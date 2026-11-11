@@ -192,8 +192,9 @@ func TestBuryCommandReportsPartialSuccess(t *testing.T) {
 		t.Run(fmt.Sprint(asJSON), func(t *testing.T) {
 			starts := clitest.IsolateRunner(t)
 			repo, store := clitest.CommandDir(t)
-			paths := []string{filepath.Join(repo, "a.log"), filepath.Join(repo, "b.log"), filepath.Join(repo, "c.log")}
-			for _, path := range paths {
+			// The parent operand starts after its child's batch has committed.
+			paths := []string{filepath.Join(repo, "parent", "a.log"), filepath.Join(repo, "parent"), filepath.Join(repo, "c.log")}
+			for _, path := range []string{paths[0], paths[2]} {
 				clitest.WriteFixture(t, path, "keep")
 			}
 			svc, err := cmdutil.Open()

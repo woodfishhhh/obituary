@@ -108,7 +108,8 @@ type Service struct {
 	confirmedOwners map[string]bool
 	readOnlyOwners  bool // diagnostics validate legacy markers without migrating them
 	burialOperation *BurialOperation
-	approvedWatch   *Proposal // request-local explicit directory burial approval
+	approvedWatch   *Proposal                  // request-local explicit directory burial approval
+	deletionCheck   func(string) (bool, error) // command-specific checks, outside ledger locks
 	Store           Store
 	Guard           Guard
 	FS              FS

@@ -50,32 +50,27 @@ func run(cmd *cobra.Command, args []string) error {
 		return cmdutil.ErrReported
 	}
 	failed, buried := false, false
-	for _, path := range opts.Paths {
+	// -Force only affects provider attributes. Guard stays enabled.
+	check := func(path string) (bool, error) {
 		if err := removecmd.CheckParentTraversal(path); err != nil {
-			itemError(path, err)
-			failed = true
-			continue
+			return false, err
 		}
-		if err := checkItem(path, opts); err != nil {
-			itemError(path, err)
-			failed = true
-			continue
+		err := checkItem(path, opts)
+		return err == nil, err
+	}
+	results, err := svc.BuryDeletionChecked(opts.Paths, false, "remove-item", check)
+	for _, result := range results {
+		if result.Action == core.ActionBuried || result.Action == core.ActionRecoveryPending {
+			buried = true
 		}
-		// -Force only affects provider attributes. Guard stays enabled.
-		results, err := svc.BuryDeletion([]string{path}, false, "remove-item")
-		for _, result := range results {
-			if result.Action == core.ActionBuried || result.Action == core.ActionRecoveryPending {
-				buried = true
-			}
-			if result.Error != "" {
-				itemError(path, errors.New(result.Error))
-				failed = true
-			}
-		}
-		if err := cmdutil.Committed(err); err != nil {
-			itemError(path, err)
+		if result.Error != "" {
+			itemError(result.Ref, errors.New(result.Error))
 			failed = true
 		}
+	}
+	if err := cmdutil.Committed(err); err != nil {
+		itemError(opts.Paths[0], err)
+		failed = true
 	}
 	if buried {
 		cmdutil.EnsureDaemon(svc.Store.Home, true)

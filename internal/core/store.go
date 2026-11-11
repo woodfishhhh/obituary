@@ -19,7 +19,8 @@ type Store struct {
 	lockDeadline time.Time
 	ctx          context.Context
 	auditPending *bool
-	auditLines   *int // batch delivery upper bound for recovery log advice
+	auditLines   *int                // batch delivery upper bound for recovery log advice
+	observeLock  func(time.Duration) // serial test measurement of store.lock ownership
 }
 
 func (s Store) WithContext(ctx context.Context) Store { s.ctx = ctx; return s }
@@ -178,6 +179,10 @@ func (s Store) withLock(name string, exclusive bool, fn func() error) error {
 		return fmt.Errorf("lock %s: %w", name, err)
 	}
 	defer unlock()
+	if name == "store.lock" && s.observeLock != nil {
+		started := time.Now()
+		defer func() { s.observeLock(time.Since(started)) }()
+	}
 	if err := ctx.Err(); err != nil {
 		return err
 	}

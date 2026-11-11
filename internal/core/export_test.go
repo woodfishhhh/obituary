@@ -20,6 +20,8 @@ func RequireFsync(t *testing.T) {
 
 func SyncFileForTesting(file *os.File) error { return syncFile(file) }
 
+func ObserveStoreLocks(s *Store, fn func(time.Duration)) { s.observeLock = fn }
+
 func CheckWatchDownload(path string) error { return checkWatchDownload(path) }
 
 func ObserveWatchTree(s *Service, path string, id Identity, isDir, hold bool) (WatchSnapshot, func(), error) {

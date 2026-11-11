@@ -67,6 +67,17 @@ func TestBuryBatchFailureBoundaries(t *testing.T) {
 				}
 			}
 			rows, err := f.svc.Bury(paths, false, "")
+			if stage == "reserve" {
+				if err == nil || len(rows) != len(paths) || len(f.burials()) != 0 {
+					t.Fatalf("failed batch reservation changed the ledger: %+v %v", rows, err)
+				}
+				for i, row := range rows {
+					if row.Ref != paths[i] || row.Action != core.ActionNotExecuted || row.Error == "" || !exists(paths[i]) {
+						t.Fatalf("failed batch reservation lost an untouched operand: %+v", row)
+					}
+				}
+				return
+			}
 			if len(rows) != len(paths) || rows[0].Error != "" || rows[1].Error == "" || exists(paths[0]) {
 				t.Fatalf("burial batch lost per-input result: %+v %v", rows, err)
 			}

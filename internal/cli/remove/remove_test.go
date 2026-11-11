@@ -8,8 +8,45 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/woodfishhhh/obituary/internal/cli/clitest"
+	rmcmd "github.com/woodfishhhh/obituary/internal/cli/rm"
+	rmdircmd "github.com/woodfishhhh/obituary/internal/cli/rmdir"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 )
+
+func TestRemoveBatchPreservesOperandOrder(t *testing.T) {
+	clitest.IsolateRunner(t)
+	root, store := clitest.CommandDir(t)
+	for _, name := range []string{"first", "last"} {
+		clitest.WriteFixture(t, filepath.Join(root, name), name)
+	}
+	out, stderr, err := clitest.Execute(t, rmcmd.NewCmd(), "-v", "missing-a", "first", "first", "missing-b", "last")
+	wantOut := "rm: buried 'first'\nrm: buried 'last'\n"
+	wantErr := "rm: cannot remove 'missing-a': No such file or directory\nrm: cannot remove 'first': No such file or directory\nrm: cannot remove 'missing-b': No such file or directory\n"
+	if err == nil || out != wantOut || stderr != wantErr {
+		t.Fatalf("operand order changed: out=%q stderr=%q err=%v", out, stderr, err)
+	}
+	st, readErr := store.ReadSnapshot()
+	if readErr != nil || len(st.Burials) != 2 {
+		t.Fatalf("duplicate operand produced duplicate grave: %+v %v", st, readErr)
+	}
+}
+
+func TestRemoveBatchChecksParentAfterChild(t *testing.T) {
+	clitest.IsolateRunner(t)
+	root, store := clitest.CommandDir(t)
+	if err := os.MkdirAll(filepath.Join(root, "parent", "child"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	out, stderr, err := clitest.Execute(t, rmdircmd.NewCmd(), "-v", "parent/child", "parent")
+	if err != nil || stderr != "" || out != "rmdir: buried 'parent/child'\nrmdir: buried 'parent'\n" {
+		t.Fatalf("parent was checked before child moved: %q %q %v", out, stderr, err)
+	}
+	st, err := store.ReadSnapshot()
+	if err != nil || len(st.Burials) != 2 {
+		t.Fatalf("parent/child receipts: %+v %v", st, err)
+	}
+}
 
 // Go overlays compile each mutation without editing the working tree. Only
 // an assertion failure counts: a compiler error or timeout is not evidence.
@@ -25,6 +62,12 @@ func TestDeleteGuardMutations(t *testing.T) {
 		t.Fatal(err)
 	}
 	for i, mutation := range []struct{ name, file, from, to, pkg, test string }{
+		{"bury-batch-disabled", "internal/core/bury.go",
+			"if !s.recycleMode() {\n\t\treturn results, errors.Join(auditErr, s.buryBatches", "if false && !s.recycleMode() {\n\t\treturn results, errors.Join(auditErr, s.buryBatches",
+			"./internal/core", "TestBuryBatchInterruptedMovesRecoverOnce"},
+		{"bury-batch-revision", "internal/core/bury_move.go",
+			"if _, err := s.burialRevision(st, out.Item, reason); err != nil {", "if err := error(nil); err != nil {",
+			"./internal/core", "TestBuryBatchRechecksEachRevision"},
 		{"suggest-glob-ambiguity", "internal/guardrm/rewrite.go",
 			`if ambiguousGlobLocation {`, `if false && ambiguousGlobLocation {`,
 			"./internal/guardrm", "TestSuggestSummaryAndGlobDecisions"},
@@ -173,8 +216,8 @@ func TestDeleteGuardMutations(t *testing.T) {
 			"segments, why := parseSuggestion(command, context)", "if context.Shell == Bash && strings.HasPrefix(command, \"rm \") { if summary != nil { *summary = \"mutation\" }; return \"obit \" + command, \"\" }; segments, why := parseSuggestion(command, context)",
 			"./internal/guardrm", "FuzzSuggest/rm-unterminated"},
 		{"msys-root", "internal/cli/remove/remove.go",
-			"if info.IsDir() {\n\t\t\troot, err := isMSYSRoot(path)",
-			"if false && info.IsDir() {\n\t\t\troot, err := isMSYSRoot(path)",
+			"if info.IsDir() {\n\t\troot, err := isMSYSRoot(path)",
+			"if false && info.IsDir() {\n\t\troot, err := isMSYSRoot(path)",
 			"./internal/cli/remove", "TestRemovePreservesMSYSRoots"},
 		{"audit-command-limit", "internal/guardrm/audit.go",
 			"event.Command = auditCommand(event.Command)\n\tevent.Equivalent = auditCommand(event.Equivalent)", "",
@@ -381,7 +424,7 @@ func TestDeleteGuardMutations(t *testing.T) {
 			"return command, why", "return \"obit \" + command, \"\"",
 			"./internal/guardrm", "TestSuggestComplexCommandsPassThrough"},
 		{"delete-on-refusal", "internal/cli/removeitem/remove-item.go",
-			"itemError(path, errors.New(result.Error))", "_ = os.Remove(path); itemError(path, errors.New(result.Error))",
+			"itemError(result.Ref, errors.New(result.Error))", "_ = os.Remove(result.Ref); itemError(result.Ref, errors.New(result.Error))",
 			"./internal/cli/removeitem", "TestRemoveItemRefusals"},
 		{"guard-notice-decoded-arguments", "internal/integrate/hooks.go",
 			`if guardHook(raw, agent) {`, `if !strings.Contains(string(raw), "--notice-only") {`,

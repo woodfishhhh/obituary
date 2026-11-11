@@ -53,6 +53,15 @@ func (s *Service) BuryDeletion(paths []string, force bool, command string) ([]Gr
 	return s.bury(paths, force, command, "delete-command")
 }
 
+// BuryDeletionChecked applies command-specific checks in operand order, after
+// earlier overlapping paths finish. A false check silently skips that operand.
+// The callback runs outside ledger locks and must not move the object.
+func (s *Service) BuryDeletionChecked(paths []string, force bool, command string, check func(string) (bool, error)) ([]GraveResult, error) {
+	copy := *s
+	copy.deletionCheck = check
+	return copy.BuryDeletion(paths, force, command)
+}
+
 // bury aborts on setup, recovery or ledger commit failures, retaining completed
 // and unexecuted receipts. Per-path refusals stay in their slots; audit failures
 // are accumulated while the remaining paths run.
@@ -100,7 +109,20 @@ func (s *Service) buryPaths(paths []string, force bool, note, source string) ([]
 			results = append(results, GraveResult{Ref: fmt.Sprintf("#%d", o.Item.ID), Action: o.Action, Burial: o.Burial, Path: o.Path, Warning: o.Detail})
 		}
 	}
+	if !s.recycleMode() {
+		return results, errors.Join(auditErr, s.buryBatches(paths, results, force, note, source, recovery))
+	}
 	for i, ref := range paths {
+		if s.deletionCheck != nil {
+			ok, checkErr := s.deletionCheck(ref)
+			if !ok || checkErr != nil {
+				results[i] = GraveResult{Ref: ref}
+				if checkErr != nil {
+					results[i].Error = checkErr.Error()
+				}
+				continue
+			}
+		}
 		results[i], err = s.buryRef(ref, force, note, source, recovery)
 		if commitFailed(err) {
 			return results, err
@@ -170,7 +192,7 @@ func (s *Service) buryRef(ref string, force bool, note, source string, recovery 
 	// cancels. The next item still uses the request context.
 	tx := s.WithContext(context.WithoutCancel(s.Store.Context()))
 	o := tx.settle(item, false, ReasonBury, recovery.locations)
-	r, finishErr := tx.finishBuryRef(ref, item, o)
+	r, finishErr := tx.finishBuryRef(ref, item, o, false)
 	if commitFailed(finishErr) {
 		return r, finishErr
 	}
@@ -219,7 +241,7 @@ func (s *Service) recoveredBuryRef(ref, abs string, burials []Burial, err error)
 
 // finishBuryRef returns ledger failures to abort the batch, keeps other failed
 // outcomes in the receipt, and reports audit failures without stopping it.
-func (s *Service) finishBuryRef(ref string, item Item, o Outcome) (GraveResult, error) {
+func (s *Service) finishBuryRef(ref string, item Item, o Outcome, audited bool) (GraveResult, error) {
 	r := GraveResult{Ref: ref, Action: o.Action, Burial: o.Burial}
 	if commitFailed(o.err) {
 		r.Error = o.err.Error()
@@ -243,7 +265,7 @@ func (s *Service) finishBuryRef(ref string, item Item, o Outcome) (GraveResult, 
 			r.Error = "object was not buried: " + o.Action
 		}
 	}
-	if o.Action != ActionBuried {
+	if o.Action != ActionBuried && !audited {
 		auditErr = errors.Join(auditErr, s.Store.RecordCommitted(Event{Time: s.now(), Action: o.Action, ID: item.ID, Path: item.Path, Detail: o.Detail}))
 	}
 	return r, auditErr

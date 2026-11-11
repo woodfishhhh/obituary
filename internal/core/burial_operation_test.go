@@ -204,7 +204,7 @@ func TestBurialBatchSurvivesInterruptedCommit(t *testing.T) {
 	})
 	rows, err := svc.Bury([]string{first, second}, false, "")
 	restore()
-	if err == nil || rows[0].Burial == nil {
+	if err == nil || len(rows) != 2 || rows[0].Action != core.ActionRecoveryPending || rows[1].Action != core.ActionRecoveryPending {
 		t.Fatal(rows, err)
 	}
 	refs, _, err := f.svc.LastBurialRefs("mine", f.dir)

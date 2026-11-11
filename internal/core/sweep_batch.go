@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"errors"
 	"time"
 )
@@ -29,7 +30,7 @@ func (s *Service) sweepBurials(state State, roots []resolvedGraveyardRoot, block
 	var pending []*preparedBurial
 	current, refresh := state, false
 	flush := func() error {
-		rows, err := s.commitBurialBatch(pending, owners)
+		rows, err := s.commitBurialBatch(pending, owners, ReasonExpired)
 		outcomes = append(outcomes, rows...)
 		pending = nil
 		refresh = true
@@ -77,7 +78,11 @@ func (s *Service) sweepBurials(state State, roots []resolvedGraveyardRoot, block
 	return outcomes, finalErr
 }
 
-func (s *Service) commitBurialBatch(pending []*preparedBurial, owners *ownershipBatch) (outcomes []Outcome, finalErr error) {
+func (s *Service) commitBurialBatch(pending []*preparedBurial, owners *ownershipBatch, reason string) (outcomes []Outcome, finalErr error) {
+	requestContext := s.Store.Context()
+	if reason == ReasonBury {
+		s = s.WithContext(context.WithoutCancel(requestContext))
+	}
 	if owners != nil {
 		for _, p := range pending {
 			p.owner = owners.lookup
@@ -85,87 +90,20 @@ func (s *Service) commitBurialBatch(pending []*preparedBurial, owners *ownership
 	}
 	for len(pending) > 0 {
 		if owners != nil {
-			// Git interprets the index without holding store.lock. The answer
-			// is authority only after Current revalidates it next to each move;
-			// providers without snapshots still query again inside the lock.
+			// Git queries run outside store.lock; Current revalidates each snapshot next to its move.
 			owners.prefetch(s.Store.Context(), pending)
 			s.gitMoveBudget = gitVerificationBudget(owners.elapsed)
 		}
-		processed, auditCount := 0, 0
-		var stopErr error
-		err := s.withGraveyardLock(func() error {
-			commitErr := s.Store.Update(func(st *State) error {
-				// Allow 100ms of work before yielding between items; a final
-				// query in flight has its own bounded, measured budget.
-				started := time.Now()
-				for _, p := range pending {
-					if processed > 0 && time.Since(started) >= sweepBatchWork {
-						break
-					}
-					if err := st.requireAuditSpace(); err != nil {
-						stopErr = err
-						break
-					}
-					if p.out.Action == "" {
-						err := s.movePrepared(st, p, ReasonExpired)
-						if errors.Is(err, errOwnerSnapshotRefresh) {
-							break // Commit the moved prefix before yielding for Git.
-						}
-						processed++
-						if err != nil {
-							return err
-						}
-					} else {
-						processed++
-					}
-					if owners != nil {
-						owners.done[p.out.Item.ID] = true
-					}
-					if !p.moved {
-						s.commitOutcome(st, p.out)
-						st.queueAudit(Event{Time: s.now(), Action: p.out.Action, ID: p.out.Item.ID, Path: p.out.Path, Detail: p.out.Detail})
-					}
-				}
-				auditCount = len(st.PendingAudit)
-				return nil
-			})
-			if !commitFailed(commitErr) {
-				for _, p := range pending[:processed] {
-					if p.moved {
-						p.out.Action, p.out.Burial = ActionBuried, &p.burial
-					}
-				}
-			}
-			for _, p := range pending[:processed] {
-				finishErr := s.finishBurial(p, commitErr)
-				if commitFailed(commitErr) {
-					p.out = ledgerOutcome(p.out, commitErr)
-					continue // classify every moved receipt, preserving every manifest
-				}
-				if commitFailed(finishErr) {
-					return finishErr
-				}
-			}
-			return commitErr
-		})
+		processed, auditCount, stopErr, err := s.commitBurialPrefix(pending, owners, reason, requestContext, len(outcomes) > 0)
 		for _, p := range pending[:processed] {
 			outcomes = append(outcomes, p.out)
 		}
-		// A cleanup error does not undo the confirmed transaction. Measure
-		// every confirmed burial before returning it, even if an earlier
-		// manifest could not be removed. Unconfirmed moves stay recovery-only.
-		for i, p := range pending[:processed] {
-			if p.out.Burial == nil {
-				continue
+		// A cleanup error does not undo the confirmed transaction.
+		// Explicit interruptions leave accounting to recovery with its receipt.
+		if reason == ReasonExpired || !commitFailed(err) {
+			if measureErr := s.measureBurialBatch(pending[:processed], outcomes[len(outcomes)-processed:]); measureErr != nil {
+				return outcomes, errors.Join(err, measureErr)
 			}
-			if stepErr := s.burialStep("cleaned"); stepErr != nil {
-				return outcomes, errors.Join(err, stepErr)
-			}
-			p.burial.Size = treeSize(p.burial.Grave)
-			if stepErr := s.burialStep("measured"); stepErr != nil {
-				return outcomes, errors.Join(err, stepErr)
-			}
-			outcomes[len(outcomes)-processed+i].Size = p.burial.Size
 		}
 		if commitFailed(err) {
 			return outcomes, err
@@ -173,14 +111,7 @@ func (s *Service) commitBurialBatch(pending []*preparedBurial, owners *ownership
 		finalErr = errors.Join(finalErr, err)
 		pending = pending[processed:]
 		if stopErr != nil {
-			// Nothing beyond the committed prefix moved. Remove only our own
-			// unused metadata so an ordinary lifespan edit remains possible.
-			for _, p := range pending {
-				if p.manifest != "" {
-					stopErr = errors.Join(stopErr, s.discardEmptyGrave(p.manifest, p.burial))
-				}
-			}
-			return outcomes, errors.Join(finalErr, stopErr)
+			return outcomes, errors.Join(finalErr, s.discardUnmovedBatch(pending, stopErr))
 		}
 		if auditCount >= maxPendingAudit-sweepBatchSize {
 			if err := s.Store.FlushAudit(); err != nil {
@@ -189,4 +120,103 @@ func (s *Service) commitBurialBatch(pending []*preparedBurial, owners *ownership
 		}
 	}
 	return outcomes, finalErr
+}
+
+func (s *Service) commitBurialPrefix(pending []*preparedBurial, owners *ownershipBatch, reason string, ctx context.Context, started bool) (processed, auditCount int, stopErr, err error) {
+	err = s.withGraveyardLock(func() error {
+		commitErr := s.Store.Update(func(st *State) error {
+			var moveErr error
+			processed, stopErr, moveErr = s.moveBurialPrefix(st, pending, owners, reason, ctx, started)
+			auditCount = len(st.PendingAudit)
+			return moveErr
+		})
+		return s.finishBurialBatch(pending[:processed], commitErr)
+	})
+	return
+}
+
+func (s *Service) moveBurialPrefix(st *State, pending []*preparedBurial, owners *ownershipBatch, reason string, ctx context.Context, alreadyStarted bool) (processed int, stopErr, err error) {
+	started := time.Now()
+	for _, p := range pending {
+		if reason == ReasonBury && (processed > 0 || alreadyStarted) && ctx.Err() != nil {
+			return processed, ctx.Err(), nil
+		}
+		// An in-flight syscall cannot be preempted; yield before starting another item.
+		if processed > 0 && time.Since(started) >= sweepBatchWork {
+			break
+		}
+		if err := st.requireAuditSpace(); err != nil {
+			return processed, err, nil
+		}
+		if p.out.Action == "" {
+			err := s.movePrepared(st, p, reason)
+			if errors.Is(err, errOwnerSnapshotRefresh) {
+				break
+			}
+			processed++
+			if err != nil {
+				return processed, nil, err
+			}
+		} else {
+			processed++
+		}
+		if owners != nil {
+			owners.done[p.out.Item.ID] = true
+		}
+		if !p.moved {
+			if reason == ReasonExpired {
+				s.commitOutcome(st, p.out)
+			}
+			st.queueAudit(Event{Time: s.now(), Action: p.out.Action, ID: p.out.Item.ID, Path: p.out.Path, Detail: p.out.Detail})
+		}
+	}
+	return processed, nil, nil
+}
+
+func (s *Service) finishBurialBatch(pending []*preparedBurial, commitErr error) error {
+	if !commitFailed(commitErr) {
+		for _, p := range pending {
+			if p.moved {
+				p.out.Action, p.out.Burial = ActionBuried, &p.burial
+			}
+		}
+	}
+	for _, p := range pending {
+		finishErr := s.finishBurial(p, commitErr)
+		if commitFailed(commitErr) {
+			p.out = ledgerOutcome(p.out, commitErr)
+			continue // Every moved receipt retains its independent manifest.
+		}
+		if commitFailed(finishErr) {
+			return finishErr
+		}
+	}
+	return commitErr
+}
+
+func (s *Service) measureBurialBatch(pending []*preparedBurial, outcomes []Outcome) error {
+	// Confirmed moves remain measurable even if an earlier manifest cleanup failed.
+	for i, p := range pending {
+		if p.out.Burial == nil {
+			continue
+		}
+		if err := s.burialStep("cleaned"); err != nil {
+			return err
+		}
+		p.burial.Size = treeSize(p.burial.Grave)
+		if err := s.burialStep("measured"); err != nil {
+			return err
+		}
+		outcomes[i].Size = p.burial.Size
+	}
+	return nil
+}
+
+func (s *Service) discardUnmovedBatch(pending []*preparedBurial, stopErr error) error {
+	for _, p := range pending {
+		if p.manifest != "" {
+			stopErr = errors.Join(stopErr, s.discardEmptyGrave(p.manifest, p.burial))
+		}
+	}
+	return stopErr
 }
