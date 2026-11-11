@@ -2,10 +2,13 @@ module github.com/woodfishhhh/obituary
 
 go 1.26.4
 
+toolchain go1.26.11
+
 require (
 	fyne.io/systray v1.12.2
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/fsnotify/fsnotify v1.10.1
+	github.com/go-ole/go-ole v1.3.0
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/spf13/cobra v1.10.2
@@ -13,8 +16,8 @@ require (
 	github.com/tc-hib/winres v0.3.1
 	github.com/wailsapp/wails/v2 v2.17.1
 	go.yaml.in/yaml/v3 v3.0.6
-	golang.org/x/mod v0.41.0
-	golang.org/x/sys v0.49.0
+	golang.org/x/mod v0.42.0
+	golang.org/x/sys v0.50.0
 	mvdan.cc/sh/v3 v3.14.1
 )
 
@@ -22,7 +25,6 @@ require (
 	git.sr.ht/~jackmordaunt/go-toast/v2 v2.0.3 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.16 // indirect
-	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/google/jsonschema-go v0.4.3 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -51,10 +53,10 @@ require (
 	github.com/wailsapp/go-webview2 v1.0.22 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	golang.org/x/crypto v0.57.0 // indirect
-	golang.org/x/image v0.41.0 // indirect
+	golang.org/x/image v0.48.0 // indirect
 	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/oauth2 v0.35.0 // indirect
-	golang.org/x/sync v0.23.0 // indirect
-	golang.org/x/text v0.42.0 // indirect
+	golang.org/x/sync v0.25.0 // indirect
+	golang.org/x/text v0.44.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 )

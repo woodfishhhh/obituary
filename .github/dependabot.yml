@@ -1,0 +1,29 @@
+# Weekly update pull requests, grouped so each ecosystem arrives as one PR.
+# Actions stay pinned by SHA; Dependabot updates the SHA and its version comment.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      go-modules:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directories:
+      - /site
+      - /cmd/obit-gui/frontend
+    schedule:
+      interval: weekly
+    groups:
+      frontend:
+        patterns: ["*"]

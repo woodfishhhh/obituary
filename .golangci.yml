@@ -4,7 +4,7 @@ version: "2"
 # limits are the ones in AGENTS.md (functions under 50 lines, at most 4
 # levels of nesting). Existing code is grandfathered: CI and workers only
 # fail on new issues (see the new-from-merge-base setting below); the
-# backlog is tracked in docs/milestones/m3-speed.md.
+# whole backlog shows with `golangci-lint run --new-from-merge-base= ./...`.
 linters:
   default: none
   enable:

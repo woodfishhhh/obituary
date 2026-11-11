@@ -1,9 +1,9 @@
 # Full tests run here, not on developer machines (D-0038): several workers
 # running the whole suite on one machine slowed every package 20x or more.
-# The repository is private and Windows runners bill at twice the Linux rate
-# (one day of per-push full runs cost about 1284 billable minutes), so pushes
-# and PRs run the short tier on one runner; the four full shards run nightly
-# when main changed and on demand; the mutation suites run weekly.
+# The repository is public, so standard runners cost nothing: every push and
+# pull request runs the four full shards in parallel, which keeps the wall
+# time near the slowest shard. The mutation suites, split across runners,
+# run weekly and on demand (before releases).
 name: ci
 
 on:
@@ -25,7 +25,6 @@ on:
         type: boolean
         default: false
   schedule:
-    - cron: "17 18 * * *" # nightly full shards, 02:17 Beijing, only if main changed
     - cron: "47 18 * * 0" # weekly mutation suites, Monday 02:47 Beijing
 
 concurrency:
@@ -36,10 +35,9 @@ env:
   GOTESTSUM: gotest.tools/gotestsum@v1.13.0
 
 jobs:
-  # Packaging is slow and rarely touched: on pushes, run the snapshot build
-  # and installer tests only when packaging inputs changed (always on PRs and
-  # manual runs; nightly when main changed). A Linux check costs a fraction of
-  # a Windows minute.
+  # Packaging is the slowest job and rarely touched: on pushes, run the
+  # snapshot build and installer tests only when packaging inputs changed
+  # (always on PRs, manual and scheduled runs).
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -47,7 +45,6 @@ jobs:
       contents: read
     outputs:
       package: ${{ steps.diff.outputs.package }}
-      recent: ${{ steps.diff.outputs.recent }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
@@ -58,15 +55,6 @@ jobs:
           BEFORE: ${{ github.event.before }}
           EVENT: ${{ github.event_name }}
         run: |
-          # Nightly runs are skipped when nothing landed in the last day.
-          if [ -n "$(git log -1 --since='25 hours ago' --format=%H)" ]; then
-            echo "recent=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "recent=false" >> "$GITHUB_OUTPUT"
-          fi
-          if [ "$EVENT" = "schedule" ]; then
-            echo "package=$(git log -1 --since='25 hours ago' --format=true)" >> "$GITHUB_OUTPUT"; exit 0
-          fi
           if [ "$EVENT" != "push" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
             echo "package=true" >> "$GITHUB_OUTPUT"; exit 0
           fi
@@ -130,6 +118,26 @@ jobs:
             Write-Output 'No frontend/package.json; using the committed frontend/dist and skipping the rebuild comparison.'
           }
 
+  # Known vulnerabilities in the Go toolchain, the standard library and the
+  # modules, for the shipped Windows build. It also runs on the weekly
+  # schedule, so a newly published advisory shows up without a code change.
+  vulnerabilities:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go.mod
+      - name: govulncheck (GOOS=windows)
+        env:
+          GOOS: windows
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
+
   # Both target platforms are type-checked on one Linux runner.
   lint:
     runs-on: ubuntu-latest
@@ -164,12 +172,11 @@ jobs:
           version: v2.15.0
           args: ${{ github.event_name == 'push' && format('--new-from-rev={0}', github.event.before) || '' }}
 
-  # The supported POSIX suites follow the same short/nightly cadence.
+  # The supported POSIX suites run whenever the Windows shards do.
   linux:
     needs: changes
     if: >-
       github.event_name == 'push' || github.event_name == 'pull_request' ||
-      (github.event_name == 'schedule' && github.event.schedule == '17 18 * * *' && needs.changes.outputs.recent == 'true') ||
       (github.event_name == 'workflow_dispatch' && inputs.full)
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -182,53 +189,21 @@ jobs:
           go-version-file: go.mod
       - name: Build POSIX packages
         run: go build ./...
-      - name: POSIX tests (short on push/PR, full nightly or on demand)
+      - name: POSIX tests
         env:
-          EVENT: ${{ github.event_name }}
           TMPDIR: /tmp
         run: |
-          args=()
-          if [ "$EVENT" = "push" ] || [ "$EVENT" = "pull_request" ]; then
-            args+=(-short)
-          fi
-          go test "${args[@]}" ./internal/winfs ./internal/pathutil ./internal/app ./internal/config ./internal/cli/daemon
+          go test ./internal/winfs ./internal/pathutil ./internal/app ./internal/config ./internal/cli/daemon
           # Native burial fixtures stay on Windows while POSIX moves are unsupported.
-          go test "${args[@]}" -run '^TestPOSIX' ./internal/core ./internal/auto ./internal/hook ./internal/integrate
+          go test -run '^TestPOSIX' ./internal/core ./internal/auto ./internal/hook ./internal/integrate
 
-  # Pushes and PRs: the short tier on one runner (go test -short ./...).
-  short:
-    if: github.event_name == 'push' || github.event_name == 'pull_request'
-    runs-on: windows-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version-file: go.mod
-      - name: Build without generated Windows resources
-        run: go build ./...
-      # pwsh, never Git Bash: see the note on the full shards below.
-      - name: go test -short
-        shell: pwsh
-        run: go run ${{ env.GOTESTSUM }} --format testname --jsonfile test.json -- -short -count=1 -timeout 20m ./...
-      - name: Slowest 30 tests
-        if: always()
-        shell: bash
-        run: |
-          {
-            echo "### Slowest short-tier tests"
-            echo '```'
-            go run ${{ env.GOTESTSUM }} tool slowest --jsonfile test.json --threshold 1s | head -30
-            echo '```'
-          } | tee -a "$GITHUB_STEP_SUMMARY"
-
-  # Nightly (when main changed) and on demand: the four slowest areas each get
-  # a runner; the wall time is the slowest shard instead of the sum. Keep
+  # Every push and PR, and on demand: the four slowest areas each get a
+  # runner; the wall time is the slowest shard instead of the sum. Keep
   # "rest" as the complement of the others.
   test:
     needs: changes
     if: >-
-      (github.event_name == 'schedule' && github.event.schedule == '17 18 * * *' && needs.changes.outputs.recent == 'true') ||
+      github.event_name == 'push' || github.event_name == 'pull_request' ||
       (github.event_name == 'workflow_dispatch' && inputs.full)
     runs-on: windows-latest
     timeout-minutes: 45

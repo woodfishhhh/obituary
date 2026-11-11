@@ -3,8 +3,8 @@
 # domain, CNAME in the build) and to the mirror server inside China; the
 # mirror build is copied there when the deploy key is configured. Both serve
 # the landing page at / and the docs at /docs/. A daily run refreshes the contributor wall and star charts.
-# Every job is skipped while the repository is private: Pages needs a public
-# repository on this plan, and private-repo Actions minutes are scarce.
+# Every job is skipped if the repository is ever private: Pages needs a
+# public repository on this plan.
 name: pages
 
 on:
