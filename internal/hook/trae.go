@@ -82,13 +82,13 @@ func (traeAdapter) Fallback(Event) []byte { return nil }
 func init() {
 	for _, name := range []string{"trae", "trae-cn"} {
 		Register(Agent{Name: name, Adapter: traeAdapter{name: name}, Capabilities: Capabilities{
-			DeleteGuard:      Support{Detail: "RunCommand payload has no verified execution shell; passed through"},
+			DeleteGuard:      Support{Detail: "RunCommand payload does not identify the execution shell; passed through"},
 			WriteObservation: Support{Detail: "Write/Edit success and path schema not documented; PostToolUse skipped"},
 			SessionStart:     Support{Level: Supported}, Stop: Support{Level: Supported},
 			SessionEnd: Support{Detail: "No documented SessionEnd event"},
 			Context:    Support{Level: Limited, Detail: "SessionStart only; write observation is unavailable"},
-			MCP:        Support{Level: Limited, Detail: "Project .trae/mcp.json requires project MCP enabled; global path unverified"},
-			Skill:      Support{Detail: "Skill installation location not verified"},
+			MCP:        Support{Level: Limited, Detail: "Project .trae/mcp.json requires project MCP enabled; global configuration requires the settings UI"},
+			Skill:      Support{Detail: "Skill installation is not implemented for this agent"},
 		}})
 	}
 }

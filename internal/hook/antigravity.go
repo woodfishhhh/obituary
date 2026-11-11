@@ -122,6 +122,6 @@ func init() {
 		Stop:             Support{Level: Limited, Detail: "Exactly one local workspace; neutral output"},
 		SessionEnd:       Support{Detail: "No native SessionEnd event"},
 		Context:          Support{Level: Limited, Detail: "SessionStart/PreInvocation injectSteps in one local workspace; PostToolUse output ignored"},
-		MCP:              Support{Level: Supported}, Skill: Support{Detail: "Plugin rules supported; skill installation not verified"},
+		MCP:              Support{Level: Supported}, Skill: Support{Detail: "Plugin rules supported; Skill installation is not implemented for this agent"},
 	}})
 }

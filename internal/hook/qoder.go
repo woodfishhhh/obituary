@@ -104,13 +104,13 @@ func (qoderAdapter) Fallback(Event) []byte { return nil }
 func qoderCapabilities() Capabilities {
 	return Capabilities{
 		DeleteGuard:      Support{Level: Limited, Detail: "Claude JSON deny is documented; Bash/run_in_terminal do not attest shell/backend, so no guard is installed"},
-		WriteObservation: Support{Level: Limited, Detail: "Documented successful PostToolUse with file_path for Write/Edit/create_file/search_replace/edit_file; local Windows paths only; host not exercised"},
+		WriteObservation: Support{Level: Limited, Detail: "Documented successful PostToolUse with file_path for Write/Edit/create_file/search_replace/edit_file; local Windows paths only"},
 		SessionStart:     Support{Level: Limited, Detail: "CLI and current 12-event IDE reference; older IDE versions may not emit SessionStart"},
 		Stop:             Support{Level: Supported, Detail: "Silent turn finish"},
 		SessionEnd:       Support{Level: Limited, Detail: "CLI/current IDE event; best effort on host termination"},
-		Context:          Support{Level: Limited, Detail: "Post feedback is deferred to SessionStart/UserPromptSubmit; real host delivery not verified"},
+		Context:          Support{Level: Limited, Detail: "Post feedback is deferred to SessionStart/UserPromptSubmit"},
 		MCP:              Support{Level: Limited, Detail: "CLI user settings.json and project .mcp.json; IDE/plugin MCP location requires its settings UI"},
-		Skill:            Support{Detail: "No verified installation target in this integration"},
+		Skill:            Support{Detail: "Skill installation is not implemented for this agent"},
 	}
 }
 

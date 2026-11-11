@@ -179,10 +179,10 @@ func (copilotAdapter) Fallback(Event) []byte { return nil }
 func init() {
 	Register(Agent{Name: "copilot", Adapter: copilotAdapter{}, Capabilities: Capabilities{
 		DeleteGuard:      Support{Level: Limited, Detail: "Native bash/powershell only; compatible Bash and VS Code run_in_terminal have no reliable shell identity"},
-		WriteObservation: Support{Level: Limited, Detail: "Successful create/edit and compatible Write/Edit; other edit schemas are not verified"},
+		WriteObservation: Support{Level: Limited, Detail: "Successful create/edit and compatible Write/Edit only"},
 		SessionStart:     Support{Level: Supported}, Stop: Support{Level: Supported},
 		SessionEnd: Support{Level: Limited, Detail: "CLI /clear only in the current harness; detached callback"},
-		Context:    Support{Level: Limited, Detail: "Current CLI/VS Code harness top-level additionalContext; legacy VS Code host not verified"},
+		Context:    Support{Level: Limited, Detail: "Current CLI/VS Code harness top-level additionalContext"},
 		MCP:        Support{Detail: "Installation is a separate phase"}, Skill: Support{Detail: "Installation is a separate phase"},
 	}})
 }

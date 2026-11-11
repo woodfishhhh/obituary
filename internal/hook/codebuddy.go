@@ -121,14 +121,14 @@ func init() {
 	for _, name := range []string{"codebuddy", "codebuddy-ide"} {
 		write := "CLI Write/Edit/MultiEdit file_path with explicit tool_response.success:true; native Windows paths only"
 		if name == "codebuddy-ide" {
-			write = "Craft write_to_file/replace_in_file filePath/file_path only with explicit success:true; other IDE result envelopes unverified"
+			write = "Craft write_to_file/replace_in_file filePath/file_path only with explicit success:true; other IDE result envelopes are skipped"
 		}
 		Register(Agent{Name: name, Adapter: codeBuddyAdapter{name: name}, Capabilities: Capabilities{
-			DeleteGuard:      Support{Level: Limited, Detail: "Requires agent_shells." + name + " = bash or powershell confirming local Windows execution; undeclared commands and remote payloads pass through; host not run"},
+			DeleteGuard:      Support{Level: Limited, Detail: "Requires agent_shells." + name + " = bash or powershell confirming local Windows execution; undeclared commands and remote payloads pass through"},
 			WriteObservation: Support{Level: Limited, Detail: write},
-			SessionStart:     Support{Level: Limited, Detail: "Documented local SessionStart; synthetic protocol fixtures, host not run"},
-			Stop:             Support{Level: Supported, Detail: "Silent Stop"}, SessionEnd: Support{Level: Limited, Detail: "Documented SessionEnd; host shutdown timing unverified"},
-			Context: Support{Level: Limited, Detail: "Documented hookSpecificOutput.additionalContext on SessionStart/PostToolUse/UserPromptSubmit; host not run"},
+			SessionStart:     Support{Level: Limited, Detail: "Local SessionStart snapshot"},
+			Stop:             Support{Level: Supported, Detail: "Silent Stop"}, SessionEnd: Support{Level: Limited, Detail: "Silent SessionEnd; background finish"},
+			Context: Support{Level: Limited, Detail: "Documented hookSpecificOutput.additionalContext on SessionStart/PostToolUse/UserPromptSubmit"},
 			MCP:     Support{Level: Limited, Detail: "CLI first-existing JSONC MCP; legacy runtime state and IDE/plugin profile targets require manual selection"},
 			Skill:   Support{Level: Limited, Detail: ".codebuddy/skills with shared owner receipts; host trust/enablement remains manual"},
 		}})

@@ -28,8 +28,8 @@ func init() {
 	caps.SessionStart = Support{Detail: "No SessionStart in the documented five-event Lingma IDE protocol"}
 	caps.SessionEnd = Support{Detail: "No SessionEnd in the documented five-event Lingma IDE protocol"}
 	caps.Stop = Support{Level: Limited, Detail: "Silent turn finish; no session-start snapshot"}
-	caps.WriteObservation.Detail = "Successful PostToolUse for Write/Edit/create_file/search_replace with file_path; compatibility fixture, not a recorded client payload"
-	caps.Context = Support{Detail: "Post notices remain unacknowledged; UserPromptSubmit JSON output is unverified, inspect obit proposals manually"}
-	caps.MCP = Support{Level: Limited, Detail: "IDE/plugin Settings > MCP Servers > custom JSON; physical target unverified"}
+	caps.WriteObservation.Detail = "Successful PostToolUse for Write/Edit/create_file/search_replace with file_path"
+	caps.Context = Support{Detail: "Post notices remain unacknowledged; UserPromptSubmit context output is disabled; inspect obit proposals manually"}
+	caps.MCP = Support{Level: Limited, Detail: "Manual IDE/plugin Settings > MCP Servers > custom JSON configuration"}
 	Register(Agent{Name: "lingma", Adapter: lingmaAdapter{qoderAdapter{name: "lingma"}}, Capabilities: caps})
 }

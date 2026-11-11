@@ -6,7 +6,7 @@ package hook
 func init() {
 	Register(Agent{Name: "omp", Adapter: piAdapter{}, Capabilities: Capabilities{
 		DeleteGuard:      Support{Level: Limited, Detail: "Shared Pi bridge v1; tool_call uses block/reason with verified local shell metadata; plugin wiring pending"},
-		WriteObservation: Support{Level: Limited, Detail: "Successful tool_result write/edit parameters; normalized edit paths require version-specific plugin verification"},
+		WriteObservation: Support{Level: Limited, Detail: "Successful tool_result write/edit parameters; plugin must provide normalized edit paths"},
 		SessionStart:     Support{Level: Limited, Detail: "session_start requires stable sessionManager identity; snapshot taken even when context delivery is unavailable"},
 		Stop:             Support{Level: Limited, Detail: "session_stop is main-session idle; agent_end is observation-only; both map to silent Stop"},
 		SessionEnd:       Support{Level: Limited, Detail: "session_shutdown has a 2-second parallel budget; silent bridge result and background handoff required"},

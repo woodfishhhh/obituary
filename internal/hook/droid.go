@@ -73,10 +73,10 @@ func (droidAdapter) Fallback(Event) []byte { return nil }
 
 func init() {
 	Register(Agent{Name: "droid", Adapter: droidAdapter{}, Capabilities: Capabilities{
-		DeleteGuard:      Support{Detail: "Execute has no verified shell/backend metadata; no pre hook should be installed"},
+		DeleteGuard:      Support{Detail: "Execute does not identify the actual shell/backend; no pre hook should be installed"},
 		WriteObservation: Support{Detail: "Official tool_response success shapes for Create/Edit/ApplyPatch are not fixed; PostToolUse skipped"},
 		SessionStart:     Support{Level: Supported}, Stop: Support{Level: Supported}, SessionEnd: Support{Level: Supported},
-		Context: Support{Level: Limited, Detail: "SessionStart only; successful PostToolUse schema awaits verification"},
+		Context: Support{Level: Limited, Detail: "SessionStart only; PostToolUse skipped"},
 		MCP:     Support{Detail: "Installation is a separate phase"}, Skill: Support{Detail: "Installation is a separate phase"},
 	}})
 }

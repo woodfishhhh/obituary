@@ -57,9 +57,9 @@ func TestAgentCoverageMarkdownFiltersAndGroups(t *testing.T) {
 		previous = position
 	}
 	for _, want := range []string{
-		"Beta runtime context delivery unverified; no notices acknowledged",
+		"Context output is disabled; notices remain unacknowledged",
 		"Native JSONC mcp command array; ambiguous layers require manual selection",
-		"managed Skill discovery has not been verified",
+		"The installed rules describe Obituary; Skill installation is not implemented for this agent",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("capability detail missing: %q", want)

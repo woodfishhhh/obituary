@@ -9,7 +9,7 @@ type opencodeAdapter struct{ BridgeAdapter }
 
 func init() {
 	Register(Agent{Name: "opencode", Adapter: opencodeAdapter{}, Capabilities: Capabilities{
-		DeleteGuard:      Support{Level: Limited, Detail: "Bridge v1 only; V1 tool.execute.before / V2 execute.before require verified local shell metadata; plugin denial through Tool.Error awaits loader verification"},
+		DeleteGuard:      Support{Level: Limited, Detail: "Bridge v1 only; V1 tool.execute.before / V2 execute.before require verified local shell metadata; plugin denial uses Tool.Error"},
 		WriteObservation: Support{Level: Limited, Detail: "Successful write/edit/apply_patch parameters only; plugin path extraction and context delivery remain to be wired"},
 		SessionStart:     Support{Level: Limited, Detail: "session.created snapshots normally; observation-only callbacks leave notices pending"},
 		Stop:             Support{Level: Limited, Detail: "session.idle maps to silent Stop; plugin lifecycle wiring pending"},

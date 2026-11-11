@@ -35,12 +35,12 @@ func PlanQoderWorkMCP(_ Scope, executable string, uninstall bool) ([]Change, err
 func init() {
 	RegisterAgent(Agent{Name: "qoderwork", Method: RulesAndMCP, Plan: PlanQoderWork, PlanMCP: PlanQoderWorkMCP, Capabilities: hook.Capabilities{
 		DeleteGuard:      hook.Support{Level: hook.Limited, Detail: "Global hooks only; exit-2 denial needs the #35 wrapper; no native hook installed"},
-		WriteObservation: hook.Support{Detail: "Awaiting verified tool fields and wrapper"},
+		WriteObservation: hook.Support{Detail: "Write-observation hook and wrapper are not installed"},
 		SessionStart:     hook.Support{Detail: "Documented event, not installed"},
 		SessionEnd:       hook.Support{Detail: "Documented event, not installed"},
 		Stop:             hook.Support{Detail: "Documented event, not installed"},
-		Context:          hook.Support{Level: hook.Limited, Detail: "Manual task instructions only; persistent rule metadata/path unverified"},
+		Context:          hook.Support{Level: hook.Limited, Detail: "Manual task instructions only; persistent rules are not installed"},
 		MCP:              hook.Support{Level: hook.Limited, Detail: "Manual stdio configuration; physical target and this host version's schema require UI verification"},
-		Skill:            hook.Support{Detail: "No verified skill installation target"},
+		Skill:            hook.Support{Detail: "Skill installation is not implemented for this agent"},
 	}})
 }

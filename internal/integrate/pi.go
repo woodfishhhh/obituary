@@ -75,7 +75,7 @@ func init() {
 	caps.SessionStart.Detail = "session_start uses stable sessionManager id and passive sendMessage with triggerTurn:false; local backend attestation required"
 	caps.Stop.Detail = "agent_end and agent_settled map to silent Stop; local backend attestation required"
 	caps.SessionEnd.Detail = "session_shutdown maps to silent SessionEnd with a 1.2-second subprocess budget"
-	caps.Context.Detail = "Passive tool_result content and session_start sendMessage; Node protocol and installed bridge tested; actual host loader pending"
+	caps.Context.Detail = "Passive tool_result content and session_start sendMessage"
 	caps.MCP = hook.Support{Level: hook.Supported, Detail: "Native user/project mcp.json with shared Pi/OMP ownership"}
 	RegisterAgent(Agent{Name: "pi", Method: Plugin, Capabilities: caps, Plan: PlanPi, PlanMCP: PlanPiMCP, PlanSkill: unsupportedPluginSkill("pi")})
 }

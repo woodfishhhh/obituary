@@ -140,5 +140,5 @@ func graveNoticeSupport(agent Agent) Support {
 		}
 		return Support{Level: Limited, Detail: "SessionStart summary; missing verified PostToolUse write paths or confirmed shell operands; delivery follows the Context capability"}
 	}
-	return Support{Detail: "No verified grave-notice context delivery"}
+	return Support{Detail: "Grave-notice context delivery is unavailable"}
 }

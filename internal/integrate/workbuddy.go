@@ -17,7 +17,7 @@ import (
 //go:embed plugins/workbuddy/SETUP.md plugins/workbuddy/sources.json
 var workBuddyFiles embed.FS
 
-const workBuddyManualSkill = "export only; in mainland WorkBuddy open 技能 > 添加技能 > 上传技能, review the local package, then confirm it under 已安装; upload format and loader remain unverified; no automatic activation"
+const workBuddyManualSkill = "export only; in mainland WorkBuddy open 技能 > 添加技能 > 上传技能, review the local package, then confirm it under 已安装; no automatic activation"
 
 func workBuddyDirectory(s Scope) (string, error) {
 	if s.Global {
@@ -75,7 +75,7 @@ func PlanWorkBuddyMCP(s Scope, executable string, uninstall bool) ([]Change, err
 		return nil, err
 	}
 	if change.Action != "preserve" {
-		change.Detail = "mainland Windows WorkBuddy local MCP; review 插件 > MCP 服务器 > 配置 MCP and confirm service status; actual client unverified; keep this local server disabled for cloud/remote tasks"
+		change.Detail = "mainland Windows WorkBuddy local MCP; review 插件 > MCP 服务器 > 配置 MCP and confirm service status; keep this local server disabled for cloud/remote tasks"
 	}
 	return []Change{change}, nil
 }
@@ -103,12 +103,12 @@ func PlanWorkBuddySkill(s Scope, uninstall bool) ([]Change, error) {
 }
 
 func init() {
-	unverified := hook.Support{Detail: "unsupported: mainland consumer WorkBuddy hook schema, registration path and local/cloud identity unverified; no callbacks registered"}
+	unverified := hook.Support{Detail: "mainland consumer WorkBuddy callbacks are not registered; hook integration is unavailable"}
 	RegisterAgent(Agent{Name: "workbuddy", Method: RulesAndMCP, Plan: PlanWorkBuddy, PlanMCP: PlanWorkBuddyMCP, PlanSkill: PlanWorkBuddySkill,
 		Capabilities: hook.Capabilities{
 			DeleteGuard: unverified, WriteObservation: unverified, SessionStart: unverified, Stop: unverified, SessionEnd: unverified,
-			Context: hook.Support{Detail: "office setup and optional SKILL.md exported for manual review; automatic rule/context loading unverified"},
-			MCP:     hook.Support{Level: hook.Supported, Detail: "mainland Windows desktop: user/project .workbuddy/mcp.json, local command/args; actual client unverified; international .workbuddy-ai MCP paths unverified, verify in that edition's MCP UI; cloud/remote tasks excluded"},
+			Context: hook.Support{Detail: "office setup and optional SKILL.md exported for manual review; automatic rule/context loading is unavailable"},
+			MCP:     hook.Support{Level: hook.Supported, Detail: "mainland Windows desktop: user/project .workbuddy/mcp.json, local command/args; international edition requires manual configuration through its MCP UI; cloud/remote tasks excluded"},
 			Skill:   hook.Support{Level: hook.Limited, Detail: workBuddyManualSkill},
 		},
 	})

@@ -27,12 +27,12 @@ func (a openclawAdapter) Decode(raw []byte, invocation Invocation) (Event, error
 
 func init() {
 	Register(Agent{Name: "openclaw", Adapter: openclawAdapter{}, Capabilities: Capabilities{
-		DeleteGuard:      Support{Level: Limited, Detail: "before_tool_call requires confirmed local shell exec; remote, sandbox and Code Mode are skipped; real host validation pending"},
-		WriteObservation: Support{Level: Limited, Detail: "after_tool_call observes successful local writes and leaves notices pending; plugin round trip tested"},
+		DeleteGuard:      Support{Level: Limited, Detail: "before_tool_call requires confirmed local shell exec; remote, sandbox and Code Mode are skipped"},
+		WriteObservation: Support{Level: Limited, Detail: "after_tool_call observes successful local writes and leaves notices pending"},
 		SessionStart:     Support{Level: Limited, Detail: "session_start takes a snapshot without acknowledging notices"},
 		Stop:             Support{Level: Limited, Detail: "agent_end maps to silent Stop"},
 		SessionEnd:       Support{Level: Limited, Detail: "session_end maps to silent SessionEnd; shutdown shares a 2-second drain budget and requires background handoff"},
-		Context:          Support{Level: Limited, Detail: "before_prompt_build requires allowConversationAccess=true and allowPromptModification not false; plugin round trip tested, real host validation pending"},
+		Context:          Support{Level: Limited, Detail: "before_prompt_build requires allowConversationAccess=true and allowPromptModification not false"},
 		MCP:              Support{Level: Limited, Detail: "Official mcp.servers stdio entries; Gateway ownership and native/WSL/remote target require phase-two installation checks"},
 		Skill:            Support{Level: Unsupported, Detail: "Skill installation and ownership are not implemented for this agent"},
 	}})

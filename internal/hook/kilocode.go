@@ -48,13 +48,13 @@ func (a kilocodeAdapter) Decode(raw []byte, invocation Invocation) (Event, error
 
 func init() {
 	Register(Agent{Name: "kilocode", Adapter: kilocodeAdapter{}, Capabilities: Capabilities{
-		DeleteGuard:      Support{Level: Limited, Detail: "current PluginModule tool-error veto tested in Node; OBIT_KILOCODE_LOCAL_SHELL=bash or powershell requires user-verified local executor; real host validation pending"},
+		DeleteGuard:      Support{Level: Limited, Detail: "current PluginModule tool-error veto; OBIT_KILOCODE_LOCAL_SHELL=bash or powershell requires user-verified local executor"},
 		WriteObservation: Support{Level: Limited, Detail: "tool.execute.after observes successful official file-tool args without acknowledging notices"},
 		SessionStart:     Support{Level: Limited, Detail: "session.created takes a snapshot without acknowledging notices"},
 		Stop:             Support{Level: Limited, Detail: "session.idle maps to silent Stop"},
-		SessionEnd:       Support{Level: Limited, Detail: "session.deleted is explicit persistent-session deletion; ordinary process exit is unverified"},
-		Context:          Support{Level: Limited, Detail: "experimental.chat.system.transform Context bridge with context_delivery=true; experimental API requires host validation"},
+		SessionEnd:       Support{Level: Limited, Detail: "session.deleted handles explicit persistent-session deletion only; ordinary cleanup uses Stop"},
+		Context:          Support{Level: Limited, Detail: "experimental.chat.system.transform Context bridge with context_delivery=true"},
 		MCP:              Support{Level: Limited, Detail: "current kilo.json[c] local mcp entries; ambiguous layered files require manual consolidation; legacy .kilocode MCP is separate"},
-		Skill:            Support{Level: Unsupported, Detail: "managed Skill installation has not been verified"},
+		Skill:            Support{Level: Unsupported, Detail: "Skill installation and ownership are not implemented for this agent"},
 	}})
 }

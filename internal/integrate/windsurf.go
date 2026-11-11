@@ -39,6 +39,6 @@ func init() {
 		DeleteGuard: noHook, WriteObservation: noHook, SessionStart: noHook, Stop: noHook, SessionEnd: noHook,
 		Context: hook.Support{Level: hook.Limited, Detail: "project .windsurfrules; global rules manual"},
 		MCP:     hook.Support{Level: hook.Limited, Detail: "manual raw config in the active client; Devin is a separate target"},
-		Skill:   hook.Support{Detail: "managed Skill discovery has not been verified; the installed rules describe Obituary; no Skill was installed"},
+		Skill:   hook.Support{Detail: "The installed rules describe Obituary; Skill installation is not implemented for this agent"},
 	}})
 }

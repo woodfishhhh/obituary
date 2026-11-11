@@ -73,10 +73,10 @@ func init() {
 	Register(Agent{Name: "kimi", Adapter: kimiAdapter{}, Capabilities: Capabilities{
 		DeleteGuard:      Support{Detail: "Beta hook payload does not attest the kaos tool runtime locality"},
 		WriteObservation: Support{Detail: "kimi-cli 9ab1286b PostToolUse includes ToolError and discards hook output"},
-		SessionStart:     Support{Level: Limited, Detail: "Beta event takes a local snapshot without acknowledging notices; context delivery unverified"},
+		SessionStart:     Support{Level: Limited, Detail: "Beta event takes a local snapshot without acknowledging notices"},
 		Stop:             Support{Level: Limited, Detail: "Beta hook; silent background finish using the session snapshot when available"},
 		SessionEnd:       Support{Level: Limited, Detail: "Beta hook schema; silent final finish"},
-		Context:          Support{Detail: "Beta runtime context delivery unverified; no notices acknowledged"},
+		Context:          Support{Detail: "Context output is disabled; notices remain unacknowledged"},
 		MCP:              Support{Level: Limited, Detail: "kimi-cli ~/.kimi/mcp.json; project configs require an explicit launch flag"},
 		Skill:            Support{Level: Limited, Detail: "kimi-cli ~/.kimi/skills, independent of KIMI_SHARE_DIR"},
 	}})

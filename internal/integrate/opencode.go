@@ -97,8 +97,8 @@ func init() {
 	caps.WriteObservation.Detail = "Successful write/edit result only; V1 output or V2 result content; local backend opt-in required; apply_patch is skipped"
 	caps.SessionStart.Detail = "V1 session.created / V2 first prompt are observation-only; processing awaits deferred-context support"
 	caps.Stop.Detail = "V1 session.idle / V2 experimental.idle map to silent Stop"
-	caps.SessionEnd.Detail = "V1 session.deleted handles persistent-session deletion; V2 uses idle cleanup and has no verified final-exit hook"
-	caps.Context.Detail = "V1 tool output / V2 result content; startup context awaits deferred delivery; V2 Tool.Error loader needs actual-host verification"
+	caps.SessionEnd.Detail = "V1 session.deleted handles persistent-session deletion; V2 uses idle cleanup only"
+	caps.Context.Detail = "V1 tool output / V2 result content; startup context awaits deferred delivery"
 	caps.MCP = hook.Support{Level: hook.Supported, Detail: "Native JSONC mcp command array; ambiguous layers require manual selection"}
 	RegisterAgent(Agent{Name: "opencode", Method: Plugin, Capabilities: caps, Plan: PlanOpenCode, PlanMCP: PlanOpenCodeMCP, PlanSkill: unsupportedPluginSkill("opencode")})
 }

@@ -185,13 +185,13 @@ func (minimaxAdapter) Fallback(Event) []byte { return nil }
 
 func init() {
 	Register(Agent{Name: "minimax-code", Adapter: minimaxAdapter{}, Capabilities: Capabilities{
-		DeleteGuard:      Support{Level: Limited, Detail: "Requires agent_shells.minimax-code = bash or powershell confirming local Windows execution; undeclared commands and remote payloads pass through; native hooks require global installation; host not run"},
+		DeleteGuard:      Support{Level: Limited, Detail: "Requires agent_shells.minimax-code = bash or powershell confirming local Windows execution; undeclared commands and remote payloads pass through; native hooks require global installation"},
 		WriteObservation: Support{Level: Limited, Detail: "Local Windows write/edit with captured success metadata; rewritten input needs a matching absolute result filePath; cloud/SSH/WSL paths skipped"},
-		SessionStart:     Support{Level: Limited, Detail: "mcode 3c21163c SessionStart; local Windows workspaces only; desktop client unverified"},
+		SessionStart:     Support{Level: Limited, Detail: "mcode 3c21163c SessionStart; local Windows workspaces only"},
 		Stop:             Support{Level: Limited, Detail: "Silent turn finish; local Windows only"},
 		SessionEnd:       Support{Level: Limited, Detail: "Silent final finish; local Windows only"},
-		Context:          Support{Level: Limited, Detail: "mcode 3c21163c consumes Claude JSON additionalContext at SessionStart/PostToolUse; no real client verification"},
+		Context:          Support{Level: Limited, Detail: "mcode 3c21163c consumes Claude JSON additionalContext at SessionStart/PostToolUse"},
 		MCP:              Support{Level: Limited, Detail: "Project .mcp.json requires host approval; global native MCP plugin requires a PATH interpreter"},
-		Skill:            Support{Level: Limited, Detail: "Native local plugin skills; explicit plugin enable and client verification required"},
+		Skill:            Support{Level: Limited, Detail: "Native local plugin skills; explicit plugin enable required"},
 	}})
 }

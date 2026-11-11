@@ -47,13 +47,13 @@ func (a hermesAdapter) Decode(raw []byte, invocation Invocation) (Event, error) 
 
 func init() {
 	Register(Agent{Name: "hermes", Adapter: hermesAdapter{}, Capabilities: Capabilities{
-		DeleteGuard:      Support{Level: Limited, Detail: "global Python plugin; cached LocalEnvironment proves local Bash; first call without backend evidence is skipped; real host validation pending"},
+		DeleteGuard:      Support{Level: Limited, Detail: "global Python plugin; cached LocalEnvironment proves local Bash; first call without backend evidence is skipped"},
 		WriteObservation: Support{Level: Limited, Detail: "post_tool_call observes successful local writes without acknowledging notices; pre_llm_call delivers them"},
 		SessionStart:     Support{Level: Limited, Detail: "on_session_start takes a snapshot without acknowledging notices"},
 		Stop:             Support{Level: Limited, Detail: "on_session_end maps to silent Stop after each run_conversation; requires local backend evidence"},
-		SessionEnd:       Support{Level: Unsupported, Detail: "on_session_end is a turn callback; final teardown callback needs separate version validation"},
-		Context:          Support{Level: Limited, Detail: "pre_llm_call Context bridge delivers pending notices with context_delivery=true; real host validation pending"},
+		SessionEnd:       Support{Level: Unsupported, Detail: "on_session_end is a turn callback; final teardown is not handled"},
+		Context:          Support{Level: Limited, Detail: "pre_llm_call Context bridge delivers pending notices with context_delivery=true"},
 		MCP:              Support{Level: Limited, Detail: "global config.yaml mcp_servers; project scope requires global registration"},
-		Skill:            Support{Level: Unsupported, Detail: "managed Skill installation has not been verified"},
+		Skill:            Support{Level: Unsupported, Detail: "Skill installation and ownership are not implemented for this agent"},
 	}})
 }
