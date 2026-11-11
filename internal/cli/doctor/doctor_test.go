@@ -5,6 +5,7 @@ package doctor
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -576,6 +577,56 @@ func TestDoctorDetectsDeniedLockAndSessionsWithoutWrites(t *testing.T) {
 			}
 			if !reflect.DeepEqual(before, clitest.TreeSnapshot(t, root)) {
 				t.Fatal("doctor wrote to data or created a probe")
+			}
+		})
+	}
+}
+
+func TestDoctorIgnoresSkippedAndLegacyDiscoveryDenials(t *testing.T) {
+	for _, reason := range []string{"Access is denied.", "access denied", "permission denied", "拒绝访问。"} {
+		t.Run(reason, func(t *testing.T) {
+			home := t.TempDir()
+			now := time.Now().Truncate(time.Second)
+			stamp := now.Format(time.RFC3339) + " "
+			message := fmt.Sprintf("discover project from %q: resolve project directory %s: %s", `C:\fixture\app\resources`, `C:\fixture`, reason)
+			legacy := fmt.Sprintf(`codex SessionEnd: %q; session="test" cwd="C:\\fixture\\app\\resources" home="C:\\data" user="fixture" sid="fixture-sid" pid=1; `, message) +
+				hook.PermissionHint + `; permission_diagnostic={"user":"fixture","sid":"fixture-sid","parent_image":"wsl.exe","operation":"resolve project directory","path":"C:\\fixture"}`
+			clitest.WriteFixture(t, filepath.Join(home, "hook.log.1"), stamp+legacy+"\n")
+			clitest.WriteFixture(t, filepath.Join(home, "hook.log"), stamp+`skip: project discovery unavailable; cwd="C:\\fixture" reason="permission denied"`+"\n")
+			before := clitest.TreeSnapshot(t, home)
+			got := diagnoseHookLog(home, now)
+			if got.Status != "PASS" || got.Errors != 0 || strings.Contains(got.Detail, "denied access") {
+				t.Fatalf("unavailable cwd warned about hook account access: %+v", got)
+			}
+			if !reflect.DeepEqual(before, clitest.TreeSnapshot(t, home)) {
+				t.Fatal("hook-log diagnostic changed legacy logs")
+			}
+			clitest.WriteFixture(t, filepath.Join(home, "hook.log"), stamp+`codex Stop: "open C:\\data\\store.lock: Access is denied."; permission_diagnostic={"operation":"open","path":"C:\\data\\store.lock"}`+"\n")
+			got = diagnoseHookLog(home, now)
+			if got.Status != "WARN" || got.Errors != 1 || !strings.Contains(got.Detail, "store.lock") {
+				t.Fatalf("cwd skip hid a genuine ledger denial: %+v", got)
+			}
+		})
+	}
+}
+
+func TestDoctorKeepsOtherDiscoveryAndPermissionErrors(t *testing.T) {
+	for _, tc := range []struct{ message, diagnostic string }{
+		{`discover project from "C:\fixture": resolve project directory C:\fixture: path changed`, `{"operation":"resolve project directory","path":"C:\\fixture"}`},
+		{`discover project from "C:\fixture": resolve project directory C:\fixture: context deadline exceeded`, `{"operation":"resolve project directory","path":"C:\\fixture"}`},
+		{`discover project from "C:\fixture": resolve project directory C:\fixture: context canceled`, `{"operation":"resolve project directory","path":"C:\\fixture"}`},
+		{`discover project from "C:\fixture": open C:\data\store.lock: Access is denied.`, `{"operation":"open","path":"C:\\data\\store.lock"}`},
+		{`snapshot project "C:\fixture": resolve project directory C:\fixture: Access is denied.`, `{"operation":"resolve project directory","path":"C:\\fixture"}`},
+		{`discover project from "C:\fixture": resolve project directory C:\fixture: Access is denied.`, `{broken`},
+	} {
+		t.Run(tc.message+tc.diagnostic, func(t *testing.T) {
+			home := t.TempDir()
+			now := time.Now().Truncate(time.Second)
+			line := fmt.Sprintf("%s codex SessionEnd: %q; permission_diagnostic=%s\n", now.Format(time.RFC3339), tc.message, tc.diagnostic)
+			clitest.WriteFixture(t, filepath.Join(home, "hook.log"), line)
+			got := diagnoseHookLog(home, now)
+			if got.Status != "WARN" || got.Errors != 1 {
+				t.Fatalf("unrelated error disappeared: %+v", got)
 			}
 		})
 	}

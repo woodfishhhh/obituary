@@ -18,8 +18,157 @@ import (
 	"github.com/woodfishhhh/obituary/internal/auto"
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/docker"
+	"github.com/woodfishhhh/obituary/internal/project"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 )
+
+func TestDiscoveryDeniedSkipsAutomaticWork(t *testing.T) {
+	for _, name := range []string{"SessionStart", "Context", "PostToolUseFailure", "Stop", "SessionEnd"} {
+		t.Run(name, func(t *testing.T) {
+			cwd, home := t.TempDir(), t.TempDir()
+			denied := &os.PathError{Op: "resolve project directory", Path: filepath.Dir(cwd), Err: os.ErrPermission}
+			original := findProject
+			findProject = func(string) (project.Project, bool, error) { return project.Project{}, false, denied }
+			t.Cleanup(func() { findProject = original })
+			e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: home}}}
+			runner := &Runner{
+				Tick:   func() { t.Error("discovery denial dispatched a tick") },
+				Finish: func(string, string, bool) { t.Error("discovery denial dispatched a session difference") },
+			}
+			ev := Event{Name: name, Cwd: cwd, Session: "denied", Paths: []string{filepath.Join(cwd, "tracked.log")}}
+			if text, err := Handle(e, ev, runner); err != nil || text != "" {
+				t.Errorf("discovery denial escaped: context=%q err=%v", text, err)
+			}
+			agent, _ := Lookup("codex")
+			var out bytes.Buffer
+			RunEvent(agent, e, ev, &out, runner)
+			if out.Len() != 0 {
+				t.Errorf("skipped event emitted context: %s", &out)
+			}
+			entries, err := os.ReadDir(home)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, entry := range entries {
+				if entry.Name() != "hook.log" && entry.Name() != "hook.log.lock" {
+					t.Errorf("skipped event created state: %s", entry.Name())
+				}
+			}
+			data, err := os.ReadFile(filepath.Join(home, "hook.log"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, line := range strings.Split(strings.TrimSpace(string(data)), "\n") {
+				_, message, _ := strings.Cut(line, " ")
+				if !strings.HasPrefix(message, "skip: ") || !strings.Contains(message, fmt.Sprintf("cwd=%q", cwd)) ||
+					!strings.Contains(message, "resolve project directory") || strings.Contains(message, "permission_diagnostic=") {
+					t.Errorf("expected a diagnostic-only skip line: %s", line)
+				}
+			}
+		})
+	}
+}
+
+func TestDiscoveryDeniedAncestorPreservesTrackedFiles(t *testing.T) {
+	if testing.Short() {
+		t.Skip("registration uses a real Git repository")
+	}
+	e := newEnv(t)
+	path := e.write("middle/child/tracked.log")
+	cmd := exec.Command("git", "-C", e.root, "add", "--", "middle/child/tracked.log")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("track fixture: %v %s", err, out)
+	}
+	ancestor, cwd := filepath.Join(e.root, "middle"), filepath.Dir(path)
+	original := findProject
+	findProject = func(string) (project.Project, bool, error) {
+		return project.Project{}, false, &os.PathError{Op: "resolve project directory", Path: ancestor, Err: os.ErrPermission}
+	}
+	t.Cleanup(func() { findProject = original })
+	for _, name := range []string{"SessionStart", "Context", "Stop", "SessionEnd"} {
+		text, err := Handle(e.engine, Event{Name: name, Cwd: cwd, Session: "denied", Paths: []string{path}}, nil)
+		if err != nil || text != "" {
+			t.Errorf("%s did not skip unreadable ancestor: %q %v", name, text, err)
+		}
+	}
+	if st := e.state(); len(st.Items) != 0 || len(st.Proposals) != 0 {
+		t.Fatalf("unresolved project registered tracked content: %+v", st)
+	}
+	if _, err := os.Stat(filepath.Join(e.engine.Svc.Store.Home, "sessions")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("unresolved project created a session snapshot: %v", err)
+	}
+	if data, err := os.ReadFile(path); err != nil || string(data) != "middle/child/tracked.log" {
+		t.Fatalf("tracked content changed: %s %v", data, err)
+	}
+}
+
+func TestDiscoveryDeniedDoesNotDeliverGraveNotices(t *testing.T) {
+	e, root, burial := noticeFixture(t, false)
+	original := findProject
+	findProject = func(string) (project.Project, bool, error) { return project.Project{}, false, os.ErrPermission }
+	t.Cleanup(func() { findProject = original })
+	for _, name := range []string{"SessionStart", "Context"} {
+		ev := Event{Name: name, Cwd: root, Session: "denied", References: []string{burial.Path}}
+		if text, err := Handle(e, ev, nil); err != nil || text != "" {
+			t.Errorf("skipped event delivered a grave notice: %q %v", text, err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(e.Svc.Store.Home, "sessions")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("skipped event created grave session state: %v", err)
+	}
+}
+
+func TestDiscoveryOtherErrorsRemainRetryable(t *testing.T) {
+	for _, cause := range []error{context.Canceled, context.DeadlineExceeded, errors.New("path changed")} {
+		t.Run(cause.Error(), func(t *testing.T) {
+			original := findProject
+			findProject = func(string) (project.Project, bool, error) { return project.Project{}, false, cause }
+			t.Cleanup(func() { findProject = original })
+			for _, name := range []string{"SessionStart", "Context", "Stop", "SessionEnd"} {
+				_, err := handle(nil, Event{Name: name, Cwd: t.TempDir(), Session: "retry"}, nil, true)
+				if !errors.Is(err, cause) || !strings.Contains(err.Error(), "discover project from") {
+					t.Errorf("%s lost discovery failure: %v", name, err)
+				}
+			}
+		})
+	}
+}
+
+func TestPostToolUseContinuesAfterCwdDiscoveryFailure(t *testing.T) {
+	if testing.Short() {
+		t.Skip("automatic registration uses a real Git repository")
+	}
+	for _, cause := range []error{os.ErrPermission, context.Canceled, context.DeadlineExceeded, errors.New("path changed")} {
+		t.Run(cause.Error(), func(t *testing.T) {
+			e := newEnv(t)
+			tracked, untracked := e.write("tracked.log"), e.write("debug.log")
+			cmd := exec.Command("git", "-C", e.root, "add", "--", "tracked.log")
+			if out, err := cmd.CombinedOutput(); err != nil {
+				t.Fatalf("track fixture: %v %s", err, out)
+			}
+			if err := e.engine.Svc.Store.Update(func(st *core.State) error {
+				st.Projects = map[string]core.ProjectState{core.ProjectKey(e.root): {Consent: core.ConsentApproved}}
+				return nil
+			}); err != nil {
+				t.Fatal(err)
+			}
+			original := findProject
+			findProject = func(string) (project.Project, bool, error) { return project.Project{}, false, cause }
+			t.Cleanup(func() { findProject = original })
+			text, err := Handle(e.engine, Event{Name: "PostToolUse", Cwd: e.root, Session: "s1", Paths: []string{tracked, untracked}}, nil)
+			if err != nil || text != "" {
+				t.Fatalf("write did not continue: %q %v", text, err)
+			}
+			st := e.state()
+			if len(st.Items) != 1 || st.Items[0].Path != untracked || len(st.Proposals) != 0 {
+				t.Fatalf("write bypassed per-path Git checks: %+v", st)
+			}
+			if data, err := os.ReadFile(filepath.Join(e.engine.Svc.Store.Home, "hook.log")); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("cwd discovery created an error log: %s %v", data, err)
+			}
+		})
+	}
+}
 
 func TestHooksNeverExecuteDocker(t *testing.T) {
 	if testing.Short() {

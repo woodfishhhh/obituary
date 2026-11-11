@@ -283,10 +283,13 @@ func diagnoseHookLog(home string, now time.Time) DoctorCheck {
 			return c
 		}
 		for _, line := range strings.Split(string(data), "\n") {
+			if !hook.IsErrorLogLine(line) {
+				continue
+			}
 			stamp, _, _ := strings.Cut(line, " ")
 			at, err := time.Parse(time.RFC3339, stamp)
 			if err == nil && !at.Before(now.Add(-24*time.Hour)) && !at.After(now) {
-				c.Errors++ // hook.log contains errors; normal events go to hook-audit.log.
+				c.Errors++
 				if summary, denied := hook.PermissionSummary(line); denied && !at.Before(permissionAt) {
 					permissionAt, permission = at, summary
 				}

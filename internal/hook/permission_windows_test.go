@@ -1,6 +1,7 @@
 package hook
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,8 +10,32 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/woodfishhhh/obituary/internal/auto"
+	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/project"
 	"golang.org/x/sys/windows"
 )
+
+func TestDiscoveryDenialUsesSkipLogWithoutPermissionDiagnostic(t *testing.T) {
+	home := t.TempDir()
+	original := findProject
+	findProject = func(string) (project.Project, bool, error) {
+		return project.Project{}, false, &os.PathError{Op: "resolve project directory", Path: home, Err: windows.ERROR_ACCESS_DENIED}
+	}
+	t.Cleanup(func() { findProject = original })
+	e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: home}}}
+	agent, _ := Lookup("codex")
+	var out bytes.Buffer
+	RunEvent(agent, e, Event{Name: "SessionEnd", Cwd: home, Session: "denied"}, &out, nil)
+	data, err := os.ReadFile(filepath.Join(home, "hook.log"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	line := strings.TrimSpace(string(data))
+	if out.Len() != 0 || strings.Count(string(data), "\n") != 1 || IsErrorLogLine(line) || strings.Contains(line, permissionMarker) {
+		t.Fatalf("native discovery denial was not a single silent skip: output=%s log=%s", &out, data)
+	}
+}
 
 func TestPermissionLogIdentifiesProcessAndFailedOperation(t *testing.T) {
 	home := t.TempDir()

@@ -15,6 +15,36 @@ import (
 	"github.com/woodfishhhh/obituary/internal/rules"
 )
 
+func TestIsErrorLogLineConservativelyFiltersDiscoveryDenials(t *testing.T) {
+	cwd := `C:\fixture\app\resources`
+	path := `C:\fixture`
+	message := fmt.Sprintf("discover project from %q: resolve project directory %s: Access is denied.", cwd, path)
+	line := func(message, metadata string) string {
+		return fmt.Sprintf("2026-11-11T00:00:00Z codex SessionEnd: %q%s%s", message, permissionMarker, metadata)
+	}
+	metadata := `{"operation":"resolve project directory","path":"C:\\fixture"}`
+	for _, tc := range []struct {
+		name, line string
+		wantError  bool
+	}{
+		{"skip", `2026-11-11T00:00:00Z skip: project discovery unavailable; cwd="C:\\fixture" reason="permission denied"`, false},
+		{"legacy", line(message, metadata), false},
+		{"diagnostic-path-mismatch", line(message, `{"operation":"resolve project directory","path":"C:\\other"}`), true},
+		{"missing-operation", line(message, `{"path":"C:\\fixture"}`), true},
+		{"missing-diagnostic", fmt.Sprintf("2026-11-11T00:00:00Z codex SessionEnd: %q", message), true},
+		{"permission-in-cwd-only", line(fmt.Sprintf("discover project from %q: resolve project directory %s: path changed", cwd+`\permission denied`, path), metadata), true},
+		{"joined-error", line(message+"\ncontext canceled", metadata), true},
+		{"skip-in-error", line("skip: permission denied", metadata), true},
+		{"truncated", `2026-11-11T00:00:00Z codex SessionEnd: "discover project from`, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := IsErrorLogLine(tc.line); got != tc.wantError {
+				t.Fatalf("error=%v, want %v: %s", got, tc.wantError, tc.line)
+			}
+		})
+	}
+}
+
 func TestSessionRulesPauseDoesNotExposeContent(t *testing.T) {
 	for _, body := range []string{"[PRIVATE_RULE_TOKEN_83917 2h\n", "name EXTERNAL_PRIVATE_TOKEN_83917\n"} {
 		root := t.TempDir()

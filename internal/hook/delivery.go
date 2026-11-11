@@ -11,6 +11,7 @@ import (
 type delivery struct {
 	graveUnlock func()
 	deny        bool
+	skipped     bool
 	graves      []int64
 	graveHome   string
 	graveEvent  Event

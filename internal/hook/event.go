@@ -3,6 +3,7 @@ package hook
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -102,7 +103,7 @@ func prepareEvent(e *auto.Engine, ev Event, runner *Runner, pendingNotices bool)
 	e = &engine
 	context, err := handle(e, ev, runner, pendingNotices)
 	context.svc = e.Svc
-	if err == nil {
+	if err == nil && !context.skipped {
 		prepareGraveNotices(e.Svc.Store, ev, &context)
 	}
 	if Auditing() {
@@ -110,6 +111,8 @@ func prepareEvent(e *auto.Engine, ev Event, runner *Runner, pendingNotices bool)
 	}
 	return context, err
 }
+
+var findProject = project.Find
 
 func handle(e *auto.Engine, ev Event, runner *Runner, pendingNotices bool) (delivery, error) {
 	if runner == nil {
@@ -123,8 +126,13 @@ func handle(e *auto.Engine, ev Event, runner *Runner, pendingNotices bool) (deli
 		// even when a local file happens to have the same path.
 		return delivery{}, nil
 	}
-	proj, inProject, err := project.Find(ev.Cwd)
+	proj, inProject, err := findProject(ev.Cwd)
 	if err != nil && ev.Name != "PostToolUse" {
+		if errors.Is(err, os.ErrPermission) {
+			// An unresolved project must never enter the non-project snapshot path.
+			Logf(e.Svc.Store.Home, "skip: project discovery unavailable; event=%q cwd=%q reason=%q", ev.Name, ev.Cwd, err)
+			return delivery{skipped: true}, nil
+		}
 		return delivery{}, fmt.Errorf("discover project from %q: %w", ev.Cwd, err)
 	}
 	switch ev.Name {

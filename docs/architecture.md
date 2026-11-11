@@ -222,6 +222,7 @@ agent 的 JSON ──► hook.Claude / hook.Codex（解析、路径换算）─�
 
 - `Handle` 包住真正的处理：记审计（`OBIT_HOOK_AUDIT=1` 时写 `hook-audit.log`）、把返回给 agent 的文字截到 2000 字符以内、出错只写 `hook.log`。
 - 会话开始：记快照、注入到期预告和待处理的提议。写文件之后：`Observe`（项目没同意过就生成提议，同意过就按规则登记，太大的改为提议）。
+- cwd 或祖先的项目发现被拒绝访问时，该次事件跳过自动工作、快照和后台派发，`hook.log` 写一行带 cwd 和原因的 `skip:` 说明；项目归属仍属未知，禁止进入非项目会话快照分支。`PostToolUse` 保持逐个写入路径重新发现项目、核对 Git 跟踪的流程。其他发现错误和数据目录、账本、墓地的权限错误继续报错。doctor 不统计 `skip:` 行，也不统计旧日志中同时具有 `discover project from` 来源、`resolve project directory` 操作及拒绝访问原因的结构化诊断行。
 - 慢活交给 `hook.Runner`：`Tick` 在有东西到期（或墓地里有待恢复的清单）且没有常驻进程时启动一次 `obitd --once`；`Finish` 在后台跑 `obit hook finish` 算会话遗留物，Stop 一分钟最多一次，SessionEnd 总是跑。hook 自己不做慢活，因为 SessionEnd 只有 1.5 秒（Claude Code）或 3 秒（Codex）。
 - 一次 hook 调用里所有账本锁的等待加起来不超过 1 秒（`Store.WithDeadline`），读用共享锁；拿不到就放弃这次处理、只记日志。后台下葬正持锁时，其他项目的 hook 不会被卡住。
 - Codex：从 `apply_patch` 补丁里只认第 0 列的 `*** Add/Update/Move` 头；WSL 的 `/mnt/x/…` 换成 `X:\…`，WSL 自己文件系统里的路径跳过。
@@ -296,7 +297,7 @@ agent ──stdio──► obit mcp ──► mcpPaths（只收绝对路径；�
 - 结尾的分隔符表示「必须是目录」：`x\` 或 `x/` 指向的现存对象必须是目录，按路径找墓地记录和条目时只匹配目录；`obit bury build/` 照常可用。
 - 只处理整个文件或目录：卷根之后带 `:` 的路径（备用数据流，如 `document.txt:review`）一律拒绝。流和宿主共用文件 ID，按 ID 找回会找到宿主；旧账本里的流条目绝不按 ID 回退去找宿主，sweep 只报重试，用 `obit spare` 取消。卷根统一由 `pathutil.VolumeRoot` 计算（扩展 UNC 带上服务器和共享，Go 的 `filepath.VolumeName` 只返回 `\\?\UNC`）。
 - **入口统一写法**：数据目录在 `userdirs` 里先统一成普通写法（`\\?\C:\h` 和 `C:\h` 是同一个数据目录、同一个账本键）；obitd 的 `--home` / `--config-dir`、`project.Find`、`obit trust` 的规则文件，以及 userdirs 的所有环境变量入口（OBIT_CONFIG_DIR、OBIT_USER_HOME、CLAUDE_CONFIG_DIR、CODEX_HOME）也用 `pathutil.Abs`，并检查每一级前缀，会被规范化改写的写法直接拒绝，不会落到旁边的账本、配置或项目上。
-- **找仓库**：`project.Find` 往上找仓库时，每一级父目录都要通过检查，否则返回错误（hook 当成「重试」处理）；`GIT_CEILING_DIRECTORIES` 照 Git for Windows 的 `setup.c`（`canonicalize_ceiling_entry`）和 `path.c`（`longest_ancestor_length`）处理：按字面分隔、不去引号，空项之后的条目保留原字节，不可用的条目丢弃，其余条目做和遍历路径相同的规范化和别名解析（扩展写法、8.3 短名、junction）；当前目录带 `\\?\` 前缀时，根相对的条目（`\Users\…`）按规范化后的工作目录的卷根或共享根解析；结果与原生 git 一致，不启动 git 进程。
+- **找仓库**：`project.Find` 往上找仓库时，每一级父目录都要通过检查，否则返回错误（hook 保留未知项目状态，按上面的发现失败规则处理）；`GIT_CEILING_DIRECTORIES` 照 Git for Windows 的 `setup.c`（`canonicalize_ceiling_entry`）和 `path.c`（`longest_ancestor_length`）处理：按字面分隔、不去引号，空项之后的条目保留原字节，不可用的条目丢弃，其余条目做和遍历路径相同的规范化和别名解析（扩展写法、8.3 短名、junction）；当前目录带 `\\?\` 前缀时，根相对的条目（`\Users\…`）按规范化后的工作目录的卷根或共享根解析；结果与原生 git 一致，不启动 git 进程。
 
 ## core.FS 契约
 
@@ -329,7 +330,7 @@ agent ──stdio──► obit mcp ──► mcpPaths（只收绝对路径；�
 | `graveyard\` | 这块盘的墓地：坟墓目录，以及正在下葬或复活的那几个的清单 `*.json` |
 | `sessions\` | 会话快照和遗留物计算的去抖标记 |
 | `shortcut-receipts\` | 开始菜单与桌面快捷方式的归属回执及事务锁 |
-| `hook.log` / `hook-audit.log` | hook 错误 / hook 审计（加锁轮转） |
+| `hook.log` / `hook-audit.log` | hook 错误与 `skip:` 说明 / hook 审计（加锁轮转） |
 | `obitd.log` | 后台进程日志（轮转） |
 | `update.json` / `update.lock` | 正式版更新检查缓存和独立的检查锁；缓存记录检查时间、ETag、发布说明和最近错误，不读写账本 |
 | `*.lock`、`obitd.stop` | 锁文件；常驻进程的停止信号 |
