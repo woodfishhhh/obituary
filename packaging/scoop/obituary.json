@@ -7,6 +7,7 @@
         "64bit": { "shortcuts": [["obit-gui.exe", "Obituary", "", "obit-gui.exe"]] }
     },
     "notes": [
+        "Obituary checks for updates at most once a day, reading only public release information. You can turn off \"Check for updates automatically\" in Settings or set check = false under [update] in config.toml. Privacy: https://obituary.woodfish.site/docs/en/privacy",
         "Before removing binaries, run obit uninstall --yes in the current project; data is kept by default.",
         "Close Obituary programs before upgrading. Keep obit.exe and obitd.exe in the same directory.",
         "The amd64 package also includes obit-gui.exe and requires WebView2 Runtime; arm64 includes only the CLI and daemon."

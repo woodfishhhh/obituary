@@ -14,7 +14,7 @@ writeFileSync(target, JSON.stringify({
   architecture: Object.fromEntries(Object.entries(generated.architecture).map(([arch, value]) =>
     [arch, { ...value, ...template.architecture[arch] }])),
 }, null, 4) + '\n');
-console.log(`Scoop manifest with uninstall notes: ${target}`);
+console.log(`Scoop manifest with installation notes: ${target}`);
 
 // GoReleaser's Winget type also lacks ArchiveBinariesDependOnPath. The WinGet
 // 1.9+ installer schema supports it: obit locates obitd relative to os.Executable,

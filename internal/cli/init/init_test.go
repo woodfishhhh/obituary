@@ -13,6 +13,48 @@ import (
 	initcmd "github.com/woodfishhhh/obituary/internal/cli/init"
 )
 
+func TestInitUpdateNotice(t *testing.T) {
+	clitest.CommandDir(t)
+	_, executable := clitest.DoctorFixture(t)
+	const notice = `Obituary checks for updates at most once a day, reading only public release information. You can turn off "Check for updates automatically" in Settings or set check = false under [update] in config.toml. Privacy: https://obituary.woodfish.site/docs/en/privacy`
+	args := []string{"-g", "--agent", "claude,codex", "--no-context-menu", "--no-shortcuts"}
+	for _, tc := range []struct {
+		name      string
+		flags     []string
+		wantCount int
+		wantError bool
+	}{
+		{"preview", []string{"--dry-run"}, 1, false},
+		{"unconfirmed", nil, 0, true},
+		{"install", []string{"--yes"}, 1, false},
+		{"repeat", []string{"--yes"}, 0, false},
+		{"repeat-preview", []string{"--dry-run"}, 1, false},
+		{"show", []string{"--show"}, 0, false},
+		{"uninstall-preview", []string{"--uninstall", "--dry-run"}, 0, false},
+		{"uninstall", []string{"--uninstall", "--yes"}, 0, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			out, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), append(args, tc.flags...)...)
+			if (err != nil) != tc.wantError {
+				t.Fatalf("output: %s; error: %v", out, err)
+			}
+			if strings.Count(out, notice) != tc.wantCount {
+				t.Fatalf("want %d notices: %s", tc.wantCount, out)
+			}
+			if tc.wantCount == 1 && !strings.HasSuffix(out, notice+"\n") {
+				t.Fatalf("notice must be last: %s", out)
+			}
+			if tc.name == "install" {
+				want := "installed; restart Claude Code\n" +
+					"installed. Codex only runs hooks you have trusted: start Codex, run /hooks and trust Obituary's hooks (project hooks also need the project to be trusted).\n" + notice + "\n"
+				if !strings.HasSuffix(out, want) {
+					t.Fatalf("installation summary changed: %s", out)
+				}
+			}
+		})
+	}
+}
+
 func TestInitProjectKeepsSidecarsInData(t *testing.T) {
 	if testing.Short() {
 		t.Skip("requires a real Git repository")

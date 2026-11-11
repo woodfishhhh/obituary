@@ -92,7 +92,11 @@ $action = if ($Uninstall) { 'Run obit uninstall --yes (keep data), remove owned 
     "Download $archiveName and checksums.txt from $from, verify SHA-256, install and create Start menu shortcut"
 }
 if (-not $NoPath) { $action += $(if ($Uninstall) { ', then remove the unchanged installer-owned PATH entry' } else { ', then add the directory to the user PATH' }) }
-if (-not $PSCmdlet.ShouldProcess($InstallDir, $action)) { return }
+$updateNotice = 'Obituary checks for updates at most once a day, reading only public release information. You can turn off "Check for updates automatically" in Settings or set check = false under [update] in config.toml. Privacy: https://obituary.woodfish.site/docs/en/privacy'
+if (-not $PSCmdlet.ShouldProcess($InstallDir, $action)) {
+    if ($WhatIfPreference -and -not $Uninstall) { Write-Output $updateNotice }
+    return
+}
 
 # Windows PowerShell 5.1's .NET APIs do not expose link counts or no-follow handles.
 # Use Win32 for those checks/pins and handle deletion; System.IO.File.Move performs same-volume
@@ -520,6 +524,7 @@ try {
         Write-Output 'User PATH is ready. Open a new terminal to use obit.'
     }
     Write-Output "Installed Obituary $Version ($Architecture) in $InstallDir"
+    Write-Output $updateNotice
 }
 finally {
     Remove-Item -LiteralPath $workDir -Recurse -Force

@@ -95,6 +95,9 @@ winget:
       Before removing binaries, run obit uninstall --yes in the current project;
       data is kept by default. The desktop GUI is available on amd64 only and
       requires WebView2 Runtime. Close Obituary programs before upgrading.
+      Obituary checks for updates at most once a day, reading only public release information.
+      You can turn off "Check for updates automatically" in Settings or set check = false under [update] in config.toml.
+      Privacy: https://obituary.woodfish.site/docs/en/privacy
     repository:
       owner: microsoft
       name: winget-pkgs

@@ -10,6 +10,7 @@ import test from 'node:test';
 
 const execute = promisify(execFile);
 const sha256 = data => createHash('sha256').update(data).digest('hex');
+const updateNotice = 'Obituary checks for updates at most once a day, reading only public release information. You can turn off "Check for updates automatically" in Settings or set check = false under [update] in config.toml. Privacy: https://obituary.woodfish.site/docs/en/privacy';
 
 // Windows integration test; first build the snapshot and set
 // OBIT_INSTALL_TEST_ROOT to a disposable directory created by obit mktemp.
@@ -121,6 +122,11 @@ test('install verified snapshot releases without changing the user PATH', {
     }
     await writeFile(join(root, `${++runs}-${scenario}-${shell === ps7 ? 'ps7' : 'ps5'}.log`),
       `exit=${result.code}\n${result.stdout}\n${result.stderr}`, 'utf8');
+    const expectedNotices = !extra.includes('-Uninstall') && result.code === 0 ? 1 : 0;
+    assert.equal(result.stdout.split(updateNotice).length - 1, expectedNotices, result.stdout);
+    if (expectedNotices === 1 && !extra.includes('-WhatIf')) {
+      assert.ok(result.stdout.trimEnd().endsWith(updateNotice), 'notice follows successful installation');
+    }
     return result;
   }
 
@@ -138,6 +144,7 @@ test('install verified snapshot releases without changing the user PATH', {
     assert.deepEqual([...manifest.architecture['64bit'].bin].sort(), ['obit-gui.exe', 'obit.exe', 'obitd.exe']);
     assert.deepEqual([...manifest.architecture.arm64.bin].sort(), ['obit.exe', 'obitd.exe']);
     assert.ok(manifest.notes.some(note => note.includes('obit uninstall --yes')));
+    assert.equal(manifest.notes.filter(note => note === updateNotice).length, 1);
     assert.deepEqual(manifest.architecture['64bit'].shortcuts, [['obit-gui.exe', 'Obituary', '', 'obit-gui.exe']]);
     assert.equal(manifest.architecture.arm64.shortcuts, undefined);
     const winget = await readFile(join(dist, 'winget/manifests/w/woodfishhhh/Obituary', version,
@@ -145,6 +152,13 @@ test('install verified snapshot releases without changing the user PATH', {
     assert.match(winget, /^ArchiveBinariesDependOnPath: true$/m);
     assert.ok(winget.includes(`InstallerSha256: ${sha256(zip)}`));
     assert.ok(winget.includes(`InstallerSha256: ${sha256(armZip)}`));
+    const locale = await readFile(join(dist, 'winget/manifests/w/woodfishhhh/Obituary', version,
+      'woodfishhhh.Obituary.locale.en-US.yaml'), 'utf8');
+    const notes = locale.match(/^InstallationNotes: (.+)$/m)?.[1];
+    assert.ok(notes, 'WinGet default locale has installation notes');
+    // WinGet's defaultLocale schema caps InstallationNotes at 10,000 characters.
+    assert.ok(notes.length <= 10000, `WinGet InstallationNotes length: ${notes.length}`);
+    assert.equal(notes.split(updateNotice).length - 1, 1);
   });
   await t.test('install all amd64 binaries together and run the installed CLI', async () => {
     const result = await run('good');

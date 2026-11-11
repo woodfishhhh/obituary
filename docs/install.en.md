@@ -72,7 +72,7 @@ To keep it from going online on its own, turn off "Check for updates automatical
 check = false
 ```
 
-Checking by hand still works.
+Checking by hand still works. See the [privacy policy](https://obituary.woodfish.site/docs/en/privacy) for details about update checks.
 
 ## Uninstall
 

@@ -72,7 +72,7 @@ obit doctor
 check = false
 ```
 
-关掉后，手动检查照样可以用。
+关掉后，手动检查照样可以用。更新检查的联网说明见[隐私政策](https://obituary.woodfish.site/docs/privacy)。
 
 ## 卸载
 

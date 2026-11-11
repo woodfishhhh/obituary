@@ -14,6 +14,8 @@ import (
 	"github.com/woodfishhhh/obituary/internal/integrate"
 )
 
+const updateNotice = `Obituary checks for updates at most once a day, reading only public release information. You can turn off "Check for updates automatically" in Settings or set check = false under [update] in config.toml. Privacy: https://obituary.woodfish.site/docs/en/privacy`
+
 func NewCmd() *cobra.Command { return NewCmdWithExecutable(nil) }
 
 //nolint:funlen // Preserve the existing command flow while replacing the process-wide executable test hook.
@@ -115,6 +117,9 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 				return err
 			}
 			printChanges(changes)
+			if dryRun && !uninstall {
+				defer fmt.Println(updateNotice)
+			}
 			if !integrate.Pending(changes) {
 				if err := incompleteIntegration(changes); err != nil {
 					return err
@@ -175,6 +180,9 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 				default:
 					fmt.Println("installed; restart " + agentName(agent))
 				}
+			}
+			if !uninstall {
+				fmt.Println(updateNotice)
 			}
 			return nil
 		},
