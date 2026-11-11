@@ -3,10 +3,10 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
-// GitHub Pages serves the project site under /obituary/; the docs live
-// under /obituary/docs/ and are built separately (site/docs). The mainland
-// China mirror (VITE_SITE=cn) serves from the root. SITE_BASE overrides both.
-const base = process.env.SITE_BASE ?? (process.env.VITE_SITE === "cn" ? "/" : "/obituary/");
+// Both builds serve from the root of obituary.woodfish.site (GitHub Pages
+// with a custom domain, and the mainland China mirror); the docs live under
+// /docs/ and are built separately (site/docs). SITE_BASE overrides it.
+const base = process.env.SITE_BASE ?? "/";
 
 export default defineConfig({
   base,

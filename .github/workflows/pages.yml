@@ -1,7 +1,8 @@
-# Builds site/ (the landing page at /obituary/, the docs at /obituary/docs/)
-# and deploys it to GitHub Pages, and builds the mainland China mirror
-# (https://obituary.woodfish.site/) and copies it there when the deploy key is
-# configured. A daily run refreshes the contributor wall and star charts.
+# Builds site/ twice: the GitHub Pages build and the mainland China mirror
+# build. https://obituary.woodfish.site/ resolves to Pages abroad (custom
+# domain, CNAME in the build) and to the mirror server inside China; the
+# mirror build is copied there when the deploy key is configured. Both serve
+# the landing page at / and the docs at /docs/. A daily run refreshes the contributor wall and star charts.
 # Every job is skipped while the repository is private: Pages needs a public
 # repository on this plan, and private-repo Actions minutes are scarce.
 name: pages

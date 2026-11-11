@@ -1,4 +1,3 @@
-import { isMirror, urls } from "@/config";
 import type { Copy } from "@/copy";
 import { repo } from "@/copy";
 import { siteLink } from "@/lib/links";
@@ -33,11 +32,6 @@ export function Nav({ c }: { c: Copy }) {
           <a href={siteLink(c.docs)} className="rounded-full px-2 py-2 text-sm font-medium whitespace-nowrap text-ink transition-colors hover:bg-paper-3 sm:px-3">
             {c.nav.docs}
           </a>
-          {isMirror || c.lang !== "zh" ? null : (
-            <a href={urls.mirror} hrefLang="zh-CN" className="hidden rounded-full px-3 py-2 text-sm whitespace-nowrap text-ink-2 transition-colors hover:bg-paper-3 hover:text-ink sm:inline-flex">
-              {c.footer.mirror}
-            </a>
-          )}
           <a
             href={siteLink(c.switchLang.href)}
             hrefLang={c.lang === "zh" ? "en" : "zh-CN"}

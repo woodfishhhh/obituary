@@ -9,7 +9,7 @@ Windows 10 / 11 (x64 and ARM64).
 **Easiest: let your agent do it.** Send this sentence to the agent you use (Claude Code, Codex, Cursor…). It installs Obituary, connects it to itself and stops wherever a decision is yours:
 
 ```text
-Read https://raw.githubusercontent.com/woodfishhhh/obituary/main/docs/agent-install.md and follow it to install Obituary and connect it to yourself.
+Read https://obituary.woodfish.site/agent-install.md and follow it to install Obituary and connect it to yourself.
 ```
 
 **By hand:** pick one of the three, then run `obit doctor` to check the installation.

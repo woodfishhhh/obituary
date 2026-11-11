@@ -9,11 +9,10 @@ import { cn } from "@/lib/utils";
 type Os = "windows" | "macos" | "linux";
 const osNames: Record<Os, string> = { windows: "Windows", macos: "macOS", linux: "Linux" };
 
-const rawAgentInstall = "https://raw.githubusercontent.com/woodfishhhh/obituary/main/docs/agent-install.md";
-
-// The mirror build points every download at obituary.woodfish.site, so a
-// visitor in mainland China never waits on GitHub.
-const sentenceFor = (lang: Copy["lang"]) => (isMirror ? agentInstall[lang].replace(rawAgentInstall, mirrorFiles.agentInstall) : agentInstall[lang]);
+// The sentence is the same on both builds: each serves its own
+// agent-install.md. The mirror build points every download at the mirror, so
+// a visitor in mainland China never waits on GitHub.
+const sentenceFor = (lang: Copy["lang"]) => agentInstall[lang];
 const mirrorScript = [`irm ${mirrorFiles.installScript} -OutFile install.ps1`, `.\\install.ps1 -Version ${version} -Mirror cn`];
 
 // The visitor's system, when the browser says it; Windows otherwise.

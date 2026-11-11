@@ -1,5 +1,5 @@
 import wordmark from "@/assets/wordmark-light.webp";
-import { icp, isMirror, urls } from "@/config";
+import { icp, isMirror } from "@/config";
 import type { Copy } from "@/copy";
 import { siteLink } from "@/lib/links";
 
@@ -15,12 +15,7 @@ export function Footer({ c }: { c: Copy }) {
         </div>
         <nav aria-label={c.lang === "zh" ? "页脚" : "Footer"}>
           <ul className="grid grid-cols-2 gap-x-8 gap-y-3">
-            {[
-              ...f.links,
-              isMirror
-                ? { label: f.github, href: c.lang === "zh" ? urls.pages : `${urls.pages}en/` }
-                : { label: f.mirror, href: c.lang === "zh" ? urls.mirror : `${urls.mirror}en/` },
-            ].map((l) => (
+            {f.links.map((l) => (
               <li key={l.label}>
                 <a href={siteLink(l.href)} className="text-ink-2 underline-offset-4 transition-colors hover:text-cobalt hover:underline">
                   {l.label}

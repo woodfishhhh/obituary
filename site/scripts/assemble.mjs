@@ -2,8 +2,10 @@
 //   <out>/        the landing page (landing/dist)
 //   <out>/docs/   the docs (docs/.vitepress/dist)
 // <out> is dist/ for GitHub Pages and dist-cn/ for the mainland China mirror
-// (VITE_SITE=cn). The mirror also serves the files an agent and the install
-// script would otherwise fetch from GitHub.
+// (VITE_SITE=cn); obituary.woodfish.site resolves to one or the other by
+// where the visitor is. Both serve /agent-install.md, so the sentence for an
+// agent is the same everywhere: the Pages copy installs from GitHub, the
+// mirror copy from cn.obituary.woodfish.site, which also serves install.ps1.
 import { cp, readFile, rm, stat, writeFile } from "node:fs/promises";
 
 const mirror = process.env.VITE_SITE === "cn";
@@ -44,10 +46,13 @@ function mirrorGuide(text, host) {
   return guide;
 }
 
+const guide = await readFile(new URL("docs/agent-install.md", repo), "utf8");
 if (mirror) {
-  const host = "https://obituary.woodfish.site/";
-  const guide = mirrorGuide(await readFile(new URL("docs/agent-install.md", repo), "utf8"), host);
-  await writeFile(new URL("agent-install.md", out), guide);
+  await writeFile(new URL("agent-install.md", out), mirrorGuide(guide, "https://cn.obituary.woodfish.site/"));
   await cp(new URL("packaging/install.ps1", repo), new URL("install.ps1", out));
+} else {
+  await writeFile(new URL("agent-install.md", out), guide);
+  // GitHub Pages serves this build at the custom domain.
+  await writeFile(new URL("CNAME", out), "obituary.woodfish.site\n");
 }
 console.log(`assembled ${out.pathname}`);

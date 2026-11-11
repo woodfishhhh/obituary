@@ -21,8 +21,8 @@ export type Method = keyof typeof installCode;
 // The sentence a user sends to their agent; it matches README.md and
 // README.en.md word for word.
 export const agentInstall = {
-  zh: "读 https://raw.githubusercontent.com/woodfishhhh/obituary/main/docs/agent-install.md ，照里面的步骤帮我安装讣告并接入你自己。",
-  en: "Read https://raw.githubusercontent.com/woodfishhhh/obituary/main/docs/agent-install.md and follow it to install Obituary and connect it to yourself.",
+  zh: "读 https://obituary.woodfish.site/agent-install.md ，照里面的步骤帮我安装讣告并接入你自己。",
+  en: "Read https://obituary.woodfish.site/agent-install.md and follow it to install Obituary and connect it to yourself.",
 } as const;
 
 // One real run with the delete guard on: the reason the hook gave Claude Code
@@ -191,7 +191,7 @@ const zh = {
     update: "更新：Scoop 用 scoop update obituary，winget 用 winget upgrade woodfishhhh.Obituary，安装脚本换上新版本号再运行一次。obit update 会告诉你当前版本和该用的升级命令。",
     uninstall: "卸载：obit uninstall，先 --dry-run 看看会撤掉什么；墓地默认保留。",
     network: "讣告唯一的联网是每天最多一次检查新版本，只读 GitHub 上公开的发布信息，可以在设置里关掉。",
-    mirrorScript: "国内镜像：安装脚本从 obituary.woodfish.site 下载",
+    mirrorScript: "安装脚本和安装包都从国内镜像下载",
     downloadHead: "直接下载",
     downloads: [
       { label: "x64", file: "obituary_1.0.0_windows_amd64.zip" },
@@ -241,8 +241,6 @@ const zh = {
       { label: "发布记录", href: `${repo}/releases` },
     ],
     legal: "MIT 许可。截图里的文件都是示例数据。",
-    mirror: "国内访问",
-    github: "GitHub 上的原站",
   },
 };
 
@@ -384,7 +382,7 @@ const en: Copy = {
     update: "Update: scoop update obituary, winget upgrade woodfishhhh.Obituary, or the install script again with the new version number. obit update shows your version and the command to use.",
     uninstall: "Uninstall: obit uninstall, with --dry-run first to see what it removes; the graveyard stays by default.",
     network: "Obituary's only network use is a check for a new version, at most once a day. It reads only public release information on GitHub, and you can turn it off in Settings.",
-    mirrorScript: "Mainland China mirror: the install script downloads from obituary.woodfish.site",
+    mirrorScript: "The install script and the archives come from the mainland China mirror",
     downloadHead: "Direct download",
     downloads: [
       { label: "x64", file: "obituary_1.0.0_windows_amd64.zip" },
@@ -434,8 +432,6 @@ const en: Copy = {
       { label: "Releases", href: `${repo}/releases` },
     ],
     legal: "MIT licensed. The files in the screenshots are sample data.",
-    mirror: "Mainland China mirror",
-    github: "The site on GitHub",
   },
 };
 

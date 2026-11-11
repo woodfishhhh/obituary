@@ -9,7 +9,7 @@
 **最省事：让 agent 帮你装。** 把这句话发给你正在用的 agent（Claude Code、Codex、Cursor……都行），它会装好讣告、接到自己身上，要你拍板的地方会停下来问你：
 
 ```text
-读 https://raw.githubusercontent.com/woodfishhhh/obituary/main/docs/agent-install.md ，照里面的步骤帮我安装讣告并接入你自己。
+读 https://obituary.woodfish.site/agent-install.md ，照里面的步骤帮我安装讣告并接入你自己。
 ```
 
 **自己装**：下面三种方式任选其一，装好后执行 `obit doctor` 体检。

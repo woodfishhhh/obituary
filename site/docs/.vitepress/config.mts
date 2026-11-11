@@ -1,19 +1,19 @@
 import { defineConfig, type DefaultTheme } from "vitepress";
 
-// The landing page is served at SITE_BASE (/obituary/ on GitHub Pages, / on
-// the mainland China mirror built with VITE_SITE=cn); the docs sit under it
-// at docs/. SITE_URL names the host.
+// Both builds serve the landing page at the root of obituary.woodfish.site
+// (GitHub Pages abroad, the mainland China mirror built with VITE_SITE=cn at
+// home); the docs sit under it at docs/. SITE_BASE and SITE_URL override them.
 const mirror = process.env.VITE_SITE === "cn";
-const siteBase = process.env.SITE_BASE ?? (mirror ? "/" : "/obituary/");
+const siteBase = process.env.SITE_BASE ?? "/";
 const base = `${siteBase}docs/`;
-const siteUrl = process.env.SITE_URL ?? (mirror ? "https://obituary.woodfish.site" : "https://woodfishhhh.github.io");
-const mirrorHost = "https://obituary.woodfish.site/";
+const siteUrl = process.env.SITE_URL ?? "https://obituary.woodfish.site";
+// Programs fetch from this host, which always reaches the mirror server.
+const mirrorHost = "https://cn.obituary.woodfish.site/";
 
 // On the mirror, install lines point at files the mirror serves, so a reader
 // who cannot reach GitHub can still follow them.
 function toMirror(src: string): string {
   return src
-    .replaceAll("https://raw.githubusercontent.com/woodfishhhh/obituary/main/docs/agent-install.md", `${mirrorHost}agent-install.md`)
     .replaceAll("https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1", `${mirrorHost}install.ps1`)
     .replaceAll(".\\install.ps1 -Version 1.0.0", ".\\install.ps1 -Version 1.0.0 -Mirror cn");
 }
