@@ -212,7 +212,6 @@ obit init -g --agent gemini --uninstall     # 只删讣告加的东西
 - 各家能做到的程度不一样：写文件后的登记、会话开头的提示、删除护栏、MCP、Skill。逐项的「支持 / 有限 / 不支持」和原因见 [agent 覆盖表](docs/agents.md)，它由 `obit init --show --format markdown` 从代码里的能力声明生成，和代码对不上时测试会失败。删除护栏只在宿主能证明命令在本机、用哪种 shell 执行时才开。
 - 公开资料不足以安全地自动写入的地方（例如 OpenClaw 的 JSON5 配置、Windsurf 和 Cursor 的全局规则、部分 MCP 位置），`obit init` 打印完整的手动步骤，结果标成「未完成，需要手动步骤」，不会假装装好了，也不会往猜测的目录里写东西。
 - 插件类需要你确认它在本机执行（例如设 `OBIT_OPENCODE_LOCAL=1`、`OBIT_CLINE_LOCAL_SHELL=bash`），安装输出里会写清楚要设什么；远端或云端执行的操作不会登记本机同名的文件。
-- 除了 Claude Code 和 Codex，这些宿主都还没有在真机上逐一验证过；各家的已知限制见 [agent 覆盖表](docs/agents.md)。
 
 ## Docker 容器
 
