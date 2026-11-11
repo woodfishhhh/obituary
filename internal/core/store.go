@@ -3,7 +3,6 @@ package core
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -62,7 +61,8 @@ func (s Store) WithDeadline(deadline time.Time) Store {
 // automatically. Both v13 additions were unpublished and share this version.
 // Version 14 preserves Docker container identities and object kinds. Older
 // writers must refuse this version to keep containers out of file operations.
-const stateVersion = 14
+// Version 15 interns parent chains in the ledger; manifests stay self-contained.
+const stateVersion = 15
 
 func (s Store) statePath() string { return filepath.Join(s.Home, "store.json") }
 
@@ -118,14 +118,14 @@ func (s Store) update(fn func(*State) error, confirm bool) error {
 		if err != nil {
 			return err
 		}
-		before, err := json.Marshal(state)
+		before, err := marshalLedger(state)
 		if err != nil {
 			return err
 		}
 		if err := fn(&state); err != nil {
 			return err
 		}
-		after, err := json.Marshal(state)
+		after, err := marshalLedger(state)
 		if err != nil {
 			return err
 		}
@@ -205,12 +205,12 @@ func (s Store) load() (State, []Event, error) {
 	if err != nil {
 		return State{}, nil, fmt.Errorf("read store: %w", err)
 	}
-	var state State
-	if err := json.Unmarshal(data, &state); err != nil {
-		return State{}, nil, fmt.Errorf("store %s is corrupt: %w", s.statePath(), err)
+	state, err := unmarshalLedger(data)
+	if newer := (newerStoreError{}); errors.As(err, &newer) {
+		return State{}, nil, err
 	}
-	if state.Version > stateVersion {
-		return State{}, nil, fmt.Errorf("store was written by a newer Obituary (version %d)", state.Version)
+	if err != nil {
+		return State{}, nil, fmt.Errorf("store %s is corrupt: %w", s.statePath(), err)
 	}
 	if err := validateContainerState(state); err != nil {
 		return State{}, nil, fmt.Errorf("store has invalid object kind: %w", err)
@@ -284,6 +284,9 @@ func (s Store) load() (State, []Event, error) {
 }
 
 func (s Store) save(state State) error {
+	if err := s.prepareLedgerMigration(&state); err != nil {
+		return err
+	}
 	if err := s.prepareDataOwner(&state); err != nil {
 		return err
 	}
@@ -292,7 +295,7 @@ func (s Store) save(state State) error {
 	}
 	state.Version = stateVersion
 	sort.Slice(state.Items, func(i, j int) bool { return state.Items[i].ExpiresAt.Before(state.Items[j].ExpiresAt) })
-	data, err := json.MarshalIndent(state, "", "  ")
+	data, err := marshalLedger(state)
 	if err != nil {
 		return err
 	}

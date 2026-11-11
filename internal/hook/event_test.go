@@ -22,6 +22,68 @@ import (
 	"github.com/woodfishhhh/obituary/internal/testenv"
 )
 
+func TestIdleHookEventsDoNotRewriteLedger(t *testing.T) {
+	root := t.TempDir()
+	e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: t.TempDir()}}}
+	if err := e.Svc.Store.Update(func(*core.State) error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"PostToolUse", "Context", "SessionStart", "Stop", "SessionEnd"} {
+		t.Run(name, func(t *testing.T) {
+			assertHookLeavesLedger(t, e, Event{Name: name, Cwd: root, Session: "idle"})
+		})
+	}
+}
+
+func TestUnchangedProjectHooksDoNotRewriteLedger(t *testing.T) {
+	if testing.Short() {
+		t.Skip("hook registration and snapshots use a real Git repository")
+	}
+	e := newEnv(t)
+	path := e.write("pending.log")
+	p, _, _, err := e.engine.Svc.Propose(core.ProposalOnboard, e.root, "idle", []core.Candidate{{Path: path, Lifespan: "1d"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.engine.Svc.MarkNotifiedBatch([]int64{p.ID}, "idle"); err != nil {
+		t.Fatal(err)
+	}
+	for _, ev := range []Event{
+		{Name: "SessionStart"}, {Name: "SessionStart", Source: "resume"},
+		{Name: "PostToolUse"}, {Name: "Context"},
+		{Name: "PostToolUse", Paths: []string{e.write("unmatched.txt")}},
+	} {
+		ev.Cwd, ev.Session = e.root, "idle"
+		t.Run(ev.Name+ev.Source+fmt.Sprint(len(ev.Paths)), func(t *testing.T) {
+			assertHookLeavesLedger(t, e.engine, ev)
+		})
+	}
+}
+
+func assertHookLeavesLedger(t *testing.T, e *auto.Engine, ev Event) {
+	t.Helper()
+	path := filepath.Join(e.Svc.Store.Home, "store.json")
+	stamp := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+	if err := os.Chtimes(path, stamp, stamp); err != nil {
+		t.Fatal(err)
+	}
+	before, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner := &Runner{Tick: func() {}, Finish: func(string, string, bool) {}}
+	for range 2 {
+		if _, err := Handle(e, ev, runner); err != nil {
+			t.Fatal(err)
+		}
+	}
+	after, err := os.ReadFile(path)
+	info, statErr := os.Stat(path)
+	if err != nil || statErr != nil || !bytes.Equal(before, after) || !info.ModTime().Equal(stamp) {
+		t.Fatalf("unchanged %s rewrote ledger: read=%v stat=%v", ev.Name, err, statErr)
+	}
+}
+
 func TestDiscoveryDeniedSkipsAutomaticWork(t *testing.T) {
 	for _, name := range []string{"SessionStart", "Context", "PostToolUseFailure", "Stop", "SessionEnd"} {
 		t.Run(name, func(t *testing.T) {

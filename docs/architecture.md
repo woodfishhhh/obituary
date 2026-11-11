@@ -324,7 +324,7 @@ agent ──stdio──► obit mcp ──► mcpPaths（只收绝对路径；�
 
 | 文件 | 内容 |
 |---|---|
-| `store.json` | 账本（版本 8：v6 新增墓地记录的 `parents`，v7 新增墓地记录的 `longNames`、提议的 `candidateSeq`、带位置的清理回执 `restoreCleanups`、待补审计队列 `pendingAudit`、墓地记录上的火化意图 `purgeIntent`，v8 新增墓地记录上的删除批次 `operation`；更早版本照常读取，下一次写入时升级；旧程序拒绝读比自己新的版本，v7 程序写回时会丢掉不认识的字段，所以 v8 必须升版本号；v7 尚未发布，开发版写过的 `abandonedRestores` 键会被忽略）：条目、墓地索引、提议、各项目的同意状态、会话里拒绝过的遗留物、统计。`LockFileEx` 加锁，经 `os.Root` 写临时文件、落盘后按目录句柄替换 |
+| `store.json` | 账本 v15，紧凑 JSON：条目、墓地索引、提议、项目同意状态、拒绝记录、统计和恢复证据；顶层 `parentChains` 保存去重后的父目录链，墓地记录和 `restoreCleanups[].burial` 用从 0 开始的 `parentRef` 引用。`LockFileEx` 加锁，经 `os.Root` 写临时文件、落盘后按目录句柄替换；兼容旧版和带缩进的 JSON，更高版本明确拒绝 |
 | `audit.jsonl` | 审计日志（`obit log`） |
 | `trusted_rules.json` | 已信任的 `.obitrules` 及其 SHA-256（版本 2，键是真实长名；版本 1 的旧键丢掉了大小写，无法证明对应哪个文件，所以一律当作未信任，提示 `trust store format was upgraded; review the rules and run obit trust again`；下一次 trust / untrust 写成版本 2） |
 | `graveyard\` | 这块盘的墓地：坟墓目录，以及正在下葬或复活的那几个的清单 `*.json` |
@@ -343,7 +343,9 @@ agent ──stdio──► obit mcp ──► mcpPaths（只收绝对路径；�
 
 - **读**：不经 `store.lock` 读账本的只有只读诊断（`Store.Inspect`、`obit doctor`、`daemon status` 的 `PendingGraves`），它们不建目录、不建锁、不迁移；所有对账本和清单的读取都以共享读、写、删除的方式打开（`readShared`，照 libuv 和 Go issue #32088 的讨论）。
 - **写**：账本写入用标准库 `os.Root`：在账本目录的同一个句柄下写临时文件、`Sync`，再 `Root.Rename` 替换（Go 1.25 起它在 Windows 上就是按目录句柄、带 POSIX 语义的替换改名，不支持时由标准库退回普通改名），源和目标天然在同一个目录里，读者开着旧文件也不会让替换失败。审计轮转（`audit.jsonl` 换成 `audit.jsonl.1`）也用同一个辅助函数。
-- **内容没变不提交**：`Store.Update` 在函数执行前后把账本序列化比较一次，完全一样（且没有待补审计、版本已是最新）就不写盘，也不触发资源管理器同步之类的变更回调，所以等待批准的条目不会让常驻进程反复唤醒自己。确实需要「原样再落一次盘」的地方（删除恢复证据之前确认账本已经写穿）用 `Store.Confirm`。
+- **v15 父目录链**：仅把逐字段完全相同的链合并，保留 `Path`、`Identity` 的卷写法、序列号、文件 ID 和 `Reparse`；读取还原成每条记录独立的 `[]BurialParent`，复活核对和独立墓地清单保持原样。越界或缺失的引用、混用内联 `parents` 一律拒绝；每次写入从现存墓地记录和清理回执重建表，最后一个引用消失时回收链。
+- **v14 及更早版本迁移**：读快照和带 hook 期限的读只解码；下一次写入（或需要写回旧迁移结果的普通读）先把原始字节写到 `store.v<旧版本>-<SHA-256>.json.bak` 并确认落盘，再原子提交 v15，`store-migrated` 事件和新账本一起进入 `pendingAudit`，恢复入口补投递。备份失败时保留旧账本；中断后旧账本可重试，新账本携带待补事件；相同备份可重新确认，不覆盖不同内容。回退前停止所有账本写入方，保留当前账本并用该备份恢复 `store.json`；备份之后的操作需要先核实，直接回退会丢掉这些账本变更。备份作为迁移证据保留。
+- **内容没变不提交**：`Store.Update` 在函数执行前后按紧凑、去重格式序列化比较，完全一样（且没有读时迁移事件、版本已是最新）就不写盘，也不触发变更回调；已有待补审计仍留给 outbox 投递。`PostToolUse` 无登记变化、`SessionStart` 重复通知确认同样跳过账本写入，会话快照单独保存；hook 的 1 秒锁预算保持不变。确实需要「原样再落一次盘」的地方（删除恢复证据之前确认账本已经写穿）用 `Store.Confirm`。
 - **提交未确认**：Go 的 `Renameat` 不会把改名本身写穿到磁盘（Microsoft 的 File Caching 文档：元数据要靠 `FlushFileBuffers`），所以临时文件的写句柄一直开到改名之后，再在同一个句柄上 `Sync` 一次；这次刷新失败就报「提交未确认」（`commit unconfirmed`，类型化错误）：
   - 下葬和复活保留清单；删除下葬清单之前（恢复扫描和直接复活都一样）先在锁内复核记录、再确认一次账本落盘。
   - 恢复时确认的下葬放进本次回执，所以原样重试 `bury` 能报出编号：只有按 FindBurial 的规则选中这条记录、而且原路径上没有别的对象（或者就是它）时，才算这次请求的结果，否则按编号另列；之后的统计写入失败也不会吞掉这份回执。
