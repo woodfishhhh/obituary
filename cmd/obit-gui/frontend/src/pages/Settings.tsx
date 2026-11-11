@@ -1,8 +1,9 @@
-import { Archive, CalendarClock, ClipboardList, FolderInput, FolderOpen, MousePointerClick, PauseCircle, Plus, Power, Trash2 } from "lucide-react";
+import { Archive, CalendarClock, ClipboardList, FolderInput, FolderOpen, ListChecks, MousePointerClick, PauseCircle, Plus, Power, Trash2 } from "lucide-react";
 import { Fragment, useState, type ReactNode } from "react";
 import { errorText, useApi } from "../api";
 import { bytes, lifespanText, when } from "../format";
 import { useLoad, useRefresh } from "../hooks";
+import { askDecisions, setAskDecisions } from "../prefs";
 import { t, useLangChoice } from "../i18n";
 import type { Lifetime, Plan, PlanReceipt, WatchPolicy } from "../types";
 import { Button, Head, Outcome, Seg, Skeleton, useConfirm, useToast, type OutcomeNote } from "../ui";
@@ -21,6 +22,7 @@ export default function Settings() {
   const { data } = useLoad(() => Promise.all([api.Settings(), api.Watches()]), [api, version]);
   const [days, setDays] = useState<string | null>(null);
   const [note, setNote] = useState<OutcomeNote | null>(null);
+  const [ask, setAsk] = useState(askDecisions);
   const langChoice = useLangChoice();
   if (!data) return <><Head title={t("page.settings")} /><div className="card"><Skeleton /></div></>;
   const [s, watches] = data;
@@ -70,7 +72,7 @@ export default function Settings() {
       <div className="card">
         <Setting icon={Archive} label={t("set.mode")} desc={s.mode === "recycle" ? t("set.modeRecycle") : t("set.modeGraveyard")}>
           <select className="select" value={s.mode} aria-label={t("set.mode")} onChange={async (e) => { const recycle = e.target.value === "recycle"; await apply(await api.PlanSettings(e.target.value, s.retentionDays), recycle ? t("set.toRecycle") : t("set.toGraveyard"), { ask: true, body: <p>{recycle ? t("set.toRecycleBody") : t("set.toGraveyardBody", s.retentionDays)}</p> }); }}>
-            <option value="graveyard">{t("page.graveyard")}</option>
+            <option value="graveyard">{t("set.graveyardOption")}</option>
             <option value="recycle">{t("set.recycle")}</option>
           </select>
         </Setting>
@@ -95,6 +97,9 @@ export default function Settings() {
             <Switch on={s.sessionSummary} label={t("set.summary")} onToggle={async () => apply(await api.PlanSessionSummary!(!s.sessionSummary), s.sessionSummary ? t("set.summaryOff") : t("set.summaryOn"))} />
           </Setting>
         ) : null}
+        <Setting icon={ListChecks} label={t("set.askDecisions")} desc={ask ? t("set.askDecisionsOn") : t("set.askDecisionsOff")}>
+          <Switch on={ask} label={t("set.askDecisions")} onToggle={() => { setAskDecisions(!ask); setAsk(!ask); toast(!ask ? t("set.askDecisionsOnDone") : t("set.askDecisionsOffDone")); }} />
+        </Setting>
       </div>
 
       <div className="section-title">{t("set.watches")}</div>

@@ -124,7 +124,7 @@ function Graves() {
   return (
     <div className="vg-split">
       <section className="vg-list" aria-label={t("page.graveyard")}>
-        <ListHead title={t("page.graveyard")} deck={g.graves.length ? t("vg.deck", g.graves.length, bytes(g.bytes)) : t("vg.deckEmpty")}>
+        <ListHead title={t("head.graveyard")} deck={g.graves.length ? t("vg.deck", g.graves.length, bytes(g.bytes)) : t("vg.deckEmpty")}>
           <label className="vg-search"><Search size={14} aria-hidden /><input type="search" placeholder={t("filterByPath")} aria-label={t("filterByPath")} value={filter} onChange={(e) => setFilter(e.target.value)} /></label>
         </ListHead>
         {g.error ? <p className="vg-alert">{t("grave.readError", g.error)}</p> : null}
@@ -209,7 +209,7 @@ function Upcoming() {
   return (
     <div className="vg-split">
       <section className="vg-list" aria-label={t("page.upcoming")}>
-        <ListHead title={t("page.upcoming")} deck={n ? t("vg.upDeck", n) : t("vg.upDeckEmpty")}>
+        <ListHead title={t("head.upcoming")} deck={n ? t("vg.upDeck", n) : t("vg.upDeckEmpty")}>
           <div className="vg-tabs" role="group" aria-label={t("range.label")}>
             {([["24h", t("range.24h")], ["7d", t("range.7d")], ["", t("range.all")]] as [Range, string][]).map(([v, label]) => (
               <button key={v} type="button" aria-pressed={range === v} onClick={() => { setRange(v); it.sel.clear(); }}>{label}</button>

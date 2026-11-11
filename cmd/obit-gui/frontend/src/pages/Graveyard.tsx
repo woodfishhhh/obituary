@@ -44,7 +44,7 @@ export default function Graveyard({ embedded = false }: { embedded?: boolean }) 
   return (
     <>
       <Head
-        title={embedded ? undefined : t("page.graveyard")}
+        title={embedded ? undefined : t("head.graveyard")}
         actions={
           <div className="toolbar" style={{ margin: 0 }}>
             <label className="search"><Search aria-hidden /><input className="input" type="search" placeholder={t("filterByPath")} aria-label={t("filterByPath")} value={filter} onChange={(e) => setFilter(e.target.value)} /></label>

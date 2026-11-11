@@ -40,7 +40,7 @@ export default function Upcoming({ embedded = false }: { embedded?: boolean }) {
 
   return (
     <>
-      <Head title={embedded ? undefined : t("page.upcoming")}>
+      <Head title={embedded ? undefined : t("head.upcoming")}>
         {items.length ? t("up.deck", range, items.length) : t("up.deckEmpty", range)}
       </Head>
       <div className="toolbar">

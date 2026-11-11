@@ -195,7 +195,7 @@ function Graves() {
   return (
     <div className="tn-stage" ref={box}>
       {!g.loading || g.data ? <Tunnel stones={stones} has={g.sel.has} toggle={g.sel.toggle} fate={fate} cam={cam} bring={bring} aim={aim} /> : <Scene cam={cam} />}
-      <Hud title={t("page.graveyard")} deck={g.graves.length ? t("tn.graveDeck", g.graves.length, bytes(g.bytes)) : t("tn.graveDeckEmpty")}
+      <Hud title={t("head.graveyard")} deck={g.graves.length ? t("tn.graveDeck", g.graves.length, bytes(g.bytes)) : t("tn.graveDeckEmpty")}
         tools={<label className="tn-search"><Search size={14} aria-hidden /><input type="search" placeholder={t("filterByPath")} aria-label={t("filterByPath")} value={filter} onChange={(e) => setFilter(e.target.value)} /></label>} />
       {g.error ? <p className="tn-alert">{t("grave.readError", g.error)}</p> : null}
       {g.data && !g.graves.length ? <Quiet title={filter ? t("tn.noStone") : t("tn.empty")} text={filter ? t("notInPath", filter) : t("grave.emptyText")} /> : null}
@@ -224,7 +224,7 @@ function Upcoming() {
   return (
     <div className="tn-stage" ref={box}>
       {!it.loading || it.data ? <Tunnel stones={stones} has={it.sel.has} toggle={it.sel.toggle} fate={null} cam={cam} bring={bring} aim={aim} /> : <Scene cam={cam} />}
-      <Hud title={t("page.upcoming")} deck={it.items.length ? t("tn.upDeck", it.items.length) : t("tn.upDeckEmpty")} />
+      <Hud title={t("head.upcoming")} deck={it.items.length ? t("tn.upDeck", it.items.length) : t("tn.upDeckEmpty")} />
       {it.error ? <p className="tn-alert">{t("up.readError", it.error)}</p> : null}
       {it.data && !it.items.length ? <Quiet title={t("tn.empty")} text={t("up.quietAll")} /> : null}
       <Scrubber cam={cam} setCam={setCam} />

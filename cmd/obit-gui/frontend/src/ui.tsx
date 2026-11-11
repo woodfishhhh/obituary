@@ -107,16 +107,18 @@ export const FrameProvider = FrameContext.Provider;
 
 // ── Confirm ────────────────────────────────────────────────────────────
 
-export interface Ask { title: string; body?: ReactNode; ok: string; danger?: boolean }
+// remember adds a "don't ask again" checkbox; it counts only with confirm.
+export interface Ask { title: string; body?: ReactNode; ok: string; danger?: boolean; remember?: { label: string; onRemember: () => void } }
 const ConfirmContext = createContext<(a: Ask) => Promise<boolean>>(async () => false);
 export const useConfirm = () => useContext(ConfirmContext);
 
 export function ConfirmProvider({ children }: { children: ReactNode }) {
   const frame = useContext(FrameContext);
   const [ask, setAsk] = useState<Ask | null>(null);
+  const [quiet, setQuiet] = useState(false);
   const resolver = useRef<(v: boolean) => void>(() => {});
-  const open = useCallback((a: Ask) => new Promise<boolean>((resolve) => { resolver.current = resolve; setAsk(a); }), []);
-  const done = (v: boolean) => { resolver.current(v); setAsk(null); };
+  const open = useCallback((a: Ask) => new Promise<boolean>((resolve) => { resolver.current = resolve; setQuiet(false); setAsk(a); }), []);
+  const done = (v: boolean) => { if (v && quiet) ask?.remember?.onRemember(); resolver.current(v); setAsk(null); };
   return (
     <ConfirmContext.Provider value={open}>
       {children}
@@ -129,6 +131,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
               {ask?.body}
             </div>
             <div className="dialog-actions">
+              {ask?.remember ? <label className="dialog-quiet"><input type="checkbox" checked={quiet} onChange={(e) => setQuiet(e.target.checked)} />{ask.remember.label}</label> : null}
               <Button onClick={() => done(false)}>{t("cancel")}</Button>
               <Button kind={ask?.danger ? "danger solid" : "primary"} onClick={() => done(true)} autoFocus>{ask?.ok}</Button>
             </div>

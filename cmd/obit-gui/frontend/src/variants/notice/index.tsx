@@ -93,7 +93,7 @@ function Graves() {
   return (
     <>
       <PageHead
-        title={t("page.graveyard")}
+        title={t("head.graveyard")}
         deck={n ? t("nt.deck", n, bytes(g.bytes)) : t("nt.deckEmpty")}
         tools={<>
           <label className="nt-search"><Search aria-hidden /><input type="search" placeholder={t("nt.search")} aria-label={t("nt.search")} value={filter} onChange={(e) => setFilter(e.target.value)} /></label>
@@ -157,7 +157,7 @@ function Upcoming() {
   return (
     <>
       <PageHead
-        title={t("page.upcoming")}
+        title={t("head.upcoming")}
         deck={n ? t("nt.upDeck", range, n) : t("nt.upDeckEmpty", range)}
         tools={<div className="nt-ranges" role="group" aria-label={t("range.label")}>
           {ranges().map(([v, label]) => <button key={v} type="button" aria-pressed={range === v} onClick={() => { setRange(v); it.sel.clear(); }}>{label}</button>)}

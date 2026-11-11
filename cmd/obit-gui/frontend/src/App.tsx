@@ -9,7 +9,8 @@ import { Button, ConfirmProvider, FrameProvider, PageBoundary, ToastProvider, us
 export type { PageId } from "./shell";
 
 export const navFor = (v: Variant): PageId[] =>
-  v.home === "horizon" ? ["horizon", "decisions", "settings", "logs"] : ["graveyard", "upcoming", "decisions", "settings", "logs"];
+  // In the order things happen: due for burial, then the graveyard.
+  v.home === "horizon" ? ["horizon", "decisions", "settings", "logs"] : ["upcoming", "graveyard", "decisions", "settings", "logs"];
 
 // The window: shared providers around the variant's own shell. The page
 // chosen survives a change of variant when the new one has it too.

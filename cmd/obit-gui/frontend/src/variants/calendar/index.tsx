@@ -138,7 +138,7 @@ function Graves() {
   const k = g.sel.chosen.length;
   return (
     <div className="cal-page">
-      <Head title={t("page.graveyard")} deck={n ? t("cal.graveDeck", n, bytes(g.bytes)) : t("cal.graveDeckEmpty")}>
+      <Head title={t("head.graveyard")} deck={n ? t("cal.graveDeck", n, bytes(g.bytes)) : t("cal.graveDeckEmpty")}>
         <label className="cal-search"><Search size={14} aria-hidden /><input type="search" placeholder={t("filterByPath")} aria-label={t("filterByPath")} value={filter} onChange={(e) => setFilter(e.target.value)} /></label>
         <span className="cal-picked" aria-live="polite">{k ? t("cal.pickedGraves", k) : t("cal.pickGraves")}</span>
         <button type="button" className="cal-btn gold" disabled={!k} onClick={() => g.resurrect()}><Star size={13} />{t("resurrect")}</button>
@@ -179,7 +179,7 @@ function Upcoming() {
 
   return (
     <div className="cal-page">
-      <Head title={t("page.upcoming")} deck={n ? t("cal.upDeck", n, today) : t("cal.upDeckEmpty")}>
+      <Head title={t("head.upcoming")} deck={n ? t("cal.upDeck", n, today) : t("cal.upDeckEmpty")}>
         <span className="cal-picked" aria-live="polite">{k ? t("cal.pickedItems", k) : t("cal.pickItems")}</span>
         <select className="cal-select" aria-label={t("howLong")} value={lifespan} disabled={!k} onChange={(e) => setLifespan(e.target.value)}>
           {extendSpans().map(([v, label]) => <option key={v} value={v}>{t("giveMore", label)}</option>)}

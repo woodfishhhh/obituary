@@ -86,6 +86,9 @@ func checkResources(root string, rs *winres.ResourceSet, app application, releas
 	if !bytes.Equal(rs.Get(winres.RT_MANIFEST, winres.ID(1), winres.LCIDDefault), manifest) {
 		return fmt.Errorf("missing or incorrect application manifest")
 	}
+	if group := rs.Get(winres.RT_GROUP_ICON, appIconID, winres.LCIDNeutral); len(group) == 0 || !bytes.Equal(rs.Get(winres.RT_GROUP_ICON, classIconID, winres.LCIDNeutral), group) {
+		return fmt.Errorf("taskbar icon (IDI_APPLICATION) missing or different from the application icon")
+	}
 	extracted, err := rs.GetIcon(appIconID)
 	if err != nil {
 		return fmt.Errorf("application icon: %w", err)

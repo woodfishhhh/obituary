@@ -1,9 +1,10 @@
-import { Check, FileCode2, Inbox, ShieldCheck, ShieldOff, X } from "lucide-react";
+import { Check, CheckCheck, FileCode2, Inbox, ShieldCheck, ShieldOff, X } from "lucide-react";
 import { useState } from "react";
 import { errorText, useApi } from "../api";
 import { t } from "../i18n";
 import { bytes, extendedTo, lifespanText, underProject, when } from "../format";
 import { useLoad, useRefresh } from "../hooks";
+import { askDecisions, setAskDecisions } from "../prefs";
 import type { Proposal, ProposalResult, RuleFile } from "../types";
 import { Button, Empty, Head, Outcome, Skeleton, isContainer, useConfirm, useToast, type OutcomeNote } from "../ui";
 
@@ -14,7 +15,9 @@ const ruleText = (status: string): [string, string] => (ruleTone[status] ? [t(`r
 
 export default function Decisions() {
   const api = useApi();
-  const { version } = useRefresh();
+  const { version, bump } = useRefresh();
+  const confirm = useConfirm();
+  const toast = useToast();
   const { data, error, loading } = useLoad(() => Promise.all([api.Proposals(), api.Rules()]), [api, version]);
   const [note, setNote] = useState<OutcomeNote | null>(null);
   if (loading && !data) return <><Head title={t("page.decisions")} /><div className="card"><Skeleton /></div></>;
@@ -23,6 +26,40 @@ export default function Decisions() {
   const pending = rules.filter((r) => r.status !== "trusted");
   const trusted = rules.filter((r) => r.status === "trusted");
   const waiting = proposals.length + pending.length;
+  // An expired folder moves now when approved; it is never part of "approve all".
+  const batchable = proposals.filter((p) => p.kind !== "watch-burial");
+
+  // One proposal at a time, each with the fingerprint shown on its card, so a
+  // proposal that changed meanwhile is refused instead of half-applied.
+  async function approveAll() {
+    const ok = !askDecisions() || await confirm({
+      title: t("dec.askApproveAll", batchable.length),
+      body: <><p>{t("dec.approveAllBody")}</p><ul>{batchable.map((p) => <li key={p.id}>{t("dec.allLine", p.id, p.project, p.candidates.length)}</li>)}</ul></>,
+      ok: t("dec.approveAllOk"),
+      remember: { label: t("dec.noAsk"), onRemember: () => { setAskDecisions(false); toast(t("dec.noAskToast")); } },
+    });
+    if (!ok) return;
+    const failed: [string, string][] = [];
+    let done = 0;
+    for (const p of batchable) {
+      try {
+        const reply = await api.Approve([`#${p.id}`], [p.fingerprint]);
+        const errors = (reply.results ?? []).filter((r) => r.error);
+        if (reply.error || errors.length) failed.push([`#${p.id}`, reply.error ?? errors[0].error ?? ""]);
+        else done++;
+      } catch (error) {
+        failed.push([`#${p.id}`, errorText(error)]);
+      }
+    }
+    bump();
+    if (failed.length) {
+      setNote({ title: t("dec.allPartial", done, failed.length), text: t("dec.allPartialText"), items: failed });
+      toast(t("dec.allPartial", done, failed.length), "error");
+    } else {
+      setNote(null);
+      toast(t("dec.allDone", done));
+    }
+  }
   return (
     <>
       <Head title={t("page.decisions")}>
@@ -31,7 +68,12 @@ export default function Decisions() {
       {error ? <div className="notice error">{t("dec.readError", error)}</div> : null}
       {note ? <Outcome note={note} onClose={() => setNote(null)} /> : null}
       {!waiting ? <div className="card"><Empty icon={Inbox} title={t("dec.none")} text={t("dec.noneText")} /></div> : null}
-      {proposals.length ? <div className="section-title">{t("dec.proposals")}</div> : null}
+      {proposals.length ? (
+        <div className="section-title section-row">
+          <span>{t("dec.proposals")}</span>
+          {batchable.length > 1 ? <Button kind="primary" icon={CheckCheck} onClick={approveAll}>{t("dec.approveAll", batchable.length)}</Button> : null}
+        </div>
+      ) : null}
       {proposals.map((p) => <ProposalCard key={`${p.id}-${p.fingerprint}`} p={p} onOutcome={setNote} />)}
       {pending.length ? <div className="section-title">{t("dec.rules")}</div> : null}
       {pending.map((r) => <RuleCard key={r.path} r={r} />)}
@@ -62,13 +104,15 @@ function ProposalCard({ p, onOutcome }: { p: Proposal; onOutcome: (note: Outcome
     return <li key={c.path}>{underProject(c.path, p.project)}{due ? <b className="moves">{t("dec.dueAt", lifespanText(c.lifespan), when(due))}</b> : null}</li>;
   })}</ul>;
   async function decide(approve: boolean) {
-    const ok = await confirm({
+    // Once the owner says a decision is a decision, the buttons act at once.
+    const ok = !askDecisions() || await confirm({
       title: policy ? (approve ? t("dec.askPolicy", p.project) : t("dec.askNoPolicy", p.project))
         : burial ? (approve ? t("dec.askApprove", p.id) : t("dec.askReject", p.id))
         : approve ? t("dec.askStart", n) : t("dec.askSkip", n),
       body: <><p>{policy ? t(approve ? "dec.policyBody" : "dec.noPolicyBody") : burial ? t(approve ? "dec.buryBody" : "dec.spareBody") : approve ? t("dec.approveBody", n) : t("dec.rejectBody")}</p>{policy ? null : items}</>,
       ok: approve ? t("approve") : t("reject"),
       danger: burial ? approve : !approve,
+      remember: { label: t("dec.noAsk"), onRemember: () => { setAskDecisions(false); toast(t("dec.noAskToast")); } },
     });
     if (!ok) return;
     const ref = `#${p.id}`;

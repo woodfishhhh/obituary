@@ -129,6 +129,9 @@ func TestWindowsSelectsExactIconSizes(t *testing.T) {
 		t.Fatal(err)
 	}
 	group := rs.Get(winres.RT_GROUP_ICON, appIconID, winres.LCIDNeutral)
+	if !bytes.Equal(rs.Get(winres.RT_GROUP_ICON, classIconID, winres.LCIDNeutral), group) {
+		t.Fatal("the taskbar's class icon (IDI_APPLICATION) must be the application icon")
+	}
 	lookup := windows.NewLazySystemDLL("user32.dll").NewProc("LookupIconIdFromDirectoryEx")
 	// Match Windows' small (16px) and systray LR_DEFAULTSIZE (32px) metrics
 	// at 100%, 150%, and 200%, without changing the user's display settings.

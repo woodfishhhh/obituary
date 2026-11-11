@@ -79,7 +79,7 @@ export default function PaletteShell({ page, nav, setPage, summary: s, refresh }
               : (
                 <>
                   <div className="pl-body pl-shared">{page === "decisions" ? <Decisions /> : page === "settings" ? <Settings /> : <Logs />}</div>
-                  <Bar context={pageTitle(page)}><Hint keys={["Ctrl", "1"]}>{t("page.graveyard")}</Hint><Hint keys={["Ctrl", "2"]}>{t("page.upcoming")}</Hint></Bar>
+                  <Bar context={pageTitle(page)}><Hint keys={["Ctrl", "1"]}>{t("page.upcoming")}</Hint><Hint keys={["Ctrl", "2"]}>{t("page.graveyard")}</Hint></Bar>
                 </>
               )}
       </div>

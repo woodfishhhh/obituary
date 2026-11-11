@@ -19,6 +19,11 @@ import (
 // Wails v2 internal/frontend/desktop/windows/winc/app.go loads AppIconID 3.
 const appIconID = winres.ID(3)
 
+// Wails registers its window class with LoadIcon(instance, IDI_APPLICATION)
+// and sets only the small window icon from appIconID, so the taskbar's large
+// icon comes from this ID. Its group points at the same images.
+const classIconID = winres.ID(32512)
+
 //go:embed obituary.manifest
 var manifest []byte
 
@@ -92,6 +97,9 @@ func resources(root string, app application, release string, icon *winres.Icon) 
 	rs := &winres.ResourceSet{}
 	rs.SetVersionInfo(*vi)
 	if err := rs.SetIcon(appIconID, icon); err != nil {
+		return nil, err
+	}
+	if err := rs.Set(winres.RT_GROUP_ICON, classIconID, winres.LCIDNeutral, rs.Get(winres.RT_GROUP_ICON, appIconID, winres.LCIDNeutral)); err != nil {
 		return nil, err
 	}
 	// A custom manifest preserves activeCodePage, which winres.AppManifest
