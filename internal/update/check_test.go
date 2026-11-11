@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -226,18 +227,192 @@ func TestCheckRequestHasTenSecondDeadline(t *testing.T) {
 	}
 }
 
+func TestCheckFallsBackToMirrorWithoutGitHubResponse(t *testing.T) {
+	github := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	github.Close()
+	var calls int
+	mirror := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if r.Method != "GET" || r.URL.Path != "/download/latest.json" || r.Header.Get("Accept") != "application/vnd.github+json" || r.Header.Get("User-Agent") == "" || r.Header.Get("Authorization") != "" || r.Header.Get("If-None-Match") != "" || r.ContentLength > 0 {
+			t.Errorf("unexpected mirror request: %+v", r)
+		}
+		w.Header().Set("ETag", `"mirror-only"`)
+		fmt.Fprint(w, releaseJSON)
+	}))
+	defer mirror.Close()
+	c := Checker{Home: t.TempDir(), BaseURL: github.URL, MirrorURL: mirror.URL + "/download/latest.json"}
+	if err := save(c.Home, Cache{ETag: `"github-only"`, Latest: Release{Version: "1.0.0"}}); err != nil {
+		t.Fatal(err)
+	}
+	state, err := c.Check(context.Background(), true, true)
+	if err != nil || state.LastError != "" || state.Latest.Version != "1.0.1" || state.ETag != "" || calls != 1 {
+		t.Fatalf("mirror: %+v %v calls=%d", state, err, calls)
+	}
+	cached, err := Read(c.Home)
+	if err != nil || cached != state {
+		t.Fatalf("cache: %+v %v", cached, err)
+	}
+}
+
+func TestCheckFallsBackAfterGitHubTimeout(t *testing.T) {
+	if testing.Short() {
+		t.Skip("waits for the GitHub request timeout")
+	}
+	github := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		<-r.Context().Done()
+	}))
+	defer github.Close()
+	mirror := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { fmt.Fprint(w, releaseJSON) }))
+	defer mirror.Close()
+	c := Checker{Home: t.TempDir(), BaseURL: github.URL, MirrorURL: mirror.URL}
+	state, err := c.Check(context.Background(), true, true)
+	if err != nil || state.LastError != "" || state.Latest.Version != "1.0.1" {
+		t.Fatalf("timeout fallback: %+v %v", state, err)
+	}
+}
+
+func TestCheckGitHubHTTPErrorDoesNotUseMirror(t *testing.T) {
+	for _, status := range []int{http.StatusNotFound, http.StatusInternalServerError, http.StatusFound} {
+		t.Run(fmt.Sprint(status), func(t *testing.T) {
+			mirror := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+				t.Error("mirror requested after GitHub responded")
+			}))
+			defer mirror.Close()
+			github := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Location", mirror.URL)
+				w.WriteHeader(status)
+			}))
+			defer github.Close()
+			c := Checker{Home: t.TempDir(), BaseURL: github.URL, MirrorURL: mirror.URL}
+			state, err := c.Check(context.Background(), true, true)
+			if err != nil || state.LastError != fmt.Sprintf("GitHub releases: HTTP %d", status) || state.Latest.Version != "" {
+				t.Fatalf("HTTP error: %+v %v", state, err)
+			}
+		})
+	}
+}
+
+func TestCheckGitHubInvalidBodyDoesNotUseMirror(t *testing.T) {
+	mirror := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { t.Error("mirror requested after GitHub responded") }))
+	defer mirror.Close()
+	github := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Length", "100")
+		fmt.Fprint(w, `{`)
+	}))
+	defer github.Close()
+	state, err := (Checker{Home: t.TempDir(), BaseURL: github.URL, MirrorURL: mirror.URL}).Check(context.Background(), true, true)
+	if err != nil || state.LastError == "" || state.Latest.Version != "" {
+		t.Fatalf("incomplete GitHub response: %+v %v", state, err)
+	}
+}
+
+func TestCheckMirrorRejectsInvalidResponses(t *testing.T) {
+	github := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	github.Close()
+	for _, tc := range []struct {
+		name, body string
+		status     int
+	}{
+		{"external-url", strings.Replace(releaseJSON, "https://github.com/woodfishhhh/obituary/releases/tag/v1.0.1", "https://example.org/download", 1), 200},
+		{"draft", `{"tag_name":"v1.0.1","draft":true}`, 200},
+		{"prerelease", `{"tag_name":"v1.0.1","prerelease":true}`, 200},
+		{"oversized", strings.Repeat(" ", 1<<20) + releaseJSON, 200},
+		{"bad-json", `{`, 200}, {"not-modified", "", 304}, {"http-error", "", 500},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			mirror := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(tc.status)
+				fmt.Fprint(w, tc.body)
+			}))
+			defer mirror.Close()
+			c := Checker{Home: t.TempDir(), BaseURL: github.URL, MirrorURL: mirror.URL}
+			if err := save(c.Home, Cache{Latest: Release{Version: "1.0.0"}}); err != nil {
+				t.Fatal(err)
+			}
+			state, err := c.Check(context.Background(), true, true)
+			if err != nil || state.LastError == "" || state.Latest.Version != "1.0.0" {
+				t.Fatalf("invalid mirror: %+v %v", state, err)
+			}
+		})
+	}
+}
+
+func TestCheckMirrorDoesNotFollowRedirect(t *testing.T) {
+	github := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	github.Close()
+	target := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { t.Error("redirect followed") }))
+	defer target.Close()
+	mirror := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, target.URL, http.StatusFound) }))
+	defer mirror.Close()
+	state, err := (Checker{Home: t.TempDir(), BaseURL: github.URL, MirrorURL: mirror.URL}).Check(context.Background(), true, true)
+	if err != nil || state.LastError == "" {
+		t.Fatalf("mirror redirect: %+v %v", state, err)
+	}
+}
+
+func TestCheckMirrorSharesTotalDeadline(t *testing.T) {
+	mirror := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { fmt.Fprint(w, releaseJSON) }))
+	defer mirror.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+	defer cancel()
+	totalDeadline, _ := ctx.Deadline()
+	var githubDeadline time.Time
+	calls := 0
+	c := Checker{Home: t.TempDir(), BaseURL: "http://127.0.0.1", MirrorURL: mirror.URL}
+	c.Client = &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		calls++
+		deadline, ok := r.Context().Deadline()
+		if !ok || time.Until(deadline) <= 0 || time.Until(deadline) > requestTimeout {
+			t.Errorf("deadline: %v %t", deadline, ok)
+		}
+		if calls == 1 {
+			githubDeadline = deadline
+			return nil, context.DeadlineExceeded
+		}
+		if !deadline.After(githubDeadline) || !deadline.Equal(totalDeadline) {
+			t.Errorf("mirror deadline=%v GitHub deadline=%v total=%v", deadline, githubDeadline, totalDeadline)
+		}
+		return http.DefaultTransport.RoundTrip(r)
+	})}
+	state, err := c.Check(ctx, true, true)
+	if err != nil || state.LastError != "" || state.Latest.Version != "1.0.1" || calls != 2 {
+		t.Fatalf("timeout fallback: %+v %v calls=%d", state, err, calls)
+	}
+}
+
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
 func TestCheckTestEnvironmentNeverUsesPublicAPI(t *testing.T) {
 	t.Setenv("OBIT_TEST_NO_UPDATE", "1")
-	c := Checker{Home: filepath.Join(t.TempDir(), "absent")}
-	state, err := c.Check(context.Background(), true, true)
-	if err != nil || !state.CheckedAt.IsZero() {
-		t.Fatalf("test check: %+v %v", state, err)
+	for _, base := range []string{"", APIBase, APIBase + "/"} {
+		c := Checker{Home: filepath.Join(t.TempDir(), "absent"), BaseURL: base}
+		state, err := c.Check(context.Background(), true, true)
+		if err != nil || !state.CheckedAt.IsZero() {
+			t.Fatalf("test check: %+v %v", state, err)
+		}
+		if _, err := os.Stat(c.Home); !os.IsNotExist(err) {
+			t.Fatalf("test check wrote directory: %v", err)
+		}
 	}
-	if _, err := os.Stat(c.Home); !os.IsNotExist(err) {
-		t.Fatalf("test check wrote directory: %v", err)
+}
+
+func TestCheckTestEnvironmentNeverUsesPublicMirror(t *testing.T) {
+	t.Setenv("OBIT_TEST_NO_UPDATE", "1")
+	for _, endpoint := range []string{"", MirrorURL, MirrorURL + "/"} {
+		calls := 0
+		c := Checker{Home: t.TempDir(), BaseURL: "http://127.0.0.1", MirrorURL: endpoint}
+		c.Client = &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			calls++
+			if r.URL.Host != "127.0.0.1" {
+				t.Errorf("public endpoint requested: %s", r.URL)
+			}
+			return nil, context.DeadlineExceeded
+		})}
+		state, err := c.Check(context.Background(), true, true)
+		if err != nil || state.LastError == "" || calls != 1 {
+			t.Fatalf("test mirror check: %+v %v calls=%d", state, err, calls)
+		}
 	}
 }

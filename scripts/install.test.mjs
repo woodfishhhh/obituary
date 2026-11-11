@@ -79,6 +79,11 @@ test('install verified snapshot releases without changing the user PATH', {
   const engines = [['ps7', ps7], ['ps5', ps5]].filter(([name]) =>
     !process.env.OBIT_INSTALL_TEST_ENGINES || process.env.OBIT_INSTALL_TEST_ENGINES.split(',').includes(name));
   const install = join(root, 'installed');
+  async function assertReceiptSource(destination, source) {
+    const receipt = JSON.parse(await readFile(join(destination, '.obituary-install.json'), 'utf8'));
+    assert.equal(receipt.owner, 'obituary-install-v1');
+    assert.equal(receipt.source, source);
+  }
   async function shortcut(destination, shell = ps7, target) {
     const result = await execute(shell, ['-NoProfile', '-NonInteractive', '-File',
       resolve('scripts/testdata/shortcut.ps1'), '-Path', join(`${destination}-menu`, '讣告 Obituary.lnk'),
@@ -146,6 +151,7 @@ test('install verified snapshot releases without changing the user PATH', {
     assert.equal(result.code, 0, result.stderr);
     assert.match(result.stdout, /SHA-256 verified:/);
     assert.deepEqual((await readdir(install)).sort(), ['.obituary-install.json', 'LICENSE', 'README.txt', 'obit-gui.exe', 'obit.exe', 'obitd.exe']);
+    await assertReceiptSource(install, 'custom');
     const { stdout } = await execute(join(install, 'obit.exe'), ['--version'], { env, windowsHide: true });
     assert.ok(stdout.includes(version), stdout);
     await execute(join(install, 'obit.exe'), ['daemon', 'stop'], { env, windowsHide: true });
@@ -166,10 +172,15 @@ test('install verified snapshot releases without changing the user PATH', {
   await t.test('repeat installation replaces an older binary and preserves unrelated files', async () => {
     await writeFile(join(install, 'obit.exe'), 'old release');
     await writeFile(join(install, 'keep.txt'), 'user file');
+    const receiptPath = join(install, '.obituary-install.json');
+    const receipt = JSON.parse(await readFile(receiptPath, 'utf8'));
+    delete receipt.source;
+    await writeFile(receiptPath, JSON.stringify(receipt));
     const result = await run('upgrade', [], ps7, install, 'AMD64');
     assert.equal(result.code, 0, result.stderr);
     assert.equal(sha256(await readFile(join(install, 'obit.exe'))), installedHash);
     assert.equal(await readFile(join(install, 'keep.txt'), 'utf8'), 'user file');
+    await assertReceiptSource(install, 'custom');
   });
   for (const [scenario, message] of [
     ['corrupt', /SHA-256 mismatch/],
@@ -197,9 +208,9 @@ test('install verified snapshot releases without changing the user PATH', {
   async function sourcesScript(name, github) {
     const file = join(root, `install-${name}.ps1`);
     const text = source
-      .replace('https://github.com/woodfishhhh/obituary/releases/download/v$Version/', `${github}/v$Version/`)
-      .replace('https://obituary.woodfish.site/download/v$Version/', `${base}/mirror/`);
-    assert.ok(!text.includes('https://github.com/') && !text.includes('https://obituary.woodfish.site/'));
+      .replace('https://github.com/woodfishhhh/obituary/releases/download/v$Version/', `${github}/`)
+      .replace('https://cn.obituary.woodfish.site/download/v$Version/', `${base}/mirror/`);
+    assert.ok(!text.includes('https://github.com/') && !text.includes('https://cn.obituary.woodfish.site/'));
     await writeFile(file, text);
     return file;
   }
@@ -215,6 +226,15 @@ test('install verified snapshot releases without changing the user PATH', {
       assert.match(result.stdout, /SHA-256 verified:/);
       assert.deepEqual(mirrorRequests(from), ['/mirror/checksums.txt', `/mirror/${archiveName}`]);
       assert.deepEqual((await readdir(destination)).sort(), installedNames);
+      await assertReceiptSource(destination, 'mirror');
+    });
+    await t.test(`${engine} records GitHub when the default source answers`, async () => {
+      const destination = join(root, `${engine}-github`);
+      const from = seen.length;
+      const result = await run('github', ['-DefaultSource'], shell, destination, 'amd64', await sourcesScript('github', `${base}/github`));
+      assert.equal(result.code, 0, result.stderr);
+      assert.deepEqual(seen.slice(from), ['/github/checksums.txt', `/github/${archiveName}`]);
+      await assertReceiptSource(destination, 'github');
     });
   }
   await t.test('an HTTP error from GitHub is reported, not retried on the mirror', async () => {
@@ -233,6 +253,10 @@ test('install verified snapshot releases without changing the user PATH', {
     assert.doesNotMatch(result.stdout, /GitHub did not answer/);
     assert.deepEqual(mirrorRequests(from), ['/mirror/checksums.txt', `/mirror/${archiveName}`]);
     assert.deepEqual((await readdir(destination)).sort(), installedNames);
+    await assertReceiptSource(destination, 'mirror');
+    const upgrade = await run('good', [], ps7, destination);
+    assert.equal(upgrade.code, 0, upgrade.stderr);
+    await assertReceiptSource(destination, 'custom');
   });
   await t.test('-Mirror and -BaseUrl together are refused before any download', async () => {
     const from = seen.length;
@@ -380,7 +404,7 @@ test('install verified snapshot releases without changing the user PATH', {
         if (state === 'edited') await writeFile(env.OBIT_INSTALL_PATH_FIXTURE, `${original};"${destination}"`);
         if (state === 'duplicate') await writeFile(env.OBIT_INSTALL_PATH_FIXTURE, `${original};${destination};${destination}`);
         if (state === 'legacy') {
-          delete receipt.pathAdded; delete receipt.pathEntry;
+          delete receipt.pathAdded; delete receipt.pathEntry; delete receipt.source;
           await writeFile(receiptPath, JSON.stringify(receipt));
         }
         const before = await readFile(env.OBIT_INSTALL_PATH_FIXTURE, 'utf8');

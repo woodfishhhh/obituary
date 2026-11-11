@@ -1,6 +1,8 @@
 package update
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -25,6 +27,44 @@ func TestChannel(t *testing.T) {
 		t.Run(tc.exe, func(t *testing.T) {
 			if got := Channel(tc.exe, packages, tc.receipt); got != tc.want {
 				t.Fatalf("channel=%s want %s", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestScriptCommandReceiptSource(t *testing.T) {
+	for _, tc := range []struct {
+		name, receipt, source, script, suffix string
+	}{
+		{"legacy", `{"owner":"obituary-install-v1"}`, "github", "https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1", ""},
+		{"github", `{"owner":"obituary-install-v1","source":"github"}`, "github", "https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1", ""},
+		{"mirror", `{"owner":"obituary-install-v1","source":"mirror"}`, "mirror", "https://cn.obituary.woodfish.site/install.ps1", " -Mirror cn"},
+		{"custom", `{"owner":"obituary-install-v1","source":"custom"}`, "custom", "https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1", ""},
+		{"unknown", `{"owner":"obituary-install-v1","source":"untrusted"}`, "github", "https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1", ""},
+		{"invalid", `{`, "github", "https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := filepath.Join(t.TempDir(), "O'Brien")
+			if err := os.Mkdir(dir, 0o700); err != nil {
+				t.Fatal(err)
+			}
+			exe := filepath.Join(dir, "obit.exe")
+			if err := os.WriteFile(filepath.Join(dir, ".obituary-install.json"), []byte(tc.receipt), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			if got := DetectSource(exe); got != tc.source {
+				t.Fatalf("source=%q want %q", got, tc.source)
+			}
+			channel := DetectChannel(exe)
+			if channel != "script" {
+				t.Fatalf("channel=%s", channel)
+			}
+			want := "irm " + tc.script + " -OutFile install.ps1; .\\install.ps1 -Version 1.0.1 -InstallDir '" + strings.ReplaceAll(filepath.ToSlash(dir), "'", "''") + "'" + tc.suffix
+			if got := Command(channel, "v1.0.1", exe); got != want {
+				t.Fatalf("command=%q want %q", got, want)
+			}
+			if got := Command(channel, "1.0.1;bad", exe); got != "" {
+				t.Fatalf("unsafe command=%q", got)
 			}
 		})
 	}

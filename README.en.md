@@ -104,6 +104,8 @@ irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/instal
 
 ### Updates
 
+When GitHub is unreachable in mainland China, update checks and downloads fall back to the mainland China mirror.
+
 Once a day at most, Obituary asks GitHub whether a new stable release is out. It reads public release information only and sends no usage data. When there is one, the tray menu and the small window say so, and Settings > About and updates shows the command for the way you installed it:
 
 - Scoop: `scoop update obituary`

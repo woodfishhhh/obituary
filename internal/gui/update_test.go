@@ -59,6 +59,31 @@ func TestCheckUpdateManualWhileDisabledAndCacheOnlyRead(t *testing.T) {
 	}
 }
 
+func TestCheckUpdateMirrorReleaseAndCommand(t *testing.T) {
+	a, _ := fixture(t)
+	github := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	github.Close()
+	requests := 0
+	mirror := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		fmt.Fprint(w, `{"tag_name":"v9.0.0","name":"Release","body":"Release notes"}`)
+	}))
+	defer mirror.Close()
+	a.deps.UpdateChecker = &update.Checker{BaseURL: github.URL, MirrorURL: mirror.URL}
+	write(t, filepath.Join(filepath.Dir(a.deps.Executable), ".obituary-install.json"), `{"owner":"obituary-install-v1","source":"mirror"}`)
+	info, err := a.CheckUpdate()
+	if err != nil || requests != 1 || info.Error != "" || !info.Newer || info.Latest != "9.0.0" || info.Channel != "script" {
+		t.Fatalf("mirror: %+v %v", info, err)
+	}
+	if !strings.HasPrefix(info.Command, "irm https://cn.obituary.woodfish.site/install.ps1 ") || !strings.Contains(info.Command, "-Version 9.0.0") || !strings.HasSuffix(info.Command, " -Mirror cn") {
+		t.Fatalf("mirror command: %s", info.Command)
+	}
+	cached, err := a.Update()
+	if err != nil || requests != 1 || cached != info {
+		t.Fatalf("mirror cache: %+v %v calls=%d", cached, err, requests)
+	}
+}
+
 func TestCheckUpdateReportsSettingChangedDuringRequest(t *testing.T) {
 	a, _ := fixture(t)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

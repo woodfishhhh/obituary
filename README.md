@@ -103,6 +103,8 @@ irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/instal
 
 ### 更新
 
+国内连不上 GitHub 时，会改从国内镜像检查和下载。
+
 讣告每天最多联网一次，看 GitHub 上有没有新的正式版。它只读公开的版本信息，不发送任何使用数据。有新版时托盘菜单和小窗口会告诉你，设置页的「关于与更新」里给出升级命令，按你的安装方式来：
 
 - Scoop：`scoop update obituary`

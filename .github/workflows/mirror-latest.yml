@@ -1,0 +1,53 @@
+name: mirror-latest
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mirror-latest
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    if: ${{ !github.event.release.draft && !github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - id: key
+        env:
+          CN_DEPLOY_KEY: ${{ secrets.CN_DEPLOY_KEY }}
+        run: echo "present=$([ -n "$CN_DEPLOY_KEY" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+      - name: Read the published release metadata
+        if: steps.key.outputs.present == 'yes'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_ID: ${{ github.event.release.id }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GH_REPO/releases/$RELEASE_ID" |
+            jq -e 'if .draft == false and .prerelease == false then
+              {tag_name, name, body, html_url, published_at, draft, prerelease}
+              else error("Release must be published and stable") end' > latest.json
+      - name: Copy the latest release metadata to the mirror
+        if: steps.key.outputs.present == 'yes'
+        shell: bash
+        env:
+          CN_DEPLOY_KEY: ${{ secrets.CN_DEPLOY_KEY }}
+          CN_DEPLOY_HOST: ${{ secrets.CN_DEPLOY_HOST }}
+          CN_DEPLOY_KNOWN_HOSTS: ${{ secrets.CN_DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          ssh_dir="$RUNNER_TEMP/cn-ssh"
+          mkdir -p "$ssh_dir"
+          trap 'rm -rf "$ssh_dir"' EXIT
+          echo "$CN_DEPLOY_KEY" > "$ssh_dir/key"
+          echo "$CN_DEPLOY_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          ssh_cmd="ssh -i $ssh_dir/key -o IdentitiesOnly=yes -o UserKnownHostsFile=$ssh_dir/known_hosts -o StrictHostKeyChecking=yes"
+          rsync -rlt --chmod=D755,F644 -e "$ssh_cmd" latest.json "obit-deploy@$CN_DEPLOY_HOST:download/latest.json"

@@ -66,10 +66,11 @@ $Architecture = $Architecture.ToLowerInvariant()
 if (-not $Uninstall) { $Version = $Version -replace '^v', '' }
 # A mirror only replaces the default source; an explicit BaseUrl is final.
 $fallbackUrl = $null
+$downloadSource = if ($BaseUrl) { 'custom' } elseif ($Mirror) { 'mirror' } else { 'github' }
 if ($Mirror -and $BaseUrl) { throw 'Use either -Mirror or -BaseUrl, not both.' }
 if (-not $BaseUrl -and -not $Uninstall) {
     $githubUrl = [uri]"https://github.com/woodfishhhh/obituary/releases/download/v$Version/"
-    $mirrorUrl = [uri]"https://obituary.woodfish.site/download/v$Version/"
+    $mirrorUrl = [uri]"https://cn.obituary.woodfish.site/download/v$Version/"
     if ($Mirror) { $BaseUrl = $mirrorUrl } else { $BaseUrl = $githubUrl; $fallbackUrl = $mirrorUrl }
 }
 if (-not $Uninstall -and (-not $BaseUrl.IsAbsoluteUri -or
@@ -447,6 +448,7 @@ try {
             if ($answer -and $answer.Value) { throw }
             Write-Output "GitHub did not answer ($($_.Exception.Message)); downloading from $fallback instead."
             $source = $fallback
+            $downloadSource = 'mirror'
             Invoke-WebRequest -UseBasicParsing -Uri "$source/checksums.txt" -OutFile $checksums
         }
     } else {
@@ -489,7 +491,7 @@ try {
                 $previous.PSObject.Properties.Name -contains 'pathEntry' -and $previous.pathEntry -ceq $InstallDir
         } finally { if ($previousFile) { $previousFile.Dispose() } }
     }
-    $receipt = [ordered]@{ owner = 'obituary-install-v1'; directory = $InstallDir; pathAdded = $pathAdded; pathEntry = $InstallDir; files = @(
+    $receipt = [ordered]@{ owner = 'obituary-install-v1'; source = $downloadSource; directory = $InstallDir; pathAdded = $pathAdded; pathEntry = $InstallDir; files = @(
         foreach ($name in $files) {
             @{ name = $name; sha256 = (Get-FileHash -LiteralPath (Join-Path $expanded $name) -Algorithm SHA256).Hash }
         }

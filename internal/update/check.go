@@ -18,16 +18,18 @@ import (
 )
 
 const APIBase = "https://api.github.com"
+const MirrorURL = "https://cn.obituary.woodfish.site/download/latest.json"
 const releasePath = "/repos/woodfishhhh/obituary/releases/latest"
 const requestTimeout = 10 * time.Second
 
-// Checker accepts a loopback API in tests. Production supplies no endpoint,
+// Checker accepts loopback endpoints in tests. Production supplies no endpoint,
 // credentials, cookies, request body, or machine-specific identifiers.
 type Checker struct {
-	Home    string
-	BaseURL string
-	Client  *http.Client
-	Now     func() time.Time
+	Home      string
+	BaseURL   string
+	MirrorURL string
+	Client    *http.Client
+	Now       func() time.Time
 }
 
 func (c Checker) Check(ctx context.Context, enabled, force bool) (Cache, error) {
@@ -39,7 +41,7 @@ func (c Checker) Check(ctx context.Context, enabled, force bool) (Cache, error) 
 		return state, nil
 	}
 	// Test child processes inherit this switch, including explicit CLI checks.
-	if os.Getenv("OBIT_TEST_NO_UPDATE") == "1" && c.BaseURL == "" {
+	if testEndpointDisabled(c.BaseURL, APIBase) {
 		return state, nil
 	}
 	if err := os.MkdirAll(c.Home, 0o700); err != nil {
@@ -94,29 +96,27 @@ func (c Checker) check(ctx context.Context, state Cache, now time.Time) (Cache, 
 	return state, save(c.Home, state)
 }
 
+func testEndpointDisabled(endpoint, public string) bool {
+	return os.Getenv("OBIT_TEST_NO_UPDATE") == "1" && (endpoint == "" || strings.TrimRight(endpoint, "/") == public)
+}
+
 func (c Checker) fetch(ctx context.Context, state Cache) (Release, string, error) {
 	base := c.BaseURL
 	if base == "" {
 		base = APIBase
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(base, "/")+releasePath, nil)
-	if err != nil {
-		return Release{}, "", err
-	}
-	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("User-Agent", "Obituary/"+buildinfo.Version)
+	// Reserve part of the shared ten-second budget for an unreachable GitHub.
+	githubCtx, cancel := context.WithTimeout(ctx, requestTimeout/2)
+	defer cancel()
+	etag := ""
 	if state.Latest.Version != "" {
-		req.Header.Set("If-None-Match", state.ETag)
+		etag = state.ETag
 	}
-	client := http.Client{Timeout: requestTimeout}
-	if c.Client != nil {
-		client = *c.Client
-	}
-	// Follow-up requests must stay on the explicitly chosen public endpoint.
-	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
-	client.Jar = nil
-	resp, err := client.Do(req)
+	resp, err := c.request(githubCtx, strings.TrimRight(base, "/")+releasePath, etag)
 	if err != nil {
+		if resp == nil && ctx.Err() == nil && !testEndpointDisabled(c.MirrorURL, MirrorURL) {
+			return c.fetchMirror(ctx)
+		}
 		return Release{}, "", err
 	}
 	defer resp.Body.Close()
@@ -132,6 +132,44 @@ func (c Checker) fetch(ctx context.Context, state Cache) (Release, string, error
 	}
 	latest, err := decodeRelease(resp.Body)
 	return latest, resp.Header.Get("ETag"), err
+}
+
+func (c Checker) fetchMirror(ctx context.Context) (Release, string, error) {
+	endpoint := c.MirrorURL
+	if endpoint == "" {
+		endpoint = MirrorURL
+	}
+	resp, err := c.request(ctx, endpoint, "")
+	if err != nil {
+		return Release{}, "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return Release{}, "", fmt.Errorf("mirror releases: HTTP %d", resp.StatusCode)
+	}
+	latest, err := decodeRelease(resp.Body)
+	// A mirror response cannot validate a later conditional GitHub request.
+	return latest, "", err
+}
+
+func (c Checker) request(ctx context.Context, endpoint, etag string) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("User-Agent", "Obituary/"+buildinfo.Version)
+	if etag != "" {
+		req.Header.Set("If-None-Match", etag)
+	}
+	client := http.Client{Timeout: requestTimeout}
+	if c.Client != nil {
+		client = *c.Client
+	}
+	// Follow-up requests must stay on the explicitly chosen public endpoint.
+	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	client.Jar = nil
+	return client.Do(req)
 }
 
 func releaseURL(value string) bool {

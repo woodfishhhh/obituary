@@ -1,6 +1,8 @@
 package update
 
 import (
+	"encoding/json"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -42,6 +44,25 @@ func DetectChannel(executable string) string {
 	return Channel(executable, packages, err == nil && info.Mode().IsRegular())
 }
 
+// DetectSource defaults legacy and unreadable receipts to the original source.
+func DetectSource(executable string) string {
+	file, err := os.Open(filepath.Join(filepath.Dir(executable), ".obituary-install.json"))
+	if err != nil {
+		return "github"
+	}
+	defer file.Close()
+	var receipt struct {
+		Source string `json:"source"`
+	}
+	if json.NewDecoder(io.LimitReader(file, 1<<20)).Decode(&receipt) == nil {
+		switch receipt.Source {
+		case "mirror", "custom":
+			return receipt.Source
+		}
+	}
+	return "github"
+}
+
 // Command is display-only. A version is validated before it enters shell text.
 func Command(channel, latest, executable string) string {
 	if !stable(latest) {
@@ -54,7 +75,11 @@ func Command(channel, latest, executable string) string {
 		return "winget upgrade woodfishhhh.Obituary"
 	case "script":
 		dir := path.Dir(strings.ReplaceAll(executable, `\`, "/"))
-		return "irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1; .\\install.ps1 -Version " + strings.TrimPrefix(latest, "v") + " -InstallDir '" + strings.ReplaceAll(dir, "'", "''") + "'"
+		script, flags := "https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1", ""
+		if DetectSource(executable) == "mirror" {
+			script, flags = "https://cn.obituary.woodfish.site/install.ps1", " -Mirror cn"
+		}
+		return "irm " + script + " -OutFile install.ps1; .\\install.ps1 -Version " + strings.TrimPrefix(latest, "v") + " -InstallDir '" + strings.ReplaceAll(dir, "'", "''") + "'" + flags
 	default:
 		return ""
 	}
