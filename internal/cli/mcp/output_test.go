@@ -89,7 +89,7 @@ func TestMCPUnconfirmedLongHomeKeepsAdvice(t *testing.T) {
 		}
 		data = append(data, []byte(`
 func init() {
-	syncReplacement = func(f *os.File) error {
+	fileio.SyncReplacement = func(f *os.File) error {
 		if os.Getenv("OBIT_TEST_MCP_SYNC_FAIL") == "1" && filepath.Base(f.Name()) == "store.json.tmp" {
 			return &os.PathError{Op: "sync", Path: f.Name(), Err: os.ErrPermission}
 		}
