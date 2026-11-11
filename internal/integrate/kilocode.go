@@ -157,7 +157,13 @@ func PlanKiloCodeMCP(s Scope, executable string, uninstall bool) (changes []Chan
 	return []Change{ch}, err
 }
 
+func PlanKiloCodeSkill(s Scope, uninstall bool) ([]Change, error) {
+	return PlanSharedSkill(s, "kilocode", uninstall)
+}
+
 func init() {
 	host, _ := hook.Lookup("kilocode")
-	RegisterAgent(Agent{Name: "kilocode", Method: Plugin, Capabilities: host.Capabilities, Plan: PlanKiloCode, PlanMCP: PlanKiloCodeMCP, PlanSkill: unsupportedAgentSkill("kilocode")})
+	caps := host.Capabilities
+	caps.Skill = hook.Support{Level: hook.Supported, Detail: "Shared .agents/skills at user and project scope"}
+	RegisterAgent(Agent{Name: "kilocode", Method: Plugin, Capabilities: caps, Plan: PlanKiloCode, PlanMCP: PlanKiloCodeMCP, PlanSkill: PlanKiloCodeSkill})
 }

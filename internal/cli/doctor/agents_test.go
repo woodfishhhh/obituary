@@ -198,7 +198,7 @@ func TestDoctorFindsExtraAgentInstallationTraces(t *testing.T) {
 			if err := integrate.Apply(changes); err != nil {
 				t.Fatal(err)
 			}
-			if err := os.Remove(filepath.Join(root, "home", ".gemini", "skills", "obituary", "SKILL.md")); err != nil {
+			if err := os.Remove(filepath.Join(root, "home", ".agents", "skills", "obituary", "SKILL.md")); err != nil {
 				t.Fatal(err)
 			}
 		}, "WARN"},

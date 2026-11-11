@@ -102,7 +102,14 @@ func newNativeJSONInstallFixture(t *testing.T, name string, global bool) nativeJ
 		f.mcpPath = filepath.Join(f.dir, "mcp.json")
 		f.userConfig = "\xef\xbb\xbf" + `{"Notification":[{"hooks":[{"type":"command","command":"user-tool"}]}],"Stop":[]}`
 	}
-	f.skillPath = filepath.Join(f.dir, "skills", "obituary", "SKILL.md")
+	skillHome := project
+	if global {
+		skillHome = filepath.Join(root, "user")
+		if name == "gemini" {
+			skillHome = filepath.Join(root, "gemini-home")
+		}
+	}
+	f.skillPath = filepath.Join(skillHome, ".agents", "skills", "obituary", "SKILL.md")
 	return f
 }
 
@@ -345,7 +352,7 @@ func testNativeJSONExtensions(t *testing.T, name string) {
 			if _, err := os.Stat(f.skillPath); !os.IsNotExist(err) {
 				t.Fatal("skill not removed", err)
 			}
-			if _, err := os.Stat(ManagedAssetReceiptPath(f.skillPath)); !os.IsNotExist(err) {
+			if _, err := os.Stat(filepath.Join(filepath.Dir(f.skillPath), ".obituary-skill")); !os.IsNotExist(err) {
 				t.Fatal("skill receipt remains", err)
 			}
 		})

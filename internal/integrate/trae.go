@@ -169,11 +169,37 @@ func PlanTraeMCP(s Scope, executable string, uninstall bool) ([]Change, error) {
 	return []Change{ch}, err
 }
 
+func PlanTraeSkill(s Scope, uninstall bool) ([]Change, error) {
+	return planTraeSkill(s, "trae", uninstall)
+}
+
+func PlanTraeCNSkill(s Scope, uninstall bool) ([]Change, error) {
+	return planTraeSkill(s, "trae-cn", uninstall)
+}
+
+func planTraeSkill(s Scope, owner string, uninstall bool) ([]Change, error) {
+	if !s.Global && owner == "trae-cn" {
+		return PlanSharedSkill(s, owner, uninstall)
+	}
+	root := filepath.Join(s.Project, ".trae")
+	if s.Global {
+		var err error
+		root, err = userdirs.AgentDir(owner)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return planSkillAsset(s, filepath.Join(root, "skills"), "trae-skill", owner, skillContent, uninstall)
+}
+
 func init() {
 	for _, name := range []string{"trae", "trae-cn"} {
 		name := name
 		host, _ := hook.Lookup(name)
-		RegisterAgent(Agent{Name: name, Method: NativeHooks, Capabilities: host.Capabilities,
+		caps := host.Capabilities
+		caps.Skill = hook.Support{Level: hook.Limited, Detail: "User .trae/skills or .trae-cn/skills; international project .trae/skills; CN shared project .agents/skills requires enabling the shared-directory setting"}
+		RegisterAgent(Agent{Name: name, Method: NativeHooks, Capabilities: caps,
+			PlanSkill: func(s Scope, uninstall bool) ([]Change, error) { return planTraeSkill(s, name, uninstall) },
 			Plan: func(s Scope, commands Commands, uninstall bool) ([]Change, error) {
 				return planTrae(s, commands, name, uninstall)
 			}, PlanMCP: PlanTraeMCP})

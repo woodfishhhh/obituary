@@ -148,7 +148,10 @@ func ClaudeMCPFile() (string, error) {
 
 // CodexSkillsDir follows the shared Agent Skills convention, independently of
 // CODEX_HOME (which controls Codex configuration, not shared skills).
-func CodexSkillsDir() (string, error) {
+func CodexSkillsDir() (string, error) { return AgentSkillsDir() }
+
+// AgentSkillsDir is the shared user skill root, independent of host config roots.
+func AgentSkillsDir() (string, error) {
 	home, err := Home()
 	return filepath.Join(home, ".agents", "skills"), err
 }

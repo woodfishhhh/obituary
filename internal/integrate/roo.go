@@ -43,14 +43,16 @@ func PlanRooMCP(s Scope, executable string, uninstall bool) (changes []Change, e
 	return []Change{ch}, err
 }
 
+func PlanRooSkill(s Scope, uninstall bool) ([]Change, error) {
+	return PlanSharedSkill(s, "roo", uninstall)
+}
+
 func init() {
-	// PlanRoo installs rules, not runtime callbacks; unsupportedAgentSkill
-	// leaves Skill discovery unverified (see docs/milestones/m4-agents.md).
 	noHook := hook.Support{Detail: "rules only; runtime hooks are not installed"}
-	RegisterAgent(Agent{Name: "roo", Method: RulesAndMCP, Plan: PlanRoo, PlanMCP: PlanRooMCP, PlanSkill: unsupportedAgentSkill("roo"), Capabilities: hook.Capabilities{
+	RegisterAgent(Agent{Name: "roo", Method: RulesAndMCP, Plan: PlanRoo, PlanMCP: PlanRooMCP, PlanSkill: PlanRooSkill, Capabilities: hook.Capabilities{
 		DeleteGuard: noHook, WriteObservation: noHook, SessionStart: noHook, Stop: noHook, SessionEnd: noHook,
 		Context: hook.Support{Level: hook.Limited, Detail: "global/project .roo/rules/obituary.md"},
 		MCP:     hook.Support{Level: hook.Limited, Detail: "project .roo/mcp.json; global Edit Global MCP manual steps"},
-		Skill:   hook.Support{Detail: "The installed rules describe Obituary; Skill installation is not implemented for this agent"},
+		Skill:   hook.Support{Level: hook.Supported, Detail: "Shared .agents/skills at user and project scope"},
 	}})
 }

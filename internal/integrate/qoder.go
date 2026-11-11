@@ -188,11 +188,30 @@ func planQoderMCP(s Scope, executable, agent string, uninstall bool) ([]Change, 
 	return changes, nil
 }
 
+func PlanQoderSkill(s Scope, uninstall bool) ([]Change, error) {
+	return planQoderSkill(s, "qoder", uninstall)
+}
+
+func PlanQoderCNSkill(s Scope, uninstall bool) ([]Change, error) {
+	return planQoderSkill(s, "qoder-cn", uninstall)
+}
+
+func planQoderSkill(s Scope, owner string, uninstall bool) ([]Change, error) {
+	root, err := qoderDirectory(s, owner)
+	if err != nil {
+		return nil, err
+	}
+	return planSkillAsset(s, filepath.Join(root, "skills"), "qoder-skill", owner, skillContent, uninstall)
+}
+
 func init() {
 	for _, name := range []string{"qoder", "qoder-cn"} {
 		host, _ := hook.Lookup(name)
-		RegisterAgent(Agent{Name: name, Method: NativeHooks, Capabilities: host.Capabilities,
-			Plan: func(s Scope, c Commands, uninstall bool) ([]Change, error) { return planQoder(s, c, name, uninstall) },
+		caps := host.Capabilities
+		caps.Skill = hook.Support{Level: hook.Supported, Detail: "User config root skills (QODER_CONFIG_DIR / QODERCN_CONFIG_DIR); shared project .qoder/skills"}
+		RegisterAgent(Agent{Name: name, Method: NativeHooks, Capabilities: caps,
+			PlanSkill: func(s Scope, uninstall bool) ([]Change, error) { return planQoderSkill(s, name, uninstall) },
+			Plan:      func(s Scope, c Commands, uninstall bool) ([]Change, error) { return planQoder(s, c, name, uninstall) },
 			PlanMCP: func(s Scope, exe string, uninstall bool) ([]Change, error) {
 				return planQoderMCP(s, exe, name, uninstall)
 			},

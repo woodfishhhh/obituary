@@ -62,12 +62,22 @@ func PlanKimiSkill(s Scope, uninstall bool) ([]Change, error) {
 			return nil, err
 		}
 	}
-	return PlanManagedAssets(nativeSpecialScope(s, root), []ManagedAsset{{Path: filepath.Join(root, "obituary", "SKILL.md"), ID: "kimi-skill", Owner: "kimi", Version: "1", Content: skillContent}}, uninstall)
+	shared := filepath.Join(s.Project, ".agents", "skills")
+	if s.Global {
+		var err error
+		shared, err = userdirs.AgentSkillsDir()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return planMigratedSharedSkill(s, shared, root, "kimi-skill", "kimi", uninstall)
 }
 
 func init() {
 	host, _ := hook.Lookup("kimi")
-	RegisterAgent(Agent{Name: "kimi", Method: NativeHooks, Capabilities: host.Capabilities, Plan: PlanKimi, PlanMCP: PlanKimiMCP, PlanSkill: PlanKimiSkill})
+	caps := host.Capabilities
+	caps.Skill = hook.Support{Level: hook.Limited, Detail: "Shared .agents/skills; user ~/.config/agents/skills takes precedence unless merge_all_available_skills is enabled"}
+	RegisterAgent(Agent{Name: "kimi", Method: NativeHooks, Capabilities: caps, Plan: PlanKimi, PlanMCP: PlanKimiMCP, PlanSkill: PlanKimiSkill})
 }
 
 var kimiAdapter = tomlHookAdapter{

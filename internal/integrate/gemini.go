@@ -50,13 +50,20 @@ func PlanGeminiSkill(s Scope, uninstall bool) ([]Change, error) {
 	if err != nil {
 		return nil, err
 	}
-	return PlanManagedAssets(s, []ManagedAsset{{Path: filepath.Join(dir, "skills", "obituary", "SKILL.md"), ID: "gemini-obituary-skill", Owner: "gemini", Version: "1", Content: skillContent}}, uninstall)
+	root := filepath.Join(s.Project, ".agents", "skills")
+	if s.Global {
+		root, err = userdirs.GeminiSkillsDir()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return planMigratedSharedSkill(s, root, filepath.Join(dir, "skills"), "gemini-obituary-skill", "gemini", uninstall)
 }
 
 func init() {
 	host, _ := hook.Lookup("gemini")
 	capabilities := host.Capabilities
 	capabilities.MCP = hook.Support{Level: hook.Supported, Detail: "mcpServers in .gemini/settings.json; shares file with hooks"}
-	capabilities.Skill = hook.Support{Level: hook.Supported, Detail: ".gemini/skills, including GEMINI_CLI_HOME override"}
+	capabilities.Skill = hook.Support{Level: hook.Supported, Detail: "Shared .agents/skills; GEMINI_CLI_HOME redirects the user home; owned .gemini copies migrate"}
 	RegisterAgent(Agent{Name: "gemini", Method: NativeHooks, Capabilities: capabilities, Plan: PlanGemini, PlanMCP: PlanGeminiMCP, PlanSkill: PlanGeminiSkill})
 }

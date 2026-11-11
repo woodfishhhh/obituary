@@ -52,6 +52,9 @@ func skillReceipt(content []byte) []byte {
 
 func planSkillContent(s Scope, agent string, content []byte, uninstall bool) ([]Change, error) {
 	path, err := skillPath(s, agent)
+	if err == nil && agent == "codex" {
+		return planSkillAsset(s, filepath.Dir(filepath.Dir(path)), sharedSkillID, agent, content, uninstall)
+	}
 	if err != nil {
 		return nil, err
 	}

@@ -107,7 +107,7 @@ func TestKimiSkillDiscoveryAndOwnership(t *testing.T) {
 		if global {
 			root = home
 		}
-		path := filepath.Join(root, ".kimi", "skills", "obituary", "SKILL.md")
+		path := filepath.Join(root, ".agents", "skills", "obituary", "SKILL.md")
 		plan, err := PlanKimiSkill(s, false)
 		applyIntegration(t, plan, err)
 		if read(t, path) != string(skillContent) {

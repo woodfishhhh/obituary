@@ -19,3 +19,7 @@ func TestWindsurfInstallation(t *testing.T) {
 		t.Fatal("rules advertised as guard")
 	}
 }
+
+func TestWindsurfSkillTargets(t *testing.T) {
+	checkAgentSkillTargets(t, "windsurf")
+}

@@ -26,3 +26,11 @@ func TestRooInstallation(t *testing.T) {
 		t.Fatal("rules advertised as guard")
 	}
 }
+
+func TestRooSkillTargets(t *testing.T) {
+	checkAgentSkillTargets(t, "roo")
+}
+
+func TestRooSkillSharedOwners(t *testing.T) {
+	checkSharedSkillOwners(t, Scope{Project: t.TempDir()}, "codex", "roo")
+}

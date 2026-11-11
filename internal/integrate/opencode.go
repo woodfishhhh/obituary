@@ -90,9 +90,14 @@ func PlanOpenCodeMCP(s Scope, executable string, uninstall bool) ([]Change, erro
 	return []Change{ch}, err
 }
 
+func PlanOpenCodeSkill(s Scope, uninstall bool) ([]Change, error) {
+	return PlanSharedSkill(s, "opencode", uninstall)
+}
+
 func init() {
 	host, _ := hook.Lookup("opencode")
 	caps := host.Capabilities
+	caps.Skill = hook.Support{Level: hook.Supported, Detail: "Shared .agents/skills at user and project scope"}
 	caps.DeleteGuard.Detail = "V1 >=1.18.29 error / V2 Tool.Error; OBIT_OPENCODE_LOCAL=1 and OBIT_OPENCODE_SHELL=bash or powershell require verified local backend"
 	caps.WriteObservation.Detail = "Successful write/edit result only; V1 output or V2 result content; local backend opt-in required; apply_patch is skipped"
 	caps.SessionStart.Detail = "V1 session.created / V2 first prompt are observation-only; processing awaits deferred-context support"
@@ -100,5 +105,5 @@ func init() {
 	caps.SessionEnd.Detail = "V1 session.deleted handles persistent-session deletion; V2 uses idle cleanup only"
 	caps.Context.Detail = "V1 tool output / V2 result content; startup context awaits deferred delivery"
 	caps.MCP = hook.Support{Level: hook.Supported, Detail: "Native JSONC mcp command array; ambiguous layers require manual selection"}
-	RegisterAgent(Agent{Name: "opencode", Method: Plugin, Capabilities: caps, Plan: PlanOpenCode, PlanMCP: PlanOpenCodeMCP, PlanSkill: unsupportedPluginSkill("opencode")})
+	RegisterAgent(Agent{Name: "opencode", Method: Plugin, Capabilities: caps, Plan: PlanOpenCode, PlanMCP: PlanOpenCodeMCP, PlanSkill: PlanOpenCodeSkill})
 }

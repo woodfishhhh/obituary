@@ -209,14 +209,19 @@ func PlanCopilotSkill(s Scope, uninstall bool) ([]Change, error) {
 	if err != nil {
 		return nil, err
 	}
-	return PlanManagedAssets(s, []ManagedAsset{{Path: filepath.Join(dir, "skills", "obituary", "SKILL.md"),
-		ID: "copilot-obituary-skill", Owner: "copilot", Version: "1", Content: skillContent}}, uninstall)
+	root := filepath.Join(s.Project, ".agents", "skills")
+	if s.Global {
+		root, err = userdirs.AgentSkillsDir()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return planMigratedSharedSkill(s, root, filepath.Join(dir, "skills"), "copilot-obituary-skill", "copilot", uninstall)
 }
-
 func init() {
 	host, _ := hook.Lookup("copilot")
 	capabilities := host.Capabilities
 	capabilities.MCP = hook.Support{Level: hook.Limited, Detail: "Portable mcpServers for CLI/current VS Code Copilot harness; legacy Local harness profile configuration remains manual"}
-	capabilities.Skill = hook.Support{Level: hook.Supported, Detail: ".github/skills or COPILOT_HOME/skills"}
+	capabilities.Skill = hook.Support{Level: hook.Supported, Detail: "Shared .agents/skills at user and project scope; owned previous host-specific copies migrate"}
 	RegisterAgent(Agent{Name: "copilot", Method: NativeHooks, Capabilities: capabilities, Plan: PlanCopilot, PlanMCP: PlanCopilotMCP, PlanSkill: PlanCopilotSkill})
 }

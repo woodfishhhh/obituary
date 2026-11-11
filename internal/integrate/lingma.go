@@ -71,7 +71,17 @@ func PlanLingmaMCP(_ Scope, executable string, uninstall bool) ([]Change, error)
 	return nil, manualf("Lingma IDE/plugin MCP requires a manual step: Personal Settings > MCP Servers > Add > custom JSON; add mcpServers.obituary = %s after checking the name is unused; no physical path was assumed", entry)
 }
 
+func PlanLingmaSkill(s Scope, uninstall bool) ([]Change, error) {
+	root, err := qoderDirectory(s, "lingma")
+	if err != nil {
+		return nil, err
+	}
+	return planSkillAsset(s, filepath.Join(root, "skills"), "lingma-skill", "lingma", skillContent, uninstall)
+}
+
 func init() {
 	host, _ := hook.Lookup("lingma")
-	RegisterAgent(Agent{Name: "lingma", Method: NativeHooks, Capabilities: host.Capabilities, Plan: PlanLingma, PlanMCP: PlanLingmaMCP})
+	caps := host.Capabilities
+	caps.Skill = hook.Support{Level: hook.Supported, Detail: ".lingma/skills at user and project scope"}
+	RegisterAgent(Agent{Name: "lingma", Method: NativeHooks, Capabilities: caps, Plan: PlanLingma, PlanMCP: PlanLingmaMCP, PlanSkill: PlanLingmaSkill})
 }

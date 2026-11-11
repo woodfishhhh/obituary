@@ -9,3 +9,11 @@ func TestOMPInstallationLifecycle(t *testing.T) {
 
 	testPluginLifecycle(t, "omp")
 }
+
+func TestOMPSkillTargets(t *testing.T) {
+	checkAgentSkillTargets(t, "omp")
+}
+
+func TestOMPSkillSharedOwners(t *testing.T) {
+	checkSharedSkillOwners(t, Scope{Project: t.TempDir()}, "codex", "omp")
+}

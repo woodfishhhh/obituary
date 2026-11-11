@@ -139,13 +139,19 @@ func PlanDroidSkill(s Scope, uninstall bool) ([]Change, error) {
 	if err != nil {
 		return nil, err
 	}
-	return PlanManagedAssets(s, []ManagedAsset{{Path: filepath.Join(dir, "skills", "obituary", "SKILL.md"), ID: "droid-obituary-skill", Owner: "droid", Version: "1", Content: skillContent}}, uninstall)
+	root := filepath.Join(s.Project, ".agents", "skills")
+	if s.Global {
+		root, err = userdirs.AgentSkillsDir()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return planMigratedSharedSkill(s, root, filepath.Join(dir, "skills"), "droid-obituary-skill", "droid", uninstall)
 }
-
 func init() {
 	host, _ := hook.Lookup("droid")
 	capabilities := host.Capabilities
 	capabilities.MCP = hook.Support{Level: hook.Supported, Detail: ".factory/mcp.json; local stdio"}
-	capabilities.Skill = hook.Support{Level: hook.Supported, Detail: ".factory/skills, including FACTORY_HOME_OVERRIDE"}
+	capabilities.Skill = hook.Support{Level: hook.Supported, Detail: "Shared .agents/skills at user and project scope; owned previous host-specific copies migrate"}
 	RegisterAgent(Agent{Name: "droid", Method: NativeHooks, Capabilities: capabilities, Plan: PlanDroid, PlanMCP: PlanDroidMCP, PlanSkill: PlanDroidSkill})
 }

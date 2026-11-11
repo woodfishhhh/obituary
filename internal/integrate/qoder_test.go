@@ -351,3 +351,33 @@ func TestQoderRepeatedUninstall(t *testing.T) {
 		applyIntegration(t, p, err)
 	}
 }
+
+func TestQoderSkillTargets(t *testing.T) {
+	checkAgentSkillTargets(t, "qoder")
+}
+
+func TestQoderSkillSharedProjectOwners(t *testing.T) {
+	checkSharedSkillOwners(t, Scope{Project: t.TempDir()}, "qoder", "qoder-cn")
+}
+
+func TestQoderSkillUpgradeRetainsOwners(t *testing.T) {
+	s := Scope{Project: t.TempDir()}
+	root := filepath.Join(s.Project, ".qoder", "skills")
+	for _, name := range []string{"qoder", "qoder-cn"} {
+		plan, err := planSkillAsset(s, root, "qoder-skill", name, []byte("previous skill"), false)
+		applyIntegration(t, plan, err)
+	}
+	plan, err := PlanQoderSkill(s, false)
+	applyIntegration(t, plan, err)
+	plan, err = PlanQoderSkill(s, true)
+	applyIntegration(t, plan, err)
+	path := filepath.Join(root, "obituary", "SKILL.md")
+	if read(t, path) != string(skillContent) {
+		t.Fatal("shared upgrade lost payload or CN owner")
+	}
+	plan, err = PlanQoderCNSkill(s, true)
+	applyIntegration(t, plan, err)
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatal("last owner retained upgraded skill", err)
+	}
+}

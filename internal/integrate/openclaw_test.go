@@ -81,3 +81,11 @@ func TestOpenClawPluginDeferredContext(t *testing.T) {
 	t.Parallel()
 	testPluginContext(t, "openclaw")
 }
+
+func TestOpenClawSkillTargets(t *testing.T) {
+	checkAgentSkillTargets(t, "openclaw")
+}
+
+func TestOpenClawSkillSharedOwners(t *testing.T) {
+	checkSharedSkillOwners(t, Scope{Project: t.TempDir()}, "codex", "openclaw")
+}

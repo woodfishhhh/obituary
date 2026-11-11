@@ -81,7 +81,13 @@ func PlanClineMCP(s Scope, executable string, uninstall bool) (changes []Change,
 	return []Change{ch}, err
 }
 
+func PlanClineSkill(s Scope, uninstall bool) ([]Change, error) {
+	return PlanSharedSkill(s, "cline", uninstall)
+}
+
 func init() {
 	host, _ := hook.Lookup("cline")
-	RegisterAgent(Agent{Name: "cline", Method: Plugin, Capabilities: host.Capabilities, Plan: PlanCline, PlanMCP: PlanClineMCP, PlanSkill: unsupportedAgentSkill("cline")})
+	caps := host.Capabilities
+	caps.Skill = hook.Support{Level: hook.Supported, Detail: "Shared .agents/skills at user and project scope"}
+	RegisterAgent(Agent{Name: "cline", Method: Plugin, Capabilities: caps, Plan: PlanCline, PlanMCP: PlanClineMCP, PlanSkill: PlanClineSkill})
 }

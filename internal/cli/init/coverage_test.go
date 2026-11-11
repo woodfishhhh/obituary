@@ -59,7 +59,7 @@ func TestAgentCoverageMarkdownFiltersAndGroups(t *testing.T) {
 	for _, want := range []string{
 		"Context output is disabled; notices remain unacknowledged",
 		"Native JSONC mcp command array; ambiguous layers require manual selection",
-		"The installed rules describe Obituary; Skill installation is not implemented for this agent",
+		"Shared .agents/skills at user and project scope",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("capability detail missing: %q", want)

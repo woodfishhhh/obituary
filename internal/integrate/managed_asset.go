@@ -146,7 +146,9 @@ func planAssetOwners(file, receipt Change, asset ManagedAsset, requested []strin
 		}
 	}
 	slices.Sort(owners)
-	if file.existed && len(owners) > 1 && !bytes.Equal(file.orig, asset.Content) {
+	// Portable skills carry identical embedded bytes for every participating host.
+	sharedSkillUpgrade := (asset.ID == sharedSkillID || asset.ID == "qoder-skill") && bytes.Equal(asset.Content, skillContent)
+	if file.existed && len(owners) > 1 && !bytes.Equal(file.orig, asset.Content) && !sharedSkillUpgrade {
 		return nil, fmt.Errorf("%s is shared by %s; a different payload requires coordinated installation", asset.Path, strings.Join(owners, ", "))
 	}
 	finalState := assetReceipt{Schema: max(1, asset.receiptSchema), ID: asset.ID, File: filepath.Base(asset.Path), Version: asset.Version, Owners: owners, SHA256: assetHash(asset.Content)}
@@ -182,6 +184,9 @@ func planAssetOwners(file, receipt Change, asset ManagedAsset, requested []strin
 func assetHash(data []byte) string { return fmt.Sprintf("%x", sha256.Sum256(data)) }
 
 func decodeAssetReceipt(data []byte, asset ManagedAsset) (assetReceipt, bool) {
+	if asset.ID == sharedSkillID && !bytes.HasPrefix(bytes.TrimSpace(data), []byte("{")) {
+		return decodeLegacySharedSkill(data, asset)
+	}
 	var state assetReceipt
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.DisallowUnknownFields()

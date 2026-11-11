@@ -165,8 +165,8 @@ func testPluginLifecycle(t *testing.T, agent string) {
 			if err != nil || Pending(plan) {
 				t.Fatalf("uninstall not idempotent: %v", err)
 			}
-			if _, err := a.PlanSkill(s, false); err == nil {
-				t.Fatal("unverified skill reported installed")
+			if _, err := a.PlanSkill(s, false); err != nil {
+				t.Fatal("verified skill planning failed", err)
 			}
 		})
 	}

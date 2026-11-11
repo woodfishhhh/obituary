@@ -78,3 +78,30 @@ func TestOpenClawValidatesOverrides(t *testing.T) {
 		})
 	}
 }
+
+func TestOpenClawSharedSkillsIsolation(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("OBIT_USER_HOME", home)
+	t.Setenv("OPENCLAW_HOME", "")
+	t.Setenv("OPENCLAW_STATE_DIR", "")
+	t.Setenv("OPENCLAW_PROFILE", "")
+	got, shared, err := OpenClawSkillsDir()
+	if err != nil || !shared || got != filepath.Join(home, ".agents", "skills") {
+		t.Fatalf("default: %q %t %v", got, shared, err)
+	}
+	custom := filepath.Join(home, "redirected")
+	t.Setenv("OPENCLAW_HOME", custom)
+	got, shared, err = OpenClawSkillsDir()
+	if err != nil || !shared || got != filepath.Join(custom, ".agents", "skills") {
+		t.Fatalf("home override: %q %t %v", got, shared, err)
+	}
+	t.Setenv("OPENCLAW_STATE_DIR", filepath.Join(home, "profile"))
+	got, shared, err = OpenClawSkillsDir()
+	if err != nil || shared || got != filepath.Join(home, "profile", "skills") {
+		t.Fatalf("profile: %q %t %v", got, shared, err)
+	}
+	t.Setenv("OPENCLAW_STATE_DIR", home+":stream")
+	if _, _, err := OpenClawSkillsDir(); err == nil {
+		t.Fatal("accepted unstable state")
+	}
+}

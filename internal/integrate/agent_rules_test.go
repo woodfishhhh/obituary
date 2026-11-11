@@ -367,11 +367,8 @@ func TestAgentMCPSafety(t *testing.T) {
 			}
 		})
 	}
-	for _, agent := range []string{"hermes", "cline", "kilocode", "roo", "windsurf"} {
-		a, _ := LookupAgent(agent)
-		if _, err := a.PlanSkill(Scope{Project: t.TempDir()}, false); err == nil {
-			t.Fatalf("%s claimed unverified Skill", agent)
-		}
+	if _, err := PlanWindsurfSkill(Scope{Global: true}, false); err == nil {
+		t.Fatal("claimed an unverified user Skill directory")
 	}
 }
 

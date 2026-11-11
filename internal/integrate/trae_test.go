@@ -177,3 +177,11 @@ func TestTraeMCPLifecycleAndManualSteps(t *testing.T) {
 		t.Fatal("unverified spaced MCP command accepted")
 	}
 }
+
+func TestTraeSkillTargets(t *testing.T) {
+	checkAgentSkillTargets(t, "trae")
+}
+
+func TestTraeCNSkillSharedOwners(t *testing.T) {
+	checkSharedSkillOwners(t, Scope{Project: t.TempDir()}, "codex", "trae-cn")
+}

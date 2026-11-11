@@ -87,7 +87,20 @@ func PlanAntigravityMCP(s Scope, executable string, uninstall bool) ([]Change, e
 	return []Change{ch}, err
 }
 
+func PlanAntigravitySkill(s Scope, uninstall bool) ([]Change, error) {
+	if !s.Global {
+		return PlanSharedSkill(s, "antigravity", uninstall)
+	}
+	root, err := userdirs.AntigravityDir()
+	if err != nil {
+		return nil, err
+	}
+	return planSkillAsset(s, filepath.Join(root, "skills"), "antigravity-skill", "antigravity", skillContent, uninstall)
+}
+
 func init() {
 	host, _ := hook.Lookup("antigravity")
-	RegisterAgent(Agent{Name: "antigravity", Method: NativeHooks, Capabilities: host.Capabilities, Plan: PlanAntigravity, PlanMCP: PlanAntigravityMCP})
+	caps := host.Capabilities
+	caps.Skill = hook.Support{Level: hook.Supported, Detail: "User ~/.gemini/config/skills; shared project .agents/skills"}
+	RegisterAgent(Agent{Name: "antigravity", Method: NativeHooks, Capabilities: caps, Plan: PlanAntigravity, PlanMCP: PlanAntigravityMCP, PlanSkill: PlanAntigravitySkill})
 }

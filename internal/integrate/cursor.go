@@ -65,13 +65,19 @@ func PlanCursorSkill(s Scope, uninstall bool) ([]Change, error) {
 	if err != nil {
 		return nil, err
 	}
-	return PlanManagedAssets(s, []ManagedAsset{{Path: filepath.Join(dir, "skills", "obituary", "SKILL.md"), ID: "cursor-obituary-skill", Owner: "cursor", Version: "1", Content: skillContent}}, uninstall)
+	root := filepath.Join(s.Project, ".agents", "skills")
+	if s.Global {
+		root, err = userdirs.AgentSkillsDir()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return planMigratedSharedSkill(s, root, filepath.Join(dir, "skills"), "cursor-obituary-skill", "cursor", uninstall)
 }
-
 func init() {
 	host, _ := hook.Lookup("cursor")
 	capabilities := host.Capabilities
 	capabilities.MCP = hook.Support{Level: hook.Supported, Detail: ".cursor/mcp.json; local stdio"}
-	capabilities.Skill = hook.Support{Level: hook.Supported, Detail: ".cursor/skills; user skills are local and not automatically synced to Cloud Agents"}
+	capabilities.Skill = hook.Support{Level: hook.Supported, Detail: "Shared .agents/skills at user and project scope; owned previous host-specific copies migrate"}
 	RegisterAgent(Agent{Name: "cursor", Method: NativeHooks, Capabilities: capabilities, Plan: PlanCursor, PlanMCP: PlanCursorMCP, PlanSkill: PlanCursorSkill})
 }

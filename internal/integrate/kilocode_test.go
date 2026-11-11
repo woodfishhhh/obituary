@@ -94,3 +94,11 @@ func TestKiloCodePluginRuntime(t *testing.T) {
 	t.Parallel()
 	checkJSPlugin(t, "kilocode", kiloCodePlugin)
 }
+
+func TestKiloCodeSkillTargets(t *testing.T) {
+	checkAgentSkillTargets(t, "kilocode")
+}
+
+func TestKiloCodeSkillSharedOwners(t *testing.T) {
+	checkSharedSkillOwners(t, Scope{Project: t.TempDir()}, "codex", "kilocode")
+}

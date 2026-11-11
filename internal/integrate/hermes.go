@@ -123,7 +123,20 @@ func PlanHermesMCP(s Scope, executable string, uninstall bool) (changes []Change
 	return planHermesConfigParents(bound, ch, "mcp", uninstall)
 }
 
+func PlanHermesSkill(s Scope, uninstall bool) ([]Change, error) {
+	if !s.Global {
+		return PlanSharedSkill(s, "hermes", uninstall)
+	}
+	root, err := userdirs.HermesDir()
+	if err != nil {
+		return nil, err
+	}
+	return planSkillAsset(s, filepath.Join(root, "skills"), "hermes-skill", "hermes", skillContent, uninstall)
+}
+
 func init() {
 	host, _ := hook.Lookup("hermes")
-	RegisterAgent(Agent{Name: "hermes", Method: Plugin, Capabilities: host.Capabilities, Plan: PlanHermes, PlanMCP: PlanHermesMCP, PlanSkill: unsupportedAgentSkill("hermes")})
+	caps := host.Capabilities
+	caps.Skill = hook.Support{Level: hook.Limited, Detail: "HERMES_HOME/skills (Windows default LOCALAPPDATA/hermes/skills); shared project .agents/skills requires project trust"}
+	RegisterAgent(Agent{Name: "hermes", Method: Plugin, Capabilities: caps, Plan: PlanHermes, PlanMCP: PlanHermesMCP, PlanSkill: PlanHermesSkill})
 }

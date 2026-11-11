@@ -20,6 +20,168 @@ import (
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
+func checkAgentSkillTargets(t *testing.T, agent string) {
+	t.Helper()
+	names := []string{agent}
+	if agent == "qoder" || agent == "trae" {
+		names = append(names, agent+"-cn")
+	}
+	for _, name := range names {
+		for _, global := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/global=%t", name, global), func(t *testing.T) {
+				root := agentGoldenEnvironment(t)
+				s := Scope{Global: global, Project: filepath.Join(root, "project")}
+				if name == "qoderwork" && !global || name == "windsurf" && global {
+					a, _ := LookupAgent(name)
+					if _, err := a.PlanSkill(s, false); err == nil {
+						t.Fatal("accepted undocumented project skill")
+					}
+					return
+				}
+				checkSkillLifecycle(t, name, s, expectedSkillRoot(root, name, global))
+			})
+		}
+	}
+}
+
+func expectedSkillRoot(root, name string, global bool) string {
+	if !global {
+		folder := ".agents"
+		switch name {
+		case "lingma":
+			folder = ".lingma"
+		case "qoder", "qoder-cn":
+			folder = ".qoder"
+		case "trae":
+			folder = ".trae"
+		case "windsurf":
+			folder = ".windsurf"
+		}
+		return filepath.Join(root, "project", folder, "skills")
+	}
+	switch name {
+	case "antigravity":
+		return filepath.Join(root, "OBIT_USER_HOME", ".gemini", "config", "skills")
+	case "hermes":
+		return filepath.Join(root, "HERMES_HOME", "skills")
+	case "openclaw":
+		return filepath.Join(root, "OPENCLAW_STATE_DIR", "skills")
+	case "qoder":
+		return filepath.Join(root, "QODER_CONFIG_DIR", "skills")
+	case "qoder-cn":
+		return filepath.Join(root, "QODERCN_CONFIG_DIR", "skills")
+	case "lingma", "trae", "trae-cn", "qoderwork":
+		return filepath.Join(root, "OBIT_USER_HOME", "."+name, "skills")
+	default:
+		return filepath.Join(root, "OBIT_USER_HOME", ".agents", "skills")
+	}
+}
+
+func applyPreservedSkill(t *testing.T, plan []Change, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if PreservedError(plan) == nil {
+		t.Fatal("missing user-content preservation report")
+	}
+	if err := Apply(plan); err == nil {
+		t.Fatal("unresolved preservation must be reported")
+	}
+}
+
+func checkSkillLifecycle(t *testing.T, agent string, s Scope, root string) {
+	t.Helper()
+	a, ok := LookupAgent(agent)
+	if !ok || a.PlanSkill == nil {
+		t.Fatal("missing skill planner", agent)
+	}
+	path := filepath.Join(root, "obituary", "SKILL.md")
+	plan, err := a.PlanSkill(s, false)
+	if err != nil || len(plan) == 0 || plan[0].Path != path {
+		t.Fatalf("skill path: %v %v; want %s", plan, err, path)
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatal("plan wrote skill", err)
+	}
+	applyIntegration(t, plan, nil)
+	if read(t, path) != string(skillContent) {
+		t.Fatal("skill bytes changed")
+	}
+	plan, err = a.PlanSkill(s, false)
+	if err != nil || Pending(plan) {
+		t.Fatal("skill install is not idempotent", err)
+	}
+	status, err := InspectExtension(s, agent, "skill", "obit")
+	if err != nil || !status.Installed || !status.Current {
+		t.Fatalf("skill status: %+v %v", status, err)
+	}
+	plan, err = a.PlanSkill(s, true)
+	applyIntegration(t, plan, err)
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatal("owned skill retained", err)
+	}
+	checkSkillUserContent(t, a, s, path)
+}
+
+func checkSkillUserContent(t *testing.T, a Agent, s Scope, path string) {
+	t.Helper()
+	for _, owned := range []bool{false, true} {
+		if owned {
+			// The previous unowned file belongs to this test fixture.
+			if err := os.Remove(path); err != nil {
+				t.Fatal(err)
+			}
+			plan, err := a.PlanSkill(s, false)
+			applyIntegration(t, plan, err)
+		}
+		writeIntegrationFile(t, path, "user skill")
+		if _, err := a.PlanSkill(s, false); err == nil {
+			t.Fatal("accepted user content", a.Name)
+		}
+		plan, err := a.PlanSkill(s, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = Apply(plan)
+		if read(t, path) != "user skill" {
+			t.Fatal("removed user skill", a.Name)
+		}
+	}
+}
+
+func checkSharedSkillOwners(t *testing.T, s Scope, names ...string) {
+	t.Helper()
+	var combined []Change
+	for _, name := range names {
+		a, _ := LookupAgent(name)
+		plan, err := a.PlanSkill(s, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		combined = append(combined, plan...)
+	}
+	plan, err := ComposeAgentChanges(combined)
+	applyIntegration(t, plan, err)
+	path := plan[0].Path
+	for i, name := range names {
+		status, err := InspectExtension(s, name, "skill", "obit")
+		if err != nil || !status.Installed || !status.Current {
+			t.Fatalf("shared skill status for %s: %+v %v", name, status, err)
+		}
+		a, _ := LookupAgent(name)
+		plan, err := a.PlanSkill(s, true)
+		applyIntegration(t, plan, err)
+		if i == len(names)-1 {
+			if _, err := os.Stat(path); !os.IsNotExist(err) {
+				t.Fatal("last owner retained skill", err)
+			}
+		} else if read(t, path) != string(skillContent) {
+			t.Fatal("removed another owner's skill")
+		}
+	}
+}
+
 func ownershipCommands(agent string) Commands {
 	return Commands{Native: `"C:/tools/obit.exe" hook ` + agent, Executable: `C:\tools\obit.exe`}
 }

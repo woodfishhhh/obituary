@@ -75,3 +75,11 @@ func checkJSPlugin(t *testing.T, agent string, source []byte) {
 	}
 	t.Log(string(out))
 }
+
+func TestClineSkillTargets(t *testing.T) {
+	checkAgentSkillTargets(t, "cline")
+}
+
+func TestClineSkillSharedOwners(t *testing.T) {
+	checkSharedSkillOwners(t, Scope{Project: t.TempDir()}, "codex", "cline")
+}

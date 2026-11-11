@@ -38,3 +38,7 @@ func TestQoderWorkManualCapabilities(t *testing.T) {
 		}
 	}
 }
+
+func TestQoderWorkSkillTargets(t *testing.T) {
+	checkAgentSkillTargets(t, "qoderwork")
+}

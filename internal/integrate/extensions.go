@@ -3,6 +3,8 @@ package integrate
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -54,8 +56,8 @@ func InspectExtension(s Scope, agent, kind, executable string) (ExtensionStatus,
 		return ExtensionStatus{}, err
 	}
 	status := ExtensionStatus{Installed: Pending(remove), Detail: "not installed"}
-	if kind == "skill" && (agent == "claude" || agent == "codex") {
-		status.Installed = remove[0].delete // an orphaned receipt is not an installed skill
+	if kind == "skill" {
+		status.Installed = installedSkillOwner(remove)
 	}
 	if !status.Installed {
 		for _, c := range remove {
@@ -76,6 +78,28 @@ func InspectExtension(s Scope, agent, kind, executable string) (ExtensionStatus,
 		status.Detail = "installed, outdated"
 	}
 	return status, nil
+}
+
+func installedSkillOwner(changes []Change) bool {
+	for _, ch := range changes {
+		if !ch.existed || filepath.Base(ch.Path) != "SKILL.md" {
+			continue
+		}
+		if ch.delete {
+			return true
+		}
+		if ch.shared != nil {
+			p := ch.shared.asset
+			state, valid := decodeAssetReceipt(p.receipt.orig, p.asset)
+			if valid && slices.Contains(state.Owners, p.asset.Owner) {
+				return true
+			}
+		}
+		if ch.asset != nil && ch.Action != "preserve" && Pending(changes) {
+			return true
+		}
+	}
+	return false
 }
 
 func hasManualChanges(changes []Change) bool {

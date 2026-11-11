@@ -67,9 +67,14 @@ func unsupportedPluginSkill(agent string) func(Scope, bool) ([]Change, error) {
 	}
 }
 
+func PlanPiSkill(s Scope, uninstall bool) ([]Change, error) {
+	return PlanSharedSkill(s, "pi", uninstall)
+}
+
 func init() {
 	host, _ := hook.Lookup("pi")
 	caps := host.Capabilities
+	caps.Skill = hook.Support{Level: hook.Supported, Detail: "Shared .agents/skills at user and project scope"}
 	caps.DeleteGuard.Detail = "tool_call block/reason; requires OBIT_PI_LOCAL=1 and OBIT_PI_SHELL=bash or powershell after verifying the backend"
 	caps.WriteObservation.Detail = "Successful local write/edit tool_result; requires OBIT_PI_LOCAL=1; passive content delivery; apply_patch is skipped"
 	caps.SessionStart.Detail = "session_start uses stable sessionManager id and passive sendMessage with triggerTurn:false; local backend attestation required"
@@ -77,5 +82,5 @@ func init() {
 	caps.SessionEnd.Detail = "session_shutdown maps to silent SessionEnd with a 1.2-second subprocess budget"
 	caps.Context.Detail = "Passive tool_result content and session_start sendMessage"
 	caps.MCP = hook.Support{Level: hook.Supported, Detail: "Native user/project mcp.json with shared Pi/OMP ownership"}
-	RegisterAgent(Agent{Name: "pi", Method: Plugin, Capabilities: caps, Plan: PlanPi, PlanMCP: PlanPiMCP, PlanSkill: unsupportedPluginSkill("pi")})
+	RegisterAgent(Agent{Name: "pi", Method: Plugin, Capabilities: caps, Plan: PlanPi, PlanMCP: PlanPiMCP, PlanSkill: PlanPiSkill})
 }

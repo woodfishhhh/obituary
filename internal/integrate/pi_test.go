@@ -158,3 +158,11 @@ func TestPiMCPRejectsMalformedAndChangedConfig(t *testing.T) {
 	plan, err = PlanPiMCP(s, `C:\tools\obit.exe`, false)
 	applyIntegration(t, plan, err)
 }
+
+func TestPiSkillTargets(t *testing.T) {
+	checkAgentSkillTargets(t, "pi")
+}
+
+func TestPiSkillSharedOwners(t *testing.T) {
+	checkSharedSkillOwners(t, Scope{Project: t.TempDir()}, "codex", "pi")
+}

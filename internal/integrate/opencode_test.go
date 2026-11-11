@@ -70,3 +70,11 @@ func TestOpenCodeMCPInvalidAndAmbiguous(t *testing.T) {
 		t.Fatal("accepted ambiguous layers")
 	}
 }
+
+func TestOpenCodeSkillTargets(t *testing.T) {
+	checkAgentSkillTargets(t, "opencode")
+}
+
+func TestOpenCodeSkillSharedOwners(t *testing.T) {
+	checkSharedSkillOwners(t, Scope{Project: t.TempDir()}, "codex", "opencode")
+}

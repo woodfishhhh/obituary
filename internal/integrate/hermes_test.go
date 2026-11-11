@@ -203,3 +203,11 @@ func TestHermesPluginDeferredContext(t *testing.T) {
 	}
 	testPluginContext(t, "hermes")
 }
+
+func TestHermesSkillTargets(t *testing.T) {
+	checkAgentSkillTargets(t, "hermes")
+}
+
+func TestHermesSkillSharedOwners(t *testing.T) {
+	checkSharedSkillOwners(t, Scope{Project: t.TempDir()}, "codex", "hermes")
+}

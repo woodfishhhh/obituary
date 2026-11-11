@@ -35,3 +35,23 @@ func TestGeminiDirectory(t *testing.T) {
 		t.Fatal("ADS accepted", path)
 	}
 }
+
+func TestGeminiSharedSkillsDirectory(t *testing.T) {
+	home, custom := t.TempDir(), t.TempDir()
+	t.Setenv("OBIT_USER_HOME", home)
+	for _, override := range []string{"", custom} {
+		t.Setenv("GEMINI_CLI_HOME", override)
+		base := home
+		if override != "" {
+			base = custom
+		}
+		got, err := GeminiSkillsDir()
+		if err != nil || got != filepath.Join(base, ".agents", "skills") {
+			t.Fatalf("shared home: %q %v", got, err)
+		}
+	}
+	t.Setenv("GEMINI_CLI_HOME", custom+":stream")
+	if _, err := GeminiSkillsDir(); err == nil {
+		t.Fatal("accepted unstable home")
+	}
+}

@@ -36,10 +36,8 @@ func TestNativeSpecialInstallationBoundaries(t *testing.T) {
 			if _, err := registered.Plan(s, commands, false); err == nil {
 				t.Fatal("unsupported delete guard reported installed")
 			}
-			if agent == "trae" || agent == "trae-cn" || agent == "antigravity" {
-				if registered.PlanSkill != nil {
-					t.Fatal("unverified skill location enabled")
-				}
+			if registered.PlanSkill == nil {
+				t.Fatal("verified skill planner missing")
 			}
 		})
 	}

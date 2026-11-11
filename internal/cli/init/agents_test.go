@@ -294,7 +294,9 @@ func TestManualStatusFollowsInstallationEvidence(t *testing.T) {
 			before := clitest.TreeSnapshot(t, root)
 			status, err := (initcmd.Planner{Executable: executable}).InspectAgent(name, integrate.Scope{Global: true})
 			want := "manual"
-			if name == "windsurf" || name == "qoderwork" {
+			// QoderWork gets its user Skill by default, so only Windsurf has
+			// nothing written at user scope.
+			if name == "windsurf" {
 				want = "missing"
 			}
 			if err != nil || status.Installation != want || strings.Contains(status.Detail, "已安装") {

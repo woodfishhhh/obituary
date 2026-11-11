@@ -60,3 +60,7 @@ func TestLingmaMCPManualAndIndependentRoots(t *testing.T) {
 		t.Fatal("Lingma used CN project root", err)
 	}
 }
+
+func TestLingmaSkillTargets(t *testing.T) {
+	checkAgentSkillTargets(t, "lingma")
+}

@@ -168,3 +168,11 @@ func TestAntigravityMCPAndBoundaries(t *testing.T) {
 		t.Fatal("external plugin root accepted")
 	}
 }
+
+func TestAntigravitySkillTargets(t *testing.T) {
+	checkAgentSkillTargets(t, "antigravity")
+}
+
+func TestAntigravitySkillSharedOwners(t *testing.T) {
+	checkSharedSkillOwners(t, Scope{Project: t.TempDir()}, "codex", "antigravity")
+}

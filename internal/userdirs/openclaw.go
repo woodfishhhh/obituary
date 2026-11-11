@@ -63,6 +63,23 @@ func openClawPath(path string) (string, error) {
 	return directoryAbs(path)
 }
 
+// OpenClawSkillsDir keeps isolated Gateway profiles out of the default user's
+// shared catalog. The bool identifies the canonical shared receipt family.
+func OpenClawSkillsDir() (string, bool, error) {
+	root, err := OpenClawDir()
+	if err != nil {
+		return "", false, err
+	}
+	home, err := openClawHome()
+	if err != nil {
+		return "", false, err
+	}
+	if root == filepath.Join(home, ".openclaw") {
+		return filepath.Join(home, ".agents", "skills"), true, nil
+	}
+	return filepath.Join(root, "skills"), false, nil
+}
+
 func init() {
 	RegisterAgentDirectory(AgentDirectory{Name: "openclaw", Resolve: OpenClawDir})
 }

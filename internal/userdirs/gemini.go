@@ -13,6 +13,12 @@ func GeminiDir() (string, error) {
 	return filepath.Join(home, ".gemini"), nil
 }
 
+// GeminiSkillsDir follows the same redirected home as Gemini configuration.
+func GeminiSkillsDir() (string, error) {
+	home, err := agentDir("GEMINI_CLI_HOME", "")
+	return filepath.Join(home, ".agents", "skills"), err
+}
+
 func init() {
 	RegisterAgentDirectory(AgentDirectory{Name: "gemini", Resolve: GeminiDir})
 }

@@ -168,3 +168,17 @@ func TestDirectoryReadScanner(t *testing.T) {
 		t.Fatalf("stale exemption accepted: %v", got)
 	}
 }
+
+func TestAgentSkillsDirectory(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("OBIT_USER_HOME", home)
+	t.Setenv("CODEX_HOME", t.TempDir())
+	got, err := AgentSkillsDir()
+	if err != nil || got != filepath.Join(home, ".agents", "skills") {
+		t.Fatalf("shared skills: %q %v", got, err)
+	}
+	t.Setenv("OBIT_USER_HOME", home+":stream")
+	if _, err := AgentSkillsDir(); err == nil {
+		t.Fatal("accepted unstable home")
+	}
+}

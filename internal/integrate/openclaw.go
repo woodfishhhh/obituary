@@ -78,12 +78,28 @@ func PlanOpenClawMCP(s Scope, executable string, uninstall bool) ([]Change, erro
 	return []Change{{Path: config, Action: "preserve", Manual: true, Detail: "manual MCP step required: in the OpenClaw Control UI for " + config + ", " + operation + "; Gateway owns this JSON5 state; confirm native local Windows execution, then reload it yourself; project MCP activation also uses this Gateway configuration"}}, nil
 }
 
+func PlanOpenClawSkill(s Scope, uninstall bool) ([]Change, error) {
+	if !s.Global {
+		return PlanSharedSkill(s, "openclaw", uninstall)
+	}
+	root, shared, err := userdirs.OpenClawSkillsDir()
+	if err != nil {
+		return nil, err
+	}
+	id := "openclaw-skill"
+	if shared {
+		id = sharedSkillID
+	}
+	return planSkillAsset(s, root, id, "openclaw", skillContent, uninstall)
+}
+
 func init() {
 	host, _ := hook.Lookup("openclaw")
 	caps := host.Capabilities
+	caps.Skill = hook.Support{Level: hook.Supported, Detail: "Shared workspace .agents/skills; default-state user .agents/skills; isolated state uses OPENCLAW_STATE_DIR/skills"}
 	caps.DeleteGuard.Detail = "before_tool_call block/blockReason; manual Gateway activation plus OBIT_OPENCLAW_LOCAL=1 and OBIT_OPENCLAW_SHELL required; Code Mode skipped"
 	caps.Stop.Detail = "agent_end maps to silent Stop after local backend attestation"
 	caps.SessionEnd.Detail = "session_end maps to silent SessionEnd with a 1.2-second subprocess budget"
 	caps.MCP.Detail = "Manual Control UI mcp.servers entry; JSON5 and Gateway ownership prevent automatic edits"
-	RegisterAgent(Agent{Name: "openclaw", Method: Plugin, Capabilities: caps, Plan: PlanOpenClaw, PlanMCP: PlanOpenClawMCP, PlanSkill: unsupportedPluginSkill("openclaw")})
+	RegisterAgent(Agent{Name: "openclaw", Method: Plugin, Capabilities: caps, Plan: PlanOpenClaw, PlanMCP: PlanOpenClawMCP, PlanSkill: PlanOpenClawSkill})
 }

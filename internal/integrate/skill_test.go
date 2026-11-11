@@ -110,7 +110,7 @@ func TestSkillRecoversPendingCommit(t *testing.T) {
 							t.Fatal("pending receipt claimed user edit")
 						}
 						if uninstall {
-							applyIntegration(t, plan, err)
+							applyPreservedSkill(t, plan, err)
 						}
 						if read(t, path) != "user content" {
 							t.Fatal("pending receipt removed user edit")
@@ -200,7 +200,7 @@ func TestSkillPreservesUserEdits(t *testing.T) {
 		t.Fatal("overwrote user-edited skill")
 	}
 	plan, err = PlanSkill(scope, "codex", true)
-	applyIntegration(t, plan, err)
+	applyPreservedSkill(t, plan, err)
 	if !strings.Contains(read(t, path), "User additions") {
 		t.Fatal("uninstall removed user-edited skill")
 	}
@@ -211,7 +211,7 @@ func TestSkillPreservesUserEdits(t *testing.T) {
 	}
 	writeIntegrationFile(t, path, string(skillContent))
 	plan, err = PlanSkill(scope, "codex", true)
-	applyIntegration(t, plan, err)
+	applyPreservedSkill(t, plan, err)
 	if read(t, path) != string(skillContent) {
 		t.Fatal("unowned copy removed")
 	}
