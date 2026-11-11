@@ -3,8 +3,13 @@ package doctor
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/woodfishhhh/obituary/internal/cli/clitest"
+	"github.com/woodfishhhh/obituary/internal/integrate"
+	"github.com/woodfishhhh/obituary/internal/shortcut"
 )
 
 func TestStartMenuShortcutDiagnosis(t *testing.T) {
@@ -28,6 +33,47 @@ func TestStartMenuShortcutDiagnosis(t *testing.T) {
 			})
 			if check.Status != tc.status {
 				t.Fatal(check)
+			}
+		})
+	}
+}
+
+func TestShortcutDiagnosisUsesRelocatedAndLegacyReceipts(t *testing.T) {
+	for _, place := range []shortcut.Location{shortcut.StartMenu, shortcut.Desktop} {
+		t.Run(string(place), func(t *testing.T) {
+			root := t.TempDir()
+			t.Setenv("OBIT_HOME", filepath.Join(root, "data"))
+			t.Setenv("OBIT_USER_HOME", root)
+			t.Setenv("OBIT_START_MENU_DIR", filepath.Join(root, "Programs"))
+			exe := filepath.Join(root, "obit.exe")
+			clitest.WriteFixture(t, shortcut.Target(exe), "fixture")
+			plan, err := shortcut.Plan(clitest.ShortcutCodec{}, exe, place, true)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := integrate.Apply(plan); err != nil {
+				t.Fatal(err)
+			}
+			paths, _ := shortcut.Paths(place)
+			receipt, _ := shortcut.ReceiptPath(paths[0])
+			target := func(path string) (string, error) { data, err := os.ReadFile(path); return string(data), err }
+			for _, legacy := range []bool{false, true} {
+				if legacy {
+					old := integrate.ManagedAssetReceiptPath(paths[0])
+					if err := os.Rename(receipt, old); err != nil {
+						t.Fatal(err)
+					}
+					receipt = old
+				}
+				before := clitest.TreeSnapshot(t, root)
+				check := diagnoseShortcutAt(exe, place, target)
+				if check.Status != "PASS" || !reflect.DeepEqual(before, clitest.TreeSnapshot(t, root)) {
+					t.Fatal("diagnosis failed or changed files", check)
+				}
+			}
+			clitest.WriteFixture(t, receipt, "edited receipt")
+			if check := diagnoseShortcutAt(exe, place, target); check.Status != "WARN" {
+				t.Fatal("edited receipt accepted", check)
 			}
 		})
 	}

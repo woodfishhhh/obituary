@@ -5,6 +5,7 @@ package init_test
 import (
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	initcmd "github.com/woodfishhhh/obituary/internal/cli/init"
+	"github.com/woodfishhhh/obituary/internal/shortcut"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,6 +29,41 @@ func TestInitDefaultDesktopPlanAndOptOut(t *testing.T) {
 		for text, want := range map[string]bool{"context-menu:": tc.menu, "start-menu:": tc.shortcuts, "desktop:": tc.shortcuts, "HKCU Run": true} {
 			if strings.Contains(out, text) != want {
 				t.Fatalf("%v missing/wrong %s: %s", tc.args, text, out)
+			}
+		}
+	}
+}
+
+func TestInitShortcutDirectoriesContainOnlyLinks(t *testing.T) {
+	clitest.CommandDir(t)
+	root, exe := clitest.DoctorFixture(t)
+	t.Setenv("OBIT_START_MENU_DIR", filepath.Join(root, "Programs"))
+	clitest.WriteFixture(t, filepath.Join(root, "bin", "obit-gui.exe"), "fixture")
+	out, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(exe), "--dry-run")
+	if err != nil {
+		t.Fatal(out, err)
+	}
+	for _, place := range []shortcut.Location{shortcut.StartMenu, shortcut.Desktop} {
+		paths, _ := shortcut.Paths(place)
+		if strings.Contains(out, paths[0]+".obituary-asset") {
+			t.Fatal("plan puts receipt beside shortcut", out)
+		}
+		if _, err := os.Stat(paths[0]); !os.IsNotExist(err) {
+			t.Fatal("dry-run wrote shortcut", err)
+		}
+	}
+	for _, args := range [][]string{{"--yes"}, {"--uninstall", "--yes"}} {
+		if out, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(exe), args...); err != nil {
+			t.Fatal(out, err)
+		}
+		for _, place := range []shortcut.Location{shortcut.StartMenu, shortcut.Desktop} {
+			paths, _ := shortcut.Paths(place)
+			entries, err := os.ReadDir(filepath.Dir(paths[0]))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(args) == 1 && (len(entries) != 1 || entries[0].Name() != shortcut.Name) || len(args) > 1 && len(entries) != 0 {
+				t.Fatal("shortcut directory has auxiliary files", entries)
 			}
 		}
 	}

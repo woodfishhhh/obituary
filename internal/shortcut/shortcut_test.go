@@ -15,6 +15,7 @@ func (textCodec) Target(data []byte) (string, error)   { return string(data), ni
 func fixture(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
+	t.Setenv("OBIT_HOME", filepath.Join(root, "data"))
 	t.Setenv("OBIT_USER_HOME", root)
 	t.Setenv("OBIT_START_MENU_DIR", filepath.Join(root, "Programs"))
 	exe := filepath.Join(root, "obit.exe")
@@ -30,6 +31,54 @@ func writeLink(t *testing.T, path, target string) {
 	}
 	if err := os.WriteFile(path, []byte(target), 0600); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestShortcutDirectoriesContainOnlyLinks(t *testing.T) {
+	for _, place := range []Location{StartMenu, Desktop} {
+		t.Run(string(place), func(t *testing.T) {
+			exe := fixture(t)
+			paths, _ := Paths(place)
+			plan, err := Plan(textCodec{}, exe, place, true)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, change := range plan {
+				if filepath.Dir(change.Path) == filepath.Dir(paths[0]) && change.Path != paths[0] {
+					t.Errorf("plan puts auxiliary file beside shortcut: %s", change.Path)
+				}
+			}
+			if _, err := os.Stat(paths[0]); !os.IsNotExist(err) {
+				t.Fatal("planning wrote shortcut", err)
+			}
+			if err := integrate.Apply(plan); err != nil {
+				t.Fatal(err)
+			}
+			assertShortcutDirectory(t, paths[0], true)
+			plan, err = Plan(textCodec{}, exe, place, false)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := integrate.Apply(plan); err != nil {
+				t.Fatal(err)
+			}
+			assertShortcutDirectory(t, paths[0], false)
+		})
+	}
+}
+
+func assertShortcutDirectory(t *testing.T, path string, installed bool) {
+	t.Helper()
+	entries, err := os.ReadDir(filepath.Dir(path))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := 0
+	if installed {
+		want = 1
+	}
+	if len(entries) != want || installed && entries[0].Name() != filepath.Base(path) {
+		t.Errorf("shortcut directory contains unexpected files: %v", entries)
 	}
 }
 

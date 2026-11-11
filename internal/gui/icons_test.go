@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/woodfishhhh/obituary/internal/shortcut"
 )
 
 func TestSettingsReportsDesktopSwitches(t *testing.T) {
@@ -68,6 +71,7 @@ func TestShortcutPlansAndSettings(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	assertShortcutDirectories(t, true)
 	settings, err := a.Settings()
 	if err != nil || !settings.StartMenu || !settings.DesktopShortcut {
 		t.Fatal(settings, err)
@@ -81,9 +85,24 @@ func TestShortcutPlansAndSettings(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	assertShortcutDirectories(t, false)
 	settings, err = a.Settings()
 	if err != nil || settings.StartMenu || settings.DesktopShortcut {
 		t.Fatal(settings, err)
+	}
+}
+
+func assertShortcutDirectories(t *testing.T, installed bool) {
+	t.Helper()
+	for _, place := range []shortcut.Location{shortcut.StartMenu, shortcut.Desktop} {
+		paths, _ := shortcut.Paths(place)
+		entries, err := os.ReadDir(filepath.Dir(paths[0]))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if installed && (len(entries) != 1 || entries[0].Name() != shortcut.Name) || !installed && len(entries) != 0 {
+			t.Fatal("shortcut directory has auxiliary files", entries)
+		}
 	}
 }
 

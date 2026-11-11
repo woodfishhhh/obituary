@@ -29,6 +29,7 @@ type Change struct {
 	next         *Change // final receipt after a pending receipt and its dependent file
 	location     *integrationLocation
 	identity     os.FileInfo
+	relocated    *relocatedAssetPlan
 	readOnly     bool              // inspection skipped the identity snapshot; never executable
 	asset        *managedAssetPlan // owner intent, composed before generating a receipt transaction
 	shared       *sharedRegistrationPlan
@@ -83,7 +84,7 @@ func apply(changes []Change, afterWrite func(string) error) (err error) {
 			c.location = &p.location
 		}
 		err = p.checkOriginal(*c)
-		if err == nil && c.existed && c.Action != "unchanged" && c.claude == nil {
+		if err == nil && c.existed && c.Action != "unchanged" && c.claude == nil && c.relocated == nil {
 			err = p.backup(nil, false)
 		}
 		p.root.Close()

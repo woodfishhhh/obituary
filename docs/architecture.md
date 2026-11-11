@@ -283,6 +283,7 @@ agent ──stdio──► obit mcp ──► mcpPaths（只收绝对路径；�
    - 规则块的开始和结束标记必须各自独占一行；标记残缺、重复或夹在正文里就拒绝改写。改写时保留 BOM、换行风格（LF / CRLF）和块外的每个字节。
    - 共享的 MCP 注册旁边记一份归属回执（schema 2），写明哪几家装过。旧版本写的回执标为 `legacy-unverified`，不当作可信归属；最后一家已知的 agent 卸载时保留注册并提示用户核对，显式重装（如 `obit init --mcp`）可以补全归属。
    - 落盘按实际涉及的共享资源加锁（`<文件>.obituary-owners.lock`），在锁内重新核对正文和归属回执，一直持锁到注册、旁注文件和回执全部提交，两个同时运行的安装不会各自以为自己是唯一的主人。
+5. **开始菜单与桌面快捷方式**：归属回执放在数据目录的 `shortcut-receipts/<路径摘要>.obituary-asset`；摘要为绝对路径经 `pathutil.Abs`、`filepath.Clean` 和 ASCII 小写折叠后的 SHA-256。回执继续绑定快捷方式绝对路径、目标和内容摘要；包管理器或用户已有的快捷方式保持原样。新旧回执及快捷方式一起预检，在新回执旁的 `.lock` 锁内复核并按原来的原子写入协议提交。旧的相邻回执可只读识别，下一次写入先提交新回执，再删除核实过的旧回执；卸载移除已核实的快捷方式及回执。已核实的生成文件不留相邻备份，桌面与开始菜单只放 `.lnk`；其他集成文件继续使用原来的相邻回执和编号备份。
 
 ## 路径写法
 
@@ -327,6 +328,7 @@ agent ──stdio──► obit mcp ──► mcpPaths（只收绝对路径；�
 | `trusted_rules.json` | 已信任的 `.obitrules` 及其 SHA-256（版本 2，键是真实长名；版本 1 的旧键丢掉了大小写，无法证明对应哪个文件，所以一律当作未信任，提示 `trust store format was upgraded; review the rules and run obit trust again`；下一次 trust / untrust 写成版本 2） |
 | `graveyard\` | 这块盘的墓地：坟墓目录，以及正在下葬或复活的那几个的清单 `*.json` |
 | `sessions\` | 会话快照和遗留物计算的去抖标记 |
+| `shortcut-receipts\` | 开始菜单与桌面快捷方式的归属回执及事务锁 |
 | `hook.log` / `hook-audit.log` | hook 错误 / hook 审计（加锁轮转） |
 | `obitd.log` | 后台进程日志（轮转） |
 | `update.json` / `update.lock` | 正式版更新检查缓存和独立的检查锁；缓存记录检查时间、ETag、发布说明和最近错误，不读写账本 |

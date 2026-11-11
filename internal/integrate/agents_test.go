@@ -166,6 +166,10 @@ func agentGoldenValue(v reflect.Value) any {
 		out := map[string]any{}
 		for i := range v.NumField() {
 			name := v.Type().Field(i).Name
+			// Optional shortcut transactions have no state in agent plans.
+			if name == "relocated" && v.Field(i).IsNil() {
+				continue
+			}
 			if name != "location" && name != "identity" {
 				out[name] = agentGoldenValue(v.Field(i))
 			}

@@ -25,10 +25,18 @@ func TestNativeUnicodeShortcut(t *testing.T) {
 	if err != nil || path == "" {
 		t.Fatal(path, err)
 	}
+	assertShortcutDirectory(t, path, true)
+	changes, err = Plan(Native{}, exe, Desktop, true)
+	if err != nil || integrate.Pending(changes) {
+		t.Fatal("repeated native installation changed shortcut", changes, err)
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}
+	changes, err = Plan(Native{}, exe, Desktop, false)
+	applyShortcut(t, changes, err)
+	assertShortcutDirectory(t, path, false)
 	if err := withLink(data, func(_ *ole.IDispatch, work string) error {
 		for _, r := range filepath.Base(work) {
 			if r > 127 {

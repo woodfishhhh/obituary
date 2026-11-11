@@ -38,6 +38,10 @@ func diagnoseShortcutAt(executable string, place shortcut.Location, target func(
 			c.Detail = "Shortcut targets a different installation: " + got
 			continue
 		}
+		if err := shortcut.CheckReceipt(executable, path); err != nil {
+			c.Detail = "Shortcut ownership receipt requires attention: " + err.Error()
+			return c
+		}
 		c.Status, c.Detail = "PASS", path+" -> "+got
 		return c
 	}

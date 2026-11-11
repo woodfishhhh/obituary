@@ -77,17 +77,14 @@ func Plan(codec Codec, executable string, place Location, enabled bool) ([]integ
 			return nil, err
 		}
 		if present != "" {
-			return []integrate.Change{}, nil
+			return planExistingShortcut(executable, paths[0], present)
 		}
 	}
 	content, err := shortcutContent(codec, executable, enabled)
 	if err != nil {
 		return nil, err
 	}
-	// ID and Version bind the receipt to this installation's absolute target.
-	// The shared asset protocol also verifies path, bytes and concurrent edits.
-	asset := integrate.ManagedAsset{Path: paths[0], ID: "shortcut:" + paths[0] + " -> " + Target(executable), Owner: "obit-init", Version: Target(executable), Content: content}
-	return integrate.PlanManagedAssets(integrate.Scope{Global: true}, []integrate.ManagedAsset{asset}, !enabled)
+	return planReceipt(executable, paths[0], content, !enabled)
 }
 
 func shortcutContent(codec Codec, executable string, enabled bool) ([]byte, error) {
