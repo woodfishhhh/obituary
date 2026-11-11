@@ -73,7 +73,15 @@ Agents pushed us into writing it. As soon as version 0.0.1 ran we installed it o
 
 ## Install
 
-Windows 10 / 11 (x64 and ARM64). Pick one, then run `obit doctor` to check the installation.
+Windows 10 / 11 (x64 and ARM64).
+
+**Easiest: let your agent do it.** Send this sentence to the agent you use (Claude Code, Codex, Cursor…). It installs Obituary, connects it to itself and stops wherever a decision is yours:
+
+```text
+Read https://raw.githubusercontent.com/woodfishhhh/obituary/main/docs/agent-install.md and follow it to install Obituary and connect it to yourself.
+```
+
+**By hand:** pick one of the three, then run `obit doctor` to check the installation.
 
 ```powershell
 # Scoop
@@ -92,7 +100,6 @@ irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/instal
 - All three download the same archive from the GitHub release and check its SHA-256 before unpacking; a mismatch stops the install.
 - 1.0.0 is not code-signed yet. If you download the archive with a browser, Windows may show "Windows protected your PC"; choose "More info → Run anyway". Scoop, winget and the install script usually do not trigger this.
 - The small window `obit-gui.exe` needs the WebView2 runtime (built into Windows 11 and present on most Windows 10 machines) and is x64 only; the ARM64 build has the command line and the tray.
-- To let your agent do it: paste the prompt in [docs/agent-install.md](docs/agent-install.md#in-english); it installs Obituary, integrates it with itself and stops wherever a decision is yours.
 - To build from source, see [Build](#build).
 
 ## Quick start

@@ -73,7 +73,15 @@
 
 ## 安装
 
-目前只支持 Windows 10 / 11（x64 和 ARM64）。三种方式任选其一，装好后执行 `obit doctor` 体检。
+目前只支持 Windows 10 / 11（x64 和 ARM64）。
+
+**最省事：让 agent 帮你装。** 把这句话发给你正在用的 agent（Claude Code、Codex、Cursor……都行），它会装好讣告、接到自己身上，要你拍板的地方会停下来问你：
+
+```text
+读 https://raw.githubusercontent.com/woodfishhhh/obituary/main/docs/agent-install.md ，照里面的步骤帮我安装讣告并接入你自己。
+```
+
+**自己装**：下面三种方式任选其一，装好后执行 `obit doctor` 体检。
 
 ```powershell
 # Scoop
@@ -91,7 +99,6 @@ irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/instal
 - 三种方式下载的都是 GitHub Release 里的同一个压缩包，安装前都会核对 SHA-256，对不上就不解压。
 - 1.0.0 还没有代码签名。用浏览器手动下载压缩包时，Windows 可能弹出「Windows 已保护你的电脑」，点「更多信息 → 仍要运行」即可；Scoop、winget 和安装脚本一般不会遇到。
 - 小窗口 `obit-gui.exe` 需要 WebView2 运行时（Windows 11 自带，Windows 10 多数已经装好），目前只有 x64 版；ARM64 版只有命令行和后台托盘。
-- 想让 agent 替你装：把 [docs/agent-install.md](docs/agent-install.md) 里那段话发给它，它会装好讣告、接到自己身上，要你拍板的地方会停下来问你。
 - 想从源码构建见[构建](#构建)。
 
 ## 快速上手

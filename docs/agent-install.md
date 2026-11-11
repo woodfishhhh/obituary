@@ -1,5 +1,7 @@
 # 让 agent 帮你装讣告
 
+> 如果你是 agent，被要求照这一页安装讣告：执行下面代码块里的步骤（用户说英文就用 [In English](#in-english) 那一段），遵守里面的规则。
+
 把下面这段话原样发给你正在用的 agent（Claude Code、Codex、Cursor、DeepSeek、WorkBuddy……都行）。它会装好讣告，把讣告接到它自己身上，最后告诉你结果；要你拍板的地方，它会停下来问你。
 
 ```text
