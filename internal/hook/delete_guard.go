@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -24,26 +25,7 @@ func guardDelete(home string, ev Event) (string, error) {
 		} else if context.Shell == guardrm.PowerShell && !windowsCwd(ev.Cwd) {
 			why = "PowerShell deletion requires a Windows working directory"
 		} else {
-			self, err := os.Executable()
-			if err != nil {
-				why = "hook executable unavailable: " + err.Error()
-			} else {
-				if real, err := filepath.EvalSymlinks(self); err == nil {
-					self = real
-				}
-				// Pin the same canonical binary used by absolute-path hook
-				// installation. A later PATH change must not select another obit.
-				if context.WSL {
-					context.Executable = WSLExecutable(self)
-					if context.Executable == "" {
-						why = "executable is not accessible through WSL interop"
-					}
-				} else if context.Shell == guardrm.PowerShell {
-					context.Executable = "& '" + strings.ReplaceAll(self, "'", "''") + "'"
-				} else {
-					context.Executable = "'" + strings.ReplaceAll(filepath.ToSlash(self), "'", `'\''`) + "'"
-				}
-			}
+			context.Executable, why = deleteGuardExecutable(context)
 		}
 		if why == "" {
 			equivalent, summary, why = guardrm.SuggestWithSummary(ev.Command, context)
@@ -60,6 +42,55 @@ func guardDelete(home string, ev Event) (string, error) {
 		return "", guardrm.Record(home, guardrm.AuditEvent{Kind: "skipped", Command: ev.Command, Reason: why})
 	}
 	return "", nil
+}
+
+func deleteGuardExecutable(context guardrm.Context) (string, string) {
+	self, err := os.Executable()
+	if err != nil {
+		return "", "hook executable unavailable: " + err.Error()
+	}
+	if real, err := filepath.EvalSymlinks(self); err == nil {
+		self = real
+	}
+	if context.WSL {
+		executable := WSLExecutable(self)
+		if executable == "" {
+			return "", "executable is not accessible through WSL interop"
+		}
+		return executable, ""
+	}
+	// Recheck PATH on every denial; an unavailable or different binary keeps
+	// the absolute-path hook's executable. Windows PATH cannot prove WSL lookup.
+	if obitOnPATHIsSelf(self) {
+		return "obit", ""
+	}
+	if context.Shell == guardrm.PowerShell {
+		return "& '" + strings.ReplaceAll(self, "'", "''") + "'", ""
+	}
+	return "'" + strings.ReplaceAll(filepath.ToSlash(self), "'", `'\''`) + "'", ""
+}
+
+func obitOnPATHIsSelf(self string) bool {
+	candidate, err := exec.LookPath("obit")
+	if err != nil || !filepath.IsAbs(candidate) {
+		return false
+	}
+	candidate, err = filepath.EvalSymlinks(candidate)
+	if err != nil {
+		return false
+	}
+	self, err = filepath.EvalSymlinks(self)
+	if err != nil {
+		return false
+	}
+	// EvalSymlinks restores Windows long names and their stored case;
+	// SameFile also verifies identity in case-sensitive Windows directories.
+	candidateInfo, err := os.Stat(candidate)
+	if err != nil {
+		return false
+	}
+	selfInfo, err := os.Stat(self)
+	return err == nil && os.SameFile(candidateInfo, selfInfo)
 }
 
 func deleteReason(equivalent, summary string) string {

@@ -19,6 +19,163 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+func TestDeleteGuardExecutablePATH(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs the hook test binary under the obit executable name")
+	}
+	if os.Getenv("OBIT_TEST_GUARD_EXECUTABLE") != "1" {
+		runGuardExecutableTest(t)
+		return
+	}
+	t.Chdir(t.TempDir())
+	t.Setenv("PATHEXT", ".EXE")
+	t.Setenv("OBIT_GUARD_RM", "1")
+	t.Setenv("OBIT_DISABLED", "0")
+	self, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	selfDir := filepath.Dir(self)
+	otherDir, emptyDir := t.TempDir(), t.TempDir()
+	if err := os.WriteFile(filepath.Join(otherDir, "obit.exe"), []byte("another executable"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name, path string
+		bare       bool
+	}{
+		{"same", selfDir + string(os.PathListSeparator) + otherDir, true},
+		{"case", strings.ToUpper(selfDir), true},
+		{"different", otherDir + string(os.PathListSeparator) + selfDir, false},
+		{"missing", emptyDir, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("PATH", tc.path)
+			assertGuardPATHSuggestion(t, tc.bare)
+		})
+	}
+	t.Run("short-name", func(t *testing.T) {
+		t.Setenv("PATH", guardShortPath(t, selfDir))
+		assertGuardPATHSuggestion(t, true)
+	})
+	t.Run("wsl", func(t *testing.T) {
+		t.Setenv("PATH", selfDir)
+		real, err := filepath.EvalSymlinks(self)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := deleteReason(WSLExecutable(real)+" rm -rf build", "")
+		got, err := guardDelete(t.TempDir(), Event{Shell: guardrm.Bash, Cwd: "/mnt/c/repo", Command: "rm -rf build"})
+		if err != nil || got != want {
+			t.Fatalf("WSL executable changed: got %q, %v; want %q", got, err, want)
+		}
+	})
+}
+
+func TestDeleteGuardPATHIdentity(t *testing.T) {
+	t.Chdir(t.TempDir())
+	t.Setenv("PATHEXT", ".EXE")
+	selfDir, otherDir := t.TempDir(), t.TempDir()
+	self := filepath.Join(selfDir, "obit.exe")
+	for _, path := range []string{self, filepath.Join(otherDir, "obit.exe")} {
+		if err := os.WriteFile(path, []byte("same contents, distinct files"), 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, tc := range []struct {
+		name, path, self string
+		want             bool
+	}{
+		{"same", selfDir, self, true},
+		{"case", strings.ToUpper(selfDir), strings.ToLower(self), true},
+		{"different", otherDir + string(os.PathListSeparator) + selfDir, self, false},
+		{"missing", t.TempDir(), self, false},
+		{"self-missing", selfDir, filepath.Join(selfDir, "missing.exe"), false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("PATH", tc.path)
+			if got := obitOnPATHIsSelf(tc.self); got != tc.want {
+				t.Fatalf("PATH identity: got %v, want %v", got, tc.want)
+			}
+		})
+	}
+	t.Run("short-name", func(t *testing.T) {
+		t.Setenv("PATH", guardShortPath(t, selfDir))
+		if !obitOnPATHIsSelf(self) {
+			t.Fatal("short PATH did not resolve to the same executable")
+		}
+	})
+	t.Run("relative", func(t *testing.T) {
+		t.Chdir(selfDir)
+		t.Setenv("PATH", ".")
+		if obitOnPATHIsSelf(self) {
+			t.Fatal("relative executable lookup accepted")
+		}
+	})
+}
+
+func guardShortPath(t *testing.T, path string) string {
+	t.Helper()
+	name, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	buf := make([]uint16, 32768)
+	n, err := windows.GetShortPathName(name, &buf[0], uint32(len(buf)))
+	if err != nil || n >= uint32(len(buf)) {
+		t.Fatalf("short path: size=%d, error=%v", n, err)
+	}
+	short := windows.UTF16ToString(buf[:n])
+	if strings.EqualFold(short, path) {
+		t.Skip("volume does not provide an 8.3 alias")
+	}
+	return short
+}
+
+func runGuardExecutableTest(t *testing.T) {
+	t.Helper()
+	self, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(self)
+	if err != nil {
+		t.Fatal(err)
+	}
+	binary := filepath.Join(t.TempDir(), "obit.exe")
+	if err := os.WriteFile(binary, data, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command(binary, "-test.run=^TestDeleteGuardExecutablePATH$", "-test.v")
+	cmd.Env = append(os.Environ(), "OBIT_TEST_GUARD_EXECUTABLE=1")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("executable PATH subprocess: %s %v", out, err)
+	}
+}
+
+func assertGuardPATHSuggestion(t *testing.T, bare bool) {
+	t.Helper()
+	for _, tc := range []struct {
+		shell         guardrm.Shell
+		command, want string
+	}{
+		{guardrm.Bash, "rm -rf build", "rm -rf build"},
+		{guardrm.PowerShell, "rm -Recurse -Force build", "remove-item -Recurse -Force build"},
+	} {
+		t.Run(string(tc.shell), func(t *testing.T) {
+			executable := expectedGuardExecutable(t, tc.shell)
+			if bare {
+				executable = "obit"
+			}
+			want := "Obituary's delete guard is on: `" + executable + " " + tc.want + "` provides restorable deletion; `obit resurrect` restores graveyard entries."
+			got, err := guardDelete(t.TempDir(), Event{Shell: tc.shell, Cwd: t.TempDir(), Command: tc.command})
+			if err != nil || got != want {
+				t.Fatalf("PATH executable denial: got %q, %v; want %q", got, err, want)
+			}
+		})
+	}
+}
+
 func TestPreToolUseDeny(t *testing.T) {
 	for _, agent := range []string{"claude", "codex"} {
 		for _, source := range []string{"rm -rf build", "rm -f *.log"} {
