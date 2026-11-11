@@ -89,6 +89,18 @@ func (r *repo) apply(paths ...string) map[string]Decision {
 	return out
 }
 
+func checkOwnerLedgerLock(t *testing.T, svc *core.Service, locked bool) {
+	t.Helper()
+	// Probe ownership without consuming a Git query's deadline while waiting.
+	release, available, err := core.TryLockExclusive(filepath.Join(svc.Store.Home, "store.lock"))
+	if available {
+		release()
+	}
+	if err != nil || available == locked {
+		t.Fatalf("Git verification used the wrong ledger lock boundary: locked=%t available=%t err=%v", locked, available, err)
+	}
+}
+
 type unreadableObservationFS struct {
 	core.FS
 	path string

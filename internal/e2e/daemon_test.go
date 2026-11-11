@@ -102,14 +102,6 @@ func TestDaemonStartAfterLegacyStop(t *testing.T) {
 	})
 	waitFolderResident(t, home)
 	processFile := filepath.Join(home, "obitd.process.json")
-	for deadline := time.Now().Add(5 * time.Second); ; time.Sleep(10 * time.Millisecond) {
-		if _, err := os.Stat(processFile); err == nil {
-			break
-		}
-		if time.Now().After(deadline) {
-			t.Fatal("daemon process receipt missing")
-		}
-	}
 	if err := os.Remove(processFile); err != nil {
 		t.Fatal(err)
 	}
@@ -135,7 +127,21 @@ func TestDaemonStartAfterLegacyStop(t *testing.T) {
 func waitFolderResident(t *testing.T, home string) {
 	t.Helper()
 	for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); time.Sleep(10 * time.Millisecond) {
-		if app.Running(home) {
+		if !app.Running(home) {
+			continue
+		}
+		var process struct {
+			PID    int  `json:"pid"`
+			Closed bool `json:"closed"`
+		}
+		data, err := os.ReadFile(filepath.Join(home, "obitd.process.json"))
+		if err != nil || json.Unmarshal(data, &process) != nil || process.PID == 0 || process.Closed {
+			continue
+		}
+		// The startup log is emitted after the process receipt's writer closes.
+		// A visible mutex or file alone can still precede that close on Windows.
+		data, err = os.ReadFile(filepath.Join(home, "obitd.log"))
+		if err == nil && bytes.Contains(data, fmt.Appendf(nil, "obitd started (pid %d,", process.PID)) {
 			return
 		}
 	}

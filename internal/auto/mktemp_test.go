@@ -163,9 +163,13 @@ func TestSweepPreservesFileStagedBetweenMoves(t *testing.T) {
 			}
 			if batch {
 				r.engine.Svc.OwnerBatch = OwnerBatch
+				r.engine.Svc.PrepareOwners = PrepareOwners
 			}
 			published := false
-			r.engine.Svc.FS = &batchRuleChangeFS{FS: r.engine.Svc.FS, afterMove: func() {
+			r.engine.Svc.FS = &batchRuleChangeFS{FS: r.engine.Svc.FS, afterMove: func(path string) {
+				if path != paths[0] {
+					t.Fatalf("staging fixture expected first.log to move first, got %s", path)
+				}
 				if err := os.Rename(staged, index); err != nil {
 					t.Fatal(err)
 				}
@@ -329,15 +333,24 @@ func TestSweepBatchRechecksGitAndRules(t *testing.T) {
 				}
 			}
 			calls := 0
-			r.engine.Svc.OwnerBatch = func(ctx context.Context, paths []string) []core.Ownership {
-				calls++
-				// Prefetch measures startup outside the lock. Without Current,
-				// each subsequent answer must still come from the moving transaction.
-				_, readErr := r.engine.Svc.Store.WithDeadline(time.Now().Add(5 * time.Millisecond)).ReadSnapshot()
-				if (calls == 1) != (readErr == nil) {
-					t.Error("Git prefetch or final query used the wrong ledger lock boundary")
+			r.engine.Svc.PrepareOwners = func(ctx context.Context, paths []string) core.OwnerBatchFunc {
+				query := PrepareOwners(ctx, paths)
+				return func(ctx context.Context, paths []string) []core.Ownership {
+					calls++
+					checkOwnerLedgerLock(t, r.engine.Svc, false)
+					owners := query(ctx, paths)
+					for i := range owners {
+						current := owners[i].Current
+						if current == nil {
+							t.Fatalf("missing real Git snapshot: %+v", owners[i])
+						}
+						owners[i].Current = func(ctx context.Context) (bool, time.Time, error) {
+							checkOwnerLedgerLock(t, r.engine.Svc, true)
+							return current(ctx)
+						}
+					}
+					return owners
 				}
-				return OwnerBatch(ctx, paths)
 			}
 			out, err := r.engine.Svc.Sweep(false)
 			st, readErr := r.engine.Svc.Store.ReadSnapshot()
@@ -354,7 +367,7 @@ func TestSweepBatchRechecksGitAndRules(t *testing.T) {
 
 type batchRuleChangeFS struct {
 	core.FS
-	afterMove   func()
+	afterMove   func(string)
 	gitAnswered map[string]time.Time
 	maxGitGap   time.Duration
 	moves       int
@@ -375,7 +388,7 @@ func (fs *batchRuleChangeFS) MovePinned(path string, want core.Identity, to stri
 	if fs.afterMove != nil {
 		change := fs.afterMove
 		fs.afterMove = nil
-		change()
+		change(path)
 	}
 	return nil
 }
@@ -446,7 +459,7 @@ func TestSweepBatchRechecksRulesBeforeEachMove(t *testing.T) {
 		t.Fatalf("untrust staged rules: %v %v", was, err)
 	}
 	r.engine.Svc.OwnerBatch = OwnerBatch
-	r.engine.Svc.FS = &batchRuleChangeFS{FS: r.engine.Svc.FS, afterMove: func() {
+	r.engine.Svc.FS = &batchRuleChangeFS{FS: r.engine.Svc.FS, afterMove: func(string) {
 		if err := os.Rename(file+".pending", file); err != nil {
 			t.Fatal(err)
 		}
