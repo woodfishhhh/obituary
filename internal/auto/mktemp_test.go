@@ -149,46 +149,51 @@ func TestSweepPreservesFileStagedBetweenMoves(t *testing.T) {
 	}
 	for _, batch := range []bool{true, false} {
 		t.Run(fmt.Sprint(batch), func(t *testing.T) {
-			r := newRepo(t)
-			now := time.Now()
-			r.engine.Svc.Now = func() time.Time { return now }
-			paths := []string{r.write("first.log", "first"), r.write("second.log", "keep"), r.write("third.log", "third")}
-			if rows, err := r.engine.Svc.Add(paths, core.AddOptions{ExpiresAt: now.Add(time.Hour), Source: "rule", Project: r.root}); err != nil || core.Failed(rows) {
-				t.Fatalf("add: %+v %v", rows, err)
-			}
-			now = now.Add(time.Hour)
-			r.git("add", "--", "second.log")
-			index, staged := filepath.Join(r.root, ".git", "index"), filepath.Join(r.root, "staged-index")
-			if err := os.Rename(index, staged); err != nil {
-				t.Fatal(err)
-			}
-			if batch {
-				r.engine.Svc.OwnerBatch = OwnerBatch
-				r.engine.Svc.PrepareOwners = PrepareOwners
-			}
-			published := false
-			r.engine.Svc.FS = &batchRuleChangeFS{FS: r.engine.Svc.FS, afterMove: func(path string) {
-				if path != paths[0] {
-					t.Fatalf("staging fixture expected first.log to move first, got %s", path)
+			// This checks index publication order, not wall-clock query budgets.
+			// Keep real Git and moves while scheduler stalls cannot make the
+			// first item retry before it publishes the staged index.
+			synctest.Test(t, func(t *testing.T) {
+				r := newRepo(t)
+				now := time.Now()
+				r.engine.Svc.Now = func() time.Time { return now }
+				paths := []string{r.write("first.log", "first"), r.write("second.log", "keep"), r.write("third.log", "third")}
+				if rows, err := r.engine.Svc.Add(paths, core.AddOptions{ExpiresAt: now.Add(time.Hour), Source: "rule", Project: r.root}); err != nil || core.Failed(rows) {
+					t.Fatalf("add: %+v %v", rows, err)
 				}
-				if err := os.Rename(staged, index); err != nil {
+				now = now.Add(time.Hour)
+				r.git("add", "--", "second.log")
+				index, staged := filepath.Join(r.root, ".git", "index"), filepath.Join(r.root, "staged-index")
+				if err := os.Rename(index, staged); err != nil {
 					t.Fatal(err)
 				}
-				published = true
-			}}
-			out, err := r.engine.Svc.Sweep(false)
-			root, tracked, gitErr := Owner(paths[1])
-			if err != nil || !published || gitErr != nil || !tracked || root != r.root {
-				t.Fatalf("invalid staging fixture: %+v %v %v", out, err, gitErr)
-			}
-			data, readErr := os.ReadFile(paths[1])
-			if readErr != nil || string(data) != "keep" {
-				t.Fatalf("file staged after first move was buried: %+v %v", out, readErr)
-			}
-			st, ledgerErr := r.engine.Svc.Store.ReadSnapshot()
-			if ledgerErr != nil || len(out) != 3 || out[0].Action != core.ActionBuried || out[1].Action != core.ActionRefused || out[2].Action != core.ActionBuried || len(st.Burials) != 2 || len(st.Items) != 0 {
-				t.Fatalf("new Git protection blocked unrelated siblings: %+v %v", out, ledgerErr)
-			}
+				if batch {
+					r.engine.Svc.OwnerBatch = OwnerBatch
+					r.engine.Svc.PrepareOwners = PrepareOwners
+				}
+				published := false
+				r.engine.Svc.FS = &batchRuleChangeFS{FS: r.engine.Svc.FS, afterMove: func(path string) {
+					if path != paths[0] {
+						t.Fatalf("staging fixture expected first.log to move first, got %s", path)
+					}
+					if err := os.Rename(staged, index); err != nil {
+						t.Fatal(err)
+					}
+					published = true
+				}}
+				out, err := r.engine.Svc.Sweep(false)
+				root, tracked, gitErr := Owner(paths[1])
+				if err != nil || !published || gitErr != nil || !tracked || root != r.root {
+					t.Fatalf("invalid staging fixture: %+v %v %v", out, err, gitErr)
+				}
+				data, readErr := os.ReadFile(paths[1])
+				if readErr != nil || string(data) != "keep" {
+					t.Fatalf("file staged after first move was buried: %+v %v", out, readErr)
+				}
+				st, ledgerErr := r.engine.Svc.Store.ReadSnapshot()
+				if ledgerErr != nil || len(out) != 3 || out[0].Action != core.ActionBuried || out[1].Action != core.ActionRefused || out[2].Action != core.ActionBuried || len(st.Burials) != 2 || len(st.Items) != 0 {
+					t.Fatalf("new Git protection blocked unrelated siblings: %+v %v", out, ledgerErr)
+				}
+			})
 		})
 	}
 }
