@@ -71,97 +71,114 @@ func TestSkillOrphanedUpgradeReceipt(t *testing.T) {
 
 func TestSkillInterruptedWritesRemainOwned(t *testing.T) {
 	t.Parallel()
-	for _, upgrade := range []bool{false, true} {
-		for _, step := range []string{".obituary-skill", "SKILL.md"} {
-			t.Run(fmt.Sprintf("upgrade=%t/%s", upgrade, step), func(t *testing.T) {
-				t.Parallel()
-				scope := Scope{Project: t.TempDir()}
-				if upgrade {
-					plan, err := planSkillContent(scope, "codex", []byte("previous"), false)
-					applyIntegration(t, plan, err)
-				}
-				plan, err := PlanSkill(scope, "codex", false)
-				if err != nil {
-					t.Fatal(err)
-				}
-				stop := errors.New("process interrupted")
-				afterIntegrationWrite := func(path string) error {
-					if filepath.Base(path) == step {
-						return stop
-					}
-					return nil
-				}
+	for _, agent := range []string{"claude", "codex"} {
+		t.Run(agent, func(t *testing.T) {
+			t.Parallel()
+			for _, upgrade := range []bool{false, true} {
+				for _, step := range []string{".obituary-skill", "SKILL.md"} {
+					t.Run(fmt.Sprintf("upgrade=%t/%s", upgrade, step), func(t *testing.T) {
+						t.Parallel()
+						scope := Scope{Project: t.TempDir()}
+						if upgrade {
+							plan, err := planSkillContent(scope, agent, []byte("previous"), false)
+							applyIntegration(t, plan, err)
+						}
+						plan, err := PlanSkill(scope, agent, false)
+						if err != nil {
+							t.Fatal(err)
+						}
+						stop := errors.New("process interrupted")
+						afterIntegrationWrite := func(path string) error {
+							if filepath.Base(path) == step {
+								return stop
+							}
+							return nil
+						}
 
-				if err := apply(plan, afterIntegrationWrite); !errors.Is(err, stop) {
-					t.Fatalf("interruption not reached: %v", err)
+						if err := apply(plan, afterIntegrationWrite); !errors.Is(err, stop) {
+							t.Fatalf("interruption not reached: %v", err)
+						}
+						plan, err = PlanSkill(scope, agent, false)
+						if err != nil {
+							t.Fatalf("interrupted write lost ownership: %v", err)
+						}
+						applyIntegration(t, plan, nil)
+						st, err := InspectExtension(scope, agent, "skill", "obit")
+						if err != nil || !st.Current {
+							t.Fatalf("interrupted write did not recover: %+v %v", st, err)
+						}
+					})
 				}
-				plan, err = PlanSkill(scope, "codex", false)
-				if err != nil {
-					t.Fatalf("interrupted write lost ownership: %v", err)
-				}
-				applyIntegration(t, plan, nil)
-				st, err := InspectExtension(scope, "codex", "skill", "obit")
-				if err != nil || !st.Current {
-					t.Fatalf("interrupted write did not recover: %+v %v", st, err)
-				}
-			})
-		}
+			}
+		})
 	}
 }
 
 func TestSkillRecoversPendingCommit(t *testing.T) {
 	t.Parallel()
-	for _, old := range []string{"", "previous skill"} {
-		for _, step := range []string{"prepared", "written", "edited"} {
-			for _, uninstall := range []bool{false, true} {
-				t.Run(fmt.Sprintf("old=%t/%s/remove=%t", old != "", step, uninstall), func(t *testing.T) {
-					t.Parallel()
-					scope := Scope{Project: t.TempDir()}
-					path, err := skillPath(scope, "codex")
-					if err != nil {
-						t.Fatal(err)
+	for _, agent := range []string{"claude", "codex"} {
+		t.Run(agent, func(t *testing.T) {
+			t.Parallel()
+			for _, old := range []string{"", "previous skill"} {
+				for _, step := range []string{"prepared", "written", "edited"} {
+					for _, uninstall := range []bool{false, true} {
+						t.Run(fmt.Sprintf("old=%t/%s/remove=%t", old != "", step, uninstall), func(t *testing.T) {
+							t.Parallel()
+							scope := Scope{Project: t.TempDir()}
+							path, err := skillPath(scope, agent)
+							if err != nil {
+								t.Fatal(err)
+							}
+							newContent := []byte("interrupted upgrade")
+							previous := "absent"
+							if old != "" {
+								previous = fmt.Sprintf("%x", sha256.Sum256([]byte(old)))
+							}
+							receipt := fmt.Sprintf("obituary-skill-pending-v1\n%s\n%x\n", previous, sha256.Sum256(newContent))
+							writeIntegrationFile(t, filepath.Join(filepath.Dir(path), ".obituary-skill"), receipt)
+							if step == "written" {
+								writeIntegrationFile(t, path, string(newContent))
+							} else if step == "edited" {
+								writeIntegrationFile(t, path, "user content")
+							} else if old != "" {
+								writeIntegrationFile(t, path, old)
+							}
+							plan, err := PlanSkill(scope, agent, uninstall)
+							if step == "edited" {
+								if !uninstall && err == nil {
+									t.Fatal("pending receipt claimed user edit")
+								}
+								if uninstall {
+									if agent == "codex" {
+										applyPreservedSkill(t, plan, err)
+									} else {
+										if err != nil || Pending(plan) || len(plan) == 0 || !strings.Contains(plan[0].Detail, "preserved") {
+											t.Fatalf("edited skill preservation plan: %+v %v", plan, err)
+										}
+										applyIntegration(t, plan, nil)
+									}
+								}
+								if read(t, path) != "user content" || read(t, filepath.Join(filepath.Dir(path), ".obituary-skill")) != receipt {
+									t.Fatal("pending receipt removed user edit")
+								}
+								return
+							}
+							if err != nil {
+								t.Fatalf("interrupted skill cannot recover: %v", err)
+							}
+							applyIntegration(t, plan, nil)
+							if uninstall {
+								if _, err := os.Stat(path); !os.IsNotExist(err) {
+									t.Fatalf("recoverable skill not removed: %v", err)
+								}
+							} else if read(t, path) != string(skillContent) {
+								t.Fatal("interrupted skill not upgraded")
+							}
+						})
 					}
-					newContent := []byte("interrupted upgrade")
-					previous := "absent"
-					if old != "" {
-						previous = fmt.Sprintf("%x", sha256.Sum256([]byte(old)))
-					}
-					receipt := fmt.Sprintf("obituary-skill-pending-v1\n%s\n%x\n", previous, sha256.Sum256(newContent))
-					writeIntegrationFile(t, filepath.Join(filepath.Dir(path), ".obituary-skill"), receipt)
-					if step == "written" {
-						writeIntegrationFile(t, path, string(newContent))
-					} else if step == "edited" {
-						writeIntegrationFile(t, path, "user content")
-					} else if old != "" {
-						writeIntegrationFile(t, path, old)
-					}
-					plan, err := PlanSkill(scope, "codex", uninstall)
-					if step == "edited" {
-						if !uninstall && err == nil {
-							t.Fatal("pending receipt claimed user edit")
-						}
-						if uninstall {
-							applyPreservedSkill(t, plan, err)
-						}
-						if read(t, path) != "user content" {
-							t.Fatal("pending receipt removed user edit")
-						}
-						return
-					}
-					if err != nil {
-						t.Fatalf("interrupted skill cannot recover: %v", err)
-					}
-					applyIntegration(t, plan, nil)
-					if uninstall {
-						if _, err := os.Stat(path); !os.IsNotExist(err) {
-							t.Fatalf("recoverable skill not removed: %v", err)
-						}
-					} else if read(t, path) != string(skillContent) {
-						t.Fatal("interrupted skill not upgraded")
-					}
-				})
+				}
 			}
-		}
+		})
 	}
 }
 

@@ -298,5 +298,6 @@ jobs:
         env:
           OBIT_TEST_MCP_MUTATIONS: "1"
           OBIT_TEST_DELETE_MUTATIONS: "1"
+          OBIT_TEST_REGISTRY: "1" # testenv confines registry writes to disposable keys
           OBIT_MUTATION_SHARD: ${{ matrix.shard }}
         run: go test -count=1 -timeout 50m -run ${{ matrix.run }} ${{ matrix.pkg }}
