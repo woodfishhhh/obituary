@@ -69,7 +69,17 @@ func taskXML(daemon, home, userID string, start time.Time) string {
       <RunLevel>LeastPrivilege</RunLevel>
     </Principal>
   </Principals>
-  <Settings>
+` + taskSettingsXML + `  <Actions Context="Author">
+    <Exec>
+      <Command>` + esc(daemon) + `</Command>
+      <Arguments>` + esc(args) + `</Arguments>
+    </Exec>
+  </Actions>
+</Task>
+`
+}
+
+const taskSettingsXML = `  <Settings>
     <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
     <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
     <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
@@ -88,15 +98,7 @@ func taskXML(daemon, home, userID string, start time.Time) string {
     <ExecutionTimeLimit>PT30M</ExecutionTimeLimit>
     <Priority>7</Priority>
   </Settings>
-  <Actions Context="Author">
-    <Exec>
-      <Command>` + esc(daemon) + `</Command>
-      <Arguments>` + esc(args) + `</Arguments>
-    </Exec>
-  </Actions>
-</Task>
 `
-}
 
 var schtasks = func(args ...string) (string, error) {
 	cmd := exec.Command("schtasks", args...)

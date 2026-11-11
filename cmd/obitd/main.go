@@ -15,6 +15,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/contextmenu"
+	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"github.com/woodfishhhh/obituary/internal/tray"
 )
@@ -31,15 +32,8 @@ func main() {
 	menu := flag.Bool("context-menu", false, "run an explicit Explorer action and show its result")
 	withTray := flag.Bool("tray", defaultTray == "true", "show the resident tray icon")
 	flag.Parse()
-	for value, env := range map[*string]string{home: "OBIT_HOME", configDir: "OBIT_CONFIG_DIR"} {
-		if *value == "" {
-			continue
-		}
-		abs, err := pathutil.Abs(*value)
-		if err != nil {
-			os.Exit(2)
-		}
-		os.Setenv(env, abs)
+	if err := setDirectoryOverrides(map[*string]string{home: "OBIT_HOME", configDir: "OBIT_CONFIG_DIR"}); err != nil {
+		os.Exit(2)
 	}
 	if *menu {
 		if err := contextmenu.Run(flag.Args(), contextmenu.Execute, contextmenu.Notify); err != nil {
@@ -55,20 +49,7 @@ func main() {
 	logger := log.New(&rotatingLog{path: filepath.Join(svc.Store.Home, "obitd.log")}, "", log.LstdFlags)
 	if *once {
 		defer app.CheckUpdatesOnce(svc.Store.Home)
-		outcomes, purged, err := app.Tick(svc)
-		for _, o := range outcomes {
-			logger.Printf("once: #%d %s %s %s", o.Item.ID, o.Action, o.Path, o.Detail)
-		}
-		for _, r := range purged {
-			logger.Printf("once: %s %s %s", r.Ref, r.Action, r.Error)
-		}
-		logErr := app.ProposalLogErrors(svc.Store.Home, logger, err)
-		if logErr != nil {
-			logger.Printf("once: %v", logErr)
-		}
-		if err != nil || logErr != nil {
-			os.Exit(1)
-		}
+		runOnce(svc, logger)
 		return
 	}
 	serve := app.Serve
@@ -83,6 +64,37 @@ func main() {
 		}
 		os.Exit(1)
 	}
+}
+
+func runOnce(svc *core.Service, logger *log.Logger) {
+	outcomes, purged, err := app.Tick(svc)
+	for _, o := range outcomes {
+		logger.Printf("once: #%d %s %s %s", o.Item.ID, o.Action, o.Path, o.Detail)
+	}
+	for _, r := range purged {
+		logger.Printf("once: %s %s %s", r.Ref, r.Action, r.Error)
+	}
+	logErr := app.ProposalLogErrors(svc.Store.Home, logger, err)
+	if logErr != nil {
+		logger.Printf("once: %v", logErr)
+	}
+	if err != nil || logErr != nil {
+		os.Exit(1)
+	}
+}
+
+func setDirectoryOverrides(overrides map[*string]string) error {
+	for value, env := range overrides {
+		if *value == "" {
+			continue
+		}
+		abs, err := pathutil.Abs(*value)
+		if err != nil {
+			return err
+		}
+		os.Setenv(env, abs)
+	}
+	return nil
 }
 
 // rotatingLog appends to path and moves it to path.1 once it exceeds logLimit.

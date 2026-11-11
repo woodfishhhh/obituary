@@ -24,24 +24,9 @@ func NewCmd() *cobra.Command {
   obit add report.zip --at "2026-12-01 18:00"`,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			now := time.Now()
-			var expires time.Time
-			paths := args
-			if at != "" {
-				t, err := core.ParseAt(at, now)
-				if err != nil {
-					return err
-				}
-				expires = t
-			} else {
-				if len(args) < 2 {
-					return errors.New("give a duration after the paths (for example 2h), or use --at")
-				}
-				d, err := core.ParseDuration(args[len(args)-1])
-				if err != nil {
-					return err
-				}
-				expires, paths = now.Add(d), args[:len(args)-1]
+			paths, expires, err := parseExpiry(args, at, time.Now())
+			if err != nil {
+				return err
 			}
 			svc, err := cmdutil.Open()
 			if err != nil {
@@ -64,4 +49,19 @@ func NewCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print JSON")
 	cmd.Flags().BoolVar(&noDaemon, "no-daemon", false, "do not start the background daemon")
 	return cmd
+}
+
+func parseExpiry(args []string, at string, now time.Time) ([]string, time.Time, error) {
+	if at != "" {
+		expires, err := core.ParseAt(at, now)
+		return args, expires, err
+	}
+	if len(args) < 2 {
+		return nil, time.Time{}, errors.New("give a duration after the paths (for example 2h), or use --at")
+	}
+	d, err := core.ParseDuration(args[len(args)-1])
+	if err != nil {
+		return nil, time.Time{}, err
+	}
+	return args[:len(args)-1], now.Add(d), nil
 }

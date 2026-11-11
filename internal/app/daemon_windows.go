@@ -116,30 +116,31 @@ func SpawnSelf(args ...string) error {
 
 // Stop asks a running daemon to exit and waits for it.
 func Stop(home string) error {
-	if Running(home) {
-		check, closeHandle, verifyErr := daemonExitCheck(home)
-		if closeHandle != nil {
-			defer closeHandle()
+	if !Running(home) {
+		return clearStopRequest(home)
+	}
+	check, closeHandle, verifyErr := daemonExitCheck(home)
+	if closeHandle != nil {
+		defer closeHandle()
+	}
+	if err := os.WriteFile(stopPath(home), nil, 0o600); err != nil {
+		return err
+	}
+	if err := waitFor(func() bool { return !Running(home) }, 10*time.Second, "daemon did not stop"); err != nil {
+		return err
+	}
+	if verifyErr != nil {
+		if errors.Is(verifyErr, os.ErrNotExist) {
+			verifyErr = fmt.Errorf("daemon stopped; legacy resident has no shutdown receipt; cannot verify exit code: %w", verifyErr)
 		}
-		if err := os.WriteFile(stopPath(home), nil, 0o600); err != nil {
+		return errors.Join(verifyErr, clearStopRequest(home))
+	}
+	if err := check(); err != nil {
+		var pending *daemonExitPending
+		if errors.As(err, &pending) {
 			return err
 		}
-		if err := waitFor(func() bool { return !Running(home) }, 10*time.Second, "daemon did not stop"); err != nil {
-			return err
-		}
-		if verifyErr != nil {
-			if errors.Is(verifyErr, os.ErrNotExist) {
-				verifyErr = fmt.Errorf("daemon stopped; legacy resident has no shutdown receipt; cannot verify exit code: %w", verifyErr)
-			}
-			return errors.Join(verifyErr, clearStopRequest(home))
-		}
-		if err := check(); err != nil {
-			var pending *daemonExitPending
-			if errors.As(err, &pending) {
-				return err
-			}
-			return errors.Join(err, clearStopRequest(home))
-		}
+		return errors.Join(err, clearStopRequest(home))
 	}
 	return clearStopRequest(home)
 }

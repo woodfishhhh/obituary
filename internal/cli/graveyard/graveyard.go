@@ -2,6 +2,7 @@ package graveyard
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"text/tabwriter"
 	"time"
@@ -44,63 +45,70 @@ func NewCmd() *cobra.Command {
 					return err
 				}
 			}
-			pending := view.Pending
-			listing := GraveyardListing{Burials: view.Burials, Pending: pending, PendingCount: len(pending), Restored: view.Restored}
+			listing := GraveyardListing{Burials: view.Burials, Pending: view.Pending, PendingCount: len(view.Pending), Restored: view.Restored}
 			if scanErr != nil {
 				listing.Warning = scanErr.Error()
 			}
 			if asJSON {
 				return cmdutil.PrintJSON(listing)
 			}
-			for _, r := range view.Restored {
-				fmt.Printf("#%d resurrected  %s (recovered)\n", r.Burial.ID, r.Path)
-			}
-			if len(view.Burials) == 0 && len(pending) == 0 && scanErr == nil {
-				fmt.Println("the graveyard is empty")
-				return nil
-			}
-			w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintln(w, "ID\tBURIED\tPURGE\tSIZE\tPATH")
-			for _, b := range view.Burials {
-				purge := "in " + core.FormatRemaining(time.Until(b.PurgeAt))
-				if b.PurgeIntent != nil {
-					retry := b.NextPurgeAttempt
-					if retry.IsZero() {
-						retry = b.PurgeIntent.VerifiedAt
-					}
-					purge = "purging (retry at " + retry.Local().Format(cmdutil.TimeLayout) + ")"
-				}
-				fmt.Fprintf(w, "#%d\t%s\t%s\t%s\t%s", b.ID, b.BuriedAt.Local().Format(cmdutil.TimeLayout),
-					purge, cmdutil.HumanBytes(b.Size), b.Path)
-				if len(b.Contains) > 0 {
-					fmt.Fprint(w, "  contains")
-					for _, id := range b.Contains {
-						fmt.Fprintf(w, " #%d", id)
-					}
-				}
-				if b.PurgeIntent != nil && b.LastPurgeError != "" {
-					fmt.Fprint(w, "  WARN: ", b.LastPurgeError)
-				}
-				fmt.Fprintln(w)
-			}
-			if err := w.Flush(); err != nil {
-				return err
-			}
-			fmt.Printf("pending recovery: %d\n", len(pending))
-			for _, p := range pending {
-				fmt.Printf("%s  %s", p.Status, p.Manifest)
-				if p.Error != "" {
-					fmt.Printf("  WARN: %s", p.Error)
-				}
-				fmt.Println()
-			}
-			if scanErr != nil {
-				fmt.Fprintln(os.Stderr, "warning:", scanErr)
-			}
-			return nil
+			return printListing(listing, scanErr)
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print JSON")
 	cmd.Flags().BoolVar(&here, "here", false, "show only original paths in the current directory and its descendants")
 	return cmd
+}
+
+func printListing(listing GraveyardListing, scanErr error) error {
+	for _, r := range listing.Restored {
+		fmt.Printf("#%d resurrected  %s (recovered)\n", r.Burial.ID, r.Path)
+	}
+	if len(listing.Burials) == 0 && len(listing.Pending) == 0 && scanErr == nil {
+		fmt.Println("the graveyard is empty")
+		return nil
+	}
+	w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
+	fmt.Fprintln(w, "ID\tBURIED\tPURGE\tSIZE\tPATH")
+	for _, b := range listing.Burials {
+		printBurial(w, b)
+	}
+	if err := w.Flush(); err != nil {
+		return err
+	}
+	fmt.Printf("pending recovery: %d\n", len(listing.Pending))
+	for _, p := range listing.Pending {
+		fmt.Printf("%s  %s", p.Status, p.Manifest)
+		if p.Error != "" {
+			fmt.Printf("  WARN: %s", p.Error)
+		}
+		fmt.Println()
+	}
+	if scanErr != nil {
+		fmt.Fprintln(os.Stderr, "warning:", scanErr)
+	}
+	return nil
+}
+
+func printBurial(w io.Writer, b core.Burial) {
+	purge := "in " + core.FormatRemaining(time.Until(b.PurgeAt))
+	if b.PurgeIntent != nil {
+		retry := b.NextPurgeAttempt
+		if retry.IsZero() {
+			retry = b.PurgeIntent.VerifiedAt
+		}
+		purge = "purging (retry at " + retry.Local().Format(cmdutil.TimeLayout) + ")"
+	}
+	fmt.Fprintf(w, "#%d\t%s\t%s\t%s\t%s", b.ID, b.BuriedAt.Local().Format(cmdutil.TimeLayout),
+		purge, cmdutil.HumanBytes(b.Size), b.Path)
+	if len(b.Contains) > 0 {
+		fmt.Fprint(w, "  contains")
+		for _, id := range b.Contains {
+			fmt.Fprintf(w, " #%d", id)
+		}
+	}
+	if b.PurgeIntent != nil && b.LastPurgeError != "" {
+		fmt.Fprint(w, "  WARN: ", b.LastPurgeError)
+	}
+	fmt.Fprintln(w)
 }

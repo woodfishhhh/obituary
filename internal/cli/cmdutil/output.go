@@ -35,35 +35,39 @@ func ReportGraves(results []core.GraveResult, asJSON bool, describe func(core.Gr
 		}
 	} else {
 		for _, r := range results {
-			if r.Warning != "" {
-				fmt.Fprintln(os.Stderr, "warning:", r.Warning)
-			}
-			if r.Error != "" {
-				label := fmt.Sprintf("ref=%q", r.Ref)
-				if r.Burial != nil {
-					label += fmt.Sprintf(" id=%d path=%s", r.Burial.ID, r.Burial.Path)
-				}
-				if r.Action == core.ActionResurrected && r.Path != "" {
-					fmt.Println(describe(r))
-				}
-				if r.Action == core.ActionNotExecuted {
-					fmt.Fprintln(os.Stderr, r.Ref+":", r.Error)
-					continue
-				}
-				if r.Action == core.ActionBlocked {
-					fmt.Fprintln(os.Stderr, "blocked:", label+":", r.Error)
-				} else {
-					fmt.Fprintln(os.Stderr, "error:", label+":", r.Error)
-				}
-				continue
-			}
-			fmt.Println(describe(r))
+			printGraveResult(r, describe)
 		}
 	}
 	if core.GraveFailed(results) {
 		return ErrReported
 	}
 	return nil
+}
+
+func printGraveResult(r core.GraveResult, describe func(core.GraveResult) string) {
+	if r.Warning != "" {
+		fmt.Fprintln(os.Stderr, "warning:", r.Warning)
+	}
+	if r.Error == "" {
+		fmt.Println(describe(r))
+		return
+	}
+	label := fmt.Sprintf("ref=%q", r.Ref)
+	if r.Burial != nil {
+		label += fmt.Sprintf(" id=%d path=%s", r.Burial.ID, r.Burial.Path)
+	}
+	if r.Action == core.ActionResurrected && r.Path != "" {
+		fmt.Println(describe(r))
+	}
+	if r.Action == core.ActionNotExecuted {
+		fmt.Fprintln(os.Stderr, r.Ref+":", r.Error)
+		return
+	}
+	if r.Action == core.ActionBlocked {
+		fmt.Fprintln(os.Stderr, "blocked:", label+":", r.Error)
+	} else {
+		fmt.Fprintln(os.Stderr, "error:", label+":", r.Error)
+	}
 }
 
 // Bury emits a receipt for every argument before returning a partial failure.
@@ -74,24 +78,28 @@ func ReportBury(results []core.GraveResult, asJSON bool, describe func(core.Grav
 		}
 	} else {
 		for _, r := range results {
-			if r.Warning != "" {
-				fmt.Fprintln(os.Stderr, "warning:", r.Warning)
-			}
-			if r.Error != "" {
-				detail := r.Error
-				if r.Detail != "" {
-					detail = r.Detail
-				}
-				fmt.Printf("%s  %s: %s\n", r.Action, r.Ref, detail)
-			} else {
-				fmt.Println(describe(r))
-			}
+			printBuryResult(r, describe)
 		}
 	}
 	if core.GraveFailed(results) {
 		return ErrReported
 	}
 	return nil
+}
+
+func printBuryResult(r core.GraveResult, describe func(core.GraveResult) string) {
+	if r.Warning != "" {
+		fmt.Fprintln(os.Stderr, "warning:", r.Warning)
+	}
+	if r.Error == "" {
+		fmt.Println(describe(r))
+		return
+	}
+	detail := r.Error
+	if r.Detail != "" {
+		detail = r.Detail
+	}
+	fmt.Printf("%s  %s: %s\n", r.Action, r.Ref, detail)
 }
 
 // errReported marks failures whose details were already printed.

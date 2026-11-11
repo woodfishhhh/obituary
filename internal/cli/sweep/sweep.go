@@ -37,16 +37,7 @@ func NewCmd() *cobra.Command {
 					return jerr
 				}
 			} else {
-				if len(outcomes) == 0 {
-					fmt.Println("nothing is due")
-				}
-				verb := ""
-				if dryRun {
-					verb = "would be "
-				}
-				for _, o := range outcomes {
-					fmt.Printf("#%d %s%s %s %s\n", o.Item.ID, verb, o.Action, o.Path, o.Detail)
-				}
+				printOutcomes(outcomes, dryRun)
 			}
 			if err != nil {
 				return err
@@ -62,4 +53,17 @@ func NewCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "only show what would happen")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print JSON")
 	return cmd
+}
+
+func printOutcomes(outcomes []core.Outcome, dryRun bool) {
+	if len(outcomes) == 0 {
+		fmt.Println("nothing is due")
+	}
+	verb := ""
+	if dryRun {
+		verb = "would be "
+	}
+	for _, o := range outcomes {
+		fmt.Printf("#%d %s%s %s %s\n", o.Item.ID, verb, o.Action, o.Path, o.Detail)
+	}
 }

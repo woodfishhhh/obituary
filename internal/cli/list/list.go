@@ -30,39 +30,47 @@ func NewCmd() *cobra.Command {
 			}
 			now := time.Now()
 			if asJSON {
-				type row struct {
-					core.Item
-					Stability *core.WatchStatus `json:"stability,omitempty"`
-				}
-				rows := make([]row, 0, len(state.Items))
-				for _, it := range state.Items {
-					rows = append(rows, row{it, svc.WatchStatus(it, now)})
-				}
-				return cmdutil.PrintJSON(rows)
+				return printItemsJSON(svc, state.Items, now)
 			}
-			if len(state.Items) == 0 {
-				fmt.Println("nothing is tracked")
-				return nil
-			}
-			w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintln(w, "ID\tEXPIRES\tLEFT\tPATH\tNOTE")
-			for _, item := range state.Items {
-				note := item.Note
-				if item.LastError != "" {
-					note = fmt.Sprintf("retry %d: %s", item.Attempts, item.LastError)
-				}
-				if status := svc.WatchStatus(item, now); status != nil {
-					if strings.HasPrefix(item.LastError, "folder child is still active") {
-						note = fmt.Sprintf("retry %d", item.Attempts)
-					}
-					note += fmt.Sprintf("; quiet for %s more (stable_window=%s); next check %s", status.QuietFor, status.StableWindow, status.NextCheck.Format(time.RFC3339))
-				}
-				fmt.Fprintf(w, "#%d\t%s\t%s\t%s\t%s\n", item.ID, item.ExpiresAt.Local().Format(cmdutil.TimeLayout),
-					core.FormatRemaining(time.Until(item.ExpiresAt)), item.Path, note)
-			}
-			return w.Flush()
+			return printItems(svc, state.Items, now)
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print JSON")
 	return cmd
+}
+
+func printItemsJSON(svc *core.Service, items []core.Item, now time.Time) error {
+	type row struct {
+		core.Item
+		Stability *core.WatchStatus `json:"stability,omitempty"`
+	}
+	rows := make([]row, 0, len(items))
+	for _, it := range items {
+		rows = append(rows, row{it, svc.WatchStatus(it, now)})
+	}
+	return cmdutil.PrintJSON(rows)
+}
+
+func printItems(svc *core.Service, items []core.Item, now time.Time) error {
+	if len(items) == 0 {
+		fmt.Println("nothing is tracked")
+		return nil
+	}
+	w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
+	fmt.Fprintln(w, "ID\tEXPIRES\tLEFT\tPATH\tNOTE")
+	for _, item := range items {
+		note := item.Note
+		if item.LastError != "" {
+			note = fmt.Sprintf("retry %d: %s", item.Attempts, item.LastError)
+		}
+		if status := svc.WatchStatus(item, now); status != nil {
+			if strings.HasPrefix(item.LastError, "folder child is still active") {
+				note = fmt.Sprintf("retry %d", item.Attempts)
+			}
+			note += fmt.Sprintf("; quiet for %s more (stable_window=%s); next check %s", status.QuietFor, status.StableWindow, status.NextCheck.Format(time.RFC3339))
+		}
+		fmt.Fprintf(w, "#%d\t%s\t%s\t%s\t%s\n", item.ID, item.ExpiresAt.Local().Format(cmdutil.TimeLayout),
+			core.FormatRemaining(time.Until(item.ExpiresAt)), item.Path, note)
+	}
+	return w.Flush()
 }

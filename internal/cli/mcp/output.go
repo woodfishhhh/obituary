@@ -34,67 +34,86 @@ func boundMCPReply(reply mcpReply) mcpReply {
 	reply.Truncated = errorText != reply.Error || warningText != reply.Warning
 	reply.Error, reply.Warning = errorText, warningText
 	if reply.Data != nil {
-		encoded, err := json.Marshal(reply.Data)
+		value, err := decodeMCPData(reply.Data)
 		if err != nil {
 			return mcpResult(nil, err)
 		}
-		var value map[string]any
-		decoder := json.NewDecoder(bytes.NewReader(encoded))
-		decoder.UseNumber() // ledger IDs retain their full int64 precision
-		if err := decoder.Decode(&value); err != nil {
-			return mcpResult(nil, err)
-		}
-		for key, field := range value {
-			if rows, ok := field.([]any); ok {
-				if len(rows) > 200 {
-					if _, exists := value[key+"Total"]; !exists {
-						value[key+"Total"] = len(rows)
-					}
-					rows = rows[:200]
-					value[key] = rows
-					reply.Truncated = true
-				}
-				for i, row := range rows {
-					var trimmed bool
-					rows[i], trimmed = boundedMCPRow(row)
-					reply.Truncated = reply.Truncated || trimmed
-				}
-			} else {
-				var trimmed bool
-				value[key], trimmed = boundedMCPRow(field)
-				reply.Truncated = reply.Truncated || trimmed
-			}
-		}
+		boundMCPFields(value, &reply.Truncated)
 		reply.Data = value
-		// Preserve every top-level input row (tools accept at most 100), while
-		// reducing strings/nested detail if several bounded arrays add up.
-		for limit := 256; ; limit /= 2 {
-			encoded, err := json.Marshal(reply)
-			if err != nil {
-				return mcpResult(nil, err)
-			}
-			if len(encoded) <= mcpReplyBytes-1024 {
-				break
-			}
-			if limit == 0 {
-				return mcpResult(nil, errors.New("reply exceeds the display budget; use obit graveyard or a smaller page"))
-			}
-			reply.Truncated = true
-			for key, field := range value {
-				if rows, ok := field.([]any); ok {
-					for i, row := range rows {
-						rows[i] = compactMCPValue(row, limit, &reply.Truncated)
-					}
-				} else {
-					value[key] = compactMCPValue(field, limit, &reply.Truncated)
-				}
-			}
+		if err := fitMCPReply(&reply, value); err != nil {
+			return mcpResult(nil, err)
 		}
 	}
 	if reply.Truncated {
 		reply.Warning = strings.TrimSpace(reply.Warning + " Display data truncated; full metadata remains in the ledger and CLI output.")
 	}
 	return reply
+}
+
+func decodeMCPData(data any) (map[string]any, error) {
+	encoded, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	var value map[string]any
+	decoder := json.NewDecoder(bytes.NewReader(encoded))
+	decoder.UseNumber() // ledger IDs retain their full int64 precision
+	if err := decoder.Decode(&value); err != nil {
+		return nil, err
+	}
+	return value, nil
+}
+
+func boundMCPFields(value map[string]any, truncated *bool) {
+	for key, field := range value {
+		rows, ok := field.([]any)
+		if !ok {
+			var trimmed bool
+			value[key], trimmed = boundedMCPRow(field)
+			*truncated = *truncated || trimmed
+			continue
+		}
+		if len(rows) > 200 {
+			if _, exists := value[key+"Total"]; !exists {
+				value[key+"Total"] = len(rows)
+			}
+			rows = rows[:200]
+			value[key] = rows
+			*truncated = true
+		}
+		for i, row := range rows {
+			var trimmed bool
+			rows[i], trimmed = boundedMCPRow(row)
+			*truncated = *truncated || trimmed
+		}
+	}
+}
+
+func fitMCPReply(reply *mcpReply, value map[string]any) error {
+	// Preserve every top-level input row (tools accept at most 100), while
+	// reducing strings/nested detail if several bounded arrays add up.
+	for limit := 256; ; limit /= 2 {
+		encoded, err := json.Marshal(reply)
+		if err != nil {
+			return err
+		}
+		if len(encoded) <= mcpReplyBytes-1024 {
+			return nil
+		}
+		if limit == 0 {
+			return errors.New("reply exceeds the display budget; use obit graveyard or a smaller page")
+		}
+		reply.Truncated = true
+		for key, field := range value {
+			if rows, ok := field.([]any); ok {
+				for i, row := range rows {
+					rows[i] = compactMCPValue(row, limit, &reply.Truncated)
+				}
+			} else {
+				value[key] = compactMCPValue(field, limit, &reply.Truncated)
+			}
+		}
+	}
 }
 
 func boundedMCPRow(value any) (any, bool) {

@@ -46,6 +46,12 @@ func BurialRetryFixture(t *testing.T, mode string) (*core.Service, core.Burial, 
 		svc.FS = &onceRootFailureFS{FS: svc.FS, root: filepath.Join(svc.Store.Home, "graveyard")}
 		return svc, burials[0], burials[1]
 	}
+	prepareBurialRetry(t, svc, burials[1], mode)
+	return svc, burials[0], burials[1]
+}
+
+func prepareBurialRetry(t *testing.T, svc *core.Service, newer core.Burial, mode string) {
+	t.Helper()
 	original := svc.FS
 	var held windows.Handle
 	t.Cleanup(func() {
@@ -54,14 +60,14 @@ func BurialRetryFixture(t *testing.T, mode string) (*core.Service, core.Burial, 
 		}
 	})
 	svc.FS = restoreReceiptFS{FS: original, after: func() {
-		p, _ := windows.UTF16PtrFromString(filepath.Dir(burials[1].Grave) + ".json")
+		p, _ := windows.UTF16PtrFromString(filepath.Dir(newer.Grave) + ".json")
 		h, err := windows.CreateFile(p, windows.GENERIC_READ, windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE, nil, windows.OPEN_EXISTING, 0, 0)
 		if err != nil {
 			t.Fatal(err)
 		}
 		held = h
 	}}
-	rows, err := svc.Resurrect([]string{fmt.Sprint(burials[1].ID)})
+	rows, err := svc.Resurrect([]string{fmt.Sprint(newer.ID)})
 	if err != nil || core.GraveFailed(rows) || rows[0].Warning == "" {
 		t.Fatal(rows, err)
 	}
@@ -69,14 +75,13 @@ func BurialRetryFixture(t *testing.T, mode string) (*core.Service, core.Burial, 
 	if mode == "manifest" {
 		windows.CloseHandle(held)
 		held = 0
-		p, _ := windows.UTF16PtrFromString(filepath.Dir(burials[1].Grave) + ".json")
+		p, _ := windows.UTF16PtrFromString(filepath.Dir(newer.Grave) + ".json")
 		var err error
 		held, err = windows.CreateFile(p, windows.GENERIC_READ, 0, nil, windows.OPEN_EXISTING, 0, 0)
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
-	return svc, burials[0], burials[1]
 }
 
 func AssertRetryPreservesBurials(t *testing.T, older, newer core.Burial, mode, message string, failed bool) {

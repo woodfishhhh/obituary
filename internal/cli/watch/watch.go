@@ -80,20 +80,21 @@ func (o *options) run(args []string) error {
 	if !o.noDaemon {
 		cmdutil.EnsureDaemon(svc.Store.Home, o.asJSON)
 	}
-	if o.asJSON {
-		err = cmdutil.PrintJSON(p)
-	} else {
-		fmt.Printf("#%d %s  %s  age=%s  %s\n", p.ID, p.Path, p.Lifespan, p.Age, p.Consent)
-		if p.Consent != core.ConsentApproved {
-			if err := printWatchProposal(svc, p.ID); err != nil {
-				return err
-			}
-		}
-	}
-	if err != nil {
+	if err := o.printPolicy(svc, p); err != nil {
 		return err
 	}
 	return folderwatch.Reconcile(svc)
+}
+
+func (o *options) printPolicy(svc *core.Service, p core.WatchPolicy) error {
+	if o.asJSON {
+		return cmdutil.PrintJSON(p)
+	}
+	fmt.Printf("#%d %s  %s  age=%s  %s\n", p.ID, p.Path, p.Lifespan, p.Age, p.Consent)
+	if p.Consent != core.ConsentApproved {
+		return printWatchProposal(svc, p.ID)
+	}
+	return nil
 }
 
 func printWatchProposal(svc *core.Service, policyID int64) error {

@@ -77,38 +77,8 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 				scope.Project = p.Root
 			}
 			if show {
-				scope = scope.ForInspection()
-				names := AgentNames()
-				statusScope := scope
-				if cmd.Flags().Changed("agent") {
-					names = selected
-				} else {
-					// The unfiltered inventory does not request optional extensions
-					// for agents outside the historical default selection.
-					statusScope.MCP, statusScope.Skill = false, false
-				}
-				if err := planner.showAgents(statusScope, names, !cmd.Flags().Changed("agent")); err != nil {
+				if err := planner.showIntegrations(scope.ForInspection(), selected, cmd.Flags().Changed("agent")); err != nil {
 					return err
-				}
-				for _, agent := range selected {
-					if agent == "claude" || agent == "codex" {
-						changes, err := planner.IntegrationPlan(agent, scope, false)
-						if err != nil {
-							return err
-						}
-						if !integrate.Pending(changes) {
-							fmt.Println(agentName(agent) + " integration: installed")
-						} else {
-							fmt.Println(agentName(agent) + " integration: not (fully) installed; obit init would:")
-						}
-						printChanges(changes)
-						registered, effective := integrate.GuardRMStatus(changes, agent)
-						status, _ := DeleteGuardStatus(registered, effective)
-						fmt.Printf("delete guard: %s\n", status)
-					}
-					if err := planner.showExtensions(scope, agent); err != nil {
-						return err
-					}
 				}
 				return showDesktop(cmd.OutOrStdout(), executable)
 			}
@@ -202,6 +172,49 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 	cmd.Flags().BoolVar(&noContextMenu, "no-context-menu", false, "skip Explorer context menus")
 	cmd.Flags().BoolVar(&noShortcuts, "no-shortcuts", false, "skip Start menu and desktop shortcuts")
 	return cmd
+}
+
+func (p Planner) showIntegrations(scope integrate.Scope, selected []string, explicit bool) error {
+	names := AgentNames()
+	statusScope := scope
+	if explicit {
+		names = selected
+	} else {
+		// The unfiltered inventory does not request optional extensions
+		// for agents outside the historical default selection.
+		statusScope.MCP, statusScope.Skill = false, false
+	}
+	if err := p.showAgents(statusScope, names, !explicit); err != nil {
+		return err
+	}
+	for _, agent := range selected {
+		if agent == "claude" || agent == "codex" {
+			if err := p.showHookPlan(scope, agent); err != nil {
+				return err
+			}
+		}
+		if err := p.showExtensions(scope, agent); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p Planner) showHookPlan(scope integrate.Scope, agent string) error {
+	changes, err := p.IntegrationPlan(agent, scope, false)
+	if err != nil {
+		return err
+	}
+	if !integrate.Pending(changes) {
+		fmt.Println(agentName(agent) + " integration: installed")
+	} else {
+		fmt.Println(agentName(agent) + " integration: not (fully) installed; obit init would:")
+	}
+	printChanges(changes)
+	registered, effective := integrate.GuardRMStatus(changes, agent)
+	status, _ := DeleteGuardStatus(registered, effective)
+	fmt.Printf("delete guard: %s\n", status)
+	return nil
 }
 
 func agentName(agent string) string {

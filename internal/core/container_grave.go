@@ -62,11 +62,12 @@ func (s *Service) resurrectContainer(r *GraveResult, b Burial) error {
 func finishContainerGrave(st *State, b Burial, action string, at time.Time, detail string) {
 	idx := st.BurialIndex(b.ID)
 	st.Burials = append(st.Burials[:idx], st.Burials[idx+1:]...)
-	if action == ActionResurrected {
+	switch action {
+	case ActionResurrected:
 		st.Stats.Resurrected++
-	} else if action == ActionLost {
+	case ActionLost:
 		st.Stats.ContainersLost++
-	} else {
+	default:
 		st.Stats.Purged++
 	}
 	st.queueAudit(Event{Time: at, Action: action, ID: b.ID, Path: b.Path, Detail: detail})

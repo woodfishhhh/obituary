@@ -37,57 +37,69 @@ func StatusCmd(home func() (string, error)) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			state, err := core.Store{Home: h}.Read()
+			st, err := readStatus(h)
 			if err != nil {
 				return err
-			}
-			st := DaemonStatus{Running: cmdutil.RunnerRunning(h), Autostart: cmdutil.RunnerAutostart(), Home: h, Tracked: len(state.Items),
-				ScheduleInstalled: cmdutil.RunnerInstalled(), ScheduleServesHome: cmdutil.RunnerServes(h)}
-			pending, scanErr := (&core.Service{Store: core.Store{Home: h}, FS: winfs.FS{}}).PendingGraves()
-			st.PendingRecovery = len(pending)
-			if scanErr != nil {
-				st.RecoveryWarning = scanErr.Error()
-			}
-			if st.ScheduleInstalled {
-				st.ScheduleTarget, _ = cmdutil.RunnerTarget()
-			}
-			switch {
-			case st.Running || st.Autostart != "":
-				st.Mode = "resident"
-			case st.ScheduleServesHome:
-				st.Mode = "scheduled"
-			default:
-				st.Mode = "off"
-			}
-			if next, ok := state.NextDue(); ok {
-				st.NextDue = &next
 			}
 			if asJSON {
 				return cmdutil.PrintJSON(st)
 			}
-			mode := map[string]string{
-				"scheduled": fmt.Sprintf("scheduled task every %d minutes (%s)", int(app.Interval.Minutes()), app.TaskName),
-				"resident":  "resident tray daemon (scheduled fallback is reported separately)",
-				"off":       "off (run `obit daemon enable`)",
-			}[st.Mode]
-			running := "not running"
-			if st.Running {
-				running = "running"
-			}
-			fmt.Printf("runner:    %s\ndaemon:    %s\ndata:      %s\ntracked:   %d\n", mode, running, h, st.Tracked)
-			fmt.Printf("pending recovery: %d\n", st.PendingRecovery)
-			if st.RecoveryWarning != "" {
-				fmt.Fprintln(os.Stderr, "warning:", st.RecoveryWarning)
-			}
-			if st.ScheduleInstalled && !st.ScheduleServesHome {
-				fmt.Printf("schedule:  installed but does not serve this data directory: %s\n", st.ScheduleTarget)
-			}
-			if st.NextDue != nil {
-				fmt.Printf("next:      %s\n", cmdutil.When(*st.NextDue))
-			}
+			printStatus(st)
 			return nil
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print JSON")
 	return cmd
+}
+
+func readStatus(home string) (DaemonStatus, error) {
+	state, err := (core.Store{Home: home}).Read()
+	if err != nil {
+		return DaemonStatus{}, err
+	}
+	st := DaemonStatus{Running: cmdutil.RunnerRunning(home), Autostart: cmdutil.RunnerAutostart(), Home: home, Tracked: len(state.Items),
+		ScheduleInstalled: cmdutil.RunnerInstalled(), ScheduleServesHome: cmdutil.RunnerServes(home)}
+	pending, scanErr := (&core.Service{Store: core.Store{Home: home}, FS: winfs.FS{}}).PendingGraves()
+	st.PendingRecovery = len(pending)
+	if scanErr != nil {
+		st.RecoveryWarning = scanErr.Error()
+	}
+	if st.ScheduleInstalled {
+		st.ScheduleTarget, _ = cmdutil.RunnerTarget()
+	}
+	switch {
+	case st.Running || st.Autostart != "":
+		st.Mode = "resident"
+	case st.ScheduleServesHome:
+		st.Mode = "scheduled"
+	default:
+		st.Mode = "off"
+	}
+	if next, ok := state.NextDue(); ok {
+		st.NextDue = &next
+	}
+	return st, nil
+}
+
+func printStatus(st DaemonStatus) {
+	mode := map[string]string{
+		"scheduled": fmt.Sprintf("scheduled task every %d minutes (%s)", int(app.Interval.Minutes()), app.TaskName),
+		"resident":  "resident tray daemon (scheduled fallback is reported separately)",
+		"off":       "off (run `obit daemon enable`)",
+	}[st.Mode]
+	running := "not running"
+	if st.Running {
+		running = "running"
+	}
+	fmt.Printf("runner:    %s\ndaemon:    %s\ndata:      %s\ntracked:   %d\n", mode, running, st.Home, st.Tracked)
+	fmt.Printf("pending recovery: %d\n", st.PendingRecovery)
+	if st.RecoveryWarning != "" {
+		fmt.Fprintln(os.Stderr, "warning:", st.RecoveryWarning)
+	}
+	if st.ScheduleInstalled && !st.ScheduleServesHome {
+		fmt.Printf("schedule:  installed but does not serve this data directory: %s\n", st.ScheduleTarget)
+	}
+	if st.NextDue != nil {
+		fmt.Printf("next:      %s\n", cmdutil.When(*st.NextDue))
+	}
 }

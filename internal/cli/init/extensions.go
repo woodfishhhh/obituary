@@ -66,11 +66,7 @@ func (p Planner) planExtensions(changes []integrate.Change, scope integrate.Scop
 				changes = append(changes, integrate.Change{Path: agent + " " + kind, Extension: kind, Implicit: true, Action: "preserve", Detail: "warning: implicit refresh skipped: " + err.Error()})
 				continue
 			}
-			installed := integrate.Pending(remove)
-			if kind == "skill" && (agent == "claude" || agent == "codex") {
-				installed = remove[0].Action == "remove"
-			}
-			if !installed {
+			if !extensionInstalled(remove, kind, agent) {
 				continue
 			}
 		}
@@ -107,29 +103,17 @@ func (p Planner) planExtensions(changes []integrate.Change, scope integrate.Scop
 	return changes, nil
 }
 
+func extensionInstalled(remove []integrate.Change, kind, agent string) bool {
+	installed := integrate.Pending(remove)
+	if kind == "skill" && (agent == "claude" || agent == "codex") {
+		installed = remove[0].Action == "remove"
+	}
+	return installed
+}
+
 func applyIntegrationPlan(changes []integrate.Change, uninstall bool) error {
 	if !uninstall {
-		var required []integrate.Change
-		for _, c := range changes {
-			if !c.Implicit {
-				required = append(required, c)
-			}
-		}
-		if err := integrate.Apply(required); err != nil {
-			return err
-		}
-		for _, kind := range []string{"mcp", "skill"} {
-			var optional []integrate.Change
-			for _, c := range changes {
-				if c.Implicit && c.Extension == kind {
-					optional = append(optional, c)
-				}
-			}
-			if err := integrate.Apply(optional); err != nil {
-				fmt.Printf("warning: implicit %s refresh failed: %v\n", kind, err)
-			}
-		}
-		return nil
+		return applyInstallPlan(changes)
 	}
 	var errs []error
 	// Hook removal and each optional extension have independent preflights.
@@ -145,6 +129,30 @@ func applyIntegrationPlan(changes []integrate.Change, uninstall bool) error {
 		}
 	}
 	return errors.Join(errs...)
+}
+
+func applyInstallPlan(changes []integrate.Change) error {
+	var required []integrate.Change
+	for _, c := range changes {
+		if !c.Implicit {
+			required = append(required, c)
+		}
+	}
+	if err := integrate.Apply(required); err != nil {
+		return err
+	}
+	for _, kind := range []string{"mcp", "skill"} {
+		var optional []integrate.Change
+		for _, c := range changes {
+			if c.Implicit && c.Extension == kind {
+				optional = append(optional, c)
+			}
+		}
+		if err := integrate.Apply(optional); err != nil {
+			fmt.Printf("warning: implicit %s refresh failed: %v\n", kind, err)
+		}
+	}
+	return nil
 }
 
 func (p Planner) showExtensions(scope integrate.Scope, agent string) error {

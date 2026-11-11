@@ -24,25 +24,29 @@ func HermesDir() (string, error) {
 		return "", fmt.Errorf("HERMES_DATA_DIR_SUFFIX must be a directory-name suffix")
 	}
 	if runtime.GOOS == "windows" {
-		base := strings.TrimSpace(os.Getenv("LOCALAPPDATA"))
-		if base == "" {
-			home, err := Home()
-			if err != nil {
-				return "", err
-			}
-			base = filepath.Join(home, "AppData", "Local")
-		}
-		base, err := directoryAbs(base)
-		if err != nil {
-			return "", err
-		}
-		return directoryAbs(filepath.Join(base, "hermes"+suffix))
+		return hermesWindowsDir(suffix)
 	}
 	home, err := Home()
 	if err != nil {
 		return "", err
 	}
 	return directoryAbs(filepath.Join(home, ".hermes"+suffix))
+}
+
+func hermesWindowsDir(suffix string) (string, error) {
+	base := strings.TrimSpace(os.Getenv("LOCALAPPDATA"))
+	if base == "" {
+		home, err := Home()
+		if err != nil {
+			return "", err
+		}
+		base = filepath.Join(home, "AppData", "Local")
+	}
+	base, err := directoryAbs(base)
+	if err != nil {
+		return "", err
+	}
+	return directoryAbs(filepath.Join(base, "hermes"+suffix))
 }
 
 func init() {
