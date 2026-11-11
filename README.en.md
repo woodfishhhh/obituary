@@ -8,7 +8,7 @@
   </h1>
   <p>
     <strong>Every file has a deadline.</strong><br>
-    Write an obituary for a file or folder. When its lifespan runs out it is buried in a graveyard; you can resurrect it at any time during the retention period, and only after that is it really deleted.
+    What your AI leaves behind leaves on its own when it expires; what your AI deletes comes back for seven days.
   </p>
     <p>
     <a href="#why-obituary">Why Obituary</a> ·

@@ -24,7 +24,7 @@ export function Hero({ c }: { c: Copy }) {
             </SparklesText>
             {h.after}
           </h1>
-          <p className="max-w-[34ch] text-lg leading-relaxed text-ink-2 md:text-xl">{h.line}</p>
+          <p className="max-w-[34ch] text-lg leading-relaxed text-balance! text-ink-2 md:text-xl">{h.line}</p>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <ShimmerLink href="#install" background="var(--color-cobalt)" shimmerColor={brand.gold} shimmerDuration="2.6s" className="h-12 px-7 text-base font-medium">
               {h.primary}
