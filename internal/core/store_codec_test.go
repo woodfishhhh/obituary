@@ -12,13 +12,15 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/woodfishhhh/obituary/internal/core/internal/fileio"
 )
 
 // Measure the whole file-backed transaction, including production fsyncs.
 func BenchmarkStoreLedger(b *testing.B) {
-	previous := syncFile
-	syncFile = (*os.File).Sync
-	b.Cleanup(func() { syncFile = previous })
+	previous := fileio.SyncFile
+	fileio.SyncFile = (*os.File).Sync
+	b.Cleanup(func() { fileio.SyncFile = previous })
 	for _, operation := range []string{"load", "load-hot", "save", "update-single", "update-joint"} {
 		b.Run(operation, func(b *testing.B) {
 			store := Store{Home: b.TempDir()}

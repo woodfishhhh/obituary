@@ -4,21 +4,23 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/woodfishhhh/obituary/internal/core/internal/fileio"
 )
 
-func init() { syncFile = func(*os.File) error { return nil } }
+func init() { fileio.SyncFile = func(*os.File) error { return nil } }
 
 // RequireFsync is only available in core's test binary. Like SetReplacementSync,
 // it is for serial tests: callers and their subtests must not use t.Parallel.
 // The core suite is serial, including all recovery and flush-failure tests.
 func RequireFsync(t *testing.T) {
 	t.Helper()
-	previous := syncFile
-	syncFile = (*os.File).Sync
-	t.Cleanup(func() { syncFile = previous })
+	previous := fileio.SyncFile
+	fileio.SyncFile = (*os.File).Sync
+	t.Cleanup(func() { fileio.SyncFile = previous })
 }
 
-func SyncFileForTesting(file *os.File) error { return syncFile(file) }
+func SyncFileForTesting(file *os.File) error { return fileio.SyncFile(file) }
 
 func ObserveStoreLocks(s *Store, fn func(time.Duration)) { s.observeLock = fn }
 
@@ -51,9 +53,9 @@ func PendingBurialRetry(s *Service, st State, path string) string {
 }
 
 func SetReplacementSync(fn func(*os.File) error) func() {
-	previous := syncReplacement
-	syncReplacement = fn
-	return func() { syncReplacement = previous }
+	previous := fileio.SyncReplacement
+	fileio.SyncReplacement = fn
+	return func() { fileio.SyncReplacement = previous }
 }
 
 // GraveyardRoot exposes graveyardRoot to the external tests.

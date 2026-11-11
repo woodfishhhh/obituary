@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/woodfishhhh/obituary/internal/core/internal/fileio"
 )
 
 func snapshotTestStore(t *testing.T) Store {
@@ -25,7 +27,7 @@ func snapshotTestStore(t *testing.T) Store {
 
 func injectSnapshotFault(t *testing.T, stage string) func() {
 	t.Helper()
-	oldWrite, oldSync, oldReplace, oldRename, oldLink := writeStoreBytes, syncFile, syncReplacement, renameStore, publishGraveyardLink
+	oldWrite, oldSync, oldReplace, oldRename, oldLink := fileio.WriteStoreBytes, fileio.SyncFile, fileio.SyncReplacement, fileio.RenameStore, publishGraveyardLink
 	fault := errors.New("injected " + stage)
 	kind := func(f *os.File) string {
 		if strings.HasPrefix(filepath.Base(f.Name()), "graveyard.") {
@@ -36,25 +38,25 @@ func injectSnapshotFault(t *testing.T, stage string) func() {
 		}
 		return "backup"
 	}
-	writeStoreBytes = func(f *os.File, data []byte) (int, error) {
+	fileio.WriteStoreBytes = func(f *os.File, data []byte) (int, error) {
 		if stage == kind(f)+"-write" {
 			return 0, fault
 		}
 		return oldWrite(f, data)
 	}
-	syncFile = func(f *os.File) error {
+	fileio.SyncFile = func(f *os.File) error {
 		if stage == kind(f)+"-flush" {
 			return fault
 		}
 		return oldSync(f)
 	}
-	syncReplacement = func(f *os.File) error {
+	fileio.SyncReplacement = func(f *os.File) error {
 		if stage == kind(f)+"-confirm" {
 			return fault
 		}
 		return oldReplace(f)
 	}
-	renameStore = func(root *os.Root, from, to string) error {
+	fileio.RenameStore = func(root *os.Root, from, to string) error {
 		if stage == "hot-rename" && to == "store.json" {
 			return fault
 		}
@@ -67,7 +69,7 @@ func injectSnapshotFault(t *testing.T, stage string) func() {
 		return oldLink(root, from, to)
 	}
 	reset := func() {
-		writeStoreBytes, syncFile, syncReplacement, renameStore, publishGraveyardLink = oldWrite, oldSync, oldReplace, oldRename, oldLink
+		fileio.WriteStoreBytes, fileio.SyncFile, fileio.SyncReplacement, fileio.RenameStore, publishGraveyardLink = oldWrite, oldSync, oldReplace, oldRename, oldLink
 	}
 	t.Cleanup(reset)
 	return reset
@@ -113,12 +115,12 @@ func TestSnapshotConfirmFlushesDependencyBeforeHotLedger(t *testing.T) {
 	RequireFsync(t)
 	store := snapshotTestStore(t)
 	var names []string
-	old := syncReplacement
-	syncReplacement = func(f *os.File) error {
+	old := fileio.SyncReplacement
+	fileio.SyncReplacement = func(f *os.File) error {
 		names = append(names, filepath.Base(f.Name()))
 		return old(f)
 	}
-	t.Cleanup(func() { syncReplacement = old })
+	t.Cleanup(func() { fileio.SyncReplacement = old })
 	if err := store.Confirm(func(*State) error { return nil }); err != nil {
 		t.Fatal(err)
 	}

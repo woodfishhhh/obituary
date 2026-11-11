@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/woodfishhhh/obituary/internal/core/internal/fileio"
 )
 
 const DataOwnerFile = ".obituary-data"
@@ -56,8 +58,7 @@ func (s Store) prepareDataOwner(state *State) error {
 	// write. A marker that was renamed into place but not confirmed on disk
 	// is still the visible one; any other failure leaves the ledger
 	// unmarked and the next save tries again.
-	var unconfirmed *unconfirmedCommit
-	if err := writeDurably(filepath.Join(s.Home, DataOwnerFile), append(data, '\n')); err == nil || errors.As(err, &unconfirmed) {
+	if err := writeDurably(filepath.Join(s.Home, DataOwnerFile), append(data, '\n')); err == nil || fileio.IsCommitUnconfirmed(err) {
 		state.DataID = id
 	}
 	return nil

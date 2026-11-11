@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/woodfishhhh/obituary/internal/core/internal/fileio"
 )
 
 // Extend pushes the expiry of each referenced item back by d (counted from now if already due).
@@ -95,8 +97,7 @@ func (s *Service) mutate(refs []string, action string, apply func(*State, int)) 
 }
 
 func lifespanCommitError(err error) error {
-	var unconfirmed *unconfirmedCommit
-	if errors.As(err, &unconfirmed) {
+	if fileio.IsCommitUnconfirmed(err) {
 		return fmt.Errorf("commit unconfirmed: the change may already have taken effect; check obit list before retrying: %w", err)
 	}
 	return err

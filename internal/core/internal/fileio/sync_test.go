@@ -1,14 +1,16 @@
-package core
+package fileio_test
 
 import (
 	"errors"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/woodfishhhh/obituary/internal/core/internal/fileio"
 )
 
 // Capture the production default before TestMain installs the test substitute.
-var defaultFileSync = syncFile
+var defaultFileSync = fileio.SyncFile
 
 func TestFileSyncDefaultFlushes(t *testing.T) {
 	file, err := os.Create(filepath.Join(t.TempDir(), "flush-probe"))

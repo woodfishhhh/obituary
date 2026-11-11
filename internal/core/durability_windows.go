@@ -1,6 +1,9 @@
 package core
 
-import "os"
+import (
+	"os"
 
-// Windows durability is the existing Sync on the renamed file handle.
-func syncParentDirectory(*os.Root) error { return nil }
+	"github.com/woodfishhhh/obituary/internal/core/internal/fileio"
+)
+
+func syncParentDirectory(root *os.Root) error { return fileio.SyncParentDirectory(root) }

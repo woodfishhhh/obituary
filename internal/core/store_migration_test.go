@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/woodfishhhh/obituary/internal/core/internal/fileio"
 )
 
 func legacyLedger(t *testing.T, indented bool) (Store, []byte, State) {
@@ -125,14 +127,14 @@ func TestLedgerMigrationRecoversInterruptedCommits(t *testing.T) {
 	for _, stage := range []string{"backup", "ledger"} {
 		t.Run(stage, func(t *testing.T) {
 			store, original, want := legacyLedger(t, true)
-			oldSync := syncReplacement
-			syncReplacement = func(f *os.File) error {
+			oldSync := fileio.SyncReplacement
+			fileio.SyncReplacement = func(f *os.File) error {
 				if stage == "backup" && strings.HasSuffix(f.Name(), ".bak.tmp") || stage == "ledger" && filepath.Base(f.Name()) == "store.json.tmp" {
 					return errors.New("injected interrupted commit")
 				}
-				return syncFile(f)
+				return fileio.SyncFile(f)
 			}
-			t.Cleanup(func() { syncReplacement = oldSync })
+			t.Cleanup(func() { fileio.SyncReplacement = oldSync })
 			if err := store.Update(func(*State) error { return nil }); err == nil {
 				t.Fatal("interrupted migration reported success")
 			}
@@ -142,7 +144,7 @@ func TestLedgerMigrationRecoversInterruptedCommits(t *testing.T) {
 					t.Fatal("ledger changed before backup confirmation")
 				}
 			}
-			syncReplacement = oldSync
+			fileio.SyncReplacement = oldSync
 			if err := store.Update(func(*State) error { return nil }); err != nil {
 				t.Fatal(err)
 			}
@@ -208,9 +210,9 @@ func TestLedgerMigrationAuditRetriesAndBackupRollsBack(t *testing.T) {
 
 func TestLedgerMigrationBackupFailureKeepsOriginal(t *testing.T) {
 	store, original, _ := legacyLedger(t, false)
-	oldSync := syncReplacement
-	syncReplacement = func(*os.File) error { return errors.New("backup unavailable") }
-	t.Cleanup(func() { syncReplacement = oldSync })
+	oldSync := fileio.SyncReplacement
+	fileio.SyncReplacement = func(*os.File) error { return errors.New("backup unavailable") }
+	t.Cleanup(func() { fileio.SyncReplacement = oldSync })
 	if err := store.Update(func(st *State) error { st.Burials = nil; return nil }); err == nil {
 		t.Fatal("mutation committed without rollback evidence")
 	}

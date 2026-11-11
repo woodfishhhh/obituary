@@ -7,24 +7,25 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/woodfishhhh/obituary/internal/core/internal/fileio"
 )
 
 func TestPOSIXCommitReportsUnconfirmedFlush(t *testing.T) {
 	store := Store{Home: t.TempDir()}
 	sentinel := errors.New("injected device flush failure")
-	before := syncReplacement
+	before := fileio.SyncReplacement
 	// Fail only the hot ledger's post-rename flush; the graveyard snapshot is
 	// published (and confirmed) before the hot commit and must still succeed.
-	syncReplacement = func(f *os.File) error {
+	fileio.SyncReplacement = func(f *os.File) error {
 		if filepath.Base(f.Name()) == "store.json.tmp" {
 			return sentinel
 		}
 		return before(f)
 	}
-	t.Cleanup(func() { syncReplacement = before })
+	t.Cleanup(func() { fileio.SyncReplacement = before })
 	err := store.Update(func(st *State) error { st.NextID = 19; return nil })
-	var uncertain *unconfirmedCommit
-	if !errors.As(err, &uncertain) || !errors.Is(err, sentinel) {
+	if !fileio.IsCommitUnconfirmed(err) || !errors.Is(err, sentinel) {
 		t.Fatalf("flush failure reported as success: %v", err)
 	}
 	got, err := store.Inspect()

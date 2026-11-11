@@ -1,21 +1,23 @@
 //go:build linux || darwin
 
-package core
+package fileio_test
 
 import (
 	"context"
 	"errors"
 	"path/filepath"
 	"testing"
+
+	"github.com/woodfishhhh/obituary/internal/core/internal/fileio"
 )
 
 func TestPOSIXLocksSerializeAndRelease(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "store.lock")
-	release, err := lockFile(path, true)
+	release, err := fileio.LockFile(path, true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	other, ok, err := tryLockFile(path, true)
+	other, ok, err := fileio.TryLockFile(path, true)
 	if other != nil {
 		other()
 	}
@@ -25,12 +27,12 @@ func TestPOSIXLocksSerializeAndRelease(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, err := lockFileContext(ctx, path, true); !errors.Is(err, context.Canceled) {
+	if _, err := fileio.LockFileContext(ctx, path, true); !errors.Is(err, context.Canceled) {
 		release()
 		t.Fatal(err)
 	}
 	release()
-	other, ok, err = tryLockFile(path, true)
+	other, ok, err = fileio.TryLockFile(path, true)
 	if err != nil || !ok {
 		t.Fatal(ok, err)
 	}
