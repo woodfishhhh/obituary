@@ -89,6 +89,10 @@ const zh = {
     backNote: "obit resurrect",
     end: "火化",
     endNote: "保留期过后",
+    graveLeft: "还能复活",
+    days: "天",
+    backDone: "原样放回",
+    endDone: "保留期到，火化",
   },
   story: {
     head: "讣告是被 agent 逼出来的",
@@ -283,6 +287,10 @@ const en: Copy = {
     backNote: "obit resurrect",
     end: "Purge",
     endNote: "after retention",
+    graveLeft: "Restorable for",
+    days: "days",
+    backDone: "Back where it was",
+    endDone: "Retention over, purged",
   },
   story: {
     head: "Agents pushed us into writing it",
