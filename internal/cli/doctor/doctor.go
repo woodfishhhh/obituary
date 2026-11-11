@@ -268,7 +268,7 @@ func regularFile(path string) error {
 	return err
 }
 
-func diagnoseHookLog(home string, now time.Time) DoctorCheck {
+func diagnoseHookLog(home string, now time.Time, protectedRoots ...string) DoctorCheck {
 	c := DoctorCheck{Name: "hook-log", Status: "PASS"}
 	var permissionAt time.Time
 	permission := ""
@@ -283,7 +283,7 @@ func diagnoseHookLog(home string, now time.Time) DoctorCheck {
 			return c
 		}
 		for _, line := range strings.Split(string(data), "\n") {
-			if !hook.IsErrorLogLine(line) {
+			if !hook.IsErrorLogLine(line, protectedRoots...) {
 				continue
 			}
 			stamp, _, _ := strings.Cut(line, " ")

@@ -19,6 +19,13 @@ import (
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
+func setProtectedDiscoveryRoots(t *testing.T, roots ...string) {
+	t.Helper()
+	original := protectedDiscoveryRoots
+	protectedDiscoveryRoots = func() []string { return roots }
+	t.Cleanup(func() { protectedDiscoveryRoots = original })
+}
+
 type env struct {
 	t      testing.TB
 	root   string

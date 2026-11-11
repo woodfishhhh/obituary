@@ -33,17 +33,21 @@ func Disabled() bool {
 // previous log).
 func Logf(home, format string, args ...any) { appendLog(home, "hook.log", format, args...) }
 
-// IsErrorLogLine excludes explicit skips and legacy discovery denials from
-// health warnings. Unrecognized records remain errors so real failures surface.
-func IsErrorLogLine(line string) bool {
+// IsErrorLogLine excludes explicit skips and legacy discovery denials in
+// protected system locations. A non-nil roots slice overrides the OS locations.
+// Unrecognized records remain errors so real failures surface.
+func IsErrorLogLine(line string, roots ...string) bool {
 	_, message, _ := strings.Cut(line, " ")
 	if strings.HasPrefix(message, "skip: ") {
 		return false
 	}
-	return !legacyDiscoveryDenied(message)
+	if roots == nil {
+		roots = protectedDiscoveryRoots()
+	}
+	return !legacyDiscoveryDenied(message, roots)
 }
 
-func legacyDiscoveryDenied(message string) bool {
+func legacyDiscoveryDenied(message string, roots []string) bool {
 	_, payload, ok := strings.Cut(message, ": ")
 	if !ok {
 		return false
@@ -61,7 +65,7 @@ func legacyDiscoveryDenied(message string) bool {
 		Path      string `json:"path"`
 	}
 	_, raw, ok := strings.Cut(payload[len(quoted):], permissionMarker)
-	if !ok || json.Unmarshal([]byte(raw), &diagnostic) != nil || diagnostic.Operation != "resolve project directory" || diagnostic.Path == "" {
+	if !ok || json.Unmarshal([]byte(raw), &diagnostic) != nil || diagnostic.Operation != "resolve project directory" || !inProtectedDiscoveryRoot(diagnostic.Path, roots) {
 		return false
 	}
 	cwd, err := strconv.QuotedPrefix(strings.TrimPrefix(text, "discover project from "))

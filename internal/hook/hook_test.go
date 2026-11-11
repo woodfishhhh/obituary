@@ -16,19 +16,26 @@ import (
 )
 
 func TestIsErrorLogLineConservativelyFiltersDiscoveryDenials(t *testing.T) {
-	cwd := `C:\fixture\app\resources`
-	path := `C:\fixture`
+	path := filepath.Join(t.TempDir(), "Program Files")
+	cwd := filepath.Join(path, "app", "resources")
+	setProtectedDiscoveryRoots(t, path)
 	message := fmt.Sprintf("discover project from %q: resolve project directory %s: Access is denied.", cwd, path)
 	line := func(message, metadata string) string {
 		return fmt.Sprintf("2026-11-11T00:00:00Z codex SessionEnd: %q%s%s", message, permissionMarker, metadata)
 	}
-	metadata := `{"operation":"resolve project directory","path":"C:\\fixture"}`
+	metadata := fmt.Sprintf(`{"operation":"resolve project directory","path":%q}`, path)
+	deniedLine := func(denied string) string {
+		message := fmt.Sprintf("discover project from %q: resolve project directory %s: Access is denied.", cwd, denied)
+		return line(message, fmt.Sprintf(`{"operation":"resolve project directory","path":%q}`, denied))
+	}
 	for _, tc := range []struct {
 		name, line string
 		wantError  bool
 	}{
 		{"skip", `2026-11-11T00:00:00Z skip: project discovery unavailable; cwd="C:\\fixture" reason="permission denied"`, false},
 		{"legacy", line(message, metadata), false},
+		{"outside-protected", deniedLine(filepath.Dir(path)), true},
+		{"protected-prefix", deniedLine(path + "X"), true},
 		{"diagnostic-path-mismatch", line(message, `{"operation":"resolve project directory","path":"C:\\other"}`), true},
 		{"missing-operation", line(message, `{"path":"C:\\fixture"}`), true},
 		{"missing-diagnostic", fmt.Sprintf("2026-11-11T00:00:00Z codex SessionEnd: %q", message), true},

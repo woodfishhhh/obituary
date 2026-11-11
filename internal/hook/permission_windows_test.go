@@ -18,6 +18,7 @@ import (
 
 func TestDiscoveryDenialUsesSkipLogWithoutPermissionDiagnostic(t *testing.T) {
 	home := t.TempDir()
+	setProtectedDiscoveryRoots(t, home)
 	original := findProject
 	findProject = func(string) (project.Project, bool, error) {
 		return project.Project{}, false, &os.PathError{Op: "resolve project directory", Path: home, Err: windows.ERROR_ACCESS_DENIED}

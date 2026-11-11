@@ -3,7 +3,6 @@ package hook
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -128,7 +127,7 @@ func handle(e *auto.Engine, ev Event, runner *Runner, pendingNotices bool) (deli
 	}
 	proj, inProject, err := findProject(ev.Cwd)
 	if err != nil && ev.Name != "PostToolUse" {
-		if errors.Is(err, os.ErrPermission) {
+		if skipDiscoveryDenied(err) {
 			// An unresolved project must never enter the non-project snapshot path.
 			Logf(e.Svc.Store.Home, "skip: project discovery unavailable; event=%q cwd=%q reason=%q", ev.Name, ev.Cwd, err)
 			return delivery{skipped: true}, nil

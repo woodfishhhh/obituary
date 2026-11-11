@@ -71,12 +71,8 @@ func TestDeleteGuardDemoRestoresBuild(t *testing.T) {
 		t.Fatalf("PreToolUse denial: %s %v", &stdout, err)
 	}
 	parts := strings.Split(response.Hook.Reason, "`")
-	self, err := filepath.EvalSymlinks(binaryPath(t, "obit"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	// The hook pins its own binary; this is the installed obit rm -rf build.
-	wantCommand := "'" + strings.ReplaceAll(filepath.ToSlash(self), "'", `'\''`) + "' rm -rf build"
+	// demoRepo puts this same executable first on PATH.
+	wantCommand := "obit rm -rf build"
 	if len(parts) < 3 || parts[1] != wantCommand {
 		t.Fatalf("equivalent command: %s; want %s", response.Hook.Reason, wantCommand)
 	}

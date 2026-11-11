@@ -84,10 +84,51 @@ func assertHookLeavesLedger(t *testing.T, e *auto.Engine, ev Event) {
 	}
 }
 
+func TestDiscoveryDeniedOutsideProtectedLocationsReportsError(t *testing.T) {
+	for _, name := range []string{"SessionStart", "Context", "PostToolUseFailure", "Stop", "SessionEnd"} {
+		t.Run(name, func(t *testing.T) {
+			cwd, home := t.TempDir(), t.TempDir()
+			setProtectedDiscoveryRoots(t, filepath.Join(cwd, "Program Files"))
+			denied := &os.PathError{Op: "resolve project directory", Path: cwd, Err: os.ErrPermission}
+			original := findProject
+			findProject = func(string) (project.Project, bool, error) { return project.Project{}, false, denied }
+			t.Cleanup(func() { findProject = original })
+			e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: home}}}
+			runner := &Runner{
+				Tick:   func() { t.Error("discovery denial dispatched a tick") },
+				Finish: func(string, string, bool) { t.Error("discovery denial dispatched a session difference") },
+			}
+			ev := Event{Name: name, Cwd: cwd, Session: "denied"}
+			if text, err := Handle(e, ev, runner); !errors.Is(err, os.ErrPermission) || text != "" {
+				t.Errorf("discovery denial lost its error: context=%q err=%v", text, err)
+			}
+			agent, _ := Lookup("codex")
+			var out bytes.Buffer
+			RunEvent(agent, e, ev, &out, runner)
+			if out.Len() != 0 {
+				t.Errorf("denied event emitted context: %s", &out)
+			}
+			data, err := os.ReadFile(filepath.Join(home, "hook.log"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, want := range []string{"codex " + name, "session=", "home=", "sid=", "hook continues", "obit doctor", "permission_diagnostic="} {
+				if !strings.Contains(string(data), want) {
+					t.Errorf("diagnostic missing %q: %s", want, data)
+				}
+			}
+			if _, err := os.Stat(filepath.Join(home, "sessions")); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("denied event created a session snapshot: %v", err)
+			}
+		})
+	}
+}
+
 func TestDiscoveryDeniedSkipsAutomaticWork(t *testing.T) {
 	for _, name := range []string{"SessionStart", "Context", "PostToolUseFailure", "Stop", "SessionEnd"} {
 		t.Run(name, func(t *testing.T) {
 			cwd, home := t.TempDir(), t.TempDir()
+			setProtectedDiscoveryRoots(t, filepath.Dir(cwd))
 			denied := &os.PathError{Op: "resolve project directory", Path: filepath.Dir(cwd), Err: os.ErrPermission}
 			original := findProject
 			findProject = func(string) (project.Project, bool, error) { return project.Project{}, false, denied }
@@ -142,6 +183,7 @@ func TestDiscoveryDeniedAncestorPreservesTrackedFiles(t *testing.T) {
 		t.Fatalf("track fixture: %v %s", err, out)
 	}
 	ancestor, cwd := filepath.Join(e.root, "middle"), filepath.Dir(path)
+	setProtectedDiscoveryRoots(t, ancestor)
 	original := findProject
 	findProject = func(string) (project.Project, bool, error) {
 		return project.Project{}, false, &os.PathError{Op: "resolve project directory", Path: ancestor, Err: os.ErrPermission}
@@ -166,8 +208,11 @@ func TestDiscoveryDeniedAncestorPreservesTrackedFiles(t *testing.T) {
 
 func TestDiscoveryDeniedDoesNotDeliverGraveNotices(t *testing.T) {
 	e, root, burial := noticeFixture(t, false)
+	setProtectedDiscoveryRoots(t, root)
 	original := findProject
-	findProject = func(string) (project.Project, bool, error) { return project.Project{}, false, os.ErrPermission }
+	findProject = func(string) (project.Project, bool, error) {
+		return project.Project{}, false, &os.PathError{Op: "resolve project directory", Path: root, Err: os.ErrPermission}
+	}
 	t.Cleanup(func() { findProject = original })
 	for _, name := range []string{"SessionStart", "Context"} {
 		ev := Event{Name: name, Cwd: root, Session: "denied", References: []string{burial.Path}}
@@ -181,7 +226,7 @@ func TestDiscoveryDeniedDoesNotDeliverGraveNotices(t *testing.T) {
 }
 
 func TestDiscoveryOtherErrorsRemainRetryable(t *testing.T) {
-	for _, cause := range []error{context.Canceled, context.DeadlineExceeded, errors.New("path changed")} {
+	for _, cause := range []error{os.ErrPermission, context.Canceled, context.DeadlineExceeded, errors.New("path changed")} {
 		t.Run(cause.Error(), func(t *testing.T) {
 			original := findProject
 			findProject = func(string) (project.Project, bool, error) { return project.Project{}, false, cause }

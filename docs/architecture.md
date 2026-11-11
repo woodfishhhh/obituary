@@ -223,7 +223,7 @@ agent 的 JSON ──► hook.Claude / hook.Codex（解析、路径换算）─�
 
 - `Handle` 包住真正的处理：记审计（`OBIT_HOOK_AUDIT=1` 时写 `hook-audit.log`）、把返回给 agent 的文字截到 2000 字符以内、出错只写 `hook.log`。
 - 会话开始：记快照、注入到期预告和待处理的提议。写文件之后：`Observe`（项目没同意过就生成提议，同意过就按规则登记，太大的改为提议）。
-- cwd 或祖先的项目发现被拒绝访问时，该次事件跳过自动工作、快照和后台派发，`hook.log` 写一行带 cwd 和原因的 `skip:` 说明；项目归属仍属未知，禁止进入非项目会话快照分支。`PostToolUse` 保持逐个写入路径重新发现项目、核对 Git 跟踪的流程。其他发现错误和数据目录、账本、墓地的权限错误继续报错。doctor 不统计 `skip:` 行，也不统计旧日志中同时具有 `discover project from` 来源、`resolve project directory` 操作及拒绝访问原因的结构化诊断行。
+- cwd 或祖先的项目发现被拒绝访问时，只在错误指向的路径位于 Windows 已知文件夹 API 返回的 Program Files、Program Files (x86)、Windows 目录本身或其子目录时安静跳过；路径先规范化，忽略大小写，按目录分隔符限定边界。该次事件跳过自动工作、快照和后台派发，`hook.log` 写一行带 cwd 和原因的 `skip:` 说明；项目归属仍属未知，禁止进入非项目会话快照分支。用户项目等其他位置的发现权限错误继续返回错误并记录权限诊断，让用户知道自动登记不可用；无法取得受保护位置时也保留错误。`PostToolUse` 保持逐个写入路径重新发现项目、核对 Git 跟踪的流程。其他发现错误和数据目录、账本、墓地的权限错误继续报错。doctor 不统计 `skip:` 行；旧日志只有同时具有 `discover project from` 来源、`resolve project directory` 操作、拒绝访问原因，且结构化诊断的 path 位于上述受保护位置时才免于告警。
 - 慢活交给 `hook.Runner`：`Tick` 在有东西到期（或墓地里有待恢复的清单）且没有常驻进程时启动一次 `obitd --once`；`Finish` 在后台跑 `obit hook finish` 算会话遗留物，Stop 一分钟最多一次，SessionEnd 总是跑。hook 自己不做慢活，因为 SessionEnd 只有 1.5 秒（Claude Code）或 3 秒（Codex）。
 - 一次 hook 调用里所有账本锁的等待加起来不超过 1 秒（`Store.WithDeadline`），读用共享锁；拿不到就放弃这次处理、只记日志。后台下葬正持锁时，其他项目的 hook 不会被卡住。
 - Codex：从 `apply_patch` 补丁里只认第 0 列的 `*** Add/Update/Move` 头；WSL 的 `/mnt/x/…` 换成 `X:\…`，WSL 自己文件系统里的路径跳过。

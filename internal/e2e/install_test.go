@@ -95,6 +95,12 @@ func TestGuardInstalledExecutableReference(t *testing.T) {
 						interop := "/mnt/" + strings.ToLower(binary[:1]) + filepath.ToSlash(binary[2:])
 						want = "'" + strings.ReplaceAll(interop, "'", `'\''`) + "' " + command
 					}
+					if mode == "current" && shell != "wsl" {
+						want = "obit " + command
+						if shell == "powershell" {
+							want = `obit remove-item -Force .\victim`
+						}
+					}
 					payload, _ := json.Marshal(map[string]any{"hook_event_name": "PreToolUse", "cwd": cwd, "tool_name": tool, "tool_input": input})
 					child := exec.Command(`C:\Program Files\Git\bin\bash.exe`, "--noprofile", "--norc", "-c", installed)
 					if agent == "claude" {

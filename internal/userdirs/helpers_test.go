@@ -12,11 +12,12 @@ import (
 type directoryRead struct{ file, variable string }
 
 var directoryExemptions = map[directoryRead]string{
-	{"internal/testenv/fakeclaude.go", "CLAUDE_CONFIG_DIR"}:      "The test-only fake requires an explicit redirected directory; userdirs would create a TestMain import cycle",
-	{"internal/core/safety.go", "USERPROFILE"}:                   "DefaultGuard protects real user locations; it does not store data there",
-	{"internal/core/safety.go", "APPDATA"}:                       "DefaultGuard protects real user locations; it does not store data there",
-	{"internal/core/safety.go", "LOCALAPPDATA"}:                  "DefaultGuard protects real user locations; it does not store data there",
-	{"internal/app/guard_windows.go", "windows.KnownFolderPath"}: "Guard and Explorer labels use redirected known folders; state stays in userdirs",
+	{"internal/testenv/fakeclaude.go", "CLAUDE_CONFIG_DIR"}:           "The test-only fake requires an explicit redirected directory; userdirs would create a TestMain import cycle",
+	{"internal/core/safety.go", "USERPROFILE"}:                        "DefaultGuard protects real user locations; it does not store data there",
+	{"internal/core/safety.go", "APPDATA"}:                            "DefaultGuard protects real user locations; it does not store data there",
+	{"internal/core/safety.go", "LOCALAPPDATA"}:                       "DefaultGuard protects real user locations; it does not store data there",
+	{"internal/app/guard_windows.go", "windows.KnownFolderPath"}:      "Guard and Explorer labels use redirected known folders; state stays in userdirs",
+	{"internal/hook/discovery_windows.go", "windows.KnownFolderPath"}: "Discovery diagnostics classify system locations without reading or storing user data there",
 }
 
 // directoryReads follows local function aliases too (DefaultGuard uses env :=
