@@ -27,6 +27,27 @@ func Main(m *testing.M) (code int) {
 		}
 		return 0
 	}
+	desktop, err := realDesktopSnapshot()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "test desktop snapshot:", err)
+		return 1
+	}
+	defer func() {
+		if !checkDesktop(desktop, realDesktopSnapshot, os.Stderr) {
+			code = 1
+		}
+	}()
+	cleanupRegistry, err := isolateRegistry()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "test registry isolation:", err)
+		return 1
+	}
+	defer func() {
+		if err := cleanupRegistry(); err != nil {
+			fmt.Fprintln(os.Stderr, "test registry cleanup:", err)
+			code = 1
+		}
+	}()
 	// TEMP is an ordinary Windows path. Snapshot the real volume-root
 	// graveyard read-only; tests must never create ledger keys outside scratch.
 	graveyard := filepath.Join(pathutil.VolumeRoot(os.TempDir()), ".obituary", "graveyard")

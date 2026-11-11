@@ -10,8 +10,7 @@ import (
 	"golang.org/x/sys/windows/registry"
 )
 
-// path is overridden at link time by subprocess tests, never by user input.
-var path = `Software\Microsoft\Windows\CurrentVersion\Run`
+const path = `Software\Microsoft\Windows\CurrentVersion\Run`
 
 // Value distinguishes absent, empty and non-REG_SZ startup values.
 type Value struct {
@@ -34,11 +33,11 @@ var Current Registry = native{}
 
 type native struct{ root string }
 
-func (r native) keyPath() string {
+func (r native) keyPath() (string, error) {
 	if r.root != "" {
-		return r.root
+		return r.root, nil
 	}
-	return path
+	return regtxn.UserPath(path, "Run")
 }
 
 func (r native) Get(name string) (string, error) {
@@ -47,7 +46,11 @@ func (r native) Get(name string) (string, error) {
 }
 
 func (r native) Read(name string) (Value, error) {
-	key, err := registry.OpenKey(registry.CURRENT_USER, r.keyPath(), registry.QUERY_VALUE)
+	path, err := r.keyPath()
+	if err != nil {
+		return Value{}, err
+	}
+	key, err := registry.OpenKey(registry.CURRENT_USER, path, registry.QUERY_VALUE)
 	if errors.Is(err, registry.ErrNotExist) {
 		return Value{}, nil
 	}
@@ -72,16 +75,26 @@ func readValue(key registry.Key, name string) (Value, error) {
 	return StringValue(value), nil
 }
 
-func (r native) Lock() (func(), error) { return regtxn.Lock("runkey:" + strings.ToUpper(r.keyPath())) }
+func (r native) Lock() (func(), error) {
+	path, err := r.keyPath()
+	if err != nil {
+		return nil, err
+	}
+	return regtxn.Lock("runkey:" + strings.ToUpper(path))
+}
 
 func (r native) CompareAndSwap(name string, before, after Value) error {
+	path, err := r.keyPath()
+	if err != nil {
+		return err
+	}
 	return regtxn.Do(func(tx *regtxn.Transaction) error {
-		key, err := tx.OpenPinned(registry.CURRENT_USER, r.keyPath(), registry.QUERY_VALUE|registry.SET_VALUE)
+		key, err := tx.OpenPinned(registry.CURRENT_USER, path, registry.QUERY_VALUE|registry.SET_VALUE)
 		if errors.Is(err, registry.ErrNotExist) && !before.Exists {
 			if !after.Exists {
 				return nil
 			}
-			key, err = tx.Create(registry.CURRENT_USER, r.keyPath(), registry.QUERY_VALUE|registry.SET_VALUE)
+			key, err = tx.Create(registry.CURRENT_USER, path, registry.QUERY_VALUE|registry.SET_VALUE)
 		}
 		if err != nil {
 			return err

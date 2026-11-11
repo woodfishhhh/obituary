@@ -3,7 +3,6 @@
 package e2e_test
 
 import (
-	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,7 +13,6 @@ import (
 	"testing"
 
 	"github.com/woodfishhhh/obituary/internal/testenv"
-	"golang.org/x/sys/windows/registry"
 )
 
 var binaries func() (string, error)
@@ -42,7 +40,6 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	startupKey := `Software\obituary-test-` + rand.Text()
 	// testenv.Main establishes isolation before the first fixture calls this
 	// builder. Its temporary root owns the binaries and their cleanup, too.
 	binaries = sync.OnceValues(func() (string, error) {
@@ -52,11 +49,9 @@ func TestMain(m *testing.M) {
 		}
 		for _, name := range []string{"obit", "obitd"} {
 			args := []string{"build", "-o", filepath.Join(dir, name+".exe")}
-			ldflags := "-X github.com/woodfishhhh/obituary/internal/runkey.path=" + startupKey
 			if name == "obitd" {
-				ldflags += " -H=windowsgui -X main.defaultTray=false"
+				args = append(args, "-ldflags=-H=windowsgui -X main.defaultTray=false")
 			}
-			args = append(args, "-ldflags="+ldflags)
 			if overlay := os.Getenv("OBIT_E2E_OVERLAY"); overlay != "" {
 				args = append(args, "-overlay", overlay)
 			}
@@ -68,10 +63,5 @@ func TestMain(m *testing.M) {
 		}
 		return dir, nil
 	})
-	code := testenv.Main(m)
-	if err := registry.DeleteKey(registry.CURRENT_USER, startupKey); err != nil && !errors.Is(err, registry.ErrNotExist) {
-		fmt.Fprintln(os.Stderr, "remove test startup key:", err)
-		code = 1
-	}
-	os.Exit(code)
+	os.Exit(testenv.Main(m))
 }

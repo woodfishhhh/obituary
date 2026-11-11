@@ -68,10 +68,14 @@ func TestFolderResidentStopsNormallyWithPendingDirectories(t *testing.T) {
 	if out, stderr, err := execute(t, "approve", fmt.Sprint(proposals[0].ID)); err != nil {
 		t.Fatal(out, stderr, err)
 	}
-	time.Sleep(4 * time.Second)
-	st, err := (core.Store{Home: home}).Read()
-	if err != nil || len(st.Proposals) != 2 || len(st.Burials) != 1 {
-		t.Fatalf("folder flow: proposals=%d burials=%d err=%v", len(st.Proposals), len(st.Burials), err)
+	for deadline := time.Now().Add(30 * time.Second); ; time.Sleep(50 * time.Millisecond) {
+		st, err := (core.Store{Home: home}).Read()
+		if err == nil && len(st.Proposals) == 2 && len(st.Burials) == 1 {
+			break
+		}
+		if !time.Now().Before(deadline) {
+			t.Fatalf("folder flow: proposals=%d burials=%d err=%v", len(st.Proposals), len(st.Burials), err)
+		}
 	}
 }
 

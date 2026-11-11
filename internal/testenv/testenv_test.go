@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/woodfishhhh/obituary/internal/pathutil"
+	"github.com/woodfishhhh/obituary/internal/regtxn"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
 	"golang.org/x/sys/windows"
@@ -115,7 +116,7 @@ func TestIsolationSurvivesHostileInheritedEnvironment(t *testing.T) {
 	cmd := exec.Command(exe, "-test.run=^TestIsolationChild$")
 	cmd.Env = append(os.Environ(), "OBIT_ISOLATION_CHILD=1", "GIT_DIR=Z:\\missing", "GIT_WORK_TREE=Z:\\missing", "GIT_CONFIG_COUNT=1", "GIT_CONFIG_KEY_0=user.name", "GIT_CONFIG_VALUE_0=leaked", "GIT_CONFIG_GLOBAL=Z:\\missing")
 	cmd.Env = append(cmd.Env, "OBIT_GUARD_RM=0", "OBIT_DISABLED=1", "OBIT_HOOK_AUDIT=1", "OBIT_SESSION_ID=foreign-session")
-	cmd.Env = append(cmd.Env, "CLAUDE_CODE_SESSION_ID=foreign-claude", "CODEX_THREAD_ID=foreign-codex")
+	cmd.Env = append(cmd.Env, "CLAUDE_CODE_SESSION_ID=foreign-claude", "CODEX_THREAD_ID=foreign-codex", "OBIT_TEST_REGISTRY_ROOT=Software\\Classes")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("child failed: %v\n%s", err, out)
@@ -183,6 +184,9 @@ func TestIsolationChild(t *testing.T) {
 	}
 	if os.Getenv("OBIT_ISOLATION_CHILD") != "1" {
 		t.Skip("subprocess assertion")
+	}
+	if err := regtxn.ValidateTestRoot(os.Getenv("OBIT_TEST_REGISTRY_ROOT")); err != nil {
+		t.Fatal(err)
 	}
 	data, err := userdirs.Data()
 	if err != nil {

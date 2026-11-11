@@ -382,6 +382,8 @@ agent ──stdio──► obit mcp ──► mcpPaths（只收绝对路径；�
 ## 测试
 
 - **隔离**：每个测试包的 `TestMain` 调用 `testenv.Main`：把数据目录、配置目录、主目录、`~/.claude`、`~/.codex`、临时目录都指到一次性目录；清掉继承来的所有 `GIT_*` 变量，换上专用的全局 gitconfig，设 `GIT_CEILING_DIRECTORIES`，让测试仓库不会被外层仓库吞掉。
+- **子进程注册表隔离**：Windows 上 `testenv.Main` 为每个测试进程创建独立的 HKCU 键，统一设置 `OBIT_TEST_REGISTRY_ROOT`；真实程序子进程把右键菜单和开机启动分别写进该根的 `Classes`、`Run`。变量必须以 `Software\obituary-test-` 开头，后续各段只接受 ASCII 字母、数字、连字符和下划线；空值、空段、点段和其他位置都报错。嵌套测试进程在父进程的根下分配独立子键，退出时只清理本次创建的键；崩溃测试故意终止的子进程也由父根清理兜底，显式注册表夹具同样属于本进程根；进程内 Run 测试仍用内存实现。快捷方式沿用 `OBIT_START_MENU_DIR`、`OBIT_USER_HOME` 的目录隔离。
+- **真实桌面集成只读防线**：`testenv.Main` 在测试前后比较真实 Classes 下三类 `shell\Obituary.*`、`Obituary.ContextMenu` 及其 `AppUserModelId` 的完整树（包括空键、值类型和原始值）、真实 Run 中 `Obituary-` 前缀值、已知文件夹 API 返回的开始菜单和桌面「讣告 Obituary.lnk」的存在性、大小、修改时间。读取失败或出现变化就让测试失败并列出位置；快照从不修复或删除真实内容。
 - **不漏到真实卷根**：`testenv.Main` 在测试前后比较 TEMP 所在卷根 `.obituary\graveyard` 下的顶层条目（账本键目录，以及 `<键>.owner`、`.owner.lock` 这类文件），多出新条目就让测试失败。
 - **源码扫描**：`userdirs` 里的测试解析所有非测试源码，任何别处读 `LOCALAPPDATA`、`USERPROFILE`、`os.UserHomeDir` 之类的地方都要列进豁免表，并写明理由；豁免不再被用到也会报错。
 - **真 Git、真文件 ID**：自动登记的测试跑在真实的临时 Git 仓库里，`core` 的测试用真实文件 ID。真实回收站和真实任务计划的测试默认跳过，要设 `OBIT_TEST_RECYCLE=1` / `OBIT_TEST_SCHEDULER=1`。

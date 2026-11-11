@@ -54,7 +54,8 @@ func TestRegistrySourceBoundary(t *testing.T) {
 			if err != nil {
 				return err
 			}
-			if filepath.ToSlash(path) == "../../internal/runkey/runkey_windows.go" {
+			if filepath.ToSlash(path) == "../../internal/runkey/runkey_windows.go" || filepath.ToSlash(path) == "../../internal/testenv/desktop_windows.go" {
+				// The leak detector reads the real Run key to catch bypassed isolation.
 				return nil
 			}
 			ast.Inspect(file, func(node ast.Node) bool {

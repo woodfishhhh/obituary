@@ -8,6 +8,31 @@ import (
 	"golang.org/x/sys/windows/registry"
 )
 
+func TestUserRegistryUsesDisposableRoot(t *testing.T) {
+	t.Setenv("OBIT_TEST_REGISTRY_ROOT", `Software\obituary-test-resolver`)
+	reg, ok := UserRegistry().(WindowsRegistry)
+	if !ok || reg.Root != `Software\obituary-test-resolver\Classes` || reg.err != nil {
+		t.Fatalf("native resolver bypassed isolation: %+v", reg)
+	}
+}
+
+func TestUserRegistryRejectsInvalidRoot(t *testing.T) {
+	t.Setenv("OBIT_TEST_REGISTRY_ROOT", `Software\Classes`)
+	reg := UserRegistry()
+	if _, err := reg.ReadTree("unused"); err == nil {
+		t.Fatal("invalid root allowed a read")
+	}
+	if _, err := reg.Lock(); err == nil {
+		t.Fatal("invalid root allowed a lock")
+	}
+	if err := reg.CompareAndSwap(Change{Path: "unused"}); err == nil {
+		t.Fatal("invalid root allowed a transaction")
+	}
+	if err := reg.(WindowsRegistry).WriteTree("unused", nil); err == nil {
+		t.Fatal("invalid root allowed a write")
+	}
+}
+
 func TestContextMenuPreservesNonStringRegistryValues(t *testing.T) {
 	reg := WindowsRegistry{Root: testenv.ClassesKey(t)}
 	path := `*\shell\Obituary.Mark`

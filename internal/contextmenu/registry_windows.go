@@ -14,18 +14,25 @@ import (
 )
 
 // WindowsRegistry uses x/sys's registry APIs; it never opens HKLM.
-type WindowsRegistry struct{ Root string }
+type WindowsRegistry struct {
+	Root string
+	err  error
+}
 
 func UserRegistry() Registry {
 	if Current != nil {
 		return Current
 	}
-	return WindowsRegistry{Root: `Software\Classes`}
+	root, err := regtxn.UserPath(`Software\Classes`, "Classes")
+	return WindowsRegistry{Root: root, err: err}
 }
 
 func sortedKeys[V any](m map[string]V) []string { return slices.Sorted(maps.Keys(m)) }
 
 func (r WindowsRegistry) ReadTree(path string) (Tree, error) {
+	if r.err != nil {
+		return nil, r.err
+	}
 	key, err := registry.OpenKey(registry.CURRENT_USER, r.Root+`\`+path, registry.READ)
 	if errors.Is(err, registry.ErrNotExist) {
 		return nil, nil
@@ -82,6 +89,9 @@ func readKeyWith(key registry.Key, path string, tree Tree, open func(registry.Ke
 }
 
 func (r WindowsRegistry) WriteTree(path string, tree Tree) error {
+	if r.err != nil {
+		return r.err
+	}
 	for _, rel := range sortedKeys(tree) {
 		key, _, err := registry.CreateKey(registry.CURRENT_USER, r.Root+`\`+path+keySuffix(rel), registry.SET_VALUE)
 		if err != nil {
@@ -106,10 +116,16 @@ func writeValues(key registry.Key, values map[string]string) error {
 }
 
 func (r WindowsRegistry) Lock() (func(), error) {
+	if r.err != nil {
+		return nil, r.err
+	}
 	return regtxn.Lock("contextmenu:" + strings.ToUpper(r.Root))
 }
 
 func (r WindowsRegistry) CompareAndSwap(c Change) error {
+	if r.err != nil {
+		return r.err
+	}
 	return regtxn.Do(func(tx *regtxn.Transaction) error {
 		key, err := tx.OpenPinned(registry.CURRENT_USER, r.Root+`\`+c.Path, registry.READ|registry.WRITE|windows.DELETE)
 		if errors.Is(err, registry.ErrNotExist) && c.Before == nil {
