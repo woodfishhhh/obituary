@@ -13,7 +13,7 @@
 
 ## 改代码
 
-- 需要 Windows 和 Go 1.26+。构建命令见 README 的[构建](README.md#构建)。
+- 需要 Windows 和 Go 1.26+。构建命令见使用手册的[构建](docs/usage.md#构建)。
 - 先读 [AGENTS.md](AGENTS.md)，那里是代码约定。改动跨模块时再读 [docs/architecture.md](docs/architecture.md)。
 - 动到移动、下葬、删除的代码时，先写一个能证明不会误删的失败测试，再修。
 - 提交前跑：
@@ -48,7 +48,7 @@ Issues and pull requests are welcome. The most welcome is an issue that comes wi
 
 ## Code
 
-- You need Windows and Go 1.26+. Build commands are in the README under [Build](README.en.md#build).
+- You need Windows and Go 1.26+. Build commands are in the user guide under [Build](docs/usage.en.md#build).
 - Read [AGENTS.md](AGENTS.md) first for the code conventions, and [docs/architecture.md](docs/architecture.md) when a change crosses modules.
 - When you touch code that moves, buries or deletes, first write a failing test that proves nothing wrong gets deleted, then fix it.
 - Before you send it:

@@ -10,7 +10,8 @@
 
 | 文档 | 讲什么 | 写给谁 |
 |---|---|---|
-| [README](../README.md) | 用法：常用命令、接入 Claude Code 和 Codex、删除护栏、MCP 服务与 Agent Skill、自动登记、安全设计、后台运行、构建 | 用讣告的人 |
+| [README](../README.md) | 讣告是什么、为什么有它、交给 agent 安装、常用命令 | 第一次来的人 |
+| [usage.md](usage.md)（[English](usage.en.md)） | 使用手册：托盘和小窗口、接入 Claude Code、Codex 和其他 agent、Docker、删除护栏、MCP 与 Skill、自动登记、安全设计、后台运行、构建 | 用讣告的人 |
 | [architecture.md](architecture.md) | 架构：东西怎么流动，每个决定在哪里做出，哪些约定不能破。包括威胁模型、关卡、各条流程、`core.FS` 契约、数据布局、运行器和测试 | 要改代码的人和 agent |
 | [install.md](install.md)（[English](install.en.md)） | 自己动手安装：Scoop、winget、安装脚本和国内镜像，接到 agent 上，体检、更新和卸载 | 想自己装的人 |
 | [agent-install.md](agent-install.md) | 一段可以直接发给 agent 的话：让它装好讣告、接到自己身上，要你拍板的地方停下来问你（中英文） | 想让 agent 替自己装的人 |
@@ -21,7 +22,7 @@
 
 ## 从哪里读起
 
-- **第一次用**：README 的[快速上手](../README.md#快速上手)，再按需要看[接入 Claude Code](../README.md#接入-claude-code) 或[接入 Codex](../README.md#接入-codex)。
+- **第一次用**：README 的[快速上手](../README.md#快速上手)，再按需要看使用手册的[接入 Claude Code](usage.md#接入-claude-code) 或[接入 Codex](usage.md#接入-codex)。
 - **要改代码**：先读 [AGENTS.md](../AGENTS.md)；改动跨模块时先读 [architecture.md](architecture.md)，尤其是[关卡](architecture.md#关卡)：每类决定只在一处做出，新入口必须调用这些关卡。
 
 ## 品牌物料
