@@ -1,6 +1,6 @@
 # Third-party notices for docs/assets
 
-The agent wall in `docs/assets/readme/agents/` (agents-light.svg, agents-dark.svg) contains agent marks from @lobehub/icons-static-svg 1.102.0, used unaltered. Each mark is a trademark of its owner and appears only to show that Obituary connects to that agent; no endorsement is implied.
+The agent wall in `docs/assets/readme/agents/` (agents-light.svg, agents-dark.svg) contains agent marks from @lobehub/icons-static-svg 1.102.0 and four marks from their vendors, all used unaltered. Each mark is a trademark of its owner and appears only to show that Obituary connects to that agent; no endorsement is implied.
 
 ## @lobehub/icons-static-svg
 
@@ -27,3 +27,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## Marks from their vendors
+
+These four come from `site/landing/src/assets/agents/`, used unaltered (Oh My Pi's light mark sits on a dark tile on the light page; the file is not recoloured). Each is the trademark of its owner, shown only to say that Obituary connects to that agent.
+
+| Agent | File | Source |
+|---|---|---|
+| Pi | `pi.svg` | https://pi.dev/logo-auto.svg |
+| Oh My Pi | `oh-my-pi.svg` | `assets/icon.svg` in the can1357/oh-my-pi repository |
+| Factory Droid | `factory.svg` | the favicon of https://factory.ai |
+| Lingma | `lingma.png` | the icon of the VS Code extension `Alibaba-Cloud.tongyi-lingma` |
