@@ -12,7 +12,7 @@ export default function Appearance() {
   return (
     <section className="looks" aria-labelledby={title}>
       <div className="section-title" id={title}>{t("look.title")}</div>
-      <p className="hint looks-hint">{t("look.hint")}</p>
+      {t("look.hint") ? <p className="hint looks-hint">{t("look.hint")}</p> : null}
       <div className="looks-grid">
         {a.looks.map((l) => (
           <button key={l.id} type="button" className="look" aria-pressed={a.current === l.id} aria-busy={a.loading === l.id} onClick={() => a.choose(l.id)}>
