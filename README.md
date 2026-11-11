@@ -42,7 +42,7 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo/demo-dark.gif">
     <source media="(prefers-color-scheme: light)" srcset="docs/assets/demo/demo-light.gif">
-    <img alt="演示：agent 执行 rm -rf build 被删除护栏拦下，改用 obit rm -rf build 后东西进墓地，obit resurrect --last 一条命令原样复活" src="docs/assets/demo/demo-light.gif" width="703">
+    <img alt="演示：agent 执行 rm -rf build 被删除护栏拦下，改用 obit rm -rf build 后东西进墓地，obit resurrect --last 一条命令原样复活" src="docs/assets/demo/demo-light.gif" width="100%">
   </picture>
 </p>
 

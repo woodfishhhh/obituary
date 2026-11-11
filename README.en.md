@@ -40,9 +40,9 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo/demo-dark.gif">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/demo/demo-light.gif">
-    <img alt="Demo: an agent's rm -rf build is stopped by the delete guard, obit rm -rf build buries it instead, and obit resurrect --last brings it all back" src="docs/assets/demo/demo-light.gif" width="703">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo/demo-en-dark.gif">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/demo/demo-en-light.gif">
+    <img alt="Demo: an agent's rm -rf build is stopped by the delete guard, obit rm -rf build buries it instead, and obit resurrect --last brings it all back" src="docs/assets/demo/demo-en-light.gif" width="100%">
   </picture>
 </p>
 

@@ -46,3 +46,5 @@ README 用 `<picture>` 按访问者的主题在浅色版和深色版之间切换
 | `delete-guard-light.svg`、`delete-guard-dark.svg` | 删除护栏：拦下删除命令 → 等价的 `obit` 命令 → 复活 |
 
 图里的命令和说明都取自 README 正文，正文里的这些内容改了，图要跟着改：SVG 是手写的结构，直接改文件里对应的 `<text>`，浅色、深色两份都要改。配色取自品牌标志：主色 `#126CFF`，「复活」上的四角星沿用标志的火花渐变。
+
+README 开头的演示动图在 [`assets/demo/`](assets/demo/)：`demo-light.gif`、`demo-dark.gif` 是中文版，`demo-en-*.gif` 是英文版。它们由 [`assets/readme/demo/build.py`](assets/readme/demo/build.py) 生成：先写出 SVG 源文件和动作描述（`*.motion.json`），再逐帧渲染成 GIF，每个约 7 秒、0.6 MB。终端里的文字照抄 `obit` 的真实输出，路径换成了演示目录。要改文案，就改 `build.py` 再重新生成四个 GIF，`build.py` 开头写了命令。

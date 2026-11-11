@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" role="img" aria-labelledby="t d">
+  <title id="t">讣告 Obituary demo</title>
+  <desc id="d">An agent's rm -rf build is stopped by Obituary's delete guard; obit rm -rf build buries it instead, and obit resurrect --last puts it back as it was.</desc>
+  <defs>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2F7BFF"/><stop offset="0.55" stop-color="#7FB2FF"/><stop offset="1" stop-color="#FFC83D"/>
+    </linearGradient>
+    <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.4" fill="#DCE5F3"/></pattern>
+    <clipPath id="frame"><rect width="1200" height="560" rx="28"/></clipPath>
+  </defs>
+  <g clip-path="url(#frame)">
+    <rect width="1200" height="560" fill="#F5F8FD"/>
+    <rect x="780" width="420" height="560" fill="url(#dots)"/>
+    <rect x="40" y="40" width="712" height="480" rx="22" fill="#0E1628"/>
+    <text x="76" y="92" font-family="'Cascadia Mono', Consolas, 'JetBrains Mono', monospace" font-size="18" fill="#7D8BA5">PS C:\work\shop&gt;</text>
+    <line x1="76" y1="112" x2="716" y2="112" stroke="#24324D"/>
+    <text x="76" y="486" font-family="'Cascadia Mono', Consolas, 'JetBrains Mono', monospace" font-size="18" fill="#7D8BA5">PS C:\work\shop&gt;</text>
+    <rect x="252" y="470" width="11" height="20" rx="2" fill="#7D8BA5"/>
+    <text x="842" y="102" font-family="'Segoe UI', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-size="30" font-weight="700" fill="#0F1B33">Graveyard</text>
+    <text x="842" y="136" font-family="'Segoe UI', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-size="20" fill="#5B6B85">Back as it was, for 7 days</text>
+    <ellipse cx="980" cy="388" rx="150" ry="16" fill="#E3EBF7"/>
+    <path d="M 902 384 V 252 Q 902 200 954 188 L 1014 188 L 1058 232 V 384 Z" fill="#FFFFFF" stroke="url(#brand)" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M 1014 188 V 224 Q 1014 232 1022 232 H 1058" fill="none" stroke="url(#brand)" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M 980 246 C 984 278 990 284 1020 288 C 990 292 984 298 980 330 C 976 298 970 292 940 288 C 970 284 976 278 980 246 Z" fill="url(#brand)"/>
+    <circle cx="842" cy="430" r="5" fill="#C3D0E6"/>
+    <circle cx="842" cy="460" r="5" fill="#C3D0E6"/>
+    <circle cx="842" cy="490" r="5" fill="#C3D0E6"/>
+    <circle cx="842" cy="520" r="5" fill="#C3D0E6"/>
+    <g id="line1" transform="translate(0 166)"><text x="76" font-family="'Cascadia Mono', Consolas, 'JetBrains Mono', monospace" font-size="20" font-weight="600" fill="#FFC83D">agent ›</text><text x="184" font-family="'Cascadia Mono', Consolas, 'JetBrains Mono', monospace" font-size="24" fill="#E6ECF5">rm -rf build</text></g>
+    <g id="line2" transform="translate(0 218)"><text x="76" font-family="'Cascadia Mono', Consolas, 'JetBrains Mono', monospace" font-size="21" fill="#FFB547">✕ Obituary&apos;s delete guard is on:</text><text x="102" y="34" font-family="'Cascadia Mono', Consolas, 'JetBrains Mono', monospace" font-size="21" fill="#FFB547">`obit rm -rf build` provides restorable deletion</text></g>
+    <g id="line3" transform="translate(0 306)"><text x="76" font-family="'Cascadia Mono', Consolas, 'JetBrains Mono', monospace" font-size="20" font-weight="600" fill="#FFC83D">agent ›</text><text x="184" font-family="'Cascadia Mono', Consolas, 'JetBrains Mono', monospace" font-size="24" fill="#E6ECF5">obit rm -rf build</text></g>
+    <g id="line4" transform="translate(0 384)"><text x="76" font-family="'Cascadia Mono', Consolas, 'JetBrains Mono', monospace" font-size="20" font-weight="600" fill="#2F7BFF">you ›</text><text x="184" font-family="'Cascadia Mono', Consolas, 'JetBrains Mono', monospace" font-size="24" fill="#E6ECF5">obit resurrect --last</text></g>
+    <g id="line5" transform="translate(0 432)"><text x="76" font-family="'Cascadia Mono', Consolas, 'JetBrains Mono', monospace" font-size="22" fill="#3DD68C">#2 resurrected  C:\work\shop\build</text></g>
+    <g id="chip"><rect x="910" y="310" width="140" height="44" rx="12" fill="#FFFFFF" stroke="#C9D6EC"/><path d="M 930 324 h 12 l 4 4 h 14 v 16 h -30 Z" fill="#FFC83D"/><text x="968" y="339" font-family="'Cascadia Mono', Consolas, 'JetBrains Mono', monospace" font-size="20" fill="#0F1B33">build/</text></g>
+    <g id="step1" transform="translate(842 437)"><circle cx="0" cy="-7" r="5" fill="#2F7BFF"/><text x="18" font-family="'Segoe UI', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-size="20" fill="#0F1B33">The AI runs rm -rf</text></g>
+    <g id="step2" transform="translate(842 467)"><circle cx="0" cy="-7" r="5" fill="#2F7BFF"/><text x="18" font-family="'Segoe UI', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-size="20" fill="#0F1B33">The guard swaps in obit</text></g>
+    <g id="step3" transform="translate(842 497)"><circle cx="0" cy="-7" r="5" fill="#2F7BFF"/><text x="18" font-family="'Segoe UI', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-size="20" fill="#0F1B33">Buried as #2</text></g>
+    <g id="step4" transform="translate(842 527)"><circle cx="0" cy="-7" r="5" fill="#3DD68C"/><text x="18" font-family="'Segoe UI', -apple-system, 'Helvetica Neue', Arial, sans-serif" font-size="20" fill="#0F1B33">Resurrected</text></g>
+  </g>
+</svg>
