@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"unicode/utf8"
 
@@ -248,6 +249,63 @@ func testPluginGuard(t *testing.T, agent Agent, base BridgeRequest) {
 	}
 }
 
+func lockPluginObservationStore(t *testing.T, e *env) func() {
+	t.Helper()
+	if _, err := e.engine.Svc.Store.Read(); err != nil {
+		t.Fatal(err)
+	}
+	release, err := core.LockFile(filepath.Join(e.engine.Svc.Store.Home, "store.lock"), true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unlock := sync.OnceFunc(release)
+	t.Cleanup(unlock)
+	return unlock
+}
+
+func replayPluginObservation(t *testing.T, e *env, agent Agent, input BridgeRequest) {
+	t.Helper()
+	rows, err := e.engine.Svc.Store.DeferredObservations()
+	if err != nil || len(rows) != 1 || rows[0].Path != input.Paths[0] || rows[0].Session != agent.Name+":"+input.Session {
+		t.Fatalf("observation-only callback did not queue its write: %+v %v", rows, err)
+	}
+	id, err := e.engine.Svc.FS.Identify(input.Paths[0])
+	if err != nil || rows[0].Identity == nil || *rows[0].Identity != id {
+		t.Fatalf("queued write lost its captured identity: %+v %v", rows, err)
+	}
+	if st := e.state(); len(st.Proposals) != 0 || len(st.Items) != 0 {
+		t.Fatalf("callback changed the locked ledger: %+v", st)
+	}
+	// Replay is background work and gets its own budget; the hook remains silent.
+	if err := e.engine.ReplayObservations(); err != nil {
+		t.Fatal(err)
+	}
+	st := e.state()
+	if e.engine.Svc.Store.HasDeferredObservations() || !st.ObservationCompleted(&rows[0]) {
+		t.Fatal("background replay did not acknowledge the queued write")
+	}
+}
+
+func checkPluginPendingDelivery(t *testing.T, e *env, agent Agent, input BridgeRequest) {
+	t.Helper()
+	input.Event, input.Paths, input.ContextDelivery = "PostToolUse", nil, true
+	if agent.Name == "openclaw" {
+		input.Event, input.HostEvent, input.Success = "Context", "before_prompt_build", nil
+	}
+	var out bytes.Buffer
+	Run(agent.Name, e.engine, bytes.NewReader(pluginJSON(t, input)), &out, &Runner{})
+	response := pluginResponse(t, out.Bytes())
+	st := e.state()
+	if !strings.Contains(response.Context, "obit approve") || len(st.Proposals) != 1 || len(st.Proposals[0].Notified) != 1 || st.Proposals[0].Notified[0] != agent.Name+":"+input.Session {
+		t.Fatalf("replayed plugin notice was not delivered: %s %+v", &out, st.Proposals)
+	}
+	out.Reset()
+	Run(agent.Name, e.engine, bytes.NewReader(pluginJSON(t, input)), &out, &Runner{})
+	if response := pluginResponse(t, out.Bytes()); response != (BridgeResponse{Version: 1}) {
+		t.Fatalf("replayed plugin notice repeated: %+v", response)
+	}
+}
+
 func testPluginRepository(t *testing.T, agent Agent, base BridgeRequest) {
 	t.Helper()
 	for _, deferred := range []bool{false, true} {
@@ -256,13 +314,24 @@ func testPluginRepository(t *testing.T, agent Agent, base BridgeRequest) {
 			input := base
 			input.Cwd, input.ContextDelivery = e.root, !deferred
 			input.Paths = []string{e.write(strings.Repeat("测", 20) + ".log")}
+			unlock := func() {}
+			if deferred {
+				unlock = lockPluginObservationStore(t, e)
+			}
 			var out bytes.Buffer
 			Run(agent.Name, e.engine, bytes.NewReader(pluginJSON(t, input)), &out, &Runner{})
+			unlock()
 			response := pluginResponse(t, out.Bytes())
+			if deferred {
+				replayPluginObservation(t, e, agent, input)
+			}
 			if deferred || agent.Name == "openclaw" {
 				state := e.state()
 				if response != (BridgeResponse{Version: 1}) || len(state.Proposals) != 1 || len(state.Proposals[0].Notified) != 0 {
 					t.Fatalf("observation-only callback lost or acknowledged notices: %s %+v", out.String(), state.Proposals)
+				}
+				if deferred {
+					checkPluginPendingDelivery(t, e, agent, input)
 				}
 				return
 			}

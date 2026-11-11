@@ -2,15 +2,163 @@ package hook
 
 import (
 	"bytes"
+	"context"
 	"errors"
+	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
 	"github.com/woodfishhhh/obituary/internal/core"
 )
+
+func TestPostToolUseDeliversReplayedProposal(t *testing.T) {
+	if testing.Short() {
+		t.Skip("observation replay uses a real Git repository")
+	}
+	for _, name := range []string{"claude", "codex"} {
+		for _, background := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/background=%v", name, background), func(t *testing.T) {
+				e := newEnv(t)
+				path := e.write("debug.log")
+				agent, _ := Lookup(name)
+				ev := Event{Name: "PostToolUse", Cwd: e.root, Session: "s", Paths: []string{path}}
+				if _, err := e.engine.Svc.Store.Read(); err != nil {
+					t.Fatal(err)
+				}
+				release, err := core.LockFile(filepath.Join(e.engine.Svc.Store.Home, "store.lock"), true)
+				if err != nil {
+					t.Fatal(err)
+				}
+				unlock := sync.OnceFunc(release)
+				t.Cleanup(unlock)
+				var out bytes.Buffer
+				RunEvent(agent, e.engine, ev, &out, &Runner{})
+				unlock()
+				rows, err := e.engine.Svc.Store.DeferredObservations()
+				if err != nil || len(rows) != 1 || out.Len() != 0 {
+					t.Fatalf("write was not deferred silently: rows=%+v output=%q err=%v", rows, &out, err)
+				}
+				if background {
+					if err := e.engine.ReplayObservations(); err != nil {
+						t.Fatal(err)
+					}
+				}
+				ev.Paths = nil
+				RunEvent(agent, e.engine, ev, &out, &Runner{})
+				st := e.state()
+				if len(st.Proposals) != 1 || len(st.Items) != 0 || !st.ObservationCompleted(&rows[0]) || e.engine.Svc.Store.HasDeferredObservations() {
+					t.Fatalf("deferred proposal lost: %+v", st)
+				}
+				if !strings.Contains(out.String(), "obit approve") || !strings.Contains(out.String(), "debug.log") || !slices.Contains(st.Proposals[0].Notified, ev.Session) {
+					t.Fatalf("replayed proposal was not delivered: output=%q notified=%v", &out, st.Proposals[0].Notified)
+				}
+				out.Reset()
+				RunEvent(agent, e.engine, ev, &out, &Runner{})
+				if out.Len() != 0 {
+					t.Fatalf("notice repeated: %s", &out)
+				}
+			})
+		}
+	}
+}
+
+func TestPostToolUseRecoversProposalAfterConsentTimeout(t *testing.T) {
+	if testing.Short() {
+		t.Skip("proposal creation uses a real Git repository")
+	}
+	for _, name := range []string{"claude", "codex"} {
+		t.Run(name, func(t *testing.T) {
+			e := newEnv(t)
+			agent, _ := Lookup(name)
+			ev := Event{Name: "PostToolUse", Cwd: e.root, Session: "s", Paths: []string{e.write("debug.log")}}
+			previous := proposalConsent
+			t.Cleanup(func() { proposalConsent = previous })
+			proposalConsent = func(svc *core.Service, root string) (string, error) {
+				_, err := svc.Store.WithDeadline(time.Now()).Read()
+				if !errors.Is(err, context.DeadlineExceeded) {
+					t.Fatalf("expected the post-commit read to exhaust its lock budget: %v", err)
+				}
+				return "", err
+			}
+			var out bytes.Buffer
+			RunEvent(agent, e.engine, ev, &out, &Runner{})
+			proposalConsent = previous
+			st := e.state()
+			if len(st.Proposals) != 1 || len(st.ObservationReceipts) != 1 || len(st.Proposals[0].Notified) != 0 || out.Len() != 0 || e.engine.Svc.Store.HasDeferredObservations() {
+				t.Fatalf("post-commit timeout did not retain the pending notice: %+v %s", st, &out)
+			}
+			if data, err := os.ReadFile(filepath.Join(e.engine.Svc.Store.Home, "hook.log")); err != nil || !strings.Contains(string(data), "deadline exceeded") {
+				t.Fatalf("post-commit timeout was not diagnosed: %s %v", data, err)
+			}
+			ev.Paths = []string{e.write("unmatched.txt")}
+			RunEvent(agent, e.engine, ev, &out, &Runner{})
+			if !strings.Contains(out.String(), "obit approve") || !slices.Contains(e.state().Proposals[0].Notified, ev.Session) {
+				t.Fatalf("committed proposal was never delivered: %q", &out)
+			}
+			out.Reset()
+			RunEvent(agent, e.engine, ev, &out, &Runner{})
+			if out.Len() != 0 {
+				t.Fatalf("notice repeated: %s", &out)
+			}
+		})
+	}
+}
+
+func TestPostToolUsePendingNoticeScopeAndSilence(t *testing.T) {
+	for _, name := range []string{"claude", "codex"} {
+		t.Run(name, func(t *testing.T) {
+			root, elsewhere := t.TempDir(), t.TempDir()
+			if err := os.Mkdir(filepath.Join(root, ".git"), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(root, "pending.log")
+			if err := os.WriteFile(path, []byte("pending"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: t.TempDir()}}}
+			if err := e.Svc.Store.Update(func(st *core.State) error {
+				for i, scope := range []struct{ project, session string }{{root, "other"}, {elsewhere, "s"}, {elsewhere, "other"}} {
+					st.Proposals = append(st.Proposals, core.Proposal{ID: int64(i + 1), Kind: core.ProposalOnboard, Project: scope.project, Session: scope.session,
+						Candidates: []core.Candidate{{Path: path, Lifespan: "3d"}}})
+				}
+				st.NextID = 4
+				return nil
+			}); err != nil {
+				t.Fatal(err)
+			}
+			agent, _ := Lookup(name)
+			runner := &Runner{Tick: func() {}, Finish: func(string, string, bool) {}}
+			for _, ev := range []Event{{Name: "Stop"}, {Name: "SessionEnd"}, {Name: "PostToolUseFailure"}, {Name: "PostToolUse", DeferContext: true}, {Name: "PostToolUse"}, {Name: "PostToolUse"}} {
+				ev.Cwd, ev.Session = root, "s"
+				var out bytes.Buffer
+				before, err := e.Svc.Store.Read()
+				if err != nil {
+					t.Fatal(err)
+				}
+				RunEvent(agent, e, ev, &out, runner)
+				want := ev.Name == "PostToolUse" && !ev.DeferContext && len(before.Proposals[0].Notified) == 0
+				if !want && out.Len() != 0 || strings.Contains(out.String(), "obit approve 1") != want || strings.Contains(out.String(), "obit approve 2") != want || strings.Contains(out.String(), "obit approve 3") {
+					t.Fatalf("scope/silence failed for %+v: %s", ev, &out)
+				}
+				st, err := e.Svc.Store.Read()
+				if err != nil || len(st.Proposals[2].Notified) != 0 || want && (!slices.Contains(st.Proposals[0].Notified, "s") || !slices.Contains(st.Proposals[1].Notified, "s")) {
+					t.Fatalf("pending acknowledgement scope: %+v %v", st.Proposals, err)
+				}
+				if !want && (!slices.Equal(st.Proposals[0].Notified, before.Proposals[0].Notified) || !slices.Equal(st.Proposals[1].Notified, before.Proposals[1].Notified)) {
+					t.Fatalf("silent callback acknowledged pending context: %+v", st.Proposals)
+				}
+			}
+		})
+	}
+}
 
 func TestAdapterRegistry(t *testing.T) {
 	for _, name := range []string{"claude", "codex"} {

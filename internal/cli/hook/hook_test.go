@@ -169,6 +169,43 @@ func assertBackgroundExplorerRefresh(t *testing.T, root string) {
 	}
 }
 
+func TestPostToolUseDeliversQueuedProposal(t *testing.T) {
+	if testing.Short() {
+		t.Skip("queued proposal replay uses a real Git repository")
+	}
+	clitest.IsolateRunner(t)
+	for _, agent := range []string{"claude", "codex"} {
+		t.Run(agent, func(t *testing.T) {
+			root, store := clitest.CommandRepo(t)
+			path := filepath.Join(root, "debug.log")
+			clitest.WriteFixture(t, path, "fixture")
+			svc, err := app.Open()
+			if err != nil {
+				t.Fatal(err)
+			}
+			rows, err := svc.CaptureObservations([]string{path}, "pending")
+			if err != nil || len(rows) != 1 {
+				t.Fatalf("capture: %+v %v", rows, err)
+			}
+			if err := store.DeferObservations(rows); err != nil {
+				t.Fatal(err)
+			}
+			input, _ := json.Marshal(map[string]any{"hook_event_name": "PostToolUse", "session_id": "pending", "cwd": root})
+			out, err := executeHookPayload(t, string(input), agent)
+			if err != nil {
+				t.Fatal(err)
+			}
+			checkLatencyResult(t, store, "PostToolUse/pending", out)
+			if store.HasDeferredObservations() {
+				t.Fatal("successful replay retained the queued write")
+			}
+			if out, err := executeHookPayload(t, string(input), agent); err != nil || out != "" {
+				t.Fatalf("proposal repeated: %q %v", out, err)
+			}
+		})
+	}
+}
+
 func TestHookLatencyReport(t *testing.T) {
 	if testing.Short() {
 		t.Skip("measures hook latency with real Git and filesystem operations")

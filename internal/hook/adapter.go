@@ -174,9 +174,9 @@ func RunEvent(agent Agent, e *auto.Engine, ev Event, out io.Writer, runner *Runn
 		WriteFallback(agent.Adapter, ev, out)
 		return
 	}
-	// Claude/Codex keep their existing per-write notice selection; new hosts
-	// can drain observation-only callbacks on any context-capable event.
-	context, err := prepareEvent(e, ev, runner, agent.Name != "claude" && agent.Name != "codex")
+	// Pending proposals survive deferred observations and context-read failures;
+	// every context-capable host retries delivery on its next callback.
+	context, err := prepareEvent(e, ev, runner, true)
 	defer context.close()
 	if err != nil {
 		LogEventError(e.Svc.Store.Home, agent.Name, ev, err)
