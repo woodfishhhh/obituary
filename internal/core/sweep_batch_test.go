@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
@@ -52,44 +53,48 @@ func TestSweepInvalidatedSnapshotRefreshesOnce(t *testing.T) {
 	if testing.Short() {
 		t.Skip("real Git indexes published after consecutive queries")
 	}
-	f, paths, git := slowGitFixture(t, "keep.log")
-	f.file("seed.txt")
-	git("add", "--", "seed.txt")
-	index := filepath.Join(f.dir, ".git", "index")
-	seed := read(t, index)
-	git("add", "--", "keep.log")
-	trackedIndex := read(t, index)
-	if err := os.WriteFile(index, []byte(seed), 0600); err != nil {
-		t.Fatal(err)
-	}
-	calls := 0
-	f.svc.PrepareOwners = func(ctx context.Context, paths []string) core.OwnerBatchFunc {
-		query := auto.PrepareOwners(ctx, paths)
-		return func(ctx context.Context, paths []string) []core.Ownership {
-			calls++
-			if unlocked := ledgerUnlocked(t, f); unlocked != (calls <= 2) {
-				t.Fatalf("refresh query %d used wrong lock boundary: unlocked=%t", calls, unlocked)
-			}
-			owners := query(ctx, paths)
-			if calls <= 2 {
-				data := seed
-				if calls == 2 {
-					data = trackedIndex
-				}
-				if err := os.WriteFile(index+".next", []byte(data), 0600); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.Rename(index+".next", index); err != nil {
-					t.Fatal(err)
-				}
-			}
-			return owners
+	// Index publication and lock boundaries use real Git; runner scheduling
+	// must not consume the fallback query's budget in this ordering test.
+	synctest.Test(t, func(t *testing.T) {
+		f, paths, git := slowGitFixture(t, "keep.log")
+		f.file("seed.txt")
+		git("add", "--", "seed.txt")
+		index := filepath.Join(f.dir, ".git", "index")
+		seed := read(t, index)
+		git("add", "--", "keep.log")
+		trackedIndex := read(t, index)
+		if err := os.WriteFile(index, []byte(seed), 0600); err != nil {
+			t.Fatal(err)
 		}
-	}
-	rows, err := f.svc.Sweep(false)
-	if err != nil || calls != 3 || len(rows) != 1 || rows[0].Action != core.ActionRefused || read(t, paths[0]) != "keep.log" || len(f.burials()) != 0 {
-		t.Fatalf("repeated invalidation skipped bounded fallback or protection: calls=%d %+v %v", calls, rows, err)
-	}
+		calls := 0
+		f.svc.PrepareOwners = func(ctx context.Context, paths []string) core.OwnerBatchFunc {
+			query := auto.PrepareOwners(ctx, paths)
+			return func(ctx context.Context, paths []string) []core.Ownership {
+				calls++
+				if unlocked := ledgerUnlocked(t, f); unlocked != (calls <= 2) {
+					t.Fatalf("refresh query %d used wrong lock boundary: unlocked=%t", calls, unlocked)
+				}
+				owners := query(ctx, paths)
+				if calls <= 2 {
+					data := seed
+					if calls == 2 {
+						data = trackedIndex
+					}
+					if err := os.WriteFile(index+".next", []byte(data), 0600); err != nil {
+						t.Fatal(err)
+					}
+					if err := os.Rename(index+".next", index); err != nil {
+						t.Fatal(err)
+					}
+				}
+				return owners
+			}
+		}
+		rows, err := f.svc.Sweep(false)
+		if err != nil || calls != 3 || len(rows) != 1 || rows[0].Action != core.ActionRefused || read(t, paths[0]) != "keep.log" || len(f.burials()) != 0 {
+			t.Fatalf("repeated invalidation skipped bounded fallback or protection: calls=%d %+v %v", calls, rows, err)
+		}
+	})
 }
 
 func TestSweepSnapshotRefreshRechecksRevision(t *testing.T) {

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/core"
@@ -397,37 +398,47 @@ func TestSweepFinalGitToMoveWindow(t *testing.T) {
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}
-	r := newRepo(t)
-	now := time.Now()
-	r.engine.Svc.Now = func() time.Time { return now }
-	paths := make([]string, 32)
-	for i := range paths {
-		paths[i] = r.write(fmt.Sprintf("timed-%02d.log", i), "payload")
-	}
-	if rows, err := r.engine.Svc.Add(paths, core.AddOptions{ExpiresAt: now.Add(time.Hour), Source: "rule", Project: r.root}); err != nil || core.Failed(rows) {
-		t.Fatalf("add: %+v %v", rows, err)
-	}
-	now = now.Add(time.Hour)
-	answered := make(map[string]time.Time)
-	calls := 0
-	r.engine.Svc.OwnerBatch = func(ctx context.Context, paths []string) []core.Ownership {
-		owners := OwnerBatch(ctx, paths)
-		calls++
-		for i, path := range paths {
-			answered[path] = owners[i].CheckedAt
+	// Keep real Git answers while making scheduling and the handoff interval
+	// deterministic; a slow rules check must finish before the final answer.
+	synctest.Test(t, func(t *testing.T) {
+		r := newRepo(t)
+		now := time.Now()
+		r.engine.Svc.Now = func() time.Time { return now }
+		paths := make([]string, 32)
+		for i := range paths {
+			paths[i] = r.write(fmt.Sprintf("timed-%02d.log", i), "payload")
 		}
-		return owners
-	}
-	fs := &batchRuleChangeFS{FS: r.engine.Svc.FS, gitAnswered: answered}
-	r.engine.Svc.FS = fs
-	out, err := r.engine.Svc.Sweep(false)
-	if err != nil || fs.moves != len(paths) {
-		t.Fatalf("timed sweep incomplete: moves=%d %+v %v", fs.moves, out, err)
-	}
-	if fs.maxGitGap > 10*time.Millisecond {
-		t.Fatalf("final Git answer exceeded move window: %s", fs.maxGitGap)
-	}
-	t.Logf("real Git samples=%d queries=%d maximum answer-to-MovePinned-entry=%s", fs.moves, calls, fs.maxGitGap)
+		if rows, err := r.engine.Svc.Add(paths, core.AddOptions{ExpiresAt: now.Add(time.Hour), Source: "rule", Project: r.root}); err != nil || core.Failed(rows) {
+			t.Fatalf("add: %+v %v", rows, err)
+		}
+		now = now.Add(time.Hour)
+		answered := make(map[string]time.Time)
+		calls := 0
+		r.engine.Svc.OwnerBatch = func(ctx context.Context, paths []string) []core.Ownership {
+			owners := OwnerBatch(ctx, paths)
+			time.Sleep(time.Millisecond)
+			calls++
+			for i, path := range paths {
+				answered[path] = owners[i].CheckedAt
+			}
+			return owners
+		}
+		recheck := r.engine.Svc.Recheck
+		r.engine.Svc.Recheck = func(root, path string, isDir bool) error {
+			time.Sleep(20 * time.Millisecond)
+			return recheck(root, path, isDir)
+		}
+		fs := &batchRuleChangeFS{FS: r.engine.Svc.FS, gitAnswered: answered}
+		r.engine.Svc.FS = fs
+		out, err := r.engine.Svc.Sweep(false)
+		if err != nil || fs.moves != len(paths) {
+			t.Fatalf("timed sweep incomplete: moves=%d %+v %v", fs.moves, out, err)
+		}
+		if fs.maxGitGap > 10*time.Millisecond {
+			t.Fatalf("final Git answer exceeded move window: %s", fs.maxGitGap)
+		}
+		t.Logf("real Git samples=%d queries=%d maximum answer-to-MovePinned-entry=%s", fs.moves, calls, fs.maxGitGap)
+	})
 }
 
 func TestSweepBatchRechecksRulesBeforeEachMove(t *testing.T) {

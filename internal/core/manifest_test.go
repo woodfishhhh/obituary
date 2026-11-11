@@ -2,6 +2,7 @@ package core_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -815,6 +816,16 @@ func TestOversizedChildManifestRefusesBeforeMove(t *testing.T) {
 	moves := 0
 	f.fs.onRecycle = func(string) { moves++ }
 	f.fs.fail = errors.New("move must not be reached")
+	// An oversized recovery record must be refused before the final directory
+	// scan can exhaust its work budget, regardless of filesystem latency.
+	prepared := false
+	f.svc.Guard.Canonical = func(path string) (string, error) {
+		if prepared {
+			return "", context.DeadlineExceeded
+		}
+		return path, nil
+	}
+	t.Cleanup(core.SetAfterManifest(f.svc, func() { prepared = true }))
 	rows, err := f.svc.Bury([]string{parent.Path}, false, "")
 	if err != nil || len(rows) != 1 || rows[0].Action != core.ActionRefused || !strings.Contains(rows[0].Error, "too many registered") || moves != 0 {
 		t.Fatalf("oversized manifest reached move: moves=%d rows=%+v err=%v", moves, rows, err)

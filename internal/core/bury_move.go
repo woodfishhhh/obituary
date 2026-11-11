@@ -97,13 +97,6 @@ func (s *Service) validatePrepared(st *State, p *preparedBurial, reason string) 
 	if st.BurialIndex(b.ID) >= 0 || st.ProposalIndex(b.ID) >= 0 {
 		return "", fmt.Errorf("#%d is already in use", b.ID)
 	}
-	guardCtx, cancelGuard := context.WithTimeout(s.Store.Context(), sweepBatchWork)
-	guardErr := s.Guard.CheckContext(guardCtx, out.Path, out.Item.Force)
-	cancelGuard()
-	if err := guardErr; err != nil {
-		*out = failedMove(*out, err)
-		return "", nil
-	}
 	children, err := s.childLifespans(st, out.Item, out.Path, reason)
 	if err != nil {
 		*out = failedMove(*out, err)
@@ -120,6 +113,15 @@ func (s *Service) validatePrepared(st *State, p *preparedBurial, reason string) 
 			*out = failedMove(*out, err)
 			return "", nil
 		}
+	}
+	// Refuse an unrepresentable recovery record before a directory scan can
+	// consume the guard budget. The guard still precedes every move.
+	guardCtx, cancelGuard := context.WithTimeout(s.Store.Context(), sweepBatchWork)
+	guardErr := s.Guard.CheckContext(guardCtx, out.Path, out.Item.Force)
+	cancelGuard()
+	if err := guardErr; err != nil {
+		*out = failedMove(*out, err)
+		return "", nil
 	}
 	if reason == ReasonExpired && automatic(out.Item) || s.approvedWatch != nil {
 		real, action, detail := s.recheckAutomaticRules(out.Item, out.Path)
