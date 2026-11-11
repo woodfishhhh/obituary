@@ -116,6 +116,8 @@ Issues and pull requests are welcome. The most welcome is an issue that comes wi
 
 <a href="https://github.com/woodfishhhh/obituary/graphs/contributors"><img alt="Contributors" src="https://contrib.rocks/image?repo=woodfishhhh/obituary&max=100"></a>
 
+Chinese-speaking users also chat in the QQ group **1135603207**.
+
 <p>
   <a href="https://star-history.com/#woodfishhhh/obituary&Date">
     <picture>

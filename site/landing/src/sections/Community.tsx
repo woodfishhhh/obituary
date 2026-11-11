@@ -1,6 +1,7 @@
 import { useId } from "react";
 import type { Copy } from "@/copy";
-import { repo } from "@/copy";
+import { qqGroup, repo } from "@/copy";
+import qqCode from "@/assets/qq-group.png";
 import { cn } from "@/lib/utils";
 
 interface Community {
@@ -107,6 +108,15 @@ export function Community({ c }: { c: Copy }) {
             ))}
           </div>
         ) : null}
+
+        <div className="mt-14 flex max-w-2xl flex-col gap-6 rounded-2xl border border-line bg-paper p-6 sm:flex-row sm:items-center">
+          <img src={qqCode} alt={m.qqAlt} width={160} height={200} loading="lazy" className="h-auto w-40 shrink-0 rounded-xl" />
+          <div className="flex min-w-0 flex-col gap-2">
+            <h3 className="text-xl font-semibold">{m.qqHead}</h3>
+            <p className="text-3xl font-semibold tracking-[-0.01em] text-cobalt tabular-nums">{qqGroup}</p>
+            <p className="max-w-[40ch] text-ink-2">{m.qqLine}</p>
+          </div>
+        </div>
       </div>
     </section>
   );

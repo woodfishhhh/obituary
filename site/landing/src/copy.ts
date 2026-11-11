@@ -5,6 +5,7 @@
 export type Lang = "zh" | "en";
 
 export const repo = "https://github.com/woodfishhhh/obituary";
+export const qqGroup = "1135603207";
 
 // Commands are product text and stay identical in both languages; the install
 // lines mirror the README.
@@ -179,10 +180,13 @@ const zh = {
     howTo: "怎么参与",
     stars: "Star 走势",
     starHistoryAlt: "讣告仓库的 Star 数随时间变化的曲线",
+    qqHead: "QQ 用户群",
+    qqLine: "用着有问题、有想法，扫码进群聊。",
+    qqAlt: "讣告用户群的 QQ 二维码，群号 1135603207",
   },
   install: {
     head: "安装",
-    lead: "目前只支持 Windows 10 / 11（x64 和 ARM64）。",
+    lead: "支持 Windows 10 / 11（x64 和 ARM64）。",
     mirrorFact: "镜像上的压缩包和 GitHub Release 里的是同一份，安装脚本同样先核对 SHA-256。",
     payoff: "装好后重启 agent。它生成的日志、截图按规则带上寿命（每个项目第一次先问你）；打开删除护栏的话，它的 rm -rf 会换成能复活的 obit rm -rf。",
     updateHead: "更新和卸载",
@@ -368,6 +372,9 @@ const en: Copy = {
     howTo: "How to contribute",
     stars: "Stars over time",
     starHistoryAlt: "Stars of the Obituary repository over time",
+    qqHead: "QQ group",
+    qqLine: "Chinese-speaking users chat here: scan the code or search the group number in QQ.",
+    qqAlt: "QR code of the Obituary QQ group, number 1135603207",
   },
   install: {
     head: "Install",
