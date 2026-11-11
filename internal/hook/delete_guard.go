@@ -18,15 +18,8 @@ func guardDelete(home string, ev Event) (string, error) {
 		why = "delete guard is disabled"
 	}
 	if why == "" {
-		context := guardrm.Context{Shell: ev.Shell, DeclaredShell: ev.ShellDeclared, WSL: strings.HasPrefix(ev.Cwd, "/") || strings.HasPrefix(ev.Cwd, "~")}
-		context.Cwd, _ = NativePath(ev.Cwd) // read-only glob check; preserve ev.Cwd's shell namespace
-		if context.WSL && (!guardrm.WSLMountedPath(ev.Cwd) || context.Shell != guardrm.Bash) {
-			why = "WSL requires bash in a mounted Windows directory"
-		} else if context.Shell == guardrm.PowerShell && !windowsCwd(ev.Cwd) {
-			why = "PowerShell deletion requires a Windows working directory"
-		} else {
-			context.Executable, why = deleteGuardExecutable(context)
-		}
+		var context guardrm.Context
+		context, why = deleteGuardContext(ev)
 		if why == "" {
 			equivalent, summary, why = guardrm.SuggestWithSummary(ev.Command, context)
 		}
@@ -42,6 +35,20 @@ func guardDelete(home string, ev Event) (string, error) {
 		return "", guardrm.Record(home, guardrm.AuditEvent{Kind: "skipped", Command: ev.Command, Reason: why})
 	}
 	return "", nil
+}
+
+func deleteGuardContext(ev Event) (guardrm.Context, string) {
+	context := guardrm.Context{Shell: ev.Shell, DeclaredShell: ev.ShellDeclared, WSL: strings.HasPrefix(ev.Cwd, "/") || strings.HasPrefix(ev.Cwd, "~")}
+	context.Cwd, _ = NativePath(ev.Cwd) // read-only glob check; preserve ev.Cwd's shell namespace
+	var why string
+	if context.WSL && (!guardrm.WSLMountedPath(ev.Cwd) || context.Shell != guardrm.Bash) {
+		why = "WSL requires bash in a mounted Windows directory"
+	} else if context.Shell == guardrm.PowerShell && !windowsCwd(ev.Cwd) {
+		why = "PowerShell deletion requires a Windows working directory"
+	} else {
+		context.Executable, why = deleteGuardExecutable(context)
+	}
+	return context, why
 }
 
 func deleteGuardExecutable(context guardrm.Context) (string, string) {
@@ -137,6 +144,10 @@ func codexCommand(tool string, input map[string]any, cwd string) (string, guardr
 	if !ok {
 		return "", shell, "missing shell command"
 	}
+	return codexArgvCommand(raw, shell)
+}
+
+func codexArgvCommand(raw []any, shell guardrm.Shell) (string, guardrm.Shell, string) {
 	encoded, _ := json.Marshal(raw)
 	args := make([]string, len(raw))
 	for i, v := range raw {

@@ -78,25 +78,8 @@ func (b ExitCodeBridge) Plan(s Scope, registration []Change, uninstall bool) ([]
 		return nil, fmt.Errorf("exit-code bridge requires a registration plan")
 	}
 	if uninstall {
-		for _, ch := range registration {
-			if ch.delete {
-				continue
-			}
-			data := ch.data
-			if ch.Action == "unchanged" || ch.Action == "preserve" {
-				data = ch.orig
-			}
-			raw, err := configJSON(data, ConfigJSONC)
-			if err != nil {
-				return nil, fmt.Errorf("cannot verify wrapper unregistration in %s: %w", ch.Path, err)
-			}
-			var value any
-			if err := json.Unmarshal(raw, &value); err != nil {
-				return nil, err
-			}
-			if refersToExitCodeScript(value, b.ScriptPath) {
-				return nil, fmt.Errorf("%s still references %s; remove that handler explicitly before removing the wrapper", ch.Path, b.ScriptPath)
-			}
+		if err := b.verifyUnregistration(registration); err != nil {
+			return nil, err
 		}
 	}
 	content := bytes.ReplaceAll(exitCodeScript, []byte("__OBIT_EXE_BASE64__"), []byte(base64.StdEncoding.EncodeToString([]byte(b.Executable))))
@@ -106,6 +89,30 @@ func (b ExitCodeBridge) Plan(s Scope, registration []Change, uninstall bool) ([]
 		return nil, err
 	}
 	return OrderManagedInstallation(assets, registration, uninstall)
+}
+
+func (b ExitCodeBridge) verifyUnregistration(registration []Change) error {
+	for _, ch := range registration {
+		if ch.delete {
+			continue
+		}
+		data := ch.data
+		if ch.Action == "unchanged" || ch.Action == "preserve" {
+			data = ch.orig
+		}
+		raw, err := configJSON(data, ConfigJSONC)
+		if err != nil {
+			return fmt.Errorf("cannot verify wrapper unregistration in %s: %w", ch.Path, err)
+		}
+		var value any
+		if err := json.Unmarshal(raw, &value); err != nil {
+			return err
+		}
+		if refersToExitCodeScript(value, b.ScriptPath) {
+			return fmt.Errorf("%s still references %s; remove that handler explicitly before removing the wrapper", ch.Path, b.ScriptPath)
+		}
+	}
+	return nil
 }
 
 // An edited compound handler is not ours to unregister. Do not delete the

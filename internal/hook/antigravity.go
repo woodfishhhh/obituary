@@ -13,16 +13,18 @@ import (
 // by the installed command's --event flag, not guessed from toolCall presence.
 type antigravityAdapter struct{}
 
+type antigravityInput struct {
+	Session    string   `json:"conversationId"`
+	Workspaces []string `json:"workspacePaths"`
+	ToolCall   struct {
+		Name string         `json:"name"`
+		Args map[string]any `json:"args"`
+	} `json:"toolCall"`
+	Error string `json:"error"`
+}
+
 func (antigravityAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
-	var in struct {
-		Session    string   `json:"conversationId"`
-		Workspaces []string `json:"workspacePaths"`
-		ToolCall   struct {
-			Name string         `json:"name"`
-			Args map[string]any `json:"args"`
-		} `json:"toolCall"`
-		Error string `json:"error"`
-	}
+	var in antigravityInput
 	if err := json.Unmarshal(raw, &in); err != nil {
 		return Event{}, err
 	}
@@ -51,36 +53,7 @@ func (antigravityAdapter) Decode(raw []byte, invocation Invocation) (Event, erro
 		return Event{}, fmt.Errorf("antigravity payload lacks a stable conversation id")
 	}
 	if ev.Name == "PostToolUse" {
-		ev.DeferContext = true // host ignores stdout; RunEvent must not acknowledge notices
-		if in.Error != "" {
-			return ev, ErrSkip
-		}
-		switch ev.Tool {
-		case "write_to_file", "replace_file_content", "multi_replace_file_content":
-		default:
-			return ev, ErrSkip
-		}
-		path, ok := NativePath(firstString(in.ToolCall.Args, "TargetFile"))
-		if !ok || !filepath.IsAbs(path) {
-			return ev, ErrSkip
-		}
-		// Pick the workspace containing the explicit target, never [0]. A
-		// lexical selection is only routing; core still verifies each object.
-		for _, workspace := range in.Workspaces {
-			root, ok := NativePath(workspace)
-			if !ok || !filepath.IsAbs(root) {
-				continue
-			}
-			rel, err := filepath.Rel(root, path)
-			if err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel) && len(root) > len(ev.Cwd) {
-				ev.Cwd = root
-			}
-		}
-		if ev.Cwd == "" {
-			return ev, ErrSkip
-		}
-		ev.Paths = []string{path}
-		return ev, nil
+		return antigravityWriteEvent(ev, in)
 	}
 	// One Event cannot snapshot/finish multiple workspace roots. Reject that
 	// ambiguity rather than silently covering only the first project.
@@ -92,6 +65,39 @@ func (antigravityAdapter) Decode(raw []byte, invocation Invocation) (Event, erro
 		return ev, ErrSkip
 	}
 	ev.Cwd = root
+	return ev, nil
+}
+
+func antigravityWriteEvent(ev Event, in antigravityInput) (Event, error) {
+	ev.DeferContext = true // host ignores stdout; RunEvent must not acknowledge notices
+	if in.Error != "" {
+		return ev, ErrSkip
+	}
+	switch ev.Tool {
+	case "write_to_file", "replace_file_content", "multi_replace_file_content":
+	default:
+		return ev, ErrSkip
+	}
+	path, ok := NativePath(firstString(in.ToolCall.Args, "TargetFile"))
+	if !ok || !filepath.IsAbs(path) {
+		return ev, ErrSkip
+	}
+	// Pick the workspace containing the explicit target, never [0]. A
+	// lexical selection is only routing; core still verifies each object.
+	for _, workspace := range in.Workspaces {
+		root, ok := NativePath(workspace)
+		if !ok || !filepath.IsAbs(root) {
+			continue
+		}
+		rel, err := filepath.Rel(root, path)
+		if err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel) && len(root) > len(ev.Cwd) {
+			ev.Cwd = root
+		}
+	}
+	if ev.Cwd == "" {
+		return ev, ErrSkip
+	}
+	ev.Paths = []string{path}
 	return ev, nil
 }
 

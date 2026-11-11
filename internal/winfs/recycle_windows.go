@@ -111,6 +111,10 @@ func (fs FS) Recycle(path string, want core.Identity) error {
 		return err
 	}
 	performErr := hresult(op.call(vtPerformOperations), "recycle")
+	return confirmRecycled(path, performErr)
+}
+
+func confirmRecycled(path string, performErr error) error {
 	// Trust the disk, not the shell's report: success means the path is gone.
 	_, statErr := os.Lstat(path)
 	switch {

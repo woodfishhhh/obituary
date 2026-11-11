@@ -83,17 +83,9 @@ func planHermesEnabled(s Scope, path string, uninstall bool) (Change, error) {
 		return ch, fmt.Errorf("%s: plugins.enabled must be an array of plugin names", path)
 	}
 	if slices.Contains(enabled, "obituary") {
-		manifest := filepath.Join(filepath.Dir(path), "plugins", "obituary", "plugin.yaml")
-		receipt, err := readAssetReceipt(s, manifest)
+		enabled, err = updateOwnedHermesEnabled(s, path, enabled, uninstall)
 		if err != nil {
 			return ch, err
-		}
-		state, valid := decodeAssetReceipt(receipt.orig, ManagedAsset{Path: manifest, ID: "hermes-plugin"})
-		if !valid || !slices.Contains(state.Owners, "hermes") {
-			return ch, fmt.Errorf("%s: obituary plugin enablement has no verified receipt; left untouched", path)
-		}
-		if uninstall {
-			enabled = slices.DeleteFunc(enabled, func(name string) bool { return name == "obituary" })
 		}
 	} else if uninstall {
 		return ch, nil
@@ -102,6 +94,22 @@ func planHermesEnabled(s Scope, path string, uninstall bool) (Change, error) {
 	}
 	value, _ := marshal(enabled)
 	return PlanConfigEdits(s, path, ConfigYAML, []ConfigEdit{{Path: []string{"plugins", "enabled"}, Value: value, CheckExpected: true, Expected: raw}})
+}
+
+func updateOwnedHermesEnabled(s Scope, path string, enabled []string, uninstall bool) ([]string, error) {
+	manifest := filepath.Join(filepath.Dir(path), "plugins", "obituary", "plugin.yaml")
+	receipt, err := readAssetReceipt(s, manifest)
+	if err != nil {
+		return nil, err
+	}
+	state, valid := decodeAssetReceipt(receipt.orig, ManagedAsset{Path: manifest, ID: "hermes-plugin"})
+	if !valid || !slices.Contains(state.Owners, "hermes") {
+		return nil, fmt.Errorf("%s: obituary plugin enablement has no verified receipt; left untouched", path)
+	}
+	if uninstall {
+		enabled = slices.DeleteFunc(enabled, func(name string) bool { return name == "obituary" })
+	}
+	return enabled, nil
 }
 
 func PlanHermesMCP(s Scope, executable string, uninstall bool) (changes []Change, err error) {

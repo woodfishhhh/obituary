@@ -69,24 +69,29 @@ func (codexAdapter) Decode(raw []byte, _ Invocation) (Event, error) {
 		ev.Command, ev.Shell, ev.SkipReason = codexCommand(input.ToolName, input.ToolInput, ev.Cwd)
 	}
 	if input.Event == "PostToolUse" {
-		if path := firstString(input.ToolInput, "file_path"); path != "" {
-			ev.Paths = append(ev.Paths, path)
-		}
-		if cmd := firstString(input.ToolInput, "command", "patch", "input"); strings.Contains(cmd, "*** Begin Patch") {
-			paths, err := localPatchPaths(cmd)
-			if err != nil {
-				return Event{}, fmt.Errorf("codex PostToolUse: %w", err)
-			}
-			ev.Paths = append(ev.Paths, paths...)
-		}
-		var native []string
-		for _, p := range ev.Paths {
-			if np, ok := NativePath(p); ok {
-				native = append(native, np)
-			}
-		}
-		ev.Paths = native
+		return codexWriteEvent(ev, input)
 	}
+	return ev, nil
+}
+
+func codexWriteEvent(ev Event, input codexInput) (Event, error) {
+	if path := firstString(input.ToolInput, "file_path"); path != "" {
+		ev.Paths = append(ev.Paths, path)
+	}
+	if cmd := firstString(input.ToolInput, "command", "patch", "input"); strings.Contains(cmd, "*** Begin Patch") {
+		paths, err := localPatchPaths(cmd)
+		if err != nil {
+			return Event{}, fmt.Errorf("codex PostToolUse: %w", err)
+		}
+		ev.Paths = append(ev.Paths, paths...)
+	}
+	var native []string
+	for _, p := range ev.Paths {
+		if np, ok := NativePath(p); ok {
+			native = append(native, np)
+		}
+	}
+	ev.Paths = native
 	return ev, nil
 }
 

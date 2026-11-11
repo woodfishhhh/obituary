@@ -59,6 +59,10 @@ func Main(m *testing.M) (code int) {
 			code = 1
 		}
 	}()
+	return runIsolatedTests(m, scratchPackage())
+}
+
+func runIsolatedTests(m *testing.M, pkg string) (code int) {
 	reapScratch(os.TempDir(), time.Now(), os.Stderr)
 	scratch, err := os.MkdirTemp("", "obit-tests-")
 	if err != nil {
@@ -85,7 +89,7 @@ func Main(m *testing.M) (code int) {
 			}
 		}
 	}()
-	if err := writeScratchOwner(scratch, scratchPackage()); err != nil {
+	if err := writeScratchOwner(scratch, pkg); err != nil {
 		fmt.Fprintln(os.Stderr, "test scratch owner:", err)
 		return 1
 	}
@@ -147,6 +151,28 @@ func isolate(scratch string) error {
 	if err := isolateDocker(scratch); err != nil {
 		return err
 	}
+	if err := clearInheritedEnvironment(); err != nil {
+		return err
+	}
+	if err := isolateDirectories(scratch); err != nil {
+		return err
+	}
+	path := filepath.Join(scratch, "gitconfig")
+	if err := os.WriteFile(path, []byte("[user]\n\tname = Obituary Tests\n\temail = tests@obituary.invalid\n[init]\n\tdefaultBranch = main\n[core]\n\tautocrlf = false\n"), 0o600); err != nil {
+		return err
+	}
+	if err := os.Setenv("GIT_CONFIG_GLOBAL", path); err != nil {
+		return err
+	}
+	// A scratch inside a checkout must not make non-repository fixtures inherit
+	// that checkout; Git may still discover repositories created inside scratch.
+	if err := os.Setenv("GIT_CEILING_DIRECTORIES", scratch); err != nil {
+		return err
+	}
+	return os.Setenv("GIT_CONFIG_NOSYSTEM", "1")
+}
+
+func clearInheritedEnvironment() error {
 	for _, entry := range os.Environ() {
 		name, _, _ := strings.Cut(entry, "=")
 		upper := strings.ToUpper(name)
@@ -156,6 +182,10 @@ func isolate(scratch string) error {
 			}
 		}
 	}
+	return nil
+}
+
+func isolateDirectories(scratch string) error {
 	for name, sub := range map[string]string{
 		"OBIT_HOME": "data", "OBIT_CONFIG_DIR": "config", "OBIT_USER_HOME": "home",
 		"LOCALAPPDATA":        "localappdata",
@@ -183,17 +213,5 @@ func isolate(scratch string) error {
 			return err
 		}
 	}
-	path := filepath.Join(scratch, "gitconfig")
-	if err := os.WriteFile(path, []byte("[user]\n\tname = Obituary Tests\n\temail = tests@obituary.invalid\n[init]\n\tdefaultBranch = main\n[core]\n\tautocrlf = false\n"), 0o600); err != nil {
-		return err
-	}
-	if err := os.Setenv("GIT_CONFIG_GLOBAL", path); err != nil {
-		return err
-	}
-	// A scratch inside a checkout must not make non-repository fixtures inherit
-	// that checkout; Git may still discover repositories created inside scratch.
-	if err := os.Setenv("GIT_CEILING_DIRECTORIES", scratch); err != nil {
-		return err
-	}
-	return os.Setenv("GIT_CONFIG_NOSYSTEM", "1")
+	return nil
 }

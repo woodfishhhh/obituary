@@ -59,6 +59,10 @@ func (a codeBuddyAdapter) Decode(raw []byte, invocation Invocation) (Event, erro
 	if ev.Name != "PostToolUse" {
 		return ev, nil
 	}
+	return codeBuddyWriteEvent(ev, in.declaredShellInput, in.Response)
+}
+
+func codeBuddyWriteEvent(ev Event, in declaredShellInput, raw json.RawMessage) (Event, error) {
 	// The CLI reference documents success:true. IDE tool_response is any;
 	// only this explicit success envelope is supported, never output text.
 	var response struct {
@@ -66,7 +70,7 @@ func (a codeBuddyAdapter) Decode(raw []byte, invocation Invocation) (Event, erro
 		Error   json.RawMessage `json:"error"`
 		IsError bool            `json:"is_error"`
 	}
-	if err := json.Unmarshal(in.Response, &response); err != nil {
+	if err := json.Unmarshal(raw, &response); err != nil {
 		return Event{}, ErrSkip
 	}
 	if response.Success == nil || !*response.Success || response.IsError ||
@@ -86,7 +90,7 @@ func (a codeBuddyAdapter) Decode(raw []byte, invocation Invocation) (Event, erro
 	default:
 		return Event{}, ErrSkip
 	}
-	path, ok = NativePath(path)
+	path, ok := NativePath(path)
 	if !ok || bytes.Contains([]byte(path), []byte("://")) {
 		return Event{}, ErrSkip
 	}

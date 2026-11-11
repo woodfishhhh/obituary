@@ -55,6 +55,36 @@ func PlanDeepSeekProfile(s Scope, commands Commands, profile string, uninstall b
 func planDeepSeek(s Scope, commands Commands, root string, uninstall bool) ([]Change, error) {
 	bounded := nativeSpecialScope(s, root)
 	dir := filepath.Join(root, "obituary-hooks")
+	assets, err := planDeepSeekAssets(bounded, commands, dir, s.GuardRM, uninstall)
+	if err != nil {
+		return nil, err
+	}
+	rulesPath := filepath.Join(s.Project, "AGENTS.md")
+	if s.Global {
+		home, err := userdirs.DeepSeekDir()
+		if err != nil {
+			return nil, err
+		}
+		rulesPath = filepath.Join(home, "AGENTS.md")
+	}
+	// Profile exports share the home instruction file. Keep profile bundle
+	// uninstall from removing instructions belonging to another profile.
+	if s.Global {
+		home, _ := userdirs.DeepSeekDir()
+		if root != home {
+			deepseekActivation(assets, dir, "obituary-deepseek-hooks", uninstall)
+			return assets, nil
+		}
+	}
+	rules, err := planPluginRules(bounded, rulesPath, "deepseek-harness", uninstall)
+	if err != nil {
+		return nil, err
+	}
+	deepseekActivation(assets, dir, "obituary-deepseek-hooks", uninstall)
+	return OrderManagedInstallation(assets, []Change{rules}, uninstall)
+}
+
+func planDeepSeekAssets(bounded Scope, commands Commands, dir string, guardRM, uninstall bool) ([]Change, error) {
 	hooksPath := filepath.Join(dir, "hooks.json")
 	// The shipped Windows composition uses pwsh-sandbox for ctx.shell.
 	// Pin the same executable used by the observer; PATH cannot select another.
@@ -67,21 +97,10 @@ func planDeepSeek(s Scope, commands Commands, root string, uninstall bool) ([]Ch
 			return nil, fmt.Errorf("DeepSeek requires a literal PowerShell obit hook deepseek-harness command")
 		}
 	}
-	template, _ := deepseekFiles.ReadFile("plugins/deepseek/hooks.json")
-	encoded, _ := marshal(command)
-	template = bytes.ReplaceAll(template, []byte(`"__OBIT_COMMAND__"`), encoded)
-	var config struct {
-		Hooks map[string][]struct{ Hooks []json.RawMessage } `json:"hooks"`
-	}
-	if err := json.Unmarshal(template, &config); err != nil {
+	spec, err := deepseekHookConfig(command, guardRM)
+	if err != nil {
 		return nil, err
 	}
-	spec := HookConfig{Agent: "deepseek-harness", Shape: GroupedHooks}
-	for _, event := range []string{"SessionStart", "UserPromptSubmit", "PostToolUse", "Stop"} {
-		spec.Events = append(spec.Events, HookRegistration{Event: event, Handler: config.Hooks[event][0].Hooks[0]})
-	}
-	spec.Events = append(spec.Events, HookRegistration{Event: "PreToolUse", Matcher: "^(bash|pwsh)$",
-		Handler: config.Hooks["Stop"][0].Hooks[0], Optional: !s.GuardRM})
 	var hooks []byte
 	var hooksBefore *Change
 	if !uninstall {
@@ -114,37 +133,41 @@ func planDeepSeek(s Scope, commands Commands, root string, uninstall bool) ([]Ch
 		return nil, err
 	}
 	if hooksBefore != nil {
-		for _, ch := range assets {
-			if ch.Path == hooksPath {
-				if err := nativeSpecialOriginal(ch, *hooksBefore); err != nil {
-					return nil, err
-				}
+		if err := verifyDeepSeekHooks(assets, hooksPath, *hooksBefore); err != nil {
+			return nil, err
+		}
+	}
+	return assets, nil
+}
+
+func verifyDeepSeekHooks(assets []Change, hooksPath string, before Change) error {
+	for _, ch := range assets {
+		if ch.Path == hooksPath {
+			if err := nativeSpecialOriginal(ch, before); err != nil {
+				return err
 			}
 		}
 	}
-	rulesPath := filepath.Join(s.Project, "AGENTS.md")
-	if s.Global {
-		home, err := userdirs.DeepSeekDir()
-		if err != nil {
-			return nil, err
-		}
-		rulesPath = filepath.Join(home, "AGENTS.md")
+	return nil
+}
+
+func deepseekHookConfig(command string, guardRM bool) (HookConfig, error) {
+	template, _ := deepseekFiles.ReadFile("plugins/deepseek/hooks.json")
+	encoded, _ := marshal(command)
+	template = bytes.ReplaceAll(template, []byte(`"__OBIT_COMMAND__"`), encoded)
+	var config struct {
+		Hooks map[string][]struct{ Hooks []json.RawMessage } `json:"hooks"`
 	}
-	// Profile exports share the home instruction file. Keep profile bundle
-	// uninstall from removing instructions belonging to another profile.
-	if s.Global {
-		home, _ := userdirs.DeepSeekDir()
-		if root != home {
-			deepseekActivation(assets, dir, "obituary-deepseek-hooks", uninstall)
-			return assets, nil
-		}
+	if err := json.Unmarshal(template, &config); err != nil {
+		return HookConfig{}, err
 	}
-	rules, err := planPluginRules(bounded, rulesPath, "deepseek-harness", uninstall)
-	if err != nil {
-		return nil, err
+	spec := HookConfig{Agent: "deepseek-harness", Shape: GroupedHooks}
+	for _, event := range []string{"SessionStart", "UserPromptSubmit", "PostToolUse", "Stop"} {
+		spec.Events = append(spec.Events, HookRegistration{Event: event, Handler: config.Hooks[event][0].Hooks[0]})
 	}
-	deepseekActivation(assets, dir, "obituary-deepseek-hooks", uninstall)
-	return OrderManagedInstallation(assets, []Change{rules}, uninstall)
+	spec.Events = append(spec.Events, HookRegistration{Event: "PreToolUse", Matcher: "^(bash|pwsh)$",
+		Handler: config.Hooks["Stop"][0].Hooks[0], Optional: !guardRM})
+	return spec, nil
 }
 
 func deepseekActivation(changes []Change, dir, name string, uninstall bool) {

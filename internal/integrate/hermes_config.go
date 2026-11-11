@@ -23,23 +23,7 @@ func planHermesConfigParents(s Scope, registration Change, kind string, uninstal
 	}
 	content := before.orig
 	if !before.existed {
-		data, err := configJSON(registration.orig, ConfigYAML)
-		if err != nil {
-			return nil, err
-		}
-		parent, err := configMember(data, []string{container})
-		if err != nil {
-			return nil, err
-		}
-		state := hermesConfigParents{ContainerExisted: parent != nil}
-		if kind == "hooks" {
-			member, err := configMember(data, []string{container, "enabled"})
-			if err != nil {
-				return nil, err
-			}
-			state.EnabledExisted = member != nil
-		}
-		content, err = marshal(state)
+		content, err = hermesParentState(registration.orig, container, kind)
 		if err != nil {
 			return nil, err
 		}
@@ -50,46 +34,9 @@ func planHermesConfigParents(s Scope, registration Change, kind string, uninstal
 		return nil, err
 	}
 	if uninstall && before.existed && PreservedError(assets) == nil {
-		var state hermesConfigParents
-		if err := json.Unmarshal(content, &state); err != nil {
+		registration, err = removeHermesParents(registration, content, container, kind)
+		if err != nil {
 			return nil, err
-		}
-		data := registration.orig
-		if registration.data != nil {
-			data = registration.data
-		}
-		changed := false
-		removeEmpty := func(path []string, empty string) error {
-			raw, err := configJSON(data, ConfigYAML)
-			if err != nil {
-				return err
-			}
-			member, err := configMember(raw, path)
-			if err != nil {
-				return err
-			}
-			if sameConfigJSON(member, []byte(empty)) {
-				edit := ConfigEdit{Path: path, Remove: true}
-				data, err = editConfig(data, ConfigYAML, []ConfigEdit{edit})
-				if err != nil {
-					return err
-				}
-				changed = true
-			}
-			return nil
-		}
-		if kind == "hooks" && !state.EnabledExisted {
-			if err := removeEmpty([]string{container, "enabled"}, "[]"); err != nil {
-				return nil, err
-			}
-		}
-		if !state.ContainerExisted {
-			if err := removeEmpty([]string{container}, "{}"); err != nil {
-				return nil, err
-			}
-		}
-		if changed {
-			registration = setIntegrationData(registration, data)
 		}
 	}
 	changes, err := OrderManagedInstallation(assets, []Change{registration}, uninstall)
@@ -98,4 +45,75 @@ func planHermesConfigParents(s Scope, registration Change, kind string, uninstal
 	}
 	// Preserve the MCP planner's primary-file-first result for inspectors.
 	return append(changes[len(changes)-1:], changes[:len(changes)-1]...), nil
+}
+
+func hermesParentState(original []byte, container, kind string) ([]byte, error) {
+	data, err := configJSON(original, ConfigYAML)
+	if err != nil {
+		return nil, err
+	}
+	parent, err := configMember(data, []string{container})
+	if err != nil {
+		return nil, err
+	}
+	state := hermesConfigParents{ContainerExisted: parent != nil}
+	if kind == "hooks" {
+		member, err := configMember(data, []string{container, "enabled"})
+		if err != nil {
+			return nil, err
+		}
+		state.EnabledExisted = member != nil
+	}
+	return marshal(state)
+}
+
+func removeHermesParents(registration Change, content []byte, container, kind string) (Change, error) {
+	var state hermesConfigParents
+	if err := json.Unmarshal(content, &state); err != nil {
+		return registration, err
+	}
+	data := registration.orig
+	if registration.data != nil {
+		data = registration.data
+	}
+	changed := false
+	var err error
+	if kind == "hooks" && !state.EnabledExisted {
+		data, changed, err = removeEmptyHermesMember(data, []string{container, "enabled"}, "[]")
+		if err != nil {
+			return registration, err
+		}
+	}
+	if !state.ContainerExisted {
+		var removed bool
+		data, removed, err = removeEmptyHermesMember(data, []string{container}, "{}")
+		if err != nil {
+			return registration, err
+		}
+		changed = changed || removed
+	}
+	if changed {
+		registration = setIntegrationData(registration, data)
+	}
+	return registration, nil
+}
+
+func removeEmptyHermesMember(data []byte, path []string, empty string) ([]byte, bool, error) {
+	raw, err := configJSON(data, ConfigYAML)
+	if err != nil {
+		return nil, false, err
+	}
+	member, err := configMember(raw, path)
+	if err != nil {
+		return nil, false, err
+	}
+	if sameConfigJSON(member, []byte(empty)) {
+		edit := ConfigEdit{Path: path, Remove: true}
+		data, err = editConfig(data, ConfigYAML, []ConfigEdit{edit})
+		if err != nil {
+			return nil, false, err
+		}
+		return data, true, nil
+	}
+	return data, false, nil
 }

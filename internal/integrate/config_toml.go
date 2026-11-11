@@ -25,6 +25,13 @@ type TOMLBlock struct {
 
 var tomlBlockID = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 
+type tomlBlockState struct {
+	data, baseData []byte
+	base, prefix   map[string]any
+	start, finish  int
+	begin, end     string
+}
+
 func PlanTOMLBlock(s Scope, path string, spec TOMLBlock, uninstall bool) (Change, error) {
 	ch, err := readIntegrationChange(s, path)
 	if err != nil {
@@ -33,16 +40,41 @@ func PlanTOMLBlock(s Scope, path string, spec TOMLBlock, uninstall bool) (Change
 	if !tomlBlockID.MatchString(spec.ID) || spec.Owns == nil {
 		return ch, fmt.Errorf("TOML block requires an identifier and ownership assertion")
 	}
-	bom := []byte("\xef\xbb\xbf")
-	data := bytes.TrimPrefix(ch.orig, bom)
+	data := bytes.TrimPrefix(ch.orig, []byte("\xef\xbb\xbf"))
+	block, err := inspectTOMLBlock(data, path, spec)
+	if err != nil {
+		return ch, err
+	}
+	if uninstall && block.start < 0 {
+		return ch, nil
+	}
+	out, expected := block.baseData, block.base
+	if !uninstall {
+		body, unchanged, err := block.installBody(spec)
+		if err != nil {
+			return ch, err
+		}
+		if unchanged {
+			return ch, nil
+		}
+		out, expected, err = block.replace(spec, body)
+		if err != nil {
+			return ch, err
+		}
+	}
+	return block.finishChange(ch, spec.ID, out, expected)
+}
+
+func inspectTOMLBlock(data []byte, path string, spec TOMLBlock) (tomlBlockState, error) {
+	block := tomlBlockState{data: data}
 	full, err := decodeTOML(data)
 	if err != nil {
-		return ch, fmt.Errorf("%s: %w", path, err)
+		return block, fmt.Errorf("%s: %w", path, err)
 	}
 	begin, end := "# obit:"+spec.ID+":begin", "# obit:"+spec.ID+":end"
 	start, finish, err := tomlMarkedRange(data, begin, end)
 	if err != nil {
-		return ch, err
+		return block, err
 	}
 	baseData := bytes.Clone(data)
 	if start >= 0 {
@@ -50,67 +82,74 @@ func PlanTOMLBlock(s Scope, path string, spec TOMLBlock, uninstall bool) (Change
 	}
 	base, err := decodeTOML(baseData)
 	if err != nil {
-		return ch, fmt.Errorf("removing TOML block changes syntax: %w", err)
+		return block, fmt.Errorf("removing TOML block changes syntax: %w", err)
 	}
 	prefix := base
 	if start >= 0 {
 		prefix, err = decodeTOML(data[:start])
 		if err != nil {
-			return ch, err
+			return block, err
 		}
 		owned, err := decodeTOML(data[start:finish])
 		if err != nil || !spec.Owns(owned) {
-			return ch, fmt.Errorf("%s: edited TOML ownership block; left untouched", path)
+			return block, fmt.Errorf("%s: edited TOML ownership block; left untouched", path)
 		}
 		joined, err := mergeTOMLAt(base, owned, prefix)
 		if err != nil || !reflect.DeepEqual(full, joined) {
-			return ch, fmt.Errorf("TOML block shares scope with user configuration; left untouched")
+			return block, fmt.Errorf("TOML block shares scope with user configuration; left untouched")
 		}
 	}
-	if uninstall && start < 0 {
-		return ch, nil
+	block.baseData, block.base, block.prefix = baseData, base, prefix
+	block.start, block.finish, block.begin, block.end = start, finish, begin, end
+	return block, nil
+}
+
+func (block tomlBlockState) installBody(spec TOMLBlock) ([]byte, bool, error) {
+	body := spec.Content
+	if block.start < 0 {
+		return []byte(block.begin + "\n" + strings.TrimSpace(string(body)) + "\n" + block.end + "\n"), false, nil
 	}
-	out, expected := baseData, base
-	if !uninstall {
-		body := spec.Content
-		if start >= 0 {
-			if spec.Refresh != nil {
-				body, err = spec.Refresh(data[start:finish])
-				if err != nil {
-					return ch, err
-				}
-				// Refresh works on the complete marked block to retain comments.
-				if a, b, rangeErr := tomlMarkedRange(body, begin, end); rangeErr != nil || a != 0 || b != len(body) {
-					return ch, fmt.Errorf("TOML refresh must retain the complete marked block")
-				}
-			} else {
-				old, _ := decodeTOML(data[start:finish])
-				want, err := decodeTOML(spec.Content)
-				if err != nil || !reflect.DeepEqual(old, want) {
-					return ch, fmt.Errorf("TOML update requires a comment-preserving Refresh function")
-				}
-				return ch, nil
-			}
-		} else {
-			body = []byte(begin + "\n" + strings.TrimSpace(string(body)) + "\n" + end + "\n")
+	if spec.Refresh == nil {
+		old, _ := decodeTOML(block.data[block.start:block.finish])
+		want, err := decodeTOML(spec.Content)
+		if err != nil || !reflect.DeepEqual(old, want) {
+			return nil, false, fmt.Errorf("TOML update requires a comment-preserving Refresh function")
 		}
-		owned, err := decodeTOML(body)
-		if err != nil || !spec.Owns(owned) {
-			if err == nil {
-				return ch, errors.New("proposed TOML block is invalid or unowned: <nil>")
-			}
-			return ch, fmt.Errorf("proposed TOML block is invalid or unowned: %w", err)
-		}
-		expected, err = mergeTOMLAt(base, owned, prefix)
-		if err != nil {
-			return ch, err
-		}
-		if start >= 0 {
-			out = append(append(bytes.Clone(data[:start]), body...), data[finish:]...)
-		} else {
-			out = append(append(bytes.Clone(data), '\n'), body...)
-		}
+		return nil, true, nil
 	}
+	body, err := spec.Refresh(block.data[block.start:block.finish])
+	if err != nil {
+		return nil, false, err
+	}
+	// Refresh works on the complete marked block to retain comments.
+	if a, b, rangeErr := tomlMarkedRange(body, block.begin, block.end); rangeErr != nil || a != 0 || b != len(body) {
+		return nil, false, fmt.Errorf("TOML refresh must retain the complete marked block")
+	}
+	return body, false, nil
+}
+
+func (block tomlBlockState) replace(spec TOMLBlock, body []byte) ([]byte, map[string]any, error) {
+	owned, err := decodeTOML(body)
+	if err != nil || !spec.Owns(owned) {
+		if err == nil {
+			return nil, nil, errors.New("proposed TOML block is invalid or unowned: <nil>")
+		}
+		return nil, nil, fmt.Errorf("proposed TOML block is invalid or unowned: %w", err)
+	}
+	expected, err := mergeTOMLAt(block.base, owned, block.prefix)
+	if err != nil {
+		return nil, nil, err
+	}
+	var out []byte
+	if block.start >= 0 {
+		out = append(append(bytes.Clone(block.data[:block.start]), body...), block.data[block.finish:]...)
+	} else {
+		out = append(append(bytes.Clone(block.data), '\n'), body...)
+	}
+	return out, expected, nil
+}
+
+func (block tomlBlockState) finishChange(ch Change, id string, out []byte, expected map[string]any) (Change, error) {
 	check, err := decodeTOML(out)
 	if err != nil || !reflect.DeepEqual(expected, check) {
 		if err == nil {
@@ -118,19 +157,20 @@ func PlanTOMLBlock(s Scope, path string, spec TOMLBlock, uninstall bool) (Change
 		}
 		return ch, fmt.Errorf("proposed TOML block changes user semantics: %w", err)
 	}
+	bom := []byte("\xef\xbb\xbf")
 	if bytes.HasPrefix(ch.orig, bom) {
 		out = append(bytes.Clone(bom), out...)
 	}
-	ch.Detail = "owned TOML block: " + spec.ID
+	ch.Detail = "owned TOML block: " + id
 	ch = setIntegrationData(ch, out)
 	if ch.Action != "unchanged" {
-		if start < 0 {
+		if block.start < 0 {
 			ch.textEdit = &composeTextEdit{len(ch.orig), len(ch.orig), bytes.Clone(out[len(ch.orig):])}
 		} else {
-			bomSize := len(ch.orig) - len(data)
+			bomSize := len(ch.orig) - len(block.data)
 			// Keep the parser's range. A minimal string diff can move a
 			// deletion into the next block's identical "# obit:" header.
-			ch.textEdit = &composeTextEdit{start + bomSize, finish + bomSize, bytes.Clone(out[start+bomSize : len(out)-(len(data)-finish)])}
+			ch.textEdit = &composeTextEdit{block.start + bomSize, block.finish + bomSize, bytes.Clone(out[block.start+bomSize : len(out)-(len(block.data)-block.finish)])}
 		}
 	}
 	return ch, nil

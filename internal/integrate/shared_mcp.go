@@ -34,20 +34,8 @@ func planSharedMCP(s Scope, path, agent string, spec MCPConfig, executable strin
 		asset = legacy
 	}
 	if !uninstall && !receipt.existed {
-		format := spec.Format
-		if format == "" {
-			format = ConfigJSON
-		}
-		data, err := configJSON(mcp.orig, format)
-		if err != nil {
+		if err := checkUnreceiptedMCP(path, mcp.orig, spec.Format); err != nil {
 			return nil, err
-		}
-		entry, err := configMember(data, []string{"mcpServers", "obituary"})
-		if err != nil {
-			return nil, err
-		}
-		if entry != nil {
-			return nil, fmt.Errorf("%s: existing obituary MCP has no shared owner receipt; retained", path)
 		}
 	}
 	changes, err := planSharedRegistration(s, asset, []Change{mcp}, []string{agent}, uninstall)
@@ -57,4 +45,22 @@ func planSharedMCP(s Scope, path, agent string, spec MCPConfig, executable strin
 	// Keep the public planner's primary configuration first; dependency phases
 	// still commit owner evidence before adding the registration.
 	return append(changes[len(changes)-1:], changes[:len(changes)-1]...), nil
+}
+
+func checkUnreceiptedMCP(path string, original []byte, format ConfigFormat) error {
+	if format == "" {
+		format = ConfigJSON
+	}
+	data, err := configJSON(original, format)
+	if err != nil {
+		return err
+	}
+	entry, err := configMember(data, []string{"mcpServers", "obituary"})
+	if err != nil {
+		return err
+	}
+	if entry != nil {
+		return fmt.Errorf("%s: existing obituary MCP has no shared owner receipt; retained", path)
+	}
+	return nil
 }

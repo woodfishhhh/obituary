@@ -59,15 +59,7 @@ func planAgentRule(s Scope, path string, uninstall bool) (Change, error) {
 	}
 	block := strings.ReplaceAll(blockBegin+"\n"+strings.TrimRight(Awareness, "\n")+"\n"+blockEnd, "\n", eol)
 	if start >= 0 {
-		if uninstall {
-			block = ""
-			if strings.HasPrefix(content[end:], "\r\n") {
-				end += 2
-			} else if strings.HasPrefix(content[end:], "\n") {
-				end++
-			}
-		}
-		next := content[:start] + block + content[end:]
+		next := replaceMarkdownBlock(content, block, start, end, uninstall)
 		if uninstall && strings.TrimSpace(strings.TrimPrefix(next, "\xef\xbb\xbf")) == "" {
 			ch.Action, ch.delete = "remove", true
 			return ch, nil
@@ -81,6 +73,18 @@ func planAgentRule(s Scope, path string, uninstall bool) (Change, error) {
 		content += eol
 	}
 	return setIntegrationData(ch, []byte(content+block+eol)), nil
+}
+
+func replaceMarkdownBlock(content, block string, start, end int, uninstall bool) string {
+	if uninstall {
+		block = ""
+		if strings.HasPrefix(content[end:], "\r\n") {
+			end += 2
+		} else if strings.HasPrefix(content[end:], "\n") {
+			end++
+		}
+	}
+	return content[:start] + block + content[end:]
 }
 
 // Reuse the line-boundary checks for every Markdown block. A marker in an

@@ -45,22 +45,7 @@ func runClaude(cli string, args []string) ([]byte, error) {
 	if err := cmd.Start(); err != nil {
 		return nil, err
 	}
-	startErr := func() error {
-		jobMu.Lock()
-		defer jobMu.Unlock()
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-		h, err := windows.OpenProcess(windows.PROCESS_SET_QUOTA|windows.PROCESS_TERMINATE, false, uint32(cmd.Process.Pid))
-		if err != nil {
-			return err
-		}
-		defer windows.CloseHandle(h)
-		if err := windows.AssignProcessToJobObject(job, h); err != nil {
-			return err
-		}
-		return resumeClaude(uint32(cmd.Process.Pid))
-	}()
+	startErr := assignClaudeJob(ctx, job, uint32(cmd.Process.Pid), &jobMu)
 	if startErr != nil {
 		_ = closeJob()
 		_ = cmd.Process.Kill()
@@ -72,6 +57,23 @@ func runClaude(cli string, args []string) ([]byte, error) {
 		err = startErr
 	}
 	return output.Bytes(), err
+}
+
+func assignClaudeJob(ctx context.Context, job windows.Handle, pid uint32, jobMu *sync.Mutex) error {
+	jobMu.Lock()
+	defer jobMu.Unlock()
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	h, err := windows.OpenProcess(windows.PROCESS_SET_QUOTA|windows.PROCESS_TERMINATE, false, pid)
+	if err != nil {
+		return err
+	}
+	defer windows.CloseHandle(h)
+	if err := windows.AssignProcessToJobObject(job, h); err != nil {
+		return err
+	}
+	return resumeClaude(pid)
 }
 
 // os/exec closes CreateProcess's thread handle. The suspended process has

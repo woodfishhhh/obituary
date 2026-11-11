@@ -47,42 +47,11 @@ func (copilotAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
 	if invocation.Event != "" && invocation.Event != host {
 		return Event{}, fmt.Errorf("copilot: conflicting event names")
 	}
-	ev := Event{HostEvent: host, Cwd: in.Cwd, Source: in.Source}
-	compat := false
-	switch host {
-	case "PreToolUse", "PostToolUse", "SessionStart", "Stop", "SessionEnd":
-		compat, ev.Name = true, host
-	case "preToolUse":
-		ev.Name = "PreToolUse"
-	case "postToolUse":
-		ev.Name = "PostToolUse"
-	case "sessionStart":
-		ev.Name = "SessionStart"
-	case "agentStop":
-		ev.Name = "Stop"
-	case "sessionEnd":
-		ev.Name = "SessionEnd"
-	default:
-		return Event{}, ErrSkip
+	ev, compat, err := copilotEvent(in, host)
+	if err != nil {
+		return Event{}, err
 	}
-	session, tool, args := in.NativeSession, in.NativeTool, in.NativeInput
-	success := in.NativeResult != nil && in.NativeResult.Type == "success"
-	if compat {
-		if in.NativeSession != nil || in.NativeTool != nil || len(in.NativeInput) != 0 || in.NativeResult != nil {
-			return Event{}, fmt.Errorf("copilot: mixed envelopes")
-		}
-		session, tool, args = in.Session, in.Tool, in.Input
-		success = in.Result != nil && in.Result.Type == "success"
-	} else if in.Session != nil || in.Tool != nil || len(in.Input) != 0 || in.Result != nil {
-		return Event{}, fmt.Errorf("copilot: mixed envelopes")
-	}
-	if session != nil && *session != "" {
-		ev.Session = core.NormalizeSession("copilot:" + *session)
-	}
-	if tool != nil {
-		ev.Tool = *tool
-	}
-	input, err := copilotArguments(args)
+	ev, input, success, err := copilotEnvelope(ev, in, compat)
 	if err != nil {
 		return Event{}, err
 	}
@@ -109,25 +78,77 @@ func (copilotAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
 	}
 	ev.Cwd = native
 	if ev.Name == "PostToolUse" {
-		if !success {
-			return Event{}, ErrSkip
+		return copilotWriteEvent(ev, input, success)
+	}
+	return ev, nil
+}
+
+func copilotEvent(in *copilotInput, host string) (Event, bool, error) {
+	ev := Event{HostEvent: host, Cwd: in.Cwd, Source: in.Source}
+	compat := false
+	switch host {
+	case "PreToolUse", "PostToolUse", "SessionStart", "Stop", "SessionEnd":
+		compat, ev.Name = true, host
+	case "preToolUse":
+		ev.Name = "PreToolUse"
+	case "postToolUse":
+		ev.Name = "PostToolUse"
+	case "sessionStart":
+		ev.Name = "SessionStart"
+	case "agentStop":
+		ev.Name = "Stop"
+	case "sessionEnd":
+		ev.Name = "SessionEnd"
+	default:
+		return Event{}, false, ErrSkip
+	}
+	return ev, compat, nil
+}
+
+func copilotEnvelope(ev Event, in *copilotInput, compat bool) (Event, map[string]any, bool, error) {
+	session, tool, args := in.NativeSession, in.NativeTool, in.NativeInput
+	success := in.NativeResult != nil && in.NativeResult.Type == "success"
+	if compat {
+		if in.NativeSession != nil || in.NativeTool != nil || len(in.NativeInput) != 0 || in.NativeResult != nil {
+			return Event{}, nil, false, fmt.Errorf("copilot: mixed envelopes")
 		}
-		// Compatible names retain the runtime tool's original arguments.
-		// Do not interpret shell result text or generic path-looking keys.
-		var path string
-		switch ev.Tool {
-		case "create", "edit":
-			path = firstString(input, "path")
-		case "Write", "Edit":
-			path = firstString(input, "file_path", "path")
-		default:
-			return Event{}, ErrSkip
-		}
-		if path, ok := NativePath(path); ok {
-			ev.Paths = []string{path}
-		} else {
-			return Event{}, ErrSkip
-		}
+		session, tool, args = in.Session, in.Tool, in.Input
+		success = in.Result != nil && in.Result.Type == "success"
+	} else if in.Session != nil || in.Tool != nil || len(in.Input) != 0 || in.Result != nil {
+		return Event{}, nil, false, fmt.Errorf("copilot: mixed envelopes")
+	}
+	if session != nil && *session != "" {
+		ev.Session = core.NormalizeSession("copilot:" + *session)
+	}
+	if tool != nil {
+		ev.Tool = *tool
+	}
+	input, err := copilotArguments(args)
+	if err != nil {
+		return Event{}, nil, false, err
+	}
+	return ev, input, success, nil
+}
+
+func copilotWriteEvent(ev Event, input map[string]any, success bool) (Event, error) {
+	if !success {
+		return Event{}, ErrSkip
+	}
+	// Compatible names retain the runtime tool's original arguments.
+	// Do not interpret shell result text or generic path-looking keys.
+	var path string
+	switch ev.Tool {
+	case "create", "edit":
+		path = firstString(input, "path")
+	case "Write", "Edit":
+		path = firstString(input, "file_path", "path")
+	default:
+		return Event{}, ErrSkip
+	}
+	if path, ok := NativePath(path); ok {
+		ev.Paths = []string{path}
+	} else {
+		return Event{}, ErrSkip
 	}
 	return ev, nil
 }

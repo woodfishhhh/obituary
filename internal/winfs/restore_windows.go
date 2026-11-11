@@ -155,12 +155,7 @@ func (fs FS) findRestored(parent, source core.Identity, locateParent func(core.I
 		if err != nil {
 			return "", err
 		}
-		attrs := windows.OBJECT_ATTRIBUTES{RootDirectory: p.h, ObjectName: n, Attributes: windows.OBJ_CASE_INSENSITIVE | windows.OBJ_DONT_REPARSE}
-		attrs.Length = uint32(unsafe.Sizeof(attrs))
-		var h windows.Handle
-		err = windows.NtCreateFile(&h, windows.FILE_READ_ATTRIBUTES, &attrs, &windows.IO_STATUS_BLOCK{}, nil,
-			windows.FILE_ATTRIBUTE_NORMAL, windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE, windows.FILE_OPEN,
-			windows.FILE_OPEN_REPARSE_POINT|windows.FILE_OPEN_FOR_BACKUP_INTENT, 0, 0)
+		h, err := openRestoredChild(p.h, n)
 		if err != nil {
 			inspectErr = errors.Join(inspectErr, err)
 			continue
@@ -183,6 +178,16 @@ func (fs FS) findRestored(parent, source core.Identity, locateParent func(core.I
 		return "", fmt.Errorf("restored identity could not be located in its recorded parent: %w", inspectErr)
 	}
 	return "", fmt.Errorf("restored identity is absent from its recorded parent: %w", core.ErrNotFound)
+}
+
+func openRestoredChild(parent windows.Handle, name *windows.NTUnicodeString) (windows.Handle, error) {
+	attrs := windows.OBJECT_ATTRIBUTES{RootDirectory: parent, ObjectName: name, Attributes: windows.OBJ_CASE_INSENSITIVE | windows.OBJ_DONT_REPARSE}
+	attrs.Length = uint32(unsafe.Sizeof(attrs))
+	var h windows.Handle
+	err := windows.NtCreateFile(&h, windows.FILE_READ_ATTRIBUTES, &attrs, &windows.IO_STATUS_BLOCK{}, nil,
+		windows.FILE_ATTRIBUTE_NORMAL, windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE, windows.FILE_OPEN,
+		windows.FILE_OPEN_REPARSE_POINT|windows.FILE_OPEN_FOR_BACKUP_INTENT, 0, 0)
+	return h, err
 }
 
 // MovePinnedInto uses a single-component relative name and the already opened

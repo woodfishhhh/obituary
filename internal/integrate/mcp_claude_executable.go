@@ -67,31 +67,9 @@ func checkedClaudeExecutable(path string) (checked string, err error) {
 	if err != nil {
 		return "", err
 	}
-	cwd, err := os.Getwd()
+	roots, err := claudeProtectedRoots()
 	if err != nil {
 		return "", err
-	}
-	realCWD, err := winfs.Resolve(cwd)
-	if err != nil {
-		return "", err
-	}
-	rootPaths := []string{cwd, realCWD}
-	for _, dir := range []string{cwd, realCWD} {
-		proj, found, err := project.Find(dir)
-		if err != nil {
-			return "", err
-		}
-		if found {
-			rootPaths = append(rootPaths, proj.Root)
-		}
-	}
-	var roots []claudeExecutableRoot
-	for _, dir := range rootPaths {
-		id, err := winfs.IdentifyFollowing(dir)
-		if err != nil {
-			return "", fmt.Errorf("identify protected directory %q: %w", dir, err)
-		}
-		roots = append(roots, claudeExecutableRoot{path: dir, id: id, cwd: dir == cwd || dir == realCWD})
 	}
 	// Check both spellings: a project junction pointing out still belongs to
 	// the project, and an external junction pointing in is equally untrusted.
@@ -110,6 +88,36 @@ func checkedClaudeExecutable(path string) (checked string, err error) {
 		}
 	}
 	return real, nil
+}
+
+func claudeProtectedRoots() ([]claudeExecutableRoot, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	realCWD, err := winfs.Resolve(cwd)
+	if err != nil {
+		return nil, err
+	}
+	rootPaths := []string{cwd, realCWD}
+	for _, dir := range []string{cwd, realCWD} {
+		proj, found, err := project.Find(dir)
+		if err != nil {
+			return nil, err
+		}
+		if found {
+			rootPaths = append(rootPaths, proj.Root)
+		}
+	}
+	var roots []claudeExecutableRoot
+	for _, dir := range rootPaths {
+		id, err := winfs.IdentifyFollowing(dir)
+		if err != nil {
+			return nil, fmt.Errorf("identify protected directory %q: %w", dir, err)
+		}
+		roots = append(roots, claudeExecutableRoot{path: dir, id: id, cwd: dir == cwd || dir == realCWD})
+	}
+	return roots, nil
 }
 
 type claudeExecutableRoot struct {

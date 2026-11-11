@@ -28,81 +28,104 @@ func planMCPTOML(ch Change, executable string, uninstall bool) (Change, error) {
 	}
 	servers, _ := full["mcp_servers"].(map[string]any)
 	if start < 0 {
-		if uninstall {
-			if _, exists := servers["obituary"]; exists {
-				ch.Detail = "unowned MCP entry preserved"
-			}
-			return ch, nil // never claim a user's unmarked table
-		}
-		if _, exists := servers["obituary"]; exists {
-			return ch, fmt.Errorf("%s: unmarked mcp_servers.obituary belongs to the user", ch.Path)
-		}
-		if inlineMCPParent(data) {
-			return ch, fmt.Errorf("%s: mcp_servers is an inline table; it cannot be extended with an obituary subtable", ch.Path)
-		}
-		body, err := toml.Marshal(map[string]any{"command": executable, "args": []string{"mcp"}})
+		return planUnmarkedMCPTOML(ch, data, servers, executable, uninstall)
+	}
+	block := data[start:end]
+	if err := checkMCPTOMLOwnership(ch.Path, block, servers); err != nil {
+		return ch, err
+	}
+	if uninstall {
+		data, err = removeMCPTOMLBlock(ch.Path, data, full, servers, start, end)
 		if err != nil {
 			return ch, err
 		}
-		block := []byte(mcpBlockBegin + "\n[mcp_servers.obituary]\n" + string(body) + mcpBlockEnd + "\n")
-		// Append to preserve root assignments and EOF without a newline.
-		// The begin marker's range owns the one additional LF separator.
-		block = append([]byte("\n"), block...)
-		data = append(bytes.Clone(data), block...)
 	} else {
-		block := data[start:end]
-		var owned map[string]any
-		if err := toml.Unmarshal(block, &owned); err != nil {
+		updated, err := refreshMCPCommand(block, executable)
+		if err != nil {
 			return ch, err
 		}
-		ownedServers, _ := owned["mcp_servers"].(map[string]any)
-		entry, _ := ownedServers["obituary"].(map[string]any)
-		command, _ := entry["command"].(string)
-		var args []string
-		if values, ok := entry["args"].([]any); ok {
-			for _, value := range values {
-				arg, ok := value.(string)
-				if !ok {
-					return ch, fmt.Errorf("%s: non-string MCP argument", ch.Path)
-				}
-				args = append(args, arg)
-			}
+		data = append(append(bytes.Clone(data[:start]), updated...), data[end:]...)
+	}
+	return renderMCPTOML(ch, data)
+}
+
+func removeMCPTOMLBlock(path string, data []byte, full, servers map[string]any, start, end int) ([]byte, error) {
+	data = append(bytes.Clone(data[:start]), data[end:]...)
+	delete(servers, "obituary")
+	var remaining map[string]any
+	if err := toml.Unmarshal(data, &remaining); err != nil {
+		return nil, err
+	}
+	// Detect keys/tables outside the markers whose meaning would change
+	// after removal (TOML table scope extends beyond comment markers).
+	if len(servers) == 0 {
+		delete(full, "mcp_servers")
+	}
+	if rest, ok := remaining["mcp_servers"].(map[string]any); ok && len(rest) == 0 {
+		delete(remaining, "mcp_servers")
+	}
+	if !reflect.DeepEqual(full, remaining) {
+		return nil, fmt.Errorf("%s: removing the MCP block would change user TOML", path)
+	}
+	return data, nil
+}
+
+func planUnmarkedMCPTOML(ch Change, data []byte, servers map[string]any, executable string, uninstall bool) (Change, error) {
+	if uninstall {
+		if _, exists := servers["obituary"]; exists {
+			ch.Detail = "unowned MCP entry preserved"
 		}
-		if len(owned) != 1 || len(ownedServers) != 1 || !isObitMCP(command, args) || !reflect.DeepEqual(entry, servers["obituary"]) {
-			return ch, fmt.Errorf("%s: edited MCP ownership block; left untouched", ch.Path)
-		}
-		if uninstall {
-			data = append(bytes.Clone(data[:start]), data[end:]...)
-			delete(servers, "obituary")
-			var remaining map[string]any
-			if err := toml.Unmarshal(data, &remaining); err != nil {
-				return ch, err
+		return ch, nil // never claim a user's unmarked table
+	}
+	if _, exists := servers["obituary"]; exists {
+		return ch, fmt.Errorf("%s: unmarked mcp_servers.obituary belongs to the user", ch.Path)
+	}
+	if inlineMCPParent(data) {
+		return ch, fmt.Errorf("%s: mcp_servers is an inline table; it cannot be extended with an obituary subtable", ch.Path)
+	}
+	body, err := toml.Marshal(map[string]any{"command": executable, "args": []string{"mcp"}})
+	if err != nil {
+		return ch, err
+	}
+	block := []byte(mcpBlockBegin + "\n[mcp_servers.obituary]\n" + string(body) + mcpBlockEnd + "\n")
+	// Append to preserve root assignments and EOF without a newline.
+	// The begin marker's range owns the one additional LF separator.
+	block = append([]byte("\n"), block...)
+	data = append(bytes.Clone(data), block...)
+	return renderMCPTOML(ch, data)
+}
+
+func checkMCPTOMLOwnership(path string, block []byte, servers map[string]any) error {
+	var owned map[string]any
+	if err := toml.Unmarshal(block, &owned); err != nil {
+		return err
+	}
+	ownedServers, _ := owned["mcp_servers"].(map[string]any)
+	entry, _ := ownedServers["obituary"].(map[string]any)
+	command, _ := entry["command"].(string)
+	var args []string
+	if values, ok := entry["args"].([]any); ok {
+		for _, value := range values {
+			arg, ok := value.(string)
+			if !ok {
+				return fmt.Errorf("%s: non-string MCP argument", path)
 			}
-			// Detect keys/tables outside the markers whose meaning would change
-			// after removal (TOML table scope extends beyond comment markers).
-			if len(servers) == 0 {
-				delete(full, "mcp_servers")
-			}
-			if rest, ok := remaining["mcp_servers"].(map[string]any); ok && len(rest) == 0 {
-				delete(remaining, "mcp_servers")
-			}
-			if !reflect.DeepEqual(full, remaining) {
-				return ch, fmt.Errorf("%s: removing the MCP block would change user TOML", ch.Path)
-			}
-		} else {
-			updated, err := refreshMCPCommand(block, executable)
-			if err != nil {
-				return ch, err
-			}
-			data = append(append(bytes.Clone(data[:start]), updated...), data[end:]...)
+			args = append(args, arg)
 		}
 	}
+	if len(owned) != 1 || len(ownedServers) != 1 || !isObitMCP(command, args) || !reflect.DeepEqual(entry, servers["obituary"]) {
+		return fmt.Errorf("%s: edited MCP ownership block; left untouched", path)
+	}
+	return nil
+}
+
+func renderMCPTOML(ch Change, data []byte) (Change, error) {
 	var check map[string]any
 	if err := toml.Unmarshal(data, &check); err != nil {
 		return ch, fmt.Errorf("%s: proposed MCP configuration is invalid: %w", ch.Path, err)
 	}
-	if bytes.HasPrefix(ch.orig, bom) {
-		data = append(bytes.Clone(bom), data...)
+	if bytes.HasPrefix(ch.orig, []byte("\xef\xbb\xbf")) {
+		data = append(bytes.Clone([]byte("\xef\xbb\xbf")), data...)
 	}
 	ch.Detail = "owned MCP TOML block"
 	return setIntegrationData(ch, data), nil

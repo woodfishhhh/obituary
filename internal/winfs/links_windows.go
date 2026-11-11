@@ -58,6 +58,10 @@ func HardlinkNames(path string) ([]string, error) {
 		buf = make([]uint16, n)
 	}
 	defer windows.FindClose(handle)
+	return collectHardlinkNames(path, root, handle, buf)
+}
+
+func collectHardlinkNames(path, root string, handle windows.Handle, buf []uint16) ([]string, error) {
 	var names []string
 	for {
 		names = append(names, filepath.Join(root, strings.TrimLeft(windows.UTF16ToString(buf), `\`)))

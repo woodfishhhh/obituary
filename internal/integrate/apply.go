@@ -114,24 +114,7 @@ func apply(changes []Change, afterWrite func(string) error) (err error) {
 			return err
 		}
 		if c.claude != nil {
-			// The host owns these writes. Keep its configuration directory pinned
-			// until the official CLI has finished, including recovery commands.
-			p, err := openIntegrationTarget(c, true)
-			if err != nil {
-				return err
-			}
-			if err := p.lockHostDirectory(); err != nil {
-				p.root.Close()
-				return err
-			}
-			if beforeIntegrationWrite != nil {
-				if err := beforeIntegrationWrite(c.Path); err != nil {
-					p.root.Close()
-					return err
-				}
-			}
-			steps, err := applyClaudeMCP(c)
-			p.root.Close()
+			steps, err := applyClaudeChange(c)
 			applied = append(applied, steps...)
 			if err != nil {
 				return err
@@ -156,6 +139,28 @@ func apply(changes []Change, afterWrite func(string) error) (err error) {
 		}
 	}
 	return nil
+}
+
+func applyClaudeChange(c Change) ([]string, error) {
+	// The host owns these writes. Keep its configuration directory pinned
+	// until the official CLI has finished, including recovery commands.
+	p, err := openIntegrationTarget(c, true)
+	if err != nil {
+		return nil, err
+	}
+	if err := p.lockHostDirectory(); err != nil {
+		p.root.Close()
+		return nil, err
+	}
+	if beforeIntegrationWrite != nil {
+		if err := beforeIntegrationWrite(c.Path); err != nil {
+			p.root.Close()
+			return nil, err
+		}
+	}
+	steps, err := applyClaudeMCP(c)
+	p.root.Close()
+	return steps, err
 }
 
 func checkOriginal(c Change) error {

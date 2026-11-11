@@ -26,26 +26,35 @@ func parseJSONC(data []byte) (hujson.Value, error) {
 	}
 	// Ambiguous members cannot safely be addressed by JSON Pointer.
 	for node := range v.All() {
-		if obj, ok := node.Value.(*hujson.Object); ok {
-			seen := map[string]bool{}
-			for _, member := range obj.Members {
-				var key string
-				if err := json.Unmarshal(member.Name.Pack(), &key); err != nil {
-					// Name extras can contain comments.
-					name := member.Name.Clone()
-					name.Standardize()
-					if err := json.Unmarshal(name.Pack(), &key); err != nil {
-						return v, err
-					}
-				}
-				if seen[key] {
-					return v, fmt.Errorf("duplicate JSONC member %q (left untouched)", key)
-				}
-				seen[key] = true
-			}
+		obj, ok := node.Value.(*hujson.Object)
+		if !ok {
+			continue
+		}
+		if err := uniqueJSONCMembers(obj); err != nil {
+			return v, err
 		}
 	}
 	return v, nil
+}
+
+func uniqueJSONCMembers(obj *hujson.Object) error {
+	seen := map[string]bool{}
+	for _, member := range obj.Members {
+		var key string
+		if err := json.Unmarshal(member.Name.Pack(), &key); err != nil {
+			// Name extras can contain comments.
+			name := member.Name.Clone()
+			name.Standardize()
+			if err := json.Unmarshal(name.Pack(), &key); err != nil {
+				return err
+			}
+		}
+		if seen[key] {
+			return fmt.Errorf("duplicate JSONC member %q (left untouched)", key)
+		}
+		seen[key] = true
+	}
+	return nil
 }
 
 func jsoncJSON(data []byte) ([]byte, error) {
@@ -134,33 +143,37 @@ func jsonDiff(path string, old, want []byte) []configPatch {
 	}
 	var x, y []json.RawMessage
 	if bytes.HasPrefix(bytes.TrimSpace(old), []byte("[")) && bytes.HasPrefix(bytes.TrimSpace(want), []byte("[")) && json.Unmarshal(old, &x) == nil && json.Unmarshal(want, &y) == nil {
-		var patches []configPatch
-		i, j := 0, 0
-		for i < len(x) || j < len(y) {
-			p := jsonPointer(path, strconv.Itoa(j))
-			switch {
-			case j == len(y):
-				patches = append(patches, configPatch{Op: "remove", Path: p})
-				i++
-			case i == len(x):
-				patches = append(patches, configPatch{Op: "add", Path: p, Value: y[j]})
-				j++
-			case sameConfigJSON(x[i], y[j]):
-				i++
-				j++
-			case containsConfigJSON(x[i+1:], y[j]):
-				patches = append(patches, configPatch{Op: "remove", Path: p})
-				i++
-			case containsConfigJSON(y[j+1:], x[i]):
-				patches = append(patches, configPatch{Op: "add", Path: p, Value: y[j]})
-				j++
-			default:
-				patches = append(patches, jsonDiff(p, x[i], y[j])...)
-				i++
-				j++
-			}
-		}
-		return patches
+		return jsonArrayDiff(path, x, y)
 	}
 	return []configPatch{{Op: "replace", Path: path, Value: want}}
+}
+
+func jsonArrayDiff(path string, x, y []json.RawMessage) []configPatch {
+	var patches []configPatch
+	i, j := 0, 0
+	for i < len(x) || j < len(y) {
+		p := jsonPointer(path, strconv.Itoa(j))
+		switch {
+		case j == len(y):
+			patches = append(patches, configPatch{Op: "remove", Path: p})
+			i++
+		case i == len(x):
+			patches = append(patches, configPatch{Op: "add", Path: p, Value: y[j]})
+			j++
+		case sameConfigJSON(x[i], y[j]):
+			i++
+			j++
+		case containsConfigJSON(x[i+1:], y[j]):
+			patches = append(patches, configPatch{Op: "remove", Path: p})
+			i++
+		case containsConfigJSON(y[j+1:], x[i]):
+			patches = append(patches, configPatch{Op: "add", Path: p, Value: y[j]})
+			j++
+		default:
+			patches = append(patches, jsonDiff(p, x[i], y[j])...)
+			i++
+			j++
+		}
+	}
+	return patches
 }

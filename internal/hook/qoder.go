@@ -52,29 +52,34 @@ func (a qoderAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
 	}
 	ev.Cwd = native
 	if in.Event == "PostToolUse" {
-		switch in.ToolName {
-		case "Write", "Edit", "create_file", "search_replace":
-		case "edit_file":
-			if a.name == "lingma" {
-				return Event{}, ErrSkip
-			}
-		default:
-			return Event{}, ErrSkip
-		}
-		path, ok := NativePath(firstString(in.ToolInput, "file_path"))
-		if !ok || !filepath.IsAbs(path) {
-			return Event{}, ErrSkip
-		}
-		path, err := pathutil.Abs(path)
-		if err != nil {
-			return Event{}, ErrSkip
-		}
-		ev.Paths = []string{path}
-		// IDE Post feedback is user-visible, not model context. Compatible
-		// names cannot distinguish IDE from CLI, so defer all variants until
-		// UserPromptSubmit/SessionStart rather than acknowledge unseen text.
-		ev.DeferContext = true
+		return a.writeEvent(ev, in)
 	}
+	return ev, nil
+}
+
+func (a qoderAdapter) writeEvent(ev Event, in claudeInput) (Event, error) {
+	switch in.ToolName {
+	case "Write", "Edit", "create_file", "search_replace":
+	case "edit_file":
+		if a.name == "lingma" {
+			return Event{}, ErrSkip
+		}
+	default:
+		return Event{}, ErrSkip
+	}
+	path, ok := NativePath(firstString(in.ToolInput, "file_path"))
+	if !ok || !filepath.IsAbs(path) {
+		return Event{}, ErrSkip
+	}
+	path, err := pathutil.Abs(path)
+	if err != nil {
+		return Event{}, ErrSkip
+	}
+	ev.Paths = []string{path}
+	// IDE Post feedback is user-visible, not model context. Compatible
+	// names cannot distinguish IDE from CLI, so defer all variants until
+	// UserPromptSubmit/SessionStart rather than acknowledge unseen text.
+	ev.DeferContext = true
 	return ev, nil
 }
 

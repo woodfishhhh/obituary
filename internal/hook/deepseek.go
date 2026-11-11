@@ -26,17 +26,7 @@ func (deepseekAdapter) Decode(raw []byte, invocation Invocation) (Event, error) 
 		return Event{}, err
 	}
 	if envelope.Version != 0 {
-		var in BridgeRequest
-		if err := json.Unmarshal(raw, &in); err != nil {
-			return Event{}, err
-		}
-		if in.Event != "PostToolUse" || in.HostEvent != "tools/result" || (in.Tool != "write" && in.Tool != "edit") ||
-			!deepseekLocal() || !in.Local || len(in.Paths) != 1 || !deepseekWindowsPath(in.Cwd) || !deepseekWindowsPath(in.Paths[0]) {
-			return Event{}, ErrSkip
-		}
-		ev, err := (BridgeAdapter{}).Decode(raw, invocation)
-		ev.DeferContext = true // tools/result is observation-only; the official bridge drains later.
-		return ev, err
+		return deepseekBridgeEvent(raw, invocation)
 	}
 	var in claudeInput
 	if err := json.Unmarshal(raw, &in); err != nil {
@@ -56,31 +46,7 @@ func (deepseekAdapter) Decode(raw []byte, invocation Invocation) (Event, error) 
 	}
 	local := deepseekLocal() && deepseekWindowsPath(in.Cwd)
 	if in.Event == "PreToolUse" {
-		ev.Command = firstString(in.ToolInput, "command")
-		switch in.ToolName {
-		case "bash":
-			ev.Shell = guardrm.Bash
-		case "pwsh":
-			ev.Shell = guardrm.PowerShell
-		default:
-			ev.SkipReason = "deepseek-harness: unsupported native shell tool"
-		}
-		// Both tools consume the replaceable ctx.shell service. Its dialect and
-		// locality need operator attestation, independently of the tool name.
-		if !local || string(ev.Shell) != os.Getenv("OBIT_DEEPSEEK_SHELL") {
-			ev.SkipReason = "deepseek-harness: local backend and shell are not confirmed"
-		}
-		if workdir, exists := in.ToolInput["workdir"]; exists {
-			path, ok := workdir.(string)
-			if !ok || path == "" || strings.HasPrefix(path, "/") || strings.HasPrefix(path, `\`) || strings.Contains(path, ":") && !deepseekWindowsPath(path) {
-				ev.SkipReason = "deepseek-harness: unsupported workdir"
-			} else if filepath.IsAbs(path) {
-				ev.Cwd = path
-			} else {
-				ev.Cwd = filepath.Join(in.Cwd, path)
-			}
-		}
-		return ev, nil
+		return deepseekPreToolEvent(ev, in, local), nil
 	}
 	if !local || ev.Session == "" {
 		return Event{}, ErrSkip
@@ -96,6 +62,48 @@ func (deepseekAdapter) Decode(raw []byte, invocation Invocation) (Event, error) 
 		ev.DeferContext = true // detached best effort; notices wait for an awaited callback
 	}
 	return ev, nil
+}
+
+func deepseekBridgeEvent(raw []byte, invocation Invocation) (Event, error) {
+	var in BridgeRequest
+	if err := json.Unmarshal(raw, &in); err != nil {
+		return Event{}, err
+	}
+	if in.Event != "PostToolUse" || in.HostEvent != "tools/result" || (in.Tool != "write" && in.Tool != "edit") ||
+		!deepseekLocal() || !in.Local || len(in.Paths) != 1 || !deepseekWindowsPath(in.Cwd) || !deepseekWindowsPath(in.Paths[0]) {
+		return Event{}, ErrSkip
+	}
+	ev, err := (BridgeAdapter{}).Decode(raw, invocation)
+	ev.DeferContext = true // tools/result is observation-only; the official bridge drains later.
+	return ev, err
+}
+
+func deepseekPreToolEvent(ev Event, in claudeInput, local bool) Event {
+	ev.Command = firstString(in.ToolInput, "command")
+	switch in.ToolName {
+	case "bash":
+		ev.Shell = guardrm.Bash
+	case "pwsh":
+		ev.Shell = guardrm.PowerShell
+	default:
+		ev.SkipReason = "deepseek-harness: unsupported native shell tool"
+	}
+	// Both tools consume the replaceable ctx.shell service. Its dialect and
+	// locality need operator attestation, independently of the tool name.
+	if !local || string(ev.Shell) != os.Getenv("OBIT_DEEPSEEK_SHELL") {
+		ev.SkipReason = "deepseek-harness: local backend and shell are not confirmed"
+	}
+	if workdir, exists := in.ToolInput["workdir"]; exists {
+		path, ok := workdir.(string)
+		if !ok || path == "" || strings.HasPrefix(path, "/") || strings.HasPrefix(path, `\`) || strings.Contains(path, ":") && !deepseekWindowsPath(path) {
+			ev.SkipReason = "deepseek-harness: unsupported workdir"
+		} else if filepath.IsAbs(path) {
+			ev.Cwd = path
+		} else {
+			ev.Cwd = filepath.Join(in.Cwd, path)
+		}
+	}
+	return ev
 }
 
 func deepseekLocal() bool { return os.Getenv("OBIT_DEEPSEEK_LOCAL") == "1" }

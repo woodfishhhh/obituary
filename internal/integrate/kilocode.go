@@ -125,15 +125,9 @@ func planKiloCodeInstructions(s Scope, config, rule string, uninstall bool) (Cha
 	}
 	ref := filepath.ToSlash(rule)
 	if slices.Contains(paths, ref) {
-		owned, err := readIntegrationChange(s, rule)
+		paths, err = updateOwnedKiloInstructions(s, config, rule, paths, ref, uninstall)
 		if err != nil {
 			return ch, err
-		}
-		if !bytes.Contains(owned.orig, []byte(blockBegin)) {
-			return ch, fmt.Errorf("%s: instruction reference has no owned rules block; left untouched", config)
-		}
-		if uninstall {
-			paths = slices.DeleteFunc(paths, func(path string) bool { return path == ref })
 		}
 	} else if uninstall {
 		return ch, nil
@@ -142,6 +136,20 @@ func planKiloCodeInstructions(s Scope, config, rule string, uninstall bool) (Cha
 	}
 	value, _ := marshal(paths)
 	return PlanConfigEdits(s, config, ConfigJSONC, []ConfigEdit{{Path: []string{"instructions"}, Value: value, Expected: raw, CheckExpected: true}})
+}
+
+func updateOwnedKiloInstructions(s Scope, config, rule string, paths []string, ref string, uninstall bool) ([]string, error) {
+	owned, err := readIntegrationChange(s, rule)
+	if err != nil {
+		return nil, err
+	}
+	if !bytes.Contains(owned.orig, []byte(blockBegin)) {
+		return nil, fmt.Errorf("%s: instruction reference has no owned rules block; left untouched", config)
+	}
+	if uninstall {
+		paths = slices.DeleteFunc(paths, func(path string) bool { return path == ref })
+	}
+	return paths, nil
 }
 
 func PlanKiloCodeMCP(s Scope, executable string, uninstall bool) (changes []Change, err error) {

@@ -30,45 +30,16 @@ func ParseRemove(args []string, directoryOnly bool) (RemoveOptions, error) {
 			continue
 		}
 		if strings.HasPrefix(arg, "--") {
-			switch arg {
-			case "--help":
-				o.Help = true
-				return o, nil
-			case "--verbose":
-				o.Verbose = true
-			case "--recursive":
-				o.Recursive = true
-			case "--force":
-				o.Force = true
-			case "--dir":
-				o.Dir = true
-			case "--preserve-root":
-				// Guard always protects roots. Mount traversal restrictions such
-				// as --one-file-system and --preserve-root=all are unsupported.
-			default:
-				return o, fmt.Errorf("unsupported option '%s'", arg)
+			if err := o.parseLongOption(arg, directoryOnly); err != nil {
+				return o, err
 			}
-			if directoryOnly && arg != "--verbose" {
-				return o, fmt.Errorf("unsupported rmdir option '%s'", arg)
+			if o.Help {
+				return o, nil
 			}
 			continue
 		}
-		for _, flag := range arg[1:] {
-			if directoryOnly && flag != 'v' {
-				return o, fmt.Errorf("unsupported rmdir option -- '%c'", flag)
-			}
-			switch flag {
-			case 'r', 'R':
-				o.Recursive = true
-			case 'f':
-				o.Force = true
-			case 'd':
-				o.Dir = true
-			case 'v':
-				o.Verbose = true
-			default:
-				return o, fmt.Errorf("unsupported option -- '%c'", flag)
-			}
+		if err := o.parseShortOptions(arg, directoryOnly); err != nil {
+			return o, err
 		}
 	}
 	if len(o.Paths) == 0 && !o.Force {
@@ -91,6 +62,52 @@ func ParseRemove(args []string, directoryOnly bool) (RemoveOptions, error) {
 		}
 	}
 	return o, nil
+}
+
+func (o *RemoveOptions) parseLongOption(arg string, directoryOnly bool) error {
+	switch arg {
+	case "--help":
+		o.Help = true
+		return nil
+	case "--verbose":
+		o.Verbose = true
+	case "--recursive":
+		o.Recursive = true
+	case "--force":
+		o.Force = true
+	case "--dir":
+		o.Dir = true
+	case "--preserve-root":
+		// Guard always protects roots. Mount traversal restrictions such
+		// as --one-file-system and --preserve-root=all are unsupported.
+	default:
+		return fmt.Errorf("unsupported option '%s'", arg)
+	}
+	if directoryOnly && arg != "--verbose" {
+		return fmt.Errorf("unsupported rmdir option '%s'", arg)
+	}
+	return nil
+}
+
+func (o *RemoveOptions) parseShortOptions(arg string, directoryOnly bool) error {
+	for _, flag := range arg[1:] {
+		if directoryOnly && flag != 'v' {
+			return fmt.Errorf("unsupported rmdir option -- '%c'", flag)
+		}
+		switch flag {
+		case 'r', 'R':
+			o.Recursive = true
+		case 'f':
+			o.Force = true
+		case 'd':
+			o.Dir = true
+		case 'v':
+			o.Verbose = true
+		default:
+			return fmt.Errorf("unsupported option -- '%c'", flag)
+		}
+	}
+	return nil
 }
 
 func driveRelativePath(path string) bool {
@@ -154,58 +171,73 @@ func ParseClean(args []string) (CleanOptions, error) {
 			o.Preview = append(o.Preview, arg)
 			continue
 		}
+		var err error
 		if strings.HasPrefix(arg, "--") {
-			switch arg {
-			case "--dry-run":
-				o.DryRun = true
-			case "--force":
-				o.Force++
-			case "--quiet":
-				o.Quiet = true
-				continue
-			case "--exclude":
-				if i+1 >= len(args) {
-					return o, fmt.Errorf("option '%s' requires a value", arg)
-				}
-				o.Preview = append(o.Preview, arg, args[i+1])
-				i++
-				continue
-			default:
-				if !strings.HasPrefix(arg, "--exclude=") {
-					return o, fmt.Errorf("unsupported option '%s'", arg)
-				}
-			}
-			o.Preview = append(o.Preview, arg)
-			continue
+			i, err = o.parseLongOption(args, i)
+		} else {
+			i, err = o.parseShortOptions(args, i)
 		}
-		for j := 1; j < len(arg); j++ {
-			flag := arg[j]
-			switch flag {
-			case 'f':
-				o.Force++
-			case 'n':
-				o.DryRun = true
-			case 'q':
-				o.Quiet = true
-				continue
-			case 'd', 'x', 'X':
-			case 'e':
-				value := arg[j+1:]
-				if value == "" {
-					i++
-					if i == len(args) {
-						return o, fmt.Errorf("option '-e' requires a value")
-					}
-					value = args[i]
-				}
-				o.Preview = append(o.Preview, "-e", value)
-				j = len(arg)
-				continue
-			default:
-				return o, fmt.Errorf("unsupported option -- '%c'", flag)
-			}
-			o.Preview = append(o.Preview, "-"+string(flag))
+		if err != nil {
+			return o, err
 		}
 	}
 	return o, nil
+}
+
+func (o *CleanOptions) parseLongOption(args []string, i int) (int, error) {
+	arg := args[i]
+	switch arg {
+	case "--dry-run":
+		o.DryRun = true
+	case "--force":
+		o.Force++
+	case "--quiet":
+		o.Quiet = true
+		return i, nil
+	case "--exclude":
+		if i+1 >= len(args) {
+			return i, fmt.Errorf("option '%s' requires a value", arg)
+		}
+		o.Preview = append(o.Preview, arg, args[i+1])
+		return i + 1, nil
+	default:
+		if !strings.HasPrefix(arg, "--exclude=") {
+			return i, fmt.Errorf("unsupported option '%s'", arg)
+		}
+	}
+	o.Preview = append(o.Preview, arg)
+	return i, nil
+}
+
+func (o *CleanOptions) parseShortOptions(args []string, i int) (int, error) {
+	arg := args[i]
+	for j := 1; j < len(arg); j++ {
+		flag := arg[j]
+		switch flag {
+		case 'f':
+			o.Force++
+		case 'n':
+			o.DryRun = true
+		case 'q':
+			o.Quiet = true
+			continue
+		case 'd', 'x', 'X':
+		case 'e':
+			value := arg[j+1:]
+			if value == "" {
+				i++
+				if i == len(args) {
+					return i, fmt.Errorf("option '-e' requires a value")
+				}
+				value = args[i]
+			}
+			o.Preview = append(o.Preview, "-e", value)
+			j = len(arg)
+			continue
+		default:
+			return i, fmt.Errorf("unsupported option -- '%c'", flag)
+		}
+		o.Preview = append(o.Preview, "-"+string(flag))
+	}
+	return i, nil
 }

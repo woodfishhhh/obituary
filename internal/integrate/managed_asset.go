@@ -126,26 +126,36 @@ func planAssetOwners(file, receipt Change, asset ManagedAsset, requested []strin
 	state = migrateSharedMCPReceipt(state, asset, requested, uninstall)
 	owners := slices.Clone(state.Owners)
 	if uninstall {
-		if !owned || !slices.ContainsFunc(requested, func(owner string) bool { return slices.Contains(owners, owner) }) {
-			return []Change{file, receipt}, nil
-		}
-		owners = slices.DeleteFunc(owners, func(owner string) bool { return slices.Contains(requested, owner) })
-		if len(owners) > 0 {
-			state.Owners = owners
-			data, _ := marshal(state)
-			receipt = setIntegrationData(receipt, append(data, '\n'))
-		} else {
-			if file.existed {
-				file.Action, file.delete = "remove", true
-			}
-			receipt.Action, receipt.delete = "remove", true
-		}
-		file.phase, receipt.phase = -20, -10
-		if asset.Activation {
-			file.phase, receipt.phase = -30, -25
-		}
+		return planAssetRemoval(intent, state, owners, owned)
+	}
+	return planAssetInstall(intent, owners)
+}
+
+func planAssetRemoval(intent *managedAssetPlan, state assetReceipt, owners []string, owned bool) ([]Change, error) {
+	file, receipt, asset, requested := intent.file, intent.receipt, intent.asset, intent.owners
+	if !owned || !slices.ContainsFunc(requested, func(owner string) bool { return slices.Contains(owners, owner) }) {
 		return []Change{file, receipt}, nil
 	}
+	owners = slices.DeleteFunc(owners, func(owner string) bool { return slices.Contains(requested, owner) })
+	if len(owners) > 0 {
+		state.Owners = owners
+		data, _ := marshal(state)
+		receipt = setIntegrationData(receipt, append(data, '\n'))
+	} else {
+		if file.existed {
+			file.Action, file.delete = "remove", true
+		}
+		receipt.Action, receipt.delete = "remove", true
+	}
+	file.phase, receipt.phase = -20, -10
+	if asset.Activation {
+		file.phase, receipt.phase = -30, -25
+	}
+	return []Change{file, receipt}, nil
+}
+
+func planAssetInstall(intent *managedAssetPlan, owners []string) ([]Change, error) {
+	file, receipt, asset, requested := intent.file, intent.receipt, intent.asset, intent.owners
 	for _, owner := range requested {
 		if !slices.Contains(owners, owner) {
 			owners = append(owners, owner)

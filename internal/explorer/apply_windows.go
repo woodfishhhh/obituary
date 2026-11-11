@@ -121,29 +121,40 @@ func (p *Plan) write(root *os.Root) error {
 	}
 	if old != nil {
 		defer old.Close()
-		if p.remove {
-			if err := p.captureRemoval(old); err != nil {
-				return err
-			}
-		}
-		// Text ownership alone says nothing about other NTFS streams. When
-		// the handle cannot prove whole-file ownership, only remove our text.
-		if p.remove && !onlyDefaultStream(old) {
-			p.remove = false
+		if err := p.prepareRemoval(old); err != nil {
+			return err
 		}
 	}
 	if p.remove {
-		if beforeLabelsDelete != nil {
-			if err := beforeLabelsDelete(); err != nil {
-				return err
-			}
-		}
-		if err := p.verifyFinal(old); err != nil {
-			return err
-		}
-		return winfs.DeleteCommitFile(old)
+		return p.deleteOriginal(old)
 	}
 	return p.writeReplacement(root, old)
+}
+
+func (p *Plan) prepareRemoval(old *os.File) error {
+	if p.remove {
+		if err := p.captureRemoval(old); err != nil {
+			return err
+		}
+	}
+	// Text ownership alone says nothing about other NTFS streams. When
+	// the handle cannot prove whole-file ownership, only remove our text.
+	if p.remove && !onlyDefaultStream(old) {
+		p.remove = false
+	}
+	return nil
+}
+
+func (p *Plan) deleteOriginal(old *os.File) error {
+	if beforeLabelsDelete != nil {
+		if err := beforeLabelsDelete(); err != nil {
+			return err
+		}
+	}
+	if err := p.verifyFinal(old); err != nil {
+		return err
+	}
+	return winfs.DeleteCommitFile(old)
 }
 
 func (p *Plan) writeReplacement(root *os.Root, old *os.File) (err error) {

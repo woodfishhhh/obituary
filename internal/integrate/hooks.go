@@ -138,36 +138,39 @@ func planHooks(s Scope, path string, spec hookSpec, uninstall bool) (ch Change, 
 			var keepHandlers []json.RawMessage
 			groupChanged := false
 			for _, h := range handlers {
-				if spec.IsOurs(h) {
-					var matcher string
-					if raw, ok := group.get("matcher"); ok {
-						_ = json.Unmarshal(raw, &matcher)
+				if !spec.IsOurs(h) {
+					if spec.PreserveNote != nil {
+						if note := spec.PreserveNote(h); note != "" {
+							preserveNote = note
+						}
 					}
-					if ev.Event == "PreToolUse" && matcher != ev.Matcher && !uninstall {
-						eventChanged, groupChanged = true, true
-						ev.Optional = false // relocate our handler; leave others in place
-						continue
-					}
-					switch {
-					case uninstall:
-						eventChanged, groupChanged = true, true
-						continue
-					case present:
-						// a duplicate of ours (would run twice): drop it
-						eventChanged, groupChanged = true, true
-						continue
-					}
-					present = true
-					if want, _ := marshal(ev.Handler); !sameJSON(h, want) {
-						// ours, but stale (moved binary, new timeout): refresh in place
-						h = want
-						eventChanged, groupChanged = true, true
-						notes = append(notes, "refresh "+ev.Event)
-					}
-				} else if spec.PreserveNote != nil {
-					if note := spec.PreserveNote(h); note != "" {
-						preserveNote = note
-					}
+					keepHandlers = append(keepHandlers, h)
+					continue
+				}
+				var matcher string
+				if raw, ok := group.get("matcher"); ok {
+					_ = json.Unmarshal(raw, &matcher)
+				}
+				if ev.Event == "PreToolUse" && matcher != ev.Matcher && !uninstall {
+					eventChanged, groupChanged = true, true
+					ev.Optional = false // relocate our handler; leave others in place
+					continue
+				}
+				switch {
+				case uninstall:
+					eventChanged, groupChanged = true, true
+					continue
+				case present:
+					// a duplicate of ours (would run twice): drop it
+					eventChanged, groupChanged = true, true
+					continue
+				}
+				present = true
+				if want, _ := marshal(ev.Handler); !sameJSON(h, want) {
+					// ours, but stale (moved binary, new timeout): refresh in place
+					h = want
+					eventChanged, groupChanged = true, true
+					notes = append(notes, "refresh "+ev.Event)
 				}
 				keepHandlers = append(keepHandlers, h)
 			}

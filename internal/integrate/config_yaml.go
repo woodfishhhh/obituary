@@ -128,77 +128,86 @@ func syncYAML(dst, src *yaml.Node) error {
 		return fmt.Errorf("edited YAML member uses an anchor or alias; left untouched")
 	}
 	if dst.Kind == yaml.MappingNode && src.Kind == yaml.MappingNode {
-		for _, key := range dst.Content {
-			if key.Tag == "!!merge" {
-				return fmt.Errorf("edited YAML mapping uses a merge key; left untouched")
-			}
-		}
-		wanted := map[string]*yaml.Node{}
-		for i := 0; i < len(src.Content); i += 2 {
-			wanted[src.Content[i].Value] = src.Content[i+1]
-		}
-		var kept []*yaml.Node
-		for i := 0; i < len(dst.Content); i += 2 {
-			key, value := dst.Content[i], dst.Content[i+1]
-			if next, ok := wanted[key.Value]; ok {
-				if err := syncYAML(value, next); err != nil {
-					return err
-				}
-				kept = append(kept, key, value)
-				delete(wanted, key.Value)
-			} else {
-				keepYAMLComments(dst, key, value)
-			}
-		}
-		for i := 0; i < len(src.Content); i += 2 {
-			if _, ok := wanted[src.Content[i].Value]; ok {
-				plainYAML(src.Content[i])
-				plainYAML(src.Content[i+1])
-				kept = append(kept, src.Content[i], src.Content[i+1])
-			}
-		}
-		dst.Content = kept
-		return nil
+		return syncYAMLMapping(dst, src)
 	}
 	if dst.Kind == yaml.SequenceNode && src.Kind == yaml.SequenceNode {
-		var kept []*yaml.Node
-		x, y := dst.Content, src.Content
-		for i, j := 0, 0; i < len(x) || j < len(y); {
-			switch {
-			case j == len(y):
-				keepYAMLComments(dst, x[i])
-				i++
-			case i == len(x):
-				plainYAML(y[j])
-				kept = append(kept, y[j])
-				j++
-			case sameYAML(x[i], y[j]):
-				kept = append(kept, x[i])
-				i++
-				j++
-			case containsYAML(x[i+1:], y[j]):
-				keepYAMLComments(dst, x[i])
-				i++
-			case containsYAML(y[j+1:], x[i]):
-				plainYAML(y[j])
-				kept = append(kept, y[j])
-				j++
-			default:
-				if err := syncYAML(x[i], y[j]); err != nil {
-					return err
-				}
-				kept = append(kept, x[i])
-				i++
-				j++
-			}
-		}
-		dst.Content = kept
-		return nil
+		return syncYAMLSequence(dst, src)
 	}
 	before, line, after := dst.HeadComment, dst.LineComment, dst.FootComment
 	plainYAML(src)
 	*dst = *src
 	dst.HeadComment, dst.LineComment, dst.FootComment = before, line, after
+	return nil
+}
+
+func syncYAMLMapping(dst, src *yaml.Node) error {
+	for _, key := range dst.Content {
+		if key.Tag == "!!merge" {
+			return fmt.Errorf("edited YAML mapping uses a merge key; left untouched")
+		}
+	}
+	wanted := map[string]*yaml.Node{}
+	for i := 0; i < len(src.Content); i += 2 {
+		wanted[src.Content[i].Value] = src.Content[i+1]
+	}
+	var kept []*yaml.Node
+	for i := 0; i < len(dst.Content); i += 2 {
+		key, value := dst.Content[i], dst.Content[i+1]
+		next, ok := wanted[key.Value]
+		if !ok {
+			keepYAMLComments(dst, key, value)
+			continue
+		}
+		if err := syncYAML(value, next); err != nil {
+			return err
+		}
+		kept = append(kept, key, value)
+		delete(wanted, key.Value)
+	}
+	for i := 0; i < len(src.Content); i += 2 {
+		if _, ok := wanted[src.Content[i].Value]; ok {
+			plainYAML(src.Content[i])
+			plainYAML(src.Content[i+1])
+			kept = append(kept, src.Content[i], src.Content[i+1])
+		}
+	}
+	dst.Content = kept
+	return nil
+}
+
+func syncYAMLSequence(dst, src *yaml.Node) error {
+	var kept []*yaml.Node
+	x, y := dst.Content, src.Content
+	for i, j := 0, 0; i < len(x) || j < len(y); {
+		switch {
+		case j == len(y):
+			keepYAMLComments(dst, x[i])
+			i++
+		case i == len(x):
+			plainYAML(y[j])
+			kept = append(kept, y[j])
+			j++
+		case sameYAML(x[i], y[j]):
+			kept = append(kept, x[i])
+			i++
+			j++
+		case containsYAML(x[i+1:], y[j]):
+			keepYAMLComments(dst, x[i])
+			i++
+		case containsYAML(y[j+1:], x[i]):
+			plainYAML(y[j])
+			kept = append(kept, y[j])
+			j++
+		default:
+			if err := syncYAML(x[i], y[j]); err != nil {
+				return err
+			}
+			kept = append(kept, x[i])
+			i++
+			j++
+		}
+	}
+	dst.Content = kept
 	return nil
 }
 

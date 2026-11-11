@@ -77,6 +77,10 @@ func planSkillContent(s Scope, agent string, content []byte, uninstall bool) ([]
 	}
 	intent := &relocatedAssetPlan{receipt: lockChange, checks: []Change{file, receipt}}
 	file.relocated, receipt.relocated = intent, intent
+	return planOwnedSkill(path, file, receipt, content, uninstall)
+}
+
+func planOwnedSkill(path string, file, receipt Change, content []byte, uninstall bool) ([]Change, error) {
 	ours := file.existed && (bytes.Equal(receipt.orig, skillReceipt(file.orig)) || pendingSkillMatches(receipt.orig, file))
 	staleReceipt := !file.existed && (strings.HasPrefix(string(receipt.orig), skillReceiptPrefix) || pendingSkillMatches(receipt.orig, file))
 	if (file.existed && !ours) || (receipt.existed && !ours && !staleReceipt) {
@@ -93,23 +97,24 @@ func planSkillContent(s Scope, agent string, content []byte, uninstall bool) ([]
 		if ours || staleReceipt {
 			receipt.Action, receipt.delete = "remove", true
 		}
-	} else {
-		file = setIntegrationData(file, bytes.Clone(content))
-		final := setIntegrationData(receipt, skillReceipt(content))
-		if file.Action != "unchanged" {
-			oldHash := "absent"
-			if file.existed {
-				oldHash = fmt.Sprintf("%x", sha256.Sum256(file.orig))
-			}
-			pending := fmt.Appendf(nil, "%s%s\n%x\n", skillPendingPrefix, oldHash, sha256.Sum256(content))
-			receipt = setIntegrationData(receipt, pending)
-			receipt.phase = -1
-			final.orig, final.existed, final.Action, final.phase = pending, true, "update", 1
-			receipt.next = &final
-			return []Change{file, receipt}, nil
-		}
-		receipt = final
+		receipt.phase = 1 // commit the file before its ownership receipt
+		return []Change{file, receipt}, nil
 	}
+	file = setIntegrationData(file, bytes.Clone(content))
+	final := setIntegrationData(receipt, skillReceipt(content))
+	if file.Action != "unchanged" {
+		oldHash := "absent"
+		if file.existed {
+			oldHash = fmt.Sprintf("%x", sha256.Sum256(file.orig))
+		}
+		pending := fmt.Appendf(nil, "%s%s\n%x\n", skillPendingPrefix, oldHash, sha256.Sum256(content))
+		receipt = setIntegrationData(receipt, pending)
+		receipt.phase = -1
+		final.orig, final.existed, final.Action, final.phase = pending, true, "update", 1
+		receipt.next = &final
+		return []Change{file, receipt}, nil
+	}
+	receipt = final
 	receipt.phase = 1 // commit the file before its ownership receipt
 	return []Change{file, receipt}, nil
 }

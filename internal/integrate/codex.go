@@ -111,15 +111,7 @@ func planBlock(s Scope, path, text string, uninstall bool) (Change, error) {
 	}
 	block := strings.ReplaceAll(blockBegin+"\n"+strings.TrimRight(text, "\r\n")+"\n"+blockEnd, "\n", eol)
 	if start >= 0 {
-		if uninstall {
-			block = ""
-			if strings.HasPrefix(content[end:], "\r\n") {
-				end += 2
-			} else if strings.HasPrefix(content[end:], "\n") {
-				end++
-			}
-		}
-		next := content[:start] + block + content[end:]
+		next := replaceMarkdownBlock(content, block, start, end, uninstall)
 		if uninstall && next == "" {
 			ch.Action, ch.Detail, ch.delete = "remove", "only held Obituary's block", true
 			return ch, nil

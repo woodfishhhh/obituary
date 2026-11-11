@@ -91,22 +91,26 @@ const ClaudeUpgradeHint = `the stable channel may lag below 2.1.318; choose late
 func CommandText(args []string) string {
 	note := ""
 	if len(args) == 7 && args[2] == "add-json" {
-		if manual, ok := claudeManualAdd(json.RawMessage(args[6])); ok {
-			manual[0] = args[0]
-			args = manual
-		} else {
-			args = slices.Clone(args)
-			if !strings.EqualFold(filepath.Ext(args[0]), ".exe") {
-				args[0] = "claude.exe"
-			}
-			note = " # Requires PowerShell 7.3 or newer, $PSNativeCommandArgumentPassing = 'Standard' or 'Windows'; use the native claude.exe (npm: node_modules/@anthropic-ai/claude-code/bin/claude.exe)"
-		}
+		args, note = claudeManualArgs(args)
 	}
 	quoted := make([]string, len(args))
 	for i, arg := range args {
 		quoted[i] = "'" + strings.ReplaceAll(arg, "'", "''") + "'"
 	}
 	return "& " + strings.Join(quoted, " ") + note
+}
+
+func claudeManualArgs(args []string) ([]string, string) {
+	if manual, ok := claudeManualAdd(json.RawMessage(args[6])); ok {
+		manual[0] = args[0]
+		return manual, ""
+	}
+	args = slices.Clone(args)
+	if !strings.EqualFold(filepath.Ext(args[0]), ".exe") {
+		args[0] = "claude.exe"
+	}
+	note := " # Requires PowerShell 7.3 or newer, $PSNativeCommandArgumentPassing = 'Standard' or 'Windows'; use the native claude.exe (npm: node_modules/@anthropic-ai/claude-code/bin/claude.exe)"
+	return args, note
 }
 
 // The official MCP docs specify repeatable -e KEY=value before another option

@@ -37,20 +37,7 @@ func InspectExtension(s Scope, agent, kind, executable string) (ExtensionStatus,
 	remove, err := plan(true)
 	var manual *ManualSteps
 	if errors.As(err, &manual) || hasManualChanges(remove) {
-		install, installErr := plan(false)
-		if errors.As(installErr, &manual) {
-			return ExtensionStatus{Manual: true, Detail: "需要手动步骤 (manual steps required): " + manual.Steps}, nil
-		}
-		if installErr != nil {
-			return ExtensionStatus{}, installErr
-		}
-		var steps []string
-		for _, c := range install {
-			if c.Manual {
-				steps = append(steps, c.Detail)
-			}
-		}
-		return ExtensionStatus{Manual: true, Detail: "需要手动步骤 (manual steps required): " + strings.Join(steps, "\n")}, nil
+		return manualExtensionStatus(plan)
 	}
 	if err != nil {
 		return ExtensionStatus{}, err
@@ -78,6 +65,24 @@ func InspectExtension(s Scope, agent, kind, executable string) (ExtensionStatus,
 		status.Detail = "installed, outdated"
 	}
 	return status, nil
+}
+
+func manualExtensionStatus(plan func(bool) ([]Change, error)) (ExtensionStatus, error) {
+	install, err := plan(false)
+	var manual *ManualSteps
+	if errors.As(err, &manual) {
+		return ExtensionStatus{Manual: true, Detail: "需要手动步骤 (manual steps required): " + manual.Steps}, nil
+	}
+	if err != nil {
+		return ExtensionStatus{}, err
+	}
+	var steps []string
+	for _, c := range install {
+		if c.Manual {
+			steps = append(steps, c.Detail)
+		}
+	}
+	return ExtensionStatus{Manual: true, Detail: "需要手动步骤 (manual steps required): " + strings.Join(steps, "\n")}, nil
 }
 
 func installedSkillOwner(changes []Change) bool {

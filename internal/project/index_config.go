@@ -59,26 +59,8 @@ func (p Project) indexConfiguration(ctx context.Context, gitdir, common string) 
 	if err != nil {
 		return nil, err
 	}
-	parts := bytes.Split(out, []byte{0})
-	if len(parts)%2 != 1 || len(parts[len(parts)-1]) != 0 {
-		return nil, errors.New("unexpected Git configuration origin reply")
-	}
-	for i := 0; i+1 < len(parts); i += 2 {
-		origin, key := string(parts[i]), string(parts[i+1])
-		if strings.HasPrefix(key, "include.") || strings.HasPrefix(key, "includeif.") || !strings.HasPrefix(origin, "file:") {
-			return nil, ErrIndexSnapshotUnavailable
-		}
-		path := strings.TrimPrefix(origin, "file:")
-		if !filepath.IsAbs(path) {
-			path = filepath.Join(p.Root, path)
-		}
-		path, err = pathutil.Abs(path)
-		if err != nil {
-			return nil, err
-		}
-		if !known[path] {
-			return nil, ErrIndexSnapshotUnavailable
-		}
+	if err := checkIndexConfigOrigins(out, p.Root, known); err != nil {
+		return nil, err
 	}
 	if same, err := sameIndexFiles(ctx, files); err != nil {
 		return nil, err
@@ -86,4 +68,29 @@ func (p Project) indexConfiguration(ctx context.Context, gitdir, common string) 
 		return nil, errIndexChanged
 	}
 	return files, nil
+}
+
+func checkIndexConfigOrigins(out []byte, root string, known map[string]bool) error {
+	parts := bytes.Split(out, []byte{0})
+	if len(parts)%2 != 1 || len(parts[len(parts)-1]) != 0 {
+		return errors.New("unexpected Git configuration origin reply")
+	}
+	for i := 0; i+1 < len(parts); i += 2 {
+		origin, key := string(parts[i]), string(parts[i+1])
+		if strings.HasPrefix(key, "include.") || strings.HasPrefix(key, "includeif.") || !strings.HasPrefix(origin, "file:") {
+			return ErrIndexSnapshotUnavailable
+		}
+		path := strings.TrimPrefix(origin, "file:")
+		if !filepath.IsAbs(path) {
+			path = filepath.Join(root, path)
+		}
+		path, err := pathutil.Abs(path)
+		if err != nil {
+			return err
+		}
+		if !known[path] {
+			return ErrIndexSnapshotUnavailable
+		}
+	}
+	return nil
 }

@@ -17,10 +17,16 @@ import (
 // decoder; only the verified response format and patch reader are reused.
 type zcodeAdapter struct{}
 
-func (zcodeAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
+type zcodeInput struct {
+	claudeInput
+	Response json.RawMessage `json:"tool_response"`
+	Error    json.RawMessage `json:"error"`
+}
+
+func normalizeZCodeAliases(raw []byte) ([]byte, error) {
 	var fields map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &fields); err != nil {
-		return Event{}, err
+		return nil, err
 	}
 	for _, pair := range [][2]string{
 		{"hookEventName", "hook_event_name"}, {"sessionId", "session_id"},
@@ -39,22 +45,22 @@ func (zcodeAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
 				return value
 			}
 			if !reflect.DeepEqual(decode(native), decode(alias)) {
-				return Event{}, fmt.Errorf("zcode: conflicting %s and %s", pair[0], pair[1])
+				return nil, fmt.Errorf("zcode: conflicting %s and %s", pair[0], pair[1])
 			}
 		}
 		if n {
 			fields[pair[1]] = native
 		}
 	}
-	data, err := json.Marshal(fields)
+	return json.Marshal(fields)
+}
+
+func (zcodeAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
+	data, err := normalizeZCodeAliases(raw)
 	if err != nil {
 		return Event{}, err
 	}
-	var in struct {
-		claudeInput
-		Response json.RawMessage `json:"tool_response"`
-		Error    json.RawMessage `json:"error"`
-	}
+	var in zcodeInput
 	if err := json.Unmarshal(data, &in); err != nil {
 		return Event{}, err
 	}
@@ -92,6 +98,10 @@ func (zcodeAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
 	if ev.Name != "PostToolUse" {
 		return ev, nil
 	}
+	return zcodeWriteEvent(ev, in)
+}
+
+func zcodeWriteEvent(ev Event, in zcodeInput) (Event, error) {
 	// hook-flow.ts emits Post only after successful execution and serialization.
 	// A missing response or an explicit error cannot attest a successful write.
 	if len(in.Response) == 0 || bytes.Equal(in.Response, []byte("null")) ||
@@ -99,6 +109,7 @@ func (zcodeAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
 		return Event{}, ErrSkip
 	}
 	var paths []string
+	var err error
 	switch in.ToolName {
 	case "Write", "Edit":
 		path, ok := NativePath(firstString(in.ToolInput, "file_path"))

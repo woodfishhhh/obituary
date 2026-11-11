@@ -97,15 +97,7 @@ func PlanMCPConfig(s Scope, path string, spec MCPConfig, executable string, unin
 	entryPath := append(slices.Clone(spec.ServersPath), "obituary")
 	ch.preservePath = entryPath
 	if spec.Format == ConfigJSON5 {
-		edit := ConfigEdit{Path: entryPath, Remove: uninstall}
-		if !uninstall {
-			edit.Value, err = spec.Codec.Encode(executable, nil)
-			if err != nil {
-				return ch, err
-			}
-		}
-		_, err = editConfig(ch.orig, spec.Format, []ConfigEdit{edit})
-		return ch, fmt.Errorf("%s: %w", path, err)
+		return planMCPJSON5(ch, spec, entryPath, executable, uninstall)
 	}
 	data, err := configJSON(ch.orig, spec.Format)
 	if err != nil {
@@ -138,6 +130,19 @@ func PlanMCPConfig(s Scope, path string, spec MCPConfig, executable string, unin
 	}
 	ch.Detail = "MCP stdio registration"
 	return setIntegrationData(ch, out), nil
+}
+
+func planMCPJSON5(ch Change, spec MCPConfig, entryPath []string, executable string, uninstall bool) (Change, error) {
+	edit := ConfigEdit{Path: entryPath, Remove: uninstall}
+	if !uninstall {
+		var err error
+		edit.Value, err = spec.Codec.Encode(executable, nil)
+		if err != nil {
+			return ch, err
+		}
+	}
+	_, err := editConfig(ch.orig, spec.Format, []ConfigEdit{edit})
+	return ch, fmt.Errorf("%s: %w", ch.Path, err)
 }
 
 func configMember(data []byte, path []string) (json.RawMessage, error) {

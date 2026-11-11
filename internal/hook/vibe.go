@@ -58,20 +58,25 @@ func (vibeAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
 	}
 	ev.Cwd = native
 	if ev.Name == "PostToolUse" {
-		if in.Status != "success" {
-			return ev, ErrSkip
-		}
-		switch in.ToolName {
-		case "write_file", "file_system.write_file", "edit", "file_system.edit":
-		default:
-			return ev, ErrSkip
-		}
-		path, ok := NativePath(firstString(in.ToolInput, "file_path"))
-		if !ok || !filepath.IsAbs(path) {
-			return ev, ErrSkip
-		}
-		ev.Paths = []string{path}
+		return vibeWriteEvent(ev, in.claudeInput, in.Status)
 	}
+	return ev, nil
+}
+
+func vibeWriteEvent(ev Event, in claudeInput, status string) (Event, error) {
+	if status != "success" {
+		return ev, ErrSkip
+	}
+	switch in.ToolName {
+	case "write_file", "file_system.write_file", "edit", "file_system.edit":
+	default:
+		return ev, ErrSkip
+	}
+	path, ok := NativePath(firstString(in.ToolInput, "file_path"))
+	if !ok || !filepath.IsAbs(path) {
+		return ev, ErrSkip
+	}
+	ev.Paths = []string{path}
 	return ev, nil
 }
 

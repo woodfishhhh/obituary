@@ -42,76 +42,13 @@ func FindContext(ctx context.Context, path string) (Project, bool, error) {
 	if err := ctx.Err(); err != nil {
 		return Project{}, false, err
 	}
-	if !filepath.IsAbs(path) {
-		cwd, err := os.Getwd()
-		if err != nil {
-			return Project{}, false, err
-		}
-		if _, err := pathutil.Abs(cwd); err != nil {
-			return Project{}, false, err
-		}
-	}
-	dir, err := pathutil.Abs(path)
+	dir, err := discoveryStart(path)
 	if err != nil {
 		return Project{}, false, err
 	}
-	info, err := os.Stat(dir)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return Project{}, false, err
-	}
-	if err != nil || !info.IsDir() {
-		dir = filepath.Dir(dir)
-	}
-	dir, err = discoveryDirectory(dir)
+	ceilings, err := discoveryCeilings(ctx, dir)
 	if err != nil {
 		return Project{}, false, err
-	}
-	var ceilings []string
-	resolve := true
-	// Git for Windows v2.54.0 setup.c canonicalize_ceiling_entry and its
-	// caller split literally, discard unusable entries, and preserve all bytes
-	// after an empty entry. filepath.SplitList instead unquotes Windows PATH.
-	for _, ceiling := range strings.Split(os.Getenv("GIT_CEILING_DIRECTORIES"), string(os.PathListSeparator)) {
-		if err := ctx.Err(); err != nil {
-			return Project{}, false, err
-		}
-		if ceiling == "" {
-			resolve = false
-			continue
-		}
-		if !filepath.IsAbs(ceiling) && !strings.HasPrefix(ceiling, `/`) && !strings.HasPrefix(ceiling, `\`) {
-			continue
-		}
-		normalized := ceiling
-		if resolve {
-			if !filepath.IsAbs(ceiling) {
-				cwd, cwdErr := os.Getwd()
-				if cwdErr != nil {
-					return Project{}, false, cwdErr
-				}
-				cwd, cwdErr = pathutil.Abs(cwd)
-				if cwdErr != nil {
-					return Project{}, false, cwdErr
-				}
-				// GetFullPathName under a verbatim cwd can turn a root-relative
-				// ceiling into a different UNC name. Use the ordinary volume/share
-				// root first, leaving entries after an empty entry byte-for-byte.
-				normalized = filepath.Join(pathutil.VolumeRoot(cwd), strings.TrimLeft(ceiling, `\/`))
-			}
-			normalized, err = discoveryDirectory(normalized)
-			if err != nil {
-				continue
-			}
-			normalized = filepath.ToSlash(normalized)
-		}
-		// path.c longest_ancestor_length uses a byte comparison, removes
-		// one final slash, and never treats a directory as its own ancestor.
-		normalized = strings.TrimSuffix(normalized, "/")
-		// A missing descendant may not resolve until traversal reaches an
-		// existing junction parent; keep potential ceilings until that point.
-		if strings.TrimSuffix(filepath.ToSlash(dir), "/") != normalized {
-			ceilings = append(ceilings, normalized)
-		}
 	}
 	// Discover without Git so failures to query tracked paths remain retryable.
 	for {
@@ -145,6 +82,94 @@ func FindContext(ctx context.Context, path string) (Project, bool, error) {
 		}
 		dir = parent
 	}
+}
+
+func discoveryStart(path string) (string, error) {
+	if !filepath.IsAbs(path) {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return "", err
+		}
+		if _, err := pathutil.Abs(cwd); err != nil {
+			return "", err
+		}
+	}
+	dir, err := pathutil.Abs(path)
+	if err != nil {
+		return "", err
+	}
+	info, err := os.Stat(dir)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return "", err
+	}
+	if err != nil || !info.IsDir() {
+		dir = filepath.Dir(dir)
+	}
+	return discoveryDirectory(dir)
+}
+
+func discoveryCeilings(ctx context.Context, dir string) ([]string, error) {
+	var ceilings []string
+	resolve := true
+	// Git for Windows v2.54.0 setup.c canonicalize_ceiling_entry and its
+	// caller split literally, discard unusable entries, and preserve all bytes
+	// after an empty entry. filepath.SplitList instead unquotes Windows PATH.
+	for _, ceiling := range strings.Split(os.Getenv("GIT_CEILING_DIRECTORIES"), string(os.PathListSeparator)) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if ceiling == "" {
+			resolve = false
+			continue
+		}
+		if !filepath.IsAbs(ceiling) && !strings.HasPrefix(ceiling, `/`) && !strings.HasPrefix(ceiling, `\`) {
+			continue
+		}
+		normalized := ceiling
+		if resolve {
+			var usable bool
+			var err error
+			normalized, usable, err = normalizeDiscoveryCeiling(ceiling)
+			if err != nil {
+				return nil, err
+			}
+			if !usable {
+				continue
+			}
+		}
+		// path.c longest_ancestor_length uses a byte comparison, removes
+		// one final slash, and never treats a directory as its own ancestor.
+		normalized = strings.TrimSuffix(normalized, "/")
+		// A missing descendant may not resolve until traversal reaches an
+		// existing junction parent; keep potential ceilings until that point.
+		if strings.TrimSuffix(filepath.ToSlash(dir), "/") != normalized {
+			ceilings = append(ceilings, normalized)
+		}
+	}
+	return ceilings, nil
+}
+
+func normalizeDiscoveryCeiling(ceiling string) (string, bool, error) {
+	normalized := ceiling
+	if !filepath.IsAbs(ceiling) {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return "", false, err
+		}
+		cwd, err = pathutil.Abs(cwd)
+		if err != nil {
+			return "", false, err
+		}
+		// GetFullPathName under a verbatim cwd can turn a root-relative
+		// ceiling into a different UNC name. Use the ordinary volume/share
+		// root first, leaving entries after an empty entry byte-for-byte.
+		normalized = filepath.Join(pathutil.VolumeRoot(cwd), strings.TrimLeft(ceiling, `\/`))
+	}
+	normalized, err := discoveryDirectory(normalized)
+	if err != nil {
+		return "", false, nil
+	}
+	return filepath.ToSlash(normalized), true, nil
 }
 
 // Resolve already expands 8.3 names through GetFinalPathNameByHandle, and

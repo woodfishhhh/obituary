@@ -34,32 +34,12 @@ func planSharedAgentRules(s Scope, path, agent string, uninstall bool) (changes 
 			return []Change{rule, receipt}, nil
 		}
 		requested = append(requested, "legacy-unverified")
-		hooksPath := filepath.Join(filepath.Dir(path), ".codex", "hooks.json")
-		if s.Global {
-			hooksPath = filepath.Join(filepath.Dir(path), "hooks.json")
-		}
-		hooks, err := readIntegrationChange(s, hooksPath)
+		owners, check, err := legacyCodexRulesOwners(s, path)
 		if err != nil {
 			return nil, err
 		}
-		checks = append(checks, hooks)
-		if hooks.existed {
-			var config struct {
-				Hooks map[string][]struct{ Hooks []json.RawMessage }
-			}
-			if err := json.Unmarshal(bytes.TrimPrefix(hooks.orig, []byte("\xef\xbb\xbf")), &config); err != nil {
-				return nil, fmt.Errorf("legacy Codex owner: %w", err)
-			}
-			for _, groups := range config.Hooks {
-				for _, group := range groups {
-					for _, handler := range group.Hooks {
-						if codexSpec("", "").IsOurs(handler) {
-							requested = append(requested, "codex")
-						}
-					}
-				}
-			}
-		}
+		checks = append(checks, check)
+		requested = append(requested, owners...)
 	}
 	changes, err = planSharedRegistration(s, asset, []Change{rule}, requested, uninstall)
 	for i := range changes {
@@ -73,4 +53,35 @@ func planSharedAgentRules(s Scope, path, agent string, uninstall bool) (changes 
 		}
 	}
 	return append(checks, changes...), err
+}
+
+func legacyCodexRulesOwners(s Scope, path string) ([]string, Change, error) {
+	hooksPath := filepath.Join(filepath.Dir(path), ".codex", "hooks.json")
+	if s.Global {
+		hooksPath = filepath.Join(filepath.Dir(path), "hooks.json")
+	}
+	hooks, err := readIntegrationChange(s, hooksPath)
+	if err != nil {
+		return nil, hooks, err
+	}
+	if !hooks.existed {
+		return nil, hooks, nil
+	}
+	var config struct {
+		Hooks map[string][]struct{ Hooks []json.RawMessage }
+	}
+	if err := json.Unmarshal(bytes.TrimPrefix(hooks.orig, []byte("\xef\xbb\xbf")), &config); err != nil {
+		return nil, hooks, fmt.Errorf("legacy Codex owner: %w", err)
+	}
+	var owners []string
+	for _, groups := range config.Hooks {
+		for _, group := range groups {
+			for _, handler := range group.Hooks {
+				if codexSpec("", "").IsOurs(handler) {
+					owners = append(owners, "codex")
+				}
+			}
+		}
+	}
+	return owners, hooks, nil
 }

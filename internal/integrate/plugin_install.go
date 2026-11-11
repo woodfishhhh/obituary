@@ -47,6 +47,35 @@ func planPlugin(s Scope, dir, agent, id, template, destination, executable strin
 	if err != nil {
 		return nil, err
 	}
+	payload, err := pluginPayloadTemplate(template)
+	if err != nil {
+		return nil, err
+	}
+	changes, err := PlanManagedAssets(s, []ManagedAsset{
+		{Path: settingsPath, ID: agent + "-runtime", Owner: agent, Version: "1", Content: append(config, '\n')},
+		{Path: path, ID: id, Owner: agent, Version: "1", Content: payload, Activation: true},
+	}, uninstall)
+	if err != nil {
+		return nil, err
+	}
+	for i := range changes {
+		if changes[i].Path == path && changes[i].Action != "preserve" && !uninstall {
+			changes[i].Detail = pluginActivationDetail(agent)
+		}
+	}
+	return changes, nil
+}
+
+func pluginActivationDetail(agent string) string {
+	prefix := "OBIT_" + strings.ToUpper(agent) + "_"
+	detail := "after verifying all observed tools use the local Windows filesystem, launch the host with " + prefix + "LOCAL=1; guard also requires " + prefix + "SHELL=bash or powershell matching the actual shell; unknown/remote backends remain skipped"
+	if agent == "openclaw" {
+		detail += "; set OBIT_OPENCLAW_CWD to the verified workspace when hook context has no directory"
+	}
+	return detail
+}
+
+func pluginPayloadTemplate(template string) ([]byte, error) {
 	payload, err := pluginFiles.ReadFile(template)
 	if err != nil {
 		return nil, err
@@ -58,24 +87,7 @@ func planPlugin(s Scope, dir, agent, id, template, destination, executable strin
 	payload = bytes.ReplaceAll(payload, []byte("/* OBIT_BRIDGE */"), bridge)
 	// V1 loaders can treat every named function export as another plugin.
 	// Keep the installed surface to the documented default entrypoint.
-	payload = bytes.ReplaceAll(payload, []byte("export function "), []byte("function "))
-	changes, err := PlanManagedAssets(s, []ManagedAsset{
-		{Path: settingsPath, ID: agent + "-runtime", Owner: agent, Version: "1", Content: append(config, '\n')},
-		{Path: path, ID: id, Owner: agent, Version: "1", Content: payload, Activation: true},
-	}, uninstall)
-	if err != nil {
-		return nil, err
-	}
-	for i := range changes {
-		if changes[i].Path == path && changes[i].Action != "preserve" && !uninstall {
-			prefix := "OBIT_" + strings.ToUpper(agent) + "_"
-			changes[i].Detail = "after verifying all observed tools use the local Windows filesystem, launch the host with " + prefix + "LOCAL=1; guard also requires " + prefix + "SHELL=bash or powershell matching the actual shell; unknown/remote backends remain skipped"
-			if agent == "openclaw" {
-				changes[i].Detail += "; set OBIT_OPENCLAW_CWD to the verified workspace when hook context has no directory"
-			}
-		}
-	}
-	return changes, nil
+	return bytes.ReplaceAll(payload, []byte("export function "), []byte("function ")), nil
 }
 
 // Each host has a distinct block even in a shared AGENTS.md. Outside bytes,

@@ -136,117 +136,141 @@ func handle(e *auto.Engine, ev Event, runner *Runner, pendingNotices bool) (deli
 	}
 	switch ev.Name {
 	case "SessionStart":
-		replayPending(e)
-		if runner.Tick != nil {
-			runner.Tick()
-		}
-		if !inProject {
-			return delivery{}, e.SnapshotSession(ev.Cwd, ev.Session)
-		}
-		if err := e.Snapshot(proj.Root, ev.Session); err != nil {
-			return delivery{}, fmt.Errorf("snapshot project %q: %w", proj.Root, err)
-		}
-		if ev.DeferContext {
-			return delivery{}, nil
-		}
-		return sessionContext(e, proj.Root, ev.Session)
-
+		return startSession(e, ev, runner, proj, inProject)
 	case "PostToolUseFailure":
 		return delivery{}, nil
 	case "PostToolUse", "Context":
-		var paths []string
-		for _, p := range ev.Paths {
-			if ev.Name == "Context" {
-				break // context callbacks never imply a successful write
-			}
-			if !filepath.IsAbs(p) {
-				p = filepath.Join(ev.Cwd, p)
-			}
-			paths = append(paths, p)
+		return postToolContext(e, ev, runner, pendingNotices, proj, inProject)
+	case "Stop", "SessionEnd":
+		return finishSession(e, ev, runner, proj, inProject)
+	}
+	return delivery{}, nil
+}
+
+func startSession(e *auto.Engine, ev Event, runner *Runner, proj project.Project, inProject bool) (delivery, error) {
+	replayPending(e)
+	if runner.Tick != nil {
+		runner.Tick()
+	}
+	if !inProject {
+		return delivery{}, e.SnapshotSession(ev.Cwd, ev.Session)
+	}
+	if err := e.Snapshot(proj.Root, ev.Session); err != nil {
+		return delivery{}, fmt.Errorf("snapshot project %q: %w", proj.Root, err)
+	}
+	if ev.DeferContext {
+		return delivery{}, nil
+	}
+	return sessionContext(e, proj.Root, ev.Session)
+}
+
+func eventWritePaths(ev Event) []string {
+	var paths []string
+	for _, p := range ev.Paths {
+		if ev.Name == "Context" {
+			break // context callbacks never imply a successful write
 		}
-		observations, captureErr := e.Svc.CaptureObservations(paths, ev.Session)
-		for i := range observations {
-			observations[i].Host, observations[i].Event = ev.Host, ev.Name
-			if ev.HostEvent != "" {
-				observations[i].Event = ev.HostEvent
-			}
-			observations[i].Project = proj.Root
-			if target, ok, err := project.Find(filepath.Dir(observations[i].Path)); err == nil && ok {
-				observations[i].Project = target.Root
-			}
+		if !filepath.IsAbs(p) {
+			p = filepath.Join(ev.Cwd, p)
 		}
-		replayPending(e)
-		if len(paths) == 0 && !pendingNotices && ev.Name != "Context" {
-			return delivery{}, nil
+		paths = append(paths, p)
+	}
+	return paths
+}
+
+func captureEventObservations(e *auto.Engine, ev Event, proj project.Project, paths []string) ([]core.Observation, error) {
+	observations, captureErr := e.Svc.CaptureObservations(paths, ev.Session)
+	for i := range observations {
+		observations[i].Host, observations[i].Event = ev.Host, ev.Name
+		if ev.HostEvent != "" {
+			observations[i].Event = ev.HostEvent
 		}
-		decisions, notices, err := observeAvailable(e, observations)
-		if err != nil {
-			var pending []core.Observation
-			for i, d := range decisions {
-				if d.Action != auto.Retry {
-					continue
-				}
-				pending = append(pending, observations[i])
-			}
-			err = errors.Join(err, e.Svc.Store.DeferObservations(pending))
-			if len(pending) > 0 && runner.Tick != nil {
-				runner.Tick()
-			}
-			return delivery{}, errors.Join(err, captureErr)
+		observations[i].Project = proj.Root
+		if target, ok, err := project.Find(filepath.Dir(observations[i].Path)); err == nil && ok {
+			observations[i].Project = target.Root
 		}
-		if captureErr != nil {
-			return delivery{}, captureErr
-		}
-		if ev.DeferContext {
-			return delivery{}, nil
-		}
-		// A callback need not write another matching file to deliver earlier
-		// observations. The ledger is the queue, scoped to the current project
-		// or proposals created by this session (which may span projects).
-		if pendingNotices || ev.Name == "Context" {
-			state, err := e.Svc.Store.ReadHot()
-			if err != nil {
-				return delivery{}, err
-			}
-			for _, p := range core.ExistingProposals(state.Proposals) {
-				if (p.Session == ev.Session || inProject && core.ProjectKey(p.Project) == core.ProjectKey(proj.Root)) &&
-					!slices.Contains(p.Notified, ev.Session) && !slices.ContainsFunc(notices, func(n auto.Notice) bool { return n.Proposal.ID == p.ID }) {
-					notices = append(notices, auto.Notice{Proposal: p})
-				}
-			}
-		}
-		var context delivery
-		for _, n := range notices {
-			if slices.Contains(n.Proposal.Notified, ev.Session) {
+	}
+	return observations, captureErr
+}
+
+func postToolContext(e *auto.Engine, ev Event, runner *Runner, pendingNotices bool, proj project.Project, inProject bool) (delivery, error) {
+	paths := eventWritePaths(ev)
+	observations, captureErr := captureEventObservations(e, ev, proj, paths)
+	replayPending(e)
+	if len(paths) == 0 && !pendingNotices && ev.Name != "Context" {
+		return delivery{}, nil
+	}
+	decisions, notices, err := observeAvailable(e, observations)
+	if err != nil {
+		var pending []core.Observation
+		for i, d := range decisions {
+			if d.Action != auto.Retry {
 				continue
 			}
-			consent, err := proposalConsent(e.Svc, n.Proposal.Project)
-			if err != nil {
-				return delivery{}, err
-			}
-			context.append(n.Proposal, consent)
+			pending = append(pending, observations[i])
 		}
-		return context, nil
-
-	case "Stop", "SessionEnd":
-		// Claude Stop additionalContext continues the turn. Codex Stop has
-		// no additionalContext field; JSON continuation uses block + reason.
-		// Both ending events stay silent; a runner computes the diff outside
-		// the hook's time budget.
-		if !inProject && runner.Finish != nil {
-			runner.Finish(ev.Cwd, ev.Session, ev.Name == "SessionEnd")
-		}
-		if inProject {
-			if runner.Finish != nil {
-				runner.Finish(proj.Root, ev.Session, ev.Name == "SessionEnd")
-			} else if _, err := e.FinishFiles(proj.Root, ev.Session); err != nil {
-				return delivery{}, fmt.Errorf("finish project %q: %w", proj.Root, err)
-			}
-		}
-		if ev.Name == "SessionEnd" && runner.Tick != nil {
+		err = errors.Join(err, e.Svc.Store.DeferObservations(pending))
+		if len(pending) > 0 && runner.Tick != nil {
 			runner.Tick()
 		}
+		return delivery{}, errors.Join(err, captureErr)
+	}
+	if captureErr != nil {
+		return delivery{}, captureErr
+	}
+	if ev.DeferContext {
 		return delivery{}, nil
+	}
+	return observationContext(e, ev, proj, inProject, pendingNotices, notices)
+}
+
+func observationContext(e *auto.Engine, ev Event, proj project.Project, inProject, pendingNotices bool, notices []auto.Notice) (delivery, error) {
+	// A callback need not write another matching file to deliver earlier
+	// observations. The ledger is the queue, scoped to the current project
+	// or proposals created by this session (which may span projects).
+	if pendingNotices || ev.Name == "Context" {
+		state, err := e.Svc.Store.ReadHot()
+		if err != nil {
+			return delivery{}, err
+		}
+		for _, p := range core.ExistingProposals(state.Proposals) {
+			if (p.Session == ev.Session || inProject && core.ProjectKey(p.Project) == core.ProjectKey(proj.Root)) &&
+				!slices.Contains(p.Notified, ev.Session) && !slices.ContainsFunc(notices, func(n auto.Notice) bool { return n.Proposal.ID == p.ID }) {
+				notices = append(notices, auto.Notice{Proposal: p})
+			}
+		}
+	}
+	var context delivery
+	for _, n := range notices {
+		if slices.Contains(n.Proposal.Notified, ev.Session) {
+			continue
+		}
+		consent, err := proposalConsent(e.Svc, n.Proposal.Project)
+		if err != nil {
+			return delivery{}, err
+		}
+		context.append(n.Proposal, consent)
+	}
+	return context, nil
+}
+
+func finishSession(e *auto.Engine, ev Event, runner *Runner, proj project.Project, inProject bool) (delivery, error) {
+	// Claude Stop additionalContext continues the turn. Codex Stop has
+	// no additionalContext field; JSON continuation uses block + reason.
+	// Both ending events stay silent; a runner computes the diff outside
+	// the hook's time budget.
+	if !inProject && runner.Finish != nil {
+		runner.Finish(ev.Cwd, ev.Session, ev.Name == "SessionEnd")
+	}
+	if inProject {
+		if runner.Finish != nil {
+			runner.Finish(proj.Root, ev.Session, ev.Name == "SessionEnd")
+		} else if _, err := e.FinishFiles(proj.Root, ev.Session); err != nil {
+			return delivery{}, fmt.Errorf("finish project %q: %w", proj.Root, err)
+		}
+	}
+	if ev.Name == "SessionEnd" && runner.Tick != nil {
+		runner.Tick()
 	}
 	return delivery{}, nil
 }

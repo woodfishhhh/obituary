@@ -51,19 +51,8 @@ func (BridgeAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
 	if err := json.Unmarshal(bytes.TrimPrefix(raw, []byte("\xef\xbb\xbf")), &input); err != nil {
 		return Event{}, err
 	}
-	if input.Version != BridgeVersion {
-		return Event{}, fmt.Errorf("unsupported bridge version %d", input.Version)
-	}
-	if !validAgentName(invocation.Agent) || input.Agent != invocation.Agent {
-		return Event{}, fmt.Errorf("bridge agent %q does not match invocation %q", input.Agent, invocation.Agent)
-	}
-	switch input.Event {
-	case "PreToolUse", "PostToolUse", "SessionStart", "Context", "Stop", "SessionEnd":
-	default:
-		return Event{}, fmt.Errorf("unsupported bridge event %q", input.Event)
-	}
-	if invocation.Event != "" && invocation.Event != input.Event {
-		return Event{}, fmt.Errorf("bridge event conflicts with invocation")
+	if err := validateBridgeRequest(input, invocation); err != nil {
+		return Event{}, err
 	}
 	ev := Event{Name: input.Event, HostEvent: input.HostEvent, Tool: input.Tool, Cwd: input.Cwd,
 		Source: input.Source, Command: input.Command, Shell: input.Shell, SkipReason: input.SkipReason,
@@ -79,17 +68,7 @@ func (BridgeAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
 		ev.SkipReason = "bridge: local filesystem not confirmed"
 	}
 	if ev.Name == "PreToolUse" {
-		if input.Local && reachable && filepath.IsAbs(native) {
-			for _, path := range input.Paths {
-				if p, ok := NativePath(path); ok {
-					ev.References = append(ev.References, p)
-				}
-			}
-		}
-		if ev.Shell != guardrm.Bash && ev.Shell != guardrm.PowerShell {
-			ev.SkipReason = "bridge: shell syntax not confirmed"
-		}
-		return ev, nil
+		return bridgePreToolEvent(ev, input, native, reachable), nil
 	}
 	if ev.SkipReason != "" {
 		return Event{}, fmt.Errorf("bridge event skipped: %s", ev.SkipReason)
@@ -109,6 +88,38 @@ func (BridgeAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
 		}
 	}
 	return ev, nil
+}
+
+func validateBridgeRequest(input BridgeRequest, invocation Invocation) error {
+	if input.Version != BridgeVersion {
+		return fmt.Errorf("unsupported bridge version %d", input.Version)
+	}
+	if !validAgentName(invocation.Agent) || input.Agent != invocation.Agent {
+		return fmt.Errorf("bridge agent %q does not match invocation %q", input.Agent, invocation.Agent)
+	}
+	switch input.Event {
+	case "PreToolUse", "PostToolUse", "SessionStart", "Context", "Stop", "SessionEnd":
+	default:
+		return fmt.Errorf("unsupported bridge event %q", input.Event)
+	}
+	if invocation.Event != "" && invocation.Event != input.Event {
+		return fmt.Errorf("bridge event conflicts with invocation")
+	}
+	return nil
+}
+
+func bridgePreToolEvent(ev Event, input BridgeRequest, native string, reachable bool) Event {
+	if input.Local && reachable && filepath.IsAbs(native) {
+		for _, path := range input.Paths {
+			if p, ok := NativePath(path); ok {
+				ev.References = append(ev.References, p)
+			}
+		}
+	}
+	if ev.Shell != guardrm.Bash && ev.Shell != guardrm.PowerShell {
+		ev.SkipReason = "bridge: shell syntax not confirmed"
+	}
+	return ev
 }
 
 func (BridgeAdapter) Encode(ev Event, result Result) ([]byte, error) {

@@ -12,18 +12,20 @@ import (
 // event-specific schema while leaving tool input and permission grants to the host.
 type cursorAdapter struct{}
 
+type cursorInput struct {
+	Event        string         `json:"hook_event_name"`
+	Conversation string         `json:"conversation_id"`
+	Cwd          string         `json:"cwd"`
+	Roots        []string       `json:"workspace_roots"`
+	Background   bool           `json:"is_background_agent"`
+	Tool         string         `json:"tool_name"`
+	Command      string         `json:"command"`
+	Input        map[string]any `json:"tool_input"`
+	Path         string         `json:"file_path"`
+}
+
 func (cursorAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
-	var in struct {
-		Event        string         `json:"hook_event_name"`
-		Conversation string         `json:"conversation_id"`
-		Cwd          string         `json:"cwd"`
-		Roots        []string       `json:"workspace_roots"`
-		Background   bool           `json:"is_background_agent"`
-		Tool         string         `json:"tool_name"`
-		Command      string         `json:"command"`
-		Input        map[string]any `json:"tool_input"`
-		Path         string         `json:"file_path"`
-	}
+	var in cursorInput
 	if err := json.Unmarshal(raw, &in); err != nil {
 		return Event{}, err
 	}
@@ -64,6 +66,10 @@ func (cursorAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
 	if ev.Name == "PreToolUse" {
 		return ev, nil
 	}
+	return cursorLocalEvent(ev, in)
+}
+
+func cursorLocalEvent(ev Event, in cursorInput) (Event, error) {
 	if in.Background || ev.Session == "" {
 		return Event{}, ErrSkip
 	}

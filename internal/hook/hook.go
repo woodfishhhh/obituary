@@ -255,24 +255,7 @@ func sessionContext(e *auto.Engine, root, session string) (delivery, error) {
 		lines, _ = appendContext(lines, rules.PauseDiagnostic(root, rulesState, err))
 	}
 	if len(due) > 0 {
-		var parts []string
-		for i, it := range due {
-			if i == maxListed {
-				parts = append(parts, fmt.Sprintf("and %d more", len(due)-maxListed))
-				break
-			}
-			parts = append(parts, fmt.Sprintf("#%d %s (%s)", it.ID, rel(root, it.Path), textutil.DueIn(time.Until(it.ExpiresAt))))
-		}
-		destination := "buried (restorable with `obit resurrect`)"
-		if e.Svc.Mode == core.ModeRecycle {
-			destination = "sent to the system Recycle Bin (restore from the Recycle Bin)"
-		}
-		text := fmt.Sprintf("Obituary (讣告): %s in this project will expire within 24 hours and will be %s: %s. `obit extend <id> <lifespan>` keeps one longer.",
-			textutil.Count(len(due), "item"), destination, strings.Join(parts, ", "))
-		if len(text) > maxContext/2 {
-			text = fmt.Sprintf("Obituary: %s will expire within 24 hours; `obit list` shows the list and `obit extend <id> <lifespan>` keeps one longer.", textutil.Count(len(due), "item"))
-		}
-		lines = append(lines, text)
+		lines = append(lines, expiringContext(due, root, e.Svc.Mode))
 	}
 	if text := graveSessionContext(state.Burials, root, session); e.Svc.SessionSummary && e.Svc.Mode != core.ModeRecycle && text != "" {
 		lines, _ = appendContext(lines, text)
@@ -302,4 +285,25 @@ func sessionContext(e *auto.Engine, root, session string) (delivery, error) {
 		}
 	}
 	return context, nil
+}
+
+func expiringContext(due []core.Item, root, mode string) string {
+	var parts []string
+	for i, it := range due {
+		if i == maxListed {
+			parts = append(parts, fmt.Sprintf("and %d more", len(due)-maxListed))
+			break
+		}
+		parts = append(parts, fmt.Sprintf("#%d %s (%s)", it.ID, rel(root, it.Path), textutil.DueIn(time.Until(it.ExpiresAt))))
+	}
+	destination := "buried (restorable with `obit resurrect`)"
+	if mode == core.ModeRecycle {
+		destination = "sent to the system Recycle Bin (restore from the Recycle Bin)"
+	}
+	text := fmt.Sprintf("Obituary (讣告): %s in this project will expire within 24 hours and will be %s: %s. `obit extend <id> <lifespan>` keeps one longer.",
+		textutil.Count(len(due), "item"), destination, strings.Join(parts, ", "))
+	if len(text) > maxContext/2 {
+		text = fmt.Sprintf("Obituary: %s will expire within 24 hours; `obit list` shows the list and `obit extend <id> <lifespan>` keeps one longer.", textutil.Count(len(due), "item"))
+	}
+	return text
 }

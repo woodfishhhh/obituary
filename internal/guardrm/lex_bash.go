@@ -86,41 +86,8 @@ func bashWordParts(s string, parts []syntax.WordPart, quoted bool, w *word, valu
 	for _, part := range parts {
 		switch p := part.(type) {
 		case *syntax.Lit:
-			for i := 0; i < len(p.Value); i++ {
-				c := p.Value[i]
-				if c == '\\' {
-					w.literal = false
-					i++
-					if i == len(p.Value) {
-						return "unfinished escape"
-					}
-					// v3.14.1 retains escaped LF after an odd run of backslashes.
-					// Keep residual continuations outside our static subset.
-					if p.Value[i] == '\n' {
-						return "residual bash line continuations are unsupported"
-					}
-					if quoted && !strings.ContainsRune("$`\"\\", rune(p.Value[i])) {
-						value.WriteByte('\\')
-					}
-					value.WriteByte(p.Value[i])
-					continue
-				}
-				if !quoted && strings.ContainsRune("<>(){}@", rune(c)) {
-					return "redirection, expansion or compound command"
-				}
-				if c == '$' || !quoted && c == '~' && int(p.Pos().Offset())+i == w.start {
-					w.expands = true
-				}
-				if c == '$' && i+1 == len(p.Value) && bashDollarBoundary(s, p.End()) {
-					return "shell expansion or command substitution"
-				}
-				if !quoted && strings.ContainsRune("$*?[", rune(c)) {
-					w.literal = false
-					if value.Len() == 0 && c != '$' {
-						w.leadingGlob = true
-					}
-				}
-				value.WriteByte(c)
+			if why := bashLiteral(s, p, quoted, w, value); why != "" {
+				return why
 			}
 		case *syntax.SglQuoted:
 			if p.Dollar {
@@ -152,6 +119,46 @@ func bashWordParts(s string, parts []syntax.WordPart, quoted bool, w *word, valu
 		default:
 			return "shell expansion or command substitution"
 		}
+	}
+	return ""
+}
+
+func bashLiteral(s string, p *syntax.Lit, quoted bool, w *word, value *strings.Builder) string {
+	for i := 0; i < len(p.Value); i++ {
+		c := p.Value[i]
+		if c == '\\' {
+			w.literal = false
+			i++
+			if i == len(p.Value) {
+				return "unfinished escape"
+			}
+			// v3.14.1 retains escaped LF after an odd run of backslashes.
+			// Keep residual continuations outside our static subset.
+			if p.Value[i] == '\n' {
+				return "residual bash line continuations are unsupported"
+			}
+			if quoted && !strings.ContainsRune("$`\"\\", rune(p.Value[i])) {
+				value.WriteByte('\\')
+			}
+			value.WriteByte(p.Value[i])
+			continue
+		}
+		if !quoted && strings.ContainsRune("<>(){}@", rune(c)) {
+			return "redirection, expansion or compound command"
+		}
+		if c == '$' || !quoted && c == '~' && int(p.Pos().Offset())+i == w.start {
+			w.expands = true
+		}
+		if c == '$' && i+1 == len(p.Value) && bashDollarBoundary(s, p.End()) {
+			return "shell expansion or command substitution"
+		}
+		if !quoted && strings.ContainsRune("$*?[", rune(c)) {
+			w.literal = false
+			if value.Len() == 0 && c != '$' {
+				w.leadingGlob = true
+			}
+		}
+		value.WriteByte(c)
 	}
 	return ""
 }

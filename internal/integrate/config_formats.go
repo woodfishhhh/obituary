@@ -126,21 +126,7 @@ func editObject(root *object, edit ConfigEdit) error {
 	key := edit.Path[0]
 	old, exists := root.get(key)
 	if len(edit.Path) > 1 {
-		if !exists && edit.Remove {
-			if edit.CheckExpected && edit.Expected != nil {
-				return fmt.Errorf("%s changed from the expected configuration", key)
-			}
-			return nil
-		}
-		child, err := parseObject(old)
-		if err != nil {
-			return fmt.Errorf("%s is not an object: %w", key, err)
-		}
-		edit.Path = edit.Path[1:]
-		if err := editObject(child, edit); err != nil {
-			return err
-		}
-		return root.set(key, child)
+		return editObjectChild(root, edit, old, exists)
 	}
 	if edit.CheckExpected && ((edit.Expected == nil) != !exists || exists && !sameConfigJSON(old, edit.Expected)) {
 		return fmt.Errorf("%s changed from the expected configuration", key)
@@ -153,6 +139,25 @@ func editObject(root *object, edit ConfigEdit) error {
 		return fmt.Errorf("%s: replacement is not valid JSON", key)
 	}
 	return root.set(key, edit.Value)
+}
+
+func editObjectChild(root *object, edit ConfigEdit, old json.RawMessage, exists bool) error {
+	key := edit.Path[0]
+	if !exists && edit.Remove {
+		if edit.CheckExpected && edit.Expected != nil {
+			return fmt.Errorf("%s changed from the expected configuration", key)
+		}
+		return nil
+	}
+	child, err := parseObject(old)
+	if err != nil {
+		return fmt.Errorf("%s is not an object: %w", key, err)
+	}
+	edit.Path = edit.Path[1:]
+	if err := editObject(child, edit); err != nil {
+		return err
+	}
+	return root.set(key, child)
 }
 
 // Keep JSON numbers exact when validating a format conversion.

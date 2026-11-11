@@ -53,13 +53,9 @@ func PlanClaude(s Scope, command string, uninstall bool) ([]Change, error) {
 		return nil, err
 	}
 	spec.Events = append(spec.Events, hookEvent{Event: "PreToolUse", Matcher: ".*", Handler: claudeHandler(noticeCommand)})
-	shared := HookConfig{Agent: "claude", Shape: GroupedHooks}
-	for _, ev := range spec.Events {
-		raw, err := marshal(ev.Handler)
-		if err != nil {
-			return nil, err
-		}
-		shared.Events = append(shared.Events, HookRegistration{Event: ev.Event, Matcher: ev.Matcher, Handler: raw, Optional: ev.Optional})
+	shared, err := claudeHookConfig(spec)
+	if err != nil {
+		return nil, err
 	}
 	c, err := PlanHookConfig(s, settingsPath, shared, uninstall)
 	if err != nil {
@@ -95,6 +91,18 @@ func PlanClaude(s Scope, command string, uninstall bool) ([]Change, error) {
 	}
 	changes = append(changes[:2], references...)
 	return changes, nil
+}
+
+func claudeHookConfig(spec hookSpec) (HookConfig, error) {
+	shared := HookConfig{Agent: "claude", Shape: GroupedHooks}
+	for _, ev := range spec.Events {
+		raw, err := marshal(ev.Handler)
+		if err != nil {
+			return shared, err
+		}
+		shared.Events = append(shared.Events, HookRegistration{Event: ev.Event, Matcher: ev.Matcher, Handler: raw, Optional: ev.Optional})
+	}
+	return shared, nil
 }
 
 // PlanClaudeExec pins the executable even when PATH already resolves to obit.

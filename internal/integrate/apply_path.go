@@ -81,16 +81,21 @@ func openIntegrationTarget(c Change, create bool) (_ *integrationTarget, err err
 	if err != nil {
 		return nil, err
 	}
+	rel, err := filepath.Rel(volume, path)
+	if err != nil {
+		root.Close()
+		return nil, err
+	}
+	parts := strings.Split(rel, string(filepath.Separator))
+	return walkIntegrationTarget(c, create, root, parts)
+}
+
+func walkIntegrationTarget(c Change, create bool, root *os.Root, parts []string) (_ *integrationTarget, err error) {
 	defer func() {
 		if err != nil {
 			root.Close()
 		}
 	}()
-	rel, err := filepath.Rel(volume, path)
-	if err != nil {
-		return nil, err
-	}
-	parts := strings.Split(rel, string(filepath.Separator))
 	matched := c.location == nil
 	for i := 0; ; i++ {
 		info, err := root.Stat(".") // handle-derived FileInfo, including its file ID
@@ -125,21 +130,29 @@ func openIntegrationTarget(c Change, create bool) (_ *integrationTarget, err err
 		if err != nil {
 			return nil, err
 		}
-		if err := ordinaryIntegrationEntry(childInfo); err != nil {
-			return nil, fmt.Errorf("%s: %w", filepath.Join(root.Name(), parts[i]), err)
-		}
-		child, err := root.OpenRoot(parts[i])
+		child, err := openIntegrationChild(root, parts[i], c.Path, childInfo)
 		if err != nil {
 			return nil, err
-		}
-		opened, statErr := child.Stat(".")
-		if statErr != nil || !os.SameFile(childInfo, opened) {
-			child.Close()
-			return nil, fmt.Errorf("%s: installation directory changed while opening: %w", c.Path, errors.Join(statErr, os.ErrInvalid))
 		}
 		root.Close()
 		root = child
 	}
+}
+
+func openIntegrationChild(root *os.Root, name, path string, childInfo os.FileInfo) (*os.Root, error) {
+	if err := ordinaryIntegrationEntry(childInfo); err != nil {
+		return nil, fmt.Errorf("%s: %w", filepath.Join(root.Name(), name), err)
+	}
+	child, err := root.OpenRoot(name)
+	if err != nil {
+		return nil, err
+	}
+	opened, statErr := child.Stat(".")
+	if statErr != nil || !os.SameFile(childInfo, opened) {
+		child.Close()
+		return nil, fmt.Errorf("%s: installation directory changed while opening: %w", path, errors.Join(statErr, os.ErrInvalid))
+	}
+	return child, nil
 }
 
 func ordinaryIntegrationEntry(info os.FileInfo) error {

@@ -15,19 +15,21 @@ import (
 // run_shell_command tool name.
 type geminiAdapter struct{}
 
+type geminiInput struct {
+	Event    string         `json:"hook_event_name"`
+	Session  string         `json:"session_id"`
+	Cwd      string         `json:"cwd"`
+	Source   string         `json:"source"`
+	Tool     string         `json:"tool_name"`
+	Input    map[string]any `json:"tool_input"`
+	Response *struct {
+		Content json.RawMessage `json:"llmContent"`
+		Error   json.RawMessage `json:"error"`
+	} `json:"tool_response"`
+}
+
 func (geminiAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
-	var in struct {
-		Event    string         `json:"hook_event_name"`
-		Session  string         `json:"session_id"`
-		Cwd      string         `json:"cwd"`
-		Source   string         `json:"source"`
-		Tool     string         `json:"tool_name"`
-		Input    map[string]any `json:"tool_input"`
-		Response *struct {
-			Content json.RawMessage `json:"llmContent"`
-			Error   json.RawMessage `json:"error"`
-		} `json:"tool_response"`
-	}
+	var in geminiInput
 	if err := json.Unmarshal(raw, &in); err != nil {
 		return Event{}, err
 	}

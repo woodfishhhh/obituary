@@ -40,17 +40,7 @@ func planSharedOwners(intent sharedRegistrationPlan) (changes []Change, err erro
 	member := slices.ContainsFunc(p.owners, func(owner string) bool { return slices.Contains(state.Owners, owner) })
 	remaining := slices.ContainsFunc(state.Owners, func(owner string) bool { return !slices.Contains(p.owners, owner) })
 	if p.uninstall && (!valid || !member || remaining || PreservedError(owners) != nil) {
-		for i, ch := range registration {
-			changed := ch.Action != "unchanged"
-			ch.Action, ch.data, ch.delete = "unchanged", nil, false
-			if changed && (!valid || PreservedError(owners) != nil) {
-				ch.Action, ch.Detail = "preserve", "shared ownership is unverified; registration preserved"
-			}
-			if changed && onlyUnverifiedMCPOwners(state, p.asset, p.owners) {
-				ch.Action, ch.Detail = "preserve", "legacy shared MCP owners need manual verification; registration retained; rerun obit init --agent claude --mcp to confirm Claude ownership"
-			}
-			registration[i] = ch
-		}
+		intent.preserveRegistration(registration, owners, state, valid)
 	}
 	// Unlike a plugin activation, a retained shared member is an independent
 	// conflict receipt: it must not prevent unrelated hooks from uninstalling.
@@ -73,4 +63,19 @@ func planSharedOwners(intent sharedRegistrationPlan) (changes []Change, err erro
 		owners = append(owners, cleanup)
 	}
 	return append(owners, registration...), err
+}
+
+func (intent sharedRegistrationPlan) preserveRegistration(registration, owners []Change, state assetReceipt, valid bool) {
+	p := intent.asset
+	for i, ch := range registration {
+		changed := ch.Action != "unchanged"
+		ch.Action, ch.data, ch.delete = "unchanged", nil, false
+		if changed && (!valid || PreservedError(owners) != nil) {
+			ch.Action, ch.Detail = "preserve", "shared ownership is unverified; registration preserved"
+		}
+		if changed && onlyUnverifiedMCPOwners(state, p.asset, p.owners) {
+			ch.Action, ch.Detail = "preserve", "legacy shared MCP owners need manual verification; registration retained; rerun obit init --agent claude --mcp to confirm Claude ownership"
+		}
+		registration[i] = ch
+	}
 }

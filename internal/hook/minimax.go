@@ -14,12 +14,14 @@ import (
 // Translate native write.path to the shared event's paths before handling it.
 type minimaxAdapter struct{}
 
+type minimaxInput struct {
+	declaredShellInput
+	Response json.RawMessage `json:"tool_response"`
+	IsError  *bool           `json:"is_error"`
+}
+
 func (minimaxAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
-	var in struct {
-		declaredShellInput
-		Response json.RawMessage `json:"tool_response"`
-		IsError  *bool           `json:"is_error"`
-	}
+	var in minimaxInput
 	if err := json.Unmarshal(raw, &in); err != nil {
 		return Event{}, err
 	}
@@ -55,27 +57,32 @@ func (minimaxAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
 	}
 	ev.Cwd = native
 	if ev.Name == "PostToolUse" {
-		if in.IsError != nil && *in.IsError || !minimaxWriteSucceeded(in.ToolName, in.Response) {
-			return Event{}, ErrSkip
-		}
-		key := "file_path"
-		switch in.ToolName {
-		case "write":
-			key = "path"
-		case "edit", "Write", "Edit":
-		default:
-			return Event{}, ErrSkip
-		}
-		path := firstString(in.ToolInput, key)
-		if strings.HasPrefix(path, "/") || strings.HasPrefix(path, "~") ||
-			strings.Contains(path, ":") && !windowsCwd(path) || strings.HasPrefix(path, `\`) && !filepath.IsAbs(path) {
-			return Event{}, ErrSkip
-		}
-		if path, ok := minimaxObservedPath(path, ev.Cwd, in.Response); ok {
-			ev.Paths = []string{path}
-		} else {
-			return Event{}, ErrSkip
-		}
+		return minimaxWriteEvent(ev, in)
+	}
+	return ev, nil
+}
+
+func minimaxWriteEvent(ev Event, in minimaxInput) (Event, error) {
+	if in.IsError != nil && *in.IsError || !minimaxWriteSucceeded(in.ToolName, in.Response) {
+		return Event{}, ErrSkip
+	}
+	key := "file_path"
+	switch in.ToolName {
+	case "write":
+		key = "path"
+	case "edit", "Write", "Edit":
+	default:
+		return Event{}, ErrSkip
+	}
+	path := firstString(in.ToolInput, key)
+	if strings.HasPrefix(path, "/") || strings.HasPrefix(path, "~") ||
+		strings.Contains(path, ":") && !windowsCwd(path) || strings.HasPrefix(path, `\`) && !filepath.IsAbs(path) {
+		return Event{}, ErrSkip
+	}
+	if path, ok := minimaxObservedPath(path, ev.Cwd, in.Response); ok {
+		ev.Paths = []string{path}
+	} else {
+		return Event{}, ErrSkip
 	}
 	return ev, nil
 }

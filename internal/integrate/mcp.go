@@ -126,20 +126,15 @@ func planMCPJSON(ch Change, executable string, uninstall bool) (Change, error) {
 		}
 	}
 	entry := newObject()
-	if raw, exists := servers.get("obituary"); exists {
-		var registered struct {
-			Command string
-			Args    []string
-			Type    string
+	raw, exists := servers.get("obituary")
+	if exists && !ownedMCPJSONEntry(raw) {
+		if uninstall {
+			ch.Detail = "unowned MCP entry preserved"
+			return ch, nil
 		}
-		ours := json.Unmarshal(raw, &registered) == nil && isObitMCP(registered.Command, registered.Args) && (registered.Type == "" || registered.Type == "stdio")
-		if !ours {
-			if uninstall {
-				ch.Detail = "unowned MCP entry preserved"
-				return ch, nil
-			}
-			return ch, fmt.Errorf("%s: mcpServers.obituary is not an Obituary stdio registration; left untouched", ch.Path)
-		}
+		return ch, fmt.Errorf("%s: mcpServers.obituary is not an Obituary stdio registration; left untouched", ch.Path)
+	}
+	if exists {
 		entry, err = parseObject(raw)
 		if err != nil {
 			return ch, err
@@ -160,6 +155,10 @@ func planMCPJSON(ch Change, executable string, uninstall bool) (Change, error) {
 	} else {
 		_ = root.set("mcpServers", servers)
 	}
+	return renderMCPJSON(ch, root)
+}
+
+func renderMCPJSON(ch Change, root *object) (Change, error) {
 	data, err := root.pretty()
 	if err != nil {
 		return ch, err
@@ -172,4 +171,13 @@ func planMCPJSON(ch Change, executable string, uninstall bool) (Change, error) {
 	}
 	ch.Detail = "MCP stdio registration"
 	return setIntegrationData(ch, data), nil
+}
+
+func ownedMCPJSONEntry(raw json.RawMessage) bool {
+	var registered struct {
+		Command string
+		Args    []string
+		Type    string
+	}
+	return json.Unmarshal(raw, &registered) == nil && isObitMCP(registered.Command, registered.Args) && (registered.Type == "" || registered.Type == "stdio")
 }
