@@ -73,7 +73,7 @@ func (s *Service) Add(paths []string, opts AddOptions) ([]Result, error) {
 	}
 	results, candidates := s.inspectRegistrations(paths, opts.Force)
 	var events []Event
-	err := s.Store.Update(func(st *State) error {
+	err := s.Store.UpdateHot(func(st *State) error {
 		if st.ObservationCompleted(opts.Observed) {
 			return nil
 		}

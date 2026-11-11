@@ -62,10 +62,16 @@ func (s *Service) referencePath(ref string) (string, error) {
 
 func (s *Service) findBurial(st *State, ref string) (int, error) {
 	if _, numeric, err := BurialReferenceID(ref); numeric || err != nil {
+		if err := s.Store.loadGraveyardForReference(st, ref); err != nil {
+			return -1, err
+		}
 		return st.FindBurial(ref)
 	}
 	path, err := s.referencePath(ref)
 	if err != nil {
+		return -1, err
+	}
+	if err := s.Store.loadGraveyardForReference(st, path); err != nil {
 		return -1, err
 	}
 	return st.FindBurial(path)

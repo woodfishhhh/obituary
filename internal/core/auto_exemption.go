@@ -110,12 +110,12 @@ func (s *Service) refreshAutomaticExemption(e AutoExemption, path string) (AutoE
 // Maintenance alone locates all exemptions. A missing ID on an online,
 // serial-verified volume is definite absence; every other failure keeps it.
 func (s *Service) pruneAutomaticExemptions() error {
-	st, err := s.Store.Read()
+	st, err := s.Store.ReadHot()
 	if err != nil || len(st.AutoExemptions) == 0 {
 		return err
 	}
 	var events []Event
-	err = s.Store.Update(func(st *State) error {
+	err = s.Store.UpdateHot(func(st *State) error {
 		remaining := st.AutoExemptions[:0]
 		for _, e := range st.AutoExemptions {
 			path, err := s.FS.Locate(e.Identity)
@@ -142,11 +142,11 @@ func (s *Service) pruneAutomaticExemptions() error {
 // ObserveAutomaticWrite consumes only a successful, identity-verified hook
 // event newer than the keep decision, including writes inside kept folders.
 func (s *Service) ObserveAutomaticWrite(row Observation) error {
-	st, err := s.Store.Read()
+	st, err := s.Store.ReadHot()
 	if err != nil || len(st.AutoExemptions) == 0 {
 		return err
 	}
-	return s.Store.Update(func(st *State) error {
+	return s.Store.UpdateHot(func(st *State) error {
 		if err := s.CheckObservation(&row); err != nil {
 			return err
 		}

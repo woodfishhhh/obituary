@@ -129,7 +129,11 @@ func TestCleanupReceiptSurvivesMissingManifest(t *testing.T) {
 					t.Fatal(err)
 				}
 				var state map[string]json.RawMessage
-				if err := json.Unmarshal([]byte(read(t, filepath.Join(f.svc.Store.Home, "store.json"))), &state); err != nil {
+				committed, err := f.svc.Store.ReadSnapshot()
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := json.Unmarshal([]byte(read(t, filepath.Join(f.svc.Store.Home, committed.Graveyard.File))), &state); err != nil {
 					t.Fatal(err)
 				}
 				var receipts []map[string]any

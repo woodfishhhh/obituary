@@ -56,7 +56,7 @@ func (s *Service) purgeRestoreIntent(b Burial, p PendingGrave, dryRun bool) (Gra
 		return r, nil
 	}
 	reason := err.Error()
-	err = s.Store.Update(func(st *State) error {
+	err = s.Store.UpdateGraveyard(func(st *State) error {
 		idx := st.BurialIndex(b.ID)
 		if idx < 0 || !sameBurial(st.Burials[idx], b) {
 			return ErrUnsafe

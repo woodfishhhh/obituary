@@ -102,7 +102,7 @@ func (s *Service) settleContainerStop(p ContainerIntent, out *Outcome) error {
 		return s.observeRunningStop(p, out)
 	}
 	resume := false
-	err = s.Store.Update(func(st *State) error {
+	err = s.Store.UpdateGraveyard(func(st *State) error {
 		if err := st.checkContainerIntent(p); err != nil {
 			return err
 		}
@@ -152,7 +152,7 @@ func (s *Service) observeRunningStop(p ContainerIntent, out *Outcome) error {
 	}
 	// Observations across the full grace period permit retry, without proving
 	// what happened between observations or excluding a delayed engine request.
-	return s.Store.Update(func(st *State) error {
+	return s.Store.UpdateGraveyard(func(st *State) error {
 		if err := st.checkContainerIntent(p); err != nil {
 			return err
 		}

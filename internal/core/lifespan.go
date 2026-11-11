@@ -42,7 +42,7 @@ func (s *Service) mutate(refs []string, action string, apply func(*State, int)) 
 	now := s.now()
 	results := make([]Result, len(refs))
 	var events []Event
-	err := s.Store.Update(func(st *State) error {
+	err := s.Store.UpdateHot(func(st *State) error {
 		roots := s.resolveGraveyardRoots(*st)
 		for i, ref := range refs {
 			results[i].Ref = ref

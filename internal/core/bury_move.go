@@ -237,7 +237,7 @@ func (s *Service) commitPreparedBurial(p *preparedBurial, reason string, owners 
 			s.gitMoveBudget = gitVerificationBudget(owners.elapsed)
 		}
 		err := s.withGraveyardLock(func() error {
-			commitErr := s.Store.Update(func(st *State) error { return s.movePrepared(st, p, reason) })
+			commitErr := s.Store.UpdateGraveyard(func(st *State) error { return s.movePrepared(st, p, reason) })
 			if errors.Is(commitErr, errOwnerSnapshotRefresh) {
 				return commitErr // Keep the prepared grave for the next transaction.
 			}

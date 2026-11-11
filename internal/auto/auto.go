@@ -111,7 +111,7 @@ func (e *Engine) apply(paths []string, opts Options, located locations) ([]Decis
 	if source == "" {
 		source = "rule"
 	}
-	state, err := e.Svc.Store.Read()
+	state, err := e.Svc.Store.ReadHot()
 	if err != nil {
 		return nil, err
 	}

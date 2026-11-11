@@ -109,7 +109,7 @@ func (s *Service) retainCleanup(p PendingGrave, kind, path string) error {
 		})
 	}
 	c := RestoreCleanup{Kind: kind, Burial: *p.Burial, Path: path, Restore: p.restore, CommittedAt: s.now()}
-	return s.Store.Update(func(st *State) error {
+	return s.Store.UpdateGraveyard(func(st *State) error {
 		if kind == ActionResurrected {
 			st.spareRestoredWatch(c.Burial, path, s.now())
 			s.spareWatchObject(st, c.Burial.WatchID, c.Burial.Identity, path, "restored")
@@ -125,7 +125,7 @@ func (s *Service) retainCleanup(p PendingGrave, kind, path string) error {
 }
 
 func (s *Service) retireCleanup(b Burial) error {
-	return s.Store.Update(func(st *State) error {
+	return s.Store.UpdateGraveyard(func(st *State) error {
 		st.RestoreCleanups = slices.DeleteFunc(st.RestoreCleanups, func(c RestoreCleanup) bool { return c.Burial.ID == b.ID })
 		return nil
 	})

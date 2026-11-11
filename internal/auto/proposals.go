@@ -16,7 +16,7 @@ import (
 // candidates into bounded Git queries to limit subprocess overhead. Query each
 // round afresh so changed tracking state is reconsidered.
 func (e *Engine) RefreshProposals() error {
-	st, err := e.Svc.Store.Read()
+	st, err := e.Svc.Store.ReadHot()
 	if err != nil {
 		return err
 	}
@@ -309,7 +309,7 @@ func (e *Engine) vetCandidate(p core.Proposal, c core.Candidate, located locatio
 	if protected {
 		return core.ErrProtected.Error(), nil
 	}
-	state, err := e.Svc.Store.Read()
+	state, err := e.Svc.Store.ReadHot()
 	if err != nil {
 		return "", err
 	}

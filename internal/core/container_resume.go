@@ -71,7 +71,7 @@ func (s *Service) finishContainerResume(p ContainerIntent, out *Outcome, compens
 	if compensated {
 		detail = "container running after concurrent lifespan change or spare"
 	}
-	err := s.Store.Update(func(st *State) error {
+	err := s.Store.UpdateGraveyard(func(st *State) error {
 		if err := st.checkContainerIntent(p); err != nil {
 			return err
 		}
@@ -86,7 +86,7 @@ func (s *Service) finishContainerResume(p ContainerIntent, out *Outcome, compens
 }
 
 func (s *Service) loseContainer(p ContainerIntent, out *Outcome) error {
-	err := s.Store.Update(func(st *State) error {
+	err := s.Store.UpdateGraveyard(func(st *State) error {
 		if err := st.checkContainerIntent(p); err != nil {
 			return err
 		}

@@ -26,6 +26,9 @@ func (st *State) pendingAuditCount() int {
 			count++
 		}
 	}
+	if !st.graveyardLoaded && st.GraveyardIndex != nil {
+		return count + st.GraveyardIndex.ReservedAudit
+	}
 	for _, b := range st.Burials {
 		if b.PurgeIntent != nil && st.containerIntent(b.ID) == nil {
 			count++
@@ -67,7 +70,7 @@ func (st *State) queueAudit(event Event) {
 func (s Store) FlushAudit() error {
 	s = s.WithContext(context.WithoutCancel(s.Context()))
 	err := s.withLock("audit-outbox.lock", true, func() error {
-		st, err := s.ReadSnapshot()
+		st, err := s.ReadHot()
 		if err != nil || len(st.PendingAudit) == 0 {
 			return err
 		}
@@ -79,7 +82,7 @@ func (s Store) FlushAudit() error {
 		if err := s.RecordCommitted(st.PendingAudit...); err != nil {
 			return err
 		}
-		return s.Update(func(current *State) error {
+		return s.UpdateHot(func(current *State) error {
 			current.PendingAudit = current.PendingAudit[len(st.PendingAudit):]
 			return nil
 		})

@@ -19,7 +19,7 @@ func BenchmarkStoreLedger(b *testing.B) {
 	previous := syncFile
 	syncFile = (*os.File).Sync
 	b.Cleanup(func() { syncFile = previous })
-	for _, operation := range []string{"load", "save", "update-single"} {
+	for _, operation := range []string{"load", "load-hot", "save", "update-single", "update-joint"} {
 		b.Run(operation, func(b *testing.B) {
 			store := Store{Home: b.TempDir()}
 			state := benchmarkLedger()
@@ -30,22 +30,35 @@ func BenchmarkStoreLedger(b *testing.B) {
 			if err != nil {
 				b.Fatal(err)
 			}
+			committed, _, err := store.load()
+			if err != nil {
+				b.Fatal(err)
+			}
+			snapshot, err := os.Stat(filepath.Join(store.Home, committed.Graveyard.File))
+			if err != nil {
+				b.Fatal(err)
+			}
 			b.ReportAllocs()
 			b.SetBytes(info.Size())
 			for b.Loop() {
 				switch operation {
 				case "load":
 					_, _, err = store.load()
+				case "load-hot":
+					_, _, err = store.loadHot()
 				case "save":
 					err = store.save(state)
 				case "update-single":
-					err = store.Update(func(st *State) error { st.Items[0].Rev++; return nil })
+					err = store.UpdateHot(func(st *State) error { st.Items[0].Rev++; return nil })
+				case "update-joint":
+					err = store.UpdateGraveyard(func(st *State) error { st.Items[0].Rev++; st.Burials[0].Size++; return nil })
 				}
 				if err != nil {
 					b.Fatal(err)
 				}
 			}
 			b.ReportMetric(float64(info.Size()), "ledger-B")
+			b.ReportMetric(float64(snapshot.Size()), "snapshot-B")
 		})
 	}
 }
@@ -198,6 +211,7 @@ func assertLedgerRoundTrip(t *testing.T, want State, data []byte) {
 
 func TestLedgerCompactAndIndentedReads(t *testing.T) {
 	want := benchmarkLedger()
+	want.Version = 16
 	for _, indent := range []bool{false, true} {
 		data, err := json.Marshal(want)
 		if indent {
@@ -211,6 +225,7 @@ func TestLedgerCompactAndIndentedReads(t *testing.T) {
 			t.Fatal(err)
 		}
 		got, err := store.Inspect()
+		got.graveyardLoaded, got.graveyardOriginal = false, [32]byte{}
 		if err != nil || !reflect.DeepEqual(got, want) {
 			t.Fatalf("full ledger fields changed, indented=%v: %v", indent, err)
 		}

@@ -71,7 +71,7 @@ func (s *Service) settleContainerGrave(p ContainerIntent, r *GraveResult) error 
 	default:
 		r.Error = "container remains stopped; operation cleared for retry"
 	}
-	err = s.Store.Update(func(st *State) error {
+	err = s.Store.UpdateGraveyard(func(st *State) error {
 		if err := st.checkContainerIntent(p); err != nil {
 			return err
 		}
@@ -105,7 +105,7 @@ func (s *Service) checkContainerRemoval(p ContainerIntent) error {
 }
 
 func (s *Service) commitContainerRetry(out Outcome) error {
-	return s.Store.Update(func(st *State) error {
+	return s.Store.UpdateGraveyard(func(st *State) error {
 		// A pending stop owns the original revision until its effect is known.
 		if st.containerIntent(out.Item.ID) == nil {
 			s.commitOutcome(st, out)

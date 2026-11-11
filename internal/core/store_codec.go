@@ -73,6 +73,9 @@ type ledgerTables struct {
 // MarshalJSON keeps legacy fixtures/exported snapshots readable by their
 // stated version. v15 interns parents; v16 also interns operations and metadata.
 func (st State) MarshalJSON() ([]byte, error) {
+	if st.Version < 17 {
+		st.Graveyard, st.PreviousGraveyard, st.GraveyardIndex = nil, nil, nil
+	}
 	if st.Version < 15 {
 		return json.Marshal(plainState(st))
 	}
@@ -80,6 +83,14 @@ func (st State) MarshalJSON() ([]byte, error) {
 }
 
 func marshalLedger(st State) ([]byte, error) {
+	wire, err := packLedger(st)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(wire)
+}
+
+func packLedger(st State) (ledgerState, error) {
 	wire := ledgerState{plainState: (*plainState)(&st),
 		Burials: make([]ledgerBurial, 0, len(st.Burials)), RestoreCleanups: make([]ledgerCleanup, 0, len(st.RestoreCleanups))}
 	tables := ledgerTables{chains: make(map[string]*int), operations: make(map[string]*int),
@@ -87,18 +98,18 @@ func marshalLedger(st State) ([]byte, error) {
 	for _, b := range st.Burials {
 		row, err := wire.packBurial(b, tables)
 		if err != nil {
-			return nil, err
+			return wire, err
 		}
 		wire.Burials = append(wire.Burials, row)
 	}
 	for _, c := range st.RestoreCleanups {
 		row, err := wire.packBurial(c.Burial, tables)
 		if err != nil {
-			return nil, err
+			return wire, err
 		}
 		wire.RestoreCleanups = append(wire.RestoreCleanups, ledgerCleanup{RestoreCleanup: c, Burial: row})
 	}
-	return json.Marshal(wire)
+	return wire, nil
 }
 
 func (wire *ledgerState) packBurial(b Burial, tables ledgerTables) (ledgerBurial, error) {
@@ -215,6 +226,11 @@ func unmarshalLedger(data []byte) (State, error) {
 	if decoded.Version > stateVersion {
 		return State{}, newerStoreError{decoded.Version}
 	}
+	return unpackLedger(wire)
+}
+
+func unpackLedger(wire ledgerState) (State, error) {
+	decoded := *wire.plainState
 	if len(wire.Burials) > 0 {
 		decoded.Burials = make([]Burial, 0, len(wire.Burials))
 	}

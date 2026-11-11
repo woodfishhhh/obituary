@@ -192,7 +192,7 @@ func checkMetadata(root *os.Root, name string) error {
 			return nil
 		}
 	}
-	if info.Mode().IsRegular() && slices.Contains(metadataNames, name) {
+	if info.Mode().IsRegular() && (slices.Contains(metadataNames, name) || core.OwnedLedgerFile(root, name)) {
 		return nil
 	}
 	return fmt.Errorf("data retained: unknown file, link or nonempty directory %s", filepath.Join(root.Name(), name))

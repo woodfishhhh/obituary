@@ -83,7 +83,7 @@ func (st *State) dropContainerIntent(p ContainerIntent) {
 
 func (s *Service) beginContainerIntent(p *ContainerIntent) error {
 	p.Token, p.At = rand.Text(), s.now()
-	return s.Store.Update(func(st *State) error {
+	return s.Store.UpdateGraveyard(func(st *State) error {
 		if st.containerIntent(p.id()) != nil {
 			return errors.New("container operation pending; run obit reap")
 		}

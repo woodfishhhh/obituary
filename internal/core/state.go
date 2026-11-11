@@ -208,6 +208,11 @@ type LeftoverRejection struct {
 // State is the persisted ledger: tracked items, the graveyard, proposals,
 // per-project consent and counters.
 type State struct {
+	Graveyard           *GraveyardReference `json:"graveyard,omitempty"`
+	PreviousGraveyard   *GraveyardReference `json:"previousGraveyard,omitempty"`
+	GraveyardIndex      *graveyardIndex     `json:"graveyardIndex,omitempty"`
+	graveyardLoaded     bool
+	graveyardOriginal   [32]byte
 	DataID              string                  `json:"dataId,omitempty"` // paired with .obituary-data for explicit uninstall
 	ContainerIntents    []ContainerIntent       `json:"containerIntents,omitempty"`
 	PendingAudit        []Event                 `json:"pendingAudit,omitempty"`

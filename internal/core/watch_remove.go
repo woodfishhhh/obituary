@@ -21,7 +21,7 @@ func (s *Service) RemoveWatch(path string) error {
 	if identifyErr != nil && !missing {
 		return identifyErr
 	}
-	return s.Store.Update(func(st *State) error {
+	return s.Store.UpdateHot(func(st *State) error {
 		idx := -1
 		for i, p := range st.Watches {
 			match := identifyErr == nil && sameWatchIdentity(id, p.Identity)
@@ -45,7 +45,7 @@ func (s *Service) RemoveWatch(path string) error {
 
 // RemoveWatchID also works when the original directory cannot be resolved.
 func (s *Service) RemoveWatchID(id int64) error {
-	return s.Store.Update(func(st *State) error {
+	return s.Store.UpdateHot(func(st *State) error {
 		idx := slices.IndexFunc(st.Watches, func(p WatchPolicy) bool { return p.ID == id })
 		if idx < 0 {
 			return fmt.Errorf("no folder policy #%d", id)

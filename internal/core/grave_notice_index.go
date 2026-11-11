@@ -16,6 +16,11 @@ type graveNoticePath struct {
 	Directory bool   `json:"directory,omitempty"`
 }
 
+type graveNoticeIndex struct {
+	Generation string            `json:"generation"`
+	Paths      []graveNoticePath `json:"paths"`
+}
+
 func (s Store) writeGraveNoticeIndex(st State) {
 	// Most registration-only homes have no graves. Keep their writes free of
 	// advisory index work until a burial first needs it.
@@ -33,7 +38,11 @@ func (s Store) writeGraveNoticeIndex(st State) {
 	for _, b := range st.Burials {
 		paths = append(paths, graveNoticePath{filepath.Clean(b.Path), b.IsDir})
 	}
-	data, err := json.Marshal(paths)
+	index := graveNoticeIndex{Paths: paths}
+	if st.Graveyard != nil {
+		index.Generation = st.Graveyard.Generation
+	}
+	data, err := json.Marshal(index)
 	if err != nil {
 		return
 	}
@@ -60,11 +69,11 @@ func (s Store) MightHaveBurial(path string) bool {
 	if err != nil {
 		return false
 	}
-	var paths []graveNoticePath
-	if json.Unmarshal(data, &paths) != nil {
+	var index graveNoticeIndex
+	if json.Unmarshal(data, &index) != nil {
 		return false
 	}
-	return slices.ContainsFunc(paths, func(p graveNoticePath) bool {
+	return slices.ContainsFunc(index.Paths, func(p graveNoticePath) bool {
 		return BurialPathMatches(p.Path, p.Directory, path)
 	})
 }
@@ -81,7 +90,16 @@ func BurialPathMatches(buried string, directory bool, path string) bool {
 // It does not change the ledger or upgrade its version.
 func (s Store) RefreshGraveNoticeIndex() {
 	_ = s.withLock("store.lock", false, func() error {
-		st, _, err := s.load()
+		st, _, err := s.loadHot()
+		if err != nil {
+			return err
+		}
+		var index graveNoticeIndex
+		data, readErr := readShared(filepath.Join(s.Home, "grave-notice-paths.json"))
+		if readErr == nil && json.Unmarshal(data, &index) == nil && st.Graveyard != nil && index.Generation == st.Graveyard.Generation {
+			return nil
+		}
+		err = s.loadGraveyard(&st)
 		if err == nil {
 			s.writeGraveNoticeIndex(st)
 		}

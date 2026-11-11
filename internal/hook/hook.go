@@ -241,7 +241,11 @@ func sessionContext(e *auto.Engine, root, session string) (delivery, error) {
 			return delivery{}, err
 		}
 	}
-	state, err := e.Svc.Store.Read()
+	read := e.Svc.Store.ReadHot
+	if e.Svc.SessionSummary && e.Svc.Mode != core.ModeRecycle {
+		read = e.Svc.Store.ReadSnapshot
+	}
+	state, err := read()
 	if err != nil {
 		return delivery{}, err
 	}

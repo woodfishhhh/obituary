@@ -33,7 +33,7 @@ func (e *Engine) replayObservations() error {
 }
 
 func (e *Engine) replayObservation(row core.Observation) error {
-	state, err := e.Svc.Store.Read()
+	state, err := e.Svc.Store.ReadHot()
 	if err != nil {
 		return err
 	} // lock contention does not consume a request's retry budget
@@ -47,7 +47,7 @@ func (e *Engine) replayObservation(row core.Observation) error {
 	}
 	// Add/Propose persist their own receipt atomically. Skips have no mutation,
 	// but need a receipt too: a later consent change must not revive this request.
-	state, err = e.Svc.Store.Read()
+	state, err = e.Svc.Store.ReadHot()
 	if err != nil {
 		return err
 	}

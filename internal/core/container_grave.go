@@ -117,7 +117,7 @@ func (s *Service) prepareContainerPurge(r *GraveResult, dryRun bool) (bool, erro
 		r.Action = action
 		return true, nil
 	}
-	err = s.Store.Update(func(st *State) error {
+	err = s.Store.UpdateGraveyard(func(st *State) error {
 		if err := checkContainerBurial(st, b); err != nil {
 			return err
 		}

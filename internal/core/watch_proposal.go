@@ -40,7 +40,7 @@ func (s *Service) proposeWatchBurial(out Outcome, dryRun bool) Outcome {
 	if dryRun {
 		return out
 	}
-	err = s.Store.Update(func(st *State) error {
+	err = s.Store.UpdateHot(func(st *State) error {
 		if _, err := s.burialRevision(st, out.Item, ReasonExpired); err != nil {
 			return err
 		}

@@ -179,7 +179,7 @@ func diagnose(now time.Time, executable cmdutil.Executable, agents ...string) []
 	} else {
 		checks = append(checks, diagnoseData(home))
 		state, err := (core.Store{Home: home}).Inspect()
-		check("store", "store.json is readable (absence means an empty store)", err)
+		check("store", "store.json and its referenced graveyard snapshot are readable (absent store means empty)", err)
 		checks = append(checks, diagnoseWatches(state, err, now, (&core.Service{FS: winfs.FS{}}).WatchPath))
 		if err == nil {
 			checks = append(checks, diagnoseDockerTargets(state))

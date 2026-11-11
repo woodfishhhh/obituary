@@ -93,6 +93,18 @@ func VerifyDataOwner(root *os.Root) error {
 	if err := json.Unmarshal(data, &state); err != nil {
 		return err
 	}
+	if state.Version >= 17 {
+		if err := validateHotLedger(state); err != nil {
+			return err
+		}
+		snapshot, err := root.ReadFile(state.Graveyard.File)
+		if err != nil {
+			return fmt.Errorf("data retained: referenced graveyard unavailable: %w", err)
+		}
+		if _, err := decodeGraveyard(snapshot, state); err != nil {
+			return err
+		}
+	}
 	identity, err := dataDirectoryID(root)
 	if err != nil {
 		return err

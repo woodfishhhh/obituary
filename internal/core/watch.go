@@ -71,7 +71,7 @@ func (s *Service) SetWatch(path, lifespan, age string) (WatchPolicy, error) {
 
 func (s *Service) saveWatch(policy WatchPolicy) (WatchPolicy, error) {
 	out := policy
-	err := s.Store.Update(func(st *State) error {
+	err := s.Store.UpdateHot(func(st *State) error {
 		out.ID, out.Rev, out.Consent, out.CreatedAt = st.NextID, 1, "pending", s.now()
 		idx := slices.IndexFunc(st.Watches, func(p WatchPolicy) bool { return sameWatchIdentity(p.Identity, out.Identity) || p.Path == out.Path })
 		if idx >= 0 {
@@ -107,7 +107,7 @@ func (s *Service) saveWatch(policy WatchPolicy) (WatchPolicy, error) {
 
 // ApproveWatch is called while the existing proposal claim is held.
 func (s *Service) ApproveWatch(proposal Proposal) error {
-	return s.Store.Update(func(st *State) error {
+	return s.Store.UpdateHot(func(st *State) error {
 		idx := slices.IndexFunc(st.Watches, func(p WatchPolicy) bool { return p.ID == proposal.WatchID })
 		if idx < 0 || len(proposal.Candidates) != 1 || st.ProposalIndex(proposal.ID) < 0 {
 			return fmt.Errorf("folder policy proposal is no longer pending")

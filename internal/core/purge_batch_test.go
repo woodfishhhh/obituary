@@ -58,7 +58,12 @@ func TestTickPurgeBatchRequiresConfirmedIntents(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			restore := core.SetReplacementSync(func(f *os.File) error { return errors.New("intent flush interrupted") })
+			restore := core.SetReplacementSync(func(file *os.File) error {
+				if filepath.Base(file.Name()) == "store.json.tmp" {
+					return errors.New("intent flush interrupted")
+				}
+				return file.Sync()
+			})
 			defer restore()
 			_, rows, err := f.svc.Tick()
 			if mode == "unconfirmed" {

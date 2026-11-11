@@ -188,7 +188,7 @@ func (s *Service) recoverRecordedManifest(p PendingGrave) (manifestRecovery, err
 func (s *Service) recoverPendingManifest(p PendingGrave) (manifestRecovery, error) {
 	b := *p.Burial
 	var checkErr error
-	err := s.Store.Update(func(st *State) error { checkErr = s.entomb(st, &b); return checkErr })
+	err := s.Store.UpdateGraveyard(func(st *State) error { checkErr = s.entomb(st, &b); return checkErr })
 	if checkErr != nil {
 		return manifestRecovery{warning: checkErr}, nil
 	}

@@ -42,19 +42,15 @@ func TestMCPResurrectPreflightAuditFailureIsError(t *testing.T) {
 	var marked struct{ Results []core.Result }
 	clitest.CallMCP(t, s, "obit_mark", map[string]any{"paths": []string{other}, "lifespan": "1d"}, false, &marked)
 	store := core.Store{Home: os.Getenv("OBIT_HOME")}
-	st, err := store.Inspect()
-	if err != nil {
+	if err := store.UpdateHot(func(st *core.State) error {
+		duplicate := st.Items[0]
+		duplicate.ID = st.NextID
+		st.NextID++
+		st.Items = append(st.Items, duplicate)
+		return nil
+	}); err != nil {
 		t.Fatal(err)
 	}
-	duplicate := st.Items[0]
-	duplicate.ID = st.NextID
-	st.NextID++
-	st.Items = append(st.Items, duplicate)
-	data, err := json.Marshal(st)
-	if err != nil {
-		t.Fatal(err)
-	}
-	clitest.WriteFixture(t, filepath.Join(store.Home, "store.json"), string(data))
 	// A directory at the audit path forces the migration audit to fail.
 	if err := os.Rename(filepath.Join(store.Home, "audit.jsonl"), filepath.Join(store.Home, "audit.saved")); err != nil {
 		t.Fatal(err)
@@ -79,6 +75,9 @@ func TestMCPResurrectPreflightAuditFailureIsError(t *testing.T) {
 	var reply mcpReply
 	if err := json.Unmarshal(b, &reply); err != nil || reply.Error == "" || reply.Warning != "" {
 		t.Fatalf("preflight must be an error: %s %v", b, err)
+	}
+	if !strings.Contains(reply.Error, "audit") {
+		t.Fatalf("preflight fixture did not reach audit delivery: %s", b)
 	}
 }
 

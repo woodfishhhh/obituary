@@ -206,7 +206,7 @@ type restoreResult struct {
 // Caller owns graveyard.lock; count exactly once, in the index-removal commit.
 func (s *Service) commitResurrection(b Burial, path, detail string, intent *restoreIntent) (restoreResult, error) {
 	committed := false
-	err := s.Store.Update(func(st *State) error {
+	err := s.Store.UpdateGraveyard(func(st *State) error {
 		if j := st.BurialIndex(b.ID); j >= 0 {
 			if !sameBurial(st.Burials[j], b) {
 				return fmt.Errorf("burial changed during resurrection: %w", ErrUnsafe)

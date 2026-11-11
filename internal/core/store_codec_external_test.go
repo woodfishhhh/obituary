@@ -39,7 +39,11 @@ func TestLedgerParentChainsCollectedAfterResurrectAndPurge(t *testing.T) {
 
 func assertParentChainCount(t *testing.T, store core.Store, want int) {
 	t.Helper()
-	data, err := os.ReadFile(filepath.Join(store.Home, "store.json"))
+	state, err := store.ReadSnapshot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(store.Home, state.Graveyard.File))
 	if err != nil {
 		t.Fatal(err)
 	}

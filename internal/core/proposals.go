@@ -78,7 +78,7 @@ func (s *Service) pruneProposal(p Proposal, stale []Candidate, reason string, ch
 		revisions[c.Path] = c.Rev
 	}
 	var events []Event
-	err = s.Store.Update(func(st *State) error {
+	err = s.Store.UpdateHot(func(st *State) error {
 		idx := st.ProposalIndex(p.ID)
 		if idx < 0 {
 			return nil
@@ -109,7 +109,7 @@ func (s *Service) pruneProposal(p Proposal, stale []Candidate, reason string, ch
 
 // Consent returns a project's consent state ("" when it was never asked).
 func (s *Service) Consent(root string) (string, error) {
-	state, err := s.Store.Read()
+	state, err := s.Store.ReadHot()
 	if err != nil {
 		return "", err
 	}
@@ -150,7 +150,7 @@ func (s *Service) ProposeObserved(kind, project, session string, candidates []Ca
 		}
 		candidates[i].Path = filepath.Clean(path)
 	}
-	err := s.Store.Update(func(st *State) error {
+	err := s.Store.UpdateHot(func(st *State) error {
 		if err := s.CheckObservation(observed); err != nil {
 			return err
 		}
@@ -224,7 +224,7 @@ func (s *Service) MarkNotified(id int64, session string) (bool, error) {
 // a later lock timeout cannot leave a prefix acknowledged but never delivered.
 func (s *Service) MarkNotifiedBatch(ids []int64, session string) ([]bool, error) {
 	before := make([]bool, len(ids))
-	err := s.Store.Update(func(st *State) error {
+	err := s.Store.UpdateHot(func(st *State) error {
 		for i, id := range ids {
 			idx := st.ProposalIndex(id)
 			if idx < 0 {
@@ -291,7 +291,7 @@ func (s *Service) claimProposal(ref string, review func(Proposal) error) (Propos
 		return Proposal{}, nil, err
 	}
 	var p Proposal
-	err = s.Store.Update(func(st *State) error {
+	err = s.Store.UpdateHot(func(st *State) error {
 		idx := st.ProposalIndex(id)
 		if idx < 0 {
 			return fmt.Errorf("#%d is not a pending proposal", id)
@@ -328,7 +328,7 @@ func (s *Service) ResolveProposal(p Proposal, pending []Candidate) error {
 	for _, c := range pending {
 		delete(resolved, candidateKey(c))
 	}
-	return s.Store.Update(func(st *State) error {
+	return s.Store.UpdateHot(func(st *State) error {
 		idx := st.ProposalIndex(p.ID)
 		if idx < 0 {
 			return fmt.Errorf("#%d is no longer pending", p.ID)
@@ -372,7 +372,7 @@ func (s *Service) reject(refs []string, review func(int, Proposal) error) ([]Pro
 			out = append(out, r)
 			continue
 		}
-		err = s.Store.Update(func(st *State) error {
+		err = s.Store.UpdateHot(func(st *State) error {
 			idx := st.ProposalIndex(id)
 			if idx < 0 {
 				r.Error = fmt.Sprintf("#%d is not a pending proposal", id)
@@ -481,7 +481,7 @@ func (st *State) rememberRejectedLeftovers(p Proposal, now time.Time) {
 
 // DueWithin lists a project's items expiring before now+window.
 func (s *Service) DueWithin(project string, window time.Duration) ([]Item, error) {
-	state, err := s.Store.Read()
+	state, err := s.Store.ReadHot()
 	if err != nil {
 		return nil, err
 	}

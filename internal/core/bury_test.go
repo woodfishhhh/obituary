@@ -219,18 +219,12 @@ func testRecoveryLogAdvice(t *testing.T, backlog int) {
 		t.Fatal(err)
 	}
 	// Stage an old committed outbox without delivering it before this batch.
-	st, err := f.svc.Store.ReadSnapshot()
-	if err != nil {
-		t.Fatal(err)
-	}
-	for i := range backlog {
-		st.PendingAudit = append(st.PendingAudit, core.Event{Time: f.clock, Action: core.ActionPurged, ID: int64(1000 + i), Path: "old operation"})
-	}
-	data, err := json.Marshal(st)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(f.svc.Store.Home, "store.json"), data, 0600); err != nil {
+	if err := f.svc.Store.UpdateHot(func(st *core.State) error {
+		for i := range backlog {
+			st.PendingAudit = append(st.PendingAudit, core.Event{Time: f.clock, Action: core.ActionPurged, ID: int64(1000 + i), Path: "old operation"})
+		}
+		return nil
+	}); err != nil {
 		t.Fatal(err)
 	}
 	rows, err := f.svc.Bury([]string{f.file("new.txt")}, false, "")
@@ -373,9 +367,8 @@ func testConfirmedBurialReceipt(t *testing.T, mode string) {
 			// Observe the new ledger contents at the durability boundary. An
 			// outbox acknowledgement may also write the ledger, so ordinal
 			// write counts do not identify the accounting operation.
-			data, err := os.ReadFile(filepath.Join(f.svc.Store.Home, "store.json"))
-			var state core.State
-			if err != nil || json.Unmarshal(data, &state) != nil {
+			state, err := f.svc.Store.Inspect()
+			if err != nil {
 				t.Fatalf("read replacement: %v", err)
 			}
 			if len(state.Burials) == 1 && state.Burials[0].Size > 0 {

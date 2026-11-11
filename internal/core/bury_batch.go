@@ -89,7 +89,7 @@ func (s *Service) inspectBuryRequest(ref string, force bool, recovery recovery) 
 }
 
 func (s *Service) reserveBuryBatch(batch []burialRequest, force bool, note, source string) (state State, err error) {
-	err = s.Store.Update(func(st *State) error {
+	err = s.Store.UpdateGraveyard(func(st *State) error {
 		for i := range batch {
 			r := &batch[i]
 			idx := st.FindIdentity(r.candidate.identity)

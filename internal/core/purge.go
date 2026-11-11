@@ -73,7 +73,7 @@ func purgeBasis(all, selected bool) string {
 }
 
 func (s *Service) retryPurge(b *Burial, detail string) error {
-	return s.Store.Update(func(st *State) error {
+	return s.Store.UpdateGraveyard(func(st *State) error {
 		if idx := st.BurialIndex(b.ID); idx >= 0 {
 			current := &st.Burials[idx]
 			if current.NextPurgeAttempt.After(s.now()) && current.LastPurgeError == detail {

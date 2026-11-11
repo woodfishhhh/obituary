@@ -106,7 +106,12 @@ func TestPurgeRetryRequiresConfirmedIntent(t *testing.T) {
 	core.RequireFsync(t)
 	f := newFixture(t)
 	b := buryOne(t, f, "payload.txt")
-	restore := core.SetReplacementSync(func(*os.File) error { return errors.New("intent flush interrupted") })
+	restore := core.SetReplacementSync(func(file *os.File) error {
+		if filepath.Base(file.Name()) == "store.json.tmp" {
+			return errors.New("intent flush interrupted")
+		}
+		return file.Sync()
+	})
 	defer restore()
 	for attempt := 1; attempt <= 2; attempt++ {
 		rows, err := f.svc.PurgeRefs([]string{fmt.Sprint(b.ID)}, false)

@@ -31,7 +31,7 @@ func (s *Service) sizeRecoveredBurials(burials []Burial) error {
 }
 
 func (s *Service) saveBurialSizes(burials []Burial) error {
-	return s.Store.Update(func(st *State) error {
+	return s.Store.UpdateGraveyard(func(st *State) error {
 		for _, b := range burials {
 			idx := st.BurialIndex(b.ID)
 			if idx < 0 || st.Burials[idx].GraveID == nil || *st.Burials[idx].GraveID != *b.GraveID {

@@ -37,5 +37,5 @@ func (s Store) CompleteObservation(row Observation, now time.Time, reason string
 			return err
 		}
 	}
-	return s.Update(func(st *State) error { st.RememberObservation(&row, now); return nil })
+	return s.UpdateHot(func(st *State) error { st.RememberObservation(&row, now); return nil })
 }

@@ -109,7 +109,7 @@ func (e *Engine) ObserveCaptured(rows []core.Observation) ([]Decision, []Notice,
 // after every input has been processed.
 func (e *Engine) observe(paths []string, session string, located locations, observed *core.Observation) ([]Decision, []Notice, error) {
 	opts := Options{Session: core.NormalizeSession(session), Observed: observed}
-	state, err := e.Svc.Store.Read()
+	state, err := e.Svc.Store.ReadHot()
 	if err != nil {
 		var decisions []Decision
 		for _, path := range paths {
@@ -362,7 +362,7 @@ func (e *Engine) Leftovers(root, session string) ([]Notice, error) {
 		return nil, err
 	}
 	work := strings.ToLower(project.Project{Root: root}.WorkDir())
-	state, err := e.Svc.Store.Read()
+	state, err := e.Svc.Store.ReadHot()
 	if err != nil {
 		return nil, err
 	}
@@ -379,7 +379,7 @@ func (e *Engine) Leftovers(root, session string) ([]Notice, error) {
 	}
 	located := locations{}
 	_, notices, observeErr := e.observe(fresh, session, located, nil)
-	state, err = e.Svc.Store.Read()
+	state, err = e.Svc.Store.ReadHot()
 	if err != nil {
 		return notices, err
 	}

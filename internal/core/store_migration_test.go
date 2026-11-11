@@ -21,13 +21,21 @@ func legacyLedger(t *testing.T, indented bool) (Store, []byte, State) {
 func legacyLedgerVersion(t *testing.T, version int, indented bool) (Store, []byte, State) {
 	t.Helper()
 	store := Store{Home: t.TempDir()}
-	st := State{Version: version, NextID: 20}
+	st := State{Version: version, NextID: 100}
+	now := time.Date(2026, 11, 11, 12, 0, 0, 123456789, time.UTC)
 	for i, op := range operationEvidence() {
 		b := Burial{ID: int64(i + 1), Parents: parentEvidence(), Operation: op,
-			Identity: benchmarkIdentity(i + 1), GraveID: benchmarkIdentity(i + 100), Project: `C:\project`, Session: "session"}
+			Identity: benchmarkIdentity(i + 1), GraveID: benchmarkIdentity(i + 100), Project: `C:\project`, Session: "session",
+			Path: fmt.Sprintf(`C:\project\directory-%d`, i), Grave: fmt.Sprintf(`C:\data\graveyard\grave-%d\directory-%d`, i, i),
+			LongNames: true, IsDir: true, Size: 4321, BuriedAt: now, PurgeAt: now.Add(7 * 24 * time.Hour),
+			Reason: ReasonExpired, Note: "migration evidence", Source: "watch", WatchID: 80,
+			Contains: []int64{int64(50 + i)}, Children: []BuriedChild{{ID: int64(50 + i), Identity: benchmarkIdentity(i + 500), WatchID: 80}},
+			PurgeAttempts: 2, NextPurgeAttempt: now.Add(time.Hour), LastPurgeError: "pending retry",
+			PurgeIntent: &PurgeIntent{VerifiedAt: now, Basis: "verified"}}
 		st.Burials = append(st.Burials, b)
 		b.ID += 10
-		st.RestoreCleanups = append(st.RestoreCleanups, RestoreCleanup{Burial: b})
+		st.RestoreCleanups = append(st.RestoreCleanups, RestoreCleanup{Kind: ActionResurrected, Burial: b,
+			Path: b.Path + "-restored", Restore: &restoreIntent{Parent: *benchmarkIdentity(i + 600), Name: "restored"}, CommittedAt: now})
 	}
 	data, err := json.Marshal(st)
 	if indented {
@@ -94,7 +102,7 @@ func assertMigratedLedger(t *testing.T, store Store, original []byte, want State
 }
 
 func TestLedgerMigrationPreservesOperationsAcrossVersions(t *testing.T) {
-	for version := 1; version <= 15; version++ {
+	for version := 1; version <= 16; version++ {
 		t.Run(fmt.Sprintf("v%d", version), func(t *testing.T) {
 			store, original, want := legacyLedgerVersion(t, version, version%2 == 0)
 			if err := store.Update(func(*State) error { return nil }); err != nil {
@@ -105,7 +113,7 @@ func TestLedgerMigrationPreservesOperationsAcrossVersions(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !strings.Contains(got.PendingAudit[0].Detail, fmt.Sprintf("v%d to v16", version)) {
+			if !strings.Contains(got.PendingAudit[0].Detail, fmt.Sprintf("v%d to v%d", version, stateVersion)) {
 				t.Fatalf("migration audit has wrong versions: %+v", got.PendingAudit)
 			}
 		})
@@ -209,5 +217,29 @@ func TestLedgerMigrationBackupFailureKeepsOriginal(t *testing.T) {
 	data, err := os.ReadFile(store.statePath())
 	if err != nil || !bytes.Equal(data, original) {
 		t.Fatal("backup failure changed ledger", err)
+	}
+}
+
+func TestSnapshotMigrationFailureRetries(t *testing.T) {
+	RequireFsync(t)
+	for _, stage := range []string{"backup-write", "backup-flush", "backup-confirm", "snapshot-write", "snapshot-flush", "snapshot-publish", "snapshot-confirm", "hot-write", "hot-flush", "hot-rename", "hot-confirm"} {
+		t.Run(stage, func(t *testing.T) {
+			store, original, want := legacyLedgerVersion(t, 16, true)
+			reset := injectSnapshotFault(t, stage)
+			if err := store.UpdateGraveyard(func(*State) error { return nil }); err == nil {
+				t.Fatal("interrupted migration succeeded", stage)
+			}
+			reset()
+			if stage != "hot-confirm" {
+				data, _ := os.ReadFile(store.statePath())
+				if !bytes.Equal(data, original) {
+					t.Fatal("migration failure changed legacy bytes", stage)
+				}
+			}
+			if err := store.UpdateGraveyard(func(*State) error { return nil }); err != nil {
+				t.Fatal("migration retry failed", err)
+			}
+			assertMigratedLedger(t, store, original, want)
+		})
 	}
 }

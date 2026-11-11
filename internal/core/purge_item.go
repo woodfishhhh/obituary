@@ -167,7 +167,7 @@ func (s *Service) deletePurgeBurial(r *GraveResult, state State, dir, basis stri
 
 func (s *Service) commitPurge(r GraveResult) error {
 	b := r.Burial
-	return s.Store.Update(func(st *State) error {
+	return s.Store.UpdateGraveyard(func(st *State) error {
 		if j := st.BurialIndex(b.ID); j >= 0 {
 			st.Burials = append(st.Burials[:j], st.Burials[j+1:]...)
 		}

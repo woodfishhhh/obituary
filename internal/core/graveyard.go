@@ -324,6 +324,9 @@ func (s *Service) insideGraveyard(roots []resolvedGraveyardRoot, path string) bo
 
 func (s *Service) graveyardRoots(st State, paths ...string) []string {
 	roots := []string{filepath.Join(s.Store.Home, "graveyard")}
+	if st.GraveyardIndex != nil {
+		paths = append(paths, st.GraveyardIndex.Volumes...)
+	}
 	for _, it := range st.Items {
 		if it.Kind == KindContainer {
 			continue

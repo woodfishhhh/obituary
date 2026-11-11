@@ -64,7 +64,8 @@ func (s Store) WithDeadline(deadline time.Time) Store {
 // writers must refuse this version to keep containers out of file operations.
 // Version 15 interns parent chains in the ledger; manifests stay self-contained.
 // Version 16 interns operations, origins and identity volumes only in the ledger.
-const stateVersion = 16
+// Version 17 commits an immutable graveyard snapshot through the hot ledger.
+const stateVersion = 17
 
 func (s Store) statePath() string { return filepath.Join(s.Home, "store.json") }
 
@@ -98,15 +99,20 @@ func (s Store) ReadSnapshot() (State, error) {
 // Inspect reads a snapshot without creating a directory or lock file. It is
 // intended for read-only diagnostics, never for a read-modify-write operation.
 func (s Store) Inspect() (State, error) {
-	state, _, err := s.load()
-	return state, err
+	return s.inspectSnapshot()
 }
 
 // Update loads the state, applies fn and saves the result durably. If fn
 // returns an error nothing is written.
 func (s Store) Update(fn func(*State) error) error {
-	return s.update(fn, false)
+	return s.UpdateGraveyard(fn)
 }
+
+// UpdateHot changes only the active ledger.
+func (s Store) UpdateHot(fn func(*State) error) error { return s.updateHot(fn) }
+
+// UpdateGraveyard atomically changes the hot ledger and graveyard together.
+func (s Store) UpdateGraveyard(fn func(*State) error) error { return s.update(fn, false) }
 
 // Confirm revalidates and durably rewrites recovery evidence before retiring
 // its independent manifest, even when the logical state is unchanged.
@@ -124,9 +130,15 @@ func (s Store) update(fn func(*State) error, confirm bool) error {
 		if err != nil {
 			return err
 		}
+		originalRef, originalPrevious := copyGraveyardReference(state.Graveyard), copyGraveyardReference(state.PreviousGraveyard)
+		originalDigest := state.graveyardOriginal
 		if err := fn(&state); err != nil {
 			return err
 		}
+		// References are transaction-owned, including when a caller replaces
+		// the whole State while importing a complete snapshot.
+		state.Graveyard, state.PreviousGraveyard = originalRef, originalPrevious
+		state.graveyardOriginal = originalDigest
 		after, err := marshalLedger(state)
 		if err != nil {
 			return err
@@ -138,6 +150,11 @@ func (s Store) update(fn func(*State) error, confirm bool) error {
 		}
 		if err := s.Context().Err(); err != nil {
 			return err
+		}
+		if confirm {
+			if err := s.confirmGraveyard(state); err != nil {
+				return err
+			}
 		}
 		if err := s.save(state); err != nil {
 			return err
@@ -204,6 +221,18 @@ func (s Store) loadMigrated() (State, error) {
 }
 
 func (s Store) load() (State, []Event, error) {
+	state, events, err := s.loadHot()
+	if err != nil {
+		return State{}, nil, err
+	}
+	if err := s.loadGraveyard(&state); err != nil {
+		return State{}, nil, err
+	}
+	state, more, err := s.normalizeState(state)
+	return state, append(events, more...), err
+}
+
+func (s Store) loadHot() (State, []Event, error) {
 	data, err := readShared(s.statePath())
 	if errors.Is(err, os.ErrNotExist) {
 		return State{Version: stateVersion, NextID: 1}, nil, nil
@@ -218,9 +247,39 @@ func (s Store) load() (State, []Event, error) {
 	if err != nil {
 		return State{}, nil, fmt.Errorf("store %s is corrupt: %w", s.statePath(), err)
 	}
+	if err := validateHotLedger(state); err != nil {
+		return State{}, nil, err
+	}
+	state, events, err := s.normalizeState(state)
+	if err != nil {
+		return State{}, nil, err
+	}
+	if state.Version < 17 {
+		state.graveyardLoaded = true
+		state.graveyardOriginal, err = graveyardFingerprint(state)
+		if err != nil {
+			return State{}, nil, err
+		}
+	}
+	return state, events, nil
+}
+
+func (s Store) normalizeState(state State) (State, []Event, error) {
 	if err := validateContainerState(state); err != nil {
 		return State{}, nil, fmt.Errorf("store has invalid object kind: %w", err)
 	}
+	if err := s.normalizeIDs(&state); err != nil {
+		return State{}, nil, err
+	}
+	events := mergeItemIdentities(&state)
+	events = append(events, migrateWatchConsent(&state)...)
+	if s.auditPending != nil && len(state.PendingAudit) > 0 {
+		*s.auditPending = true
+	}
+	return state, events, nil
+}
+
+func (s Store) normalizeIDs(state *State) error {
 	seen := make(map[int64]bool, len(state.Items)+len(state.Burials))
 	ids := make([]int64, 0, len(state.Items)+len(state.Burials))
 	for _, item := range state.Items {
@@ -250,58 +309,88 @@ func (s Store) load() (State, []Event, error) {
 	}
 	for _, id := range ids {
 		if id < 1 || seen[id] {
-			return State{}, nil, fmt.Errorf("store %s is corrupt: invalid or duplicate id #%d", s.statePath(), id)
+			return fmt.Errorf("store %s is corrupt: invalid or duplicate id #%d", s.statePath(), id)
 		}
 		seen[id] = true
 		state.NextID = max(state.NextID, id+1)
 	}
 	state.NextID = max(state.NextID, 1)
+	if state.GraveyardIndex != nil {
+		state.NextID = max(state.NextID, state.GraveyardIndex.MaxID+1)
+	}
+	return nil
+}
+
+func mergeItemIdentities(state *State) []Event {
 	var events []Event
 	byIdentity := make(map[Identity]int)
 	items := make([]Item, 0, len(state.Items))
 	for _, item := range state.Items {
-		if item.Identity != nil {
-			if idx, ok := byIdentity[*item.Identity]; ok {
-				keep, other := items[idx], item
-				if other.ID < keep.ID {
-					keep, other = other, keep
-				}
-				if other.ExpiresAt.After(keep.ExpiresAt) {
-					keep.ExpiresAt = other.ExpiresAt
-				}
-				if automaticSource(keep.Source) && !automaticSource(other.Source) {
-					keep.Source = other.Source
-				}
-				items[idx] = keep
-				events = append(events, Event{Time: time.Now(), Action: "merged", ID: keep.ID, Path: keep.Path,
-					Detail: fmt.Sprintf("merged duplicate identity #%d into #%d; expires %s", other.ID, keep.ID, keep.ExpiresAt.Format(time.RFC3339))})
-				continue
-			}
-			byIdentity[*item.Identity] = len(items)
+		if item.Identity == nil {
+			items = append(items, item)
+			continue
 		}
+		if idx, ok := byIdentity[*item.Identity]; ok {
+			keep, event := mergeDuplicateItem(items[idx], item)
+			items[idx] = keep
+			events = append(events, event)
+			continue
+		}
+		byIdentity[*item.Identity] = len(items)
 		items = append(items, item)
 	}
 	state.Items = items
-	events = append(events, migrateWatchConsent(&state)...)
-	if s.auditPending != nil && len(state.PendingAudit) > 0 {
-		*s.auditPending = true
+	return events
+}
+
+func mergeDuplicateItem(keep, other Item) (Item, Event) {
+	if other.ID < keep.ID {
+		keep, other = other, keep
 	}
-	return state, events, nil
+	if other.ExpiresAt.After(keep.ExpiresAt) {
+		keep.ExpiresAt = other.ExpiresAt
+	}
+	if automaticSource(keep.Source) && !automaticSource(other.Source) {
+		keep.Source = other.Source
+	}
+	return keep, Event{Time: time.Now(), Action: "merged", ID: keep.ID, Path: keep.Path,
+		Detail: fmt.Sprintf("merged duplicate identity #%d into #%d; expires %s", other.ID, keep.ID, keep.ExpiresAt.Format(time.RFC3339))}
 }
 
 func (s Store) save(state State) error {
+	migrating := state.Version < stateVersion
 	if err := s.prepareLedgerMigration(&state); err != nil {
 		return err
 	}
 	if err := s.prepareDataOwner(&state); err != nil {
 		return err
 	}
+	// Snapshot ownership is mandatory even if the optional uninstall marker
+	// could not be written. The marker still independently controls uninstall.
+	if state.DataID == "" {
+		state.DataID = newDataID()
+	}
 	if s.auditPending != nil && len(state.PendingAudit) > 0 {
 		*s.auditPending = true
 	}
 	state.Version = stateVersion
 	sort.Slice(state.Items, func(i, j int) bool { return state.Items[i].ExpiresAt.Before(state.Items[j].ExpiresAt) })
-	data, err := marshalLedger(state)
+	changed, err := graveyardChanged(state)
+	if err != nil {
+		return err
+	}
+	if changed {
+		if err := s.writeGraveyard(&state, migrating); err != nil {
+			return err
+		}
+	} else {
+		state.GraveyardIndex = buildGraveyardIndex(state)
+	}
+	return s.saveHot(state, changed)
+}
+
+func (s Store) saveHot(state State, graveyardChanged bool) error {
+	data, err := marshalHot(state)
 	if err != nil {
 		return err
 	}
@@ -312,7 +401,12 @@ func (s Store) save(state State) error {
 		if s.changed != nil {
 			*s.changed = true
 		}
-		s.writeGraveNoticeIndex(state)
+		if graveyardChanged {
+			s.writeGraveNoticeIndex(state)
+		}
+	}
+	if err == nil && graveyardChanged {
+		s.collectGraveyardSnapshots(state)
 	}
 	return err
 }
@@ -333,7 +427,7 @@ func writeDurably(path string, data []byte) error {
 	if err != nil {
 		return fmt.Errorf("write store: %w", err)
 	}
-	if _, err := f.Write(data); err != nil {
+	if _, err := writeStoreBytes(f, data); err != nil {
 		f.Close()
 		return fmt.Errorf("write store: %w", err)
 	}
@@ -346,6 +440,10 @@ func writeDurably(path string, data []byte) error {
 
 // syncReplacement is replaceDurably's post-rename failure injection seam.
 var syncReplacement = func(file *os.File) error { return syncFile(file) }
+
+var writeStoreBytes = (*os.File).Write
+
+var renameStore = func(root *os.Root, tmp, name string) error { return root.Rename(tmp, name) }
 
 type unconfirmedCommit struct{ cause error }
 
@@ -364,7 +462,7 @@ func replaceDurably(root *os.Root, tmp, name string, f *os.File) (err error) {
 	defer func() {
 		err = errors.Join(err, f.Close())
 	}()
-	if err := root.Rename(tmp, name); err != nil {
+	if err := renameStore(root, tmp, name); err != nil {
 		return fmt.Errorf("replace store: %w", err)
 	}
 	if err := syncReplacement(f); err != nil {

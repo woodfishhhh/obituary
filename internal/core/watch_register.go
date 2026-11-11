@@ -27,7 +27,7 @@ func (s *Service) RegisterWatchChild(policy WatchPolicy, path string) error {
 		return err
 	}
 	var event *Event
-	err = s.Store.Update(func(st *State) error {
+	err = s.Store.UpdateHot(func(st *State) error {
 		p, err := s.watchRegistrationPolicy(st, policy, c)
 		if err != nil {
 			return err

@@ -33,7 +33,7 @@ func (s *Service) checkWatchExclusions(p WatchPolicy, path string, id Identity) 
 
 // ClearWatchExclusion explicitly allows an ancestor to manage this unit again.
 func (s *Service) ClearWatchExclusion(policyID, exclusionID int64) error {
-	return s.Store.Update(func(st *State) error {
+	return s.Store.UpdateHot(func(st *State) error {
 		idx := slices.IndexFunc(st.Watches, func(p WatchPolicy) bool { return p.ID == policyID })
 		if idx < 0 {
 			return fmt.Errorf("no folder policy #%d", policyID)

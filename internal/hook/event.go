@@ -204,7 +204,7 @@ func handle(e *auto.Engine, ev Event, runner *Runner, pendingNotices bool) (deli
 		// observations. The ledger is the queue, scoped to the current project
 		// or proposals created by this session (which may span projects).
 		if pendingNotices || ev.Name == "Context" {
-			state, err := e.Svc.Store.Read()
+			state, err := e.Svc.Store.ReadHot()
 			if err != nil {
 				return delivery{}, err
 			}

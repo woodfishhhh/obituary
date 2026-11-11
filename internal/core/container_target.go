@@ -25,7 +25,7 @@ func (s *Service) bindContainer(p *ContainerIntent) error {
 	old := *p
 	next := *p.identity()
 	next.Target = got.Target
-	err = s.Store.Update(func(st *State) error {
+	err = s.Store.UpdateGraveyard(func(st *State) error {
 		if old.Token != "" {
 			if err := st.checkContainerIntent(old); err != nil {
 				return err
@@ -57,7 +57,7 @@ func (s *Service) bindContainer(p *ContainerIntent) error {
 func (s *Service) updateContainerIntent(p *ContainerIntent, change func(*ContainerIntent)) error {
 	next := *p
 	change(&next)
-	err := s.Store.Update(func(st *State) error {
+	err := s.Store.UpdateGraveyard(func(st *State) error {
 		if err := st.checkContainerIntent(*p); err != nil {
 			return err
 		}
@@ -76,7 +76,7 @@ func (s *Service) containerActionError(p *ContainerIntent, err error) error {
 	}
 	next := *p
 	next.Diagnostic = err.Error()
-	auditErr := s.Store.Update(func(st *State) error {
+	auditErr := s.Store.UpdateGraveyard(func(st *State) error {
 		if err := st.checkContainerIntent(*p); err != nil {
 			return err
 		}

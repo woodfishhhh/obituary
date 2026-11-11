@@ -92,7 +92,7 @@ func (s *Service) purgeExpiredBatches(state State, requested []Burial, blocked m
 		batch = batch[:processed]
 		auditCount := 0
 		if len(batch) > 0 {
-			err = s.Store.Update(func(st *State) error {
+			err = s.Store.UpdateGraveyard(func(st *State) error {
 				for i := range batch {
 					r, b := &batch[i], batch[i].Burial
 					idx := st.BurialIndex(b.ID)

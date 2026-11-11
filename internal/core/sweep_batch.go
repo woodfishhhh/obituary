@@ -124,7 +124,7 @@ func (s *Service) commitBurialBatch(pending []*preparedBurial, owners *ownership
 
 func (s *Service) commitBurialPrefix(pending []*preparedBurial, owners *ownershipBatch, reason string, ctx context.Context, started bool) (processed, auditCount int, stopErr, err error) {
 	err = s.withGraveyardLock(func() error {
-		commitErr := s.Store.Update(func(st *State) error {
+		commitErr := s.Store.UpdateGraveyard(func(st *State) error {
 			var moveErr error
 			processed, stopErr, moveErr = s.moveBurialPrefix(st, pending, owners, reason, ctx, started)
 			auditCount = len(st.PendingAudit)

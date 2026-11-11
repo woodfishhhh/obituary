@@ -49,7 +49,7 @@ func (s *Service) registerContainer(id docker.Identity, opt AddOptions) (item It
 	defer notify()
 	s, flush := s.auditBatch(false)
 	defer func() { err = errors.Join(err, flush()) }()
-	err = s.Store.Update(func(st *State) error {
+	err = s.Store.UpdateGraveyard(func(st *State) error {
 		if err := st.requireAuditSpace(); err != nil {
 			return err
 		}
