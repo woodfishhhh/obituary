@@ -69,41 +69,16 @@ func TestGitBatchDeadlineBoundsInheritedPipes(t *testing.T) {
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}
-	exe, err := os.Executable()
-	if err != nil {
-		t.Fatal(err)
-	}
-	pidFile := filepath.Join(t.TempDir(), "child.pid")
-	previous := gitCommand
-	t.Cleanup(func() {
-		gitCommand = previous
-		if data, err := os.ReadFile(pidFile); err == nil {
-			if pid, err := strconv.Atoi(string(data)); err == nil {
-				if proc, err := os.FindProcess(pid); err == nil {
-					_ = proc.Kill()
-					_, _ = proc.Wait()
-				}
-			}
-		}
-	})
-	gitCommand = func(ctx context.Context, _ string, _ ...string) *exec.Cmd {
-		cmd := exec.CommandContext(ctx, exe, "-test.run=^TestHangingGitHelper$")
-		cmd.Env = append(os.Environ(), "OBIT_HANGING_GIT=pipes", "OBIT_GIT_CHILD_PID="+pidFile)
-		return cmd
-	}
+	pidFile := hangingGitPipes(t)
 	root := t.TempDir()
-	ctx, cancel := context.WithTimeout(t.Context(), 250*time.Millisecond)
-	defer cancel()
-	start := time.Now()
+	ctx, started := testenv.ReadyDeadline(t, pidFile, 250*time.Millisecond)
 	tracked, err := (Project{Root: root}).TrackedBatchContext(ctx, []string{filepath.Join(root, "keep.log")})
+	elapsed := testenv.ReadyElapsed(t, started)
 	if !errors.Is(err, context.DeadlineExceeded) || len(tracked) != 1 || !tracked[0] {
 		t.Fatalf("bounded Git failed open: %v %v", tracked, err)
 	}
-	if time.Since(start) > time.Second {
-		t.Fatalf("batch Git pipe outlived hook budget: %s", time.Since(start))
-	}
-	if _, err := os.Stat(pidFile); err != nil {
-		t.Fatal("helper did not start a pipe-owning descendant", err)
+	if elapsed > time.Second {
+		t.Fatalf("batch Git pipe outlived hook budget: %s", elapsed)
 	}
 }
 
@@ -626,7 +601,7 @@ func TestHangingGitHelper(t *testing.T) {
 			t.Fatal(err)
 		}
 		cmd := exec.Command(exe, "-test.run=^TestHangingGitHelper$")
-		cmd.Env = append(os.Environ(), "OBIT_HANGING_GIT=1")
+		cmd.Env = append(os.Environ(), "OBIT_HANGING_GIT=pipe-holder")
 		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 		if err := cmd.Start(); err != nil {
 			t.Fatal(err)
@@ -637,22 +612,26 @@ func TestHangingGitHelper(t *testing.T) {
 		_ = cmd.Wait()
 		os.Exit(0)
 	}
+	if mode == "pipe-holder" {
+		// Stay alive beyond the setup limit; the parent test reaps this process.
+		time.Sleep(time.Minute)
+		os.Exit(0)
+	}
 	if mode == "1" {
 		time.Sleep(3 * time.Second)
 		os.Exit(0)
 	}
 }
 
-func TestGitTimeoutBoundsInheritedOutputPipes(t *testing.T) {
-	if testing.Short() {
-		t.Skip("requires a real Git repository or child process")
-	}
+func hangingGitPipes(t *testing.T) string {
+	t.Helper()
 	exe, err := os.Executable()
 	if err != nil {
 		t.Fatal(err)
 	}
 	pidFile := filepath.Join(t.TempDir(), "child.pid")
 	previousCommand, previousTimeout := gitCommand, gitTimeout
+	gitTimeout = time.Minute
 	t.Cleanup(func() {
 		gitCommand, gitTimeout = previousCommand, previousTimeout
 		if data, err := os.ReadFile(pidFile); err == nil {
@@ -664,19 +643,29 @@ func TestGitTimeoutBoundsInheritedOutputPipes(t *testing.T) {
 			}
 		}
 	})
-	gitTimeout = 500 * time.Millisecond
 	gitCommand = func(ctx context.Context, _ string, _ ...string) *exec.Cmd {
 		cmd := exec.CommandContext(ctx, exe, "-test.run=^TestHangingGitHelper$")
 		cmd.Env = append(os.Environ(), "OBIT_HANGING_GIT=pipes", "OBIT_GIT_CHILD_PID="+pidFile)
 		return cmd
 	}
-	start := time.Now()
-	_, err = (Project{Root: t.TempDir()}).Untracked()
-	if !errors.Is(err, context.DeadlineExceeded) || time.Since(start) > 2500*time.Millisecond {
-		t.Fatalf("inherited output pipe stalled timeout: %s, %v", time.Since(start), err)
+	return pidFile
+}
+
+func TestGitTimeoutBoundsInheritedOutputPipes(t *testing.T) {
+	if testing.Short() {
+		t.Skip("requires a real Git repository or child process")
 	}
-	if _, err := os.Stat(pidFile); err != nil {
-		t.Fatal("helper did not start a descendant holding the output pipe", err)
+	pidFile := hangingGitPipes(t)
+	previous := gitWithTimeout
+	t.Cleanup(func() { gitWithTimeout = previous })
+	ctx, started := testenv.ReadyDeadline(t, pidFile, 500*time.Millisecond)
+	gitWithTimeout = func(context.Context, time.Duration) (context.Context, context.CancelFunc) {
+		return ctx, func() {}
+	}
+	_, err := (Project{Root: t.TempDir()}).Untracked()
+	elapsed := testenv.ReadyElapsed(t, started)
+	if !errors.Is(err, context.DeadlineExceeded) || elapsed > 2500*time.Millisecond {
+		t.Fatalf("inherited output pipe stalled timeout: %s, %v", elapsed, err)
 	}
 }
 

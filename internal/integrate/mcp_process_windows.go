@@ -27,7 +27,7 @@ func runClaude(cli string, args []string) ([]byte, error) {
 	if _, err := windows.SetInformationJobObject(job, windows.JobObjectExtendedLimitInformation, uintptr(unsafe.Pointer(&limits)), uint32(unsafe.Sizeof(limits))); err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), claudeMCPTimeout)
+	ctx, cancel := claudeMCPWithTimeout(context.Background(), claudeMCPTimeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, cli, args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: windows.CREATE_NO_WINDOW | windows.CREATE_SUSPENDED, HideWindow: true}

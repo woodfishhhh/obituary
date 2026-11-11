@@ -1,6 +1,7 @@
 package integrate
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -240,10 +241,11 @@ func TestClaudeMCPRecoveryUsesObservedState(t *testing.T) {
 			t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
 			t.Setenv("OBIT_FAKE_CLAUDE_MODE", mode)
 			t.Setenv("OBIT_FAKE_CLAUDE_OLD_COMMAND", "C:/old/obit.exe")
+			var started <-chan time.Time
 			if mode == "remove-committed-timeout" {
-				old := claudeMCPTimeout
-				claudeMCPTimeout = 700 * time.Millisecond
-				t.Cleanup(func() { claudeMCPTimeout = old })
+				ready := filepath.Join(t.TempDir(), "removed.ready")
+				t.Setenv("OBIT_FAKE_CLAUDE_READY", ready)
+				started = claudeDeadlineWhenReady(t, ready, 700*time.Millisecond, 2)
 			}
 			path := filepath.Join(os.Getenv("CLAUDE_CONFIG_DIR"), ".claude.json")
 			before := `{"command":"C:/old/obit.exe","args":["mcp"],"env":{"OBIT_HOME":"D:/ledger"},"custom":42}`
@@ -253,6 +255,9 @@ func TestClaudeMCPRecoveryUsesObservedState(t *testing.T) {
 				t.Fatal(err)
 			}
 			err = Apply(plan)
+			if started != nil {
+				testenv.ReadyElapsed(t, started)
+			}
 			entry, readErr := readClaudeEntry(path)
 			switch mode {
 			case "add-committed-error":
@@ -396,6 +401,21 @@ func claudeCalls(t *testing.T, path string) [][]string {
 		calls = append(calls, args)
 	}
 	return calls
+}
+
+func claudeDeadlineWhenReady(t *testing.T, path string, timeout time.Duration, call int) <-chan time.Time {
+	t.Helper()
+	previous := claudeMCPWithTimeout
+	t.Cleanup(func() { claudeMCPWithTimeout = previous })
+	ctx, started := testenv.ReadyDeadline(t, path, timeout)
+	claudeMCPWithTimeout = func(parent context.Context, d time.Duration) (context.Context, context.CancelFunc) {
+		call--
+		if call == 0 {
+			return ctx, func() {}
+		}
+		return previous(parent, d)
+	}
+	return started
 }
 
 func TestClaudeMCPTimeout(t *testing.T) {

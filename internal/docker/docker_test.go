@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -214,12 +215,16 @@ func TestDockerStopSendBoundary(t *testing.T) {
 				neighbor.ID, neighbor.Name = strings.Repeat("b", 64), row.ID
 				testenv.WriteDocker(t, state, row, neighbor)
 			}
+			ctx := t.Context()
+			var started <-chan time.Time
 			if mode == "sent" {
-				cli.Timeout = 500 * time.Millisecond
+				ready := filepath.Join(t.TempDir(), "stop.ready")
+				t.Setenv("OBIT_FAKE_DOCKER_ENTERED", ready)
 				t.Setenv("OBIT_FAKE_DOCKER_STOP_DELAY", "2s")
+				ctx, started = testenv.ReadyDeadline(t, ready, 500*time.Millisecond)
 			}
 			called := false
-			err := cli.Stop(t.Context(), row.Identity, func(got docker.Container) error {
+			err := cli.Stop(ctx, row.Identity, func(got docker.Container) error {
 				called = true
 				if !got.Same(row.Identity) {
 					t.Fatal("callback identity changed")
@@ -237,6 +242,9 @@ func TestDockerStopSendBoundary(t *testing.T) {
 				}
 				return nil
 			})
+			if started != nil {
+				testenv.ReadyElapsed(t, started)
+			}
 			if err == nil || errors.Is(err, docker.ErrNotSent) != (mode != "sent") || called != (mode != "collision") {
 				t.Fatal("stop send boundary classification", mode, called, err)
 			}

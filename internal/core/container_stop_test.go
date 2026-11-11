@@ -239,13 +239,22 @@ func TestContainerStopRunningAfterCommandRemainsLive(t *testing.T) {
 	}
 }
 
+type deadlineContainerStop struct {
+	docker.CLI
+	ctx context.Context
+}
+
+func (d deadlineContainerStop) Stop(_ context.Context, id docker.Identity, beforeSend func(docker.Container) error) error {
+	return d.CLI.Stop(d.ctx, id, beforeSend)
+}
+
 func TestContainerStopTimeoutKeepsIntent(t *testing.T) {
 	if testing.Short() {
 		t.Skip("fake Docker executable and delayed engine stop")
 	}
 	f := newFixture(t)
 	exe, state, _ := testenv.FakeDocker(t)
-	cli := docker.CLI{Executable: exe, Timeout: 500 * time.Millisecond}
+	cli := docker.CLI{Executable: exe}
 	f.svc.Docker = cli
 	row := docker.Container{Identity: docker.Identity{ID: strings.Repeat("d", 64), Name: "delayed", Created: f.clock}, Running: true}
 	testenv.WriteDocker(t, state, row)
@@ -255,10 +264,16 @@ func TestContainerStopTimeoutKeepsIntent(t *testing.T) {
 	}
 	t.Setenv("OBIT_FAKE_DOCKER_STOP_DELAY", "2s")
 	t.Setenv("OBIT_FAKE_DOCKER_BACKEND_STOP", "1")
+	ready := filepath.Join(t.TempDir(), "stop.ready")
+	t.Setenv("OBIT_FAKE_DOCKER_ENTERED", ready)
+	ctx, started := testenv.ReadyDeadline(t, ready, 500*time.Millisecond)
+	f.svc.Docker = deadlineContainerStop{CLI: cli, ctx: ctx}
 	f.clock = f.clock.Add(2 * time.Hour)
 	if _, err := f.svc.Sweep(false); err != nil {
 		t.Fatal(err)
 	}
+	testenv.ReadyElapsed(t, started)
+	f.svc.Docker = cli
 	if _, err := f.svc.Cancel([]string{fmt.Sprint(it.ID)}); err != nil {
 		t.Fatal(err)
 	}

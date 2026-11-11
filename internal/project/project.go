@@ -23,6 +23,7 @@ import (
 var gitTimeout = 15 * time.Second
 var gitCommand = exec.CommandContext
 var gitOutput = (*exec.Cmd).Output
+var gitWithTimeout = context.WithTimeout
 
 // Project is a Git work tree.
 type Project struct {
@@ -169,7 +170,7 @@ func (p Project) git(args ...string) ([]byte, error) {
 }
 
 func (p Project) gitContext(parent context.Context, args ...string) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(parent, gitTimeout)
+	ctx, cancel := gitWithTimeout(parent, gitTimeout)
 	defer cancel()
 	cmd := gitCommand(ctx, "git", append([]string{"-C", p.Root}, args...)...)
 	cmd.Env = repositoryEnvironment(cmd.Environ())

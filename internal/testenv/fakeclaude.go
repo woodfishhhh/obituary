@@ -218,6 +218,9 @@ func runFakeClaude() error {
 		case "remove-committed-error", "remove-new-error":
 			return fmt.Errorf("remove committed then failed")
 		case "remove-committed-timeout":
+			if err := os.WriteFile(os.Getenv("OBIT_FAKE_CLAUDE_READY"), []byte("ready"), 0o600); err != nil {
+				return err
+			}
 			time.Sleep(8 * time.Second)
 		case "remove-committed-waitdelay":
 			self, err := os.Executable()

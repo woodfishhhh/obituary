@@ -64,16 +64,13 @@ func TestClaudeMCPTimeoutKillsProcessTree(t *testing.T) {
 	t.Setenv("OBIT_FAKE_CLAUDE_MODE", "tree")
 	pidFile := filepath.Join(t.TempDir(), "child.pid")
 	t.Setenv("OBIT_FAKE_CLAUDE_CHILD", pidFile)
-	old := claudeMCPTimeout
-	claudeMCPTimeout = 700 * time.Millisecond
-	t.Cleanup(func() { claudeMCPTimeout = old })
+	started := claudeDeadlineWhenReady(t, pidFile, 700*time.Millisecond, 2)
 	plan, err := PlanMCP(Scope{Global: true}, "claude", "C:/tools/obit.exe", false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	started := time.Now()
 	err = Apply(plan)
-	elapsed := time.Since(started)
+	elapsed := testenv.ReadyElapsed(t, started)
 	pid, parseErr := strconv.Atoi(read(t, pidFile))
 	if parseErr != nil {
 		t.Fatal(parseErr)

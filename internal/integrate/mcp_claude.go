@@ -2,6 +2,7 @@ package integrate
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 
 var claudeLookPath = exec.LookPath
 var claudeMCPTimeout = 30 * time.Second
+var claudeMCPWithTimeout = context.WithTimeout
 
 type claudeMCPChange struct {
 	before json.RawMessage
