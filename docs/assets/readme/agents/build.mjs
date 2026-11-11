@@ -1,6 +1,9 @@
 // Builds the README's agent wall: agents-light.svg and agents-dark.svg.
-// Marks come from @lobehub/icons-static-svg (MIT; see docs/assets/THIRD_PARTY_NOTICES.md),
-// used unaltered. Run from the repository root after `pnpm install` in site/:
+// Logos only; each one stands for an agent Obituary connects to (agents
+// that share a mark, such as Trae and Trae CN, appear once).
+// Marks: @lobehub/icons-static-svg (MIT) and the vendors' own marks kept in
+// site/landing/src/assets/agents; see docs/assets/THIRD_PARTY_NOTICES.md.
+// Run from the repository root after `pnpm install` in site/:
 //   node docs/assets/readme/agents/build.mjs
 import { readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -8,70 +11,92 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const require = createRequire(join(here, "../../../../site/landing/package.json"));
-const icons = join(dirname(require.resolve("@lobehub/icons-static-svg/package.json")), "icons");
+const root = join(here, "../../../..");
+const require = createRequire(join(root, "site/landing/package.json"));
+const lobe = join(dirname(require.resolve("@lobehub/icons-static-svg/package.json")), "icons");
+const vendor = join(root, "site/landing/src/assets/agents");
 
-// The best-known agents, in the order people look for them; `id` is the
-// value for `obit init --agent`.
+// [name, mark]; a mark is a lobe-icons name or vendor:<file>.
 const agents = [
-  ["Claude Code", "claude", "claudecode-color"],
-  ["Codex", "codex", "codex-color"],
-  ["Cursor", "cursor", "cursor"],
-  ["GitHub Copilot", "copilot", "githubcopilot"],
-  ["Gemini CLI", "gemini", "geminicli-color"],
-  ["Windsurf", "windsurf", "windsurf"],
-  ["Trae", "trae", "trae-color"],
-  ["Qoder", "qoder", "qoder-color"],
-  ["CodeBuddy", "codebuddy", "codebuddy-color"],
-  ["Kimi", "kimi", "kimi-color"],
-  ["DeepSeek Harness", "deepseek-harness", "deepseek-color"],
-  ["WorkBuddy", "workbuddy", "workbuddy-color"],
-  ["OpenCode", "opencode", "opencode"],
-  ["Cline", "cline", "cline"],
-  ["Roo Code", "roo", "roocode"],
-  ["Kilo Code", "kilocode", "kilocode"],
-  ["OpenClaw", "openclaw", "openclaw-color"],
-  ["Hermes", "hermes", "hermesagent"],
+  ["Claude Code", "claudecode-color"],
+  ["Codex", "codex-color"],
+  ["Cursor", "cursor"],
+  ["GitHub Copilot", "githubcopilot"],
+  ["Gemini CLI", "geminicli-color"],
+  ["Windsurf", "windsurf"],
+  ["Trae", "trae-color"],
+  ["Qoder", "qoder-color"],
+  ["CodeBuddy", "codebuddy-color"],
+  ["Kimi", "kimi-color"],
+  ["DeepSeek Harness", "deepseek-color"],
+  ["WorkBuddy", "workbuddy-color"],
+  ["OpenCode", "opencode"],
+  ["Cline", "cline"],
+  ["Roo Code", "roocode"],
+  ["Kilo Code", "kilocode"],
+  ["OpenClaw", "openclaw-color"],
+  ["Hermes", "hermesagent"],
+  ["MiniMax Code", "minimax-color"],
+  ["Lingma", "vendor:lingma.png"],
+  ["Google Antigravity", "antigravity-color"],
+  ["Mistral Vibe", "mistral-color"],
+  ["Factory Droid", "vendor:factory.svg"],
+  ["ZCode", "zhipu-color"],
+  ["Pi", "vendor:pi.svg"],
+  ["Oh My Pi", "vendor:oh-my-pi.svg"],
 ];
+// Marks drawn in a light colour that need a dark tile on the light page.
+const darkTile = new Set(["Oh My Pi"]);
 
 const themes = {
-  light: { bg: "#F5F8FD", tile: "#FFFFFF", line: "#DDE6F3", ink: "#0F1B33", muted: "#5B6B85", mono: "#0F1B33" },
-  dark: { bg: "#0B1120", tile: "#121B2E", line: "#24324D", ink: "#E8EEF8", muted: "#93A2BC", mono: "#E8EEF8" },
+  light: { bg: "#F5F8FD", tile: "#FFFFFF", line: "#DDE6F3", mono: "#0F1B33", ink: "#0F1B33" },
+  dark: { bg: "#0B1120", tile: "#121B2E", line: "#24324D", mono: "#E8EEF8", ink: "#0F1B33" },
 };
 
-const SANS = "'Segoe UI', -apple-system, 'Helvetica Neue', Arial, sans-serif";
-const MONO = "'Cascadia Mono', Consolas, 'JetBrains Mono', monospace";
+const prefixIds = (src, p) =>
+  src.replace(/id="([^"]+)"/g, `id="${p}-$1"`).replace(/url\(#([^)]+)\)/g, `url(#${p}-$1)`).replace(/href="#([^"]+)"/g, `href="#${p}-$1"`);
 
-// One icon as a nested <svg>, with its ids prefixed so icons cannot collide.
-function icon(file, prefix, x, y, size, color) {
-  let src = readFileSync(join(icons, `${file}.svg`), "utf8");
-  const viewBox = /viewBox="([^"]+)"/.exec(src)[1];
-  const rootFill = /^<svg[^>]*\sfill="([^"]+)"/.exec(src)?.[1];
-  let inner = src.replace(/^<svg[^>]*>/, "").replace(/<\/svg>\s*$/, "").replace(/<title>.*?<\/title>/, "");
-  inner = inner.replace(/id="([^"]+)"/g, `id="${prefix}-$1"`).replace(/url\(#([^)]+)\)/g, `url(#${prefix}-$1)`).replace(/href="#([^"]+)"/g, `href="#${prefix}-$1"`);
-  const fill = rootFill ? ` fill="${rootFill}"` : "";
-  return `<svg x="${x}" y="${y}" width="${size}" height="${size}" viewBox="${viewBox}"${fill} color="${color}" fill-rule="evenodd">${inner}</svg>`;
+// One mark as a nested <svg> (or an <image> for a raster mark), ids prefixed
+// so marks cannot collide.
+function mark(file, p, x, y, size, color) {
+  if (file.startsWith("vendor:") && file.endsWith(".png")) {
+    const data = readFileSync(join(vendor, file.slice(7))).toString("base64");
+    return `<image x="${x}" y="${y}" width="${size}" height="${size}" href="data:image/png;base64,${data}"/>`;
+  }
+  let src = readFileSync(file.startsWith("vendor:") ? join(vendor, file.slice(7)) : join(lobe, `${file}.svg`), "utf8");
+  src = src.replace(/<\?xml[^>]*>\s*/, "").replace(/<!--[\s\S]*?-->/g, "");
+  // Unwrap the outer <svg> (the Factory mark nests one svg inside another).
+  const open = /^<svg[^>]*>/.exec(src.trim())[0];
+  let inner = src.trim().slice(open.length).replace(/<\/svg>\s*$/, "").replace(/<title>.*?<\/title>/, "");
+  let viewBox = /viewBox="([^"]+)"/.exec(open)?.[1];
+  if (!viewBox) {
+    const w = /width="([\d.]+)"/.exec(open)[1], h = /height="([\d.]+)"/.exec(open)[1];
+    viewBox = `0 0 ${w} ${h}`;
+  }
+  const fill = /\sfill="([^"]+)"/.exec(open)?.[1];
+  inner = prefixIds(inner, p);
+  return `<svg x="${x}" y="${y}" width="${size}" height="${size}" viewBox="${viewBox}"${fill ? ` fill="${fill}"` : ""} color="${color}" preserveAspectRatio="xMidYMid meet">${inner}</svg>`;
 }
 
 function wall(theme) {
   const t = themes[theme];
-  const cols = 6, w = 176, h = 150, gap = 16, mx = 32, my = 32;
+  const cols = 9, s = 112, gap = 14, mx = 32, my = 32, logo = 56;
   const rows = Math.ceil(agents.length / cols);
-  const width = 1200, height = my * 2 + rows * h + (rows - 1) * gap;
-  const tiles = agents.map(([name, id, file], i) => {
-    // The colour Codex mark carries a white plate; the plain mark reads better on dark.
-    if (theme === "dark" && file === "codex-color") file = "codex";
-    const x = mx + (i % cols) * (w + gap), y = my + Math.floor(i / cols) * (h + gap);
-    return `  <g>
-    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="18" fill="${t.tile}" stroke="${t.line}"/>
-    ${icon(file, `i${i}`, x + (w - 52) / 2, y + 22, 52, t.mono)}
-    <text x="${x + w / 2}" y="${y + 106}" text-anchor="middle" font-family="${SANS}" font-size="20" font-weight="600" fill="${t.ink}">${name}</text>
-    <text x="${x + w / 2}" y="${y + 132}" text-anchor="middle" font-family="${MONO}" font-size="18" fill="${t.muted}">${id}</text>
+  const width = 1200, height = my * 2 + rows * s + (rows - 1) * gap;
+  const tiles = agents.map(([name, file], i) => {
+    if (theme === "dark" && file === "codex-color") file = "codex"; // the colour mark carries a white plate
+    const row = Math.floor(i / cols), inRow = Math.min(cols, agents.length - row * cols);
+    const left = (width - (inRow * s + (inRow - 1) * gap)) / 2;
+    const x = left + (i % cols) * (s + gap), y = my + row * (s + gap);
+    const tile = darkTile.has(name) && theme === "light" ? t.ink : t.tile;
+    return `  <g><title>${name}</title>
+    <rect x="${x}" y="${y}" width="${s}" height="${s}" rx="22" fill="${tile}" stroke="${t.line}"/>
+    ${mark(file, `m${i}`, x + (s - logo) / 2, y + (s - logo) / 2, logo, t.mono)}
   </g>`;
   }).join("\n");
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="t d">
   <title id="t">Agents Obituary connects to</title>
-  <desc id="d">${agents.map(([name, id]) => `${name} (${id})`).join(", ")}</desc>
+  <desc id="d">${agents.map(([name]) => name).join(", ")}</desc>
   <rect width="${width}" height="${height}" rx="28" fill="${t.bg}"/>
 ${tiles}
 </svg>
@@ -79,4 +104,4 @@ ${tiles}
 }
 
 for (const theme of Object.keys(themes)) writeFileSync(join(here, `agents-${theme}.svg`), wall(theme));
-console.log("written agents-light.svg, agents-dark.svg");
+console.log(`written agents-light.svg, agents-dark.svg (${agents.length} marks)`);
