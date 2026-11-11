@@ -1,0 +1,138 @@
+/* The landing page: the logo's cobalt, sky and gold on a white ground, as in
+   the desktop window's Calendar look (cmd/obit-gui/frontend/src/theme.ts). */
+@import "tailwindcss";
+@import "@fontsource-variable/geist/wght.css";
+@import "@fontsource-variable/geist-mono/wght.css";
+
+@font-face {
+  font-family: "Obit Sans SC";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("./assets/fonts/display-sc-600.woff2") format("woff2");
+}
+
+@theme {
+  --color-paper: #ffffff;
+  --color-paper-2: #f6f8fc;
+  --color-paper-3: #eef2f9;
+  --color-ink: #111522;
+  --color-ink-2: #3a4256;
+  --color-muted: #646c80;
+  --color-line: #e6e9f0;
+  --color-line-2: #d0d6e2;
+  --color-cobalt: #0048e8;
+  --color-cobalt-deep: #0039bb;
+  --color-sky: #0078f8;
+  --color-glint: #b9d9ff;
+  --color-soft: #eaf0ff;
+  --color-gold: #f8e000;
+  --color-gold-deep: #e0b800;
+  --color-cream: #fcef8a;
+  --color-on-gold: #3a3000;
+  --color-ok: #0a7a3d;
+  --color-bad: #b42318;
+
+  --font-sans: "Geist Variable", "Obit Sans SC", "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", "Cascadia Mono", Consolas, ui-monospace, monospace;
+
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --shadow-nav: 0 8px 30px -12px rgb(17 21 34 / 0.18);
+  --shadow-node: 0 8px 24px -16px rgb(17 21 34 / 0.25);
+  --shadow-card: 0 12px 40px -28px rgb(17 21 34 / 0.35);
+  --shadow-shot: 0 30px 80px -36px rgb(17 21 34 / 0.4);
+  --shadow-shot-back: 0 24px 60px -28px rgb(17 21 34 / 0.35);
+  --shadow-glow: 0 32px 80px -24px rgb(0 72 232 / 0.45);
+  --shadow-glow-soft: 0 30px 80px -36px rgb(0 72 232 / 0.45);
+  --shadow-notice: 0 12px 30px -18px rgb(0 72 232 / 0.45);
+  --shadow-shine: inset 0 -8px 10px rgb(255 255 255 / 0.12);
+  --shadow-shine-hover: inset 0 -6px 10px rgb(255 255 255 / 0.25);
+  --shadow-shine-active: inset 0 -10px 10px rgb(255 255 255 / 0.25);
+
+  --animate-marquee: marquee var(--duration) infinite linear;
+  --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
+  --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite alternate;
+  --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear;
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(calc(-100% - var(--gap))); }
+  }
+  @keyframes marquee-vertical {
+    from { transform: translateY(0); }
+    to { transform: translateY(calc(-100% - var(--gap))); }
+  }
+  @keyframes shimmer-slide {
+    to { transform: translate(calc(100cqw - 100%), 0); }
+  }
+  @keyframes spin-around {
+    0% { transform: translateZ(0) rotate(0); }
+    15%, 35% { transform: translateZ(0) rotate(90deg); }
+    65%, 85% { transform: translateZ(0) rotate(270deg); }
+    100% { transform: translateZ(0) rotate(360deg); }
+  }
+}
+
+/* The copied components read shadcn's semantic colours. */
+:root {
+  --background: var(--color-paper);
+  --foreground: var(--color-ink);
+  --border: var(--color-line);
+  color-scheme: light;
+}
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-border: var(--border);
+  --color-muted-foreground: var(--color-muted);
+}
+
+html, body { overflow-x: clip; }
+html { scroll-behavior: smooth; scroll-padding-top: 96px; scrollbar-color: var(--color-line-2) var(--color-paper); }
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+::selection { background: var(--color-cream); color: var(--color-ink); }
+:focus-visible { outline: 2px solid var(--color-cobalt); outline-offset: 2px; }
+h1, h2, h3 { text-wrap: balance; overflow-wrap: break-word; min-width: 0; font-synthesis: none; }
+p { text-wrap: pretty; }
+button:disabled { cursor: not-allowed; }
+
+/* Grid and dot fields, drawn in plain CSS. */
+.dot-field {
+  background-image: radial-gradient(circle at 1px 1px, color-mix(in oklab, var(--color-cobalt) 22%, transparent) 1px, transparent 0);
+  background-size: 22px 22px;
+}
+.grid-field {
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--color-cobalt) 9%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--color-cobalt) 9%, transparent) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+.fade-edges { mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, var(--color-ink) 30%, transparent 75%); }
+
+/* The logo's gradient, cobalt to sky to gold. */
+.brand-gradient { background-image: linear-gradient(100deg, var(--color-cobalt) 0%, var(--color-sky) 45%, var(--color-gold) 100%); }
+.brand-text {
+  background-image: linear-gradient(100deg, var(--color-cobalt) 10%, var(--color-sky) 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

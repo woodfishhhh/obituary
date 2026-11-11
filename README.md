@@ -225,7 +225,7 @@ obit init -g --agent gemini --uninstall     # 只删讣告加的东西
 | 方式 | agent |
 |---|---|
 | 原生 hook | GitHub Copilot（VS Code 和 Copilot CLI）、Cursor、Gemini CLI、Factory Droid、Trae / Trae CN、Kimi、Mistral Vibe、Google Antigravity；国内的腾讯 CodeBuddy（CLI 和 IDE）、Qoder / Qoder CN / 灵码、智谱 ZCode |
-| 插件（讣告装一个小插件，插件调用 `obit.exe hook`） | OpenCode、OpenClaw、Pi、Oh My Pi、Hermes、Cline、Kilo Code、MiniMax Code、DeepSeek Harness |
+| 插件（讣告装一个小插件，插件调用 `obit hook`） | OpenCode、OpenClaw、Pi、Oh My Pi、Hermes、Cline、Kilo Code、MiniMax Code、DeepSeek Harness |
 | 只有规则文件和 MCP | Roo Code、Windsurf、WorkBuddy、QoderWork |
 
 - 各家能做到的程度不一样：写文件后的登记、会话开头的提示、删除护栏、MCP、Skill。逐项的「支持 / 有限 / 不支持」和原因见 [agent 覆盖表](docs/agents.md)，它由 `obit init --show --format markdown` 从代码里的能力声明生成，和代码对不上时测试会失败。删除护栏只在宿主能证明命令在本机、用哪种 shell 执行时才开。

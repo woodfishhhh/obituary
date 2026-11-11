@@ -1,0 +1,45 @@
+/* The docs keep VitePress's default theme, bright by default like the
+   landing page, and take only the logo's colours: cobalt #0048E8 and sky
+   #0078F8 for links and actions, the star's gold #F8E000 for one marker. */
+
+:root {
+  --vp-c-brand-1: #0048e8;
+  --vp-c-brand-2: #0a5cf0;
+  --vp-c-brand-3: #0078f8;
+  --vp-c-brand-soft: rgba(0, 120, 248, 0.12);
+  --vp-c-bg-alt: #f6f8fc;
+  --vp-c-bg-soft: #eef2f9;
+  --vp-c-text-1: #111522;
+  --vp-c-text-2: #3a4256;
+  --vp-c-text-3: #646c80;
+  --vp-c-divider: #e6e9f0;
+  --vp-c-gutter: #e6e9f0;
+  --vp-button-brand-bg: #0048e8;
+  --vp-button-brand-hover-bg: #0039bb;
+  --obit-gold: #f8e000;
+}
+
+.dark {
+  --vp-c-bg: #070b16;
+  --vp-c-bg-alt: #0b1221;
+  --vp-c-bg-elv: #0e1729;
+  --vp-c-bg-soft: #0e1729;
+  --vp-c-text-1: rgba(255, 255, 245, 0.88);
+  --vp-c-text-2: rgba(235, 235, 245, 0.66);
+  --vp-c-text-3: rgba(235, 235, 245, 0.42);
+  --vp-c-divider: #1c263a;
+  --vp-c-gutter: #000;
+  --vp-c-brand-1: #5aa6ff;
+  --vp-c-brand-2: #3a8ffc;
+  --vp-c-brand-3: #0078f8;
+  --vp-c-brand-soft: rgba(58, 155, 253, 0.16);
+}
+
+/* The one gold note: the active sidebar item's marker. */
+.VPSidebarItem.is-active > .item > .indicator {
+  background-color: var(--obit-gold);
+}
+
+.vp-doc table {
+  font-size: 0.9375rem;
+}

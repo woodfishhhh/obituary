@@ -86,3 +86,43 @@ jobs:
             if [[ "$TAG" == *-* ]]; then flags+=(--prerelease); fi
             gh release create "$TAG" release/*.zip release/checksums.txt "${flags[@]}"
           fi
+
+  # Copies the same archives and checksums.txt to the mainland China mirror
+  # (https://obituary.woodfish.site/download/<tag>/), which install.ps1 falls
+  # back to. Skipped when the deploy key is not configured.
+  mirror:
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {}
+    steps:
+      - id: key
+        env:
+          CN_DEPLOY_KEY: ${{ secrets.CN_DEPLOY_KEY }}
+        run: echo "present=$([ -n "$CN_DEPLOY_KEY" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+      - if: steps.key.outputs.present == 'yes'
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: release-files
+          path: release
+      - name: Copy the release files to the mirror
+        if: steps.key.outputs.present == 'yes'
+        shell: bash
+        env:
+          CN_DEPLOY_KEY: ${{ secrets.CN_DEPLOY_KEY }}
+          CN_DEPLOY_HOST: ${{ secrets.CN_DEPLOY_HOST }}
+          CN_DEPLOY_KNOWN_HOSTS: ${{ secrets.CN_DEPLOY_KNOWN_HOSTS }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          umask 077
+          ssh_dir="$RUNNER_TEMP/cn-ssh"
+          mkdir -p "$ssh_dir"
+          trap 'rm -rf "$ssh_dir"' EXIT
+          echo "$CN_DEPLOY_KEY" > "$ssh_dir/key"
+          echo "$CN_DEPLOY_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          mkdir -p "upload/$TAG"
+          cp release/*.zip release/checksums.txt "upload/$TAG/"
+          # No --delete: download/ keeps every earlier version.
+          ssh_cmd="ssh -i $ssh_dir/key -o IdentitiesOnly=yes -o UserKnownHostsFile=$ssh_dir/known_hosts -o StrictHostKeyChecking=yes"
+          rsync -rlt --chmod=D755,F644 -e "$ssh_cmd" "upload/$TAG" "obit-deploy@$CN_DEPLOY_HOST:download/"

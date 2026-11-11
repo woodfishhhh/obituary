@@ -59,6 +59,16 @@ checksum:
 snapshot:
   version_template: "{{ .Version }}-dev.{{ .ShortCommit }}"
 
+# Draft release notes (release.yml passes CHANGELOG.md to the draft): commit
+# subjects since the previous tag, without the first commit or merges. The
+# draft is edited by hand before it is published.
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^Initial commit$"
+      - "^Merge "
+
 # Reference: goreleaser/goreleaser internal/pipe/{scoop,winget} at v2.20.0.
 # Both pipes derive SHA-256 from the zip itself. Publishing remains manual.
 # scripts/finalize-manifests.mjs adds Scoop notes and WinGet's directory PATH.

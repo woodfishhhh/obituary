@@ -1,0 +1,109 @@
+# Builds site/ (the landing page at /obituary/, the docs at /obituary/docs/)
+# and deploys it to GitHub Pages, and builds the mainland China mirror
+# (https://obituary.woodfish.site/) and copies it there when the deploy key is
+# configured. A daily run refreshes the contributor wall and star charts.
+# Every job is skipped while the repository is private: Pages needs a public
+# repository on this plan, and private-repo Actions minutes are scarce.
+name: pages
+
+on:
+  push:
+    branches: [main]
+    paths: ["site/**", "docs/agent-install.md", "packaging/install.ps1"]
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          version: "11.11.0"
+          run_install: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: site/pnpm-lock.yaml
+      - name: Build the landing page and docs, for GitHub Pages and the mirror
+        working-directory: site
+        env:
+          # Read-only: contributors and star count for the contributor wall.
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+          pnpm build:cn
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site/dist
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: site-cn
+          path: site/dist-cn
+          if-no-files-found: error
+          retention-days: 3
+
+  deploy:
+    if: ${{ !github.event.repository.private }}
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+  deploy-cn:
+    if: ${{ !github.event.repository.private }}
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {}
+    steps:
+      - id: key
+        env:
+          CN_DEPLOY_KEY: ${{ secrets.CN_DEPLOY_KEY }}
+        run: echo "present=$([ -n "$CN_DEPLOY_KEY" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+      - if: steps.key.outputs.present == 'yes'
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: site-cn
+          path: site-cn
+      - name: Copy the mirror build to the server
+        if: steps.key.outputs.present == 'yes'
+        env:
+          CN_DEPLOY_KEY: ${{ secrets.CN_DEPLOY_KEY }}
+          CN_DEPLOY_HOST: ${{ secrets.CN_DEPLOY_HOST }}
+          CN_DEPLOY_KNOWN_HOSTS: ${{ secrets.CN_DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          ssh_dir="$RUNNER_TEMP/cn-ssh"
+          mkdir -p "$ssh_dir"
+          trap 'rm -rf "$ssh_dir"' EXIT
+          echo "$CN_DEPLOY_KEY" > "$ssh_dir/key"
+          echo "$CN_DEPLOY_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          ssh_cmd="ssh -i $ssh_dir/key -o IdentitiesOnly=yes -o UserKnownHostsFile=$ssh_dir/known_hosts -o StrictHostKeyChecking=yes"
+          rsync -rlt --delete --chmod=D755,F644 -e "$ssh_cmd" site-cn/ "obit-deploy@$CN_DEPLOY_HOST:site/"

@@ -26,6 +26,7 @@
 - `internal/integrate` 还负责 `--mcp` / `--skill`：`mcp.go`（Claude 的 `~/.claude.json` / `.mcp.json`）、`mcp_toml.go`（Codex `config.toml` 的标记块）、`skill.go`（`skill/SKILL.md` 用 go:embed 嵌入，归属记在旁边的 `.obituary-skill`）。`SKILL.md` 是给 agent 看的文档，由人来写。
 - `internal/cli/mcp`：`obit mcp`（官方 Go SDK，stdio；`tools.go` 工具、`output.go` 回复与预算、`pagination.go` 分页）。stdout 只能写协议消息。工具清单由 `TestMCPToolInventory` 固定，用户的决定（approve / reject / trust / purge / 配置）不做成工具。变异检查用 `go test -overlay`：MCP 和核心关卡的变异表在 `internal/cli/mcp/mcp_test.go`（`OBIT_TEST_MCP_MUTATIONS=1 go test -timeout 30m -run TestMCPMutations ./internal/cli/mcp`），删除护栏的在 `internal/cli/remove/remove_test.go`（`OBIT_TEST_DELETE_MUTATIONS=1 go test -timeout 30m -run TestDeleteGuardMutations ./internal/cli/remove`）。整组 MCP 变异在空闲机器上约 6 分钟，机器忙时会超过 go test 默认的 10 分钟总时限，所以要带 `-timeout 30m`。
 - `internal/cli/doctor`：`obit doctor`，只读体检（`extensions.go` 是 MCP / Skill 的检查）。新增的安装环节要在这里加一项检查。
+- `site/`：官网，pnpm workspace，和 Go 代码互不依赖。`landing/` 是落地页（Vite + React + Tailwind，组件只用 Magic UI 和自己写的），`docs/` 是文档站（VitePress，挂在 `/docs/`）。`pnpm build` 产出 GitHub Pages 版 `dist/`，`pnpm build:cn` 产出国内镜像版 `dist-cn/`：链接、给 agent 的那句话和安装脚本都指向 obituary.woodfish.site，不发任何站外请求，页脚有备案号。`scripts/assemble.mjs` 会核对 `docs/agent-install.md` 的原文，替换不上就让构建失败。贡献者墙在构建时拉取，头像存进产物。第三方图标的来源和许可写在 `site/THIRD_PARTY_NOTICES.md`，正文和注释里不提出处。`pages.yml` 只在仓库公开后部署（Pages 和镜像都是）。
 
 ## 规则
 

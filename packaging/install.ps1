@@ -6,12 +6,18 @@ Installs a specific Obituary release after mandatory SHA-256 verification.
 ./install.ps1 -Version 1.2.3 -WhatIf
 .EXAMPLE
 ./install.ps1 -Version 1.2.3 -InstallDir C:\Temp\obituary -NoPath
+.EXAMPLE
+./install.ps1 -Version 1.2.3 -Mirror cn
 .NOTES
 The installer downloads the archive, verifies its checksum, then extracts it.
 Checksum verification is mandatory; there is no bypass switch.
 Close Obituary programs before upgrading. Use -Uninstall to remove this
 installation and its integrations while retaining the ledger and graveyard.
 BaseUrl may point to an HTTPS mirror or a loopback HTTP snapshot server.
+Without BaseUrl the release comes from GitHub; when GitHub does not answer
+within 10 seconds, it comes from the mainland China mirror instead. -Mirror cn
+uses that mirror from the start. checksums.txt always comes from the same
+place as the archive.
 #>
 [CmdletBinding(SupportsShouldProcess = $true, DefaultParameterSetName = 'Install')]
 param(
@@ -26,6 +32,10 @@ param(
     [string]$InstallDir = (Join-Path $env:LOCALAPPDATA 'Programs\obituary'),
 
     [uri]$BaseUrl,
+
+    [Parameter(ParameterSetName = 'Install')]
+    [ValidateSet('cn')]
+    [string]$Mirror,
 
     [switch]$NoPath,
 
@@ -54,8 +64,13 @@ if (-not $Architecture) {
 }
 $Architecture = $Architecture.ToLowerInvariant()
 if (-not $Uninstall) { $Version = $Version -replace '^v', '' }
+# A mirror only replaces the default source; an explicit BaseUrl is final.
+$fallbackUrl = $null
+if ($Mirror -and $BaseUrl) { throw 'Use either -Mirror or -BaseUrl, not both.' }
 if (-not $BaseUrl -and -not $Uninstall) {
-    $BaseUrl = [uri]"https://github.com/woodfishhhh/obituary/releases/download/v$Version/"
+    $githubUrl = [uri]"https://github.com/woodfishhhh/obituary/releases/download/v$Version/"
+    $mirrorUrl = [uri]"https://obituary.woodfish.site/download/v$Version/"
+    if ($Mirror) { $BaseUrl = $mirrorUrl } else { $BaseUrl = $githubUrl; $fallbackUrl = $mirrorUrl }
 }
 if (-not $Uninstall -and (-not $BaseUrl.IsAbsoluteUri -or
     ($BaseUrl.Scheme -ne 'https' -and -not ($BaseUrl.Scheme -eq 'http' -and $BaseUrl.IsLoopback)) -or
@@ -70,8 +85,10 @@ $shortcutPath = Join-Path $StartMenuDir $shortcutName
 $receiptPath = Join-Path $InstallDir '.obituary-install.json'
 $archiveName = "obituary_${Version}_windows_${Architecture}.zip"
 $source = if ($BaseUrl) { $BaseUrl.AbsoluteUri.TrimEnd('/') } else { '' }
+$fallback = if ($fallbackUrl) { $fallbackUrl.AbsoluteUri.TrimEnd('/') } else { '' }
 $action = if ($Uninstall) { 'Run obit uninstall --yes (keep data), remove owned shortcut and installed files' } else {
-    "Download $archiveName and checksums.txt from $source, verify SHA-256, install and create Start menu shortcut"
+    $from = if ($fallback) { "$source (or $fallback if GitHub does not answer within 10 seconds)" } else { $source }
+    "Download $archiveName and checksums.txt from $from, verify SHA-256, install and create Start menu shortcut"
 }
 if (-not $NoPath) { $action += $(if ($Uninstall) { ', then remove the unchanged installer-owned PATH entry' } else { ', then add the directory to the user PATH' }) }
 if (-not $PSCmdlet.ShouldProcess($InstallDir, $action)) { return }
@@ -419,7 +436,22 @@ try {
     $archive = Join-Path $workDir $archiveName
     $checksums = Join-Path $workDir 'checksums.txt'
     [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
-    Invoke-WebRequest -UseBasicParsing -Uri "$source/checksums.txt" -OutFile $checksums
+    if ($fallback) {
+        try {
+            Invoke-WebRequest -UseBasicParsing -Uri "$source/checksums.txt" -OutFile $checksums -TimeoutSec 10
+        }
+        catch {
+            # An HTTP answer (404, 500...) means GitHub is reachable: report it.
+            # Only no answer at all (timeout, DNS, refused) moves to the mirror.
+            $answer = $_.Exception.PSObject.Properties['Response']
+            if ($answer -and $answer.Value) { throw }
+            Write-Output "GitHub did not answer ($($_.Exception.Message)); downloading from $fallback instead."
+            $source = $fallback
+            Invoke-WebRequest -UseBasicParsing -Uri "$source/checksums.txt" -OutFile $checksums
+        }
+    } else {
+        Invoke-WebRequest -UseBasicParsing -Uri "$source/checksums.txt" -OutFile $checksums
+    }
     Invoke-WebRequest -UseBasicParsing -Uri "$source/$archiveName" -OutFile $archive
 
     $pattern = '^(?<Hash>[0-9a-fA-F]{64})\s+\*?' + [regex]::Escape($archiveName) + '$'

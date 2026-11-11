@@ -1,0 +1,14 @@
+{
+  "name": "obituary-site",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "pnpm@11.11.0",
+  "scripts": {
+    "dev": "node scripts/community.mjs && pnpm --filter landing dev",
+    "dev:docs": "pnpm --filter docs dev",
+    "build": "node scripts/build.mjs",
+    "build:cn": "node scripts/build.mjs cn",
+    "preview": "pnpm --filter landing exec vite preview --outDir ../dist"
+  }
+}

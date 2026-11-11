@@ -1,0 +1,43 @@
+# FAQ
+
+## Why not just delete?
+
+Something you are not sure about cannot come back once deleted. Obituary buries it in the graveyard instead, kept 7 days by default, and `obit resurrect` puts it back at any time until then; only after retention is it really deleted. If an agent reaches for it within those seven days, Obituary tells it the grave number and the resurrect command on the spot (see [Grave notices](./grave-notices)).
+
+## macOS and Linux?
+
+Windows only for now; macOS and Linux compile but cannot bury yet.
+
+## Windows says "Windows protected your PC"?
+
+1.0.0 is not code-signed yet. If you download the archive with a browser, choose "More info → Run anyway". Scoop, winget and the install script usually do not trigger this, and all three check the archive's SHA-256 first.
+
+## Is there a small window on ARM64?
+
+No. `obit-gui.exe` is x64 only; the ARM64 build has the command line and the tray.
+
+## Could it register code I have not committed yet?
+
+Automatic registration only touches untracked items inside a Git work tree, and leftovers no rule covers are only proposed, not registered, because new untracked files may be code you have not committed yet. Anything registered by rule or proposal is not buried if it has been committed by the time it expires. See [Automatic lifespans](./auto-register).
+
+## Can an agent approve proposals for me?
+
+No. Approving or rejecting proposals, trusting `.obitrules`, purging the graveyard and changing configuration have no MCP tools; the agent can only pass a proposal on to you.
+
+## Does `obit resurrect` work in recycle mode?
+
+No. With `mode = "recycle"` in `config.toml`, burials go to the system Recycle Bin and you restore them from there.
+
+## How do I turn it off for a while?
+
+- Hooks: `OBIT_DISABLED=1`
+- Delete guard: `OBIT_GUARD_RM=0`
+- Automatic cleanup: "Pause" in the tray menu
+
+## Where is the data?
+
+`%LOCALAPPDATA%\obituary`: the ledger, the audit log, the daemon log and this drive's graveyard. Configuration is `%APPDATA%\obituary\config.toml`. See [How it works](./how-it-works#where-the-data-lives).
+
+## Does uninstalling delete the graveyard?
+
+No. `obit uninstall` keeps the graveyard and ledger by default; add `--purge-data` if you really want them gone. See [Uninstall](./uninstall).

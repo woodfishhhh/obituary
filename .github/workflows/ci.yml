@@ -9,10 +9,11 @@ name: ci
 on:
   push:
     branches: [main]
-    # Documentation-only pushes do not need a Windows test run.
-    paths-ignore: ["docs/**", "**/*.md"]
+    # Documentation and website pushes do not need a Windows test run
+    # (pages.yml builds site/).
+    paths-ignore: ["docs/**", "**/*.md", "site/**"]
   pull_request:
-    paths-ignore: ["docs/**", "**/*.md"]
+    paths-ignore: ["docs/**", "**/*.md", "site/**"]
   workflow_dispatch:
     inputs:
       full:

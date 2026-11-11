@@ -47,8 +47,10 @@ test('install verified snapshot releases without changing the user PATH', {
   const checksumEntry = `${sha256(zip)}  ${archiveName}\n`;
   const downloadsBefore = new Set(await readdir(downloads));
   let requests = 0;
+  const seen = [];
   const server = createServer((req, res) => {
     requests++;
+    seen.push(req.url);
     const [, scenario, file] = req.url.split('/');
     if (scenario === 'not-found') {
       res.writeHead(404).end();
@@ -97,10 +99,12 @@ test('install verified snapshot releases without changing the user PATH', {
   await writeFile(pathScript, isolatedPath);
   async function run(scenario, extra = [], shell = ps7, destination = install, architecture = 'amd64', script = sourceScript) {
     const pathFixture = extra.includes('-FixturePath');
-    extra = extra.filter(arg => arg !== '-FixturePath');
+    // -DefaultSource leaves out -BaseUrl, so the script picks its own source.
+    const defaultSource = extra.includes('-DefaultSource');
+    extra = extra.filter(arg => arg !== '-FixturePath' && arg !== '-DefaultSource');
     const args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File',
       pathFixture ? pathScript : script,
-      ...(extra.includes('-Uninstall') ? [] : ['-Version', version, '-BaseUrl', `${base}/${scenario}`]),
+      ...(extra.includes('-Uninstall') ? [] : defaultSource ? ['-Version', version] : ['-Version', version, '-BaseUrl', `${base}/${scenario}`]),
       '-Architecture', architecture, '-InstallDir', destination,
       '-StartMenuDir', `${destination}-menu`, ...(pathFixture ? [] : ['-NoPath']), ...extra];
     let result;
@@ -183,6 +187,60 @@ test('install verified snapshot releases without changing the user PATH', {
       assert.equal(await readFile(join(install, 'keep.txt'), 'utf8'), 'user file');
     });
   }
+  // Without -BaseUrl the release comes from GitHub, and from the mainland
+  // China mirror when GitHub gives no answer. Test copies point "GitHub" at a
+  // closed port (no answer) or at a 404 (an answer), and the mirror at /mirror/.
+  const closed = createServer();
+  await new Promise(resolveListen => closed.listen(0, '127.0.0.1', resolveListen));
+  const closedUrl = `http://127.0.0.1:${closed.address().port}`;
+  await new Promise(resolveClose => closed.close(resolveClose));
+  async function sourcesScript(name, github) {
+    const file = join(root, `install-${name}.ps1`);
+    const text = source
+      .replace('https://github.com/woodfishhhh/obituary/releases/download/v$Version/', `${github}/v$Version/`)
+      .replace('https://obituary.woodfish.site/download/v$Version/', `${base}/mirror/`);
+    assert.ok(!text.includes('https://github.com/') && !text.includes('https://obituary.woodfish.site/'));
+    await writeFile(file, text);
+    return file;
+  }
+  const mirrorRequests = from => seen.slice(from).filter(url => url.startsWith('/mirror/'));
+  const installedNames = ['.obituary-install.json', 'LICENSE', 'README.txt', 'obit-gui.exe', 'obit.exe', 'obitd.exe'];
+  for (const [engine, shell] of engines) {
+    await t.test(`${engine} falls back to the mirror when GitHub does not answer`, async () => {
+      const destination = join(root, `${engine}-fallback`);
+      const from = seen.length;
+      const result = await run('fallback', ['-DefaultSource'], shell, destination, 'amd64', await sourcesScript('fallback', closedUrl));
+      assert.equal(result.code, 0, result.stderr);
+      assert.match(result.stdout, /GitHub did not answer/);
+      assert.match(result.stdout, /SHA-256 verified:/);
+      assert.deepEqual(mirrorRequests(from), ['/mirror/checksums.txt', `/mirror/${archiveName}`]);
+      assert.deepEqual((await readdir(destination)).sort(), installedNames);
+    });
+  }
+  await t.test('an HTTP error from GitHub is reported, not retried on the mirror', async () => {
+    const from = seen.length;
+    const result = await run('github-404', ['-DefaultSource'], ps7, join(root, 'github-404'), 'amd64', await sourcesScript('github-404', `${base}/not-found`));
+    assert.notEqual(result.code, 0);
+    assert.match(result.stderr, /404/);
+    assert.deepEqual(mirrorRequests(from), []);
+    await assert.rejects(stat(join(root, 'github-404')), { code: 'ENOENT' });
+  });
+  await t.test('-Mirror cn downloads from the mirror without asking GitHub', async () => {
+    const destination = join(root, 'mirror-cn');
+    const from = seen.length;
+    const result = await run('mirror-cn', ['-DefaultSource', '-Mirror', 'cn'], ps7, destination, 'amd64', await sourcesScript('mirror-cn', closedUrl));
+    assert.equal(result.code, 0, result.stderr);
+    assert.doesNotMatch(result.stdout, /GitHub did not answer/);
+    assert.deepEqual(mirrorRequests(from), ['/mirror/checksums.txt', `/mirror/${archiveName}`]);
+    assert.deepEqual((await readdir(destination)).sort(), installedNames);
+  });
+  await t.test('-Mirror and -BaseUrl together are refused before any download', async () => {
+    const from = seen.length;
+    const result = await run('good', ['-Mirror', 'cn'], ps7, join(root, 'mirror-and-base'));
+    assert.notEqual(result.code, 0);
+    assert.match(result.stderr, /either -Mirror or -BaseUrl/);
+    assert.equal(seen.length, from);
+  });
   await t.test('Windows PowerShell 5.1 installs the same verified release', {skip: !engines.some(([name]) => name === 'ps5')}, async () => {
     const result = await run('good', [], ps5, join(root, 'installed-ps5'));
     assert.equal(result.code, 0, result.stderr);
