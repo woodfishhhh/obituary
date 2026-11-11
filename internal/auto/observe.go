@@ -369,7 +369,7 @@ func (e *Engine) Leftovers(root, session string) ([]Notice, error) {
 	var fresh []string
 	for _, p := range now {
 		lp := strings.ToLower(p)
-		if predates(p) || state.LeftoverRejected(root, session, p) || lp == work || strings.HasPrefix(lp, work+string(filepath.Separator)) {
+		if predates(p) || state.LeftoverPathRejected(root, p) || lp == work || strings.HasPrefix(lp, work+string(filepath.Separator)) {
 			continue
 		}
 		fresh = append(fresh, p)

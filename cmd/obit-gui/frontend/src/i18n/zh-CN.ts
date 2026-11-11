@@ -171,7 +171,7 @@ export const zh = {
   "dec.dueAt": (span: string, at: string) => `寿命 ${span}，约 ${at} 下葬`,
   "dec.count": (n: number) => `共 ${n} 项`,
   "dec.approveBody": (_n: number) => "批准后按下面的寿命开始计时。",
-  "dec.rejectBody": "这次不登记，同一会话里不会再为它们提议。",
+  "dec.rejectBody": "这次不登记，这个项目里不会再为它们提议。",
   "dec.noReply": "后台没有返回结果",
   "dec.changed": (id: number, approve: boolean) => `提议 #${id} 已变化，没有${approve ? "批准" : "拒绝"}`,
   "dec.changedText": "内容刚变过，看一遍新的再决定。",

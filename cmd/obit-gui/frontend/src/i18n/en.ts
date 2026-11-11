@@ -164,7 +164,7 @@ export const en: Messages = {
   "dec.dueAt": (span, at) => `lifespan ${span}, buried around ${at}`,
   "dec.count": (n) => plural(n, "1 item", `${n} items`),
   "dec.approveBody": (_n) => "Once approved, each starts the lifespan below.",
-  "dec.rejectBody": "Nothing is registered this time, and this session will not propose them again.",
+  "dec.rejectBody": "Nothing is registered, and this project will not propose them again.",
   "dec.noReply": "The backend returned no result",
   "dec.changed": (id, approve) => `Proposal #${id} changed, so it was not ${approve ? "approved" : "rejected"}`,
   "dec.changedText": "It changed after you looked at it. The list is refreshed; look over the new version before you decide.",

@@ -576,7 +576,7 @@ func TestNoticeRedeliveredAfterContextOrNotificationTimeout(t *testing.T) {
 	}
 }
 
-func TestRejectedLeftoversStayRejectedInSession(t *testing.T) {
+func TestRejectedLeftoversStayRejectedAcrossSessions(t *testing.T) {
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}
@@ -621,8 +621,8 @@ func TestRejectedLeftoversStayRejectedInSession(t *testing.T) {
 	}
 	e.finishEvent("SessionEnd", "s2")
 	st = e.state()
-	if len(st.Proposals) != 2 {
-		t.Fatalf("another session inherited rejection or merged sessions: %+v", st)
+	if len(st.Proposals) != 1 || len(st.Proposals[0].Candidates) != 1 || !strings.HasSuffix(st.Proposals[0].Candidates[0].Path, "fresh.txt") {
+		t.Fatalf("another session repeated decided or pending leftovers: %+v", st)
 	}
 }
 

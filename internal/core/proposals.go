@@ -128,6 +128,14 @@ func (s *Service) ProposeObserved(kind, project, session string, candidates []Ca
 		if st.ObservationCompleted(observed) {
 			return nil
 		}
+		if kind == ProposalLeftovers {
+			candidates = slices.DeleteFunc(candidates, func(c Candidate) bool {
+				return st.LeftoverPathRejected(project, c.Path) || s.leftoverUnavailable(st, project, session, c)
+			})
+			if len(candidates) == 0 {
+				return nil
+			}
+		}
 		idx := -1
 		for i, p := range st.Proposals {
 			if p.Kind == kind && samePath(p.Project, project) && ((kind != ProposalLeftovers && kind != ProposalContainer) || p.Session == session) {
@@ -297,13 +305,19 @@ func (s *Service) ResolveProposal(p Proposal, pending []Candidate) error {
 			return fmt.Errorf("#%d is no longer pending", p.ID)
 		}
 		current := &st.Proposals[idx]
+		var settled []Candidate
 		current.Candidates = slices.DeleteFunc(current.Candidates, func(c Candidate) bool {
 			rev, ok := resolved[candidateKey(c)]
-			return ok && rev == c.Rev
+			if ok && rev == c.Rev {
+				settled = append(settled, c)
+				return true
+			}
+			return false
 		})
 		if len(current.Candidates) == 0 {
 			st.Proposals = append(st.Proposals[:idx], st.Proposals[idx+1:]...)
 		}
+		st.removeLeftoverTwins(p, settled)
 		return nil
 	})
 }
@@ -360,6 +374,7 @@ func (s *Service) reject(refs []string, review func(int, Proposal) error) ([]Pro
 				st.rememberRejectedLeftovers(r.Proposal, s.now())
 			}
 			st.Proposals = append(st.Proposals[:idx], st.Proposals[idx+1:]...)
+			st.removeLeftoverTwins(r.Proposal, r.Proposal.Candidates)
 			if r.Proposal.Kind == ProposalOnboard {
 				if st.Projects == nil {
 					st.Projects = map[string]ProjectState{}

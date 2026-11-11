@@ -21,6 +21,109 @@ import (
 	"github.com/woodfishhhh/obituary/internal/rules"
 )
 
+func TestLeftoverProposalsDeduplicateAcrossSessions(t *testing.T) {
+	f := newFixture(t)
+	c := core.Candidate{Path: f.file("research.md"), Lifespan: "3d", Size: 5}
+	first, _, _, err := f.svc.Propose(core.ProposalLeftovers, f.dir, "first", []core.Candidate{c})
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.Size++
+	if _, _, _, err := f.svc.Propose(core.ProposalLeftovers, f.dir, "second", []core.Candidate{c}); err != nil {
+		t.Fatal(err)
+	}
+	st, err := f.svc.Store.Read()
+	if err != nil || len(st.Proposals) != 1 || !reflect.DeepEqual(st.Proposals[0], first) {
+		t.Fatalf("same leftover has multiple pending proposals or changed its owner: %+v %v", st.Proposals, err)
+	}
+	fresh := core.Candidate{Path: f.file("fresh.md"), Lifespan: "3d"}
+	second, _, added, err := f.svc.Propose(core.ProposalLeftovers, f.dir, "second", []core.Candidate{c, fresh})
+	if err != nil || added != 1 || len(second.Candidates) != 1 || second.Candidates[0].Path != fresh.Path {
+		t.Fatalf("deduplication suppressed distinct leftovers: %+v %d %v", second, added, err)
+	}
+	if _, _, added, err := f.svc.Propose(core.ProposalLeftovers, f.dir+"-other", "second", []core.Candidate{c}); err != nil || added != 1 {
+		t.Fatalf("deduplication crossed projects: %d %v", added, err)
+	}
+}
+
+func TestRejectedLeftoverStaysHandledAcrossSessions(t *testing.T) {
+	f := newFixture(t)
+	c := core.Candidate{Path: f.file("research.md"), Lifespan: "3d"}
+	p, _, _, err := f.svc.Propose(core.ProposalLeftovers, f.dir, "first", []core.Candidate{c})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out, err := f.svc.Reject([]string{fmt.Sprint(p.ID)}); err != nil || len(out) != 1 || out[0].Error != "" {
+		t.Fatalf("reject: %+v %v", out, err)
+	}
+	p, created, added, err := f.svc.Propose(core.ProposalLeftovers, f.dir, "second", []core.Candidate{c})
+	if err != nil || p.ID != 0 || created || added != 0 {
+		t.Fatalf("decided leftover was proposed again: %+v %v %d %v", p, created, added, err)
+	}
+	st, err := f.svc.Store.Read()
+	if err != nil || len(st.Items) != 0 || len(st.Burials) != 0 || len(st.Proposals) != 0 {
+		t.Fatalf("rejection changed registration: %+v %v", st, err)
+	}
+}
+
+func TestLeftoverDecisionClearsLegacyTwins(t *testing.T) {
+	for _, decision := range []string{"resolve", "reject", "retry", "refreshed"} {
+		t.Run(decision, func(t *testing.T) {
+			f := newFixture(t)
+			c := core.Candidate{Path: f.file("research.md"), Lifespan: "3d", Rev: 2}
+			fresh := core.Candidate{Path: f.file("fresh.md"), Lifespan: "3d", Rev: 33}
+			p := core.Proposal{ID: 247, Kind: core.ProposalLeftovers, Project: f.dir, Session: "first", Candidates: []core.Candidate{c}}
+			twin := p
+			twin.ID, twin.Session = 248, "second"
+			twin.Candidates = []core.Candidate{c, fresh}
+			twin.Candidates[0].Rev = 32
+			if err := f.svc.Store.Update(func(st *core.State) error {
+				st.NextID, st.Proposals = 249, []core.Proposal{p, twin}
+				return nil
+			}); err != nil {
+				t.Fatal(err)
+			}
+			if decision == "reject" {
+				if out, err := f.svc.Reject([]string{"247"}); err != nil || len(out) != 1 || out[0].Error != "" {
+					t.Fatalf("reject: %+v %v", out, err)
+				}
+			} else {
+				claimed, release, err := f.svc.ClaimProposal("247")
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer release()
+				var pending []core.Candidate
+				if decision == "retry" {
+					pending = claimed.Candidates
+				}
+				if decision == "refreshed" {
+					if _, _, _, err := f.svc.Propose(p.Kind, p.Project, p.Session, []core.Candidate{c}); err != nil {
+						t.Fatal(err)
+					}
+				}
+				if err := f.svc.ResolveProposal(claimed, pending); err != nil {
+					t.Fatal(err)
+				}
+			}
+			st, err := f.svc.Store.Read()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if decision == "retry" || decision == "refreshed" {
+				if len(st.Proposals) != 2 || len(st.Proposals[1].Candidates) != 2 {
+					t.Fatalf("unresolved leftover lost pending twins: %+v", st.Proposals)
+				}
+			} else if len(st.Proposals) != 1 || st.Proposals[0].ID != twin.ID || !reflect.DeepEqual(st.Proposals[0].Candidates, []core.Candidate{fresh}) {
+				t.Fatalf("decided leftover retained legacy twin: %+v", st.Proposals)
+			}
+			if len(st.Items) != 0 || len(st.Burials) != 0 || len(st.Projects) != 0 {
+				t.Fatalf("settling proposals granted consent or moved content: %+v", st)
+			}
+		})
+	}
+}
+
 func TestProposalShortProjectSharesConsent(t *testing.T) {
 	f := newFixture(t)
 	path := f.file("debug.log")

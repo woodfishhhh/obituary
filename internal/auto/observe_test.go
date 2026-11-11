@@ -294,6 +294,61 @@ func TestLeftoversDoNotMistakeExpandedDirectoriesForNewFiles(t *testing.T) {
 	}
 }
 
+func TestLeftoversDeduplicateSessions(t *testing.T) {
+	if testing.Short() {
+		t.Skip("session leftovers use a real Git repository")
+	}
+	for _, decision := range []string{"approve", "reject"} {
+		t.Run(decision, func(t *testing.T) {
+			r := newRepo(t)
+			for _, session := range []string{"first", "second"} {
+				if err := r.engine.Snapshot(r.root, session); err != nil {
+					t.Fatal(err)
+				}
+			}
+			path := r.write("research.md", "keep this research")
+			for _, session := range []string{"first", "second"} {
+				if _, err := r.engine.Leftovers(r.root, session); err != nil {
+					t.Fatal(err)
+				}
+			}
+			st, err := r.engine.Svc.Store.Read()
+			if err != nil || len(st.Proposals) != 1 || len(st.Proposals[0].Candidates) != 1 || st.Proposals[0].Candidates[0].Path != path {
+				t.Fatalf("same leftover has multiple pending proposals: %+v %v", st.Proposals, err)
+			}
+			if len(st.Items) != 0 || len(st.Burials) != 0 {
+				t.Fatalf("unapproved leftover changed registration: %+v", st)
+			}
+			refs := []string{fmt.Sprint(st.Proposals[0].ID)}
+			var out []core.ProposalResult
+			if decision == "approve" {
+				out, err = r.engine.Approve(refs)
+			} else {
+				out, err = r.engine.Svc.Reject(refs)
+			}
+			if err != nil || len(out) != 1 || out[0].Error != "" || core.Failed(out[0].Results) {
+				t.Fatalf("decision failed: %+v %v", out, err)
+			}
+			for _, session := range []string{"first", "second"} {
+				if _, err := r.engine.Leftovers(r.root, session); err != nil {
+					t.Fatal(err)
+				}
+			}
+			st, err = r.engine.Svc.Store.Read()
+			wantItems := 0
+			if decision == "approve" {
+				wantItems = 1
+			}
+			if err != nil || len(st.Proposals) != 0 || len(st.Items) != wantItems || len(st.Burials) != 0 {
+				t.Fatalf("decided leftover was proposed again: %+v %v", st, err)
+			}
+			if data, err := os.ReadFile(path); err != nil || string(data) != "keep this research" {
+				t.Fatalf("leftover content changed: %q %v", data, err)
+			}
+		})
+	}
+}
+
 func TestObserveReturnsEachPathOutcome(t *testing.T) {
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
