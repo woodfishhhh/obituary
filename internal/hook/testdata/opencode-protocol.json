@@ -1,0 +1,23 @@
+{
+  "sources": [
+    "https://github.com/anomalyco/opencode/blob/894e30395c49f65fc6256902eee8f887698da7d3/packages/core/src/tool.ts"
+  ],
+  "note": "Document-shaped host callbacks and their intended bridge v1 requests; host-to-bridge TypeScript conversion is phase two. Local and shell evidence is verified runtime metadata, never inferred from tool names. V1 and V2 callback shapes stay distinct.",
+  "cases": [
+    {
+      "name": "v1-before",
+      "host": {"input": {"tool": "bash", "sessionID": "session-1", "callID": "call-1"}, "output": {"args": {"command": "rm debug.log", "description": "remove scratch log"}}},
+      "bridge": {"version": 1, "agent": "opencode", "event": "PreToolUse", "host_event": "tool.execute.before", "tool": "bash", "session": "session-1", "cwd": "C:/repo", "command": "rm debug.log", "shell": "bash", "local": true, "context_delivery": false}
+    },
+    {
+      "name": "v2-before",
+      "host": {"tool": "shell", "sessionID": "session-1", "agent": "build", "input": {"command": "Remove-Item debug.log"}},
+      "bridge": {"version": 1, "agent": "opencode", "event": "PreToolUse", "host_event": "execute.before", "tool": "shell", "session": "session-1", "cwd": "C:/repo", "command": "Remove-Item debug.log", "shell": "powershell", "local": true, "context_delivery": false}
+    },
+    {
+      "name": "v2-write-completed",
+      "host": {"tool": "write", "sessionID": "session-1", "agent": "build", "input": {"filePath": "C:/repo/debug.log", "content": "scratch"}, "status": "completed", "result": {"content": [{"type": "text", "text": "Wrote file successfully."}]}},
+      "bridge": {"version": 1, "agent": "opencode", "event": "PostToolUse", "host_event": "execute.after", "tool": "write", "session": "session-1", "cwd": "C:/repo", "success": true, "paths": ["C:/repo/debug.log"], "local": true, "context_delivery": true}
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "fixture_kind": "trust-state-not-hook-stdin",
+  "configuredEnabled": true,
+  "runtimeHooksEnabled": true,
+  "trustState": "pending_trust",
+  "admissionClass": "pending",
+  "effectiveRunnable": false,
+  "reasonCode": "workspace_hooks_pending_trust"
+}

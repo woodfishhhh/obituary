@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"session_id\":\"old\",\"session_id\":\"new\",\"tool_input\":{\"file_path\":\"first\",\"file_path\":\"last\"}}")

@@ -1,0 +1,9 @@
+{
+  "conversationId": "agy-session",
+  "workspacePaths": [
+    "C:/repo"
+  ],
+  "transcriptPath": "C:/brain/transcript.jsonl",
+  "artifactDirectoryPath": "C:/brain",
+  "modelName": "gemini"
+}

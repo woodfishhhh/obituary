@@ -1,0 +1,15 @@
+{
+  "hookEventName": "PreToolUse",
+  "hook_event_name": "PreToolUse",
+  "sessionId": "zcode-main",
+  "session_id": "zcode-main",
+  "cwd": "C:/work/repo",
+  "mode": "default",
+  "permission_mode": "default",
+  "toolName": "Bash",
+  "tool_name": "Bash",
+  "toolInput": {"command": "rm -rf scratch"},
+  "tool_input": {"command": "rm -rf scratch"},
+  "toolCallId": "call-1",
+  "tool_use_id": "call-1"
+}

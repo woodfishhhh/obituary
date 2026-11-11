@@ -1,0 +1,7 @@
+{
+  "retrieved": "2026-11-09",
+  "sources": [
+    "https://antigravity.google/docs/hooks"
+  ],
+  "notes": "Native payload has no event name; tests supply Invocation.Event as the installed --event argument. Synthetic Windows paths include two workspaces. Post stdout is ignored, so observation remains deferred."
+}

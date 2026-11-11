@@ -1,0 +1,16 @@
+{
+  "hookEventName": "PostToolUse",
+  "sessionId": "subagent_worker-1",
+  "cwd": "C:/work/repo",
+  "toolName": "ApplyPatch",
+  "toolInput": {"patch_text": "*** Begin Patch\n*** Add File: patch.log\n+debug\n*** Update File: old.log\n*** Move to: moved.log\n@@\n-old\n+new\n*** Delete File: removed.log\n*** End Patch"},
+  "toolResponse": {
+    "files": [
+      {"filePath": "C:/work/repo/patch.log", "type": "add", "structuredPatch": [], "additions": 1, "deletions": 0},
+      {"filePath": "C:/work/repo/old.log", "type": "move", "movePath": "C:/work/repo/moved.log", "structuredPatch": [], "additions": 1, "deletions": 1},
+      {"filePath": "C:/work/repo/removed.log", "type": "delete", "structuredPatch": [], "additions": 0, "deletions": 1}
+    ],
+    "structuredPatch": [],
+    "summary": "3 files changed"
+  }
+}

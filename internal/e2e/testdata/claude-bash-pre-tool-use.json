@@ -1,0 +1,15 @@
+{
+  "cwd": "C:/isolated/repo",
+  "effort": {"level": "medium"},
+  "hook_event_name": "PreToolUse",
+  "permission_mode": "default",
+  "prompt_id": "captured-prompt",
+  "session_id": "captured-session",
+  "tool_input": {
+    "command": "echo OBIT_PROTOCOL_CAPTURE",
+    "description": "Echo the protocol capture marker"
+  },
+  "tool_name": "Bash",
+  "tool_use_id": "captured-tool",
+  "transcript_path": "C:/isolated/session.jsonl"
+}

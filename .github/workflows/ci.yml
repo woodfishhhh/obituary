@@ -1,0 +1,291 @@
+# Full tests run here, not on developer machines (D-0038): several workers
+# running the whole suite on one machine slowed every package 20x or more.
+# The repository is private and Windows runners bill at twice the Linux rate
+# (one day of per-push full runs cost about 1284 billable minutes), so pushes
+# and PRs run the short tier on one runner; the four full shards run nightly
+# when main changed and on demand; the mutation suites run weekly.
+name: ci
+
+on:
+  push:
+    branches: [main]
+    # Documentation-only pushes do not need a Windows test run.
+    paths-ignore: ["docs/**", "**/*.md"]
+  pull_request:
+    paths-ignore: ["docs/**", "**/*.md"]
+  workflow_dispatch:
+    inputs:
+      full:
+        description: Run the four full test shards
+        type: boolean
+        default: true
+      mutations:
+        description: Also run both mutation suites
+        type: boolean
+        default: false
+  schedule:
+    - cron: "17 18 * * *" # nightly full shards, 02:17 Beijing, only if main changed
+    - cron: "47 18 * * 0" # weekly mutation suites, Monday 02:47 Beijing
+
+concurrency:
+  group: ci-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+env:
+  GOTESTSUM: gotest.tools/gotestsum@v1.13.0
+
+jobs:
+  # Packaging is slow and rarely touched: on pushes, run the snapshot build
+  # and installer tests only when packaging inputs changed (always on PRs and
+  # manual runs; nightly when main changed). A Linux check costs a fraction of
+  # a Windows minute.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      package: ${{ steps.diff.outputs.package }}
+      recent: ${{ steps.diff.outputs.recent }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: diff
+        env:
+          BEFORE: ${{ github.event.before }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          # Nightly runs are skipped when nothing landed in the last day.
+          if [ -n "$(git log -1 --since='25 hours ago' --format=%H)" ]; then
+            echo "recent=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "recent=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$EVENT" = "schedule" ]; then
+            echo "package=$(git log -1 --since='25 hours ago' --format=true)" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if [ "$EVENT" != "push" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            echo "package=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if git diff --name-only "$BEFORE" "$GITHUB_SHA" | grep -qE '^(\.goreleaser\.yaml|packaging/|scripts/|cmd/obit-gui/frontend/|cmd/[^/]+/resources\.go$|internal/tray/obituary\.ico$|\.github/workflows/|go\.(mod|sum)$|LICENSE$)'; then
+            echo "package=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "package=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: changes
+    if: needs.changes.outputs.package == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "22"
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          version: "11.11.0"
+          run_install: false
+      - name: Build release archives and manifests (no publishing)
+        uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
+        with:
+          distribution: goreleaser
+          version: v2.20.0
+          args: release --snapshot --clean --skip=publish
+      - name: Verify Windows executable resources
+        run: go run ./scripts/winres -check bin/release
+      - name: Finalize local channel manifests
+        run: node scripts/finalize-manifests.mjs bin/release
+      - name: Verify snapshot installer without changing user PATH
+        env:
+          OBIT_INSTALL_TEST_ROOT: ${{ runner.temp }}
+        run: node --test scripts/install.test.mjs
+      - name: Verify committed frontend dist
+        shell: pwsh
+        run: |
+          if (Test-Path cmd/obit-gui/frontend/package.json) {
+            $changes = git diff --name-only HEAD -- cmd/obit-gui/frontend/dist
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            # Include ignored new assets, too: every generated file must be committed.
+            $untracked = git ls-files --others -- cmd/obit-gui/frontend/dist
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            if ($changes -or $untracked) {
+              Write-Output $changes
+              Write-Output $untracked
+              Write-Output '::error::frontend/dist is stale. Run pnpm build in cmd/obit-gui/frontend locally and commit the updated dist.'
+              exit 1
+            }
+          } else {
+            Write-Output 'No frontend/package.json; using the committed frontend/dist and skipping the rebuild comparison.'
+          }
+
+  # Both target platforms are type-checked on one Linux runner.
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go.mod
+      - name: go vet (windows)
+        env:
+          GOOS: windows
+        run: go vet ./...
+      - name: golangci-lint (windows, new issues only)
+        env:
+          GOOS: windows
+        uses: golangci/golangci-lint-action@4afd733a84b1f43292c63897423277bb7f4313a9 # v8.0.0
+        with:
+          version: v2.15.0
+          args: ${{ github.event_name == 'push' && format('--new-from-rev={0}', github.event.before) || '' }}
+      - name: go vet (linux)
+        env:
+          GOOS: linux
+        run: go vet ./...
+      - name: golangci-lint (linux, new issues only)
+        env:
+          GOOS: linux
+        uses: golangci/golangci-lint-action@4afd733a84b1f43292c63897423277bb7f4313a9 # v8.0.0
+        with:
+          version: v2.15.0
+          args: ${{ github.event_name == 'push' && format('--new-from-rev={0}', github.event.before) || '' }}
+
+  # The supported POSIX suites follow the same short/nightly cadence.
+  linux:
+    needs: changes
+    if: >-
+      github.event_name == 'push' || github.event_name == 'pull_request' ||
+      (github.event_name == 'schedule' && github.event.schedule == '17 18 * * *' && needs.changes.outputs.recent == 'true') ||
+      (github.event_name == 'workflow_dispatch' && inputs.full)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go.mod
+      - name: Build POSIX packages
+        run: go build ./...
+      - name: POSIX tests (short on push/PR, full nightly or on demand)
+        env:
+          EVENT: ${{ github.event_name }}
+          TMPDIR: /tmp
+        run: |
+          args=()
+          if [ "$EVENT" = "push" ] || [ "$EVENT" = "pull_request" ]; then
+            args+=(-short)
+          fi
+          go test "${args[@]}" ./internal/winfs ./internal/pathutil ./internal/app ./internal/config ./internal/cli/daemon
+          # Native burial fixtures stay on Windows while POSIX moves are unsupported.
+          go test "${args[@]}" -run '^TestPOSIX' ./internal/core ./internal/auto ./internal/hook ./internal/integrate
+
+  # Pushes and PRs: the short tier on one runner (go test -short ./...).
+  short:
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go.mod
+      - name: Build without generated Windows resources
+        run: go build ./...
+      # pwsh, never Git Bash: see the note on the full shards below.
+      - name: go test -short
+        shell: pwsh
+        run: go run ${{ env.GOTESTSUM }} --format testname --jsonfile test.json -- -short -count=1 -timeout 20m ./...
+      - name: Slowest 30 tests
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "### Slowest short-tier tests"
+            echo '```'
+            go run ${{ env.GOTESTSUM }} tool slowest --jsonfile test.json --threshold 1s | head -30
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+  # Nightly (when main changed) and on demand: the four slowest areas each get
+  # a runner; the wall time is the slowest shard instead of the sum. Keep
+  # "rest" as the complement of the others.
+  test:
+    needs: changes
+    if: >-
+      (github.event_name == 'schedule' && github.event.schedule == '17 18 * * *' && needs.changes.outputs.recent == 'true') ||
+      (github.event_name == 'workflow_dispatch' && inputs.full)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        shard:
+          - { name: e2e, pkgs: "./internal/e2e" }
+          - { name: core, pkgs: "./internal/core" }
+          - { name: install, pkgs: "./internal/integrate ./internal/cli/init ./internal/cli/doctor" }
+          - { name: rest, pkgs: "" }
+    name: test (${{ matrix.shard.name }})
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go.mod
+      # Run tests from pwsh, never from Git Bash: the MSYS runtime enables
+      # SeBackupPrivilege and SeRestorePrivilege on an elevated token and every
+      # child inherits them, so the deny-ACL fixtures stop denying anything.
+      - name: go test
+        shell: pwsh
+        run: |
+          # @() keeps a single package an array; a bare string would be split.
+          $pkgs = @("${{ matrix.shard.pkgs }}" -split ' ' | Where-Object { $_ })
+          if ($pkgs.Count -eq 0) {
+            $pkgs = @(go list ./... | Where-Object { $_ -notmatch '/internal/(e2e|core|integrate|cli/init|cli/doctor)$' })
+          }
+          go run ${{ env.GOTESTSUM }} --format testname --jsonfile test.json -- -count=1 -timeout 30m $pkgs
+      - name: Slowest 30 tests
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "### Slowest tests (${{ matrix.shard.name }})"
+            echo '```'
+            go run ${{ env.GOTESTSUM }} tool slowest --jsonfile test.json --threshold 1s | head -30
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+  mutations:
+    if: (github.event_name == 'schedule' && github.event.schedule == '47 18 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.mutations)
+    runs-on: windows-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { name: mcp, run: TestMCPMutations, pkg: ./internal/cli/mcp }
+          - { name: delete-guard, run: TestDeleteGuardMutations, pkg: ./internal/cli/remove }
+    name: mutations (${{ matrix.suite.name }})
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go.mod
+      - name: ${{ matrix.suite.run }}
+        env:
+          OBIT_TEST_MCP_MUTATIONS: "1"
+          OBIT_TEST_DELETE_MUTATIONS: "1"
+        run: go test -count=1 -timeout 100m -run ${{ matrix.suite.run }} ${{ matrix.suite.pkg }}

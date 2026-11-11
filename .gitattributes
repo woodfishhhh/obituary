@@ -1,0 +1,4 @@
+# Check out text files with LF everywhere. Mutation tests patch source by
+# exact text, and Windows runners default to core.autocrlf=true (CRLF).
+* text=auto eol=lf
+*.ps1 text eol=crlf

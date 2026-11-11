@@ -1,0 +1,1 @@
+{"hook_event_name":"PostToolUse","session_id":"vscode-1","timestamp":"2026-11-09T00:00:00Z","cwd":"C:/repo","tool_name":"Write","tool_input":{"path":"C:/repo/debug.log","file_text":"debug"},"tool_result":{"result_type":"success","text_result_for_llm":"created"}}

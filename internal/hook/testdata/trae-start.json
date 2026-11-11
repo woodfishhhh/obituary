@@ -1,0 +1,6 @@
+{
+  "session_id": "trae-session",
+  "cwd": "C:/repo",
+  "hook_event_name": "SessionStart",
+  "source": "startup"
+}

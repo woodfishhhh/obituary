@@ -1,0 +1,105 @@
+# Ship Windows zip archives with LICENSE and SHA-256 checksums so downloads
+# can be verified before installation.
+version: 2
+project_name: obituary
+dist: bin/release
+
+before:
+  hooks:
+    - node scripts/build-frontend.mjs
+    - go run ./scripts/winres -version {{ .Version }}
+
+builds:
+  - id: obit
+    main: ./cmd/obit
+    binary: obit
+    env: [CGO_ENABLED=0]
+    goos: [windows]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+
+  - id: obitd
+    main: ./cmd/obitd
+    binary: obitd
+    env: [CGO_ENABLED=0]
+    goos: [windows]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags:
+      - -s -w -H windowsgui
+
+  - id: obit-gui
+    main: ./cmd/obit-gui
+    binary: obit-gui
+    env: [CGO_ENABLED=0]
+    goos: [windows]
+    goarch: [amd64]
+    tags: [desktop, production]
+    flags: [-trimpath]
+    ldflags:
+      - -s -w -H windowsgui
+
+archives:
+  - ids: [obit, obitd, obit-gui]
+    formats: [zip]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    # The desktop GUI is amd64-only; arm64 ships the CLI and daemon.
+    allow_different_binary_count: true
+    files:
+      - LICENSE
+      - src: packaging/README.txt
+        strip_parent: true
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ .Version }}-SNAPSHOT-{{ .ShortCommit }}"
+
+# Reference: goreleaser/goreleaser internal/pipe/{scoop,winget} at v2.20.0.
+# Both pipes derive SHA-256 from the zip itself. Publishing remains manual.
+# scripts/finalize-manifests.mjs adds Scoop notes and WinGet's directory PATH.
+scoops:
+  - name: obituary
+    repository:
+      owner: woodfishhhh
+      name: scoop-bucket
+    skip_upload: true
+    url_template: "https://github.com/woodfishhhh/obituary/releases/download/v{{ .Version }}/{{ .ArtifactName }}"
+
+winget:
+  - name: obituary
+    package_identifier: woodfishhhh.Obituary
+    package_name: Obituary
+    publisher: woodfishhhh
+    publisher_url: https://github.com/woodfishhhh
+    publisher_support_url: https://github.com/woodfishhhh/obituary/issues
+    homepage: https://github.com/woodfishhhh/obituary
+    short_description: Give files a lifespan and restore them from a graveyard.
+    license: MIT
+    license_url: https://github.com/woodfishhhh/obituary/blob/main/LICENSE
+    installation_notes: >-
+      Before removing binaries, run obit uninstall --yes in the current project;
+      data is kept by default. The desktop GUI is available on amd64 only and
+      requires WebView2 Runtime. Close Obituary programs before upgrading.
+    repository:
+      owner: microsoft
+      name: winget-pkgs
+    skip_upload: true
+    url_template: "https://github.com/woodfishhhh/obituary/releases/download/v{{ .Version }}/{{ .ArtifactName }}"
+
+# WinGet's portable installer and 1.10 installer schema do not provide Start
+# menu shortcuts (microsoft/winget-cli Workflows/PortableFlow.cpp); use the
+# PowerShell installer or Scoop for a Start menu entry.
+
+release:
+  draft: true
+  prerelease: auto
+
+# TODO: add Authenticode signing in builds[].hooks.post, before archives and
+# checksums are produced. Add detached checksum signatures here when agreed.
+# signs:
+#   - artifacts: checksum

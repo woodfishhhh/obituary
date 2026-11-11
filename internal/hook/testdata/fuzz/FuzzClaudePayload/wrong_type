@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"tool_input\":{\"file_path\":[\"x\"],\"notebook_path\":false,\"command\":{\"nested\":1}}}")

@@ -1,0 +1,12 @@
+{
+  "session_id": "minimax-session",
+  "transcript_path": null,
+  "cwd": "C:\\repo",
+  "tool_use_id": "tool-1",
+  "tool_input": {
+    "timeout": 60,
+    "command": "Remove-Item -LiteralPath scratch.log"
+  },
+  "tool_name": "bash",
+  "hook_event_name": "PreToolUse"
+}

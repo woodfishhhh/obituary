@@ -1,0 +1,6 @@
+bin/
+*.exe
+cmd/*/*.syso
+
+# Maintainer-only planning docs (separate private repository)
+/docs-internal/

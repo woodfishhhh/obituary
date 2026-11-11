@@ -1,0 +1,14 @@
+{
+    "version": "GENERATED_BY_GORELEASER",
+    "description": "Give files a lifespan and restore them from a graveyard.",
+    "homepage": "https://github.com/woodfishhhh/obituary",
+    "license": "MIT",
+    "architecture": {
+        "64bit": { "shortcuts": [["obit-gui.exe", "Obituary", "", "obit-gui.exe"]] }
+    },
+    "notes": [
+        "Before removing binaries, run obit uninstall --yes in the current project; data is kept by default.",
+        "Close Obituary programs before upgrading. Keep obit.exe and obitd.exe in the same directory.",
+        "The amd64 package also includes obit-gui.exe and requires WebView2 Runtime; arm64 includes only the CLI and daemon."
+    ]
+}

@@ -1,0 +1,18 @@
+{
+  "toolCall": {
+    "name": "run_command",
+    "args": {
+      "CommandLine": "rm scratch.log",
+      "Cwd": "C:/repo",
+      "WaitMsBeforeAsync": 5000
+    }
+  },
+  "stepIdx": 19,
+  "conversationId": "agy-session",
+  "workspacePaths": [
+    "C:/repo"
+  ],
+  "transcriptPath": "C:/brain/transcript.jsonl",
+  "artifactDirectoryPath": "C:/brain",
+  "modelName": "gemini"
+}

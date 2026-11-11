@@ -1,0 +1,2 @@
+go test fuzz v1
+string("cd x &&\n\nrm -rf dist\n")

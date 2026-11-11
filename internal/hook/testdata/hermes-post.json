@@ -1,0 +1,14 @@
+{
+  "_source": "Bridge v1 projection of post_tool_call; ignored callback response, paths from write_file args.path, success from verified successful result. https://github.com/NousResearch/hermes-agent/blob/b766b76988449e15e3914037d3e03fb96af72774/tools/file_tools.py WRITE_FILE_SCHEMA and https://hermes-agent.nousresearch.com/docs/developer-guide/plugins.",
+  "version": 1,
+  "agent": "hermes",
+  "event": "PostToolUse",
+  "host_event": "post_tool_call",
+  "tool": "write_file",
+  "session": "conversation-1",
+  "cwd": "C:\\repo",
+  "paths": ["C:\\repo\\debug.log"],
+  "local": true,
+  "success": true,
+  "context_delivery": false
+}

@@ -1,0 +1,98 @@
+{
+  "kind": "synthetic",
+  "checked": "2026-11-09",
+	"version_scope": "CLI documented hooks Beta from v1.16.0; current 2026-11-09 documentation, not a pinned executable; IDE Craft binary version unverified.",
+  "host_execution": "No CodeBuddy/WorkBuddy client installed or run; IDE success:true is a deliberately restricted compatibility envelope, not a recorded native result.",
+  "references": [
+    {
+      "url": "https://www.codebuddy.cn/docs/cli/hooks",
+      "fields": [
+        "session_id",
+        "cwd",
+        "hook_event_name",
+        "source",
+        "tool_name",
+        "tool_input.command",
+        "tool_input.file_path",
+        "tool_response.filePath",
+        "tool_response.success",
+        "stop_hook_active",
+        "reason"
+      ],
+      "contracts": [
+        "Grouped hooks; explicit timeout seconds; hooks merge across CLI scopes; Windows hook launcher Git Bash; Claude deny and additionalContext; PostToolUseFailure is not a successful write"
+      ]
+    },
+    {
+      "url": "https://www.codebuddy.cn/docs/ide/Features/Hooks",
+      "fields": [
+        "session_id",
+        "cwd",
+        "hook_event_name",
+        "source",
+        "tool_name",
+        "tool_input.command",
+        "tool_input.requires_approval",
+        "tool_input.filePath",
+        "tool_response",
+        "stop_hook_active",
+        "reason"
+      ],
+      "contracts": [
+        "CLI/IDE tool aliases match bidirectionally; native execute_command/write_to_file/replace_in_file; project settings override user settings; success result schema is not defined; success:true compatibility only"
+      ]
+    },
+    {
+      "url": "https://www.codebuddy.cn/docs/cli/env-vars",
+      "fields": [
+        "CODEBUDDY_CONFIG_DIR",
+        "CODEBUDDY_CODE_SHELL",
+        "CODEBUDDY_SANDBOX_IMAGE",
+        "CODEBUDDY_CODE_GIT_BASH_PATH"
+      ],
+      "contracts": [
+        "Hook launcher does not attest actual tool shell or backend; never trust invented tool_input.shell/local"
+      ]
+    },
+    {
+      "url": "https://www.codebuddy.cn/docs/cli/mcp",
+      "fields": [
+        "mcpServers",
+        "command",
+        "args"
+      ],
+      "contracts": [
+        "JSONC; first existing user .codebuddy/.mcp.json, .codebuddy/mcp.json, .codebuddy.json; first existing project .mcp.json, mcp.json; local > project > user"
+      ]
+    },
+    {
+      "url": "https://www.codebuddy.cn/docs/cli/memory",
+      "fields": [
+        "CODEBUDDY.md"
+      ],
+      "contracts": [
+        "Global config root and project root rules"
+      ]
+    },
+    {
+      "url": "https://www.codebuddy.cn/docs/cli/skills",
+      "fields": [
+        "skills/obituary/SKILL.md"
+      ],
+      "contracts": [
+        "User/project .codebuddy skills; no trust is granted by installation"
+      ]
+    }
+  ],
+  "fixture_notes": {
+    "cli-pre": "Bash command is recognizable but remains neutral without verified shell/backend.",
+    "cli-post": "Official Write success envelope with Windows cwd and relative path.",
+    "ide-pre": "Native tool alias; matcher alias is not shell evidence.",
+    "ide-post": "Native filePath with synthetic success:true compatibility envelope; other IDE responses skipped.",
+    "start": "Shared lifecycle envelope.",
+    "stop": "Always silent.",
+    "end": "Always silent.",
+    "failed": "Failed-event name; failure error text is synthetic.",
+    "remote": "Synthetic negative ssh:// cwd; no remote schema is claimed. file_path fallback for IDE is compatibility only; conflicting keys are rejected."
+  }
+}

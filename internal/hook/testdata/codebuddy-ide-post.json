@@ -1,0 +1,13 @@
+{
+  "session_id": "codebuddy-session",
+  "cwd": "C:/repo",
+  "hook_event_name": "PostToolUse",
+  "tool_name": "write_to_file",
+  "tool_input": {
+    "filePath": "debug.log",
+    "content": "diagnostics"
+  },
+  "tool_response": {
+    "success": true
+  }
+}

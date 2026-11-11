@@ -1,0 +1,11 @@
+{
+  "session_id": "trae-session",
+  "cwd": "C:/repo",
+  "hook_event_name": "PreToolUse",
+  "tool_use_id": "tool-1",
+  "tool_name": "RunCommand",
+  "llm_tool_name": "RunCommand",
+  "tool_input": {
+    "command": "rm scratch.log"
+  }
+}

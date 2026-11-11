@@ -1,0 +1,135 @@
+/* J 一行: Windows 11 Acrylic. The logo's colours sit behind frosted glass as
+   light (cobalt high left, sky, gold low right); the sheet blurs them. Native
+   Segoe UI Variable, Fluent list rows, keycaps that name every shortcut.
+   Colours: variants.ts tokens. */
+
+.pl {
+  position: relative;
+  display: grid;
+  min-height: 0;
+  padding: 18px;
+  overflow: hidden;
+  color: var(--text);
+  font-family: var(--font);
+  background:
+    radial-gradient(60% 70% at 8% 0%, var(--light-cobalt), transparent 70%),
+    radial-gradient(50% 60% at 62% 38%, var(--light-sky), transparent 70%),
+    radial-gradient(55% 65% at 100% 100%, var(--light-gold), transparent 70%),
+    var(--bg);
+}
+/* Acrylic grain, so the glass reads as a material and not a flat fill. */
+.pl::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.05; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.pl :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.pl-sheet {
+  position: relative; z-index: 1;
+  display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto;
+  min-height: 0;
+  border: 1px solid var(--glass-edge);
+  border-radius: 12px;
+  background: var(--glass);
+  backdrop-filter: blur(40px) saturate(150%);
+  box-shadow: var(--shadow-pop);
+}
+
+/* ── The line ─────────────────────────────────────────── */
+.pl-search { position: relative; display: flex; align-items: center; gap: 14px; height: 68px; padding: 0 22px; border-bottom: 1px solid var(--line); cursor: text; }
+.pl-search img { width: 28px; height: 28px; flex-shrink: 0; }
+.pl-search input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; outline: none; color: var(--text); font-family: var(--display); font-size: 21px; font-weight: 400; }
+.pl-search input::placeholder { color: var(--muted); }
+.pl-search input:focus-visible { outline: none; }
+.pl-search:focus-within { box-shadow: inset 0 -2px 0 var(--cobalt); }
+.pl-search:focus-within .pl-lens { color: var(--cobalt); }
+.pl-lens { flex-shrink: 0; color: var(--muted); transition: color 120ms; }
+
+.pl-scopes { display: flex; align-items: center; gap: 4px; padding: 8px 14px; border-bottom: 1px solid var(--line); }
+.pl-scopes button { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 11px; border: 1px solid transparent; border-radius: 999px; background: none; color: var(--text-2); font-size: 12.5px; cursor: pointer; transition: background-color 120ms, color 120ms, border-color 120ms; }
+.pl-scopes button:hover { background: var(--hover); color: var(--text); }
+.pl-scopes button[aria-current="page"] { border-color: var(--accent-line); background: var(--accent-soft); color: var(--cobalt); font-weight: 600; }
+.pl-count { min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--chip); color: var(--text-2); font-size: 11px; font-weight: 600; line-height: 18px; text-align: center; font-variant-numeric: tabular-nums; }
+.pl-count.gold { background: var(--gold); color: var(--on-gold); }
+.pl-grow { flex: 1; }
+.pl-paused { color: var(--text-2); font-size: 12px; }
+.pl-scopes .pl-refresh { width: 28px; padding: 0; justify-content: center; color: var(--muted); }
+
+/* ── Rows ─────────────────────────────────────────────── */
+.pl-body { min-height: 0; overflow: auto; padding: 6px 8px 10px; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+.pl-group { padding: 12px 14px 4px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.pl-row {
+  position: relative;
+  display: grid; grid-template-columns: 16px 30px minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 12px; align-items: center;
+  min-height: 52px; padding: 6px 14px; border-radius: 7px; cursor: default;
+  transition: background-color 80ms;
+}
+.pl-row.cmd { grid-template-columns: 30px minmax(0, 1fr); grid-template-rows: auto; min-height: 42px; }
+.pl-row[data-active="true"] { background: var(--row-active); }
+.pl-row[data-active="true"]::before { content: ""; position: absolute; left: 3px; top: 50%; width: 3px; height: 18px; margin-top: -9px; border-radius: 2px; background: var(--cobalt); }
+.pl-row[data-on="true"] { background: var(--accent-soft); }
+.pl-check { grid-row: 1 / 3; appearance: none; width: 16px; height: 16px; margin: 0; border: 1px solid var(--line-2); border-radius: 4px; background: var(--panel); cursor: pointer; opacity: 0.55; transition: opacity 120ms; }
+.pl-row:hover .pl-check, .pl-row[data-active="true"] .pl-check, .pl-check:checked { opacity: 1; }
+.pl-check:checked { border-color: var(--cobalt); background: var(--cobalt) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 12px no-repeat; }
+.pl-icon { grid-row: 1 / 3; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 7px; background: var(--chip); color: var(--text-2); }
+.pl-row.cmd .pl-icon { grid-row: auto; background: var(--accent-soft); color: var(--cobalt); }
+.pl-name { min-width: 0; overflow: hidden; font-size: 14px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.pl-folder { grid-column: 3; min-width: 0; overflow: hidden; color: var(--muted); font-family: var(--mono); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.pl-folder em { margin-left: 12px; font-family: var(--font); font-size: 12px; font-style: normal; color: var(--text-2); }
+.pl-time { grid-column: 4; grid-row: 1 / 3; color: var(--text-2); font-size: 12.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pl-time[data-urgent="true"] { color: var(--cobalt); font-weight: 600; }
+.pl-empty { display: grid; justify-items: center; gap: 4px; padding: 64px 16px; text-align: center; }
+.pl-empty b { font-size: 15px; }
+.pl-empty span { color: var(--muted); font-size: 12.5px; }
+.pl-skel { display: grid; gap: 8px; padding: 10px 6px; }
+.pl-skel i { display: block; height: 44px; border-radius: 7px; background: var(--chip); }
+.pl-error { margin: 0 16px 8px; padding: 8px 12px; border-radius: 7px; background: var(--panel); box-shadow: inset 3px 0 0 var(--text); font-size: 12.5px; }
+
+/* ── The bar: what Enter does ─────────────────────────── */
+.pl-bar { display: flex; align-items: center; gap: 6px; height: 48px; padding: 0 10px 0 18px; border-top: 1px solid var(--line); border-radius: 0 0 12px 12px; background: var(--bar); }
+.pl-context { color: var(--text-2); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.pl-act { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px 0 12px; border: 0; border-radius: 7px; background: none; color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; transition: background-color 100ms; }
+.pl-act:hover:not(:disabled) { background: var(--hover); }
+.pl-act:disabled { color: var(--muted); opacity: 0.6; cursor: not-allowed; }
+.pl-act.gold svg { color: var(--gold-ink); }
+.pl-act.cobalt { color: var(--cobalt); }
+.pl-keys { display: inline-flex; gap: 3px; }
+.pl-keys kbd { display: inline-grid; place-items: center; min-width: 22px; height: 20px; padding: 0 5px; border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 5px; background: var(--panel); color: var(--text-2); font-family: var(--font); font-size: 10.5px; font-weight: 600; }
+.pl-hint { display: inline-flex; align-items: center; gap: 8px; margin-left: 14px; color: var(--text-2); font-size: 12.5px; }
+
+.pl-menu {
+  position: absolute; right: 10px; bottom: 54px; z-index: 6;
+  display: grid; min-width: 220px; padding: 5px;
+  border: 1px solid var(--glass-edge); border-radius: 10px; background: var(--panel);
+  box-shadow: var(--shadow-pop); outline: none;
+  animation: pl-menu 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes pl-menu { from { opacity: 0; transform: translateY(6px); } }
+.pl-menu:focus-visible { outline: none; }
+.pl-menu-item { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border: 0; border-radius: 6px; background: none; color: var(--text); font-size: 13px; text-align: left; cursor: pointer; }
+.pl-menu-item[data-active="true"] { background: var(--row-active); }
+.pl-menu-item.gold svg { color: var(--gold-ink); }
+
+/* ── Shared pages inside the glass ────────────────────── */
+.pl-shared { padding: 18px 22px 28px; }
+.pl-shared .head h1 { font-family: var(--display); font-size: 22px; font-weight: 600; }
+.pl-shared .card { background: var(--panel); box-shadow: 0 0 0 1px var(--line); }
+.pl-shared .card .card { border-radius: 0; background: none; box-shadow: inset 0 1px 0 var(--line), inset 0 -1px 0 var(--line); }
+.pl-shared .row.head-row { background: none; }
+.pl-shared .setting-icon { background: var(--accent-soft); color: var(--cobalt); }
+
+[data-variant="palette"] .btn { border-radius: 6px; }
+[data-variant="palette"] .btn.danger, [data-variant="palette"] .btn.danger.solid { border-color: var(--text); background: var(--text); color: var(--panel); }
+[data-variant="palette"] .btn.danger:hover:not(:disabled) { background: var(--text); filter: brightness(1.3); }
+[data-variant="palette"] .btn.gold { color: var(--on-gold); }
+[data-variant="palette"] .overlay { background: var(--scrim); backdrop-filter: blur(2px); }
+[data-variant="palette"] .dialog { border: 1px solid var(--glass-edge); border-radius: 10px; background: var(--panel); }
+[data-variant="palette"] .toast { border-radius: 8px; background: var(--text); color: var(--panel); }
+[data-variant="palette"] .toasts { bottom: 74px; right: 34px; }
+[data-variant="palette"] .toast.error { box-shadow: inset 4px 0 0 var(--gold), var(--shadow-pop); }
+
+.pl-shared .tag { justify-self: start; }
+@media (prefers-reduced-motion: reduce) {
+  .pl-menu { animation: none; }
+  .pl-row, .pl-scopes button, .pl-act { transition: none; }
+}

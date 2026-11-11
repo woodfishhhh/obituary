@@ -1,0 +1,14 @@
+{
+  "_source": "Bridge v1 projection of AgentPlugin afterTool(context), appendContext reply; successful edit_file input.path from https://github.com/cline/cline/blob/94eecbbe1a2f899c66b118d13656651b0a884e1f/sdk/packages/core/src/extensions/tools/schemas.ts EditFileInputSchema and https://docs.cline.bot/sdk/plugins. This is the Go transport fixture; SDK loader awaits phase two.",
+  "version": 1,
+  "agent": "cline",
+  "event": "PostToolUse",
+  "host_event": "afterTool",
+  "tool": "edit_file",
+  "session": "session-1",
+  "cwd": "C:\\repo",
+  "paths": ["C:\\repo\\debug.log"],
+  "local": true,
+  "success": true,
+  "context_delivery": true
+}

@@ -1,0 +1,47 @@
+{
+  "agent": "minimax-code",
+  "revision": "3c21163c85a9684030cb147bfef48c6284fa3c46",
+  "kind": "synthetic",
+  "recordedClient": false,
+  "fixtures": ["minimax-native-pre.json", "minimax-claude-pre.json", "minimax-post.json", "minimax-start.json", "minimax-end.json", "minimax-stop.json", "minimax-failed.json"],
+  "sources": {
+    "wire": "https://github.com/MiniMax-AI/minimax-code/blob/3c21163c85a9684030cb147bfef48c6284fa3c46/packages/agent-modules/plugin-hooks/src/runner.ts",
+    "toolMapping": "https://github.com/MiniMax-AI/minimax-code/blob/3c21163c85a9684030cb147bfef48c6284fa3c46/packages/agent-modules/plugin-hooks/src/wire-tool-adapter.ts",
+    "toolLifecycle": "https://github.com/MiniMax-AI/minimax-code/blob/3c21163c85a9684030cb147bfef48c6284fa3c46/packages/local-runtime-v2/src/service/turn-system/agent-host/execution/plugin-hook-tool-lifecycle.ts",
+    "writeCapture": "https://github.com/MiniMax-AI/minimax-code/blob/3c21163c85a9684030cb147bfef48c6284fa3c46/packages/agent-tools/src/shared/write-capture.ts",
+    "edit": "https://github.com/MiniMax-AI/minimax-code/blob/3c21163c85a9684030cb147bfef48c6284fa3c46/third_party/pi-mono/packages/coding-agent/src/core/tools/edit.ts",
+    "shell": "https://github.com/MiniMax-AI/minimax-code/blob/3c21163c85a9684030cb147bfef48c6284fa3c46/third_party/pi-mono/packages/coding-agent/src/utils/shell.ts",
+    "localTools": "https://github.com/MiniMax-AI/minimax-code/blob/3c21163c85a9684030cb147bfef48c6284fa3c46/packages/agent-tools/src/desktop/local-pi-tools.ts",
+    "manifest": "https://github.com/MiniMax-AI/minimax-code/blob/3c21163c85a9684030cb147bfef48c6284fa3c46/packages/local-runtime-v2/src/service/plugin-system/plugin/package/minimax-reader.ts",
+    "hooks": "https://github.com/MiniMax-AI/minimax-code/blob/3c21163c85a9684030cb147bfef48c6284fa3c46/packages/agent-modules/plugin-hooks/src/parser.ts",
+    "dataDir": "https://github.com/MiniMax-AI/minimax-code/blob/3c21163c85a9684030cb147bfef48c6284fa3c46/packages/tui/src/runtime/data-dir.ts",
+    "profile": "https://github.com/MiniMax-AI/minimax-code/blob/3c21163c85a9684030cb147bfef48c6284fa3c46/packages/config/src/data-dir.ts",
+    "configuration": "https://agent.minimax.io/docs/cli/configuration.md",
+    "install": "https://github.com/MiniMax-AI/minimax-code/blob/3c21163c85a9684030cb147bfef48c6284fa3c46/README.md#installation",
+    "mcpProject": "https://github.com/MiniMax-AI/minimax-code/blob/3c21163c85a9684030cb147bfef48c6284fa3c46/packages/local-runtime-v2/src/service/mcp/project-config.ts",
+    "mcpPlugin": "https://github.com/MiniMax-AI/minimax-code/blob/3c21163c85a9684030cb147bfef48c6284fa3c46/packages/local-runtime-v2/src/service/plugin-system/mcp/config.ts"
+  },
+  "fields": {
+    "session_id,cwd,transcript_path,hook_event_name": "wire: serializeHookInput",
+    "tool_name,tool_input,tool_use_id,tool_response": "wire: adaptVendorInput; toolLifecycle: buildPluginPostToolEvent",
+    "source": "wire: compatibleSessionStartSource",
+    "reason": "wire: compatibleSessionEndReason",
+    "stop_hook_active,last_assistant_message": "wire: adaptVendorInput Stop",
+    "bash.command,bash.timeout": "toolMapping: native bash input, timeout seconds",
+    "PowerShell.command,PowerShell.timeout": "toolMapping: compatible Windows OS alias; timeout milliseconds; shell/backend is not attested",
+    "write.path,write.content": "toolMapping: isValidNativeWriteInput",
+    "edit.file_path": "toolMapping: isValidCompatibleFileToolInput",
+    "tool_response.tool_name,tool_response.content.type,tool_response.content.text": "writeCapture: buildWriteToolResult; text is ignored as success/path evidence",
+    "tool_response.details.created,tool_response.details.bytes_written,tool_response.details.encoding,tool_response.details.bom": "writeCapture: buildWriteToolResult after successful filesystem capture",
+    "tool_response.details.is_error": "toolLifecycle: isFailedToolResult; failed results are forwarded too",
+    "tool_response.details.diff": "edit: successful write then return diff metadata",
+    "hookSpecificOutput.hookEventName,hookSpecificOutput.additionalContext,hookSpecificOutput.permissionDecision,hookSpecificOutput.permissionDecisionReason": "wire: parsePreToolUseOutput, parsePostToolUseOutput, parseStructuredOutput"
+  },
+  "limits": [
+    "Native and compatible aliases never prove shell or sandbox backend; delete guard remains unsupported.",
+    "Native serialization drops top-level is_error; only captured write/edit result metadata is accepted.",
+    "Project plugins are not auto-discovered; project installation supplies AGENTS.md and approved .mcp.json.",
+    "Local native MCP requires a PATH interpreter and relative argv; a managed node relay pins obit.exe.",
+    "Desktop client and official marketplace submission have not been verified."
+  ]
+}

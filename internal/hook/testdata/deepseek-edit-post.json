@@ -1,0 +1,14 @@
+{
+  "session_id": "dsh-session-1",
+  "cwd": "C:/repo",
+  "transcript_path": "",
+  "hook_event_name": "PostToolUse",
+  "tool_response": "The file C:/repo/debug.log has been updated successfully.",
+  "tool_input": {
+    "new_string": "new",
+    "old_string": "old",
+    "file_path": "C:/repo/debug.log"
+  },
+  "tool_name": "edit",
+  "tool_use_id": "call-1"
+}

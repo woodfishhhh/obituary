@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"tool_input\":{\"command\":\"\",\"patch\":null,\"input\":\"*** Begin Patch\\n*** Update File: x\\n*** Move to: y\\n*** End Patch\"}}")

@@ -1,0 +1,3 @@
+go test fuzz v1
+string("*** Add File: ../a.log")
+string("/mnt/c/repo/../x")

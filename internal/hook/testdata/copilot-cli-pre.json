@@ -1,0 +1,1 @@
+{"sessionId":"cli-1","timestamp":1780000000000,"cwd":"C:/repo","toolName":"powershell","toolArgs":"{\"command\":\"Remove-Item -LiteralPath scratch.log\"}"}

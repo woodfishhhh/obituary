@@ -1,0 +1,22 @@
+{
+  "session_id": "vibe-session",
+  "parent_session_id": null,
+  "transcript_path": "C:/repo/transcript.jsonl",
+  "cwd": "C:/repo",
+  "hook_event_name": "post_tool",
+  "tool_name": "file_system.write_file",
+  "tool_call_id": "tool-2",
+  "tool_input": {
+    "file_path": "C:/repo/debug.log",
+    "content": "debug"
+  },
+  "tool_status": "success",
+  "tool_output": {
+    "file_path": "C:/repo/debug.log",
+    "bytes_written": 5,
+    "content": "debug"
+  },
+  "tool_output_text": "debug",
+  "tool_error": null,
+  "duration_ms": 0
+}

@@ -1,0 +1,11 @@
+{
+  "id": "obituary",
+  "name": "Obituary",
+  "version": "1.0.0",
+  "description": "Local Obituary hook protocol bridge",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

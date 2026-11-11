@@ -1,0 +1,20 @@
+{
+  "retrieved": "2026-11-09",
+  "synthetic": true,
+  "host_verified": false,
+  "sources": {
+    "hooks": "https://docs.qoder.cn/cli/hooks-reference.md",
+    "desktop": "https://docs.qoder.cn/qoder/hooks.md",
+    "settings": "https://docs.qoder.cn/cli/settings-reference.md",
+    "memory": "https://docs.qoder.cn/cli/memory.md",
+    "mcp": "https://docs.qoder.cn/cli/mcp-reference.md",
+    "compatible_fields": "https://docs.qoder.com/cli/hooks.md"
+  },
+  "fields": {
+    "session_id,cwd,hook_event_name": "hooks Input > common fields",
+    "tool_name,tool_input,tool_input.command,tool_input.file_path,tool_input.content,tool_response": "compatible_fields PreToolUse/PostToolUse; CN fixture tests the shared CLI protocol and is not a host recording",
+    "source,reason": "compatible_fields SessionStart/SessionEnd examples",
+    "hookSpecificOutput": "hooks Input and Exit Codes; compatible_fields supplies event-specific Claude JSON fields"
+  },
+  "limitations": "Separate QODERCN_CONFIG_DIR user root; shared project .qoder uses one qoder command with two receipt owners; no shell/backend attestation or real-client acceptance."
+}

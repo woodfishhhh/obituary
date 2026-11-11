@@ -1,0 +1,9 @@
+{
+  "hooks": {
+    "PreToolUse": [{"matcher": "bash|Bash|PowerShell", "hooks": [{"type": "command", "commandWindows": "__OBIT_COMMAND_WINDOWS__", "timeout": 5}]}],
+    "SessionStart": [{"hooks": [{"type": "command", "commandWindows": "__OBIT_COMMAND_WINDOWS__", "timeout": 5}]}],
+    "PostToolUse": [{"matcher": "write|edit", "hooks": [{"type": "command", "commandWindows": "__OBIT_COMMAND_WINDOWS__", "timeout": 5}]}],
+    "Stop": [{"hooks": [{"type": "command", "commandWindows": "__OBIT_COMMAND_WINDOWS__", "timeout": 5}]}],
+    "SessionEnd": [{"hooks": [{"type": "command", "commandWindows": "__OBIT_COMMAND_WINDOWS__", "timeout": 5}]}]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "_source": "Bridge v1 projection of Hermes pre_tool_call(tool_name,args,task_id,**kwargs): https://hermes-agent.nousresearch.com/docs/developer-guide/plugins; terminal args.command. local/shell are plugin-verified backend evidence, not inferred from the tool name.",
+  "version": 1,
+  "agent": "hermes",
+  "event": "PreToolUse",
+  "host_event": "pre_tool_call",
+  "tool": "terminal",
+  "session": "conversation-1",
+  "cwd": "C:\\repo",
+  "command": "cd 'scratch dir' && rm -- 'scratch file.log'",
+  "shell": "bash",
+  "local": true,
+  "context_delivery": false
+}

@@ -1,0 +1,12 @@
+# Complete, independent rows: Cordis replaces a row's entire config.
+# Activation is explicit through --patch or dsh plugin --profile NAME add.
+- insert:
+    - id: obituary-deepseek-hooks
+      name: '@deepseek-ai/dsh-hooks-claude-code'
+      config:
+        configPath: __OBIT_HOOKS__
+        defaultTimeoutMs: 5000
+    - id: obituary-deepseek-writes
+      name: __OBIT_OBSERVER__
+      config:
+        executable: __OBIT_EXECUTABLE__

@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"version\":1,\"id\":1,\"path\":\"@path@\",\"grave\":\"@grave@\",\"graveId\":\"@graveID@\",\"identity\":\"@identity@\",\"isDir\":true,\"children\":[{\"id\":2,\"identity\":\"@identity@\",\"path\":\"ignored old field\"}],\"contains\":[2],\"size\":0,\"buriedAt\":\"2026-11-07T12:00:00Z\",\"purgeAt\":\"2026-11-14T12:00:00Z\",\"reason\":\"bury\"}")

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "name": "obituary",
+  "displayName": "Obituary",
+  "version": "1.0.0",
+  "description": "Restorable deletion and file lifespans for local Windows workspaces.",
+  "author": "Obituary contributors",
+  "icon": "icon.png",
+  "category": "Code",
+  "exampleQueries": [],
+  "apps": [],
+  "mcpServers": [],
+  "skills": [],
+  "hooks": ["hooks/hooks.json"]
+}

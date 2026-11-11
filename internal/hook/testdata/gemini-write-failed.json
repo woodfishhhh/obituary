@@ -1,0 +1,1 @@
+{"session_id":"gemini-1","cwd":"C:/repo","hook_event_name":"AfterTool","tool_name":"write_file","tool_input":{"file_path":"C:/repo/debug.log","content":"debug"},"tool_response":{"llmContent":"Error writing file","returnDisplay":"Error","error":{"message":"Access denied","type":"FILE_WRITE_FAILURE"}}}

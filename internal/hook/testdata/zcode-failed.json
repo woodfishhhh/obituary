@@ -1,0 +1,15 @@
+{
+  "hookEventName": "PostToolUseFailure",
+  "hook_event_name": "PostToolUseFailure",
+  "sessionId": "zcode-main",
+  "session_id": "zcode-main",
+  "cwd": "C:/work/repo",
+  "toolName": "Write",
+  "tool_name": "Write",
+  "toolInput": {"file_path": "C:/work/repo/debug.log", "content": "debug"},
+  "tool_input": {"file_path": "C:/work/repo/debug.log", "content": "debug"},
+  "error": "Permission denied",
+  "error_details": {"message": "Permission denied", "type": "Error"},
+  "isInterrupt": false,
+  "is_interrupt": false
+}

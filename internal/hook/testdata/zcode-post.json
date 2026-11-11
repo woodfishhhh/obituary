@@ -1,0 +1,13 @@
+{
+  "hookEventName": "PostToolUse",
+  "hook_event_name": "PostToolUse",
+  "sessionId": "zcode-main",
+  "session_id": "zcode-main",
+  "cwd": "C:/work/repo",
+  "toolName": "Write",
+  "tool_name": "Write",
+  "toolInput": {"file_path": "C:/work/repo/debug.log", "content": "debug"},
+  "tool_input": {"file_path": "C:/work/repo/debug.log", "content": "debug"},
+  "toolResponse": {"type": "create", "filePath": "C:/work/repo/debug.log", "content": "debug", "structuredPatch": [], "originalFile": null},
+  "tool_response": {"type": "create", "filePath": "C:/work/repo/debug.log", "content": "debug", "structuredPatch": [], "originalFile": null}
+}

@@ -1,0 +1,12 @@
+{
+  "session_id": "codebuddy-session",
+  "cwd": "ssh://example.invalid/workspace",
+  "hook_event_name": "PostToolUse",
+  "tool_name": "write_to_file",
+  "tool_input": {
+    "filePath": "/home/agent/debug.log"
+  },
+  "tool_response": {
+    "success": true
+  }
+}

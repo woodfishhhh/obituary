@@ -1,0 +1,10 @@
+{
+  "session_id": "codebuddy-session",
+  "cwd": "C:/repo",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "execute_command",
+  "tool_input": {
+    "command": "rm -rf scratch",
+    "requires_approval": true
+  }
+}

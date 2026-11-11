@@ -1,0 +1,4 @@
+{
+  "sources": ["https://cursor.com/docs/hooks"],
+  "scope": "Common fields plus documented preToolUse, afterFileEdit, sessionStart examples; synthetic local paths/session IDs. No shell or generic Write parameter schema is invented. afterFileEdit is observation-only and awaits deferred delivery. Empty stdout is neutral with the documented default failClosed=false; no explicit allow is sent."
+}

@@ -1,0 +1,10 @@
+{
+  "session_id": "codebuddy-session",
+  "cwd": "C:/repo",
+  "hook_event_name": "PostToolUseFailure",
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "debug.log"
+  },
+  "error": "permission denied"
+}

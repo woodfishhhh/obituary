@@ -1,0 +1,8 @@
+{
+  "session_id": "vibe-session",
+  "parent_session_id": null,
+  "transcript_path": "C:/repo/transcript.jsonl",
+  "cwd": "C:/repo",
+  "hook_event_name": "post_agent",
+  "agent_name": "main"
+}

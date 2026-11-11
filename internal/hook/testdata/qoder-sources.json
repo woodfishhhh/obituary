@@ -1,0 +1,31 @@
+{
+  "retrieved": "2026-11-09",
+  "synthetic": true,
+  "host_verified": false,
+  "sources": {
+    "ide": "https://docs.qoder.com/extensions/hooks.md",
+    "cli": "https://docs.qoder.com/cli/hooks.md",
+    "settings": "https://docs.qoder.com/cli/settings.md",
+    "memory": "https://docs.qoder.com/cli/memory.md",
+    "mcp": "https://docs.qoder.com/cli/mcp-reference.md",
+    "work": "https://docs.qoder.com/qoderwork/hooks.md"
+  },
+  "fields": {
+    "session_id,cwd,hook_event_name": "ide Writing Hook Scripts > Input; cli Input Format",
+    "source": "ide/cli SessionStart input",
+    "tool_name": "ide Tool Name Mapping: Bash/run_in_terminal, Write/create_file, Edit/search_replace, edit_file",
+    "tool_input.command": "ide/cli PreToolUse example",
+    "tool_input.file_path,tool_input.file_content,tool_response": "ide PostToolUse example (successful events only); file_path mapping for native aliases is compatibility coverage, not a recorded host payload",
+    "reason": "cli SessionEnd input",
+    "stop_hook_active": "ide/cli Stop input",
+    "hookSpecificOutput.hookEventName,permissionDecision,permissionDecisionReason": "ide/cli PreToolUse JSON output at exit 0",
+    "hookSpecificOutput.feedback": "ide PostToolUse: shown to user; never used to acknowledge model delivery",
+    "hookSpecificOutput.additionalContext": "ide/cli SessionStart and UserPromptSubmit"
+  },
+  "limitations": [
+    "Bash is also an IDE alias; neither payload proves actual shell/backend. Pre passes through and is not registered.",
+    "CLI and IDE compatible tool names are indistinguishable; every Post defers context.",
+    "QoderWork has only documented exit-2 blocking; wrapper and rules/MCP physical targets remain unimplemented pending #35 and version verification.",
+    "IDE Windows command launcher and actual hook delivery require real-host verification."
+  ]
+}

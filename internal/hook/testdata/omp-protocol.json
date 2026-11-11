@@ -1,0 +1,19 @@
+{
+  "sources": [
+    "https://github.com/can1357/oh-my-pi/blob/21f1188cf88b2f534c092181968cd5a4d1a9c296/docs/extensions.md",
+    "https://github.com/can1357/oh-my-pi/blob/21f1188cf88b2f534c092181968cd5a4d1a9c296/docs/hooks.md"
+  ],
+  "note": "OMP reuses Pi bridge decoding. These document-shaped callbacks use a stable ctx.sessionManager session id and verified local runtime metadata. tool_result.additionalContext is passive; main-session session_stop and session_shutdown stay silent.",
+  "cases": [
+    {
+      "name": "tool-call",
+      "host": {"type": "tool_call", "toolName": "bash", "toolCallId": "call-1", "input": {"command": "rm debug.log"}},
+      "bridge": {"version": 1, "agent": "omp", "event": "PreToolUse", "host_event": "tool_call", "tool": "bash", "session": "session-1", "cwd": "C:/repo", "command": "rm debug.log", "shell": "bash", "local": true, "context_delivery": false}
+    },
+    {
+      "name": "tool-result-write",
+      "host": {"type": "tool_result", "toolName": "write", "toolCallId": "call-2", "input": {"path": "debug.log", "content": "scratch"}, "content": [{"type": "text", "text": "Successfully wrote 7 bytes to debug.log"}], "isError": false},
+      "bridge": {"version": 1, "agent": "omp", "event": "PostToolUse", "host_event": "tool_result", "tool": "write", "session": "session-1", "cwd": "C:/repo", "success": true, "paths": ["debug.log"], "local": true, "context_delivery": true}
+    }
+  ]
+}

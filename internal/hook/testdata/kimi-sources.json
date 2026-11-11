@@ -1,0 +1,9 @@
+{
+  "retrieved": "2026-11-09",
+  "sources": [
+    "https://github.com/MoonshotAI/kimi-cli/blob/9ab1286b8fe4e6bcd116949a27ce5e0ac3389c82/src/kimi_cli/hooks/events.py",
+    "https://github.com/MoonshotAI/kimi-cli/blob/9ab1286b8fe4e6bcd116949a27ce5e0ac3389c82/src/kimi_cli/soul/toolset.py",
+    "https://github.com/MoonshotAI/kimi-cli/blob/9ab1286b8fe4e6bcd116949a27ce5e0ac3389c82/src/kimi_cli/hooks/runner.py"
+  ],
+  "notes": "Pinned kimi-cli Beta contract, not newer kimi-code. Values synthetic. Post tool_output is opaque str(ret)[:2000], also emitted for ToolError, and must never be parsed as success/path evidence."
+}

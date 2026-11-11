@@ -1,0 +1,9 @@
+{
+  "retrieved": "2026-11-09",
+  "sources": [
+    "https://docs.mistral.ai/vibe/code/cli/hooks",
+    "https://github.com/mistralai/mistral-vibe/blob/c96a6dbb34d34f8a868b3f67b279ecabbf1aa616/vibe/core/tools/builtins/write_file.py",
+    "https://github.com/mistralai/mistral-vibe/blob/c96a6dbb34d34f8a868b3f67b279ecabbf1aa616/vibe/core/tools/builtins/edit.py"
+  ],
+  "notes": "Synthetic Windows paths and IDs in documented payloads; explicit tool_status is required. No inferred shell/runtime signal."
+}

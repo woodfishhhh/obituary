@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("\xef\xbb\xbfmodel='x'\r\n\r\n# obit:mcp:begin (managed by obit init)\r\n[mcp_servers.obituary]\r\ncommand='obit'\r\nargs=['mcp']\r\n# obit:mcp:end\r\n")

@@ -1,0 +1,10 @@
+{
+  "executionNum": 1,
+  "terminationReason": "model_stop",
+  "error": "",
+  "fullyIdle": true,
+  "conversationId": "agy-session",
+  "workspacePaths": [
+    "C:/repo"
+  ]
+}

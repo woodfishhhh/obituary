@@ -1,0 +1,4 @@
+{
+  "sources": ["https://docs.factory.com/harness/hooks", "https://docs.factory.com/droid-cli/settings"],
+  "scope": "Official common envelope and Create.file_path example with synthetic values. The write-unverified fixture deliberately models an unverified failure response, not a claimed official success schema; all Droid post events remain unsupported until success evidence is verified."
+}

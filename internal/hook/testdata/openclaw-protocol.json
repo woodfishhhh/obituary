@@ -1,0 +1,25 @@
+{
+  "sources": [
+    "https://docs.openclaw.ai/plugins/hooks/tool-policy",
+    "https://docs.openclaw.ai/plugins/hooks/prompt-and-session",
+    "https://github.com/openclaw/openclaw/blob/3acbd8cbd5f76b81b9ef2637b19d71c4cb4c47f8/src/agents/code-mode-control-tools.ts"
+  ],
+  "note": "Official callback shapes read 2026-11-09; bridge v1 conversion is reserved for the phase-two plugin. Gateway/sandbox locality and shell require separate runtime verification. after_tool_call ignores returned text, so context_delivery remains false.",
+  "cases": [
+    {
+      "name": "before-local-shell",
+      "host": {"event": {"toolName": "exec", "params": {"command": "rm debug.log"}}, "ctx": {"agentId": "main", "sessionId": "session-1", "sessionKey": "agent:main:main"}},
+      "bridge": {"version": 1, "agent": "openclaw", "event": "PreToolUse", "host_event": "before_tool_call", "tool": "exec", "session": "session-1", "cwd": "C:/repo", "command": "rm debug.log", "shell": "bash", "local": true, "context_delivery": false}
+    },
+    {
+      "name": "before-code-mode",
+      "host": {"event": {"toolName": "exec", "toolKind": "code_mode_exec", "toolInputKind": "javascript", "params": {"code": "console.log('rm debug.log')", "command": "console.log('rm debug.log')"}}, "ctx": {"agentId": "main", "sessionId": "session-1"}},
+      "bridge": {"version": 1, "agent": "openclaw", "event": "PreToolUse", "host_event": "before_tool_call", "tool": "exec", "session": "session-1", "cwd": "C:/repo", "skip_reason": "OpenClaw Code Mode JavaScript", "local": true, "context_delivery": false}
+    },
+    {
+      "name": "after-write",
+      "host": {"event": {"toolName": "write", "params": {"path": "C:/repo/debug.log", "content": "scratch"}, "result": {"content": [{"type": "text", "text": "Successfully wrote 7 bytes"}]}, "durationMs": 1}, "ctx": {"agentId": "main", "sessionId": "session-1"}},
+      "bridge": {"version": 1, "agent": "openclaw", "event": "PostToolUse", "host_event": "after_tool_call", "tool": "write", "session": "session-1", "cwd": "C:/repo", "success": true, "paths": ["C:/repo/debug.log"], "local": true, "context_delivery": false}
+    }
+  ]
+}

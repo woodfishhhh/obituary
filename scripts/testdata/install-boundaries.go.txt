@@ -1,0 +1,26 @@
+
+// Appended only to the uninstall package's temporary overlay in installer tests.
+func NewInstallerTestCmd() *cobra.Command {
+    return newCmd(dependencies{
+        runRegistry: installerRunRegistry{}, menuRegistry: installerMenuRegistry{},
+        previewSchedule: func(string, string, string) string { return "unchanged scheduled task (installer test)" },
+        removeSchedule: func() error { return nil }, stop: func(string) error { return nil },
+        terminal: func() bool { return false },
+    })
+}
+
+type installerRunRegistry struct{}
+func (installerRunRegistry) Get(string) (string, error) { return "", nil }
+func (installerRunRegistry) Read(string) (runkey.Value, error) { return runkey.Value{}, nil }
+func (installerRunRegistry) CompareAndSwap(_ string, before, after runkey.Value) error {
+    if before == (runkey.Value{}) && after == (runkey.Value{}) { return nil }
+    return errors.New("unexpected test Run registry mutation")
+}
+func (installerRunRegistry) Lock() (func(), error) { return func(){}, nil }
+
+type installerMenuRegistry struct{}
+func (installerMenuRegistry) ReadTree(string) (contextmenu.Tree, error) { return nil, nil }
+func (installerMenuRegistry) CompareAndSwap(contextmenu.Change) error {
+    return errors.New("unexpected test menu registry mutation")
+}
+func (installerMenuRegistry) Lock() (func(), error) { return func(){}, nil }

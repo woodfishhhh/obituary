@@ -1,0 +1,14 @@
+{
+  "_source": "Bridge v1 projection of tool.execute.before(input:{tool,sessionID,callID},output:{args}), args.command. https://github.com/Kilo-Org/kilocode/blob/b6a49d01c10d7e26c42a8a14b3441b7a1856c04c/packages/plugin/src/index.ts and https://kilo.ai/docs/automate/extending/plugins. local/shell require runtime evidence; intentional tool-error denial awaits plugin validation.",
+  "version": 1,
+  "agent": "kilocode",
+  "event": "PreToolUse",
+  "host_event": "tool.execute.before",
+  "tool": "bash",
+  "session": "ses_1",
+  "cwd": "C:\\repo",
+  "command": "rm -- 'scratch file.log'",
+  "shell": "bash",
+  "local": true,
+  "context_delivery": false
+}

@@ -1,0 +1,2 @@
+go test fuzz v1
+string("Remove-Item -LiteralPath 'C:\\tmp\\中文 空格'")

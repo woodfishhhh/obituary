@@ -1,0 +1,12 @@
+{
+  "session_id": "kimi-session",
+  "cwd": "C:/repo",
+  "hook_event_name": "PostToolUse",
+  "tool_name": "WriteFile",
+  "tool_input": {
+    "file_path": "C:/repo/debug.log",
+    "content": "debug"
+  },
+  "tool_output": "message='File written successfully.'",
+  "tool_call_id": "tool-2"
+}

@@ -1,0 +1,11 @@
+{
+  "hookEventName": "Stop",
+  "sessionId": "zcode-main",
+  "cwd": "C:/work/repo",
+  "responsePreview": "Done",
+  "responseText": "Done",
+  "last_assistant_message": "Done",
+  "stopHookActive": false,
+  "stop_hook_active": false,
+  "toolCallCount": 1
+}

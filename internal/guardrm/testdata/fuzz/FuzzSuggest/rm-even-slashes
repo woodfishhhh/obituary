@@ -1,0 +1,2 @@
+go test fuzz v1
+string("rm -- keep\x5c\x5c\n")

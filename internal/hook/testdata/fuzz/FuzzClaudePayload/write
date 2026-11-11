@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"hook_event_name\":\"PostToolUse\",\"session_id\":\"c1\",\"cwd\":\"C:/repo\",\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"debug.log\",\"content\":\"中\"}}")

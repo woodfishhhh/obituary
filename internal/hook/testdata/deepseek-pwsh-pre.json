@@ -1,0 +1,12 @@
+{
+  "session_id": "dsh-session-1",
+  "cwd": "C:/repo",
+  "transcript_path": "",
+  "hook_event_name": "PreToolUse",
+  "tool_input": {
+    "command": "Remove-Item -LiteralPath scratch.log",
+    "description": "Remove scratch log"
+  },
+  "tool_name": "pwsh",
+  "tool_use_id": "call-1"
+}

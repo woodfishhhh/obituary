@@ -1,0 +1,1 @@
+{"session_id":"qoder-session","cwd":"C:/repo","hook_event_name":"PreToolUse","tool_name":"run_in_terminal","tool_input":{"command":"rm -rf scratch"}}

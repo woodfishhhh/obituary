@@ -1,0 +1,10 @@
+{
+  "hookEventName": "SessionStart",
+  "hook_event_name": "SessionStart",
+  "sessionId": "zcode-main",
+  "session_id": "zcode-main",
+  "cwd": "C:/work/repo",
+  "source": "startup",
+  "agentName": "main",
+  "agent_type": "main"
+}

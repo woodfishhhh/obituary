@@ -1,0 +1,7 @@
+{
+  "hook_event_name": "PreToolUse",
+  "tool_name": "exec_command",
+  "session_id": "fixture-session",
+  "cwd": "C:/isolated/repo",
+  "tool_input": {"cmd": "rm -Recurse -Force build", "shell": "pwsh.exe", "yield_time_ms": 1000}
+}

@@ -1,0 +1,24 @@
+{
+  "retrieved": "2026-11-09",
+  "synthetic": true,
+  "host_verified": false,
+  "sources": {
+    "hooks": "https://docs.qoder.cn/user-guide/hooks.md",
+    "legacy": "https://help.aliyun.com/zh/lingma/guide-for-using-hooks",
+    "compatible_fields": "https://docs.qoder.com/extensions/hooks.md",
+    "rules": "https://docs.qoder.cn/user-guide/rules.md",
+    "rule_template_readme": "https://atomgit.com/lingma-org/lingma-project-rule-template",
+    "mcp": "https://docs.qoder.cn/user-guide/guide-for-using-mcp.md"
+  },
+  "fields": {
+    "session_id,cwd,hook_event_name": "hooks Writing Hook Scripts > Input",
+    "tool_name,tool_input,tool_response": "hooks Event Reference; PostToolUse means successful execution",
+    "tool_name.run_in_terminal,tool_name.search_replace": "hooks Tool Name Mapping",
+    "tool_input.command": "hooks Quick Start",
+    "tool_input.file_path": "compatible_fields native/Claude tool compatibility fixture; exact Lingma write arguments are not independently specified in the current CN page",
+    "stop_hook_active": "hooks Stop additional fields",
+    "hookSpecificOutput.hookEventName,permissionDecision,permissionDecisionReason": "hooks exit-0 JSON example",
+    "hookSpecificOutput.additionalContext": "Unverified for Lingma; not emitted, and notices remain pending for obit proposals"
+  },
+  "limitations": "Only five documented events; no start/end. No guard without shell/backend evidence. Rule activation metadata is UI-owned; official template file was login/rate limited, so no metadata schema is guessed. Global rules, MCP physical target and skill target are unverified."
+}

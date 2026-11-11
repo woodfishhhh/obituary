@@ -1,0 +1,2 @@
+go test fuzz v1
+string("  rm  -- '中文 空格'")

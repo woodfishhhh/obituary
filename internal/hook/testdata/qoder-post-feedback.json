@@ -1,0 +1,1 @@
+{"session_id":"qoder-session","cwd":"C:/repo","hook_event_name":"PostToolUse","tool_name":"create_file","tool_input":{"file_path":"C:/repo/debug.log","file_content":"debug"},"tool_response":"File written successfully"}

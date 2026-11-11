@@ -1,0 +1,11 @@
+{
+  "obituary": {
+    "enabled": true,
+    "SessionStart": [
+      {"type": "command", "command": "OBIT_SESSION_START", "timeout": 5}
+    ],
+    "Stop": [
+      {"type": "command", "command": "OBIT_STOP", "timeout": 5}
+    ]
+  }
+}

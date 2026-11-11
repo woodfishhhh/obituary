@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("# obit:mcp:begin (managed by obit init)\n# obit:mcp:begin (managed by obit init)\n# obit:mcp:end\n")

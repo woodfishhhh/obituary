@@ -1,0 +1,10 @@
+{
+  "session_id": "trae-session",
+  "cwd": "C:/repo",
+  "hook_event_name": "PostToolUse",
+  "tool_use_id": "tool-2",
+  "tool_name": "Write",
+  "llm_tool_name": "Write",
+  "tool_input": {},
+  "tool_response": {}
+}

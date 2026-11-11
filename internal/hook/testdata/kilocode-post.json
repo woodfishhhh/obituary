@@ -1,0 +1,14 @@
+{
+  "_source": "Bridge v1 projection of tool.execute.after(input:{tool,sessionID,callID,args},output:{title,output,metadata}); path from write args.filePath after confirmed success. https://github.com/Kilo-Org/kilocode/blob/b6a49d01c10d7e26c42a8a14b3441b7a1856c04c/packages/plugin/src/index.ts and packages/opencode/src/tool/write.ts. Context delivery remains deferred pending the plugin.",
+  "version": 1,
+  "agent": "kilocode",
+  "event": "PostToolUse",
+  "host_event": "tool.execute.after",
+  "tool": "write",
+  "session": "ses_1",
+  "cwd": "C:\\repo",
+  "paths": ["C:\\repo\\debug.log"],
+  "local": true,
+  "success": true,
+  "context_delivery": false
+}

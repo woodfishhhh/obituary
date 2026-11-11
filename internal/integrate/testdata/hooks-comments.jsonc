@@ -1,0 +1,11 @@
+// hook configuration
+{
+  "version": 1,
+  "hooks": {
+    "pre": [
+      {"command": "obit hook cursor"},
+      {"command": "C:/old/obit.exe hook cursor"},
+      { /* user block */ "command": "echo hello", "env": {/* env */ "A": "B"}},
+    ],
+  },
+}

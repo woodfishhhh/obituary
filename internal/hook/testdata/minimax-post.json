@@ -1,0 +1,27 @@
+{
+  "session_id": "minimax-session",
+  "transcript_path": null,
+  "cwd": "C:\\repo",
+  "tool_use_id": "tool-2",
+  "tool_input": {
+    "content": "test",
+    "path": "debug.log"
+  },
+  "tool_response": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Successfully wrote 4 bytes to debug.log"
+      }
+    ],
+    "details": {
+      "encoding": "utf-8",
+      "bytes_written": 4,
+      "created": true,
+      "bom": false
+    },
+    "tool_name": "write"
+  },
+  "tool_name": "write",
+  "hook_event_name": "PostToolUse"
+}

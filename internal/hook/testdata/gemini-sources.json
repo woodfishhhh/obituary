@@ -1,0 +1,4 @@
+{
+  "sources": ["https://geminicli.com/docs/hooks/reference/", "https://github.com/google-gemini/gemini-cli/blob/main/packages/core/src/tools/write-file.ts", "https://github.com/google-gemini/gemini-cli/blob/main/packages/core/src/tools/edit.ts", "https://github.com/google-gemini/gemini-cli/blob/main/packages/core/src/config/storage.ts", "https://github.com/google-gemini/gemini-cli/blob/main/packages/core/src/utils/paths.ts"],
+  "scope": "Documented hooks and ToolResult envelope with synthetic local paths/session IDs and result text; no live client invocation. run_shell_command has no trustworthy shell/backend field in hook input."
+}

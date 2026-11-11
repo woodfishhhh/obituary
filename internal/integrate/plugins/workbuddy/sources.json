@@ -1,0 +1,37 @@
+{
+  "agent": "workbuddy",
+  "edition": "mainland Windows desktop",
+  "checked": "2026-11-09",
+  "actualClientVerified": false,
+  "manifestVerified": false,
+  "sources": [
+    {
+      "url": "https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/MCP-Guide",
+      "claims": ["user ~/.workbuddy/mcp.json", "project .workbuddy/mcp.json", "mcpServers", "command", "args", "env", "插件 → MCP 服务器 → 配置 MCP"]
+    },
+    {
+      "url": "https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Skills-Market",
+      "claims": ["技能 → 添加技能 → 上传技能", "技能 → 已安装 → … → 卸载"],
+      "limits": ["upload package format and loader not verified"]
+    },
+    {
+      "url": "https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Plug-In",
+      "claims": ["plugins may contain Skills, MCP and Hooks"],
+      "limits": ["consumer hook input, output, timeout and registration path unverified", "no hook adapter or activation manifest exported"]
+    },
+    {
+      "url": "https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Setting",
+      "claims": ["code development can load user .codebuddy configuration"],
+      "limits": ["CodeBuddy compatibility root left untouched"]
+    },
+    {
+      "url": "https://www.workbuddy.ai/docs/zh/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Model-Configuration",
+      "limits": ["research report mentions .workbuddy-ai for model configuration only", "current fetched page is a client-rendered shell", "international MCP paths unverified; no automatic writes"]
+    }
+  ],
+  "implementationReferences": [
+    "internal/integrate/cursor.go:PlanCursorMCP",
+    "internal/integrate/managed_asset.go:PlanManagedAssets"
+  ],
+  "skillSource": "internal/integrate/skill/SKILL.md"
+}

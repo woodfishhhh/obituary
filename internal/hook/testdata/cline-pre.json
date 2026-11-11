@@ -1,0 +1,14 @@
+{
+  "_source": "Bridge v1 projection of AgentPlugin beforeTool(context) with tool/toolCall/input/snapshot, https://docs.cline.bot/sdk/plugins. run_commands uses shell strings in input.commands[] (structured command/args entries execute directly and are skipped): https://github.com/cline/cline/blob/94eecbbe1a2f899c66b118d13656651b0a884e1f/sdk/packages/core/src/extensions/tools/definitions.ts. Each command is checked separately, local/shell require runtime evidence.",
+  "version": 1,
+  "agent": "cline",
+  "event": "PreToolUse",
+  "host_event": "beforeTool",
+  "tool": "run_commands",
+  "session": "session-1",
+  "cwd": "C:\\repo",
+  "command": "Remove-Item -LiteralPath 'scratch file.log'",
+  "shell": "powershell",
+  "local": true,
+  "context_delivery": true
+}

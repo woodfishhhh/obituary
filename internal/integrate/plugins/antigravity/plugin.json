@@ -1,0 +1,5 @@
+{
+  "name": "obituary",
+  "version": "1.0.0",
+  "description": "Restorable file lifespans with Obituary; session context and silent turn cleanup."
+}

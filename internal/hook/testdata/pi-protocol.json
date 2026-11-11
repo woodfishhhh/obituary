@@ -1,0 +1,18 @@
+{
+  "sources": [
+    "https://github.com/badlogic/pi-mono/blob/7d073328e44337d3292a7db9b0f0308f679c5e97/packages/coding-agent/docs/extensions.md"
+  ],
+  "note": "Official tool event shapes with session-1 supplied by ctx.sessionManager.getSessionId() and C:/repo from ctx.cwd. The phase-two plugin must verify a local Bash backend independently, and preserve existing tool_result content when appending context.",
+  "cases": [
+    {
+      "name": "tool-call",
+      "host": {"type": "tool_call", "toolName": "bash", "toolCallId": "call-1", "input": {"command": "rm debug.log"}},
+      "bridge": {"version": 1, "agent": "pi", "event": "PreToolUse", "host_event": "tool_call", "tool": "bash", "session": "session-1", "cwd": "C:/repo", "command": "rm debug.log", "shell": "bash", "local": true, "context_delivery": false}
+    },
+    {
+      "name": "tool-result-write",
+      "host": {"type": "tool_result", "toolName": "write", "toolCallId": "call-2", "input": {"path": "debug.log", "content": "scratch"}, "content": [{"type": "text", "text": "Successfully wrote 7 bytes to debug.log"}], "isError": false},
+      "bridge": {"version": 1, "agent": "pi", "event": "PostToolUse", "host_event": "tool_result", "tool": "write", "session": "session-1", "cwd": "C:/repo", "success": true, "paths": ["debug.log"], "local": true, "context_delivery": true}
+    }
+  ]
+}

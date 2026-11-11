@@ -1,0 +1,154 @@
+/* K 隧道: CSS 3D. A cobalt night with pale light at the vanishing point; the
+   gates are the logo's tombstone outline, gold close by and sky far away;
+   the stones are the logo's porcelain with its blue-to-gold rim. Shared
+   pages float on a porcelain panel inside the tunnel. Colours: variants.ts. */
+
+/* Noto Serif SC cut down to the GUI's own copy (scripts/subset-serif.py),
+   declared only by the looks that set type in it. */
+@font-face { font-family: "Obit Serif"; src: url("/fonts/noto-serif-sc-subset.woff2") format("woff2"); font-weight: 200 900; font-display: swap; }
+
+.tn {
+  position: relative;
+  display: grid;
+  grid-template-rows: 56px minmax(0, 1fr);
+  min-height: 0;
+  overflow: hidden;
+  color: var(--on-dark);
+  font-family: var(--font);
+  background:
+    radial-gradient(34% 30% at 50% 52%, var(--vp-glow), transparent 100%),
+    radial-gradient(120% 110% at 50% 52%, var(--deep-1) 0%, var(--deep-2) 48%, var(--deep-3) 100%);
+}
+.tn :focus-visible { outline: 2px solid var(--on-dark); outline-offset: 3px; }
+
+/* ── Top ──────────────────────────────────────────────── */
+.tn-top { position: relative; z-index: 4; display: flex; align-items: center; gap: 18px; padding: 0 16px 0 22px; background: linear-gradient(var(--top-shade), transparent); }
+.tn-brand { display: flex; align-items: center; gap: 9px; font-family: var(--display); font-size: 17px; font-weight: 700; letter-spacing: 0.06em; }
+.tn-brand img { width: 26px; height: 26px; filter: drop-shadow(0 2px 8px var(--stone-shadow)); }
+.tn-nav { display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--hud); backdrop-filter: blur(10px); box-shadow: inset 0 0 0 1px var(--glass-edge-dark); }
+.tn-nav button { display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 13px; border: 0; border-radius: 8px; background: none; color: var(--on-dark-2); font-size: 13px; cursor: pointer; transition: background-color 140ms, color 140ms; }
+.tn-nav button:hover { color: var(--on-dark); background: var(--glass-dark); }
+.tn-nav button[aria-current="page"] { background: var(--on-dark); color: var(--cobalt); font-weight: 700; }
+.tn-count { min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--gold); color: var(--on-gold); font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
+.tn-grow { flex: 1; }
+.tn-sum { color: var(--on-dark-2); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.tn-icon { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 8px; background: none; color: var(--on-dark-2); cursor: pointer; }
+.tn-icon:hover { background: var(--glass-dark); color: var(--on-dark); }
+
+/* ── The scene ────────────────────────────────────────── */
+.tn-stage { min-height: 0; }
+.tn-scene { position: absolute; inset: 0; z-index: 1; overflow: hidden; perspective: 880px; perspective-origin: 50% 52%; }
+.tn-world { position: absolute; left: 50%; top: 52%; width: 0; height: 0; transform-style: preserve-3d; transition: transform 800ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.tn-scene[data-still="true"] { filter: blur(3px); opacity: 0.7; }
+.tn-gate {
+  position: absolute; left: 0; top: 0; width: 1000px; height: 660px;
+  border: 3px solid var(--gate); border-bottom: 0;
+  border-radius: 120px 170px 0 0; corner-shape: bevel;
+  box-shadow: 0 0 40px -12px var(--gate), inset 0 0 40px -16px var(--gate);
+  pointer-events: none;
+  transition: opacity 400ms;
+}
+.tn-gate span { position: absolute; left: 36px; bottom: 36px; color: var(--gate); font-family: var(--display); font-size: 26px; font-weight: 500; }
+
+.tn-stone {
+  position: absolute; left: 0; top: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer;
+  transform-style: preserve-3d;
+  transition: transform 1000ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 400ms;
+}
+.tn-stone-body {
+  position: relative; display: grid; justify-items: center; width: 180px; padding: 14px 16px 13px;
+  border: 2px solid transparent; border-radius: 22px 30px 6px 6px; corner-shape: bevel bevel round round;
+  background: linear-gradient(var(--face-top), var(--face-low)) padding-box, linear-gradient(110deg, var(--cobalt), var(--sky) 42%, var(--glint) 66%, var(--gold)) border-box;
+  color: var(--ink); text-align: center;
+  box-shadow: 0 26px 50px var(--stone-shadow);
+  animation: tn-float 5.5s ease-in-out infinite alternate;
+  transition: transform 800ms cubic-bezier(0.5, 0, 0.75, 0), opacity 700ms, box-shadow 200ms, filter 600ms;
+}
+.tn-stone:nth-child(3n) .tn-stone-body { animation-delay: -2s; }
+.tn-stone:nth-child(3n + 1) .tn-stone-body { animation-delay: -4s; }
+@keyframes tn-float { from { translate: 0 -4px; } to { translate: 0 4px; } }
+.tn-stone:hover .tn-stone-body { box-shadow: 0 0 0 2px var(--on-dark), 0 26px 50px var(--stone-shadow); }
+.tn-stone:focus-visible { outline: none; }
+.tn-stone:focus-visible .tn-stone-body { box-shadow: 0 0 0 3px var(--gold), 0 26px 50px var(--stone-shadow); }
+.tn-stone[data-on="true"] .tn-stone-body { box-shadow: 0 0 0 3px var(--on-dark), 0 0 0 7px var(--cobalt), 0 0 60px var(--halo), 0 26px 50px var(--stone-shadow); }
+.tn-stone-top { position: relative; display: flex; align-items: baseline; justify-content: center; gap: 3px; width: 100%; }
+.tn-star { align-self: center; margin-right: 6px; fill: var(--gold); filter: drop-shadow(0 1px 1px var(--star-shadow)); transition: transform 500ms; }
+.tn-stone-top b { font-family: var(--display); font-size: 32px; font-weight: 500; line-height: 1; font-variant-numeric: lining-nums; }
+.tn-stone-top i { font-size: 12.5px; font-style: normal; color: var(--ink-2); }
+.tn-tick { position: absolute; right: -6px; top: -4px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--cobalt); color: var(--on-dark); opacity: 0; transform: scale(0.5); transition: opacity 140ms, transform 180ms; }
+.tn-stone[data-on="true"] .tn-tick { opacity: 1; transform: none; }
+.tn-name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; max-width: 100%; margin-top: 10px; font-family: var(--display); font-size: 14px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
+.tn-folder { max-width: 100%; margin-top: 2px; overflow: hidden; color: var(--ink-2); font-family: var(--mono); font-size: 10.5px; text-overflow: ellipsis; white-space: nowrap; }
+.tn-caption { margin-top: 6px; padding-top: 6px; width: 100%; border-top: 1px solid var(--face-line); color: var(--ink-2); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+
+/* What an action does to a stone while it lands. */
+.tn-stone[data-fate="rise"] .tn-stone-body { transform: translateY(-560px) rotateX(38deg) scale(0.85); opacity: 0; }
+.tn-stone[data-fate="rise"] .tn-star { transform: scale(2.4); }
+.tn-stone[data-fate="ash"] .tn-stone-body { transform: translateY(320px) rotateX(-30deg); opacity: 0; filter: grayscale(1); }
+
+/* ── HUD ──────────────────────────────────────────────── */
+.tn-hud { position: absolute; left: 24px; top: 72px; z-index: 3; max-width: 330px; padding: 16px 18px 18px; border-radius: 16px; background: var(--hud); backdrop-filter: blur(10px); box-shadow: inset 0 0 0 1px var(--glass-edge-dark); }
+.tn-hud h1 { margin: 0; font-family: var(--display); font-size: 32px; font-weight: 600; line-height: 1.15; text-shadow: 0 2px 24px var(--deep-3); overflow-wrap: break-word; }
+.tn-hud p { margin: 8px 0 14px; color: var(--on-dark-2); font-size: 13px; line-height: 1.6; text-shadow: 0 1px 12px var(--deep-3); }
+.tn-search { display: flex; align-items: center; gap: 7px; width: 230px; height: 34px; padding: 0 12px; border-radius: 10px; background: var(--glass-dark); box-shadow: inset 0 0 0 1px var(--glass-edge-dark); color: var(--on-dark-2); }
+.tn-search:focus-within { box-shadow: inset 0 0 0 1.5px var(--on-dark); }
+.tn-search input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; outline: none; color: var(--on-dark); font-size: 13px; }
+.tn-search input::placeholder { color: var(--on-dark-2); }
+.tn-alert { position: absolute; left: 32px; top: 200px; z-index: 3; margin: 0; padding: 8px 12px; border-radius: 8px; background: var(--panel); color: var(--ink); box-shadow: inset 3px 0 0 var(--gold); font-size: 12.5px; }
+.tn-quiet { position: absolute; left: 50%; top: 55%; z-index: 3; display: grid; justify-items: center; gap: 4px; transform: translate(-50%, -50%); text-align: center; text-shadow: 0 1px 14px var(--deep-3); }
+.tn-quiet svg { color: var(--gold); margin-bottom: 6px; }
+.tn-quiet b { font-family: var(--display); font-size: 20px; }
+.tn-quiet span { color: var(--on-dark-2); font-size: 13px; }
+
+.tn-scrub { position: absolute; right: 22px; top: 50%; z-index: 3; display: grid; justify-items: center; gap: 10px; transform: translateY(-46%); color: var(--on-dark-2); font-size: 11.5px; }
+.tn-scrub input { writing-mode: vertical-lr; direction: rtl; width: 22px; height: 280px; margin: 0; accent-color: var(--gold); cursor: ns-resize; }
+
+.tn-dock {
+  position: absolute; left: 50%; bottom: 22px; z-index: 5;
+  display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 18px;
+  border-radius: 14px 22px 14px 14px; corner-shape: round bevel round round;
+  background: var(--panel); color: var(--ink); box-shadow: var(--shadow-pop);
+  opacity: 0; transform: translate(-50%, 16px); pointer-events: none;
+  transition: opacity 180ms, transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.tn-dock[data-open="true"] { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.tn-dock :focus-visible { outline-color: var(--cobalt); }
+.tn-dock-count { margin-right: 6px; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tn-btn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 15px; border: 0; border-radius: 9px; font-size: 13.5px; font-weight: 700; cursor: pointer; transition: filter 120ms, transform 120ms; }
+.tn-btn:hover { filter: brightness(1.08); }
+.tn-btn:active { transform: translateY(1px); }
+.tn-btn.gold { background: var(--gold); color: var(--on-gold); }
+.tn-btn.cobalt { background: var(--cobalt); color: var(--on-accent); }
+.tn-btn.ink { background: var(--ink); color: var(--panel); }
+.tn-btn.quiet { background: none; color: var(--ink-2); font-weight: 500; }
+.tn-btn.quiet:hover { color: var(--ink); filter: none; }
+.tn-select { height: 36px; padding: 0 10px; border: 1px solid var(--line-2); border-radius: 9px; background: var(--panel); color: var(--ink); font-size: 13.5px; }
+
+/* ── Shared pages on a panel inside the tunnel ────────── */
+.tn-panel {
+  position: absolute; inset: 70px 44px 26px; z-index: 3; display: grid; padding: 24px 6px 8px 0;
+  border-radius: 18px 30px 18px 18px; corner-shape: round bevel round round;
+  background: var(--panel); color: var(--text); box-shadow: var(--shadow-pop);
+}
+.tn-panel-scroll { min-height: 0; overflow: auto; padding: 0 24px 28px 30px; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+.tn-panel .head h1 { font-family: var(--display); font-size: 26px; }
+.tn-panel .card { border-radius: 12px; box-shadow: inset 0 0 0 1px var(--line); }
+.tn-panel .card .card { border-radius: 0; box-shadow: inset 0 1px 0 var(--line), inset 0 -1px 0 var(--line); background: none; }
+.tn-panel .row.head-row { background: none; }
+.tn-panel .setting-icon { background: var(--accent-soft); color: var(--cobalt); }
+.tn-panel .tag { justify-self: start; }
+
+[data-variant="tunnel"] .btn.danger, [data-variant="tunnel"] .btn.danger.solid { border-color: var(--ink); background: var(--ink); color: var(--panel); }
+[data-variant="tunnel"] .btn.danger:hover:not(:disabled) { background: var(--ink); filter: brightness(1.3); }
+[data-variant="tunnel"] .overlay { background: var(--scrim); backdrop-filter: blur(3px); }
+[data-variant="tunnel"] .dialog {
+  border: 2px solid transparent; border-radius: 16px 28px 16px 16px; corner-shape: round bevel round round;
+  background: linear-gradient(var(--panel), var(--panel)) padding-box, linear-gradient(100deg, var(--cobalt), var(--sky) 45%, var(--glint) 68%, var(--gold)) border-box;
+}
+[data-variant="tunnel"] .toast { border-radius: 10px; background: var(--panel); color: var(--ink); }
+[data-variant="tunnel"] .toast.error { box-shadow: inset 4px 0 0 var(--gold), var(--shadow-pop); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tn-world, .tn-stone, .tn-stone-body, .tn-gate, .tn-dock, .tn-tick, .tn-star { transition: none; }
+  .tn-stone-body { animation: none; }
+}

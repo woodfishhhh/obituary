@@ -1,0 +1,1 @@
+{"conversation_id":"cursor-1","generation_id":"turn-1","hook_event_name":"preToolUse","cursor_version":"1.7.2","workspace_roots":["C:/repo"],"tool_name":"Shell","tool_input":{"command":"rm scratch.log","working_directory":"C:/repo"},"tool_use_id":"call-1","cwd":"C:/repo"}

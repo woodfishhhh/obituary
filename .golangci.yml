@@ -1,0 +1,33 @@
+version: "2"
+
+# Minimal set, owner decision 2026-11-10. The function length and nesting
+# limits are the ones in AGENTS.md (functions under 50 lines, at most 4
+# levels of nesting). Existing code is grandfathered: CI and workers only
+# fail on new issues (see the new-from-merge-base setting below); the
+# backlog is tracked in docs/milestones/m3-speed.md.
+linters:
+  default: none
+  enable:
+    - staticcheck
+    - errorlint
+    - funlen
+    - nestif
+  settings:
+    funlen:
+      lines: 50
+      statements: -1
+      ignore-comments: true
+    nestif:
+      min-complexity: 4
+  exclusions:
+    rules:
+      # Table-driven tests and mutation tables are long by design.
+      - path: _test\.go
+        linters:
+          - funlen
+          - nestif
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  new-from-merge-base: main

@@ -1,0 +1,7 @@
+{
+  "retrieved": "2026-11-09",
+  "sources": [
+    "https://docs.trae.ai/ide/hook-configuration-reference"
+  ],
+  "notes": "Synthetic values in the documented native envelopes. Write/Edit tool_input and tool_response schemas are not documented; post fixture intentionally leaves them empty, and observation remains unsupported. trae-cn uses the same protocol."
+}

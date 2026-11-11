@@ -1,0 +1,10 @@
+{
+  "session_id": "kimi-session",
+  "cwd": "C:/repo",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Shell",
+  "tool_input": {
+    "command": "rm scratch.log"
+  },
+  "tool_call_id": "tool-1"
+}

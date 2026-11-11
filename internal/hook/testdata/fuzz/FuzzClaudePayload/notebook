@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"hook_event_name\":\"PostToolUse\",\"tool_name\":\"NotebookEdit\",\"tool_input\":{\"file_path\":null,\"notebook_path\":\"a.ipynb\"}}")

@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("# obit:mcp:begin (managed by obit init)\n[mcp_servers.obituary]\ncommand='obit'\nargs=['mcp']\n# obit:mcp:end\nenv={USER_EDIT='outside block'}\n")

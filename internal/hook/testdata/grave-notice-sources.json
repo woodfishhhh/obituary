@@ -1,0 +1,12 @@
+{
+  "retrieved": "2026-11-11",
+  "synthetic": true,
+  "host_verified": false,
+  "sources": {
+    "claude": "https://code.claude.com/docs/en/hooks#pretooluse-decision-control",
+    "codex": "https://github.com/openai/codex/blob/rust-v0.167.0/codex-rs/hooks/src/events/pre_tool_use.rs",
+    "codex_output": "https://github.com/openai/codex/blob/rust-v0.167.0/codex-rs/hooks/src/engine/output_parser.rs"
+  },
+  "contract": "PreToolUse hookSpecificOutput.additionalContext reaches the model without permissionDecision or updatedInput. Delete-guard denial keeps its existing bytes. Existing codex-exec-command.json and codex-local-shell.json fixtures define shell envelopes; direct file tools use file_path/path and column-zero apply_patch headers.",
+  "limits": "No live host was invoked. Literal shell operands are extracted only for known read/list commands; ambiguous commands and execution namespaces are skipped. Other hosts retain their existing context-delivery and locality contracts."
+}

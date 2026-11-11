@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"permissions\":{\"allow\":[\"Bash(echo *)\"]},\"hooks\":{},\"env\":{\"X\":\"a&&b\"}}")

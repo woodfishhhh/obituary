@@ -1,0 +1,287 @@
+/* F 讣闻: a newspaper obituary page. Paper and ink are neutrals warmed toward
+   the logo's gold; cobalt is the masthead and selection; gold only stamps a
+   resurrection. Every colour comes from the variant's tokens (variants.ts). */
+
+/* Noto Serif SC cut down to the GUI's own copy (scripts/subset-serif.py),
+   declared only by the looks that set type in it. */
+@font-face { font-family: "Obit Serif"; src: url("/fonts/noto-serif-sc-subset.woff2") format("woff2"); font-weight: 200 900; font-display: swap; }
+
+.nt {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  min-height: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+}
+.nt :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── Masthead ─────────────────────────────────────────── */
+.nt-mast {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 24px;
+  padding: 14px 28px 10px;
+  border-bottom: 3px solid var(--text);
+  box-shadow: 0 3px 0 var(--bg), 0 4px 0 var(--text);
+}
+.nt-ear { font-size: 12px; line-height: 1.6; color: var(--text-2); }
+.nt-ear.right { text-align: right; font-variant-numeric: tabular-nums; }
+.nt-title { position: relative; padding: 0 22px; }
+.nt-title h1 {
+  position: relative;
+  margin: 0;
+  font-size: 42px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.42em;
+  margin-right: -0.42em;
+  color: var(--cobalt);
+}
+.nt-swoosh { position: absolute; left: -10px; top: -2px; width: 170px; height: 56px; fill: var(--gold); }
+/* English: a wordmark, not two spaced characters. */
+.obit[data-lang="en"] .nt-title h1 { font-size: 44px; font-weight: 700; letter-spacing: -0.01em; margin-right: 0; }
+.obit[data-lang="en"] .nt-swoosh { left: 6px; width: 210px; }
+
+.nt-sections {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  height: 38px;
+  margin-top: 4px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--text);
+}
+.nt-sections button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font-size: 14.5px;
+  cursor: pointer;
+  transition: color 120ms;
+}
+.nt-sections button:hover { color: var(--text); }
+.nt-sections button[aria-current="page"] { color: var(--cobalt); font-weight: 700; }
+.nt-sections button[aria-current="page"]::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 3px; background: var(--cobalt); }
+.nt-count { min-width: 18px; padding: 0 5px; background: var(--gold); color: var(--on-gold); font-size: 11.5px; font-weight: 700; line-height: 18px; text-align: center; font-variant-numeric: tabular-nums; }
+.nt-grow { flex: 1; min-width: 0; }
+.nt-paused { align-self: center; margin-right: 8px; color: var(--text-2); font-size: 12.5px; }
+.nt-sections .nt-refresh { gap: 6px; color: var(--muted); font-size: 13px; }
+.nt-refresh svg { width: 14px; height: 14px; }
+
+/* ── Page ─────────────────────────────────────────────── */
+.nt-stage { position: relative; min-height: 0; }
+.nt-main { height: 100%; overflow: auto; padding: 22px 28px 96px; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+.nt-head { display: flex; align-items: flex-end; gap: 24px; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--line-2); }
+.nt-head-text { flex: 1; min-width: 0; }
+.nt-head h2 { margin: 0; font-size: 30px; font-weight: 800; line-height: 1.15; overflow-wrap: break-word; }
+.nt-deck { margin: 6px 0 0; color: var(--text-2); font-size: 15px; line-height: 1.6; }
+.nt-tools { display: flex; align-items: center; gap: 16px; }
+
+.nt-search { display: flex; align-items: center; gap: 6px; width: 220px; height: 32px; border-bottom: 1px solid var(--text); color: var(--muted); }
+.nt-search svg { width: 15px; height: 15px; flex-shrink: 0; }
+.nt-search input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; color: var(--text); font-size: 14px; outline: none; }
+.nt-search input::placeholder { color: var(--muted); }
+.nt-search:focus-within { border-bottom-color: var(--cobalt); box-shadow: 0 1px 0 var(--cobalt); }
+.nt-link { padding: 4px 0; border: 0; background: none; color: var(--text); font-size: 14px; text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; cursor: pointer; }
+.nt-link:hover:not(:disabled) { color: var(--cobalt); }
+.nt-link:disabled { color: var(--muted); cursor: default; text-decoration: none; }
+
+.nt-ranges { display: flex; gap: 0; }
+.nt-ranges button { padding: 4px 12px; border: 0; border-left: 1px solid var(--line-2); background: none; color: var(--text-2); font-size: 14px; cursor: pointer; }
+.nt-ranges button:first-child { border-left: 0; }
+.nt-ranges button:hover { color: var(--text); }
+.nt-ranges button[aria-pressed="true"] { color: var(--cobalt); font-weight: 700; }
+
+.nt-error { margin: 0 0 14px; padding: 8px 12px; border-left: 3px solid var(--text); background: var(--danger-soft); color: var(--text); font-size: 13.5px; }
+
+/* ── Notices, set in columns with rules between ───────── */
+.nt-columns { column-count: 3; column-gap: 0; column-rule: 1px solid var(--line-2); }
+.nt-notice {
+  position: relative;
+  break-inside: avoid;
+  margin: 0 0 4px;
+  padding: 14px 16px 16px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 140ms, background-color 140ms;
+}
+.nt-notice { box-shadow: inset 0 -1px 0 var(--line); }
+.nt-notice.lead {
+  column-span: all;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  gap: 32px;
+  align-items: end;
+  margin-bottom: 8px;
+  padding: 4px 16px 20px;
+  box-shadow: inset 0 -2px 0 var(--text);
+}
+.nt-notice.lead h3 { font-size: 28px; font-weight: 800; line-height: 1.2; }
+.nt-notice.lead .nt-body { font-size: 15px; }
+.nt-notice.lead .nt-left { flex-wrap: wrap; margin: 0; padding: 0 0 2px; border: 0; }
+.nt-notice.lead .nt-left > span:first-child { flex-basis: 100%; }
+.nt-notice.lead .nt-left b { margin-left: 0; font-size: 64px; font-weight: 300; letter-spacing: -0.02em; }
+.nt-notice.lead .nt-band { flex-basis: 100%; margin: 12px 0 0; }
+.nt-notice.lead .nt-box { top: 8px; }
+.nt-notice.lead .nt-check { top: 6px; }
+.nt-notice:hover { background: var(--hover); }
+.nt-notice[data-on="true"] { border-color: var(--cobalt); background: var(--accent-soft); box-shadow: none; }
+.nt-notice:has(.nt-check:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
+.nt-check { position: absolute; top: 12px; right: 12px; width: 16px; height: 16px; margin: 0; opacity: 0; cursor: pointer; }
+.nt-box { position: absolute; top: 14px; right: 14px; width: 13px; height: 13px; border: 1px solid var(--line-2); background: var(--bg); transition: border-color 120ms, background-color 120ms; }
+.nt-notice[data-on="true"] .nt-box { border-color: var(--cobalt); background: var(--cobalt); box-shadow: inset 0 0 0 2px var(--bg); }
+.nt-notice h3 { margin: 0 22px 4px 0; font-size: 17px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
+.nt-home { margin: 0 0 10px; color: var(--muted); font-size: 12px; }
+.nt-home span { margin-left: 4px; font-family: var(--mono); font-size: 11px; overflow-wrap: anywhere; }
+.nt-body { margin: 0; font-size: 13.5px; line-height: 1.8; color: var(--text-2); }
+.nt-note { margin: 6px 0 0; font-size: 13px; line-height: 1.7; color: var(--text); }
+.nt-left { display: flex; align-items: baseline; gap: 3px; margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.nt-left > span:first-child { margin-right: 6px; }
+.nt-left b { margin: 0 2px 0 0; font-size: 22px; font-weight: 600; line-height: 1; color: var(--text); }
+.nt-left[data-soon="true"] b { color: var(--cobalt); }
+.nt-band { position: relative; flex: 1; align-self: center; height: 3px; margin-left: 14px; background: var(--line); }
+.nt-band i { position: absolute; inset: 0; background: var(--text); transform-origin: left center; }
+
+/* The editor's stamp, shown while an action lands. */
+.nt-stamp {
+  position: absolute;
+  right: 18px;
+  bottom: 40px;
+  padding: 4px 12px;
+  border: 2px solid var(--text);
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  transform: rotate(-8deg);
+  animation: nt-stamp 260ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+.nt-notice[data-stamp="rise"] .nt-stamp { background: var(--gold); color: var(--on-gold); border-color: var(--on-gold); }
+.nt-notice[data-stamp="ash"] .nt-stamp { background: var(--text); color: var(--bg); }
+.nt-notice[data-stamp="ash"] > :not(.nt-stamp) { opacity: 0.4; transition: opacity 400ms; }
+@keyframes nt-stamp { from { opacity: 0; transform: rotate(-8deg) scale(1.6); } }
+
+/* ── The table of lifespans ───────────────────────────── */
+.nt-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.nt-table th { padding: 0 10px 8px; border-bottom: 2px solid var(--text); color: var(--muted); font-size: 12.5px; font-weight: 400; text-align: left; white-space: nowrap; }
+.nt-table td { padding: 12px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.nt-table tbody tr { cursor: pointer; transition: background-color 120ms; }
+.nt-table tbody tr:hover { background: var(--hover); }
+.nt-table tbody tr[data-on="true"] { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--cobalt); }
+.nt-table .c { width: 28px; padding-left: 4px; padding-right: 4px; text-align: center; }
+.nt-table .r { text-align: right; }
+.nt-tick { appearance: none; width: 13px; height: 13px; margin: 5px 0 0; border: 1px solid var(--line-2); background: var(--bg); cursor: pointer; transition: background-color 120ms, border-color 120ms; }
+.nt-tick:hover { border-color: var(--text); }
+.nt-tick:checked { border-color: var(--cobalt); background: var(--cobalt); box-shadow: inset 0 0 0 2px var(--bg); }
+.nt-cell-name { font-size: 15.5px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
+.nt-cell-path { margin-top: 2px; color: var(--muted); font-family: var(--mono); font-size: 11px; overflow-wrap: anywhere; }
+.nt-cell-note { margin-top: 4px; font-size: 13px; color: var(--text-2); }
+.nt-src { width: 92px; color: var(--text-2); font-size: 13px; white-space: nowrap; }
+.nt-age { width: 72px; color: var(--text-2); font-size: 13px; white-space: nowrap; }
+.nt-date { width: 96px; color: var(--text-2); font-size: 13px; line-height: 1.5; white-space: nowrap; }
+.nt-rest { width: 128px; white-space: nowrap; font-size: 12.5px; color: var(--text-2); }
+.nt-rest b { margin-right: 3px; font-size: 24px; font-weight: 600; line-height: 1; color: var(--text); }
+.nt-rest .nt-band { display: block; margin: 8px 0 0 auto; width: 96px; }
+.nt-table tr[data-soon="true"] .nt-rest b { color: var(--cobalt); }
+.nt-due { font-weight: 700; color: var(--cobalt); }
+
+/* ── The press bar: what to do with the chosen ────────── */
+.nt-press {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 58px;
+  padding: 0 28px;
+  background: var(--text);
+  color: var(--bg);
+  transform: translateY(100%);
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.nt-press[data-open="true"] { transform: none; }
+.nt-press-count { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.nt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 16px;
+  border: 1px solid var(--bg);
+  background: none;
+  color: var(--bg);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 120ms, color 120ms;
+}
+.nt-btn:hover { background: var(--bg); color: var(--text); }
+.nt-btn.quiet { border-color: transparent; font-weight: 400; color: var(--press-muted); }
+.nt-btn.quiet:hover { background: none; color: var(--bg); }
+.nt-btn.gold { border-color: var(--gold); background: var(--gold); color: var(--on-gold); }
+.nt-btn.gold:hover { background: var(--bg); border-color: var(--bg); }
+.nt-btn.cobalt { border-color: var(--cobalt); background: var(--cobalt); color: var(--on-accent); }
+.nt-btn.cobalt:hover { background: var(--bg); border-color: var(--bg); color: var(--cobalt); }
+.nt-press :focus-visible { outline-color: var(--gold); }
+.nt-select { height: 34px; padding: 0 8px; border: 1px solid var(--press-muted); background: var(--text); color: var(--bg); font-size: 14px; }
+
+/* ── Empty and loading ────────────────────────────────── */
+.nt-empty { display: grid; justify-items: center; gap: 4px; padding: 72px 16px; text-align: center; color: var(--text-2); }
+.nt-empty svg { color: var(--cobalt); margin-bottom: 8px; }
+.nt-empty h3 { margin: 0; font-size: 22px; font-weight: 800; color: var(--text); }
+.nt-empty p { margin: 0; font-size: 14px; }
+.nt-loading { column-count: 3; column-gap: 32px; }
+.nt-loading i { display: block; height: 96px; margin-bottom: 20px; background: linear-gradient(var(--line) 0 18px, transparent 18px 30px, var(--hover) 30px 40px, transparent 40px 52px, var(--hover) 52px 62px, transparent 62px); }
+
+/* ── Shared pages, set in the paper's type ────────────── */
+.nt-shared .head { margin-bottom: 18px; }
+.nt-shared .head h1 { font-size: 30px; font-weight: 800; }
+.nt-shared .head p { font-size: 15px; color: var(--text-2); }
+.nt-shared .section-title { margin: 28px 0 10px; padding-bottom: 6px; border-bottom: 2px solid var(--text); font-size: 17px; font-weight: 800; }
+.nt-shared .card { border-radius: 0; background: transparent; box-shadow: none; border-top: 1px solid var(--text); }
+.nt-shared .card.list, .nt-shared .card:has(.log) { border-bottom: 1px solid var(--line-2); }
+.nt-shared .panel { padding: 14px 0 16px; margin-bottom: 18px; }
+.nt-shared .panel .card.list { border-top: 1px solid var(--line-2); }
+.nt-shared .panel-title { font-size: 17px; font-weight: 800; }
+.nt-shared .row { padding-left: 4px; padding-right: 4px; }
+.nt-shared .row.head-row { background: none; }
+.nt-shared .setting { padding-left: 0; padding-right: 0; grid-template-columns: 34px 150px minmax(0, 1fr) auto; }
+.nt-shared .setting-icon { background: none; color: var(--cobalt); }
+.nt-shared .setting-label { font-size: 15px; font-weight: 700; }
+.nt-shared .well { border-radius: 0; background: var(--panel); border-left: 3px solid var(--line-2); }
+.nt-shared .notice { border-radius: 0; }
+.nt-shared .tag { justify-self: start; border-radius: 0; font-family: var(--mono); }
+.nt-shared .input, .nt-shared .select { border-radius: 0; border-color: var(--line-2); background: var(--panel); }
+.nt-shared .seg { border-radius: 0; }
+.nt-shared .seg button { border-radius: 0; }
+.nt-shared .switch { border-radius: 0; }
+.nt-shared .switch::after { border-radius: 0; }
+.nt-shared .log { font-size: 11.5px; }
+
+/* Buttons, dialogs and toasts everywhere in this variant (dialogs render
+   into the frame, outside .nt). */
+[data-variant="notice"] .btn { border-radius: 0; border-color: var(--text); background: transparent; font-family: var(--font); }
+[data-variant="notice"] .btn:hover:not(:disabled) { background: var(--text); color: var(--bg); }
+[data-variant="notice"] .btn.primary { background: var(--cobalt); border-color: var(--cobalt); }
+[data-variant="notice"] .btn.danger, [data-variant="notice"] .btn.danger.solid { background: var(--text); border-color: var(--text); color: var(--bg); }
+[data-variant="notice"] .btn.ghost { border-color: transparent; }
+[data-variant="notice"] .overlay { background: var(--scrim); }
+[data-variant="notice"] .dialog { border-radius: 0; background: var(--bg); border-top: 4px double var(--text); box-shadow: var(--shadow-pop); }
+[data-variant="notice"] .dialog-body h3 { font-size: 21px; font-weight: 800; }
+[data-variant="notice"] .dialog-body ul { border-top-color: var(--text); }
+[data-variant="notice"] .toast { border-radius: 0; background: var(--text); color: var(--bg); font-family: var(--font); }
+[data-variant="notice"] .toast.error { background: var(--text); box-shadow: inset 4px 0 0 var(--gold), var(--shadow-pop); }
+
+@media (prefers-reduced-motion: reduce) {
+  .nt-press, .nt-notice, .nt-stamp { transition: none; animation: none; }
+}

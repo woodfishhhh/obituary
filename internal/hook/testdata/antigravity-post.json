@@ -1,0 +1,21 @@
+{
+  "toolCall": {
+    "name": "write_to_file",
+    "args": {
+      "TargetFile": "C:/second/debug.log",
+      "Overwrite": false,
+      "CodeContent": "debug",
+      "Description": "scratch"
+    }
+  },
+  "stepIdx": 20,
+  "error": "",
+  "conversationId": "agy-session",
+  "workspacePaths": [
+    "C:/first",
+    "C:/second"
+  ],
+  "transcriptPath": "C:/brain/transcript.jsonl",
+  "artifactDirectoryPath": "C:/brain",
+  "modelName": "gemini"
+}

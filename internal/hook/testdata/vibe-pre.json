@@ -1,0 +1,12 @@
+{
+  "session_id": "vibe-session",
+  "parent_session_id": null,
+  "transcript_path": "C:/repo/transcript.jsonl",
+  "cwd": "C:/repo",
+  "hook_event_name": "pre_tool",
+  "tool_name": "file_system.bash",
+  "tool_call_id": "tool-1",
+  "tool_input": {
+    "command": "rm scratch.log"
+  }
+}

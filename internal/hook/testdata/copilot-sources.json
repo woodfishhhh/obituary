@@ -1,0 +1,4 @@
+{
+  "sources": ["https://docs.github.com/en/copilot/reference/hooks-reference", "https://code.visualstudio.com/docs/agent-customization/hooks"],
+  "scope": "Documented current CLI/VS Code shared harness envelopes, with synthetic session/path/content values; not a live client capture. CLI events are supplied through Invocation.Event. Compatible tool names retain the runtime arguments. Legacy VS Code tool_response envelopes are not claimed as supported."
+}

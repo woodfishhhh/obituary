@@ -1,0 +1,13 @@
+{
+  "session_id": "dsh-session-1",
+  "cwd": "C:/repo",
+  "transcript_path": "",
+  "hook_event_name": "PostToolUse",
+  "tool_response": "<path>C:/repo/debug.log</path>\n<type>file</type>\n<content>\nCreated file\n</content>",
+  "tool_input": {
+    "file_path": "C:/repo/debug.log",
+    "content": "debug"
+  },
+  "tool_name": "write",
+  "tool_use_id": "call-1"
+}

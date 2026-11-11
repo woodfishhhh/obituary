@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"tool_input\":{\"command\":[\"rm\",\"x\"],\"patch\":123,\"file_path\":false}}")

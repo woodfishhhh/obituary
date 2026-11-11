@@ -1,0 +1,2 @@
+go test fuzz v1
+string("ri -LiteralPath 'a[1].log'")
