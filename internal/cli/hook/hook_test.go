@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -196,13 +197,45 @@ func TestPostToolUseDeliversQueuedProposal(t *testing.T) {
 				t.Fatal(err)
 			}
 			checkLatencyResult(t, store, "PostToolUse/pending", out)
+			checkDeliveredProposal(t, store, root, "pending")
+			if log := readHookLog(t, store); log != "" {
+				t.Fatalf("queued proposal failed open: %s", log)
+			}
 			if store.HasDeferredObservations() {
 				t.Fatal("successful replay retained the queued write")
 			}
 			if out, err := executeHookPayload(t, string(input), agent); err != nil || out != "" {
 				t.Fatalf("proposal repeated: %q %v", out, err)
 			}
+			checkDeliveredProposal(t, store, root, "pending")
 		})
+	}
+}
+
+func TestPostToolUseDeliveryDeadline(t *testing.T) {
+	if testing.Short() {
+		t.Skip("delivery deadlines use a real Git repository and ledger")
+	}
+	isolateLatencyRunner(t)
+	for _, agent := range []string{"claude", "codex"} {
+		for _, stage := range []string{"immediate", "locked", "committed"} {
+			t.Run(agent+"/"+stage, func(t *testing.T) {
+				root, store := clitest.CommandRepo(t)
+				input := latencyPayload(t, root, "PostToolUse/pending")
+				resetLatencyFixture(t, root, store, "PostToolUse/pending")
+				release := injectDeliveryDeadline(t, store, stage)
+				out, err := executeHookPayload(t, input, agent)
+				release()
+				if err != nil {
+					t.Fatal(err)
+				}
+				got := checkPendingLatency(t, store, root, agent, out, "")
+				want := map[string]string{"immediate": "immediate", "locked": "observation", "committed": "notice"}[stage]
+				if got != want {
+					t.Fatalf("delivery stage: got %s, want %s", got, want)
+				}
+			})
+		}
 	}
 }
 
@@ -210,27 +243,34 @@ func TestHookLatencyReport(t *testing.T) {
 	if testing.Short() {
 		t.Skip("measures hook latency with real Git and filesystem operations")
 	}
-	oldSpawn, oldOnce := cmdutil.SpawnSelf, cmdutil.RunOnce
-	t.Cleanup(func() { cmdutil.SpawnSelf, cmdutil.RunOnce = oldSpawn, oldOnce })
-	cmdutil.SpawnSelf = func(...string) error { return nil }
-	cmdutil.RunOnce = func(string) error { return nil }
+	isolateLatencyRunner(t)
 	for _, name := range []string{"PreToolUse/delete", "PreToolUse/ordinary", "PostToolUse/approved", "PostToolUse/pending", "SessionStart/startup", "SessionStart/resume", "Stop/dispatch"} {
 		t.Run(name, func(t *testing.T) {
 			root, store := clitest.CommandRepo(t)
 			input := latencyPayload(t, root, name)
 			var samples []time.Duration
+			deferred := map[string]int{}
 			for range 10 {
 				resetLatencyFixture(t, root, store, name)
+				previousLog := readHookLog(t, store)
 				start := time.Now()
 				out, err := executeHookPayload(t, input, "claude")
 				elapsed := time.Since(start)
 				if err != nil {
 					t.Fatal(err)
 				}
-				checkLatencyResult(t, store, name, out)
 				samples = append(samples, elapsed)
+				if name == "PostToolUse/pending" {
+					deferred[checkPendingLatency(t, store, root, "claude", out, previousLog)]++
+				} else {
+					checkLatencyResult(t, store, name, out)
+					if log := readHookLog(t, store); log != previousLog {
+						t.Fatalf("hook failed open: %s", log)
+					}
+				}
 			}
-			clitest.ReportHookLatency(t, name, "service open + handler; process launch measured separately", samples)
+			scope := fmt.Sprintf("service open + handler; process launch measured separately; deferred observations=%d notices=%d included; replay checks outside samples", deferred["observation"], deferred["notice"])
+			clitest.ReportHookLatency(t, name, scope, samples)
 		})
 	}
 }
@@ -308,9 +348,6 @@ func checkLatencyResult(t *testing.T, store core.Store, name, out string) {
 		if out != "" {
 			t.Fatalf("unexpected response: %s", out)
 		}
-	}
-	if data, err := os.ReadFile(filepath.Join(store.Home, "hook.log")); !os.IsNotExist(err) {
-		t.Fatalf("hook failed open: %s %v", data, err)
 	}
 }
 
