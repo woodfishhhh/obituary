@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/woodfishhhh/obituary/internal/testenv"
 )
 
 // Each overlay restores a real unsafe behavior without altering source files.
@@ -30,7 +32,7 @@ func TestMCPMutations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, tc := range []struct{ name, file, from, to, pkg, test, assertion string }{
+	for i, tc := range []struct{ name, file, from, to, pkg, test, assertion string }{
 		{"container-stop-preflight-phase", "internal/core/container_stop.go", "err := s.Docker.Stop(s.Store.Context(), *p.identity(), beforeSend)", "_ = beforeSend(docker.Container{Running:true}); err := s.Docker.Stop(s.Store.Context(), *p.identity(), beforeSend); if errors.Is(err, docker.ErrNotSent) { err = errors.New(err.Error()) }", "./internal/core", "TestContainerStopPreflightRetries", "unsent stop retained sent intent"},
 		{"container-stop-unsent-rollback", "internal/core/container_stop.go", "if errors.Is(err, docker.ErrNotSent) && p.Phase == \"sent\" {", "if false && errors.Is(err, docker.ErrNotSent) && p.Phase == \"sent\" {", "./internal/core", "TestContainerUnsentStopClearsIntent", "unsent subprocess left sent intent"},
 		{"container-stop-unknown-retry", "internal/core/container_stop.go", "if s.now().Sub(*p.RunningSince) < wait {", "if true || s.now().Sub(*p.RunningSince) < wait {", "./internal/core", "TestContainerSentStopEventuallyRetries", "running sent stop never became retryable"},
@@ -672,6 +674,9 @@ func TestMCPMutations(t *testing.T) {
 		{"recycle-description", "internal/cli/mcp/tools.go", "if svc.Mode == core.ModeRecycle {", "if false && svc.Mode == core.ModeRecycle {",
 			"./internal/cli/mcp", "TestMCPRecycleModeDescriptionAndReceipt", "recycle description promises wrong recovery"},
 	} {
+		if !testenv.InMutationShard(t, i) {
+			continue
+		}
 		t.Run(tc.name, func(t *testing.T) {
 			path := filepath.Join(root, filepath.FromSlash(tc.file))
 			if strings.HasPrefix(tc.file, "$GOROOT/") {

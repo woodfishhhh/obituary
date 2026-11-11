@@ -272,21 +272,31 @@ jobs:
   mutations:
     if: (github.event_name == 'schedule' && github.event.schedule == '47 18 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.mutations)
     runs-on: windows-latest
-    timeout-minutes: 120
+    timeout-minutes: 60
+    # Each mutation recompiles its package, so one runner works through
+    # them serially; the cases are split by index across runners instead
+    # (OBIT_MUTATION_SHARD, see internal/testenv/mutation.go).
     strategy:
       fail-fast: false
       matrix:
-        suite:
-          - { name: mcp, run: TestMCPMutations, pkg: ./internal/cli/mcp }
-          - { name: delete-guard, run: TestDeleteGuardMutations, pkg: ./internal/cli/remove }
-    name: mutations (${{ matrix.suite.name }})
+        include:
+          - { suite: mcp, run: TestMCPMutations, pkg: ./internal/cli/mcp, shard: 0/6 }
+          - { suite: mcp, run: TestMCPMutations, pkg: ./internal/cli/mcp, shard: 1/6 }
+          - { suite: mcp, run: TestMCPMutations, pkg: ./internal/cli/mcp, shard: 2/6 }
+          - { suite: mcp, run: TestMCPMutations, pkg: ./internal/cli/mcp, shard: 3/6 }
+          - { suite: mcp, run: TestMCPMutations, pkg: ./internal/cli/mcp, shard: 4/6 }
+          - { suite: mcp, run: TestMCPMutations, pkg: ./internal/cli/mcp, shard: 5/6 }
+          - { suite: delete-guard, run: TestDeleteGuardMutations, pkg: ./internal/cli/remove, shard: 0/2 }
+          - { suite: delete-guard, run: TestDeleteGuardMutations, pkg: ./internal/cli/remove, shard: 1/2 }
+    name: mutations (${{ matrix.suite }} ${{ matrix.shard }})
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: go.mod
-      - name: ${{ matrix.suite.run }}
+      - name: ${{ matrix.run }}
         env:
           OBIT_TEST_MCP_MUTATIONS: "1"
           OBIT_TEST_DELETE_MUTATIONS: "1"
-        run: go test -count=1 -timeout 100m -run ${{ matrix.suite.run }} ${{ matrix.suite.pkg }}
+          OBIT_MUTATION_SHARD: ${{ matrix.shard }}
+        run: go test -count=1 -timeout 50m -run ${{ matrix.run }} ${{ matrix.pkg }}

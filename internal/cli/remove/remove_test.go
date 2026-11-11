@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/woodfishhhh/obituary/internal/testenv"
 )
 
 // Go overlays compile each mutation without editing the working tree. Only
@@ -22,7 +24,7 @@ func TestDeleteGuardMutations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, mutation := range []struct{ name, file, from, to, pkg, test string }{
+	for i, mutation := range []struct{ name, file, from, to, pkg, test string }{
 		{"suggest-glob-ambiguity", "internal/guardrm/rewrite.go",
 			`if ambiguousGlobLocation {`, `if false && ambiguousGlobLocation {`,
 			"./internal/guardrm", "TestSuggestSummaryAndGlobDecisions"},
@@ -394,6 +396,9 @@ func TestDeleteGuardMutations(t *testing.T) {
 			`os.Getenv("OBIT_GUARD_RM") == "0"`, `os.Getenv("OBIT_GUARD_RM") == "disabled-mutation"`,
 			"./internal/hook", "TestPreToolUseDisabled"},
 	} {
+		if !testenv.InMutationShard(t, i) {
+			continue
+		}
 		t.Run(mutation.name, func(t *testing.T) {
 			original := filepath.Join(root, mutation.file)
 			source, err := os.ReadFile(original)
