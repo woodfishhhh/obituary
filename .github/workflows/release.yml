@@ -93,7 +93,8 @@ jobs:
   mirror:
     needs: publish
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Uploading the archives to the mainland server from a US runner is slow.
+    timeout-minutes: 40
     permissions: {}
     steps:
       - id: key
@@ -125,4 +126,11 @@ jobs:
           cp release/*.zip release/checksums.txt "upload/$TAG/"
           # No --delete: download/ keeps every earlier version.
           ssh_cmd="ssh -i $ssh_dir/key -o IdentitiesOnly=yes -o UserKnownHostsFile=$ssh_dir/known_hosts -o StrictHostKeyChecking=yes"
-          rsync -rlt --chmod=D755,F644 -e "$ssh_cmd" "upload/$TAG" "obit-deploy@$CN_DEPLOY_HOST:download/"
+          # The server lets one upload through at a time (rrsync); the release
+          # archives, latest.json and the site can overlap, so wait and retry.
+          for attempt in $(seq 1 10); do
+            if rsync -rlt --chmod=D755,F644 -e "$ssh_cmd" "upload/$TAG" "obit-deploy@$CN_DEPLOY_HOST:download/"; then break; fi
+            if [[ $attempt == 10 ]]; then exit 1; fi
+            echo "upload attempt $attempt failed; retrying in 30 s"
+            sleep 30
+          done

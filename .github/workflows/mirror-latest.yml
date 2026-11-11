@@ -15,7 +15,7 @@ jobs:
   mirror:
     if: ${{ !github.event.release.draft && !github.event.release.prerelease }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - id: key
         env:
@@ -50,4 +50,11 @@ jobs:
           echo "$CN_DEPLOY_KEY" > "$ssh_dir/key"
           echo "$CN_DEPLOY_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
           ssh_cmd="ssh -i $ssh_dir/key -o IdentitiesOnly=yes -o UserKnownHostsFile=$ssh_dir/known_hosts -o StrictHostKeyChecking=yes"
-          rsync -rlt --chmod=D755,F644 -e "$ssh_cmd" latest.json "obit-deploy@$CN_DEPLOY_HOST:download/latest.json"
+          # The server lets one upload through at a time (rrsync); the release
+          # archives, latest.json and the site can overlap, so wait and retry.
+          for attempt in $(seq 1 10); do
+            if rsync -rlt --chmod=D755,F644 -e "$ssh_cmd" latest.json "obit-deploy@$CN_DEPLOY_HOST:download/latest.json"; then break; fi
+            if [[ $attempt == 10 ]]; then exit 1; fi
+            echo "upload attempt $attempt failed; retrying in 30 s"
+            sleep 30
+          done
