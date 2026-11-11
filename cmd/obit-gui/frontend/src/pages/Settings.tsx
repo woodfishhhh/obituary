@@ -1,4 +1,4 @@
-import { Archive, CalendarClock, ClipboardList, FolderInput, FolderOpen, ListChecks, MousePointerClick, PauseCircle, Plus, Power, Trash2 } from "lucide-react";
+import { AppWindow, Archive, CalendarClock, ClipboardList, FolderInput, FolderOpen, LayoutGrid, ListChecks, Monitor, MousePointerClick, PanelBottom, PauseCircle, Plus, Power, Trash2 } from "lucide-react";
 import { Fragment, useState, type ReactNode } from "react";
 import { errorText, useApi } from "../api";
 import { bytes, lifespanText, when } from "../format";
@@ -12,7 +12,7 @@ import Appearance from "./Appearance";
 
 const watchActive = (p: WatchPolicy) => p.consent === undefined || (p.consent === "approved" && (p.approvedRev ?? 0) === (p.rev ?? 0));
 const ages = (): [string, string][] => [["first-seen", t("set.age.firstSeen")], ["modified", t("set.age.modified")]];
-const actions = ["settings", "contextMenu", "autostart", "pause", "language", "sessionSummary", "updateCheck"] as const;
+const actions = ["settings", "contextMenu", "autostart", "pause", "language", "sessionSummary", "updateCheck", "trayIcon", "taskbar", "startMenu", "desktopShortcut"] as const;
 const actionText = (action: string) => ((actions as readonly string[]).includes(action) ? t(`set.action.${action as (typeof actions)[number]}`) : action);
 
 export default function Settings() {
@@ -95,9 +95,6 @@ export default function Settings() {
         <Setting icon={Power} label={t("set.autostart")} desc={t("set.autostartDesc")}>
           <Switch on={s.autostart} label={t("set.autostart")} onToggle={async () => apply(await api.PlanAutostart(!s.autostart), s.autostart ? t("set.autostartOff") : t("set.autostartOn"))} />
         </Setting>
-        <Setting icon={MousePointerClick} label={t("set.menu")} desc={s.contextMenuInstalled && !s.contextMenuCurrent ? s.contextMenuDetail || t("set.menuStale") : t("set.menuDesc")}>
-          <Switch on={s.contextMenuInstalled} label={t("set.menu")} onToggle={async () => apply(await api.PlanContextMenu(!s.contextMenuInstalled), s.contextMenuInstalled ? t("set.menuOff") : t("set.menuOn"), { ask: true })} />
-        </Setting>
         {s.sessionSummary !== undefined && api.PlanSessionSummary ? (
           <Setting icon={ClipboardList} label={t("set.summary")} desc={t("set.summaryDesc")}>
             <Switch on={s.sessionSummary} label={t("set.summary")} onToggle={async () => apply(await api.PlanSessionSummary!(!s.sessionSummary), s.sessionSummary ? t("set.summaryOff") : t("set.summaryOn"))} />
@@ -105,6 +102,33 @@ export default function Settings() {
         ) : null}
         <Setting icon={ListChecks} label={t("set.askDecisions")} desc={ask ? t("set.askDecisionsOn") : t("set.askDecisionsOff")}>
           <Switch on={ask} label={t("set.askDecisions")} onToggle={() => { setAskDecisions(!ask); setAsk(!ask); toast(!ask ? t("set.askDecisionsOnDone") : t("set.askDecisionsOffDone")); }} />
+        </Setting>
+      </div>
+
+      <div className="section-title">{t("set.entry")}</div>
+      <div className="card">
+        {s.trayIcon !== undefined && api.PlanTrayIcon ? (
+          <Setting icon={PanelBottom} label={t("set.tray")} desc={t("set.trayDesc")}>
+            <Switch on={s.trayIcon} label={t("set.tray")} onToggle={async () => apply(await api.PlanTrayIcon!(!s.trayIcon), s.trayIcon ? t("set.trayOff") : t("set.trayOn"))} />
+          </Setting>
+        ) : null}
+        {s.taskbar !== undefined && api.PlanTaskbar ? (
+          <Setting icon={AppWindow} label={t("set.taskbar")} desc={t("set.taskbarDesc")}>
+            <Switch on={s.taskbar} label={t("set.taskbar")} onToggle={async () => apply(await api.PlanTaskbar!(!s.taskbar), s.taskbar ? t("set.taskbarOff") : t("set.taskbarOn"))} />
+          </Setting>
+        ) : null}
+        {s.startMenu !== undefined && api.PlanStartMenu ? (
+          <Setting icon={LayoutGrid} label={t("set.startMenu")} desc={t("set.startMenuDesc")}>
+            <Switch on={s.startMenu} label={t("set.startMenu")} onToggle={async () => apply(await api.PlanStartMenu!(!s.startMenu), s.startMenu ? t("set.startMenuOff") : t("set.startMenuOn"))} />
+          </Setting>
+        ) : null}
+        {s.desktopShortcut !== undefined && api.PlanDesktopShortcut ? (
+          <Setting icon={Monitor} label={t("set.desktop")} desc={t("set.desktopDesc")}>
+            <Switch on={s.desktopShortcut} label={t("set.desktop")} onToggle={async () => apply(await api.PlanDesktopShortcut!(!s.desktopShortcut), s.desktopShortcut ? t("set.desktopOff") : t("set.desktopOn"))} />
+          </Setting>
+        ) : null}
+        <Setting icon={MousePointerClick} label={t("set.menu")} desc={s.contextMenuInstalled && !s.contextMenuCurrent ? s.contextMenuDetail || t("set.menuStale") : t("set.menuDesc")}>
+          <Switch on={s.contextMenuInstalled} label={t("set.menu")} onToggle={async () => apply(await api.PlanContextMenu(!s.contextMenuInstalled), s.contextMenuInstalled ? t("set.menuOff") : t("set.menuOn"), { ask: true })} />
         </Setting>
       </div>
 

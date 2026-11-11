@@ -139,6 +139,12 @@ export interface Settings {
   sessionSummary?: boolean;
   // What Obituary has buried so far; missing on an older backend.
   lifetime?: Lifetime;
+  // Where Obituary shows up: the tray icon, the window on the taskbar, and
+  // the shortcuts Obituary made. Missing on an older backend.
+  trayIcon?: boolean;
+  taskbar?: boolean;
+  startMenu?: boolean;
+  desktopShortcut?: boolean;
 }
 
 export interface Plan {
@@ -232,6 +238,10 @@ export interface Api {
   // Missing on an older backend.
   PlanLanguage?(language: string): Promise<Plan>;
   PlanSessionSummary?(enabled: boolean): Promise<Plan>;
+  PlanTrayIcon?(enabled: boolean): Promise<Plan>;
+  PlanTaskbar?(enabled: boolean): Promise<Plan>;
+  PlanStartMenu?(enabled: boolean): Promise<Plan>;
+  PlanDesktopShortcut?(enabled: boolean): Promise<Plan>;
   // Release checks; missing on an older backend.
   Update?(): Promise<UpdateInfo>;
   CheckUpdate?(): Promise<UpdateInfo>;

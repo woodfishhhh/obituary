@@ -74,7 +74,7 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
   // "auto" resolves the way the backend does from the Windows display
   // language; the browser's language stands in for it here.
   const windowsLanguage = () => (navigator.language.toLowerCase().startsWith("zh") ? "zh-CN" : "en");
-  const settings: Settings = { mode: "graveyard", retentionDays: 7, configPath: "C:\\Users\\me\\AppData\\Roaming\\obituary\\config.toml", contextMenuInstalled: true, contextMenuCurrent: true, contextMenuDetail: "", autostart: true, paused: false, language: "auto", effectiveLanguage: windowsLanguage(), sessionSummary: false, downloads: DL,
+  const settings: Settings = { mode: "graveyard", retentionDays: 7, configPath: "C:\\Users\\me\\AppData\\Roaming\\obituary\\config.toml", contextMenuInstalled: true, contextMenuCurrent: true, contextMenuDetail: "", autostart: true, paused: false, language: "auto", effectiveLanguage: windowsLanguage(), sessionSummary: false, downloads: DL, trayIcon: true, taskbar: true, startMenu: true, desktopShortcut: true,
     lifetime: scenario === "empty" ? { buried: 0, buriedBytes: 0, purgedBytes: 0, resurrected: 0 } : { buried: 216, buriedBytes: 1_395_864_371, purgedBytes: 29_884_416, resurrected: 2 } };
   const watches: WatchPolicy[] = scenario === "empty" ? [] : [{ id: 3, path: DL, lifespan: "2w", age: "first-seen", createdAt: at(-500), consent: "approved", rev: 1, approvedRev: 1 }];
   const plans = new Map<string, () => PlanReceipt>();
@@ -219,6 +219,10 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
     Update: () => wait({ ...update }),
     CheckUpdate: () => new Promise((r) => setTimeout(() => { update.checkedAt = new Date().toISOString(); r({ ...update }); }, 900)),
     PlanUpdateCheck: (on) => plan("updateCheck", on === update.enabled ? [] : [{ target: "[update] check", before: String(update.enabled), after: String(on) }], () => { update.enabled = on; }),
+    PlanTrayIcon: (on) => plan("trayIcon", on === settings.trayIcon ? [] : [{ target: "[ui] tray", before: String(settings.trayIcon), after: String(on) }], () => { settings.trayIcon = on; }),
+    PlanTaskbar: (on) => plan("taskbar", on === settings.taskbar ? [] : [{ target: "[ui] taskbar", before: String(settings.taskbar), after: String(on) }], () => { settings.taskbar = on; }),
+    PlanStartMenu: (on) => plan("startMenu", on === settings.startMenu ? [] : [{ target: "开始菜单：讣告 Obituary", before: on ? "" : "讣告 Obituary.lnk", after: on ? "讣告 Obituary.lnk" : "" }], () => { settings.startMenu = on; }),
+    PlanDesktopShortcut: (on) => plan("desktopShortcut", on === settings.desktopShortcut ? [] : [{ target: "桌面：讣告 Obituary", before: on ? "" : "讣告 Obituary.lnk", after: on ? "讣告 Obituary.lnk" : "" }], () => { settings.desktopShortcut = on; }),
     PlanPause: (paused) => plan("pause", paused === settings.paused ? [] : [{ target: "paused", before: String(settings.paused), after: String(paused) }], () => { settings.paused = paused; }),
     ApplyPlan: (id) => {
       const apply = plans.get(id);
