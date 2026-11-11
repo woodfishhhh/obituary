@@ -12,8 +12,9 @@ on:
     # Documentation and website pushes do not need a Windows test run
     # (pages.yml builds site/).
     paths-ignore: ["docs/**", "**/*.md", "site/**"]
+  # Every pull request runs CI, docs-only ones too: the required checks on
+  # main must report or the pull request could never merge.
   pull_request:
-    paths-ignore: ["docs/**", "**/*.md", "site/**"]
   workflow_dispatch:
     inputs:
       full:
