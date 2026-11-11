@@ -127,7 +127,7 @@ const zh = {
   },
   window: {
     head: "不会用命令行，也能复活",
-    lead: "托盘菜单「打开讣告」。界面有中文和英文。",
+    lead: "开始菜单、桌面、托盘都能打开；右键文件就能设寿命。",
     looks: { calendar: "日历", palette: "一行" } as Record<LookId, string>,
     pages: { upcoming: "即将下葬", graveyard: "即将火化", decisions: "待你决定" } as Record<PageId, string>,
     lookLabel: "外观",
@@ -316,7 +316,7 @@ const en: Copy = {
   },
   window: {
     head: "Resurrect without the command line",
-    lead: "\u201cOpen Obituary\u201d in the tray menu. Chinese and English.",
+    lead: "Open it from Start, the desktop or the tray; right-click a file to give it a lifespan.",
     looks: { calendar: "Calendar", palette: "One line" },
     pages: { upcoming: "Expiring", graveyard: "Graveyard", decisions: "For you" },
     lookLabel: "Look",

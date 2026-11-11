@@ -46,7 +46,7 @@ obit doctor              # read-only check: PATH, obitd, runner, Claude Code / C
 ## 2. Connect your agents
 
 ```powershell
-obit init -g                 # Claude Code, all projects; the tray also starts at login
+obit init -g                 # Claude Code, all projects; also the Skill, context menu and shortcuts
 obit init -g --agent codex   # Codex
 ```
 

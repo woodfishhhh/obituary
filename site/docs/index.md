@@ -45,7 +45,7 @@ obit doctor              # 只读体检：PATH、obitd、运行器、Claude Code
 ## 2. 接到 agent 身上
 
 ```powershell
-obit init -g                 # Claude Code，所有项目；托盘也会随登录启动
+obit init -g                 # Claude Code，所有项目；同时装好 Skill、右键菜单和快捷方式
 obit init -g --agent codex   # Codex
 ```
 

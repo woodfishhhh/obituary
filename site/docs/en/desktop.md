@@ -14,9 +14,8 @@ Resurrect files, approve proposals and change settings without the command line.
 
 ## The small window
 
-`obit-gui.exe` has five pages: Graveyard, Upcoming, Decisions, Settings and Logs. "Open Obituary" in the tray menu opens it; it must sit next to `obitd.exe` for the tray to find it.
+`obit-gui.exe` has five pages: Upcoming, Graveyard, Decisions, Settings and Logs. "Obituary" in Start, the desktop shortcut and "Open Obituary" in the tray menu all open it.
 
-- Every switch shows exactly what it will change and writes only after you confirm.
 - Trusting a `.obitrules` file trusts exactly the version shown in the window.
 - The window, tray and context menu follow `[ui] language` in `config.toml` (`auto`, `zh-CN` or `en`; `auto` follows Windows). You can switch it in Settings.
 - It needs the WebView2 runtime (built into Windows 11 and present on most Windows 10 machines) and is x64 only.
@@ -38,10 +37,20 @@ Switch in Settings → Appearance. It changes only how the window looks on this 
 
 ## Context menu
 
-```powershell
-obit init --context-menu --yes   # Explorer context menu (classic menu; on Windows 11 under "Show more options")
-```
+`obit init` installs the Explorer context menu by default: right-click a file or folder, choose "Obituary" and a lifespan (on Windows 11 under "Show more options"). `obit init --dry-run` lists every entry and its command.
 
-`--dry-run` lists every entry. Once installed, right-click a file in Explorer to give it a lifespan.
+## Icons and menus
+
+`obit init` sets all of these up by default, and each has a switch under Settings > Icons and menus:
+
+| Switch | What it covers |
+|---|---|
+| Tray icon | Obituary in the notification area; hidden, cleanup keeps running |
+| Taskbar icon | Whether the window takes a taskbar slot while open |
+| Start menu | "Obituary" in Start |
+| Desktop shortcut | "Obituary" on the desktop |
+| Context menu | The "Obituary" menu in Explorer |
+
+To skip them at install time: `obit init --no-context-menu` leaves out the context menu, `--no-shortcuts` the Start menu and desktop shortcuts.
 
 Burial dates shown in Explorer are covered in [Folder policies](./folder-policies#dates-in-explorer).

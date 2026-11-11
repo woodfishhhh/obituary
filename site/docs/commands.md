@@ -62,11 +62,11 @@ obit docker list
 ## 接入与后台
 
 ```powershell
-obit init                       # Claude Code 的 hook，并让托盘随登录启动
+obit init                       # Claude Code 的 hook 和 Skill、右键菜单、开始菜单和桌面快捷方式，托盘随登录启动
 obit init -g --agent codex      # Codex
 obit init -g --guard-rm         # 删除护栏
-obit init -g --mcp --skill      # MCP 服务和 Agent Skill
-obit init --context-menu --yes  # 资源管理器右键菜单
+obit init -g --mcp              # 加装 MCP 服务
+obit init --no-context-menu --no-shortcuts --no-skill   # 不装右键菜单、快捷方式或 Skill
 obit init -g --show             # 装了什么
 obit daemon enable              # 托盘随登录启动，并装兜底的定时任务
 obit daemon status

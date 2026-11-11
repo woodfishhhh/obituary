@@ -62,11 +62,11 @@ obit docker list
 ## Integration and background
 
 ```powershell
-obit init                       # Claude Code hooks, and the tray starts at login
+obit init                       # Claude Code hooks and Skill, context menu, Start menu and desktop shortcuts; the tray starts at login
 obit init -g --agent codex      # Codex
 obit init -g --guard-rm         # delete guard
-obit init -g --mcp --skill      # MCP server and Agent Skill
-obit init --context-menu --yes  # Explorer context menu
+obit init -g --mcp              # add the MCP server
+obit init --no-context-menu --no-shortcuts --no-skill   # skip the context menu, shortcuts or Skill
 obit init -g --show             # what is installed
 obit daemon enable              # tray at login plus the fallback scheduled task
 obit daemon status
