@@ -274,22 +274,27 @@ func TestOwnerBatchDeadlineStopsRepositoryDiscovery(t *testing.T) {
 		defer cancel()
 		readDone := make(chan error, 1)
 		start := time.Now()
+		// Only discovery runs under the lock: test logging can block on a busy
+		// runner and would otherwise be charged to the hook's lock budget.
+		var owners []core.Ownership
+		var elapsed time.Duration
 		err := r.engine.Svc.Store.Update(func(*core.State) error {
 			go func() {
 				_, err := r.engine.Svc.Store.WithDeadline(time.Now().Add(time.Second)).ReadSnapshot()
 				readDone <- err
 			}()
-			owners := OwnerBatch(ctx, paths)
-			t.Logf("discovery elapsed=%s answers=%d", time.Since(start), len(owners))
-			for _, owner := range owners {
-				if owner.Err != nil && !owner.Tracked {
-					t.Errorf("failed discovery exposed untracked answer: %+v", owner)
-				}
-			}
+			owners = OwnerBatch(ctx, paths)
+			elapsed = time.Since(start)
 			return nil
 		})
 		if err != nil {
 			t.Fatal(err)
+		}
+		t.Logf("discovery elapsed=%s answers=%d", elapsed, len(owners))
+		for _, owner := range owners {
+			if owner.Err != nil && !owner.Tracked {
+				t.Errorf("failed discovery exposed untracked answer: %+v", owner)
+			}
 		}
 		if err := <-readDone; err != nil {
 			t.Fatalf("repository discovery exceeded hook lock budget: %s %v", time.Since(start), err)
