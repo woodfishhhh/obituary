@@ -133,10 +133,11 @@ jobs:
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: go.mod
+      # Build the tool for the runner, then analyse the Windows build.
       - name: govulncheck (GOOS=windows)
-        env:
-          GOOS: windows
-        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
+        run: |
+          GOBIN="$RUNNER_TEMP/bin" go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
+          GOOS=windows "$RUNNER_TEMP/bin/govulncheck" ./...
 
   # Both target platforms are type-checked on one Linux runner.
   lint:
