@@ -6,12 +6,12 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 )
 
 func TestFileAncestryUnavailableOnPOSIX(t *testing.T) {
-	proof, err := (FS{}).OpenFileAncestry("/unused", core.Identity{})
-	if proof != nil || !errors.Is(err, core.ErrUnsafe) {
+	proof, err := (FS{}).OpenFileAncestry("/unused", corefs.Identity{})
+	if proof != nil || !errors.Is(err, corefs.ErrUnsafe) {
 		t.Fatalf("unsupported ancestry proof: %v %v", proof, err)
 	}
 }

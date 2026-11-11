@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 )
 
@@ -20,14 +21,7 @@ func (s *Service) watchStableWindow() time.Duration {
 	return WatchStableWindow
 }
 
-// WatchSnapshot binds metadata to the same open object as its identity.
-type WatchSnapshot struct {
-	Identity  Identity  `json:"identity"`
-	Size      int64     `json:"size"`
-	Modified  time.Time `json:"modified"`
-	Tree      string    `json:"tree,omitempty"`
-	Directory bool      `json:"directory,omitempty"`
-}
+type WatchSnapshot = corefs.WatchSnapshot
 
 // WatchTiming retains the registration's age basis even after a policy edit.
 type WatchTiming struct {

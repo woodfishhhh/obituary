@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"golang.org/x/sys/windows"
 )
 
@@ -25,9 +25,9 @@ func TestCanonicalReopenErrorClassification(t *testing.T) {
 	}{
 		{"denied", windows.ERROR_ACCESS_DENIED, windows.ERROR_ACCESS_DENIED},
 		{"sharing", windows.ERROR_SHARING_VIOLATION, windows.ERROR_SHARING_VIOLATION},
-		{"file-gone", windows.ERROR_FILE_NOT_FOUND, core.ErrUnsafe},
-		{"path-gone", windows.ERROR_PATH_NOT_FOUND, core.ErrUnsafe},
-		{"replaced", nil, core.ErrUnsafe},
+		{"file-gone", windows.ERROR_FILE_NOT_FOUND, corefs.ErrUnsafe},
+		{"path-gone", windows.ERROR_PATH_NOT_FOUND, corefs.ErrUnsafe},
+		{"replaced", nil, corefs.ErrUnsafe},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			calls := 0
@@ -82,15 +82,15 @@ func TestLocateReopenErrorClassification(t *testing.T) {
 		err    error
 		unsafe bool
 	}{
-		{"gone", core.ErrNotFound, false},
+		{"gone", corefs.ErrNotFound, false},
 		{"denied", windows.ERROR_ACCESS_DENIED, false},
 		{"sharing", windows.ERROR_SHARING_VIOLATION, false},
-		{"hardlinks", core.ErrUnsafe, true},
+		{"hardlinks", corefs.ErrUnsafe, true},
 		{"replaced", nil, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := locate(id, func(string) (core.Identity, error) { return core.Identity{}, tc.err })
-			if got != "" || err == nil || errors.Is(err, core.ErrNotFound) || errors.Is(err, core.ErrUnsafe) != tc.unsafe {
+			got, err := locate(id, func(string) (corefs.Identity, error) { return corefs.Identity{}, tc.err })
+			if got != "" || err == nil || errors.Is(err, corefs.ErrNotFound) || errors.Is(err, corefs.ErrUnsafe) != tc.unsafe {
 				t.Fatalf("Locate = %q, %v; unsafe=%v, object still exists by ID", got, err, tc.unsafe)
 			}
 		})
@@ -128,7 +128,7 @@ func TestLocateFollowsARenameAndLosesADeletedFile(t *testing.T) {
 	if err := os.Remove(moved); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := (FS{}).Locate(id); !errors.Is(err, core.ErrNotFound) {
+	if _, err := (FS{}).Locate(id); !errors.Is(err, corefs.ErrNotFound) {
 		t.Fatalf("Locate after delete = %v; want ErrNotFound", err)
 	}
 }
@@ -150,7 +150,7 @@ func TestHardLinkedFilesHaveNoUsableIdentity(t *testing.T) {
 	if err := os.Link(a, b); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := (FS{}).Identify(b); !errors.Is(err, core.ErrUnsafe) {
+	if _, err := (FS{}).Identify(b); !errors.Is(err, corefs.ErrUnsafe) {
 		t.Fatalf("Identify(hard link) = %v; want ErrUnsafe", err)
 	}
 }

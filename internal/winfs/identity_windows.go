@@ -1,4 +1,4 @@
-// Package winfs implements core.FS with Windows file IDs and the shell's Recycle Bin.
+// Package winfs implements corefs.FS with Windows file IDs and the shell's Recycle Bin.
 package winfs
 
 import (
@@ -8,15 +8,15 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"golang.org/x/sys/windows"
 )
 
-// FS is the Windows implementation of core.FS.
+// FS is the Windows implementation of corefs.FS.
 type FS struct{}
 
-var _ core.FS = FS{}
+var _ corefs.FS = FS{}
 
 type fileIDInfo struct {
 	VolumeSerialNumber uint64
@@ -60,22 +60,22 @@ func openWithFlags(path string, flags uint32) (windows.Handle, error) {
 }
 
 // IdentifyFollowing identifies the target, including the final reparse point.
-// Unlike core.FS.Identify, this inspection permits multiple hard links. Compare
+// Unlike corefs.FS.Identify, this inspection permits multiple hard links. Compare
 // Serial and FileID, not Volume: drive, UNC and mount aliases name the same ID.
-func IdentifyFollowing(path string) (core.Identity, error) {
+func IdentifyFollowing(path string) (corefs.Identity, error) {
 	h, err := openFollowing(path)
 	if err != nil {
-		return core.Identity{}, err
+		return corefs.Identity{}, err
 	}
 	defer windows.CloseHandle(h)
 	id, err := queryID(h)
 	if err != nil {
-		return core.Identity{}, err
+		return corefs.Identity{}, err
 	}
-	return core.Identity{Volume: volumeRoot(path), Serial: id.VolumeSerialNumber, FileID: hex.EncodeToString(id.FileID[:])}, nil
+	return corefs.Identity{Volume: volumeRoot(path), Serial: id.VolumeSerialNumber, FileID: hex.EncodeToString(id.FileID[:])}, nil
 }
 
-func (FS) IdentifyFollowing(path string) (core.Identity, error) { return IdentifyFollowing(path) }
+func (FS) IdentifyFollowing(path string) (corefs.Identity, error) { return IdentifyFollowing(path) }
 
 func (FS) Resolve(path string) (string, error) { return Resolve(path) }
 
@@ -90,10 +90,10 @@ func volumeRoot(path string) string { return pathutil.VolumeRoot(path) }
 // Identify returns the volume serial and 128-bit file ID of path without
 // following links. Files with more than one hard link are refused: following
 // such an ID could reach a name that was never registered.
-func (FS) Identify(path string) (core.Identity, error) {
+func (FS) Identify(path string) (corefs.Identity, error) {
 	h, err := open(path)
 	if err != nil {
-		return core.Identity{}, mapNotFound(err)
+		return corefs.Identity{}, mapNotFound(err)
 	}
 	defer windows.CloseHandle(h)
 	return identify(h, volumeRoot(path))
@@ -101,33 +101,33 @@ func (FS) Identify(path string) (core.Identity, error) {
 
 // IdentifyHandle reads the identity from an already pinned object. Path only
 // supplies its volume spelling, as in FS.Identify.
-func IdentifyHandle(h windows.Handle, path string) (core.Identity, error) {
+func IdentifyHandle(h windows.Handle, path string) (corefs.Identity, error) {
 	return identify(h, volumeRoot(path))
 }
 
-func identify(h windows.Handle, volume string) (core.Identity, error) {
+func identify(h windows.Handle, volume string) (corefs.Identity, error) {
 	var basic windows.ByHandleFileInformation
 	if err := windows.GetFileInformationByHandle(h, &basic); err != nil {
-		return core.Identity{}, err
+		return corefs.Identity{}, err
 	}
 	if basic.FileAttributes&windows.FILE_ATTRIBUTE_DIRECTORY == 0 && basic.NumberOfLinks > 1 {
-		return core.Identity{}, fmt.Errorf("it has %d hard links: %w", basic.NumberOfLinks, core.ErrUnsafe)
+		return corefs.Identity{}, fmt.Errorf("it has %d hard links: %w", basic.NumberOfLinks, corefs.ErrUnsafe)
 	}
 	info, err := queryID(h)
 	if err != nil {
-		return core.Identity{}, err
+		return corefs.Identity{}, err
 	}
-	return (core.Identity{Volume: volume, Serial: info.VolumeSerialNumber, FileID: hex.EncodeToString(info.FileID[:])}).Normalized(), nil
+	return (corefs.Identity{Volume: volume, Serial: info.VolumeSerialNumber, FileID: hex.EncodeToString(info.FileID[:])}).Normalized(), nil
 }
 
 // Locate opens the object by its file ID and returns its current path. The
 // path is verified to lead back to the same object. A changed name retries;
 // only unsafe properties of the object itself (such as hard links) refuse it.
-func (fs FS) Locate(id core.Identity) (string, error) {
+func (fs FS) Locate(id corefs.Identity) (string, error) {
 	return locate(id, fs.Identify)
 }
 
-func locate(id core.Identity, identifyPath func(string) (core.Identity, error)) (string, error) {
+func locate(id corefs.Identity, identifyPath func(string) (corefs.Identity, error)) (string, error) {
 	id = id.Normalized()
 	raw, err := hex.DecodeString(id.FileID)
 	if err != nil || len(raw) != 16 {
@@ -159,7 +159,7 @@ func locate(id core.Identity, identifyPath func(string) (core.Identity, error)) 
 	}
 	back, err := identifyPath(path)
 	if err != nil {
-		if errors.Is(err, core.ErrNotFound) {
+		if errors.Is(err, corefs.ErrNotFound) {
 			// The ID is still open: losing its name during a concurrent rename
 			// is not proof that the object disappeared.
 			return "", fmt.Errorf("reopen current name %q: %v", path, err) //nolint:errorlint // Exposing ErrNotFound would let callers discard a still-open object.
@@ -207,7 +207,7 @@ func checkedFinalPath(h windows.Handle, open func(string) (windows.Handle, error
 	back, err := open(path)
 	if err != nil {
 		if errors.Is(err, windows.ERROR_FILE_NOT_FOUND) || errors.Is(err, windows.ERROR_PATH_NOT_FOUND) {
-			return "", fmt.Errorf("its current name %q cannot be addressed safely: %w", path, core.ErrUnsafe)
+			return "", fmt.Errorf("its current name %q cannot be addressed safely: %w", path, corefs.ErrUnsafe)
 		}
 		return "", err
 	}
@@ -218,7 +218,7 @@ func checkedFinalPath(h windows.Handle, open func(string) (windows.Handle, error
 		return "", err
 	}
 	if got != want {
-		return "", fmt.Errorf("its current name %q cannot be addressed safely: %w", path, core.ErrUnsafe)
+		return "", fmt.Errorf("its current name %q cannot be addressed safely: %w", path, corefs.ErrUnsafe)
 	}
 	return path, nil
 }
@@ -250,7 +250,7 @@ func mapNotFound(err error) error {
 		errors.Is(err, windows.ERROR_PATH_NOT_FOUND),
 		errors.Is(err, windows.ERROR_INVALID_PARAMETER),
 		errors.Is(err, windows.ERROR_INVALID_NAME):
-		return core.ErrNotFound
+		return corefs.ErrNotFound
 	}
 	return err
 }

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 )
 
 func TestPOSIXMovesFailWithoutTouchingObjects(t *testing.T) {
@@ -32,14 +33,14 @@ func TestPOSIXMovesFailWithoutTouchingObjects(t *testing.T) {
 	}
 	defer parent.Close()
 	for _, err := range []error{fs.MovePinned(source, id, target), fs.Recycle(source, id)} {
-		if !errors.Is(err, core.ErrUnsupported) {
+		if !errors.Is(err, corefs.ErrUnsupported) {
 			t.Fatal(err)
 		}
 	}
-	if _, err := fs.MovePinnedInto(source, id, parent, "target"); !errors.Is(err, core.ErrUnsupported) {
+	if _, err := fs.MovePinnedInto(source, id, parent, "target"); !errors.Is(err, corefs.ErrUnsupported) {
 		t.Fatal(err)
 	}
-	if _, err := fs.MkdirRestoreParent(parent, "new"); !errors.Is(err, core.ErrUnsupported) {
+	if _, err := fs.MkdirRestoreParent(parent, "new"); !errors.Is(err, corefs.ErrUnsupported) {
 		t.Fatal(err)
 	}
 	if _, err := os.Lstat(filepath.Join(dir, "new")); !errors.Is(err, os.ErrNotExist) {

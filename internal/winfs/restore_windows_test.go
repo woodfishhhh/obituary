@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"golang.org/x/sys/windows"
 )
 
@@ -121,7 +121,7 @@ func TestOpenRestoreParentRequiresOrdinaryDirectory(t *testing.T) {
 		if parent != nil {
 			parent.Close()
 		}
-		if !errors.Is(err, core.ErrUnsafe) {
+		if !errors.Is(err, corefs.ErrUnsafe) {
 			t.Fatalf("unverified restore parent accepted: %s %v", path, err)
 		}
 	}
@@ -162,7 +162,7 @@ func TestMovePinnedIntoPreservesSourceAndDestination(t *testing.T) {
 		}
 	}
 	for _, name := range []string{"../escape", `..\escape`, `C:\escape`, "stream:ads", ".."} {
-		if _, err := (FS{}).MovePinnedInto(source+"-old", id, parent, name); !errors.Is(err, core.ErrUnsafe) {
+		if _, err := (FS{}).MovePinnedInto(source+"-old", id, parent, name); !errors.Is(err, corefs.ErrUnsafe) {
 			t.Fatalf("relative rename escaped parent: %s %v", name, err)
 		}
 	}
@@ -188,7 +188,7 @@ func TestFindRestoredRechecksParentAfterLocate(t *testing.T) {
 				t.Fatal(err)
 			}
 			called := false
-			_, err = fs.findRestored(pid, sid, func(id core.Identity) (string, error) {
+			_, err = fs.findRestored(pid, sid, func(id corefs.Identity) (string, error) {
 				path, err := fs.Locate(id)
 				if err != nil {
 					return "", err
@@ -210,7 +210,7 @@ func TestFindRestoredRechecksParentAfterLocate(t *testing.T) {
 			if !called || err == nil {
 				t.Fatal("FindRestored accepted replaced parent identity")
 			}
-			if mode == "replaced" && !errors.Is(err, core.ErrUnsafe) {
+			if mode == "replaced" && !errors.Is(err, corefs.ErrUnsafe) {
 				t.Fatalf("parent mismatch hidden by other defense: %v", err)
 			}
 		})

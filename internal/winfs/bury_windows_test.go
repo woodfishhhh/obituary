@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 )
 
 func TestRealPathNeverAliasesTrailingDotDirectory(t *testing.T) {
@@ -26,7 +26,7 @@ func TestRealPathNeverAliasesTrailingDotDirectory(t *testing.T) {
 			t.Fatal(err)
 		}
 		got, err := (FS{}).RealPath(path)
-		if errors.Is(err, core.ErrUnsafe) {
+		if errors.Is(err, corefs.ErrUnsafe) {
 			continue
 		}
 		if err != nil {
@@ -59,7 +59,7 @@ func TestMovePinnedMovesTheCheckedObjectAndRefusesASwap(t *testing.T) {
 		t.Fatalf("MakeGrave must refuse an existing directory, got %v", err)
 	}
 	grave := filepath.Join(graveDir, "a.txt")
-	if err := (FS{}).MovePinned(path, id, grave); err == nil || errors.Is(err, core.ErrUnsafe) || errors.Is(err, core.ErrNotFound) {
+	if err := (FS{}).MovePinned(path, id, grave); err == nil || errors.Is(err, corefs.ErrUnsafe) || errors.Is(err, corefs.ErrNotFound) {
 		t.Fatalf("MovePinned(swapped) = %v; want a retryable identity mismatch", err)
 	}
 	if _, err := os.Stat(path); err != nil {

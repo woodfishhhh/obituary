@@ -8,7 +8,7 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"golang.org/x/sys/windows"
 )
@@ -21,12 +21,12 @@ import (
 func (FS) LongPath(path string) (string, bool, error) {
 	abs, err := pathutil.Abs(path)
 	if err != nil {
-		return "", false, fmt.Errorf("%v: %w", err, core.ErrUnsafe) //nolint:errorlint // Path validation exposes only ErrUnsafe, not implementation errors.
+		return "", false, fmt.Errorf("%v: %w", err, corefs.ErrUnsafe) //nolint:errorlint // Path validation exposes only ErrUnsafe, not implementation errors.
 	}
-	var original *core.Identity
+	var original *corefs.Identity
 	if id, err := (FS{}).Identify(filepath.Clean(abs)); err == nil {
 		original = &id
-	} else if !errors.Is(err, core.ErrNotFound) {
+	} else if !errors.Is(err, corefs.ErrNotFound) {
 		return "", false, err
 	}
 	expanded, complete, err := expandLongPath(abs)
@@ -34,18 +34,18 @@ func (FS) LongPath(path string) (string, bool, error) {
 		return "", false, err
 	}
 	if err := unchangedPrefixes(expanded); err != nil {
-		return "", false, fmt.Errorf("%v: %w", err, core.ErrUnsafe) //nolint:errorlint // Path validation exposes only ErrUnsafe, not implementation errors.
+		return "", false, fmt.Errorf("%v: %w", err, corefs.ErrUnsafe) //nolint:errorlint // Path validation exposes only ErrUnsafe, not implementation errors.
 	}
 	if original != nil {
 		got, err := (FS{}).Identify(expanded)
 		if err != nil || got != *original {
-			return "", false, fmt.Errorf("expanded path %q no longer identifies %q; use an ID: %w", expanded, path, core.ErrUnsafe)
+			return "", false, fmt.Errorf("expanded path %q no longer identifies %q; use an ID: %w", expanded, path, corefs.ErrUnsafe)
 		}
 	}
 	if pathutil.RequiresDirectory(path) {
 		info, err := os.Lstat(expanded)
 		if err == nil && !info.IsDir() {
-			return "", false, fmt.Errorf("%s is not a directory: %w", path, core.ErrUnsafe)
+			return "", false, fmt.Errorf("%s is not a directory: %w", path, corefs.ErrUnsafe)
 		}
 		if err != nil && !errors.Is(err, os.ErrNotExist) {
 			return "", false, err

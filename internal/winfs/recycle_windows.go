@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	core "github.com/woodfishhhh/obituary/internal/core/fs"
 	"golang.org/x/sys/windows"
 )
 

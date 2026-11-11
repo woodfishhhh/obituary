@@ -5,7 +5,7 @@ package winfs
 import (
 	"fmt"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"golang.org/x/sys/unix"
 )
 
@@ -31,7 +31,7 @@ func HardlinkNames(path string) ([]string, error) {
 		return nil, err
 	}
 	if st.Nlink != 1 {
-		return nil, fmt.Errorf("enumerating all hard links is unavailable: %w", core.ErrUnsupported)
+		return nil, fmt.Errorf("enumerating all hard links is unavailable: %w", corefs.ErrUnsupported)
 	}
 	return []string{path}, nil
 }

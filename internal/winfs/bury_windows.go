@@ -8,7 +8,7 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"golang.org/x/sys/windows"
 )
@@ -26,7 +26,7 @@ type fileRenameInfo struct {
 // its identity is checked on that handle, and the rename is issued through
 // the same handle, so the object that was checked is the object that moves.
 // The rename never replaces an existing object at to.
-func (fs FS) MovePinned(path string, want core.Identity, to string) error {
+func (fs FS) MovePinned(path string, want corefs.Identity, to string) error {
 	parent, err := fs.IdentifyFollowing(filepath.Dir(to))
 	if err != nil {
 		return err
@@ -37,7 +37,7 @@ func (fs FS) MovePinned(path string, want core.Identity, to string) error {
 	return movePinned(path, want, func(h windows.Handle) error { return renameByHandle(h, to) })
 }
 
-func movePinned(path string, want core.Identity, rename func(windows.Handle) error) error {
+func movePinned(path string, want corefs.Identity, rename func(windows.Handle) error) error {
 	p, err := windows.UTF16PtrFromString(path)
 	if err != nil {
 		return err

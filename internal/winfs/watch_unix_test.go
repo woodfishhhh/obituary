@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 )
 
 func TestPOSIXWatchObservationDoesNotPromiseWriterExclusion(t *testing.T) {
@@ -29,14 +29,14 @@ func TestPOSIXWatchObservationDoesNotPromiseWriterExclusion(t *testing.T) {
 	if snapshot.Identity != id || snapshot.Size != 7 || snapshot.Directory || snapshot.Modified.IsZero() {
 		t.Fatal(snapshot)
 	}
-	if _, release, err := fs.ObserveWatch(path, true); !errors.Is(err, core.ErrUnsupported) || release != nil {
+	if _, release, err := fs.ObserveWatch(path, true); !errors.Is(err, corefs.ErrUnsupported) || release != nil {
 		t.Fatalf("claimed writer exclusion: %v", err)
 	}
 	link := path + "-link"
 	if err := os.Symlink(path, link); err != nil {
 		t.Fatal(err)
 	}
-	if _, release, err := fs.ObserveWatch(link, false); !errors.Is(err, core.ErrUnsafe) || release != nil {
+	if _, release, err := fs.ObserveWatch(link, false); !errors.Is(err, corefs.ErrUnsafe) || release != nil {
 		t.Fatalf("followed symbolic link: %v", err)
 	}
 	data, err := os.ReadFile(path)

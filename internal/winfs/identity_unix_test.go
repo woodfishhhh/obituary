@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 )
 
 func TestPOSIXIdentityAndLinks(t *testing.T) {
@@ -42,16 +42,16 @@ func TestPOSIXIdentityAndLinks(t *testing.T) {
 	if err != nil || got != want {
 		t.Fatalf("rename changed identity: %+v %v", got, err)
 	}
-	if _, err := fs.Locate(want); !errors.Is(err, core.ErrUnsupported) || errors.Is(err, core.ErrNotFound) {
+	if _, err := fs.Locate(want); !errors.Is(err, corefs.ErrUnsupported) || errors.Is(err, corefs.ErrNotFound) {
 		t.Fatalf("unknown inode was declared missing: %v", err)
 	}
 	if err := os.Link(renamed, path); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := fs.Identify(path); !errors.Is(err, core.ErrUnsafe) {
+	if _, err := fs.Identify(path); !errors.Is(err, corefs.ErrUnsafe) {
 		t.Fatalf("hard link accepted: %v", err)
 	}
-	if _, err := fs.Identify(filepath.Join(dir, "absent")); !errors.Is(err, core.ErrNotFound) {
+	if _, err := fs.Identify(filepath.Join(dir, "absent")); !errors.Is(err, corefs.ErrNotFound) {
 		t.Fatal(err)
 	}
 }
@@ -77,7 +77,7 @@ func TestPOSIXCanonicalPreservesFinalLinkAndCase(t *testing.T) {
 	if same, err := (FS{}).SameName("A", "a"); err != nil || same {
 		t.Fatal(same, err)
 	}
-	id := core.Identity{Volume: "/CaseSensitive", Serial: 1, FileID: "1"}
+	id := corefs.Identity{Volume: "/CaseSensitive", Serial: 1, FileID: "1"}
 	if id.Normalized() != id {
 		t.Fatal("mount name casing changed")
 	}

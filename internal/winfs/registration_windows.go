@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"golang.org/x/sys/windows"
 )
@@ -13,11 +13,11 @@ import (
 type fileAncestry struct {
 	path    string
 	handles []windows.Handle
-	ids     []core.Identity
+	ids     []corefs.Identity
 }
 
-func (a *fileAncestry) Path() string                { return a.path }
-func (a *fileAncestry) Identities() []core.Identity { return a.ids }
+func (a *fileAncestry) Path() string                  { return a.path }
+func (a *fileAncestry) Identities() []corefs.Identity { return a.ids }
 func (a *fileAncestry) Close() error {
 	for _, h := range a.handles {
 		windows.CloseHandle(h)
@@ -29,18 +29,18 @@ func (a *fileAncestry) Close() error {
 // OpenFileAncestry reuses x/sys's handle/volume APIs. os.Root intentionally
 // follows links and shares deletion; this proof needs no reparse traversal and
 // no FILE_SHARE_DELETE while the file's ancestry is compared with the ledger.
-func (fs FS) OpenFileAncestry(path string, want core.Identity) (core.FileAncestry, error) {
+func (fs FS) OpenFileAncestry(path string, want corefs.Identity) (corefs.FileAncestry, error) {
 	want = want.Normalized()
 	if len(want.Volume) != 3 || want.Volume[1:] != `:\` {
-		return nil, core.ErrUnsafe // network/volume aliases are not a local proof
+		return nil, corefs.ErrUnsafe // network/volume aliases are not a local proof
 	}
 	root, err := windows.UTF16PtrFromString(want.Volume)
 	if err != nil || windows.GetDriveType(root) != windows.DRIVE_FIXED {
-		return nil, core.ErrUnsafe
+		return nil, corefs.ErrUnsafe
 	}
 	path, complete, err := fs.LongPath(path)
 	if err != nil || !complete {
-		return nil, core.ErrUnsafe
+		return nil, corefs.ErrUnsafe
 	}
 	var paths []string
 	for dir := path; ; dir = pathutil.Parent(dir) {
@@ -59,12 +59,12 @@ func (fs FS) OpenFileAncestry(path string, want core.Identity) (core.FileAncestr
 	}
 	if !a.confirms(want) {
 		a.Close()
-		return nil, core.ErrUnsafe
+		return nil, corefs.ErrUnsafe
 	}
 	return a, nil
 }
 
-func (a *fileAncestry) confirms(want core.Identity) bool {
+func (a *fileAncestry) confirms(want corefs.Identity) bool {
 	if a.ids[len(a.ids)-1] != want || !stableRegistrationVolume(a.handles[0]) {
 		return false
 	}
@@ -101,12 +101,12 @@ func (a *fileAncestry) pin(path, volume string, file bool) error {
 	}
 	directory := info.FileAttributes&windows.FILE_ATTRIBUTE_DIRECTORY != 0
 	if file == directory || info.FileAttributes&(windows.FILE_ATTRIBUTE_REPARSE_POINT|windows.FILE_ATTRIBUTE_DEVICE) != 0 {
-		return core.ErrUnsafe
+		return corefs.ErrUnsafe
 	}
 	if directory {
 		var flags uint32
 		if err := windows.GetFileInformationByHandleEx(h, windows.FileCaseSensitiveInfo, (*byte)(unsafe.Pointer(&flags)), 4); err != nil || flags != 0 {
-			return core.ErrUnsafe
+			return corefs.ErrUnsafe
 		}
 	}
 	id, err := identify(h, volume)
@@ -114,7 +114,7 @@ func (a *fileAncestry) pin(path, volume string, file bool) error {
 		return err
 	}
 	if len(a.ids) > 0 && id.Serial != a.ids[0].Serial {
-		return core.ErrUnsafe
+		return corefs.ErrUnsafe
 	}
 	a.ids = append(a.ids, id)
 	return nil

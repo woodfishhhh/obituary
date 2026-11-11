@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 )
 
 // TestRecycleMovesToRecycleBin touches the real Recycle Bin, so it only runs
@@ -39,7 +39,7 @@ func TestRecycleMovesToRecycleBin(t *testing.T) {
 			t.Fatalf("%s still exists", path)
 		}
 	}
-	if err := (FS{}).Recycle(file, core.Identity{}); err == nil {
+	if err := (FS{}).Recycle(file, corefs.Identity{}); err == nil {
 		t.Fatal("recycling a missing path should fail")
 	}
 }
@@ -58,7 +58,7 @@ func TestRecycleRefusesAnObjectThatWasSwappedIn(t *testing.T) {
 	}
 	write(t, path) // same name, different object
 
-	if err := (FS{}).Recycle(path, id); !errors.Is(err, core.ErrUnsafe) {
+	if err := (FS{}).Recycle(path, id); !errors.Is(err, corefs.ErrUnsafe) {
 		t.Fatalf("Recycle = %v; want ErrUnsafe", err)
 	}
 	if _, err := os.Stat(path); err != nil {
