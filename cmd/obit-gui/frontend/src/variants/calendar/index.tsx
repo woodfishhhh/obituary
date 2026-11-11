@@ -5,7 +5,7 @@
 // day to extend it to that day.
 import { CalendarDays, EyeOff, Flame, RefreshCw, Search, TimerReset } from "lucide-react";
 import { useState, type DragEvent, type ReactNode } from "react";
-import { bytes, graveSize } from "../../format";
+import { bytes, graveSize, noteText } from "../../format";
 import Decisions from "../../pages/Decisions";
 import Logs from "../../pages/Logs";
 import Settings from "../../pages/Settings";
@@ -133,7 +133,7 @@ function Graves() {
   const n = g.graves.length;
   const entries: Entry[] = g.graves.map((b) => {
     const { ms } = remaining(b.buriedAt, b.purgeAt);
-    return { id: b.id, at: b.purgeAt, path: b.path, name: nameOf(b.path), meta: t("cal.graveMeta", buriedDay(b.buriedAt), `${b.isDir ? t("cal.folder") : ""}${graveSize(b)}`), soon: ms > 0 && ms < 6 * 3600e3, note: b.note };
+    return { id: b.id, at: b.purgeAt, path: b.path, name: nameOf(b.path), meta: t("cal.graveMeta", buriedDay(b.buriedAt), `${b.isDir ? t("cal.folder") : ""}${graveSize(b)}`), soon: ms > 0 && ms < 6 * 3600e3, note: noteText(b.note) };
   });
   const k = g.sel.chosen.length;
   return (
@@ -162,7 +162,7 @@ function Upcoming() {
   const now = Date.now();
   const entries: Entry[] = it.items.map((x) => {
     const ms = +new Date(x.expiresAt) - now;
-    return { id: x.id, at: x.expiresAt, path: x.path, name: nameOf(x.path), meta: ms <= 0 ? t("cal.expired") : t("cal.meta", sourceLabel(x.source), span(+new Date(x.expiresAt) - +new Date(x.createdAt))), soon: ms > 0 && ms < 3600e3, note: x.note };
+    return { id: x.id, at: x.expiresAt, path: x.path, name: nameOf(x.path), meta: ms <= 0 ? t("cal.expired") : t("cal.meta", sourceLabel(x.source), span(+new Date(x.expiresAt) - +new Date(x.createdAt))), soon: ms > 0 && ms < 3600e3, note: noteText(x.note) };
   });
   const k = it.sel.chosen.length;
   const n = it.items.length;

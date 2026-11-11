@@ -38,9 +38,10 @@ function seed(scenario: Scenario) {
     { id: 21, path: `${SHOP}\\screenshot-checkout.png`, isDir: false, createdAt: at(-23), expiresAt: at(0.4), source: "rule" },
     { id: 22, path: `${SHOP}\\notes-draft.md`, isDir: false, createdAt: at(-4), expiresAt: at(20), source: "cli", note: "周五前整理进文档" },
     { id: 23, path: `${DL}\\report-q3.csv`, isDir: false, createdAt: at(-200), expiresAt: at(136), source: "watch" },
-    { id: 24, path: `${SHOP}\\coverage`, isDir: true, createdAt: at(-2), expiresAt: at(70), source: "rule" },
+    { id: 24, path: `${SHOP}\\coverage`, isDir: true, createdAt: at(-2), expiresAt: at(70), source: "rule", note: "rule coverage" },
     { id: 25, path: `${DL}\\obs-recording-1102.mkv`, isDir: false, createdAt: at(-10), expiresAt: at(3), source: "watch" },
     { id: 26, path: "docker:shop-db-test (3f9c2a1b7e04)", isDir: false, kind: "container", createdAt: at(-20), expiresAt: at(12), source: "cli" },
+    { id: 27, path: `${SHOP}\\dist`, isDir: true, createdAt: at(-30), expiresAt: at(42), source: "proposal", note: "approved #29" },
   ];
   if (scenario === "busy") {
     for (let i = 0; i < 26; i++) {

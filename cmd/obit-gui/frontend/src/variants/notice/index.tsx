@@ -4,7 +4,7 @@
 // gold only for the resurrection stamp.
 import { RefreshCw, Search } from "lucide-react";
 import { useState, type ReactNode } from "react";
-import { bytes, graveSize } from "../../format";
+import { bytes, graveSize, noteText } from "../../format";
 import Decisions from "../../pages/Decisions";
 import Logs from "../../pages/Logs";
 import Settings from "../../pages/Settings";
@@ -120,7 +120,7 @@ function Graves() {
                   <h3 title={b.path}>{nameOf(b.path)}</h3>
                   <p className="nt-home">{t("nt.home")}<span>{folderOf(b.path) || t("nt.root")}</span></p>
                   <p className="nt-body">{t("nt.body", md(b.buriedAt), hm(b.buriedAt), b.isDir, graveSize(b), md(b.purgeAt), hm(b.purgeAt))}</p>
-                  {b.note ? <p className="nt-note">{t("nt.note", b.note)}</p> : null}
+                  {b.note ? <p className="nt-note">{t("nt.note", noteText(b.note))}</p> : null}
                 </div>
                 <div className="nt-left" data-soon={ms < 86400e3}>
                   {ms > 0 ? <><span>{lead ? t("nt.leadLeft") : t("nt.left")}</span><b>{p.n}</b>{p.unit}</> : <>{t("life.awaitPurge")}</>}
@@ -185,7 +185,7 @@ function Upcoming() {
                   <td>
                     <div className="nt-cell-name" title={x.path}>{nameOf(x.path)}</div>
                     <div className="nt-cell-path">{folderOf(x.path)}</div>
-                    {x.note ? <div className="nt-cell-note">{t("nt.note", x.note)}</div> : null}
+                    {x.note ? <div className="nt-cell-note">{t("nt.note", noteText(x.note))}</div> : null}
                     {x.lastError ? <div className="nt-cell-note">{t("nt.lastError", x.lastError)}</div> : null}
                   </td>
                   <td className="nt-src">{sourceLabel(x.source)}</td>

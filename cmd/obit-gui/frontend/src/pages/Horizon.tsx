@@ -1,7 +1,7 @@
 import { EyeOff, Flame, Sparkles, TimerReset, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useApi } from "../api";
-import { bytes, duration, splitPath, when } from "../format";
+import { bytes, duration, noteText, splitPath, when } from "../format";
 import { useLoad, useRefresh } from "../hooks";
 import type { Burial, Item } from "../types";
 import { t } from "../i18n";
@@ -150,7 +150,7 @@ function FateCard({ focus, w, h, onClose }: { focus: Focus; w: number; h: number
       {folder ? <div className="name-sub">{folder}</div> : null}
       {focus.kind === "soul" ? (
         <>
-          <p>{t("hz.soulText", +new Date(focus.it.expiresAt) > Date.now() ? duration(+new Date(focus.it.expiresAt) - Date.now()) : null, when(focus.it.expiresAt), focus.it.note ?? "")}</p>
+          <p>{t("hz.soulText", +new Date(focus.it.expiresAt) > Date.now() ? duration(+new Date(focus.it.expiresAt) - Date.now()) : null, when(focus.it.expiresAt), noteText(focus.it.note))}</p>
           <div className="fate-actions">
             <select className="select" aria-label={t("howLong")} value={span} onChange={(e) => setSpan(e.target.value)}>
               {extendSpans().map(([v, label]) => <option key={v} value={v}>{t("giveMore", label)}</option>)}

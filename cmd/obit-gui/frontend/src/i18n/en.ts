@@ -59,6 +59,8 @@ export const en: Messages = {
   "source.mktemp": "Temp folder",
   "source.proposal": "Approved proposal",
   "source.watch": "Folder policy",
+  "note.approved": (n: string) => `Proposal #${n}`,
+  "note.rule": (name: string) => `Rule: ${name}`,
 
   resurrect: "Resurrect",
   purge: "Cremate",

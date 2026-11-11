@@ -1,7 +1,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { Container, File, Folder, TriangleAlert, X, type LucideIcon } from "lucide-react";
 import { Component, createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
-import { duration, lifeLeft, splitPath, when } from "./format";
+import { duration, lifeLeft, noteText, splitPath, when } from "./format";
 import { t } from "./i18n";
 
 // ── Buttons and small parts ─────────────────────────────────────────────
@@ -49,7 +49,7 @@ export function NameCell({ path, isDir, note, kind }: { path: string; isDir?: bo
       <div className="name-text">
         <div className="name-main" title={path}>{name}</div>
         {folder ? <div className="name-sub">{folder}</div> : null}
-        {note ? <div className="name-note">{note}</div> : null}
+        {note ? <div className="name-note">{noteText(note)}</div> : null}
       </div>
     </div>
   );

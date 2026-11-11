@@ -67,6 +67,8 @@ export const zh = {
   "source.mktemp": "临时目录",
   "source.proposal": "批准的提议",
   "source.watch": "文件夹策略",
+  "note.approved": (n: string) => `提议 #${n}`,
+  "note.rule": (name: string) => `规则：${name}`,
 
   // 动作
   resurrect: "复活",

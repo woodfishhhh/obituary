@@ -10,6 +10,16 @@ export function bytes(n: number): string {
   return `${v >= 100 || i === 0 ? Math.round(v) : v.toFixed(1)} ${units[i]}`;
 }
 
+// Notes written by Obituary itself are stored in a fixed English form; show them in the window's language.
+export function noteText(note?: string): string {
+  if (!note) return "";
+  const approved = /^approved #(\d+)$/.exec(note);
+  if (approved) return t("note.approved", approved[1]);
+  const rule = /^rule (.+)$/.exec(note);
+  if (rule) return t("note.rule", rule[1]);
+  return note;
+}
+
 const pad = (n: number) => String(n).padStart(2, "0");
 
 export function when(value?: string): string {
