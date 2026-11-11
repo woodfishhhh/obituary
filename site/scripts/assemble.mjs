@@ -26,15 +26,15 @@ await rm(out, { recursive: true, force: true });
 for (const [from, to] of parts) await cp(from, to, { recursive: true });
 
 // The mirror's copy of the agent install guide installs only through the
-// mirror: Scoop and winget download from GitHub, so their lines go.
+// mirror: Scoop (and winget, once listed) download from GitHub, so their lines go.
 function mirrorGuide(text, host) {
   const swaps = [
     ["https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1", `${host}install.ps1`],
     [".\\install.ps1 -Version 1.0.0", ".\\install.ps1 -Version 1.0.0 -Mirror cn"],
     ["，按这个顺序选第一个可用的：", "，用国内镜像上的安装脚本："],
     [", using the first option that is available:", ", with the install script from the mainland China mirror:"],
-    ["   - 都没有：", "   - "],
-    ["   - neither: ", "   - "],
+    ["   - 没有 scoop：", "   - "],
+    ["   - no scoop: ", "   - "],
   ];
   for (const [from, to] of swaps) {
     if (!text.includes(from)) throw new Error(`docs/agent-install.md changed; update the mirror copy in assemble.mjs (${from})`);

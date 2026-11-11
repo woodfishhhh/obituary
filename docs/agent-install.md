@@ -10,8 +10,7 @@
 1. 先运行 obit --version。已经装了就跳到第 3 步。
 2. 安装（这台电脑是 Windows），按这个顺序选第一个可用的：
    - 有 scoop：scoop bucket add obituary https://github.com/woodfishhhh/scoop-bucket，再 scoop install obituary
-   - 有 winget：winget install woodfishhhh.Obituary
-   - 都没有：在 PowerShell 里 irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1，把脚本内容给我过目，我同意后再运行 .\install.ps1 -Version 1.0.0
+   - 没有 scoop：在 PowerShell 里 irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1，把脚本内容给我过目，我同意后再运行 .\install.ps1 -Version 1.0.0
    装完新开一个终端，确认 obit --version 能运行。
 3. 运行 obit init --show，找到你自己对应的 agent 名字。
 4. 运行 obit init -g --agent <你的名字> --dry-run，把计划给我看。默认会装所选 agent 的 Agent Skill、右键菜单、开始菜单和桌面快捷方式，不想要可以用 --no-skill / --no-context-menu / --no-shortcuts，右键菜单和快捷方式以后在设置里也能关。问我要不要同时打开删除护栏（--guard-rm：拦下 rm -rf 这类删除，改用可以复活的 obit 命令）。我同意后，去掉 --dry-run、加上 --yes 再执行一次。
@@ -36,8 +35,7 @@ Please install Obituary (the command is obit) and integrate it with yourself. Go
 1. Run obit --version. If it is already installed, skip to step 3.
 2. Install it (this is Windows), using the first option that is available:
    - scoop: scoop bucket add obituary https://github.com/woodfishhhh/scoop-bucket, then scoop install obituary
-   - winget: winget install woodfishhhh.Obituary
-   - neither: in PowerShell, irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1, show me the script, and only after I agree run .\install.ps1 -Version 1.0.0
+   - no scoop: in PowerShell, irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1, show me the script, and only after I agree run .\install.ps1 -Version 1.0.0
    Then open a new terminal and confirm that obit --version runs.
 3. Run obit init --show and find your own agent name.
 4. Run obit init -g --agent <your name> --dry-run and show me the plan. The selected agent's Agent Skill, context menus, a Start menu shortcut and a desktop shortcut are installed by default; skip them with --no-skill / --no-context-menu / --no-shortcuts; context menus and shortcuts can also be turned off later in Settings. Ask me whether to turn on the delete guard as well (--guard-rm: deletions such as rm -rf are stopped and replaced by restorable obit commands). After I agree, run it again without --dry-run and with --yes.

@@ -15,7 +15,7 @@
 scoop bucket add obituary https://github.com/woodfishhhh/scoop-bucket
 scoop install obituary
 
-# winget
+# winget（审核中，通过后可用）
 winget install woodfishhhh.Obituary
 
 # 安装脚本：先下载、看一眼，再运行

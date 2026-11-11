@@ -22,6 +22,7 @@ scoop install obituary
 ```
 
 ```powershell [winget]
+# In review, available once approved
 winget install woodfishhhh.Obituary
 ```
 

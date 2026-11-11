@@ -15,7 +15,7 @@ Pick one of the three:
 scoop bucket add obituary https://github.com/woodfishhhh/scoop-bucket
 scoop install obituary
 
-# winget
+# winget (in review, available once approved)
 winget install woodfishhhh.Obituary
 
 # Install script: download it, read it, then run it
