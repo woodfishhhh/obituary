@@ -120,6 +120,9 @@ func graveyardEntries(root string) map[string]bool {
 }
 
 func isolate(scratch string) error {
+	if err := os.Setenv("OBIT_TEST_NO_UPDATE", "1"); err != nil {
+		return err
+	}
 	if err := isolateDocker(scratch); err != nil {
 		return err
 	}

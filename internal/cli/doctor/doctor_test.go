@@ -83,7 +83,7 @@ func TestDoctorNewChecksJSONAndTextReadOnly(t *testing.T) {
 	regtxnProbe = func() error { calls++; return errors.New("KTM disabled") }
 	before := clitest.TreeSnapshot(t, root)
 	checks, err := doctorChecks(t, executable)
-	if err != nil || len(checks) != 28 {
+	if err != nil || len(checks) != 29 {
 		t.Fatalf("doctor inventory: %d %v", len(checks), err)
 	}
 	if w := checks["watch"].Watch; w == nil || w.Policies != 1 || w.Pending != 1 || w.Unavailable != 0 || w.Unstable != 1 {
@@ -97,7 +97,7 @@ func TestDoctorNewChecksJSONAndTextReadOnly(t *testing.T) {
 	}
 	out, _, err := clitest.Execute(t, NewCmdWithExecutable(executable, "claude", "codex"))
 	lines := strings.Split(strings.TrimSpace(out), "\n")
-	if err != nil || len(lines) != 28 || calls != 2 {
+	if err != nil || len(lines) != 29 || calls != 2 {
 		t.Fatalf("doctor text/probe count: %d lines, %d probes, %v: %s", len(lines), calls, err, out)
 	}
 	for _, name := range []string{"watch", "explorer", "gui", "registry-transactions", "tray-startup", "context-menu", "start-menu", "registration-identities"} {
@@ -115,7 +115,7 @@ func TestDoctorInvalidHomeKeepsCheckInventory(t *testing.T) {
 	t.Setenv("OBIT_HOME", filepath.Join(root, "data:stream"))
 	before := clitest.TreeSnapshot(t, root)
 	checks, err := doctorChecks(t, executable)
-	if !errors.Is(err, cmdutil.ErrReported) || len(checks) != 28 {
+	if !errors.Is(err, cmdutil.ErrReported) || len(checks) != 29 {
 		t.Fatalf("invalid home lost check rows: %d %v", len(checks), err)
 	}
 	for _, name := range []string{"runner", "tray-startup", "watch", "explorer", "registration-identities"} {

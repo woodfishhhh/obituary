@@ -7,6 +7,7 @@ type Key int
 const (
 	AppName Key = iota
 	OpenGUI
+	UpdateAvailable
 	MissingGUI
 	Recent
 	RecentHint

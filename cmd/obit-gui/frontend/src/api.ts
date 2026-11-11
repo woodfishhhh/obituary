@@ -5,7 +5,7 @@ import { createMockApi } from "./mock";
 declare global {
   interface Window {
     go?: { gui?: { API?: Api } };
-    runtime?: { ClipboardSetText?: (text: string) => Promise<boolean> };
+    runtime?: { ClipboardSetText?: (text: string) => Promise<boolean>; BrowserOpenURL?: (url: string) => void };
   }
 }
 

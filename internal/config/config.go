@@ -29,6 +29,7 @@ type Config struct {
 	Watch             Watch             `toml:"watch"`
 	UI                UI                `toml:"ui"`
 	Hooks             Hooks             `toml:"hooks"`
+	Update            Update            `toml:"update"`
 	CodexWindowsShell string            `toml:"codex_windows_shell,omitempty"`
 	AgentShells       map[string]string `toml:"agent_shells,omitempty"`
 }
@@ -69,6 +70,11 @@ type Hooks struct {
 	SessionSummary bool `toml:"session_summary"`
 }
 
+// Update controls automatic public release checks.
+type Update struct {
+	Check bool `toml:"check"`
+}
+
 // UI controls native desktop and window language independently of CLI output.
 type UI struct {
 	Language string `toml:"language"`
@@ -87,7 +93,7 @@ func (g Graveyard) Retention() time.Duration {
 
 // Default returns the built-in configuration.
 func Default() Config {
-	return Config{Graveyard: Graveyard{Mode: ModeGraveyard, RetentionDays: 7}, Explorer: Explorer{Enabled: true}, Watch: Watch{StableWindow: "10m"}, UI: UI{Language: i18n.Auto}}
+	return Config{Graveyard: Graveyard{Mode: ModeGraveyard, RetentionDays: 7}, Explorer: Explorer{Enabled: true}, Watch: Watch{StableWindow: "10m"}, UI: UI{Language: i18n.Auto}, Update: Update{Check: true}}
 }
 
 // Template is what `obit config --create` writes.
@@ -121,6 +127,11 @@ retention_days = 7
 # within 24 hours and what was buried recently. Off by default to save tokens:
 # the agent is told anyway when a tool call touches a buried path.
 session_summary = false
+
+[update]
+# Read public GitHub release metadata at most once per day; no usage data is sent.
+# Manual checks remain available when automatic checks are disabled.
+check = true
 
 [watch]
 # Quiet interval before moving a folder-policy child (Go duration syntax).

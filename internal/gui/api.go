@@ -12,6 +12,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/runkey"
+	"github.com/woodfishhhh/obituary/internal/update"
 )
 
 type Dependencies struct {
@@ -24,6 +25,7 @@ type Dependencies struct {
 	RunKey         runkey.Registry
 	Now            func() time.Time
 	SystemLanguage func() string
+	UpdateChecker  *update.Checker
 }
 
 type API struct {

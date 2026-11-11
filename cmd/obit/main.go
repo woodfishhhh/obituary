@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/woodfishhhh/obituary/internal/buildinfo"
 	addcmd "github.com/woodfishhhh/obituary/internal/cli/add"
 	burycmd "github.com/woodfishhhh/obituary/internal/cli/bury"
 	cancelcmd "github.com/woodfishhhh/obituary/internal/cli/cancel"
@@ -38,16 +39,15 @@ import (
 	trustcmd "github.com/woodfishhhh/obituary/internal/cli/trust"
 	uninstallcmd "github.com/woodfishhhh/obituary/internal/cli/uninstall"
 	untrustcmd "github.com/woodfishhhh/obituary/internal/cli/untrust"
+	updatecmd "github.com/woodfishhhh/obituary/internal/cli/update"
 	watchcmd "github.com/woodfishhhh/obituary/internal/cli/watch"
 )
-
-var version = "0.0.0-dev"
 
 func main() {
 	root := &cobra.Command{
 		Use:           "obit",
 		Short:         "Obituary (讣告): give files a lifespan; when it runs out they are buried in a graveyard you can resurrect from",
-		Version:       version,
+		Version:       buildinfo.Version,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
@@ -61,11 +61,11 @@ func main() {
 		initcmd.NewCmd(), hookcmd.NewCmd(), logcmd.NewCmd(), configcmd.NewCmd(),
 		daemoncmd.NewCmd(), doctorcmd.NewCmd(), contextmenucmd.NewCmd(),
 		watchcmd.NewCmd(), dockercmd.NewCmd(),
-		uninstallcmd.NewCmd(),
+		uninstallcmd.NewCmd(), updatecmd.NewCmd(),
 	)
 	root.AddCommand(
 		rmcmd.NewCmd(), rmdircmd.NewCmd(), removeitemcmd.NewCmd(),
-		gitcleancmd.NewCmd(), mcpcmd.NewCmd(version),
+		gitcleancmd.NewCmd(), mcpcmd.NewCmd(buildinfo.Version),
 	)
 	if err := root.Execute(); err != nil {
 		if !errors.Is(err, cmdutil.ErrReported) {

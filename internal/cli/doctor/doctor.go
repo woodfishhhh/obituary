@@ -130,9 +130,11 @@ func diagnose(now time.Time, executable cmdutil.Executable, agents ...string) []
 	checks = append(checks, diagnoseShortcut(self, shortcutTarget))
 	home, homeErr := userdirs.Data()
 	if homeErr != nil {
+		checks = append(checks, DoctorCheck{Name: "update", Status: "INFO", Detail: homeErr.Error()})
 		check("runner", "", homeErr)
 		check("tray-startup", "", homeErr)
 	} else {
+		checks = append(checks, diagnoseUpdate(home))
 		checks = append(checks, diagnoseRunner(home))
 		checks = append(checks, diagnoseStartup(daemon, home))
 	}

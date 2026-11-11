@@ -3,6 +3,7 @@ package i18n
 var english = map[Key]string{
 	AppName:             "Obituary",
 	OpenGUI:             "Open Obituary",
+	UpdateAvailable:     "New version available: %s",
 	MissingGUI:          "No usable obit-gui.exe; place it beside obitd.exe: %s",
 	Recent:              "Recently buried",
 	RecentHint:          "Select a record to resurrect it",

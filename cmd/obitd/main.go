@@ -54,6 +54,7 @@ func main() {
 	}
 	logger := log.New(&rotatingLog{path: filepath.Join(svc.Store.Home, "obitd.log")}, "", log.LstdFlags)
 	if *once {
+		defer app.CheckUpdatesOnce(svc.Store.Home)
 		outcomes, purged, err := app.Tick(svc)
 		for _, o := range outcomes {
 			logger.Printf("once: #%d %s %s %s", o.Item.ID, o.Action, o.Path, o.Detail)

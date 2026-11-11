@@ -44,6 +44,7 @@ func NewCmd() *cobra.Command {
 				fmt.Printf("codex_windows_shell = %q\n", cfg.CodexWindowsShell)
 			}
 			fmt.Printf("\n[graveyard]\nmode = %q\nretention_days = %d\n", cfg.Graveyard.Mode, cfg.Graveyard.RetentionDays)
+			fmt.Printf("\n[update]\ncheck = %t\n", cfg.Update.Check)
 			fmt.Printf("\n[watch]\nstable_window = %q\n", cfg.Watch.StableWindow)
 			fmt.Printf("\n[hooks]\n# List expiring items and recent burials at session start.\nsession_summary = %t\n", cfg.Hooks.SessionSummary)
 			if len(cfg.AgentShells) > 0 {

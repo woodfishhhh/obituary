@@ -7,11 +7,12 @@ import { askDecisions, setAskDecisions } from "../prefs";
 import { t, useLangChoice } from "../i18n";
 import type { Lifetime, Plan, PlanReceipt, WatchPolicy } from "../types";
 import { Button, Head, Outcome, Seg, Skeleton, useConfirm, useToast, type OutcomeNote } from "../ui";
+import About from "./About";
 import Appearance from "./Appearance";
 
 const watchActive = (p: WatchPolicy) => p.consent === undefined || (p.consent === "approved" && (p.approvedRev ?? 0) === (p.rev ?? 0));
 const ages = (): [string, string][] => [["first-seen", t("set.age.firstSeen")], ["modified", t("set.age.modified")]];
-const actions = ["settings", "contextMenu", "autostart", "pause", "language", "sessionSummary"] as const;
+const actions = ["settings", "contextMenu", "autostart", "pause", "language", "sessionSummary", "updateCheck"] as const;
 const actionText = (action: string) => ((actions as readonly string[]).includes(action) ? t(`set.action.${action as (typeof actions)[number]}`) : action);
 
 export default function Settings() {
@@ -24,6 +25,7 @@ export default function Settings() {
   const [note, setNote] = useState<OutcomeNote | null>(null);
   const [ask, setAsk] = useState(askDecisions);
   const langChoice = useLangChoice();
+  const { data: release } = useLoad(() => (api.Update ? api.Update() : Promise.resolve(null)), [api]);
   if (!data) return <><Head title={t("page.settings")} /><div className="card"><Skeleton /></div></>;
   const [s, watches] = data;
   const policies = watches.policies ?? [];
@@ -63,10 +65,14 @@ export default function Settings() {
     toast(ask ? t("set.applied") : title);
   }
 
+  // A newer release moves this card to the top, where the banner points.
+  const about = <About apply={(plan, title) => apply(plan, title)} switchFor={(on, label, onToggle) => <Switch on={on} label={label} onToggle={onToggle} />} />;
+
   return (
     <>
       <Head title={t("page.settings")} />
       <Life lifetime={s.lifetime} days={s.retentionDays} />
+      {release?.newer ? about : null}
       <div className="section-title">{t("set.general")}</div>
       {note ? <Outcome note={note} onClose={() => setNote(null)} /> : null}
       <div className="card">
@@ -135,6 +141,7 @@ export default function Settings() {
           {s.language === "auto" && s.effectiveLanguage ? <span className="hint">{t("lang.systemIs", s.effectiveLanguage === "en" ? t("lang.en") : t("lang.zh"))}</span> : null}
         </div>
       ) : null}
+      {release?.newer ? null : <><div className="section-title">{t("upd.title")}</div>{about}</>}
       <p className="hint config-path">{t("set.deck", s.configPath)}</p>
     </>
   );

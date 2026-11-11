@@ -102,6 +102,25 @@ irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/instal
 - The small window `obit-gui.exe` needs the WebView2 runtime (built into Windows 11 and present on most Windows 10 machines) and is x64 only; the ARM64 build has the command line and the tray.
 - To build from source, see [Build](#build).
 
+### Updates
+
+Once a day at most, Obituary asks GitHub whether a new stable release is out. It reads public release information only and sends no usage data. When there is one, the tray menu and the small window say so, and Settings > About and updates shows the command for the way you installed it:
+
+- Scoop: `scoop update obituary`
+- winget: `winget upgrade woodfishhhh.Obituary`
+- Install script: run the install command again
+
+Obituary only checks and tells you; it never downloads or replaces files itself. In a terminal, `obit update` shows your version and the update command, and `obit update --check` checks right away.
+
+To keep it offline, turn off "Check for updates automatically" in Settings, or put this in `config.toml`:
+
+```toml
+[update]
+check = false
+```
+
+You can still check by hand.
+
 ## Quick start
 
 Common commands (replace `<id>` with the number from an `obit add` or `obit bury` receipt, or from `obit list` / `obit graveyard`):

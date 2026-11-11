@@ -15,9 +15,11 @@ import (
 
 	"fyne.io/systray"
 	"github.com/woodfishhhh/obituary/internal/app"
+	"github.com/woodfishhhh/obituary/internal/buildinfo"
 	"github.com/woodfishhhh/obituary/internal/config"
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/i18n"
+	"github.com/woodfishhhh/obituary/internal/update"
 	"golang.org/x/sys/windows"
 )
 
@@ -31,6 +33,7 @@ var icon []byte
 type menu struct {
 	resident                        *app.Resident
 	gui                             menuItem
+	update                          menuItem
 	openGUI                         guiAction
 	status, recent, upcoming, pause menuItem
 	open, quit                      menuItem
@@ -97,6 +100,8 @@ func (m *menu) run(ctx context.Context, cancel context.CancelFunc, changed <-cha
 			err = openDirectory(m.resident.Service.Store.Home)
 		case <-m.gui.clicks():
 			err = m.openGUI.open()
+		case <-m.updateClicks():
+			err = m.openGUI.open()
 		case <-m.pause.clicks():
 			err = m.togglePause()
 		case action := <-m.actions:
@@ -123,6 +128,7 @@ func (m *menu) togglePause() error {
 
 func (m *menu) refresh(ctx context.Context) {
 	m.localize()
+	m.refreshUpdate()
 	if m.rowCancel != nil {
 		m.rowCancel()
 	}
@@ -143,6 +149,32 @@ func (m *menu) refresh(ctx context.Context) {
 		return
 	}
 	m.showPaused(paused)
+}
+
+func (m *menu) updateClicks() <-chan struct{} {
+	if m.update == nil {
+		return nil
+	}
+	return m.update.clicks()
+}
+
+func (m *menu) refreshUpdate() {
+	state, err := update.Read(m.resident.Service.Store.Home)
+	if err != nil || !update.Newer(buildinfo.Version, state.Latest.Version) {
+		if m.update != nil {
+			m.update.Remove()
+			m.update = nil
+		}
+		return
+	}
+	if m.update == nil {
+		m.update = m.ui.addItem("", "")
+	}
+	m.update.SetTitle(fmt.Sprintf(m.language.Text(i18n.UpdateAvailable), state.Latest.Version))
+	m.update.SetTooltip(m.openGUI.tooltip)
+	if !m.openGUI.enabled {
+		m.update.Disable()
+	}
 }
 
 func (m *menu) recentRows(ctx context.Context) error {

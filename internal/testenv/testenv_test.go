@@ -17,6 +17,12 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+func TestUpdateChecksDisabledInTestEnvironment(t *testing.T) {
+	if os.Getenv("OBIT_TEST_NO_UPDATE") != "1" {
+		t.Fatal("public update checks are enabled")
+	}
+}
+
 func TestRegistryLocksStayInScratch(t *testing.T) {
 	data, err := userdirs.Data()
 	if err != nil {

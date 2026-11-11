@@ -7,6 +7,22 @@ import (
 	"time"
 )
 
+func TestUpdateCheckConfig(t *testing.T) {
+	for _, text := range []string{"", Template, "[update]\ncheck=true\n"} {
+		cfg, err := Parse([]byte(text), "fixture.toml")
+		if err != nil || !cfg.Update.Check {
+			t.Fatalf("default: %+v %v", cfg.Update, err)
+		}
+	}
+	cfg, err := Parse([]byte("[update]\ncheck=false\n"), "fixture.toml")
+	if err != nil || cfg.Update.Check {
+		t.Fatalf("disabled: %+v %v", cfg.Update, err)
+	}
+	if _, err := Parse([]byte("[update]\ncheck='false'\n"), "fixture.toml"); err == nil {
+		t.Fatal("non-boolean accepted")
+	}
+}
+
 func TestWatchStableWindowConfig(t *testing.T) {
 	for _, tc := range []struct {
 		text string

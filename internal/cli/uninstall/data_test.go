@@ -12,6 +12,27 @@ import (
 	"github.com/woodfishhhh/obituary/internal/core"
 )
 
+func TestUninstallRemovesOwnedUpdateMetadata(t *testing.T) {
+	d, _, _ := fixture(t)
+	svc, err := app.Open()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.Store.Update(func(*core.State) error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"update.json", "update.json.tmp", "update.lock"} {
+		write(t, filepath.Join(svc.Store.Home, name), "{}")
+	}
+	out, err := execute(t, d, "", "--yes", "--purge-data")
+	if err != nil {
+		t.Fatal(out, err)
+	}
+	if _, err := os.Stat(svc.Store.Home); !os.IsNotExist(err) {
+		t.Fatalf("update metadata retained: %v", err)
+	}
+}
+
 func TestReviewPurgePreservesUnownedMetadataName(t *testing.T) {
 	d, _, _ := fixture(t)
 	path := filepath.Join(os.Getenv("OBIT_HOME"), "audit.jsonl")

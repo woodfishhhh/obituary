@@ -329,6 +329,7 @@ agent ──stdio──► obit mcp ──► mcpPaths（只收绝对路径；�
 | `sessions\` | 会话快照和遗留物计算的去抖标记 |
 | `hook.log` / `hook-audit.log` | hook 错误 / hook 审计（加锁轮转） |
 | `obitd.log` | 后台进程日志（轮转） |
+| `update.json` / `update.lock` | 正式版更新检查缓存和独立的检查锁；缓存记录检查时间、ETag、发布说明和最近错误，不读写账本 |
 | `*.lock`、`obitd.stop` | 锁文件；常驻进程的停止信号 |
 
 配置目录 `%APPDATA%\obituary`（`OBIT_CONFIG_DIR` 可改）：`config.toml`，所有键都可省略。项目里只有 `.obit/`（`mktemp` 的临时目录），自动写进 `.git/info/exclude`。
@@ -357,6 +358,16 @@ agent ──stdio──► obit mcp ──► mcpPaths（只收绝对路径；�
 - **兜底**：登记、批准、`mktemp`、`rules apply`、`bury` 成功后调用 `cmdutil.EnsureDaemon`：有常驻进程在服务这个数据目录，或定时任务的 `--home` 正好是它（`ScheduleServes`，用和 obitd 相同的参数解析），就什么都不做；否则临时起一个常驻进程。`--json` 模式下不往 stderr 写提示。
 - 所有子进程都带 `CREATE_NO_WINDOW`，后台永远不弹黑框；`obitd.exe` 必须用 `-ldflags=-H=windowsgui` 构建。
 - `obit doctor` 只读地检查以上所有环节（PATH、obitd、运行器、两家集成、数据目录权限、账本、信任存储、hook 日志、配置），给出 PASS / WARN / FAIL，有 FAIL 时退出码 1。
+
+### 更新检查
+
+三个程序共用 `internal/buildinfo.Version`，发布时注入。`internal/update` 用 `golang.org/x/mod/semver` 比较正式版；开发构建按基础正式版号比较，同号正式版不提示更新。
+
+后台启动 5 秒后检查一次；常驻模式每小时复核配置和缓存，定时任务的 `--once` 也共用缓存。`update.lock` 串行化进程间检查，24 小时内自动检查复用结果，失败也计入间隔。请求只向公开的 GitHub `releases/latest` 发 GET，带 ETag、10 秒超时，拒绝重定向；不下载程序、不发送使用数据。响应大小上限 1 MiB，草稿和预发布被拒绝，最近一次成功发布信息在失败时保留。
+
+`[update] check` 默认开启；关闭后自动检查静默返回，显式 `CheckUpdate` / `obit update --check` 允许手动查询。测试环境通过 `OBIT_TEST_NO_UPDATE=1` 阻止默认端点请求，HTTP 测试显式注入本机服务器。缓存复用账本的共享删除读取和原子替换辅助函数，与账本使用不同的锁。
+
+安装方式按程序路径判断 Scoop、WinGet，脚本安装由同目录的 `.obituary-install.json` 标识；只生成对应更新命令，其他安装方式给出 release 链接。GUI 的 `Update` 和 doctor 只读缓存，托盘仅在有新版时显示入口。
 
 ## 测试
 

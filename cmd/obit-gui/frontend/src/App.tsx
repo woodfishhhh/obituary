@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState, type CSSProperties } from "react";
 import { useApi } from "./api";
 import { RefreshContext, useLoad } from "./hooks";
 import { lang, t } from "./i18n";
+import { skippedUpdate, skipUpdate } from "./prefs";
 import type { PageId } from "./shell";
 import type { Variant } from "./theme";
 import { Button, ConfirmProvider, FrameProvider, PageBoundary, ToastProvider, useToast } from "./ui";
@@ -38,11 +39,31 @@ export default function App({ variant, page: forced, style }: { variant: Variant
               <PageBoundary key={`${variant.id}:${page}:${language}`} onHome={() => setPage(nav[0])}>
                 <Shell key={language} page={page} nav={nav} setPage={setPage} summary={s} refresh={bump} />
               </PageBoundary>
-              {s?.paused ? <PausedBanner onResumed={bump} /> : null}
+              <div className="banners">
+                {page !== "settings" ? <UpdateBanner onView={() => setPage("settings")} /> : null}
+                {s?.paused ? <PausedBanner onResumed={bump} /> : null}
+              </div>
             </ConfirmProvider>
           </ToastProvider>
         </RefreshContext.Provider>
       </FrameProvider>
+    </div>
+  );
+}
+
+// A newer release, until the user opens Settings or skips that version. The
+// tray item for it opens this window, so the window says it too.
+function UpdateBanner({ onView }: { onView: () => void }) {
+  const api = useApi();
+  const [skipped, setSkipped] = useState(skippedUpdate);
+  const { data } = useLoad(() => (api.Update ? api.Update() : Promise.resolve(null)), [api]);
+  if (!data?.newer || !data.latest || data.latest === skipped) return null;
+  const latest = data.latest;
+  return (
+    <div className="update-banner" role="status">
+      <span>{t("upd.banner", latest)}</span>
+      <Button kind="ghost" onClick={() => { skipUpdate(latest); setSkipped(latest); }}>{t("upd.bannerSkip")}</Button>
+      <Button kind="primary" onClick={onView}>{t("upd.bannerView")}</Button>
     </div>
   );
 }

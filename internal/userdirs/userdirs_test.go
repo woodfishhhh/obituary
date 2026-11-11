@@ -10,6 +10,17 @@ import (
 	"testing"
 )
 
+func TestWinGetPackagesUsesLocalAppData(t *testing.T) {
+	base := t.TempDir()
+	t.Setenv("LOCALAPPDATA", base)
+	t.Setenv("OBIT_HOME", t.TempDir())
+	got, err := WinGetPackages()
+	want := filepath.Join(base, "Microsoft", "WinGet", "Packages")
+	if err != nil || got != want {
+		t.Fatalf("WinGet packages: %q %v", got, err)
+	}
+}
+
 func TestRegistryLocksIndependentOfLedger(t *testing.T) {
 	base := t.TempDir()
 	t.Setenv("LOCALAPPDATA", base)

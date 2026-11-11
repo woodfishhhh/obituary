@@ -101,6 +101,25 @@ irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/instal
 - 小窗口 `obit-gui.exe` 需要 WebView2 运行时（Windows 11 自带，Windows 10 多数已经装好），目前只有 x64 版；ARM64 版只有命令行和后台托盘。
 - 想从源码构建见[构建](#构建)。
 
+### 更新
+
+讣告每天最多联网一次，看 GitHub 上有没有新的正式版。它只读公开的版本信息，不发送任何使用数据。有新版时托盘菜单和小窗口会告诉你，设置页的「关于与更新」里给出升级命令，按你的安装方式来：
+
+- Scoop：`scoop update obituary`
+- winget：`winget upgrade woodfishhhh.Obituary`
+- 安装脚本：重新运行安装命令
+
+讣告只检查和提醒，不会自己下载或替换文件。终端里用 `obit update` 看当前版本和升级命令，`obit update --check` 马上检查一次。
+
+不想让它联网：在设置页关掉「自动检查更新」，或在 `config.toml` 里写：
+
+```toml
+[update]
+check = false
+```
+
+关掉后仍然可以手动检查。
+
 ## 快速上手
 
 常用命令（`<编号>` 换成 `obit add`、`obit bury` 回执里或 `obit list`、`obit graveyard` 列出的编号）：

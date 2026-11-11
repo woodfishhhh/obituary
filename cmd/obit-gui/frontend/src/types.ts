@@ -166,6 +166,24 @@ export interface Lifetime {
   resurrected: number;
 }
 
+// The release check (internal/gui UpdateInfo). latest is empty until a check
+// has succeeded; channel says how this copy was installed, and command is the
+// one to run for it ("" when there is none, e.g. a hand-copied zip).
+export interface UpdateInfo {
+  current: string;
+  latest?: string;
+  newer: boolean;
+  name?: string;
+  notes?: string;
+  url?: string;
+  published?: string;
+  checkedAt?: string;
+  error?: string;
+  enabled: boolean;
+  channel: "scoop" | "winget" | "script" | "other" | string;
+  command?: string;
+}
+
 export interface LogLine {
   text: string;
   time?: string;
@@ -214,6 +232,10 @@ export interface Api {
   // Missing on an older backend.
   PlanLanguage?(language: string): Promise<Plan>;
   PlanSessionSummary?(enabled: boolean): Promise<Plan>;
+  // Release checks; missing on an older backend.
+  Update?(): Promise<UpdateInfo>;
+  CheckUpdate?(): Promise<UpdateInfo>;
+  PlanUpdateCheck?(enabled: boolean): Promise<Plan>;
   ApplyPlan(id: string): Promise<PlanReceipt>;
   Logs(q: { source: string; lines: number; text: string; from: string; to: string; level: string }): Promise<LogPage>;
 }

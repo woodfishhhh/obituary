@@ -9,6 +9,18 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 )
 
+func TestConfigShowsUpdateCheck(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("OBIT_CONFIG_DIR", dir)
+	for _, value := range []string{"true", "false"} {
+		clitest.WriteFixture(t, filepath.Join(dir, "config.toml"), "[update]\ncheck="+value+"\n")
+		out, _, err := clitest.Execute(t, NewCmd())
+		if err != nil || !strings.Contains(out, "[update]\ncheck = "+value) {
+			t.Fatalf("config: %s %v", out, err)
+		}
+	}
+}
+
 func TestConfigShowsWatchStableWindow(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("OBIT_CONFIG_DIR", dir)

@@ -1,6 +1,6 @@
 // An in-memory stand-in for the Go backend, used by `pnpm dev` and the
 // playground. Actions change its state, so a preview behaves like the app.
-import type { Api, Burial, Candidate, Item, Plan, PlanReceipt, Proposal, ProposalResult, RuleFile, Settings, WatchPolicy } from "./types";
+import type { Api, Burial, Candidate, Item, Plan, PlanReceipt, Proposal, ProposalResult, RuleFile, Settings, UpdateInfo, WatchPolicy } from "./types";
 
 export type Scenario = "normal" | "busy" | "empty";
 
@@ -78,6 +78,11 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
     lifetime: scenario === "empty" ? { buried: 0, buriedBytes: 0, purgedBytes: 0, resurrected: 0 } : { buried: 216, buriedBytes: 1_395_864_371, purgedBytes: 29_884_416, resurrected: 2 } };
   const watches: WatchPolicy[] = scenario === "empty" ? [] : [{ id: 3, path: DL, lifespan: "2w", age: "first-seen", createdAt: at(-500), consent: "approved", rev: 1, approvedRev: 1 }];
   const plans = new Map<string, () => PlanReceipt>();
+  const update: UpdateInfo = scenario === "empty"
+    ? { current: "1.0.0", newer: false, enabled: true, channel: "scoop", checkedAt: at(-3), latest: "1.0.0", url: "https://github.com/woodfishhhh/obituary/releases/tag/v1.0.0" }
+    : { current: "1.0.0", latest: "1.0.1", newer: true, name: "1.0.1", published: at(-20), checkedAt: at(-2), enabled: true, channel: "scoop", command: "scoop update obituary",
+        url: "https://github.com/woodfishhhh/obituary/releases/tag/v1.0.1",
+        notes: ["## 修复", "", "- 托盘菜单在高 DPI 屏幕上不再模糊", "- 文件夹策略遇到只读文件时会跳过并记日志，不再整轮停下", "", "## 改进", "", "- 墓地页搜索支持按扩展名过滤"].join("\n") };
   // The first context-menu change stops part way, as a locked key would.
   let menuStalls = scenario !== "empty";
   let nextItem = 900;
@@ -211,6 +216,9 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
       ], () => { settings.language = next; settings.effectiveLanguage = effective; });
     },
     PlanSessionSummary: (on) => plan("sessionSummary", on === settings.sessionSummary ? [] : [{ target: "[hooks] session_summary", before: String(settings.sessionSummary), after: String(on) }], () => { settings.sessionSummary = on; }),
+    Update: () => wait({ ...update }),
+    CheckUpdate: () => new Promise((r) => setTimeout(() => { update.checkedAt = new Date().toISOString(); r({ ...update }); }, 900)),
+    PlanUpdateCheck: (on) => plan("updateCheck", on === update.enabled ? [] : [{ target: "[update] check", before: String(update.enabled), after: String(on) }], () => { update.enabled = on; }),
     PlanPause: (paused) => plan("pause", paused === settings.paused ? [] : [{ target: "paused", before: String(settings.paused), after: String(paused) }], () => { settings.paused = paused; }),
     ApplyPlan: (id) => {
       const apply = plans.get(id);

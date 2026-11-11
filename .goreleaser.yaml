@@ -18,7 +18,7 @@ builds:
     goarch: [amd64, arm64]
     flags: [-trimpath]
     ldflags:
-      - -s -w -X main.version={{ .Version }}
+      - -s -w -X github.com/woodfishhhh/obituary/internal/buildinfo.Version={{ .Version }}
 
   - id: obitd
     main: ./cmd/obitd
@@ -28,7 +28,7 @@ builds:
     goarch: [amd64, arm64]
     flags: [-trimpath]
     ldflags:
-      - -s -w -H windowsgui
+      - -s -w -H windowsgui -X github.com/woodfishhhh/obituary/internal/buildinfo.Version={{ .Version }}
 
   - id: obit-gui
     main: ./cmd/obit-gui
@@ -39,7 +39,7 @@ builds:
     tags: [desktop, production]
     flags: [-trimpath]
     ldflags:
-      - -s -w -H windowsgui
+      - -s -w -H windowsgui -X github.com/woodfishhhh/obituary/internal/buildinfo.Version={{ .Version }}
 
 archives:
   - ids: [obit, obitd, obit-gui]
@@ -57,7 +57,7 @@ checksum:
   algorithm: sha256
 
 snapshot:
-  version_template: "{{ .Version }}-SNAPSHOT-{{ .ShortCommit }}"
+  version_template: "{{ .Version }}-dev.{{ .ShortCommit }}"
 
 # Reference: goreleaser/goreleaser internal/pipe/{scoop,winget} at v2.20.0.
 # Both pipes derive SHA-256 from the zip itself. Publishing remains manual.

@@ -53,6 +53,16 @@ func RegistryLocks() (string, error) {
 	return directoryAbs(filepath.Join(base, dirName, "registry-locks"))
 }
 
+// WinGetPackages is the per-user portable package directory used to identify
+// the installation channel without inspecting package manager state.
+func WinGetPackages() (string, error) {
+	base, err := dataBase()
+	if err != nil {
+		return "", err
+	}
+	return directoryAbs(filepath.Join(base, "Microsoft", "WinGet", "Packages"))
+}
+
 // Every prefix can later be used independently when a caller creates a
 // directory or appends a filename. Reuse Win32 normalization via pathutil.
 func directoryAbs(dir string) (string, error) {

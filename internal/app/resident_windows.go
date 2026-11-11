@@ -112,6 +112,8 @@ func Serve(svc *core.Service, logger *log.Logger) error {
 }
 
 func (r *Resident) Run(ctx context.Context) (runErr error) {
+	stopUpdates := startUpdateChecks(ctx, r.Service.Store.Home)
+	defer stopUpdates()
 	defer func() { r.runErr = runErr }()
 	for {
 		delay, stop, err := r.step(Interval)
@@ -148,7 +150,7 @@ func (r *Resident) wait(ctx context.Context, delay time.Duration) error {
 				return errors.New("data directory watcher closed")
 			}
 			switch filepath.Base(event.Name) {
-			case "store.json", "obitd.stop", "obitd.paused", "observations.jsonl":
+			case "store.json", "obitd.stop", "obitd.paused", "observations.jsonl", "update.json":
 				return nil
 			}
 		}
