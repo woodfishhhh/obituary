@@ -37,16 +37,20 @@ func TestSweepInvalidatedSnapshotReleasesLedger(t *testing.T) {
 	if testing.Short() {
 		t.Skip("real Git index publication")
 	}
-	f, paths, git := slowGitFixture(t, "first.log", "keep.log", "last.log")
-	assertRefresh := invalidatedIndex(t, f, git, "keep.log", true)
-	rows, err := f.svc.Sweep(false)
-	assertRefresh()
-	if err != nil || len(rows) != 3 || rows[0].Action != core.ActionBuried || rows[1].Action != core.ActionRefused || rows[2].Action != core.ActionBuried {
-		t.Fatalf("refresh lost committed prefix or remaining siblings: %+v %v", rows, err)
-	}
-	if read(t, paths[1]) != "keep.log" || len(f.burials()) != 2 || len(f.items()) != 0 {
-		t.Fatal("refresh moved protected content or lost ledger state")
-	}
+	// Check the lock boundary around a real Git refresh, independent of
+	// scheduling time consumed before index publication or sibling moves.
+	synctest.Test(t, func(t *testing.T) {
+		f, paths, git := slowGitFixture(t, "first.log", "keep.log", "last.log")
+		assertRefresh := invalidatedIndex(t, f, git, "keep.log", true)
+		rows, err := f.svc.Sweep(false)
+		assertRefresh()
+		if err != nil || len(rows) != 3 || rows[0].Action != core.ActionBuried || rows[1].Action != core.ActionRefused || rows[2].Action != core.ActionBuried {
+			t.Fatalf("refresh lost committed prefix or remaining siblings: %+v %v", rows, err)
+		}
+		if read(t, paths[1]) != "keep.log" || len(f.burials()) != 2 || len(f.items()) != 0 {
+			t.Fatal("refresh moved protected content or lost ledger state")
+		}
+	})
 }
 
 func TestSweepInvalidatedSnapshotRefreshesOnce(t *testing.T) {
@@ -101,63 +105,71 @@ func TestSweepSnapshotRefreshRechecksRevision(t *testing.T) {
 	if testing.Short() {
 		t.Skip("real Git index invalidation and concurrent lifespan extension")
 	}
-	f, paths, git := slowGitFixture(t, "keep.log")
-	calls := 0
-	f.svc.PrepareOwners = func(ctx context.Context, paths []string) core.OwnerBatchFunc {
-		query := auto.PrepareOwners(ctx, paths)
-		return func(ctx context.Context, paths []string) []core.Ownership {
-			calls++
-			owners := query(ctx, paths)
-			if calls == 1 {
-				f.file("seed.txt")
-				git("add", "--", "seed.txt")
-			}
-			if calls == 2 {
-				if !ledgerUnlocked(t, f) {
-					t.Fatal("refresh did not release ledger for revision change")
+	// Real Git invalidation must reach the unlocked revision change;
+	// a scheduler stall must not turn this ordering check into a timeout.
+	synctest.Test(t, func(t *testing.T) {
+		f, paths, git := slowGitFixture(t, "keep.log")
+		calls := 0
+		f.svc.PrepareOwners = func(ctx context.Context, paths []string) core.OwnerBatchFunc {
+			query := auto.PrepareOwners(ctx, paths)
+			return func(ctx context.Context, paths []string) []core.Ownership {
+				calls++
+				owners := query(ctx, paths)
+				if calls == 1 {
+					f.file("seed.txt")
+					git("add", "--", "seed.txt")
 				}
-				store := f.svc.Store.WithContext(ctx)
-				if err := store.Update(func(st *core.State) error {
-					st.Items[0].Rev++
-					st.Items[0].ExpiresAt = f.clock.Add(time.Hour)
-					return nil
-				}); err != nil {
-					t.Fatalf("refresh did not release ledger for revision change: %v", err)
+				if calls == 2 {
+					if !ledgerUnlocked(t, f) {
+						t.Fatal("refresh did not release ledger for revision change")
+					}
+					store := f.svc.Store.WithContext(ctx)
+					if err := store.Update(func(st *core.State) error {
+						st.Items[0].Rev++
+						st.Items[0].ExpiresAt = f.clock.Add(time.Hour)
+						return nil
+					}); err != nil {
+						t.Fatalf("refresh did not release ledger for revision change: %v", err)
+					}
 				}
+				return owners
 			}
-			return owners
 		}
-	}
-	rows, err := f.svc.Sweep(false)
-	if err != nil || calls != 2 || len(rows) != 1 || rows[0].Action != core.ActionSkipped || read(t, paths[0]) != "keep.log" || len(f.burials()) != 0 || len(f.items()) != 1 {
-		t.Fatalf("refreshed snapshot bypassed concurrent revision: %+v %v", rows, err)
-	}
+		rows, err := f.svc.Sweep(false)
+		if err != nil || calls != 2 || len(rows) != 1 || rows[0].Action != core.ActionSkipped || read(t, paths[0]) != "keep.log" || len(f.burials()) != 0 || len(f.items()) != 1 {
+			t.Fatalf("refreshed snapshot bypassed concurrent revision: %+v %v", rows, err)
+		}
+	})
 }
 
 func TestSweepSnapshotRefreshYieldsBeforeQuery(t *testing.T) {
-	f := newFixture(t)
-	path := f.file("scratch.log")
-	calls := 0
-	f.svc.PrepareOwners = func(context.Context, []string) core.OwnerBatchFunc {
-		return func(context.Context, []string) []core.Ownership {
-			calls++
-			if !ledgerUnlocked(t, f) {
-				t.Fatalf("snapshot refresh held store.lock: query=%d", calls)
+	// The ownership callback controls invalidation; actual lock probes and
+	// moves must reach both queries without consuming wall-clock budgets.
+	synctest.Test(t, func(t *testing.T) {
+		f := newFixture(t)
+		path := f.file("scratch.log")
+		calls := 0
+		f.svc.PrepareOwners = func(context.Context, []string) core.OwnerBatchFunc {
+			return func(context.Context, []string) []core.Ownership {
+				calls++
+				if !ledgerUnlocked(t, f) {
+					t.Fatalf("snapshot refresh held store.lock: query=%d", calls)
+				}
+				valid := calls > 1
+				return []core.Ownership{{Root: f.dir, Current: func(context.Context) (bool, time.Time, error) {
+					return valid, time.Now(), nil
+				}}}
 			}
-			valid := calls > 1
-			return []core.Ownership{{Root: f.dir, Current: func(context.Context) (bool, time.Time, error) {
-				return valid, time.Now(), nil
-			}}}
 		}
-	}
-	if rows, err := f.svc.Add([]string{path}, core.AddOptions{ExpiresAt: f.clock.Add(time.Hour), Source: "rule", Project: f.dir}); err != nil || core.Failed(rows) {
-		t.Fatalf("add: %+v %v", rows, err)
-	}
-	f.clock = f.clock.Add(time.Hour)
-	rows, err := f.svc.Sweep(false)
-	if err != nil || calls != 2 || len(rows) != 1 || rows[0].Action != core.ActionBuried {
-		t.Fatalf("snapshot refresh did not resume burial: calls=%d %+v %v", calls, rows, err)
-	}
+		if rows, err := f.svc.Add([]string{path}, core.AddOptions{ExpiresAt: f.clock.Add(time.Hour), Source: "rule", Project: f.dir}); err != nil || core.Failed(rows) {
+			t.Fatalf("add: %+v %v", rows, err)
+		}
+		f.clock = f.clock.Add(time.Hour)
+		rows, err := f.svc.Sweep(false)
+		if err != nil || calls != 2 || len(rows) != 1 || rows[0].Action != core.ActionBuried {
+			t.Fatalf("snapshot refresh did not resume burial: calls=%d %+v %v", calls, rows, err)
+		}
+	})
 }
 
 func TestSweepBatchRecoversAllMoved(t *testing.T) {
@@ -487,86 +499,90 @@ func TestSweepBatchChangesAcrossBoundary(t *testing.T) {
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}
-	f := newFixture(t)
-	git := func(args ...string) {
-		t.Helper()
-		if out, err := exec.Command("git", append([]string{"-C", f.dir}, args...)...).CombinedOutput(); err != nil {
-			t.Fatalf("git: %s %v", out, err)
+	// Cross-batch revisions and real Git publication depend on move order,
+	// not the runner's speed while it processes the first 32 entries.
+	synctest.Test(t, func(t *testing.T) {
+		f := newFixture(t)
+		git := func(args ...string) {
+			t.Helper()
+			if out, err := exec.Command("git", append([]string{"-C", f.dir}, args...)...).CombinedOutput(); err != nil {
+				t.Fatalf("git: %s %v", out, err)
+			}
 		}
-	}
-	git("init", "-q")
-	paths := make([]string, 67)
-	for i := range paths {
-		paths[i] = f.file(fmt.Sprintf("item-%02d.log", i))
-	}
-	f.svc.Owner, f.svc.OwnerBatch = auto.Owner, auto.OwnerBatch
-	changed, cachedGitAnswer := false, false
-	f.svc.PrepareOwners = func(ctx context.Context, candidates []string) core.OwnerBatchFunc {
-		query := auto.PrepareOwners(ctx, candidates)
-		return func(ctx context.Context, candidates []string) []core.Ownership {
-			answers := query(ctx, candidates)
-			for i, path := range candidates {
-				if !changed && path == paths[35] && answers[i].Err == nil && !answers[i].Tracked && answers[i].Current != nil {
-					cachedGitAnswer = true
+		git("init", "-q")
+		paths := make([]string, 67)
+		for i := range paths {
+			paths[i] = f.file(fmt.Sprintf("item-%02d.log", i))
+		}
+		f.svc.Owner, f.svc.OwnerBatch = auto.Owner, auto.OwnerBatch
+		changed, cachedGitAnswer := false, false
+		f.svc.PrepareOwners = func(ctx context.Context, candidates []string) core.OwnerBatchFunc {
+			query := auto.PrepareOwners(ctx, candidates)
+			return func(ctx context.Context, candidates []string) []core.Ownership {
+				answers := query(ctx, candidates)
+				for i, path := range candidates {
+					if !changed && path == paths[35] && answers[i].Err == nil && !answers[i].Tracked && answers[i].Current != nil {
+						cachedGitAnswer = true
+					}
 				}
+				return answers
 			}
-			return answers
 		}
-	}
-	if rows, err := f.svc.Add(paths, core.AddOptions{ExpiresAt: f.clock.Add(time.Hour), Source: "rule", Project: f.dir}); err != nil || core.Failed(rows) {
-		t.Fatalf("add: %+v %v", rows, err)
-	}
-	f.clock = f.clock.Add(time.Hour)
-	moves, prepared := 0, 0
-	restore := core.SetBurialStep(f.svc, func(step string) error {
-		if step == "moved" {
-			moves++
+		if rows, err := f.svc.Add(paths, core.AddOptions{ExpiresAt: f.clock.Add(time.Hour), Source: "rule", Project: f.dir}); err != nil || core.Failed(rows) {
+			t.Fatalf("add: %+v %v", rows, err)
 		}
-		if step == "manifest" {
-			prepared++
-		}
-		// The first 32 items have committed and the second batch has read
-		// its ledger snapshot. Change later items before their final checks;
-		// their Git answers were prefetched in the first query.
-		if step == "manifest" && prepared == 33 && moves == 32 && !changed {
-			if !cachedGitAnswer {
-				t.Fatal("cross-batch fixture did not cache the later Git answer")
+		f.clock = f.clock.Add(time.Hour)
+		moves, prepared := 0, 0
+		restore := core.SetBurialStep(f.svc, func(step string) error {
+			if step == "moved" {
+				moves++
 			}
-			changed = true
-			if _, err := f.svc.Extend([]string{paths[33]}, time.Hour); err != nil {
-				t.Fatal(err)
+			if step == "manifest" {
+				prepared++
 			}
-			if _, err := f.svc.Cancel([]string{paths[34]}); err != nil {
-				t.Fatal(err)
+			// The first 32 items have committed and the second batch has read
+			// its ledger snapshot. Change later items before their final checks;
+			// their Git answers were prefetched in the first query.
+			if step == "manifest" && prepared == 33 && moves == 32 && !changed {
+				if !cachedGitAnswer {
+					t.Fatal("cross-batch fixture did not cache the later Git answer")
+				}
+				changed = true
+				if _, err := f.svc.Extend([]string{paths[33]}, time.Hour); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := f.svc.Cancel([]string{paths[34]}); err != nil {
+					t.Fatal(err)
+				}
+				git("add", "--", filepath.Base(paths[35]))
 			}
-			git("add", "--", filepath.Base(paths[35]))
+			return nil
+		})
+		defer restore()
+		rows, err := f.svc.Sweep(false)
+		st, readErr := f.svc.Store.ReadSnapshot()
+		if !changed {
+			t.Fatal("cross-batch change fixture was not reached")
 		}
-		return nil
+		for _, path := range paths[33:36] {
+			if data, readErr := os.ReadFile(path); readErr != nil || string(data) != filepath.Base(path) {
+				t.Fatalf("cross-batch changes moved protected content: %s %+v %v", path, rows, readErr)
+			}
+		}
+		if err != nil || readErr != nil || len(st.Burials) != 64 || st.Stats.Buried != 64 || len(st.Items) != 1 || st.Items[0].Path != paths[33] || !st.Items[0].ExpiresAt.After(f.clock) {
+			t.Fatalf("cross-batch changes affected unrelated entries: %+v %+v %v %v", rows, st, err, readErr)
+		}
+		seen := make(map[string]bool)
+		for _, b := range st.Burials {
+			if seen[b.Path] || exists(b.Path) || read(t, b.Grave) != filepath.Base(b.Path) {
+				t.Fatalf("cross-batch burial was lost or duplicated: %+v", b)
+			}
+			seen[b.Path] = true
+		}
+		for i, path := range paths {
+			if (i < 33 || i >= 36) && !seen[path] {
+				t.Fatalf("cross-batch changes skipped an unrelated item: %s", path)
+			}
+		}
 	})
-	defer restore()
-	rows, err := f.svc.Sweep(false)
-	st, readErr := f.svc.Store.ReadSnapshot()
-	if !changed {
-		t.Fatal("cross-batch change fixture was not reached")
-	}
-	for _, path := range paths[33:36] {
-		if data, readErr := os.ReadFile(path); readErr != nil || string(data) != filepath.Base(path) {
-			t.Fatalf("cross-batch changes moved protected content: %s %+v %v", path, rows, readErr)
-		}
-	}
-	if err != nil || readErr != nil || len(st.Burials) != 64 || st.Stats.Buried != 64 || len(st.Items) != 1 || st.Items[0].Path != paths[33] || !st.Items[0].ExpiresAt.After(f.clock) {
-		t.Fatalf("cross-batch changes affected unrelated entries: %+v %+v %v %v", rows, st, err, readErr)
-	}
-	seen := make(map[string]bool)
-	for _, b := range st.Burials {
-		if seen[b.Path] || exists(b.Path) || read(t, b.Grave) != filepath.Base(b.Path) {
-			t.Fatalf("cross-batch burial was lost or duplicated: %+v", b)
-		}
-		seen[b.Path] = true
-	}
-	for i, path := range paths {
-		if (i < 33 || i >= 36) && !seen[path] {
-			t.Fatalf("cross-batch changes skipped an unrelated item: %s", path)
-		}
-	}
 }

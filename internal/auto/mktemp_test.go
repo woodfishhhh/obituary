@@ -202,46 +202,50 @@ func TestSweepQueriesGitAfterFinalDirectoryGuard(t *testing.T) {
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}
-	r := newRepo(t)
-	now := time.Now()
-	r.engine.Svc.Now = func() time.Time { return now }
-	keep := r.write("scratch/keep.txt", "keep")
-	dir := filepath.Dir(keep)
-	for i := 0; i < 1000; i++ {
-		r.write(fmt.Sprintf("scratch/file-%04d", i), "data")
-	}
-	if rows, err := r.engine.Svc.Add([]string{dir}, core.AddOptions{ExpiresAt: now.Add(time.Hour), Source: "rule", Project: r.root}); err != nil || core.Failed(rows) {
-		t.Fatalf("add: %+v %v", rows, err)
-	}
-	now = now.Add(time.Hour)
-	r.git("add", "--", "scratch/keep.txt")
-	index, staged := filepath.Join(r.root, ".git", "index"), filepath.Join(r.root, "staged-index")
-	if err := os.Rename(index, staged); err != nil {
-		t.Fatal(err)
-	}
-	published := false
-	r.engine.Svc.Guard.Canonical = func(path string) (string, error) {
-		if strings.EqualFold(path, dir) && !published {
-			if err := os.Rename(staged, index); err != nil {
-				t.Fatal(err)
-			}
-			published = true
+	// Real Git must observe the index published by Guard; scheduler stalls
+	// must not replace that ordering check with a query-budget retry.
+	synctest.Test(t, func(t *testing.T) {
+		r := newRepo(t)
+		now := time.Now()
+		r.engine.Svc.Now = func() time.Time { return now }
+		keep := r.write("scratch/keep.txt", "keep")
+		dir := filepath.Dir(keep)
+		for i := 0; i < 1000; i++ {
+			r.write(fmt.Sprintf("scratch/file-%04d", i), "data")
 		}
-		return path, nil
-	}
-	r.engine.Svc.OwnerBatch = OwnerBatch
-	out, err := r.engine.Svc.Sweep(false)
-	_, tracked, gitErr := Owner(keep)
-	if err != nil || !published || gitErr != nil || !tracked {
-		t.Fatalf("invalid directory fixture: %+v %v %v", out, err, gitErr)
-	}
-	data, readErr := os.ReadFile(keep)
-	if readErr != nil || string(data) != "keep" {
-		t.Fatalf("single directory used Git answer predating Guard: %+v %v", out, readErr)
-	}
-	if len(out) != 1 || out[0].Action != core.ActionRefused {
-		t.Fatalf("directory Git recheck was not reached: %+v", out)
-	}
+		if rows, err := r.engine.Svc.Add([]string{dir}, core.AddOptions{ExpiresAt: now.Add(time.Hour), Source: "rule", Project: r.root}); err != nil || core.Failed(rows) {
+			t.Fatalf("add: %+v %v", rows, err)
+		}
+		now = now.Add(time.Hour)
+		r.git("add", "--", "scratch/keep.txt")
+		index, staged := filepath.Join(r.root, ".git", "index"), filepath.Join(r.root, "staged-index")
+		if err := os.Rename(index, staged); err != nil {
+			t.Fatal(err)
+		}
+		published := false
+		r.engine.Svc.Guard.Canonical = func(path string) (string, error) {
+			if strings.EqualFold(path, dir) && !published {
+				if err := os.Rename(staged, index); err != nil {
+					t.Fatal(err)
+				}
+				published = true
+			}
+			return path, nil
+		}
+		r.engine.Svc.OwnerBatch = OwnerBatch
+		out, err := r.engine.Svc.Sweep(false)
+		_, tracked, gitErr := Owner(keep)
+		if err != nil || !published || gitErr != nil || !tracked {
+			t.Fatalf("invalid directory fixture: %+v %v %v", out, err, gitErr)
+		}
+		data, readErr := os.ReadFile(keep)
+		if readErr != nil || string(data) != "keep" {
+			t.Fatalf("single directory used Git answer predating Guard: %+v %v", out, readErr)
+		}
+		if len(out) != 1 || out[0].Action != core.ActionRefused {
+			t.Fatalf("directory Git recheck was not reached: %+v", out)
+		}
+	})
 }
 
 func TestOwnerBatchDeadlineStopsRepositoryDiscovery(t *testing.T) {
@@ -299,74 +303,78 @@ func TestSweepBatchRechecksGitAndRules(t *testing.T) {
 	}
 	for _, protect := range []string{"git", "rules"} {
 		t.Run(protect, func(t *testing.T) {
-			r := newRepo(t)
-			now := time.Now()
-			r.engine.Svc.Now = func() time.Time { return now }
-			paths := []string{r.write("first.log", "first"), r.write("second.log", "keep"), r.write("third.log", "third")}
-			for _, path := range paths {
-				if d := r.apply(path)[path]; d.Action != Registered {
-					t.Fatalf("register: %+v", d)
+			// Keep real Git, rules and moves while isolating their order from
+			// scheduler stalls that could make an unrelated sibling retry.
+			synctest.Test(t, func(t *testing.T) {
+				r := newRepo(t)
+				now := time.Now()
+				r.engine.Svc.Now = func() time.Time { return now }
+				paths := []string{r.write("first.log", "first"), r.write("second.log", "keep"), r.write("third.log", "third")}
+				for _, path := range paths {
+					if d := r.apply(path)[path]; d.Action != Registered {
+						t.Fatalf("register: %+v", d)
+					}
 				}
-			}
-			st, err := r.engine.Svc.Store.ReadSnapshot()
-			if err != nil {
-				t.Fatal(err)
-			}
-			now = st.Items[len(st.Items)-1].ExpiresAt.Add(time.Second)
-			if protect == "rules" {
-				file := r.write(rules.FileName, "!second.log\n")
-				if _, err := r.engine.Trust.Trust(file, ""); err != nil {
+				st, err := r.engine.Svc.Store.ReadSnapshot()
+				if err != nil {
 					t.Fatal(err)
 				}
-			} else {
-				// Build an actual Git index before the timed transaction, then
-				// publish it during the rule check. Starting an extra git add in
-				// the seam consumes the production query budget under machine load.
-				r.git("add", "--", "second.log")
-				index, staged := filepath.Join(r.root, ".git", "index"), filepath.Join(r.root, "staged-index")
-				if err := os.Rename(index, staged); err != nil {
-					t.Fatal(err)
-				}
-				published := false
-				r.engine.Svc.Recheck = func(root, path string, isDir bool) error {
-					if path == paths[1] && !published {
-						if err := os.Rename(staged, index); err != nil {
-							t.Fatal(err)
-						}
-						published = true
+				now = st.Items[len(st.Items)-1].ExpiresAt.Add(time.Second)
+				if protect == "rules" {
+					file := r.write(rules.FileName, "!second.log\n")
+					if _, err := r.engine.Trust.Trust(file, ""); err != nil {
+						t.Fatal(err)
 					}
-					return r.engine.RecheckRules(root, path, isDir)
-				}
-			}
-			calls := 0
-			r.engine.Svc.PrepareOwners = func(ctx context.Context, paths []string) core.OwnerBatchFunc {
-				query := PrepareOwners(ctx, paths)
-				return func(ctx context.Context, paths []string) []core.Ownership {
-					calls++
-					checkOwnerLedgerLock(t, r.engine.Svc, false)
-					owners := query(ctx, paths)
-					for i := range owners {
-						current := owners[i].Current
-						if current == nil {
-							t.Fatalf("missing real Git snapshot: %+v", owners[i])
-						}
-						owners[i].Current = func(ctx context.Context) (bool, time.Time, error) {
-							checkOwnerLedgerLock(t, r.engine.Svc, true)
-							return current(ctx)
-						}
+				} else {
+					// Build an actual Git index before the timed transaction, then
+					// publish it during the rule check. Starting an extra git add in
+					// the seam consumes the production query budget under machine load.
+					r.git("add", "--", "second.log")
+					index, staged := filepath.Join(r.root, ".git", "index"), filepath.Join(r.root, "staged-index")
+					if err := os.Rename(index, staged); err != nil {
+						t.Fatal(err)
 					}
-					return owners
+					published := false
+					r.engine.Svc.Recheck = func(root, path string, isDir bool) error {
+						if path == paths[1] && !published {
+							if err := os.Rename(staged, index); err != nil {
+								t.Fatal(err)
+							}
+							published = true
+						}
+						return r.engine.RecheckRules(root, path, isDir)
+					}
 				}
-			}
-			out, err := r.engine.Svc.Sweep(false)
-			st, readErr := r.engine.Svc.Store.ReadSnapshot()
-			data, fileErr := os.ReadFile(paths[1])
-			if fileErr != nil || string(data) != "keep" {
-				t.Fatalf("batch automatic recheck moved protected item: %+v %v", out, fileErr)
-			}
-			if err != nil || readErr != nil || calls == 0 || len(st.Burials) != 2 || len(st.Items) != 0 {
-				t.Fatalf("batch automatic recheck blocked siblings: %+v calls=%d %v %v", out, calls, err, readErr)
-			}
+				calls := 0
+				r.engine.Svc.PrepareOwners = func(ctx context.Context, paths []string) core.OwnerBatchFunc {
+					query := PrepareOwners(ctx, paths)
+					return func(ctx context.Context, paths []string) []core.Ownership {
+						calls++
+						checkOwnerLedgerLock(t, r.engine.Svc, false)
+						owners := query(ctx, paths)
+						for i := range owners {
+							current := owners[i].Current
+							if current == nil {
+								t.Fatalf("missing real Git snapshot: %+v", owners[i])
+							}
+							owners[i].Current = func(ctx context.Context) (bool, time.Time, error) {
+								checkOwnerLedgerLock(t, r.engine.Svc, true)
+								return current(ctx)
+							}
+						}
+						return owners
+					}
+				}
+				out, err := r.engine.Svc.Sweep(false)
+				st, readErr := r.engine.Svc.Store.ReadSnapshot()
+				data, fileErr := os.ReadFile(paths[1])
+				if fileErr != nil || string(data) != "keep" {
+					t.Fatalf("batch automatic recheck moved protected item: %+v %v", out, fileErr)
+				}
+				if err != nil || readErr != nil || calls == 0 || len(st.Burials) != 2 || len(st.Items) != 0 {
+					t.Fatalf("batch automatic recheck blocked siblings: %+v calls=%d %v %v", out, calls, err, readErr)
+				}
+			})
 		})
 	}
 }
@@ -450,48 +458,52 @@ func TestSweepBatchRechecksRulesBeforeEachMove(t *testing.T) {
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}
-	r := newRepo(t)
-	now := time.Now()
-	r.engine.Svc.Now = func() time.Time { return now }
-	paths := []string{r.write("first.log", "first"), r.write("second.log", "keep"), r.write("third.log", "third")}
-	for _, path := range paths {
-		if d := r.apply(path)[path]; d.Action != Registered {
-			t.Fatalf("register: %+v", d)
+	// Rule publication must follow the first real move. Elapsed scheduling
+	// time must not prevent that move or the unaffected sibling's burial.
+	synctest.Test(t, func(t *testing.T) {
+		r := newRepo(t)
+		now := time.Now()
+		r.engine.Svc.Now = func() time.Time { return now }
+		paths := []string{r.write("first.log", "first"), r.write("second.log", "keep"), r.write("third.log", "third")}
+		for _, path := range paths {
+			if d := r.apply(path)[path]; d.Action != Registered {
+				t.Fatalf("register: %+v", d)
+			}
 		}
-	}
-	st, err := r.engine.Svc.Store.ReadSnapshot()
-	if err != nil {
-		t.Fatal(err)
-	}
-	now = st.Items[len(st.Items)-1].ExpiresAt.Add(time.Second)
-	file := r.write(rules.FileName, "!second.log\n")
-	if _, err := r.engine.Trust.Trust(file, ""); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Rename(file, file+".pending"); err != nil {
-		t.Fatal(err)
-	}
-	if was, err := r.engine.Trust.Untrust(file); err != nil || !was {
-		t.Fatalf("untrust staged rules: %v %v", was, err)
-	}
-	r.engine.Svc.OwnerBatch = OwnerBatch
-	r.engine.Svc.FS = &batchRuleChangeFS{FS: r.engine.Svc.FS, afterMove: func(string) {
-		if err := os.Rename(file+".pending", file); err != nil {
+		st, err := r.engine.Svc.Store.ReadSnapshot()
+		if err != nil {
 			t.Fatal(err)
 		}
+		now = st.Items[len(st.Items)-1].ExpiresAt.Add(time.Second)
+		file := r.write(rules.FileName, "!second.log\n")
 		if _, err := r.engine.Trust.Trust(file, ""); err != nil {
 			t.Fatal(err)
 		}
-	}}
-	out, err := r.engine.Svc.Sweep(false)
-	data, readErr := os.ReadFile(paths[1])
-	st, ledgerErr := r.engine.Svc.Store.ReadSnapshot()
-	if readErr != nil || string(data) != "keep" {
-		t.Fatalf("batch ignored a rule published after its first move: %+v %v %v", out, err, readErr)
-	}
-	if err != nil || ledgerErr != nil || len(st.Burials) != 2 || len(st.Items) != 0 {
-		t.Fatalf("new rule blocked unrelated siblings: %+v %v %v", out, err, ledgerErr)
-	}
+		if err := os.Rename(file, file+".pending"); err != nil {
+			t.Fatal(err)
+		}
+		if was, err := r.engine.Trust.Untrust(file); err != nil || !was {
+			t.Fatalf("untrust staged rules: %v %v", was, err)
+		}
+		r.engine.Svc.OwnerBatch = OwnerBatch
+		r.engine.Svc.FS = &batchRuleChangeFS{FS: r.engine.Svc.FS, afterMove: func(string) {
+			if err := os.Rename(file+".pending", file); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := r.engine.Trust.Trust(file, ""); err != nil {
+				t.Fatal(err)
+			}
+		}}
+		out, err := r.engine.Svc.Sweep(false)
+		data, readErr := os.ReadFile(paths[1])
+		st, ledgerErr := r.engine.Svc.Store.ReadSnapshot()
+		if readErr != nil || string(data) != "keep" {
+			t.Fatalf("batch ignored a rule published after its first move: %+v %v %v", out, err, readErr)
+		}
+		if err != nil || ledgerErr != nil || len(st.Burials) != 2 || len(st.Items) != 0 {
+			t.Fatalf("new rule blocked unrelated siblings: %+v %v %v", out, err, ledgerErr)
+		}
+	})
 }
 
 func TestMkTempRejectsNamedStreamLocation(t *testing.T) {
