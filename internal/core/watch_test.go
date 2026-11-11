@@ -20,7 +20,7 @@ func TestWatchPolicyPersistenceApprovalAndRemoval(t *testing.T) {
 		t.Fatalf("policy: %+v %v", p, err)
 	}
 	st, err := f.svc.Store.Read()
-	if err != nil || st.Version != 15 || len(st.Proposals) != 1 || len(st.Items) != 0 {
+	if err != nil || st.Version != 16 || len(st.Proposals) != 1 || len(st.Items) != 0 {
 		t.Fatalf("persisted policy: %+v %v", st, err)
 	}
 	e := &auto.Engine{Svc: f.svc}

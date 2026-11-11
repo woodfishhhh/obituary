@@ -35,7 +35,7 @@ func TestContainerLegacyTargetMigration(t *testing.T) {
 			f.clock = f.clock.Add(2 * time.Hour)
 			rows, err := f.svc.Sweep(false)
 			st, readErr := f.svc.Store.ReadSnapshot()
-			if err != nil || readErr != nil || st.Version != 15 {
+			if err != nil || readErr != nil || st.Version != 16 {
 				t.Fatal(rows, st, err, readErr)
 			}
 			if missing {

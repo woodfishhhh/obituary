@@ -44,9 +44,18 @@ func assertParentChainCount(t *testing.T, store core.Store, want int) {
 		t.Fatal(err)
 	}
 	var wire struct {
-		ParentChains [][]core.BurialParent `json:"parentChains"`
+		ParentChains [][]core.BurialParent  `json:"parentChains"`
+		Operations   []core.BurialOperation `json:"operations"`
+		Volumes      []json.RawMessage      `json:"volumes"`
 	}
 	if err := json.Unmarshal(data, &wire); err != nil || len(wire.ParentChains) != want {
 		t.Fatalf("parent table count=%d want=%d err=%v", len(wire.ParentChains), want, err)
+	}
+	shared := 0
+	if want > 0 {
+		shared = 1
+	}
+	if len(wire.Operations) != shared || len(wire.Volumes) != shared {
+		t.Fatalf("shared metadata survived final restore/purge: operations=%d volumes=%d want=%d", len(wire.Operations), len(wire.Volumes), shared)
 	}
 }

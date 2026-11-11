@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -14,12 +15,23 @@ import (
 
 func legacyLedger(t *testing.T, indented bool) (Store, []byte, State) {
 	t.Helper()
+	return legacyLedgerVersion(t, 15, indented)
+}
+
+func legacyLedgerVersion(t *testing.T, version int, indented bool) (Store, []byte, State) {
+	t.Helper()
 	store := Store{Home: t.TempDir()}
-	st := State{Version: 14, NextID: 3, Burials: []Burial{{ID: 1, Parents: parentEvidence()}, {ID: 2, Parents: parentEvidence()}},
-		RestoreCleanups: []RestoreCleanup{{Burial: Burial{ID: 3, Parents: parentEvidence()}}}}
-	data, err := json.Marshal(plainState(st))
+	st := State{Version: version, NextID: 20}
+	for i, op := range operationEvidence() {
+		b := Burial{ID: int64(i + 1), Parents: parentEvidence(), Operation: op,
+			Identity: benchmarkIdentity(i + 1), GraveID: benchmarkIdentity(i + 100), Project: `C:\project`, Session: "session"}
+		st.Burials = append(st.Burials, b)
+		b.ID += 10
+		st.RestoreCleanups = append(st.RestoreCleanups, RestoreCleanup{Burial: b})
+	}
+	data, err := json.Marshal(st)
 	if indented {
-		data, err = json.MarshalIndent(plainState(st), "", "  ")
+		data, err = json.MarshalIndent(st, "", "  ")
 	}
 	if err != nil {
 		t.Fatal(err)
@@ -64,8 +76,8 @@ func TestLedgerMigrationPreservesParentEvidence(t *testing.T) {
 func assertMigratedLedger(t *testing.T, store Store, original []byte, want State) {
 	t.Helper()
 	got, err := store.Inspect()
-	if err != nil || got.Version != 15 || !reflect.DeepEqual(got.Burials, want.Burials) || !reflect.DeepEqual(got.RestoreCleanups, want.RestoreCleanups) {
-		t.Fatalf("migration changed parent evidence: %+v %v", got, err)
+	if err != nil || got.Version != stateVersion || !reflect.DeepEqual(got.Burials, want.Burials) || !reflect.DeepEqual(got.RestoreCleanups, want.RestoreCleanups) {
+		t.Fatalf("migration changed burial evidence: %+v %v", got, err)
 	}
 	backups, _ := filepath.Glob(filepath.Join(store.Home, "*.bak"))
 	if len(backups) != 1 {
@@ -78,6 +90,25 @@ func assertMigratedLedger(t *testing.T, store Store, original []byte, want State
 	data, err = os.ReadFile(store.statePath())
 	if err != nil || bytes.Contains(bytes.TrimSpace(data), []byte("\n")) || len(got.PendingAudit) != 1 || got.PendingAudit[0].Action != "store-migrated" {
 		t.Fatalf("compact ledger or transactional migration event missing: %v", err)
+	}
+}
+
+func TestLedgerMigrationPreservesOperationsAcrossVersions(t *testing.T) {
+	for version := 1; version <= 15; version++ {
+		t.Run(fmt.Sprintf("v%d", version), func(t *testing.T) {
+			store, original, want := legacyLedgerVersion(t, version, version%2 == 0)
+			if err := store.Update(func(*State) error { return nil }); err != nil {
+				t.Fatal(err)
+			}
+			assertMigratedLedger(t, store, original, want)
+			got, err := store.Inspect()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(got.PendingAudit[0].Detail, fmt.Sprintf("v%d to v16", version)) {
+				t.Fatalf("migration audit has wrong versions: %+v", got.PendingAudit)
+			}
+		})
 	}
 }
 
@@ -158,7 +189,7 @@ func TestLedgerMigrationAuditRetriesAndBackupRollsBack(t *testing.T) {
 		t.Fatal("restore original backup", err)
 	}
 	got, err := store.Inspect()
-	if err != nil || got.Version != 14 || !reflect.DeepEqual(got.Burials, want.Burials) {
+	if err != nil || got.Version != want.Version || !reflect.DeepEqual(got.Burials, want.Burials) {
 		t.Fatal("backup did not restore legacy evidence", got, err)
 	}
 	if err := store.Update(func(*State) error { return nil }); err != nil {

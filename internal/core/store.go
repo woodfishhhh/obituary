@@ -62,7 +62,8 @@ func (s Store) WithDeadline(deadline time.Time) Store {
 // Version 14 preserves Docker container identities and object kinds. Older
 // writers must refuse this version to keep containers out of file operations.
 // Version 15 interns parent chains in the ledger; manifests stay self-contained.
-const stateVersion = 15
+// Version 16 interns operations, origins and identity volumes only in the ledger.
+const stateVersion = 16
 
 func (s Store) statePath() string { return filepath.Join(s.Home, "store.json") }
 

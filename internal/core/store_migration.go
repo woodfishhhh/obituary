@@ -11,10 +11,10 @@ import (
 	"time"
 )
 
-// Preserve the exact old bytes before the first v15 commit. Content-addressed
+// Preserve the exact old bytes before the first current-version commit. Content-addressed
 // backups survive interrupted retries and never replace different evidence.
 func (s Store) prepareLedgerMigration(st *State) error {
-	if st.Version >= 15 {
+	if st.Version >= stateVersion {
 		return nil
 	}
 	data, err := readShared(s.statePath())
@@ -30,7 +30,7 @@ func (s Store) prepareLedgerMigration(st *State) error {
 	if err := json.Unmarshal(data, &header); err != nil {
 		return err
 	}
-	if header.Version >= 15 {
+	if header.Version >= stateVersion {
 		return nil
 	}
 	name := fmt.Sprintf("store.v%d-%x.json.bak", header.Version, sha256.Sum256(data))
@@ -48,6 +48,6 @@ func (s Store) prepareLedgerMigration(st *State) error {
 		return fmt.Errorf("preserve migration backup: %w", err)
 	}
 	st.queueAudit(Event{Time: time.Now(), Action: "store-migrated", Path: s.statePath(),
-		Detail: fmt.Sprintf("ledger v%d to v15; original bytes retained in %s", header.Version, name)})
+		Detail: fmt.Sprintf("ledger v%d to v%d; original bytes retained in %s", header.Version, stateVersion, name)})
 	return nil
 }
