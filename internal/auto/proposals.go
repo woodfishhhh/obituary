@@ -31,7 +31,16 @@ func (e *Engine) RefreshProposals() error {
 	for _, proposals := range groups {
 		root := proposals[0].Project
 		if err := accessibleProposalProject(root); err != nil {
-			errs = append(errs, err)
+			deleted, deletionErr := e.Svc.ProposalProjectDeleted(root)
+			if !deleted || deletionErr != nil {
+				errs = append(errs, &ProposalProjectError{Project: root, Err: errors.Join(err, deletionErr)})
+				continue
+			}
+			for _, p := range proposals {
+				if err := e.Svc.PruneDeletedProposal(p); err != nil {
+					errs = append(errs, err)
+				}
+			}
 			continue
 		}
 		var paths []string
@@ -51,7 +60,7 @@ func (e *Engine) RefreshProposals() error {
 			// Git failures prevent registration, but are not evidence for
 			// withdrawing a proposal, including missing candidates in worktrees
 			// whose .git pointer survives unavailable main-repository metadata.
-			errs = append(errs, err)
+			errs = append(errs, &ProposalProjectError{Project: root, Err: err})
 			continue
 		} else {
 			for i, path := range paths {
@@ -75,7 +84,17 @@ func (e *Engine) RefreshProposals() error {
 	return errors.Join(errs...)
 }
 
-// An unavailable worktree is not evidence that each of its files disappeared.
+// ProposalProjectError preserves the cause while allowing runners to log state
+// transitions independently for each project.
+type ProposalProjectError struct {
+	Project string
+	Err     error
+}
+
+func (e *ProposalProjectError) Error() string { return e.Err.Error() }
+func (e *ProposalProjectError) Unwrap() error { return e.Err }
+
+// An unavailable worktree needs independent evidence of deletion.
 // Check .git too: a detached mount may leave an accessible empty directory.
 func accessibleProposalProject(root string) error {
 	info, err := os.Lstat(root)

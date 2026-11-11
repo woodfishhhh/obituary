@@ -17,6 +17,45 @@ import (
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
+func TestTickWithdrawsDeletedProject(t *testing.T) {
+	if testing.Short() {
+		t.Skip("requires a real Git repository")
+	}
+	root := t.TempDir()
+	project := filepath.Join(root, "worktree")
+	testenv.InitRepo(t, project)
+	path := filepath.Join(project, "candidate.log")
+	if err := os.WriteFile(path, []byte("pending"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	svc := &core.Service{Store: core.Store{Home: filepath.Join(root, "home")}, FS: winfs.FS{}}
+	p, _, _, err := svc.Propose(core.ProposalLeftovers, project, "s", []core.Candidate{{Path: path, Lifespan: "1d"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.RemoveAll(project); err != nil {
+		t.Fatal(err)
+	}
+	out, purged, err := Tick(svc)
+	if err != nil || len(out) != 0 || len(purged) != 0 {
+		t.Fatalf("deleted project tick: %+v %+v %v", out, purged, err)
+	}
+	st, err := svc.Store.Read()
+	if err != nil || len(st.Proposals) != 0 || len(st.Items) != 0 || len(st.Burials) != 0 || len(st.Projects) != 0 || len(st.LeftoverRejections) != 0 {
+		t.Fatalf("withdrawal became a decision or file operation: %+v %v", st, err)
+	}
+	events, err := svc.Store.History(20)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range events {
+		if e.Action == "proposal-withdrawn" && e.ID == p.ID && e.Path == p.Project && strings.Contains(e.Detail, "project deleted") {
+			return
+		}
+	}
+	t.Fatalf("missing deleted-project audit: %+v", events)
+}
+
 func TestTickAuditsUnrelatedIdentityFailure(t *testing.T) {
 	root := t.TempDir()
 	svc := &core.Service{Store: core.Store{Home: filepath.Join(root, "data")}, FS: winfs.FS{}}

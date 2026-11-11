@@ -62,8 +62,11 @@ func main() {
 		for _, r := range purged {
 			logger.Printf("once: %s %s %s", r.Ref, r.Action, r.Error)
 		}
-		if err != nil {
-			logger.Printf("once: %v", err)
+		logErr := app.ProposalLogErrors(svc.Store.Home, logger, err)
+		if logErr != nil {
+			logger.Printf("once: %v", logErr)
+		}
+		if err != nil || logErr != nil {
 			os.Exit(1)
 		}
 		return

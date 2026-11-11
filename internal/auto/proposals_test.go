@@ -242,7 +242,7 @@ func TestRefreshProposalsRetainsUnavailableProject(t *testing.T) {
 		t.Skip("requires a real Git repository or child process")
 	}
 	t.Parallel()
-	for _, mode := range []string{"renamed", "not-directory", "missing-git"} {
+	for _, mode := range []string{"not-directory", "missing-git"} {
 		t.Run(mode, func(t *testing.T) {
 			t.Parallel()
 			r := newRepo(t)
@@ -283,6 +283,24 @@ func TestRefreshProposalsRetainsUnavailableProject(t *testing.T) {
 				t.Fatalf("unavailable project lost pending proposals: before=%+v after=%+v refresh=%v read=%v", before.Proposals, after.Proposals, refreshErr, err)
 			}
 		})
+	}
+}
+
+func TestRefreshProposalsRetainsMissingProjectOnUnavailableVolume(t *testing.T) {
+	r := newEngineFixture(t)
+	root := filepath.Join(r.root, "missing")
+	p, _, _, err := r.engine.Svc.Propose(core.ProposalLeftovers, root, "s", []core.Candidate{{Path: filepath.Join(root, "candidate.log"), Lifespan: "1d"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	r.engine.Svc.FS = &unavailableObservationFS{FS: r.engine.Svc.FS, path: root}
+	for range 2 {
+		refreshErr := r.engine.RefreshProposals()
+		var projectErr *ProposalProjectError
+		st, err := r.engine.Svc.Store.Read()
+		if !errors.As(refreshErr, &projectErr) || !strings.Contains(refreshErr.Error(), "retry later") || err != nil || len(st.Proposals) != 1 || st.Proposals[0].ID != p.ID || len(st.Items) != 0 || len(st.Burials) != 0 {
+			t.Fatalf("offline volume lost proposal or diagnostic: %+v %v %v", st, refreshErr, err)
+		}
 	}
 }
 

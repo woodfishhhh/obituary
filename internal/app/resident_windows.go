@@ -207,6 +207,7 @@ func (r *Resident) step(interval time.Duration) (time.Duration, bool, error) {
 
 func (r *Resident) tick() {
 	outcomes, purged, err := Tick(r.Service)
+	err = ProposalLogErrors(r.Service.Store.Home, r.logger, err)
 	if err != nil {
 		r.errs.report("tick", err)
 	} else {

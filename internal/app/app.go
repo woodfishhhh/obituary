@@ -76,5 +76,5 @@ func Tick(svc *core.Service) ([]core.Outcome, []core.GraveResult, error) {
 	}
 	diagnostics, diagnosticErr := svc.RegistrationLocationDiagnostics()
 	diagnosticErr = errors.Join(diagnosticErr, svc.Store.Record(diagnostics...))
-	return outcomes, purged, errors.Join(queuedErr, proposalErr, watchErr, err, diagnosticErr)
+	return outcomes, purged, joinTickErrors(proposalErr, queuedErr, watchErr, err, diagnosticErr)
 }

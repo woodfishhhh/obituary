@@ -2,6 +2,7 @@ package gui
 
 import (
 	"github.com/woodfishhhh/obituary/internal/app"
+	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/rules"
 )
 
@@ -30,7 +31,7 @@ func (a *API) Summary() (Summary, error) {
 	if err != nil {
 		return Summary{}, err
 	}
-	out := Summary{TrackedCount: len(state.Items), DecisionCount: len(state.Proposals), Paused: paused}
+	out := Summary{TrackedCount: len(state.Items), DecisionCount: len(core.ExistingProposals(state.Proposals)), Paused: paused}
 	for _, f := range files.Rules {
 		if f.Status == rules.Untrusted || f.Status == rules.Changed {
 			out.DecisionCount++

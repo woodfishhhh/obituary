@@ -1,7 +1,13 @@
 package gui
 
 import (
+	"encoding/json"
+	"os"
 	"path/filepath"
+	"reflect"
+
+	"github.com/woodfishhhh/obituary/internal/cli/clitest"
+	cliproposals "github.com/woodfishhhh/obituary/internal/cli/proposals"
 	"strings"
 	"testing"
 	"time"
@@ -12,6 +18,42 @@ import (
 	"github.com/woodfishhhh/obituary/internal/testenv"
 	"github.com/woodfishhhh/obituary/internal/watch"
 )
+
+func TestProposalListMatchesCLIAndRejectsReappearingCandidate(t *testing.T) {
+	for _, decide := range []string{"approve", "reject"} {
+		t.Run(decide, func(t *testing.T) {
+			a, root := fixture(t)
+			p := propose(t, a, root, "keep.log")
+			gone := filepath.Join(root, "gone.log")
+			if _, _, _, err := a.deps.Service.Propose(p.Kind, p.Project, p.Session, []core.Candidate{{Path: gone, Lifespan: "2d"}}); err != nil {
+				t.Fatal(err)
+			}
+			rows, err := a.Proposals()
+			if err != nil || len(rows.Proposals) != 1 || len(rows.Proposals[0].Candidates) != 1 {
+				t.Fatalf("GUI displayed absent candidate: %+v %v", rows, err)
+			}
+			t.Setenv("OBIT_HOME", a.deps.Service.Store.Home)
+			out, _, err := clitest.Execute(t, cliproposals.NewCmd(), "--json")
+			var cli []core.Proposal
+			if err != nil || json.Unmarshal([]byte(out), &cli) != nil || len(cli) != 1 || !reflect.DeepEqual(cli[0], rows.Proposals[0].Proposal) {
+				t.Fatalf("GUI/CLI mismatch: %+v %s %v", rows, out, err)
+			}
+			write(t, gone, "reappeared without being reviewed")
+			action := a.Approve
+			if decide == "reject" {
+				action = a.Reject
+			}
+			reply, err := action([]string{ref(p.ID)}, []string{rows.Proposals[0].Fingerprint})
+			st, readErr := a.deps.Service.Store.Read()
+			if err != nil || readErr != nil || len(reply.Results) != 1 || reply.Results[0].Error == "" || len(st.Items) != 0 || len(st.Projects) != 0 || len(st.Proposals) != 1 || len(st.LeftoverRejections) != 0 {
+				t.Fatalf("hidden candidate authorized: %+v %+v %v %v", reply, st, err, readErr)
+			}
+			if data, err := os.ReadFile(gone); err != nil || string(data) != "reappeared without being reviewed" {
+				t.Fatalf("candidate touched: %s %v", data, err)
+			}
+		})
+	}
+}
 
 func TestGUIExpiredWatchDirectoryDecisions(t *testing.T) {
 	if testing.Short() {

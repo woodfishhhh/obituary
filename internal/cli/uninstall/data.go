@@ -94,6 +94,7 @@ var metadataNames = []string{
 	"audit.jsonl", "audit.jsonl.1", "audit.lock", "audit-outbox.lock",
 	"explorer.json", "explorer.json.tmp", "explorer.lock", "explorer.log", "explorer.stamp",
 	"update.json", "update.json.tmp", "update.lock",
+	"proposal-log.json", "proposal-log.json.tmp", "proposal-log.lock",
 	"obitd.log", "obitd.stop", "obitd.paused", "obitd.process.json", "hook.log", "hook.log.1",
 	"hook-audit.log", "hook-audit.log.1", "guard-rm.json", "guard-rm.lock",
 	"observations.jsonl", "observations.lock", "trusted_rules.json", "trusted_rules.json.lock",

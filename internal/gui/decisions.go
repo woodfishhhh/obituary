@@ -29,9 +29,9 @@ func (a *API) Proposals() (ProposalList, error) {
 	defer a.mu.Unlock()
 	state, err := a.deps.Service.Store.Inspect()
 	rows := ProposalList{Proposals: []ReviewedProposal{}}
-	// Show the full snapshot, including absent candidates, so the fingerprint
-	// never authorizes candidates hidden by a display-only existence filter.
-	for _, p := range state.Proposals {
+	// The fingerprint covers exactly the displayed candidates. A partial view
+	// cannot authorize the full ledger snapshot; background pruning refreshes it.
+	for _, p := range core.ExistingProposals(state.Proposals) {
 		rows.Proposals = append(rows.Proposals, ReviewedProposal{Proposal: p, Fingerprint: core.ProposalFingerprint(p)})
 	}
 	return rows, err

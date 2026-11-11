@@ -39,6 +39,27 @@ func ExistingProposals(proposals []Proposal) []Proposal {
 // decisions. Automatic withdrawal neither grants consent nor remembers a
 // rejection; its distinct audit event records why the proposal disappeared.
 func (s *Service) PruneProposal(p Proposal, stale []Candidate) error {
+	return s.pruneProposal(p, stale, "candidate no longer exists or is Git-tracked", nil)
+}
+
+// PruneDeletedProposal checks deletion again while serializing with decisions.
+func (s *Service) PruneDeletedProposal(p Proposal) error {
+	if p.Kind == ProposalWatch || p.Kind == ProposalWatchBurial || p.Kind == ProposalContainer {
+		return fmt.Errorf("proposal kind %q does not use project deletion evidence", p.Kind)
+	}
+	return s.pruneProposal(p, p.Candidates, "project deleted", func() error {
+		deleted, err := s.ProposalProjectDeleted(p.Project)
+		if err != nil {
+			return err
+		}
+		if !deleted {
+			return fmt.Errorf("proposal project %q is available again; retry later", p.Project)
+		}
+		return nil
+	})
+}
+
+func (s *Service) pruneProposal(p Proposal, stale []Candidate, reason string, check func() error) error {
 	if len(stale) == 0 {
 		return nil
 	}
@@ -47,6 +68,11 @@ func (s *Service) PruneProposal(p Proposal, stale []Candidate) error {
 		return err
 	}
 	defer release()
+	if check != nil {
+		if err := check(); err != nil {
+			return err
+		}
+	}
 	revisions := make(map[string]uint64, len(stale))
 	for _, c := range stale {
 		revisions[c.Path] = c.Rev
@@ -58,17 +84,20 @@ func (s *Service) PruneProposal(p Proposal, stale []Candidate) error {
 			return nil
 		}
 		current := &st.Proposals[idx]
+		if current.Project != p.Project || current.Kind != p.Kind {
+			return nil
+		}
 		current.Candidates = slices.DeleteFunc(current.Candidates, func(c Candidate) bool {
 			rev, ok := revisions[c.Path]
 			if !ok || rev != c.Rev {
 				return false
 			}
-			events = append(events, Event{Time: s.now(), Action: "proposal-pruned", ID: p.ID, Path: c.Path, Detail: "candidate no longer exists or is Git-tracked"})
+			events = append(events, Event{Time: s.now(), Action: "proposal-pruned", ID: p.ID, Path: c.Path, Detail: reason})
 			return true
 		})
 		if len(current.Candidates) == 0 {
 			st.Proposals = append(st.Proposals[:idx], st.Proposals[idx+1:]...)
-			events = append(events, Event{Time: s.now(), Action: "proposal-withdrawn", ID: p.ID, Path: p.Project, Detail: "automatically withdrawn: no candidates remain"})
+			events = append(events, Event{Time: s.now(), Action: "proposal-withdrawn", ID: p.ID, Path: p.Project, Detail: "automatically withdrawn: no candidates remain; " + reason})
 		}
 		return nil
 	})
