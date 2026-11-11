@@ -83,7 +83,7 @@ func TestDoctorSummarizesUninstalledAgents(t *testing.T) {
 		}
 		if check.Status == "WARN" {
 			switch check.Name {
-			case "runner", "tray-startup", "gui", "start-menu", "claude", "codex", "codex-windows-shell":
+			case "runner", "tray-startup", "gui", "start-menu", "desktop", "claude", "codex", "codex-windows-shell":
 			default:
 				t.Fatalf("fresh doctor added a warning: %+v", check)
 			}
@@ -92,7 +92,7 @@ func TestDoctorSummarizesUninstalledAgents(t *testing.T) {
 	want := fmt.Sprintf("另有 %d 家 agent 可接入：obit init --show 查看", len(initcmd.AgentNames())-2)
 	rows := diagnose(time.Now(), executable)
 	last := rows[len(rows)-1]
-	if len(rows) != 30 || last.Status != "INFO" || last.Detail != want {
+	if len(rows) != 33 || last.Status != "INFO" || last.Detail != want {
 		t.Fatalf("inventory summary: %+v", rows)
 	}
 	if check := checks["registration-identities"]; check.Status != "PASS" || check.Errors != 0 {

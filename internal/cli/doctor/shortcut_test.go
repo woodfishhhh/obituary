@@ -32,3 +32,27 @@ func TestStartMenuShortcutDiagnosis(t *testing.T) {
 		})
 	}
 }
+
+func TestDesktopShortcutDiagnosis(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("OBIT_USER_HOME", home)
+	exe := filepath.Join(home, "obit.exe")
+	for _, installed := range []bool{false, true} {
+		check := diagnoseDesktop(exe, func(path string) (string, error) {
+			if path != filepath.Join(home, "Desktop", "讣告 Obituary.lnk") {
+				t.Fatal("escaped test desktop", path)
+			}
+			if !installed {
+				return "", os.ErrNotExist
+			}
+			return filepath.Join(home, "obit-gui.exe"), nil
+		})
+		want := "WARN"
+		if installed {
+			want = "PASS"
+		}
+		if check.Name != "desktop" || check.Status != want {
+			t.Fatal(check)
+		}
+	}
+}

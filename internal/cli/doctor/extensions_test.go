@@ -25,7 +25,10 @@ func TestDoctorExtensionsCurrentnessAndReadOnly(t *testing.T) {
 			t.Fatalf("missing optional extension: %+v", checks[name])
 		}
 		for _, agent := range []string{"claude", "codex"} {
-			want := "obit init -g --agent " + agent + " --" + name
+			want := "obit init -g --agent " + agent
+			if name == "mcp" {
+				want += " --mcp"
+			}
 			if !strings.Contains(checks[name].Detail, want) {
 				t.Fatalf("doctor missing agent-specific command %q: %+v", want, checks[name])
 			}

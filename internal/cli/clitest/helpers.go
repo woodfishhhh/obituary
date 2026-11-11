@@ -14,6 +14,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
+	"github.com/woodfishhhh/obituary/internal/contextmenu"
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/runkey"
 	"github.com/woodfishhhh/obituary/internal/testenv"
@@ -110,6 +111,9 @@ func CommandDir(t *testing.T) (string, core.Store) {
 // files, Git repositories and stores while keeping OS runner state untouched.
 func IsolateRunner(t testing.TB) *[]string {
 	t.Helper()
+	menu := contextmenu.Current
+	contextmenu.Current = NewMenuRegistry()
+	t.Cleanup(func() { contextmenu.Current = menu })
 	startup := runkey.Current
 	runkey.Current = testenv.NewRunRegistry()
 	t.Cleanup(func() { runkey.Current = startup })

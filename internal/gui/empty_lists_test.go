@@ -11,7 +11,7 @@ import (
 // window when Settings read policies.length.
 func TestEmptyLedgerListsAreArrays(t *testing.T) {
 	a, _ := fixture(t)
-	null := regexp.MustCompile(`"(policies|proposals|rules|rows|restored|items|lines|results|changes)":null`)
+	null := regexp.MustCompile(`"(policies|proposals|rules|rows|restored|items|lines|results|changes|applied|remaining)":null`)
 	check := func(name string, v any, err error) {
 		t.Helper()
 		data, merr := json.Marshal(v)
@@ -49,4 +49,12 @@ func TestEmptyLedgerListsAreArrays(t *testing.T) {
 	check("Reject", reject, err)
 	summary, err := a.PlanSessionSummary(false)
 	check("PlanSessionSummary", summary, err)
+	for name, plan := range map[string]func(bool) (Plan, error){"PlanTrayIcon": a.PlanTrayIcon, "PlanTaskbar": a.PlanTaskbar, "PlanStartMenu": a.PlanStartMenu, "PlanDesktopShortcut": a.PlanDesktopShortcut} {
+		p, err := plan(false)
+		check(name, p, err)
+		if err == nil {
+			r, err := a.ApplyPlan(p.ID)
+			check(name+" receipt", r, err)
+		}
+	}
 }

@@ -13,7 +13,10 @@ import (
 )
 
 // Planner binds executable discovery to one installation or inspection.
-type Planner struct{ Executable cmdutil.Executable }
+type Planner struct {
+	Executable cmdutil.Executable
+	SkipSkill  bool
+}
 
 func IntegrationPlan(agent string, scope integrate.Scope, uninstall bool) ([]integrate.Change, error) {
 	return (Planner{}).IntegrationPlan(agent, scope, uninstall)

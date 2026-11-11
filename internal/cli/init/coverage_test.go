@@ -77,7 +77,6 @@ func TestAgentCoverageMarkdownFiltersAndGroups(t *testing.T) {
 func TestAgentCoverageMarkdownRejectsInvalidFlags(t *testing.T) {
 	for _, args := range [][]string{
 		{"--format", "markdown"}, {"--show", "--format", "json"},
-		{"--show", "--format", "markdown", "--context-menu"},
 		{"--show", "--format", "markdown", "--agent", "unknown"},
 		{"--show", "--format", "markdown", "--agent", ""},
 	} {

@@ -46,11 +46,15 @@ func TestInitImplicitExtensionFailureKeepsHooks(t *testing.T) {
 				}
 				clitest.WriteFixture(t, path, before)
 			}
-			out, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "-g", "--agent", agent, "--yes")
+			args := []string{"-g", "--agent", agent, "--yes"}
+			if kind == "skill" {
+				args = append(args, "--no-skill")
+			}
+			out, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), args...)
 			if err != nil {
 				t.Fatalf("implicit extension failure blocked hooks: %s %v", out, err)
 			}
-			if !strings.Contains(strings.ToLower(out), "warning") {
+			if kind != "skill" && !strings.Contains(strings.ToLower(out), "warning") {
 				t.Fatalf("implicit extension failure missing warning: %s", out)
 			}
 			hooks := filepath.Join(root, agent, "hooks.json")
@@ -92,8 +96,8 @@ func TestInitGlobalRefreshesOnlyInstalledExtensions(t *testing.T) {
 			}
 			for _, kind := range []string{"mcp", "skill"} {
 				st, err := integrate.InspectExtension(scope, agent, kind, filepath.Join(root, "bin", "obit.exe"))
-				if err != nil || st.Installed {
-					t.Fatalf("refresh installed absent %s: %+v %v", kind, st, err)
+				if err != nil || st.Installed != (kind == "skill") {
+					t.Fatalf("default extension state %s: %+v %v", kind, st, err)
 				}
 			}
 			if _, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "-g", "--agent", agent, "--yes", "--mcp", "--skill"); err != nil {
@@ -256,8 +260,11 @@ func TestInitGlobalRefreshPreservesUnownedExtensions(t *testing.T) {
 	clitest.WriteFixture(t, path, original)
 	skill := filepath.Join(root, "claude", "skills", "obituary", "SKILL.md")
 	clitest.WriteFixture(t, skill, "user skill")
-	if _, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "-g", "--yes"); err != nil {
-		t.Fatalf("implicit refresh claimed unowned extension: %v", err)
+	if _, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "-g", "--yes"); err == nil {
+		t.Fatal("default skill install accepted an unowned file")
+	}
+	if _, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "-g", "--yes", "--no-skill"); err != nil {
+		t.Fatal(err)
 	}
 	if got, err := os.ReadFile(path); err != nil || string(got) != original {
 		t.Fatalf("user MCP changed: %s %v", got, err)
@@ -282,7 +289,7 @@ func TestInitExtensionsOptInShowRefreshUninstall(t *testing.T) {
 				t.Fatal(err)
 			}
 			out, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "--agent", agent, "--show", "--mcp", "--skill")
-			if err != nil || !strings.Contains(out, "mcp: not installed") || !strings.Contains(out, "skill: not installed") {
+			if err != nil || !strings.Contains(out, "mcp: not installed") || !strings.Contains(out, "skill: installed, current") {
 				t.Fatalf("show planned instead of installed: %s %v", out, err)
 			}
 			if _, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "--agent", agent, "--yes", "--mcp", "--skill"); err != nil {

@@ -64,7 +64,7 @@ Agents pushed us into writing it. As soon as version 0.0.1 ran we installed it o
 - **Anything an agent deletes can come back.** With the delete guard on, an agent's `rm -rf`, `git clean` and similar commands are stopped and the agent is told the equivalent `obit` command. It uses that instead, and things go to the graveyard rather than disappearing.
 - **Bury first, purge later.** The graveyard keeps everything for 7 days by default; `obit resurrect` puts it back where it was and never overwrites what is there now.
 - **Files are tracked by identity, not by name.** Every record keeps the volume serial number and the 128-bit file ID, so a renamed or moved file is still found, and a different file that now sits at the old path is left alone.
-- **Claude Code and Codex.** `obit init` registers hooks; an MCP server and an Agent Skill are optional; `--uninstall` removes only what Obituary added.
+- **Claude Code and Codex.** `obit init` registers hooks and an Agent Skill; an MCP server is optional; `--uninstall` removes only what Obituary added.
 - **Lives in the tray, like Everything.** `obit init` starts a tray icon at login. Its menu shows recent burials (click one to resurrect it), lets you pause automatic cleanup, and opens Obituary's small window. A Windows scheduled task remains as a fallback.
 - **A small window.** Upcoming, Graveyard, Decisions, Settings and Logs: resurrect files, approve proposals and change settings without the command line (`obit-gui.exe`, or "Open Obituary" in the tray menu). Chinese and English, eight looks.
 - **Context menu and dates in Explorer.** Right-click a file in Explorer to give it a lifespan. Tracked items in Downloads and on the Desktop show as "name (11-13 burial)" while the real file name stays the same.
@@ -118,7 +118,7 @@ Background running: [Background](#background). Agents: [Claude Code](#claude-cod
 
 ```powershell
 obit init                                   # Claude Code hooks, and the tray starts at login
-obit init --context-menu --yes              # Explorer context menu (classic menu; on Windows 11 under "Show more options"; --dry-run lists every entry)
+obit init --context-menu --yes              # compatibility flag; context menu is enabled by default (classic menu; on Windows 11 under "Show more options"; --dry-run lists every entry)
 obit watch C:\Users\you\Downloads 2w        # files that land in Downloads are buried two weeks later, once they have been left untouched for 10 minutes (a proposal you approve first; expired subfolders get their own proposal)
 obit watch --list                           # folder policies, their exemptions and quiet periods
 obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans it registered
@@ -136,6 +136,8 @@ obit init -g                         # all projects (~/.claude); obit init alone
 obit init -g --show --agent claude   # what is installed (without --agent: a one-line summary per agent, then the details)
 obit init -g --uninstall             # remove only what Obituary added
 ```
+
+`obit init` installs the selected agent's Agent Skill, context menus, a Start menu shortcut and a desktop shortcut by default. Skip them with `--no-skill` / `--no-context-menu` / `--no-shortcuts`; context menus and shortcuts can also be turned off later in Settings. Settings also controls the tray and taskbar icons; hiding the tray keeps background cleanup running.
 
 `obit init` registers `obit hook claude` in `settings.json` (SessionStart, before each tool call, after writes, Stop, SessionEnd), writes an `OBIT.md` for the agent, and adds one reference line to `CLAUDE.md`: `@OBIT.md` in `~/.claude/CLAUDE.md` for the user scope (`-g`), `@.claude/OBIT.md` in the project's `CLAUDE.md` for a project.
 
@@ -259,7 +261,7 @@ When it is on and an agent runs `rm -rf build`, `rmdir`, `git clean -fdx`, `Remo
 ## MCP server and Agent Skill
 
 ```powershell
-obit init -g --mcp --skill                 # Claude Code; add --agent codex for Codex. Neither is installed by default
+obit init -g --mcp --skill                 # Claude Code; add --agent codex for Codex. Skill is installed by default; MCP is optional
 obit init -g --show                        # also shows whether mcp / skill are installed and current
 ```
 
@@ -275,7 +277,7 @@ obit init -g --show                        # also shows whether mcp / skill are 
   </details>
 
 - The **Agent Skill** is a `SKILL.md` telling the agent when to give its output a lifespan, how to delete restorably, and which decisions belong to you. Claude Code gets it in `~/.claude/skills/obituary/`, Codex in `~/.agents/skills/obituary/` (projects: `.claude/skills/`, `.agents/skills/`). A `.obituary-skill` file next to it records the hash at install time: once you edit the Skill, Obituary no longer overwrites or removes it.
-- A plain `obit init -g` refreshes an installed Skill and Codex MCP block (for example after `obit.exe` moved) but does not install new ones. Claude Code's user-scope MCP registration is the exception: the official command can only remove and re-add, which is not atomic, so a plain refresh only reports "outdated" with the manual command; pass `--mcp` to replace it. A broken extension config never blocks installing the hooks; it only produces a warning.
+- A plain `obit init -g` installs or refreshes the Skill (`--no-skill` skips it) and refreshes an existing Codex MCP block (for example after `obit.exe` moved). MCP registration remains opt-in. Claude Code's user-scope MCP registration is the exception: the official command can only remove and re-add, which is not atomic, so a plain refresh only reports "outdated" with the manual command; pass `--mcp` to replace it. A broken extension config never blocks installing the hooks; it only produces a warning.
 - The installer runs only a `claude.exe` from an absolute PATH directory (for npm installs it follows `claude.cmd` to the exe behind it) and refuses one in the current folder or repository, so running `obit init` inside someone else's repository cannot execute a program planted there. The check uses the folder's identity on disk, not its spelling, so another name (a junction, `\\localhost\C$`, a short name, a hard link) does not get around it. Manual commands whose arguments contain double quotes need PowerShell 7.3 or newer.
 - With `mode = "recycle"` in `config.toml`, burials go to the system Recycle Bin; the MCP tool descriptions say so and `obit resurrect` cannot bring things back from there.
 - Restart the agent after installing. `obit doctor` checks whether both are installed and point at the current `obit.exe` (not installed is fine; they are optional). It only shows the configuration is right, not that the agent has connected.

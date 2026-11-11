@@ -16,7 +16,12 @@ import (
 // WindowsRegistry uses x/sys's registry APIs; it never opens HKLM.
 type WindowsRegistry struct{ Root string }
 
-func UserRegistry() Registry { return WindowsRegistry{Root: `Software\Classes`} }
+func UserRegistry() Registry {
+	if Current != nil {
+		return Current
+	}
+	return WindowsRegistry{Root: `Software\Classes`}
+}
 
 func sortedKeys[V any](m map[string]V) []string { return slices.Sorted(maps.Keys(m)) }
 

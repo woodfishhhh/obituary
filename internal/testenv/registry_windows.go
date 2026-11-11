@@ -2,6 +2,7 @@ package testenv
 
 import (
 	"crypto/rand"
+	"os"
 	"strings"
 	"testing"
 
@@ -11,6 +12,9 @@ import (
 // ClassesKey creates a private test hive. Cleanup never visits Software\Classes.
 func ClassesKey(t *testing.T) string {
 	t.Helper()
+	if os.Getenv("OBIT_TEST_REGISTRY") != "1" {
+		t.Skip("set OBIT_TEST_REGISTRY=1 for disposable registry integration tests")
+	}
 	path := `Software\obituary-test-` + rand.Text()
 	key, _, err := registry.CreateKey(registry.CURRENT_USER, path+`\Classes`, registry.ALL_ACCESS)
 	if err != nil {

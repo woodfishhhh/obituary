@@ -65,6 +65,7 @@ func Run(svc *core.Service, logger *log.Logger) error {
 	done := make(chan error, 1)
 	systray.Run(func() {
 		m := newMenu(r)
+		go followVisibility(ctx, logger)
 		go func() { done <- r.Run(ctx); systray.Quit() }()
 		go m.run(ctx, cancel, changed, logger)
 	}, cancel)

@@ -12,9 +12,14 @@ import (
 	"github.com/woodfishhhh/obituary/internal/contextmenu"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/integrate"
+	"github.com/woodfishhhh/obituary/internal/shortcut"
 )
 
 type Settings struct {
+	TrayIcon             bool          `json:"trayIcon"`
+	Taskbar              bool          `json:"taskbar"`
+	StartMenu            bool          `json:"startMenu"`
+	DesktopShortcut      bool          `json:"desktopShortcut"`
 	Mode                 string        `json:"mode"`
 	RetentionDays        int           `json:"retentionDays"`
 	ConfigPath           string        `json:"configPath"`
@@ -73,8 +78,16 @@ func (a *API) Settings() (Settings, error) {
 	if st, err := a.deps.Service.Store.Read(); err == nil {
 		lifetime = &Lifetime{Buried: st.Stats.Buried, BuriedBytes: st.Stats.BuriedBytes, PurgedBytes: st.Stats.PurgedBytes, Resurrected: st.Stats.Resurrected}
 	}
+	start, err := shortcut.Inspect(a.deps.Shortcuts, a.deps.Executable, shortcut.StartMenu)
+	if err != nil {
+		return Settings{}, err
+	}
+	desktop, err := shortcut.Inspect(a.deps.Shortcuts, a.deps.Executable, shortcut.Desktop)
+	if err != nil {
+		return Settings{}, err
+	}
 	paused, err := app.Paused(a.deps.Service.Store.Home)
-	return Settings{Lifetime: lifetime, Downloads: downloadsFolder(), Mode: cfg.Graveyard.Mode, RetentionDays: cfg.Graveyard.RetentionDays, Language: cfg.UI.Language, EffectiveLanguage: language,
+	return Settings{TrayIcon: cfg.UI.Tray, Taskbar: cfg.UI.Taskbar, StartMenu: start != "", DesktopShortcut: desktop != "", Lifetime: lifetime, Downloads: downloadsFolder(), Mode: cfg.Graveyard.Mode, RetentionDays: cfg.Graveyard.RetentionDays, Language: cfg.UI.Language, EffectiveLanguage: language,
 		ConfigPath: filepath.Join(a.deps.ConfigDir, "config.toml"), ContextMenuInstalled: menu.Installed,
 		ContextMenuCurrent: menu.Current, ContextMenuDetail: menu.Detail, Autostart: startup.Before != "", Paused: paused,
 		SessionSummary: cfg.Hooks.SessionSummary}, err
@@ -108,7 +121,7 @@ type PlanReceipt struct {
 
 func (a *API) savePlan(action string, changes []ChangePreview, apply func() error) Plan {
 	a.nextPlan++
-	view := Plan{ID: strconv.FormatUint(a.nextPlan, 10), Action: action, Changes: changes}
+	view := Plan{ID: strconv.FormatUint(a.nextPlan, 10), Action: action, Changes: list(changes)}
 	a.plan = &pendingPlan{view: view, apply: apply}
 	return view
 }
@@ -181,8 +194,8 @@ func (a *API) ApplyPlan(id string) (PlanReceipt, error) {
 	if plan.applyMenu != nil {
 		out, err := plan.applyMenu()
 		return PlanReceipt{Receipt: Receipt{Action: plan.view.Action, Changed: len(out.Applied) > 0},
-			Applied: out.Applied, Remaining: out.Remaining, Error: errorText(err)}, nil
+			Applied: list(out.Applied), Remaining: list(out.Remaining), Error: errorText(err)}, nil
 	}
 	err := plan.apply()
-	return PlanReceipt{Receipt: Receipt{Action: plan.view.Action, Changed: err == nil}}, err
+	return PlanReceipt{Receipt: Receipt{Action: plan.view.Action, Changed: err == nil && len(plan.view.Changes) > 0}, Applied: []string{}, Remaining: []string{}}, err
 }

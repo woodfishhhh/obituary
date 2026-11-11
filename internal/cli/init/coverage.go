@@ -12,15 +12,12 @@ import (
 	"github.com/woodfishhhh/obituary/internal/integrate"
 )
 
-func validateShowFormat(cmd *cobra.Command, format string, show, contextMenu bool) error {
+func validateShowFormat(cmd *cobra.Command, format string, show bool) error {
 	if format != "text" && format != "markdown" {
 		return fmt.Errorf("unknown format %q (supported: text, markdown)", format)
 	}
 	if cmd.Flags().Changed("format") && !show {
 		return errors.New("--format requires --show")
-	}
-	if format == "markdown" && contextMenu {
-		return errors.New("--format markdown shows agent coverage and cannot be used with --context-menu")
 	}
 	return nil
 }

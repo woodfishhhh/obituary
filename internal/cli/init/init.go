@@ -23,8 +23,8 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 		agents                                        []string
 		format                                        string
 		global, uninstall, show, dryRun, yes, guardRM bool
-		withMCP, withSkill                            bool
-		withContextMenu                               bool
+		withMCP, withSkill, noSkill                   bool
+		withContextMenu, noContextMenu, noShortcuts   bool
 	)
 	cmd := &cobra.Command{
 		Use:   "init",
@@ -37,11 +37,14 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
   obit init --show --format markdown > docs/agents.md`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := validateShowFormat(cmd, format, show, withContextMenu); err != nil {
+			if err := validateShowFormat(cmd, format, show); err != nil {
 				return err
 			}
-			if withContextMenu {
-				return runContextMenu(cmd, executable, uninstall, show, dryRun, yes)
+			if withContextMenu && noContextMenu {
+				return errors.New("--context-menu conflicts with --no-context-menu")
+			}
+			if withSkill && noSkill {
+				return errors.New("--skill conflicts with --no-skill")
 			}
 			var selected []string
 			for _, agent := range agents {
@@ -62,7 +65,8 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 				_, err := fmt.Fprint(cmd.OutOrStdout(), coverageMarkdown(selected))
 				return err
 			}
-			scope := integrate.Scope{Global: global, GuardRM: guardRM, MCP: withMCP, Skill: withSkill}
+			planner.SkipSkill = noSkill
+			scope := integrate.Scope{Global: global, GuardRM: guardRM, MCP: withMCP, Skill: !noSkill}
 			if !global {
 				p, err := rulescmd.CurrentProject()
 				if err != nil {
@@ -104,7 +108,7 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 						return err
 					}
 				}
-				return nil
+				return showDesktop(cmd.OutOrStdout(), executable)
 			}
 			changes, err := planner.IntegrationPlans(selected, scope, uninstall)
 			if err != nil {
@@ -116,11 +120,15 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 					return err
 				}
 			}
+			desktop, err := planDesktop(cmd.OutOrStdout(), executable, uninstall, noContextMenu, noShortcuts)
+			if err != nil {
+				return err
+			}
 			startup, err := planStartup(executable, !uninstall)
 			if err != nil {
 				return err
 			}
-			if !integrate.Pending(changes) && (startup == nil || !startup.Pending()) {
+			if !integrate.Pending(changes) && (startup == nil || !startup.Pending()) && !desktop.pending() {
 				if uninstall {
 					fmt.Println("nothing to remove")
 				} else {
@@ -144,17 +152,19 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 			// Manual changes only carry instructions. Keep real preserve conflicts
 			// in Apply so ownership failures retain its normal nonzero result.
 			automatic := slices.DeleteFunc(slices.Clone(changes), func(c integrate.Change) bool { return c.Manual })
-			if err := applyIntegrationPlan(automatic, uninstall); err != nil {
-				_ = incompleteIntegration(changes)
-				return err
+			applyErr := errors.Join(applyIntegrationPlan(automatic, uninstall), incompleteIntegration(changes))
+			if applyErr != nil && !uninstall {
+				return applyErr
 			}
-			if err := incompleteIntegration(changes); err != nil {
-				return err
+			applyErr = errors.Join(applyErr, desktop.apply(cmd.OutOrStdout()))
+			if applyErr != nil && !uninstall {
+				return applyErr
 			}
 			if startup != nil {
-				if err := startup.Apply(); err != nil {
-					return err
-				}
+				applyErr = errors.Join(applyErr, startup.Apply())
+			}
+			if applyErr != nil {
+				return applyErr
 			}
 			for _, agent := range selected {
 				switch {
@@ -178,8 +188,11 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 	cmd.Flags().BoolVar(&yes, "yes", false, "apply without asking")
 	cmd.Flags().BoolVar(&guardRM, "guard-rm", false, "deny supported deletion commands with restorable obit alternatives")
 	cmd.Flags().BoolVar(&withMCP, "mcp", false, "register the Obituary MCP stdio server")
-	cmd.Flags().BoolVar(&withSkill, "skill", false, "install the Obituary Agent Skill")
-	cmd.Flags().BoolVar(&withContextMenu, "context-menu", false, "install classic Explorer context menus for the current user")
+	cmd.Flags().BoolVar(&withSkill, "skill", false, "install the Obituary Agent Skill (enabled by default)")
+	cmd.Flags().BoolVar(&noSkill, "no-skill", false, "skip installing the Obituary Agent Skill")
+	cmd.Flags().BoolVar(&withContextMenu, "context-menu", false, "install classic Explorer context menus (enabled by default)")
+	cmd.Flags().BoolVar(&noContextMenu, "no-context-menu", false, "skip Explorer context menus")
+	cmd.Flags().BoolVar(&noShortcuts, "no-shortcuts", false, "skip Start menu and desktop shortcuts")
 	return cmd
 }
 
@@ -206,6 +219,9 @@ func printChanges(changes []integrate.Change) {
 		detail := ""
 		if c.Detail != "" {
 			detail = "  (" + c.Detail + ")"
+		}
+		if c.Extension == "skill" && strings.HasSuffix(c.Path, "SKILL.md") {
+			fmt.Printf("  Agent Skill → %s\n", c.Path)
 		}
 		fmt.Printf("  %-9s %s%s\n", c.Action, c.Path, detail)
 		for _, args := range c.Commands {

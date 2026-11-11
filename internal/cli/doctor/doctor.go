@@ -127,7 +127,8 @@ func diagnose(now time.Time, executable cmdutil.Executable, agents ...string) []
 	}
 	check("obitd", "companion executable exists: "+daemon, daemonErr)
 	checks = append(checks, diagnoseGUI(daemon, daemonErr, binaryVersion), diagnoseRegistryTransactions(regtxnProbe))
-	checks = append(checks, diagnoseShortcut(self, shortcutTarget))
+	checks = append(checks, diagnoseShortcut(self, shortcutTarget), diagnoseDesktop(self, shortcutTarget))
+	checks = append(checks, diagnoseIcons()...)
 	home, homeErr := userdirs.Data()
 	if homeErr != nil {
 		checks = append(checks, DoctorCheck{Name: "update", Status: "INFO", Detail: homeErr.Error()})

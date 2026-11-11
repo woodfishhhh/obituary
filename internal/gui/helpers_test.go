@@ -12,6 +12,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/auto"
+	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/contextmenu"
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/testenv"
@@ -76,9 +77,12 @@ func fixture(t *testing.T) (*API, string) {
 	svc.Recheck = engine.RecheckRules
 	d := Dependencies{Service: svc, Engine: engine, ConfigDir: filepath.Join(root, "config"),
 		Executable: filepath.Join(root, "obit.exe"), Daemon: filepath.Join(root, "obitd.exe"),
-		ContextMenu: &fakeMenu{trees: map[string]contextmenu.Tree{}}, RunKey: testenv.NewRunRegistry()}
+		ContextMenu: &fakeMenu{trees: map[string]contextmenu.Tree{}}, RunKey: testenv.NewRunRegistry(), Shortcuts: clitest.ShortcutCodec{}}
 	write(t, d.Executable, "fixture")
 	write(t, d.Daemon, "fixture")
+	write(t, filepath.Join(root, "obit-gui.exe"), "fixture")
+	t.Setenv("OBIT_USER_HOME", filepath.Join(root, "user"))
+	t.Setenv("OBIT_START_MENU_DIR", filepath.Join(root, "programs"))
 	a, err := New(d)
 	if err != nil {
 		t.Fatal(err)

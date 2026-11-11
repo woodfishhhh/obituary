@@ -4,26 +4,26 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
-	"github.com/go-ole/go-ole"
-	"github.com/go-ole/go-ole/oleutil"
-	"github.com/woodfishhhh/obituary/internal/userdirs"
+	"github.com/woodfishhhh/obituary/internal/config"
+	"github.com/woodfishhhh/obituary/internal/shortcut"
 )
 
 func diagnoseShortcut(executable string, target func(string) (string, error)) DoctorCheck {
-	c := DoctorCheck{Name: "start-menu", Status: "WARN"}
-	programs, err := userdirs.Programs()
+	return diagnoseShortcutAt(executable, shortcut.StartMenu, target)
+}
+
+func diagnoseDesktop(executable string, target func(string) (string, error)) DoctorCheck {
+	return diagnoseShortcutAt(executable, shortcut.Desktop, target)
+}
+
+func diagnoseShortcutAt(executable string, place shortcut.Location, target func(string) (string, error)) DoctorCheck {
+	c := DoctorCheck{Name: string(place), Status: "WARN"}
+	paths, err := shortcut.Paths(place)
 	if err != nil {
 		c.Status, c.Detail = "FAIL", err.Error()
 		return c
-	}
-	// install.ps1 uses the bilingual name; Scoop creates an ASCII one
-	// because its shortcut code cannot save names outside the ANSI code page.
-	var paths []string
-	for _, directory := range []string{programs, filepath.Join(programs, "Scoop Apps")} {
-		paths = append(paths, filepath.Join(directory, "讣告 Obituary.lnk"), filepath.Join(directory, "Obituary.lnk"))
 	}
 	for _, path := range paths {
 		got, err := target(path)
@@ -34,68 +34,34 @@ func diagnoseShortcut(executable string, target func(string) (string, error)) Do
 			c.Status, c.Detail = "FAIL", err.Error()
 			return c
 		}
-		want := filepath.Join(filepath.Dir(executable), "obit-gui.exe")
-		if !strings.EqualFold(filepath.Clean(got), filepath.Clean(want)) {
-			c.Detail = "Start menu shortcut targets a different installation: " + got
-			return c
+		if !strings.EqualFold(filepath.Clean(got), filepath.Clean(shortcut.Target(executable))) {
+			c.Detail = "Shortcut targets a different installation: " + got
+			continue
 		}
 		c.Status, c.Detail = "PASS", path+" -> "+got
 		return c
 	}
-	c.Detail = "Start menu shortcut is absent; the PowerShell installer and Scoop create it on amd64"
+	if c.Detail == "" {
+		c.Detail = "Shortcut is absent; obit init creates it; Settings can turn it off"
+	}
 	return c
 }
 
-// Reuse the installed go-ole wrapper for Windows' standard WScript.Shell API;
-// no custom Shell Link binary parser and no GUI process are needed.
-func shortcutTarget(path string) (string, error) {
-	data, err := os.ReadFile(path)
+func shortcutTarget(path string) (string, error) { return shortcut.ReadTarget(path) }
+
+func diagnoseIcons() []DoctorCheck {
+	cfg, err := config.Load()
+	checks := []DoctorCheck{{Name: "tray-icon", Status: "PASS", Detail: "visible"}, {Name: "taskbar", Status: "PASS", Detail: "visible"}}
+	if !cfg.UI.Tray {
+		checks[0].Detail = "hidden; resident cleanup and update checks continue"
+	}
+	if !cfg.UI.Taskbar {
+		checks[1].Detail = "hidden; shortcuts can still open the management window"
+	}
 	if err != nil {
-		return "", err
+		for i := range checks {
+			checks[i].Status, checks[i].Detail = "FAIL", err.Error()
+		}
 	}
-	// WScript.Shell cannot load a .lnk whose name has characters outside the
-	// system ANSI code page (the Chinese name on English Windows); read an
-	// ASCII-named private copy instead.
-	copyFile, err := os.CreateTemp("", "obit-shortcut-*.lnk")
-	if err != nil {
-		return "", err
-	}
-	defer os.Remove(copyFile.Name())
-	if _, err := copyFile.Write(data); err != nil {
-		copyFile.Close()
-		return "", err
-	}
-	if err := copyFile.Close(); err != nil {
-		return "", err
-	}
-	path = copyFile.Name()
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
-	err = ole.CoInitializeEx(0, ole.COINIT_APARTMENTTHREADED)
-	var hresult *ole.OleError
-	if err != nil && (!errors.As(err, &hresult) || hresult.Code() != 1) {
-		return "", err
-	}
-	defer ole.CoUninitialize()
-	object, err := oleutil.CreateObject("WScript.Shell")
-	if err != nil {
-		return "", err
-	}
-	defer object.Release()
-	shell, err := object.QueryInterface(ole.IID_IDispatch)
-	if err != nil {
-		return "", err
-	}
-	defer shell.Release()
-	link, err := oleutil.CallMethod(shell, "CreateShortcut", path)
-	if err != nil {
-		return "", err
-	}
-	defer link.Clear()
-	value, err := oleutil.GetProperty(link.ToIDispatch(), "TargetPath")
-	if err != nil {
-		return "", err
-	}
-	defer value.Clear()
-	return value.ToString(), nil
+	return checks
 }

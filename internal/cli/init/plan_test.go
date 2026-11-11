@@ -239,7 +239,6 @@ func TestInitUnsupportedFlagsAndConflictsAreReadOnly(t *testing.T) {
 	for _, args := range [][]string{
 		{"--agent", "unknown"}, {"--agent="},
 		{"--agent", "claude,roo", "--guard-rm"},
-		{"--agent", "pi", "--skill"},
 		{"--agent", "trae,trae-cn"},
 	} {
 		beforeRoot, beforeRepo := clitest.TreeSnapshot(t, root), clitest.TreeSnapshot(t, repo)

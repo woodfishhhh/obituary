@@ -1,6 +1,15 @@
 package i18n
 
 var chinese = map[Key]string{
+	TrayIcon:            "托盘图标",
+	TaskbarIcon:         "小窗口在任务栏里的图标",
+	StartMenuShortcut:   "开始菜单：讣告 Obituary",
+	DesktopShortcut:     "桌面：讣告 Obituary",
+	Enabled:             "已开启",
+	Disabled:            "已关闭",
+	IconLive:            "（一秒内生效，后台处理继续运行）",
+	IconNextWindow:      "（下次打开小窗口生效）",
+	ShortcutPreserved:   "快捷方式属于其他安装器或已被修改，已保留",
 	AppName:             "讣告 Obituary",
 	OpenGUI:             "打开讣告",
 	UpdateAvailable:     "发现新版本 %s",

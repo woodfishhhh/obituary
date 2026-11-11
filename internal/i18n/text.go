@@ -41,6 +41,15 @@ const (
 	MenuSubmenu
 	MenuNotifyName
 	MenuProgramMoved
+	TrayIcon
+	TaskbarIcon
+	StartMenuShortcut
+	DesktopShortcut
+	Enabled
+	Disabled
+	IconLive
+	IconNextWindow
+	ShortcutPreserved
 	keyCount
 )
 

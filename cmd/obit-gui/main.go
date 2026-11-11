@@ -17,8 +17,10 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	windowsoptions "github.com/wailsapp/wails/v2/pkg/options/windows"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"github.com/woodfishhhh/obituary/internal/config"
+	"github.com/woodfishhhh/obituary/internal/desktop"
 	"github.com/woodfishhhh/obituary/internal/gui"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 )
@@ -75,7 +77,18 @@ func windowOptions(api *gui.API, width, height int) *options.App {
 		}
 		return runtime.OpenDirectoryDialog(ctx, runtime.OpenDialogOptions{})
 	})
+	gui.SetTaskbarSetter(api, desktop.SetTaskbar)
 	return &options.App{
+		Windows: &windowsoptions.Options{WindowClassName: desktop.WindowClass},
+		OnDomReady: func(ctx context.Context) {
+			cfg, err := config.Load()
+			if err == nil {
+				err = desktop.SetTaskbar(cfg.UI.Taskbar)
+			}
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+			}
+		},
 		Title: config.UILanguage().Text(i18n.AppName), Width: width, Height: height, MinWidth: 600, MinHeight: 400,
 		AssetServer: &assetserver.Options{Assets: assets}, Bind: []interface{}{api},
 		HideWindowOnClose: false,

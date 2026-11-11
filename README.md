@@ -64,7 +64,7 @@
 - **agent 删掉的东西都能复活**：开启删除护栏后，agent 的 `rm -rf`、`git clean` 这类删除命令会被拦下，讣告告诉它一条等价的 `obit` 命令；改用之后，东西进墓地而不是消失。
 - **先下葬，再火化**：墓地默认保留 7 天，期间随时 `obit resurrect` 放回原处，绝不覆盖已有文件。
 - **认文件，不认文件名**：每条记录都存着卷序列号和 128 位文件 ID，文件改名或移动了照样找得到；原路径上换成了别的文件，就不碰它。
-- **接入 Claude Code 和 Codex**：`obit init` 注册 hook，MCP 服务和 Agent Skill 可选；`--uninstall` 只删讣告加的东西。
+- **接入 Claude Code 和 Codex**：`obit init` 注册 hook 和 Agent Skill，MCP 服务可选；`--uninstall` 只删讣告加的东西。
 - **托盘常驻，像 Everything**：`obit init` 让托盘图标随登录启动，菜单里能看最近下葬的、点一下复活、暂停自动清理、打开讣告的小窗口；Windows 任务计划留作兜底。
 - **一个小窗口**：即将下葬、即将火化（墓地）、待你决定、设置、日志五页，不会用命令行也能复活文件、批准提议、改设置（`obit-gui.exe`，托盘菜单「打开讣告」）。
 - **右键菜单和资源管理器里的日期**：在资源管理器里右键给文件设寿命；下载、桌面里被跟踪的东西显示成「名字（11-13 下葬）」，真实文件名不变。
@@ -118,7 +118,7 @@ obit log                                    # 生平记录：做过的所有事
 
 ```powershell
 obit init                                   # 装 Claude Code 的 hook，并让托盘随登录启动
-obit init --context-menu --yes              # 资源管理器右键菜单（经典菜单，Win11 在「显示更多选项」里；--dry-run 列出每一项菜单名和命令）
+obit init --context-menu --yes              # 兼容写法，右键菜单默认安装（经典菜单，Win11 在「显示更多选项」里；--dry-run 列出每一项菜单名和命令）
 obit watch C:\Users\你\Downloads 2w          # 下载文件夹：放进来的每样东西两周后进墓地（生成提议，obit approve 或在「待你决定」里批准后才生效；文件到期、并且安静 10 分钟没被改动后自动下葬，子文件夹到期另出提议）
 obit watch --list                           # 有哪些文件夹策略，各自的豁免和安静期
 obit watch --remove C:\Users\你\Downloads    # 移除策略，它登记过的寿命一起取消
@@ -135,6 +135,8 @@ obit init -g             # 所有项目（~/.claude）；obit init 只装当前�
 obit init -g --show --agent claude  # 装了什么（不加 --agent 先列每家一行的摘要，再给完整明细）
 obit init -g --uninstall # 只删讣告加的东西
 ```
+
+`obit init` 默认安装所选 agent 的 Agent Skill、右键菜单、开始菜单和桌面快捷方式；可用 `--no-skill` / `--no-context-menu` / `--no-shortcuts` 跳过，右键菜单和快捷方式以后也能在设置里关闭。托盘图标和小窗口的任务栏图标也可在设置里切换，隐藏托盘后后台清理仍会运行。
 
 `obit init` 在 `settings.json` 里注册 `obit hook claude`（SessionStart、每次调用工具前、写文件后、Stop、SessionEnd），写一份给 agent 看的 `OBIT.md`，并在 `CLAUDE.md` 里加一行引用：用户级（`-g`）是 `~/.claude/CLAUDE.md` 里的 `@OBIT.md`，项目级是项目根 `CLAUDE.md` 里的 `@.claude/OBIT.md`。
 
@@ -258,7 +260,7 @@ obit init -g --guard-rm                 # Claude Code；Codex 加 --agent codex�
 ## MCP 服务与 Agent Skill
 
 ```powershell
-obit init -g --mcp --skill                 # Claude Code；Codex 加 --agent codex。两项都默认不装
+obit init -g --mcp --skill                 # Claude Code；Codex 加 --agent codex。Skill 默认安装，MCP 按需启用
 obit init -g --show                        # 也会列出 mcp / skill 是否装了、是不是最新
 ```
 
@@ -274,7 +276,7 @@ obit init -g --show                        # 也会列出 mcp / skill 是否装�
   </details>
 
 - **Agent Skill** 是一份 `SKILL.md`，告诉 agent 什么时候给产物设寿命、怎么可复活地删除、哪些事要交给你决定。Claude Code 装到 `~/.claude/skills/obituary/`，Codex 装到 `~/.agents/skills/obituary/`（项目级对应 `.claude/skills/`、`.agents/skills/`）。旁边的 `.obituary-skill` 记着装进去时的哈希：你改过这份文件，讣告就不再覆盖或删除它。
-- 普通的 `obit init -g` 刷新时，已装的 Skill 和 Codex 的 MCP 块会跟着刷新（比如 `obit.exe` 换了位置），没装的不会新装。Claude Code 用户级的 MCP 注册例外：官方命令只能先删再加，不是原子的，所以普通刷新只报告「过期」并给出手动命令，要替换就显式加 `--mcp`。扩展的配置文件坏了也不会挡住 hooks 的安装，只给出警告。
+- 普通的 `obit init -g` 会安装或刷新 Skill（`--no-skill` 跳过）；Codex 的 MCP 块会在已安装时刷新（比如 `obit.exe` 换了位置），没装的 MCP 不会新装。Claude Code 用户级的 MCP 注册例外：官方命令只能先删再加，不是原子的，所以普通刷新只报告「过期」并给出手动命令，要替换就显式加 `--mcp`。扩展的配置文件坏了也不会挡住 hooks 的安装，只给出警告。
 - 安装器只执行 PATH 里绝对目录下的 `claude.exe`（npm 安装的会顺着 `claude.cmd` 找到它背后的 exe），落在当前目录或当前仓库里的一律拒绝，免得在别人的仓库里运行 `obit init` 时执行了仓库里放的程序。判断按文件夹在磁盘上的身份，不按路径写法，所以换个名字（junction、`\\localhost\C$`、短名、硬链接）也绕不过去。手动命令里的参数含双引号时，需要在 PowerShell 7.3 或更新版本里粘贴。
 - `config.toml` 里设了 `mode = "recycle"` 时，下葬进的是系统回收站，MCP 工具的说明会如实写明，`obit resurrect` 也救不回来。
 - 装完重启 agent。`obit doctor` 会检查两项是否装好、指向的 `obit.exe` 是否是当前这个（没装算正常，它们是可选的）；它只说明配置写对了，不代表 agent 已经连上。

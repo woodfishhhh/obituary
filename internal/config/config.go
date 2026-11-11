@@ -78,6 +78,8 @@ type Update struct {
 // UI controls native desktop and window language independently of CLI output.
 type UI struct {
 	Language string `toml:"language"`
+	Tray     bool   `toml:"tray"`
+	Taskbar  bool   `toml:"taskbar"`
 }
 
 // Graveyard controls what happens when a lifespan runs out.
@@ -93,7 +95,7 @@ func (g Graveyard) Retention() time.Duration {
 
 // Default returns the built-in configuration.
 func Default() Config {
-	return Config{Graveyard: Graveyard{Mode: ModeGraveyard, RetentionDays: 7}, Explorer: Explorer{Enabled: true}, Watch: Watch{StableWindow: "10m"}, UI: UI{Language: i18n.Auto}, Update: Update{Check: true}}
+	return Config{Graveyard: Graveyard{Mode: ModeGraveyard, RetentionDays: 7}, Explorer: Explorer{Enabled: true}, Watch: Watch{StableWindow: "10m"}, UI: UI{Language: i18n.Auto, Tray: true, Taskbar: true}, Update: Update{Check: true}}
 }
 
 // Template is what `obit config --create` writes.
@@ -151,6 +153,10 @@ in_git = false
 # Native desktop and window language: "auto", "zh-CN", or "en".
 # auto follows the Windows user interface language.
 language = "auto"
+# Show the tray icon; background cleanup and update checks continue when hidden.
+tray = true
+# Show the management window in the taskbar.
+taskbar = true
 `
 
 // Path is the location of config.toml.

@@ -1,6 +1,15 @@
 package i18n
 
 var english = map[Key]string{
+	TrayIcon:            "Tray icon",
+	TaskbarIcon:         "Management window in the taskbar",
+	StartMenuShortcut:   "Start menu: Obituary",
+	DesktopShortcut:     "Desktop: Obituary",
+	Enabled:             "Enabled",
+	Disabled:            "Disabled",
+	IconLive:            " (takes effect within one second; background work continues)",
+	IconNextWindow:      " (takes effect when the window next opens)",
+	ShortcutPreserved:   "Shortcut belongs to another installer or was edited; preserved",
 	AppName:             "Obituary",
 	OpenGUI:             "Open Obituary",
 	UpdateAvailable:     "New version available: %s",

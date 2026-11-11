@@ -26,7 +26,10 @@ func diagnoseExtension(kind string, current cmdutil.Executable) DoctorCheck {
 			c.Status = "WARN"
 		}
 		if !st.Installed {
-			st.Detail += "; install with obit init -g --agent " + agent + " --" + kind
+			st.Detail += "; install with obit init -g --agent " + agent
+			if kind == "mcp" {
+				st.Detail += " --mcp"
+			}
 		}
 		details = append(details, agent+" global: "+st.Detail)
 	}

@@ -12,6 +12,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/runkey"
+	"github.com/woodfishhhh/obituary/internal/shortcut"
 	"github.com/woodfishhhh/obituary/internal/update"
 )
 
@@ -26,6 +27,7 @@ type Dependencies struct {
 	Now            func() time.Time
 	SystemLanguage func() string
 	UpdateChecker  *update.Checker
+	Shortcuts      shortcut.Codec
 }
 
 type API struct {
@@ -37,6 +39,7 @@ type API struct {
 	plan     *pendingPlan
 	// pickFolder opens the window's folder dialog (SetFolderPicker).
 	pickFolder func() (string, error)
+	setTaskbar func(bool) error
 }
 
 func New(deps Dependencies) (*API, error) {
@@ -51,6 +54,9 @@ func New(deps Dependencies) (*API, error) {
 	}
 	if deps.SystemLanguage == nil {
 		deps.SystemLanguage = i18n.SystemLanguage
+	}
+	if deps.Shortcuts == nil {
+		deps.Shortcuts = shortcut.Native{}
 	}
 	return &API{deps: deps}, nil
 }

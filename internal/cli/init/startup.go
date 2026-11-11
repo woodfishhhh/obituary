@@ -14,6 +14,21 @@ import (
 )
 
 func planStartup(self cmdutil.Executable, enabled bool) (*app.AutostartPlan, error) {
+	plan, err := readStartupPlan(self, enabled)
+	if err != nil || plan == nil {
+		return plan, err
+	}
+	if plan.Pending() {
+		action := "set"
+		if !enabled {
+			action = "remove"
+		}
+		fmt.Printf("  %-9s HKCU Run %s %s\n", action, plan.Name, plan.After)
+	}
+	return plan, nil
+}
+
+func readStartupPlan(self cmdutil.Executable, enabled bool) (*app.AutostartPlan, error) {
 	if runtime.GOOS != "windows" {
 		return nil, nil
 	}
@@ -36,16 +51,5 @@ func planStartup(self cmdutil.Executable, enabled bool) (*app.AutostartPlan, err
 	if err != nil {
 		return nil, err
 	}
-	plan, err := app.PlanAutostart(runkey.Current, daemon, home, config, enabled)
-	if err != nil {
-		return nil, err
-	}
-	if plan.Pending() {
-		action := "set"
-		if !enabled {
-			action = "remove"
-		}
-		fmt.Printf("  %-9s HKCU Run %s %s\n", action, plan.Name, plan.After)
-	}
-	return plan, nil
+	return app.PlanAutostart(runkey.Current, daemon, home, config, enabled)
 }

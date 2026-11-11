@@ -7,6 +7,14 @@ import (
 	"time"
 )
 
+func TestUIIconDefaultsInTemplate(t *testing.T) {
+	for _, key := range []string{"tray = true", "taskbar = true"} {
+		if !strings.Contains(Template, key) {
+			t.Errorf("missing UI default %s", key)
+		}
+	}
+}
+
 func TestUpdateCheckConfig(t *testing.T) {
 	for _, text := range []string{"", Template, "[update]\ncheck=true\n"} {
 		cfg, err := Parse([]byte(text), "fixture.toml")
@@ -126,5 +134,23 @@ func TestCodexWindowsShellConfig(t *testing.T) {
 	cfg, err := Parse([]byte(Template), "template.toml")
 	if err != nil || cfg.CodexWindowsShell != "" || len(cfg.AgentShells) != 0 {
 		t.Fatalf("default must stay unset: %+v %v", cfg, err)
+	}
+}
+
+func TestUIIconConfigDefaultsAndSwitches(t *testing.T) {
+	for _, input := range []string{"", Template, "[ui]\n"} {
+		cfg, err := Parse([]byte(input), "fixture")
+		if err != nil || !cfg.UI.Tray || !cfg.UI.Taskbar {
+			t.Fatal(cfg.UI, err)
+		}
+	}
+	cfg, err := Parse([]byte("[ui]\ntray=false\ntaskbar=false\n"), "fixture")
+	if err != nil || cfg.UI.Tray || cfg.UI.Taskbar {
+		t.Fatal(cfg.UI, err)
+	}
+	for _, key := range []string{"tray", "taskbar"} {
+		if _, err := Parse([]byte("[ui]\n"+key+"='false'"), "fixture"); err == nil {
+			t.Fatal("accepted nonboolean", key)
+		}
 	}
 }

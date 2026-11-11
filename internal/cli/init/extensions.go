@@ -25,6 +25,9 @@ func ApplyUninstall(changes []integrate.Change) error {
 func (p Planner) planExtensions(changes []integrate.Change, scope integrate.Scope, agent string, uninstall bool) ([]integrate.Change, error) {
 	installer, _ := integrate.LookupAgent(agent)
 	for _, kind := range []string{"mcp", "skill"} {
+		if kind == "skill" && p.SkipSkill && !uninstall {
+			continue
+		}
 		explicit := kind == "mcp" && scope.MCP || kind == "skill" && scope.Skill
 		if !explicit && !uninstall && !scope.Global {
 			continue
@@ -34,6 +37,10 @@ func (p Planner) planExtensions(changes []integrate.Change, scope integrate.Scop
 			support, available = installer.Capabilities.Skill, installer.PlanSkill != nil
 		}
 		if !available || support.Level == hook.Unsupported {
+			if kind == "skill" && explicit {
+				changes = append(changes, integrate.Change{Path: agent + " skill", Action: "unchanged", Manual: true, Implicit: true, Detail: "跳过：这个 agent 没有 skill 目录"})
+				continue
+			}
 			if explicit {
 				return nil, fmt.Errorf("%s --%s is unsupported: %s", agent, kind, support.Detail)
 			}
@@ -146,6 +153,12 @@ func (p Planner) showExtensions(scope integrate.Scope, agent string) error {
 		return err
 	}
 	for _, kind := range []string{"mcp", "skill"} {
+		if kind == "skill" {
+			installer, _ := integrate.LookupAgent(agent)
+			if installer.PlanSkill == nil {
+				continue
+			}
+		}
 		status, err := integrate.InspectExtension(scope, agent, kind, executable)
 		if err != nil {
 			fmt.Printf("%s: %v\n", kind, err)

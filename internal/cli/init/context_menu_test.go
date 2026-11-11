@@ -14,10 +14,10 @@ import (
 	initcmd "github.com/woodfishhhh/obituary/internal/cli/init"
 	"github.com/woodfishhhh/obituary/internal/config"
 	"github.com/woodfishhhh/obituary/internal/contextmenu"
-	"github.com/woodfishhhh/obituary/internal/testenv"
 )
 
 func TestContextMenuPreviewDescribesChanges(t *testing.T) {
+	clitest.CommandDir(t)
 	// Pin the label language: CI runners use an English Windows UI.
 	cfgPath, err := config.Path()
 	if err != nil {
@@ -30,7 +30,7 @@ func TestContextMenuPreviewDescribesChanges(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = os.Remove(cfgPath) })
-	reg := contextmenu.WindowsRegistry{Root: testenv.ClassesKey(t)}
+	reg := clitest.NewMenuRegistry()
 	old := initcmd.ContextMenuRegistry
 	initcmd.ContextMenuRegistry = func() contextmenu.Registry { return reg }
 	t.Cleanup(func() { initcmd.ContextMenuRegistry = old })
@@ -77,56 +77,16 @@ func TestContextMenuPreviewDescribesChanges(t *testing.T) {
 	assertPreview("remove", "--uninstall")
 }
 
-func TestInitContextMenuWithoutAgentOrProject(t *testing.T) {
-	reg := contextmenu.WindowsRegistry{Root: testenv.ClassesKey(t)}
-	oldReg := initcmd.ContextMenuRegistry
-	t.Cleanup(func() { initcmd.ContextMenuRegistry = oldReg })
-	initcmd.ContextMenuRegistry = func() contextmenu.Registry { return reg }
-	dir := t.TempDir()
-	t.Chdir(dir)
-	exe := filepath.Join(dir, "obit.exe")
-	executable := cmdutil.Executable(func() (string, error) { return exe, nil })
-	clitest.WriteFixture(t, filepath.Join(dir, "obitd.exe"), "companion")
-	for _, args := range [][]string{{"--context-menu", "--show"}, {"--context-menu", "--dry-run"}} {
-		if _, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), args...); err != nil {
-			t.Fatal(err)
-		}
-		if st, err := contextmenu.Inspect(reg, exe); err != nil || st.Installed {
-			t.Fatal(st, err)
+func TestInitContextMenuCompatibilityFlag(t *testing.T) {
+	clitest.CommandDir(t)
+	_, executable := clitest.DoctorFixture(t)
+	for _, args := range [][]string{{"--dry-run"}, {"--context-menu", "--dry-run"}, {"--context-menu", "--agent=codex", "--dry-run"}} {
+		out, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), args...)
+		if err != nil || !strings.Contains(out, "context-menu:") {
+			t.Fatal(out, err)
 		}
 	}
-	if out, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "--context-menu", "--yes"); err != nil || !strings.Contains(out, "显示更多选项") {
-		t.Fatal(out, err)
-	}
-	if st, err := contextmenu.Inspect(reg, exe); err != nil || !st.Current {
-		t.Fatal(st, err)
-	}
-	if out, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "--context-menu", "--show"); err != nil || !strings.Contains(out, exe) {
-		t.Fatal(out, err)
-	}
-	for _, file := range []string{".claude", ".codex", "AGENTS.md", "OBIT.md"} {
-		if _, err := os.Stat(filepath.Join(dir, file)); !os.IsNotExist(err) {
-			t.Fatal("created agent integration", file, err)
-		}
-	}
-	if err := os.Remove(filepath.Join(dir, "obitd.exe")); err != nil {
-		t.Fatal(err)
-	}
-	if _, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "--context-menu", "--uninstall", "--yes"); err != nil {
-		t.Fatal(err)
-	}
-	if st, err := contextmenu.Inspect(reg, exe); err != nil || st.Installed {
-		t.Fatal(st, err)
-	}
-	if _, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "--context-menu", "--yes"); err == nil || !strings.Contains(err.Error(), "companion") {
-		t.Fatal("installed without companion", err)
-	}
-}
-
-func TestInitContextMenuRejectsMixedAgentFlags(t *testing.T) {
-	for _, flag := range []string{"--agent=codex", "--mcp", "--skill", "--guard-rm"} {
-		if _, _, err := clitest.Execute(t, initcmd.NewCmd(), "--context-menu", flag, "--yes"); err == nil {
-			t.Fatal("accepted", flag)
-		}
+	if _, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "--context-menu", "--no-context-menu", "--dry-run"); err == nil {
+		t.Fatal("accepted conflicting flags")
 	}
 }

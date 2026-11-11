@@ -137,8 +137,9 @@ func isolate(scratch string) error {
 	}
 	for name, sub := range map[string]string{
 		"OBIT_HOME": "data", "OBIT_CONFIG_DIR": "config", "OBIT_USER_HOME": "home",
-		"LOCALAPPDATA":      "localappdata",
-		"CLAUDE_CONFIG_DIR": "claude", "CODEX_HOME": "codex",
+		"LOCALAPPDATA":        "localappdata",
+		"OBIT_START_MENU_DIR": "programs",
+		"CLAUDE_CONFIG_DIR":   "claude", "CODEX_HOME": "codex",
 		"QODER_CONFIG_DIR": "qoder", "QODERCN_CONFIG_DIR": "qoder-cn",
 		"VIBE_HOME": "vibe", "KIMI_SHARE_DIR": "kimi",
 		"DSH_HOME":     "deepseek",

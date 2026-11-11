@@ -308,6 +308,7 @@ func (p Planner) showAgents(scope integrate.Scope, names []string, summary bool)
 	}
 	for i, name := range names {
 		fmt.Printf("%s: %s\n  %s\n", name, statuses[i].Detail, CapabilityText(statuses[i].Capabilities))
+		p.printSkillTarget(scope, name)
 	}
 	return firstErr
 }
