@@ -109,6 +109,8 @@ obit log                                    # 生平记录：做过的所有事
 - [安装文档](docs/install.md)：自己装、更新和卸载
 - [agent 覆盖表](docs/agents.md)：30 家 agent 各自接到哪一步
 - [文档索引](docs/README.md)：全部文档，包括架构和代码约定
+- [代码签名政策](https://obituary.woodfish.site/docs/code-signing)：Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/)
+- [隐私政策](https://obituary.woodfish.site/docs/privacy)：讣告联网只做一件事，每天最多一次检查新版本，可以关掉
 
 ## 一起做讣告
 

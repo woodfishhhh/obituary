@@ -36,6 +36,7 @@ irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/instal
 :::
 
 - All three download the same archive from the GitHub release and check its SHA-256 before unpacking; a mismatch stops the install.
+- Code signing: Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/). See the [code signing policy](code-signing) and the [privacy policy](privacy).
 - 1.0.0 is not code-signed yet. If you download the archive with a browser, Windows may show "Windows protected your PC"; choose "More info → Run anyway". Scoop, winget and the install script usually do not trigger this.
 - The small window `obit-gui.exe` needs the WebView2 runtime (built into Windows 11 and present on most Windows 10 machines) and is x64 only; the ARM64 build has the command line and the tray.
 Then check the installation:

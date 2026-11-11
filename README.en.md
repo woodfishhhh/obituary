@@ -109,6 +109,8 @@ Background running, connecting each agent, the delete guard, MCP and the Skill a
 - [Install guide](docs/install.en.md): installing by hand, updating and uninstalling
 - [Agent coverage](docs/agents.md): how far each of the 30 agents connects
 - [Docs index](docs/README.md): every document, including the architecture and code conventions
+- [Code signing policy](https://obituary.woodfish.site/docs/en/code-signing): Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/)
+- [Privacy policy](https://obituary.woodfish.site/docs/en/privacy): Obituary does one thing on the network, a daily check for a new version that you can turn off
 
 ## Build Obituary with us
 
