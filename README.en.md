@@ -73,9 +73,7 @@ Agents pushed us into writing it. As soon as version 0.0.1 ran we installed it o
 
 ## Install
 
-Windows 10 / 11 (x64 and ARM64).
-
-**Easiest: let your agent do it.** Send this sentence to the agent you use (Claude Code, Codex, Cursor…). It installs Obituary, connects it to itself and stops wherever a decision is yours:
+Windows 10 / 11 (x64 and ARM64). Send this sentence to the agent you use. It installs Obituary, connects it to itself and stops wherever a decision is yours:
 
 ```text
 Read https://obituary.woodfish.site/agent-install.md and follow it to install Obituary and connect it to yourself.
@@ -91,47 +89,7 @@ All of these connect; the small name under each card is what goes after `obit in
   </picture>
 </p>
 
-**By hand:** pick one of the three, then run `obit doctor` to check the installation.
-
-```powershell
-# Scoop
-scoop bucket add obituary https://github.com/woodfishhhh/scoop-bucket
-scoop install obituary
-
-# winget
-winget install woodfishhhh.Obituary
-
-# Install script: download it, read it, then run it
-# (installs to %LOCALAPPDATA%\Programs\obituary, adds it to your user PATH, creates a Start menu shortcut)
-irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1
-.\install.ps1 -Version 1.0.0          # -WhatIf previews, -NoPath leaves PATH alone
-```
-
-- All three download the same archive from the GitHub release and check its SHA-256 before unpacking; a mismatch stops the install.
-- 1.0.0 is not code-signed yet. If you download the archive with a browser, Windows may show "Windows protected your PC"; choose "More info → Run anyway". Scoop, winget and the install script usually do not trigger this.
-- The small window `obit-gui.exe` needs the WebView2 runtime (built into Windows 11 and present on most Windows 10 machines) and is x64 only; the ARM64 build has the command line and the tray.
-- To build from source, see [Build](#build).
-
-### Updates
-
-When GitHub is unreachable in mainland China, update checks and downloads fall back to the mainland China mirror.
-
-Once a day at most, Obituary asks GitHub whether a new stable release is out. It reads public release information only and sends no usage data. When there is one, the tray menu and the small window say so, and Settings > About and updates shows the command for the way you installed it:
-
-- Scoop: `scoop update obituary`
-- winget: `winget upgrade woodfishhhh.Obituary`
-- Install script: run the install command again
-
-Obituary only checks and tells you; it never downloads or replaces files itself. In a terminal, `obit update` shows your version and the update command, and `obit update --check` checks right away.
-
-To keep it offline, turn off "Check for updates automatically" in Settings, or put this in `config.toml`:
-
-```toml
-[update]
-check = false
-```
-
-You can still check by hand.
+Installing by hand, updating and uninstalling: see the [install guide](docs/install.en.md).
 
 ## Quick start
 
@@ -385,16 +343,6 @@ retention_days = 7      # days the graveyard keeps things
 ```
 
 `OBIT_HOME` (data), `OBIT_CONFIG_DIR` (configuration) and `OBIT_USER_HOME` (user home) move these locations; when looking for Claude Code and Codex configuration, `obit init` also honours `CLAUDE_CONFIG_DIR` and `CODEX_HOME`. The tests use these variables for isolation.
-
-## Uninstall
-
-```powershell
-obit uninstall --dry-run      # see what would be removed
-obit uninstall                # remove everything Obituary set up, after you confirm
-.\install.ps1 -Uninstall      # if you used the install script: also remove the program files, PATH entry and Start menu shortcut
-```
-
-`obit uninstall` removes the user-level and current Git project's agent hooks, MCP and Skill, login start, the scheduled task, the running daemon, the context menu, Explorer date labels and folder policies, and only what Obituary itself added. The graveyard and ledger are kept by default and you are told how much is in the graveyard and where; if you really want them gone, add `--purge-data`, which lists the graveyard first and asks once more. If you installed project-level hooks in other projects too, run `obit uninstall` in each of them before removing the program; otherwise their hooks break when `obit` is gone. For Scoop or winget installs, run `obit uninstall` first and then their own uninstall command.
 
 ## Build
 

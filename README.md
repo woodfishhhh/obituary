@@ -73,9 +73,7 @@
 
 ## 安装
 
-目前只支持 Windows 10 / 11（x64 和 ARM64）。
-
-**最省事：让 agent 帮你装。** 把这句话发给你正在用的 agent（Claude Code、Codex、Cursor……都行），它会装好讣告、接到自己身上，要你拍板的地方会停下来问你：
+支持 Windows 10 / 11（x64 和 ARM64）。把这句话发给你正在用的 agent，它会装好讣告、接到自己身上，要你拍板的地方会停下来问你：
 
 ```text
 读 https://obituary.woodfish.site/agent-install.md ，照里面的步骤帮我安装讣告并接入你自己。
@@ -91,46 +89,7 @@
   </picture>
 </p>
 
-**自己装**：下面三种方式任选其一，装好后执行 `obit doctor` 体检。
-
-```powershell
-# Scoop
-scoop bucket add obituary https://github.com/woodfishhhh/scoop-bucket
-scoop install obituary
-
-# winget
-winget install woodfishhhh.Obituary
-
-# 安装脚本：先下载、看一眼，再运行（装到 %LOCALAPPDATA%\Programs\obituary，加进用户 PATH，建开始菜单快捷方式）
-irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1
-.\install.ps1 -Version 1.0.0          # -WhatIf 只预览，-NoPath 不改 PATH
-```
-
-- 三种方式下载的都是 GitHub Release 里的同一个压缩包，安装前都会核对 SHA-256，对不上就不解压。
-- 1.0.0 还没有代码签名。用浏览器手动下载压缩包时，Windows 可能弹出「Windows 已保护你的电脑」，点「更多信息 → 仍要运行」即可；Scoop、winget 和安装脚本一般不会遇到。
-- 小窗口 `obit-gui.exe` 需要 WebView2 运行时（Windows 11 自带，Windows 10 多数已经装好），目前只有 x64 版；ARM64 版只有命令行和后台托盘。
-- 想从源码构建见[构建](#构建)。
-
-### 更新
-
-国内连不上 GitHub 时，会改从国内镜像检查和下载。
-
-讣告每天最多联网一次，看 GitHub 上有没有新的正式版。它只读公开的版本信息，不发送任何使用数据。有新版时托盘菜单和小窗口会告诉你，设置页的「关于与更新」里给出升级命令，按你的安装方式来：
-
-- Scoop：`scoop update obituary`
-- winget：`winget upgrade woodfishhhh.Obituary`
-- 安装脚本：重新运行安装命令
-
-讣告只检查和提醒，不会自己下载或替换文件。终端里用 `obit update` 看当前版本和升级命令，`obit update --check` 马上检查一次。
-
-不想让它联网：在设置页关掉「自动检查更新」，或在 `config.toml` 里写：
-
-```toml
-[update]
-check = false
-```
-
-关掉后仍然可以手动检查。
+自己装、更新和卸载见[安装文档](docs/install.md)。
 
 ## 快速上手
 
@@ -381,16 +340,6 @@ retention_days = 7      # 墓地保留天数
 ```
 
 可以用环境变量 `OBIT_HOME`（数据目录）、`OBIT_CONFIG_DIR`（配置目录）、`OBIT_USER_HOME`（用户主目录）换位置；`obit init` 找 Claude Code 和 Codex 的配置时，也认它们自己的 `CLAUDE_CONFIG_DIR` 和 `CODEX_HOME`。测试就是靠这几个变量隔离的。
-
-## 卸载
-
-```powershell
-obit uninstall --dry-run      # 先看会撤掉什么
-obit uninstall                # 撤掉讣告装过的所有东西，确认后执行
-.\install.ps1 -Uninstall      # 用安装脚本装的：再删掉程序文件、PATH 和开始菜单快捷方式
-```
-
-`obit uninstall` 撤掉用户级和当前 Git 项目里各家 agent 的 hook、MCP 和 Skill，登录自启、定时任务、常驻进程、右键菜单、资源管理器里的日期标签和文件夹策略，只撤讣告自己加的东西。墓地和账本默认保留，并告诉你墓地里还有多少东西、在哪；确实不要了再加 `--purge-data`，它会先列出墓地里的东西并再确认一次。在别的项目里也装过项目级 hook 的，先到那些项目里各执行一次 `obit uninstall`，再删程序，否则那些项目里的 hook 会因为找不到 `obit` 而失效。Scoop、winget 装的，先执行 `obit uninstall`，再用各自的卸载命令。
 
 ## 构建
 

@@ -12,6 +12,7 @@
 |---|---|---|
 | [README](../README.md) | 用法：常用命令、接入 Claude Code 和 Codex、删除护栏、MCP 服务与 Agent Skill、自动登记、安全设计、后台运行、构建 | 用讣告的人 |
 | [architecture.md](architecture.md) | 架构：东西怎么流动，每个决定在哪里做出，哪些约定不能破。包括威胁模型、关卡、各条流程、`core.FS` 契约、数据布局、运行器和测试 | 要改代码的人和 agent |
+| [install.md](install.md)（[English](install.en.md)） | 自己动手安装：Scoop、winget、安装脚本和国内镜像，接到 agent 上，体检、更新和卸载 | 想自己装的人 |
 | [agent-install.md](agent-install.md) | 一段可以直接发给 agent 的话：让它装好讣告、接到自己身上，要你拍板的地方停下来问你（中英文） | 想让 agent 替自己装的人 |
 | [agents.md](agents.md) | agent 覆盖表：30 家 agent 按接入方式分组，写文件后登记、会话提示、删除护栏、MCP、Skill 各支持到哪一步、为什么。由 `obit init --show --format markdown` 生成，不要手改 | 想知道自己用的 agent 能接到什么程度的人 |
 | [AGENTS.md](../AGENTS.md) | 代码约定：布局、规则、命令、已知坑 | 在这个仓库里写代码的 agent |
