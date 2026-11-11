@@ -1,4 +1,4 @@
-package core
+package ledger
 
 import (
 	"bytes"
@@ -105,7 +105,7 @@ func TestHotUpdateDoesNotReadOrWriteGraveyard(t *testing.T) {
 	t.Cleanup(func() { readGraveyardSnapshot = oldRead })
 	if err := store.UpdateHot(func(st *State) error {
 		st.Items[0].Rev++
-		st.queueAudit(Event{Action: "hot"})
+		QueueAudit(st, Event{Action: "hot"})
 		return nil
 	}); err != nil {
 		t.Fatal("hot update read graveyard", err)
@@ -126,19 +126,19 @@ func TestHotAuditReservationMatchesJoinedState(t *testing.T) {
 	if err := store.UpdateGraveyard(func(st *State) error {
 		st.Burials[0].PurgeIntent = &PurgeIntent{}
 		for range maxPendingAudit - 1 {
-			st.queueAudit(Event{Action: "pending"})
+			QueueAudit(st, Event{Action: "pending"})
 		}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
 	}
 	err := store.UpdateHot(func(st *State) error {
-		if st.pendingAuditCount() != maxPendingAudit {
-			return fmt.Errorf("hot audit reservation lost: %d", st.pendingAuditCount())
+		if PendingAuditCount(st) != maxPendingAudit {
+			return fmt.Errorf("hot audit reservation lost: %d", PendingAuditCount(st))
 		}
-		return st.requireAuditSpace()
+		return RequireAuditSpace(st)
 	})
-	if !errors.Is(err, errAuditBacklog) {
+	if !errors.Is(err, ErrAuditBacklog) {
 		t.Fatal("hot audit space undercounted purge intent", err)
 	}
 }

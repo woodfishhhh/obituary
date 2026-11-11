@@ -4,15 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
-// WatchExclusion keeps a removed nested folder outside its ancestor's policy.
-// ID is the removed policy ID, so it remains addressable after a path disappears.
-type WatchExclusion struct {
-	ID       int64    `json:"id"`
-	Path     string   `json:"path"`
-	Identity Identity `json:"identity"`
-}
+type WatchExclusion = ledger.WatchExclusion
 
 func (s *Service) checkWatchExclusions(p WatchPolicy, path string, id Identity) error {
 	for _, e := range p.Exclusions {
@@ -44,7 +40,7 @@ func (s *Service) ClearWatchExclusion(policyID, exclusionID int64) error {
 			return fmt.Errorf("no exclusion #%d on policy #%d", exclusionID, policyID)
 		}
 		p.Exclusions = slices.Delete(p.Exclusions, i, i+1)
-		p.reviseScope()
+		reviseScope(p)
 		return nil
 	})
 }

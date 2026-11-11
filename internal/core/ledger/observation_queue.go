@@ -1,4 +1,4 @@
-package core
+package ledger
 
 import (
 	"context"
@@ -17,6 +17,7 @@ import (
 )
 
 func (s Store) observationDir() string { return filepath.Join(s.Home, "observations") }
+
 func observationName(token string) string {
 	return fmt.Sprintf("%x.json", sha256.Sum256([]byte(token)))
 }

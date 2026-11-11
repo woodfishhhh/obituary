@@ -70,7 +70,7 @@ func finishContainerGrave(st *State, b Burial, action string, at time.Time, deta
 	default:
 		st.Stats.Purged++
 	}
-	st.queueAudit(Event{Time: at, Action: action, ID: b.ID, Path: b.Path, Detail: detail})
+	queueAudit(st, Event{Time: at, Action: action, ID: b.ID, Path: b.Path, Detail: detail})
 }
 
 func checkContainerBurial(st *State, b Burial) error {
@@ -122,7 +122,7 @@ func (s *Service) prepareContainerPurge(r *GraveResult, dryRun bool) (bool, erro
 			return err
 		}
 		if b.PurgeIntent == nil {
-			if err := st.requireAuditSpace(); err != nil {
+			if err := requireAuditSpace(st); err != nil {
 				return err
 			}
 		}

@@ -71,7 +71,7 @@ func (s *Service) checkWatchScope(st *State, it Item, path, reason string) error
 		return &RefusedError{Path: path, Reason: "folder policy is no longer active"}
 	}
 	p := st.Watches[idx]
-	if it.Identity == nil || st.watchExempt(p.ID, *it.Identity) {
+	if it.Identity == nil || watchExempt(st, p.ID, *it.Identity) {
 		return &RefusedError{Path: path, Reason: "object was explicitly spared or restored"}
 	}
 	_, err := s.WatchPath(p)

@@ -5,60 +5,23 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"errors"
-	"time"
 
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/docker"
 )
 
-// ContainerIntent survives a canceled lifespan so an interrupted stop can be
-// reconciled with the user's latest decision. Each intent reserves completion and
-// ambiguous-action audit slots so diagnostics survive a full outbox.
-type ContainerIntent struct {
-	Token        string     `json:"token"`
-	Operation    string     `json:"operation"`
-	At           time.Time  `json:"at"`
-	Item         *Item      `json:"item,omitempty"`
-	Burial       *Burial    `json:"burial,omitempty"`
-	Phase        string     `json:"phase,omitempty"`
-	WasRunning   *bool      `json:"wasRunning,omitempty"`
-	StoppedByUs  bool       `json:"stoppedByUs,omitempty"`
-	StopTimeout  *int       `json:"stopTimeout,omitempty"`
-	Diagnostic   string     `json:"diagnostic,omitempty"`
-	RunningSince *time.Time `json:"runningSince,omitempty"`
-	RemovalIDs   []string   `json:"removalIds,omitempty"`
+type ContainerIntent = ledger.ContainerIntent
+
+func containerIntentIdentity(p ContainerIntent) *docker.Identity {
+	return ledger.ContainerIntentIdentity(p)
 }
 
-func (p ContainerIntent) identity() *docker.Identity {
-	if p.Item != nil {
-		return p.Item.Container
-	}
-	if p.Burial != nil {
-		return p.Burial.Container
-	}
-	return nil
-}
+func containerIntentID(p ContainerIntent) int64 { return ledger.ContainerIntentID(p) }
 
-func (p ContainerIntent) id() int64 {
-	if p.Item != nil {
-		return p.Item.ID
-	}
-	if p.Burial != nil {
-		return p.Burial.ID
-	}
-	return 0
-}
+func containerIntent(st *State, id int64) *ContainerIntent { return ledger.FindContainerIntent(st, id) }
 
-func (st *State) containerIntent(id int64) *ContainerIntent {
-	for i := range st.ContainerIntents {
-		if st.ContainerIntents[i].id() == id {
-			return &st.ContainerIntents[i]
-		}
-	}
-	return nil
-}
-
-func (st *State) checkContainerIntent(p ContainerIntent) error {
-	current := st.containerIntent(p.id())
+func checkContainerIntent(st *State, p ContainerIntent) error {
+	current := containerIntent(st, containerIntentID(p))
 	if current == nil || !sameContainerIntent(*current, p) {
 		return ErrUnsafe
 	}
@@ -72,7 +35,7 @@ func sameContainerIntent(a, b ContainerIntent) bool {
 	return err == nil && otherErr == nil && bytes.Equal(left, right)
 }
 
-func (st *State) dropContainerIntent(p ContainerIntent) {
+func dropContainerIntent(st *State, p ContainerIntent) {
 	for i, current := range st.ContainerIntents {
 		if current.Token == p.Token {
 			st.ContainerIntents = append(st.ContainerIntents[:i], st.ContainerIntents[i+1:]...)
@@ -84,14 +47,14 @@ func (st *State) dropContainerIntent(p ContainerIntent) {
 func (s *Service) beginContainerIntent(p *ContainerIntent) error {
 	p.Token, p.At = rand.Text(), s.now()
 	return s.Store.UpdateGraveyard(func(st *State) error {
-		if st.containerIntent(p.id()) != nil {
+		if containerIntent(st, containerIntentID(*p)) != nil {
 			return errors.New("container operation pending; run obit reap")
 		}
-		if st.pendingAuditCount() > maxPendingAudit-2 {
+		if pendingAuditCount(st) > maxPendingAudit-2 {
 			return errAuditBacklog
 		}
 		if p.Item != nil {
-			if !sameContainerItem(st, *p.Item) || !st.Items[st.Index(p.id())].Due(s.now()) {
+			if !sameContainerItem(st, *p.Item) || !st.Items[st.Index(containerIntentID(*p))].Due(s.now()) {
 				return ErrUnsafe
 			}
 		} else if err := checkContainerBurial(st, *p.Burial); err != nil {
@@ -115,41 +78,9 @@ func (s *Service) inspectContainer(p ContainerIntent) (docker.Container, error) 
 	if err != nil {
 		return docker.Container{}, err
 	}
-	got, err := client.Inspect(docker.WithTarget(s.Store.Context(), p.identity().Target), p.identity().ID)
-	if err == nil && !got.Same(*p.identity()) {
+	got, err := client.Inspect(docker.WithTarget(s.Store.Context(), containerIntentIdentity(p).Target), containerIntentIdentity(p).ID)
+	if err == nil && !got.Same(*containerIntentIdentity(p)) {
 		err = docker.ErrIdentity
 	}
 	return got, err
-}
-
-func validateContainerIntents(st State) error {
-	seen := map[int64]bool{}
-	for _, p := range st.ContainerIntents {
-		id := p.identity()
-		if p.Token == "" || p.At.IsZero() || p.id() <= 0 || seen[p.id()] || id == nil || !id.Valid() {
-			return docker.ErrIdentity
-		}
-		seen[p.id()] = true
-		switch p.Phase {
-		case "", "prepared", "sent", "confirmed":
-		default:
-			return docker.ErrIdentity
-		}
-		if p.StoppedByUs && (p.WasRunning == nil || !*p.WasRunning) {
-			return docker.ErrIdentity
-		}
-		switch p.Operation {
-		case "stop", "resume":
-			if p.Item == nil || p.Burial != nil || containerIdentity(p.Item.Kind, id) != nil {
-				return docker.ErrIdentity
-			}
-		case "start", "rm":
-			if p.Burial == nil || p.Item != nil || containerIdentity(p.Burial.Kind, id) != nil {
-				return docker.ErrIdentity
-			}
-		default:
-			return docker.ErrIdentity
-		}
-	}
-	return nil
 }

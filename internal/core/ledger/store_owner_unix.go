@@ -1,6 +1,6 @@
 //go:build linux || darwin
 
-package core
+package ledger
 
 import (
 	"fmt"

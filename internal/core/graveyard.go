@@ -14,21 +14,20 @@ import (
 	"strings"
 	"time"
 
+	ledger "github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 )
 
-// Graveyard actions and burial reasons.
 const (
-	ActionBuried          = "buried"      // moved into the graveyard
-	ActionResurrected     = "resurrected" // moved back out of the graveyard
-	ActionPurged          = "purged"      // deleted for good after its retention
-	ActionLost            = "lost"        // its grave was already empty
-	ActionRecoveryPending = "recovery pending"
-	ActionNotExecuted     = "not executed"
-	ActionBlocked         = "blocked"
-
-	ReasonExpired = "expired" // its lifespan ran out
-	ReasonBury    = "bury"    // buried on request (obit bury, intercepted deletes)
+	ActionBuried          = ledger.ActionBuried
+	ActionResurrected     = ledger.ActionResurrected
+	ActionPurged          = ledger.ActionPurged
+	ActionLost            = ledger.ActionLost
+	ActionRecoveryPending = ledger.ActionRecoveryPending
+	ActionNotExecuted     = ledger.ActionNotExecuted
+	ActionBlocked         = ledger.ActionBlocked
+	ReasonExpired         = ledger.ReasonExpired
+	ReasonBury            = ledger.ReasonBury
 )
 
 // GraveResult describes what happened to one burial or requested path.
@@ -222,7 +221,7 @@ func (s *Service) verifyGrave(b Burial) (string, error) {
 }
 
 func (s *Service) withGraveyardLock(fn func() error) error {
-	return s.Store.withLock("graveyard.lock", true, fn)
+	return s.Store.WithLock("graveyard.lock", true, fn)
 }
 
 // GraveyardView combines recorded burials with manifests still needing recovery.
@@ -238,7 +237,7 @@ type GraveyardView struct {
 func (s *Service) ReadGraveyard() (view *GraveyardView, err error) {
 	s, flushAudit := s.auditBatch(false)
 	defer func() { err = errors.Join(err, flushAudit()) }()
-	err = s.Store.withLock("graveyard.lock", true, func() error {
+	err = s.Store.WithLock("graveyard.lock", true, func() error {
 		st, err := s.Store.ReadSnapshot()
 		if err != nil {
 			return err

@@ -110,7 +110,7 @@ func (s *Service) sweep(dryRun bool, blocked map[int64]bool) (outcomes []Outcome
 		return append(outcomes, batchOut...), errors.Join(auditErr, err)
 	}
 	for _, snapshot := range state.Items {
-		if blocked[snapshot.ID] || !snapshot.Due(s.now()) || state.awaitingWatchBurial(snapshot) {
+		if blocked[snapshot.ID] || !snapshot.Due(s.now()) || awaitingWatchBurial(&state, snapshot) {
 			continue
 		}
 		if dryRun {
@@ -164,7 +164,7 @@ func (s *Service) claim(id int64) (Item, bool, error) {
 		return Item{}, false, err
 	}
 	idx := state.Index(id)
-	if idx < 0 || !state.Items[idx].Due(s.now()) || state.awaitingWatchBurial(state.Items[idx]) {
+	if idx < 0 || !state.Items[idx].Due(s.now()) || awaitingWatchBurial(&state, state.Items[idx]) {
 		return Item{}, false, nil
 	}
 	return state.Items[idx], true, nil
@@ -194,7 +194,7 @@ func (s *Service) commitOutcome(st *State, o Outcome) {
 		return
 	}
 	if o.Action != ActionRetry {
-		st.dropWatchBurial(current.ID)
+		dropWatchBurial(st, current.ID)
 		st.Items = append(st.Items[:idx], st.Items[idx+1:]...)
 		return
 	}

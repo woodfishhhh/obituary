@@ -1,6 +1,8 @@
-package core
+package ledger
 
-import "time"
+import (
+	"time"
+)
 
 func (st *State) ObservationCompleted(row *Observation) bool {
 	if row == nil {

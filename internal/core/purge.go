@@ -18,7 +18,7 @@ func (s *Service) beginPurge(b *Burial, basis string) error {
 			return ErrUnsafe
 		}
 		if b.PurgeIntent == nil {
-			if err := st.requireAuditSpace(); err != nil {
+			if err := requireAuditSpace(st); err != nil {
 				return err
 			}
 		}

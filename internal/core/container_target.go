@@ -9,7 +9,7 @@ import (
 // Legacy records bind only after the current daemon returns the saved identity.
 // Absence on an unbound daemon cannot retire a legacy record.
 func (s *Service) bindContainer(p *ContainerIntent) error {
-	if p.identity().Target != nil {
+	if containerIntentIdentity(*p).Target != nil {
 		return nil
 	}
 	got, err := s.inspectContainer(*p)
@@ -23,33 +23,33 @@ func (s *Service) bindContainer(p *ContainerIntent) error {
 		return nil
 	} // In-process clients already own their routing.
 	old := *p
-	next := *p.identity()
+	next := *containerIntentIdentity(*p)
 	next.Target = got.Target
 	err = s.Store.UpdateGraveyard(func(st *State) error {
 		if old.Token != "" {
-			if err := st.checkContainerIntent(old); err != nil {
+			if err := checkContainerIntent(st, old); err != nil {
 				return err
 			}
 		}
-		if i := st.Index(p.id()); i >= 0 {
+		if i := st.Index(containerIntentID(*p)); i >= 0 {
 			if st.Items[i].Container == nil || !st.Items[i].Container.Same(next) {
 				return docker.ErrIdentity
 			}
 			st.Items[i].Container = &next
 		}
-		if i := st.BurialIndex(p.id()); i >= 0 {
+		if i := st.BurialIndex(containerIntentID(*p)); i >= 0 {
 			if st.Burials[i].Container == nil || !st.Burials[i].Container.Same(next) {
 				return docker.ErrIdentity
 			}
 			st.Burials[i].Container = &next
 		}
-		if current := st.containerIntent(p.id()); current != nil {
-			*current.identity() = next
+		if current := containerIntent(st, containerIntentID(*p)); current != nil {
+			*containerIntentIdentity(*current) = next
 		}
 		return nil
 	})
 	if err == nil {
-		*p.identity() = next
+		*containerIntentIdentity(*p) = next
 	}
 	return err
 }
@@ -58,10 +58,10 @@ func (s *Service) updateContainerIntent(p *ContainerIntent, change func(*Contain
 	next := *p
 	change(&next)
 	err := s.Store.UpdateGraveyard(func(st *State) error {
-		if err := st.checkContainerIntent(*p); err != nil {
+		if err := checkContainerIntent(st, *p); err != nil {
 			return err
 		}
-		*st.containerIntent(p.id()) = next
+		*containerIntent(st, containerIntentID(*p)) = next
 		return nil
 	})
 	if err == nil {
@@ -77,11 +77,11 @@ func (s *Service) containerActionError(p *ContainerIntent, err error) error {
 	next := *p
 	next.Diagnostic = err.Error()
 	auditErr := s.Store.UpdateGraveyard(func(st *State) error {
-		if err := st.checkContainerIntent(*p); err != nil {
+		if err := checkContainerIntent(st, *p); err != nil {
 			return err
 		}
-		*st.containerIntent(p.id()) = next
-		st.queueAudit(Event{Time: s.now(), Action: "container-ambiguous", ID: p.id(), Path: p.identity().Display(), Detail: next.Diagnostic})
+		*containerIntent(st, containerIntentID(*p)) = next
+		queueAudit(st, Event{Time: s.now(), Action: "container-ambiguous", ID: containerIntentID(*p), Path: containerIntentIdentity(*p).Display(), Detail: next.Diagnostic})
 		return nil
 	})
 	if auditErr == nil {

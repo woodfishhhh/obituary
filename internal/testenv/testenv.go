@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"github.com/woodfishhhh/obituary/internal/runkey"
 )
@@ -17,7 +17,7 @@ import (
 // Main runs a package's tests in disposable user and Git environments.
 // The caller may redirect TEMP/TMPDIR to choose where the scratch is created.
 func Main(m *testing.M) (code int) {
-	restoreSync := core.SetFileSyncForTesting(func(*os.File) error { return nil })
+	restoreSync := ledger.SetFileSyncForTesting(func(*os.File) error { return nil })
 	defer restoreSync()
 	runkey.Current = NewRunRegistry()
 	if os.Getenv("OBIT_TEST_FAKE_CLAUDE") == "1" && strings.EqualFold(filepath.Base(os.Args[0]), "claude.exe") {

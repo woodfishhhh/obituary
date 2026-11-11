@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
+
+	ledger "github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
-const ActionAbandoned = "abandoned"
+const ActionAbandoned = ledger.ActionAbandoned
 
 func abandonHint(id int64) string {
 	return fmt.Sprintf("unverifiable resurrection; obit purge %d explicitly abandons this record after verifying its empty grave", id)

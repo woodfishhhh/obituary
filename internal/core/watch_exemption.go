@@ -5,16 +5,11 @@ import (
 	"path/filepath"
 	"slices"
 	"time"
+
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
-// WatchExemption records an explicit user keep decision for one policy/object.
-type WatchExemption struct {
-	WatchID  int64     `json:"watchId"`
-	Identity Identity  `json:"identity"`
-	Path     string    `json:"path,omitempty"`
-	Reason   string    `json:"reason,omitempty"`
-	KeptAt   time.Time `json:"keptAt,omitempty"`
-}
+type WatchExemption = ledger.WatchExemption
 
 func sameWatchIdentity(a, b Identity) bool {
 	return a.Serial == b.Serial && a.FileID == b.FileID
@@ -29,14 +24,14 @@ func watchByID(st *State, id int64) WatchPolicy {
 	return WatchPolicy{}
 }
 
-func (st *State) watchExempt(id int64, identity Identity) bool {
+func watchExempt(st *State, id int64, identity Identity) bool {
 	return slices.ContainsFunc(st.WatchExemptions, func(e WatchExemption) bool {
 		return e.WatchID == id && sameWatchIdentity(e.Identity, identity)
 	})
 }
 
-func (st *State) spareWatch(id int64, identity *Identity, path, reason string, at time.Time) {
-	if id == 0 || watchByID(st, id).ID == 0 || identity == nil || st.watchExempt(id, *identity) {
+func spareWatch(st *State, id int64, identity *Identity, path, reason string, at time.Time) {
+	if id == 0 || watchByID(st, id).ID == 0 || identity == nil || watchExempt(st, id, *identity) {
 		return
 	}
 	st.WatchExemptions = append(st.WatchExemptions, WatchExemption{WatchID: id, Identity: *identity, Path: path, Reason: reason, KeptAt: at})
@@ -45,7 +40,7 @@ func (st *State) spareWatch(id int64, identity *Identity, path, reason string, a
 // Additional matching policies cover explicit burials and migrated v9 graves.
 // A lexical match is conservative when an ancestor is temporarily unreadable.
 func (s *Service) spareWatchObject(st *State, policyID int64, identity *Identity, path, reason string) {
-	st.spareWatch(policyID, identity, path, reason, s.now())
+	spareWatch(st, policyID, identity, path, reason, s.now())
 	if identity == nil {
 		return
 	}
@@ -53,7 +48,7 @@ func (s *Service) spareWatchObject(st *State, policyID int64, identity *Identity
 		id, err := s.FS.IdentifyFollowing(parent)
 		for _, p := range st.Watches {
 			if err == nil && sameWatchIdentity(id, p.Identity) || samePath(parent, p.Path) {
-				st.spareWatch(p.ID, identity, path, reason, s.now())
+				spareWatch(st, p.ID, identity, path, reason, s.now())
 			}
 		}
 		if parent == filepath.Dir(parent) {
@@ -68,10 +63,10 @@ func watchExemptionRetry(err error) error {
 	return errors.New("cannot verify watch exemption; retry: " + err.Error())
 }
 
-func (st *State) spareRestoredWatch(b Burial, path string, at time.Time) {
-	st.spareWatch(b.WatchID, b.Identity, path, "restored", at)
+func spareRestoredWatch(st *State, b Burial, path string, at time.Time) {
+	spareWatch(st, b.WatchID, b.Identity, path, "restored", at)
 	for _, child := range b.Children {
-		st.spareWatch(child.WatchID, child.Identity, "", "restored", at)
+		spareWatch(st, child.WatchID, child.Identity, "", "restored", at)
 	}
 }
 

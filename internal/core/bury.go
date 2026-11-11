@@ -14,7 +14,7 @@ import (
 func (s *Service) entomb(st *State, b *Burial) error {
 	// Recovery also enters here, after another operation may have filled the
 	// outbox. Keep the manifest until its event fits in the same transaction.
-	if err := st.requireAuditSpace(); err != nil {
+	if err := requireAuditSpace(st); err != nil {
 		return err
 	}
 	if st.BurialIndex(b.ID) >= 0 || st.ProposalIndex(b.ID) >= 0 {
@@ -30,10 +30,10 @@ func (s *Service) entomb(st *State, b *Burial) error {
 		st.Stats.DeleteBuried++
 	}
 	st.Stats.BuriedBytes += b.Size
-	st.queueAudit(Event{Time: s.now(), Action: ActionBuried, ID: b.ID, Path: b.Path, Detail: b.Grave})
-	st.dropWatchBurial(b.ID)
+	queueAudit(st, Event{Time: s.now(), Action: ActionBuried, ID: b.ID, Path: b.Path, Detail: b.Grave})
+	dropWatchBurial(st, b.ID)
 	for _, child := range b.Children {
-		st.dropWatchBurial(child.ID)
+		dropWatchBurial(st, child.ID)
 	}
 	st.Items = slices.DeleteFunc(st.Items, func(it Item) bool {
 		return it.ID == b.ID || slices.ContainsFunc(b.Children, func(child BuriedChild) bool { return it.ID == child.ID })
@@ -75,8 +75,9 @@ func (s *Service) bury(paths []string, force bool, note, source string) (results
 		}
 	}
 	s = s.WithContext(s.Store.Context())
-	s.Store.auditLines = new(int)
-	defer func() { results = limitBuryRecovery(results, len(paths), *s.Store.auditLines) }()
+	auditLines := new(int)
+	s.Store = s.Store.WithAuditCounter(auditLines)
+	defer func() { results = limitBuryRecovery(results, len(paths), *auditLines) }()
 	s, flushAudit := s.auditBatch(false)
 	defer func() { err = errors.Join(err, flushAudit()) }()
 	s.confirmedOwners = make(map[string]bool)

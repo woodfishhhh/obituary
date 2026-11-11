@@ -78,7 +78,7 @@ func (s *Service) prepareBurial(out Outcome, reason string) *preparedBurial {
 // validation, including child manifests and rules, before the final Git query.
 func (s *Service) validatePrepared(st *State, p *preparedBurial, reason string) (string, error) {
 	out, b := &p.out, &p.burial
-	if err := st.requireAuditSpace(); err != nil {
+	if err := requireAuditSpace(st); err != nil {
 		return "", err
 	}
 	if _, err := s.burialRevision(st, out.Item, reason); err != nil {

@@ -32,7 +32,7 @@ func (s *Service) RegisterWatchChild(policy WatchPolicy, path string) error {
 		if err != nil {
 			return err
 		}
-		if st.watchExempt(p.ID, c.identity) {
+		if watchExempt(st, p.ID, c.identity) {
 			return errWatchUnchanged
 		}
 		if idx := st.FindIdentity(c.identity); idx >= 0 {
@@ -160,6 +160,6 @@ func (s *Service) refreshWatchItem(st *State, idx int, p WatchPolicy, c *candida
 	if it.Rev == rev {
 		return errWatchUnchanged
 	}
-	st.dropWatchBurial(it.ID)
+	dropWatchBurial(st, it.ID)
 	return nil
 }

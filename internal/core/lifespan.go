@@ -80,7 +80,7 @@ func (s *Service) mutate(refs []string, action string, apply func(*State, int)) 
 			st.Items[idx].Path = path
 			after := st.Items[idx]
 			apply(st, idx)
-			st.dropWatchBurial(id)
+			dropWatchBurial(st, id)
 			if j := st.Index(id); j >= 0 {
 				after = st.Items[j]
 			}

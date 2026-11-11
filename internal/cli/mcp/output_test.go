@@ -82,7 +82,7 @@ func TestMCPUnconfirmedLongHomeKeepsAdvice(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		path := filepath.Join(root, "internal", "core", "store.go")
+		path := filepath.Join(root, "internal", "core", "ledger", "store.go")
 		data, err := os.ReadFile(path)
 		if err != nil {
 			t.Fatal(err)

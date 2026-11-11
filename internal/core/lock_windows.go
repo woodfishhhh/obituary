@@ -4,14 +4,15 @@ import (
 	"context"
 
 	"github.com/woodfishhhh/obituary/internal/core/internal/fileio"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func lockFile(path string, exclusive bool) (func(), error) { return fileio.LockFile(path, exclusive) }
 
-func LockFile(path string, exclusive bool) (func(), error) { return fileio.LockFile(path, exclusive) }
+func LockFile(path string, exclusive bool) (func(), error) { return ledger.LockFile(path, exclusive) }
 
 func TryLockExclusive(path string) (release func(), ok bool, err error) {
-	return fileio.TryLockExclusive(path)
+	return ledger.TryLockExclusive(path)
 }
 
 func tryLockFile(path string, exclusive bool) (func(), bool, error) {

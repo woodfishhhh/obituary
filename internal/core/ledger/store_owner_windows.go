@@ -1,10 +1,11 @@
-package core
+package ledger
 
 import (
 	"fmt"
-	"golang.org/x/sys/windows"
 	"os"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
 // os.SameFile cannot persist an identity. Use the same FILE_ID_INFO contract

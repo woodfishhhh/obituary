@@ -66,7 +66,7 @@ func (s *Service) sendContainerStop(p *ContainerIntent) (error, error) {
 		})
 		return writeErr
 	}
-	err := s.Docker.Stop(s.Store.Context(), *p.identity(), beforeSend)
+	err := s.Docker.Stop(s.Store.Context(), *containerIntentIdentity(*p), beforeSend)
 	if errors.Is(err, docker.ErrNotSent) && p.Phase == "sent" {
 		writeErr = s.updateContainerIntent(p, func(p *ContainerIntent) { p.Phase = "prepared" })
 	}
@@ -103,11 +103,11 @@ func (s *Service) settleContainerStop(p ContainerIntent, out *Outcome) error {
 	}
 	resume := false
 	err = s.Store.UpdateGraveyard(func(st *State) error {
-		if err := st.checkContainerIntent(p); err != nil {
+		if err := checkContainerIntent(st, p); err != nil {
 			return err
 		}
 		if !sameContainerItem(st, *p.Item) {
-			next := st.containerIntent(p.id())
+			next := containerIntent(st, containerIntentID(p))
 			next.Operation = "resume"
 			if !got.Running && p.Phase != "prepared" {
 				next.Phase = "confirmed"
@@ -118,7 +118,7 @@ func (s *Service) settleContainerStop(p ContainerIntent, out *Outcome) error {
 			return nil
 		}
 		if got.Running {
-			st.dropContainerIntent(p)
+			dropContainerIntent(st, p)
 			out.Detail = "container is still running; retry original lifespan"
 			return nil
 		}
@@ -146,18 +146,18 @@ func (s *Service) observeRunningStop(p ContainerIntent, out *Outcome) error {
 		now := s.now()
 		return s.updateContainerIntent(&p, func(p *ContainerIntent) { p.RunningSince = &now })
 	}
-	wait := (docker.Container{Identity: *p.identity(), StopTimeout: p.StopTimeout}).StopWait()
+	wait := (docker.Container{Identity: *containerIntentIdentity(p), StopTimeout: p.StopTimeout}).StopWait()
 	if s.now().Sub(*p.RunningSince) < wait {
 		return nil
 	}
 	// Observations across the full grace period permit retry, without proving
 	// what happened between observations or excluding a delayed engine request.
 	return s.Store.UpdateGraveyard(func(st *State) error {
-		if err := st.checkContainerIntent(p); err != nil {
+		if err := checkContainerIntent(st, p); err != nil {
 			return err
 		}
-		st.dropContainerIntent(p)
-		st.queueAudit(Event{Time: s.now(), Action: "container-stop-retry", ID: p.id(), Path: p.Item.Path, Detail: "container observed running across stop grace period plus transport margin; original lifespan may retry"})
+		dropContainerIntent(st, p)
+		queueAudit(st, Event{Time: s.now(), Action: "container-stop-retry", ID: containerIntentID(p), Path: p.Item.Path, Detail: "container observed running across stop grace period plus transport margin; original lifespan may retry"})
 		out.Detail = "container still running after stop grace period; retry original lifespan"
 		return nil
 	})
@@ -165,12 +165,12 @@ func (s *Service) observeRunningStop(p ContainerIntent, out *Outcome) error {
 
 func (s *Service) commitContainerBurial(st *State, p ContainerIntent, out *Outcome) {
 	b := s.containerBurial(*p.Item)
-	idx := st.Index(p.id())
+	idx := st.Index(containerIntentID(p))
 	st.Items = append(st.Items[:idx], st.Items[idx+1:]...)
 	st.Burials = append(st.Burials, b)
 	st.Stats.Buried++
-	st.dropContainerIntent(p)
-	st.queueAudit(Event{Time: s.now(), Action: ActionBuried, ID: b.ID, Path: b.Path, Detail: "docker stop confirmed; writable layer retained"})
+	dropContainerIntent(st, p)
+	queueAudit(st, Event{Time: s.now(), Action: ActionBuried, ID: b.ID, Path: b.Path, Detail: "docker stop confirmed; writable layer retained"})
 	out.Action, out.Burial, out.Detail = ActionBuried, &b, ""
 }
 

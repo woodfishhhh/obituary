@@ -6,18 +6,11 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
-	"time"
+
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
-// BurialOperation identifies one explicit invocation, including callers that
-// validate and bury one operand at a time (rm). Item.Session/Project describe
-// registration, so they cannot establish who performed a later deletion.
-type BurialOperation struct {
-	ID        string    `json:"id"`
-	StartedAt time.Time `json:"startedAt"`
-	Session   string    `json:"session,omitempty"`
-	Project   string    `json:"project,omitempty"`
-}
+type BurialOperation = ledger.BurialOperation
 
 // BeginBurial returns a request-local service sharing one deletion batch.
 // Call it once per command; plain Bury creates a new unscoped batch per call.

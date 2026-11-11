@@ -1,6 +1,8 @@
 package core
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type resurrectionCandidates struct {
 	matches    State
@@ -82,7 +84,7 @@ func (s *Service) checkResurrectionScan(ref string, pending []PendingGrave) erro
 
 func (c *resurrectionCandidates) addUnverified(state State, p PendingGrave) {
 	b := p.Burial
-	if idx := state.cleanupIndex(p.Number()); idx >= 0 {
+	if idx := cleanupIndex(&state, p.Number()); idx >= 0 {
 		b = &state.RestoreCleanups[idx].Burial
 	}
 	if b == nil {

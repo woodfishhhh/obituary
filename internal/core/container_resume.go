@@ -45,7 +45,7 @@ func (s *Service) restartContainer(p ContainerIntent, out *Outcome) error {
 	if err := s.updateContainerIntent(&p, func(p *ContainerIntent) { p.StoppedByUs = true; p.Phase = "confirmed" }); err != nil {
 		return err
 	}
-	err := s.Docker.Start(s.Store.Context(), *p.identity())
+	err := s.Docker.Start(s.Store.Context(), *containerIntentIdentity(p))
 	if auditErr := s.containerActionError(&p, err); auditErr != nil {
 		return auditErr
 	}
@@ -72,11 +72,11 @@ func (s *Service) finishContainerResume(p ContainerIntent, out *Outcome, compens
 		detail = "container running after concurrent lifespan change or spare"
 	}
 	err := s.Store.UpdateGraveyard(func(st *State) error {
-		if err := st.checkContainerIntent(p); err != nil {
+		if err := checkContainerIntent(st, p); err != nil {
 			return err
 		}
-		st.dropContainerIntent(p)
-		st.queueAudit(Event{Time: s.now(), Action: "container-resumed", ID: p.id(), Path: p.Item.Path, Detail: detail})
+		dropContainerIntent(st, p)
+		queueAudit(st, Event{Time: s.now(), Action: "container-resumed", ID: containerIntentID(p), Path: p.Item.Path, Detail: detail})
 		return nil
 	})
 	if err == nil {
@@ -87,19 +87,19 @@ func (s *Service) finishContainerResume(p ContainerIntent, out *Outcome, compens
 
 func (s *Service) loseContainer(p ContainerIntent, out *Outcome) error {
 	err := s.Store.UpdateGraveyard(func(st *State) error {
-		if err := st.checkContainerIntent(p); err != nil {
+		if err := checkContainerIntent(st, p); err != nil {
 			return err
 		}
-		if idx := st.Index(p.id()); idx >= 0 {
+		if idx := st.Index(containerIntentID(p)); idx >= 0 {
 			current := st.Items[idx].Container
-			if current == nil || !current.Same(*p.identity()) {
+			if current == nil || !current.Same(*containerIntentIdentity(p)) {
 				return docker.ErrIdentity
 			}
 			st.Items = append(st.Items[:idx], st.Items[idx+1:]...)
 		}
-		st.dropContainerIntent(p)
+		dropContainerIntent(st, p)
 		st.Stats.ContainersLost++
-		st.queueAudit(Event{Time: s.now(), Action: ActionLost, ID: p.id(), Path: p.Item.Path, Detail: "container removed externally on original Docker daemon"})
+		queueAudit(st, Event{Time: s.now(), Action: ActionLost, ID: containerIntentID(p), Path: p.Item.Path, Detail: "container removed externally on original Docker daemon"})
 		return nil
 	})
 	if err == nil {

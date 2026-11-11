@@ -30,7 +30,7 @@ func (s *Service) purgeExpiredBatches(state State, requested []Burial, blocked m
 					return ErrUnsafe
 				}
 				if r.Error == "" && b.PurgeIntent == nil {
-					if st.pendingAuditCount()+lostReservations >= maxPendingAudit {
+					if pendingAuditCount(st)+lostReservations >= maxPendingAudit {
 						capacityErr = errAuditBacklog
 						break
 					}
@@ -118,7 +118,7 @@ func (s *Service) purgeExpiredBatches(state State, requested []Burial, blocked m
 						st.Stats.Purged++
 						st.Stats.PurgedBytes += b.Size
 					}
-					st.queueAudit(Event{Time: s.now(), Action: r.Action, ID: b.ID, Path: b.Path, Detail: b.Grave})
+					queueAudit(st, Event{Time: s.now(), Action: r.Action, ID: b.ID, Path: b.Path, Detail: b.Grave})
 				}
 				auditCount = len(st.PendingAudit)
 				return nil

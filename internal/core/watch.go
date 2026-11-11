@@ -6,32 +6,15 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"time"
+
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
-const (
-	WatchFirstSeen = "first-seen"
-	WatchModified  = "modified"
-	ProposalWatch  = "watch-policy"
-)
+const WatchFirstSeen = ledger.WatchFirstSeen
+const WatchModified = ledger.WatchModified
+const ProposalWatch = ledger.ProposalWatch
 
-// WatchPolicy manages only the immediate children of this pinned directory.
-// Changing a consent-sensitive policy requires a new decision; binding approval
-// to the saved revision prevents policy edits from inheriting stale consent.
-type WatchPolicy struct {
-	ID          int64            `json:"id"`
-	Rev         int64            `json:"rev"`
-	Path        string           `json:"path"`
-	Project     string           `json:"project,omitempty"`
-	Identity    Identity         `json:"identity"`
-	Lifespan    string           `json:"lifespan"`
-	Age         string           `json:"age"`
-	Consent     string           `json:"consent"`
-	ApprovedRev int64            `json:"approvedRev,omitempty"`
-	CreatedAt   time.Time        `json:"createdAt"`
-	Aliases     []string         `json:"aliases,omitempty"`
-	Exclusions  []WatchExclusion `json:"exclusions,omitempty"`
-}
+type WatchPolicy = ledger.WatchPolicy
 
 // Watches returns persisted policies, including policies waiting for approval.
 func (s *Service) Watches() ([]WatchPolicy, error) {
@@ -83,7 +66,7 @@ func (s *Service) saveWatch(policy WatchPolicy) (WatchPolicy, error) {
 			reviewed := out
 			reviewed.ID, reviewed.Rev, reviewed.Consent = old.ID, old.Rev, old.Consent
 			if sameWatchIdentity(old.Identity, out.Identity) && old.Project == out.Project && oldDuration == newDuration && old.Age == out.Age &&
-				(old.Consent != ConsentApproved || old.explicitlyApproved()) && hasWatchReview(st, reviewed) {
+				(old.Consent != ConsentApproved || explicitlyApproved(old)) && hasWatchReview(st, reviewed) {
 				out.ID, out.Rev, out.Consent, out.CreatedAt = old.ID, old.Rev, old.Consent, old.CreatedAt
 				out.ApprovedRev = old.ApprovedRev
 				st.Watches[idx] = out
@@ -97,7 +80,7 @@ func (s *Service) saveWatch(policy WatchPolicy) (WatchPolicy, error) {
 			st.Watches = append(st.Watches, out)
 		}
 		if out.Consent == "pending" {
-			st.proposeWatch(out, s.now())
+			proposeWatch(st, out, s.now())
 		}
 		st.Watches[idx] = out
 		return nil

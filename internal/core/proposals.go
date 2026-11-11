@@ -346,7 +346,7 @@ func (s *Service) ResolveProposal(p Proposal, pending []Candidate) error {
 		if len(current.Candidates) == 0 {
 			st.Proposals = append(st.Proposals[:idx], st.Proposals[idx+1:]...)
 		}
-		st.removeLeftoverTwins(p, settled)
+		removeLeftoverTwins(st, p, settled)
 		return nil
 	})
 }
@@ -397,13 +397,13 @@ func (s *Service) reject(refs []string, review func(int, Proposal) error) ([]Pro
 				}
 			}
 			if r.Proposal.Kind == ProposalWatchBurial {
-				st.rejectWatchBurial(r.Proposal, s.now())
+				rejectWatchBurial(st, r.Proposal, s.now())
 			}
 			if r.Proposal.Kind == ProposalLeftovers || r.Proposal.Kind == ProposalContainer {
-				st.rememberRejectedLeftovers(r.Proposal, s.now())
+				rememberRejectedLeftovers(st, r.Proposal, s.now())
 			}
 			st.Proposals = append(st.Proposals[:idx], st.Proposals[idx+1:]...)
-			st.removeLeftoverTwins(r.Proposal, r.Proposal.Candidates)
+			removeLeftoverTwins(st, r.Proposal, r.Proposal.Candidates)
 			if r.Proposal.Kind == ProposalOnboard {
 				if st.Projects == nil {
 					st.Projects = map[string]ProjectState{}
@@ -425,23 +425,7 @@ const (
 	maxRejectedPaths    = 4096
 )
 
-// LeftoverRejected also excludes collapsed directories containing a rejected
-// path and children of rejected directories, independent of Git's spelling.
-func (st *State) LeftoverRejected(project, session, path string) bool {
-	for _, r := range st.LeftoverRejections {
-		if !samePath(r.Project, project) || r.Session != session {
-			continue
-		}
-		for _, p := range r.Paths {
-			if samePath(path, p) || isInside(path, p) || isInside(p, path) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func (st *State) rememberRejectedLeftovers(p Proposal, now time.Time) {
+func rememberRejectedLeftovers(st *State, p Proposal, now time.Time) {
 	idx := -1
 	for i, r := range st.LeftoverRejections {
 		if samePath(r.Project, p.Project) && r.Session == p.Session {

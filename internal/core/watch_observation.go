@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"time"
 
-	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 )
 
-const WatchStableWindow = 10 * time.Minute
+const WatchStableWindow = ledger.WatchStableWindow
 
 func (s *Service) watchStableWindow() time.Duration {
 	if s.WatchStableWindow > 0 {
@@ -21,16 +21,9 @@ func (s *Service) watchStableWindow() time.Duration {
 	return WatchStableWindow
 }
 
-type WatchSnapshot = corefs.WatchSnapshot
+type WatchSnapshot = ledger.WatchSnapshot
 
-// WatchTiming retains the registration's age basis even after a policy edit.
-type WatchTiming struct {
-	Age         string        `json:"age"`
-	Lifespan    string        `json:"lifespan"`
-	Automatic   time.Time     `json:"automatic"`
-	StableSince time.Time     `json:"stableSince"`
-	Snapshot    WatchSnapshot `json:"snapshot"`
-}
+type WatchTiming = ledger.WatchTiming
 
 func (s *Service) observeWatch(path string, want Identity, isDir, hold bool) (WatchSnapshot, func(), error) {
 	return s.observeObjectTree(path, want, isDir, hold, true)

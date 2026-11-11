@@ -68,7 +68,7 @@ func (s *Service) removeWatch(st *State, idx int) error {
 		}
 		if inside && !slices.ContainsFunc(p.Exclusions, func(e WatchExclusion) bool { return e.ID == removed.ID }) {
 			p.Exclusions = append(p.Exclusions, WatchExclusion{ID: removed.ID, Path: removed.Path, Identity: removed.Identity})
-			p.reviseScope()
+			reviseScope(p)
 		}
 	}
 	st.Items = slices.DeleteFunc(st.Items, func(it Item) bool { return it.WatchID == removed.ID })

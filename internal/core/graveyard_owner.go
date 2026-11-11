@@ -43,9 +43,9 @@ func (s *Service) checkGraveyardOwner(root string, create bool) error {
 	// The two ledgers have different store locks. Serialize the first claim
 	// on the shared root, then use the existing os.Root.Rename + Sync writer.
 	ctx := s.Store.Context()
-	if !s.Store.lockDeadline.IsZero() {
+	if !s.Store.LockDeadline().IsZero() {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithDeadline(ctx, s.Store.lockDeadline)
+		ctx, cancel = context.WithDeadline(ctx, s.Store.LockDeadline())
 		defer cancel()
 	}
 	release, err := lockFileContext(ctx, marker+".lock", true)

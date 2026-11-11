@@ -94,7 +94,7 @@ func (s *Service) resurrectBurial(result *GraveResult, b Burial, state State) er
 		result.Error = err.Error()
 		return nil
 	}
-	if err := state.requireAuditSpace(); err != nil {
+	if err := requireAuditSpace(&state); err != nil {
 		return err
 	}
 	if err := s.Store.Context().Err(); err != nil {

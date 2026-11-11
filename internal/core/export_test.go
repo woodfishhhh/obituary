@@ -22,7 +22,7 @@ func RequireFsync(t *testing.T) {
 
 func SyncFileForTesting(file *os.File) error { return fileio.SyncFile(file) }
 
-func ObserveStoreLocks(s *Store, fn func(time.Duration)) { s.observeLock = fn }
+func ObserveStoreLocks(s *Store, fn func(time.Duration)) { *s = s.WithLockObserver(fn) }
 
 func CheckWatchDownload(path string) error { return checkWatchDownload(path) }
 
@@ -30,7 +30,7 @@ func ObserveWatchTree(s *Service, path string, id Identity, isDir, hold bool) (W
 	return s.observeWatch(path, id, isDir, hold)
 }
 
-func SpareRestoredWatch(st *State, b Burial) { st.spareRestoredWatch(b, b.Path, time.Time{}) }
+func SpareRestoredWatch(st *State, b Burial) { spareRestoredWatch(st, b, b.Path, time.Time{}) }
 
 func GitVerificationBudget(elapsed time.Duration) time.Duration {
 	return gitVerificationBudget(elapsed)

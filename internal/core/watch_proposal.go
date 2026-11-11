@@ -9,20 +9,15 @@ import (
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
-const ProposalWatchBurial = "watch-burial"
-const ActionProposed = "proposed"
+const ProposalWatchBurial = ledger.ProposalWatchBurial
 
-// WatchBurialReview binds the decision to a lifespan and object, not a name.
-// Counts and kept paths describe the displayed tree; final movement rechecks it.
-type WatchBurialReview struct {
-	ItemID   int64    `json:"itemId"`
-	ItemRev  int64    `json:"itemRev"`
-	Identity Identity `json:"identity"`
-	Files    int64    `json:"files"`
-	Kept     []string `json:"kept,omitempty"`
-}
+const ActionProposed = ledger.ActionProposed
+
+type WatchBurialReview = ledger.WatchBurialReview
 
 func (s *Service) proposeWatchBurial(out Outcome, dryRun bool) Outcome {
 	st, err := s.Store.Read()
@@ -78,7 +73,7 @@ func (s *Service) watchBurialProposal(st *State, it Item, path string) (Proposal
 		if err != nil {
 			return err
 		}
-		if st.watchExempt(it.WatchID, id) || st.automaticallyKept(id) {
+		if watchExempt(st, it.WatchID, id) || automaticallyKept(st, id) {
 			r.Kept = append(r.Kept, current)
 		}
 		if !entry.IsDir() {
@@ -99,7 +94,7 @@ func (s *Service) watchBurialProposal(st *State, it Item, path string) (Proposal
 		Candidates: []Candidate{{Rev: uint64(it.Rev), Path: path, Lifespan: "expired", Size: size, Rule: rule}}}, err
 }
 
-func (st *State) automaticallyKept(id Identity) bool {
+func automaticallyKept(st *State, id Identity) bool {
 	for _, e := range st.AutoExemptions {
 		if sameWatchIdentity(e.Identity, id) {
 			return true
@@ -153,17 +148,9 @@ func (s *Service) checkWatchBurialReview(st *State, p Proposal) error {
 
 // Pending directory decisions have no timer deadline. A policy observation or
 // lifespan edit invalidates the review; approval rechecks the displayed tree.
-func (st *State) awaitingWatchBurial(it Item) bool {
-	if it.Source != "watch" || !it.IsDir {
-		return false
-	}
-	return slices.ContainsFunc(st.Proposals, func(p Proposal) bool {
-		return p.Kind == ProposalWatchBurial && p.WatchBurial != nil && p.WatchBurial.ItemID == it.ID &&
-			p.WatchID == it.WatchID && p.WatchBurial.ItemRev == it.Rev && it.Identity != nil && p.WatchBurial.Identity == *it.Identity
-	})
-}
+func awaitingWatchBurial(st *State, it Item) bool { return ledger.AwaitingWatchBurial(st, it) }
 
-func (st *State) dropWatchBurial(id int64) {
+func dropWatchBurial(st *State, id int64) {
 	st.Proposals = slices.DeleteFunc(st.Proposals, func(p Proposal) bool {
 		return p.Kind == ProposalWatchBurial && p.WatchBurial != nil && p.WatchBurial.ItemID == id
 	})
@@ -192,7 +179,7 @@ func (s *Service) watchMove(it Item, reason string) bool {
 	return it.Source == "watch" && (reason == ReasonExpired || s.approvedWatch != nil)
 }
 
-func (st *State) rejectWatchBurial(p Proposal, at time.Time) {
+func rejectWatchBurial(st *State, p Proposal, at time.Time) {
 	if p.WatchBurial == nil {
 		return
 	}
@@ -200,6 +187,6 @@ func (st *State) rejectWatchBurial(p Proposal, at time.Time) {
 	if i < 0 || st.Items[i].Identity == nil || *st.Items[i].Identity != p.WatchBurial.Identity {
 		return
 	}
-	st.spareWatch(p.WatchID, st.Items[i].Identity, st.Items[i].Path, "rejected", at)
+	spareWatch(st, p.WatchID, st.Items[i].Identity, st.Items[i].Path, "rejected", at)
 	st.Items = append(st.Items[:i], st.Items[i+1:]...)
 }

@@ -8,22 +8,14 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"time"
 
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 )
 
-// RestoreCleanup is committed with removal of the burial index and retains
-// the location and identities needed to finish either restore outcome.
-type RestoreCleanup struct {
-	Kind        string         `json:"kind"`
-	Burial      Burial         `json:"burial"`
-	Path        string         `json:"path,omitempty"`
-	Restore     *restoreIntent `json:"resurrect,omitempty"`
-	CommittedAt time.Time      `json:"committedAt"`
-}
+type RestoreCleanup = ledger.RestoreCleanup
 
-func (st *State) cleanupIndex(id int64) int {
+func cleanupIndex(st *State, id int64) int {
 	return slices.IndexFunc(st.RestoreCleanups, func(c RestoreCleanup) bool { return c.Burial.ID == id })
 }
 
@@ -102,7 +94,7 @@ func (s *Service) retainCleanup(p PendingGrave, kind, path string) error {
 		// Reflush it before deleting the last independent recovery evidence.
 		return s.Store.Confirm(func(st *State) error {
 			if kind == ActionResurrected {
-				st.spareRestoredWatch(*p.Burial, path, s.now())
+				spareRestoredWatch(st, *p.Burial, path, s.now())
 				s.spareWatchObject(st, p.Burial.WatchID, p.Burial.Identity, path, "restored")
 			}
 			return nil
@@ -111,11 +103,11 @@ func (s *Service) retainCleanup(p PendingGrave, kind, path string) error {
 	c := RestoreCleanup{Kind: kind, Burial: *p.Burial, Path: path, Restore: p.restore, CommittedAt: s.now()}
 	return s.Store.UpdateGraveyard(func(st *State) error {
 		if kind == ActionResurrected {
-			st.spareRestoredWatch(c.Burial, path, s.now())
+			spareRestoredWatch(st, c.Burial, path, s.now())
 			s.spareWatchObject(st, c.Burial.WatchID, c.Burial.Identity, path, "restored")
 			s.spareAutomaticObject(st, c.Burial.Identity, path)
 		}
-		if i := st.cleanupIndex(c.Burial.ID); i >= 0 {
+		if i := cleanupIndex(st, c.Burial.ID); i >= 0 {
 			st.RestoreCleanups[i] = c
 		} else {
 			st.RestoreCleanups = append(st.RestoreCleanups, c)

@@ -7,36 +7,17 @@ import (
 	"encoding/json"
 	"errors"
 	"slices"
+
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 var ErrProposalChanged = errors.New("提议已变化，请重新查看")
 
-// WatchReview is the consent-sensitive policy saved with its proposal.
-// Missing snapshots from older ledgers require a fresh SetWatch review.
-type WatchReview struct {
-	ID       int64    `json:"id"`
-	Rev      int64    `json:"rev"`
-	Path     string   `json:"path"`
-	Project  string   `json:"project"`
-	Identity Identity `json:"identity"`
-	Lifespan string   `json:"lifespan"`
-	Age      string   `json:"age"`
-}
+type WatchReview = ledger.WatchReview
 
-func watchReview(p WatchPolicy) WatchReview {
-	return WatchReview{p.ID, p.Rev, p.Path, p.Project, p.Identity, p.Lifespan, p.Age}
-}
+func watchReview(p WatchPolicy) WatchReview { return ledger.WatchReviewOf(p) }
 
-func watchProposal(p WatchPolicy, id int64) Proposal {
-	rule := "folder policy, age=" + p.Age
-	if p.Age == WatchModified {
-		rule += "; modified dates may expire immediately"
-	}
-	review := watchReview(p)
-	return Proposal{ID: id, Kind: ProposalWatch, WatchID: p.ID, Project: p.Path,
-		WatchReview: &review,
-		Candidates:  []Candidate{{Path: p.Path, Lifespan: p.Lifespan, Rev: uint64(p.Rev), Rule: rule}}}
-}
+func watchProposal(p WatchPolicy, id int64) Proposal { return ledger.WatchProposal(p, id) }
 
 func hasWatchReview(st *State, policy WatchPolicy) bool {
 	return policy.Consent != "pending" || slices.ContainsFunc(st.Proposals, func(p Proposal) bool {

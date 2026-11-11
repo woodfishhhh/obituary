@@ -125,8 +125,8 @@ func (s *Service) checkBurying(it Item) error {
 // Called under store.lock: an inspection before the lock may predate another
 // process's completed burial, including a move along with a parent directory.
 func (s *Service) checkBuried(st *State, path string, identity *Identity, roots []resolvedGraveyardRoot) error {
-	if st.graveyardMayMatch(path, identity) {
-		if err := s.Store.loadGraveyard(st); err != nil {
+	if graveyardMayMatch(st, path, identity) {
+		if err := s.Store.LoadGraveyard(st); err != nil {
 			return err
 		}
 	}
@@ -164,7 +164,7 @@ func (s *Service) checkBuried(st *State, path string, identity *Identity, roots 
 	if !s.insideGraveyard(roots, current) {
 		return nil
 	}
-	if err := s.Store.loadGraveyard(st); err != nil {
+	if err := s.Store.LoadGraveyard(st); err != nil {
 		return err
 	}
 	for _, b := range st.Burials {

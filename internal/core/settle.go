@@ -25,7 +25,7 @@ func (s *Service) settle(item Item, dryRun bool, reason string, roots []resolved
 	// Shell recycling is slow: hold the write lock only for the final check.
 	// A later mutation may still race the Shell, but commit preserves its Rev.
 	if err := s.Store.UpdateGraveyard(func(st *State) error {
-		if err := st.requireAuditSpace(); err != nil {
+		if err := requireAuditSpace(st); err != nil {
 			return err
 		}
 		if _, err := s.burialRevision(st, item, reason); err != nil {

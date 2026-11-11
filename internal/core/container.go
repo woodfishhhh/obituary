@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/docker"
 )
 
-const KindContainer = "container"
+const KindContainer = ledger.KindContainer
 
 func (s *Service) containerClient() (docker.Client, error) {
 	if s.Docker == nil {
@@ -50,7 +51,7 @@ func (s *Service) registerContainer(id docker.Identity, opt AddOptions) (item It
 	s, flush := s.auditBatch(false)
 	defer func() { err = errors.Join(err, flush()) }()
 	err = s.Store.UpdateGraveyard(func(st *State) error {
-		if err := st.requireAuditSpace(); err != nil {
+		if err := requireAuditSpace(st); err != nil {
 			return err
 		}
 		for _, b := range st.Burials {
@@ -77,7 +78,7 @@ func (s *Service) registerContainer(id docker.Identity, opt AddOptions) (item It
 			st.NextID++
 			st.Items = append(st.Items, item)
 		}
-		st.queueAudit(Event{Time: s.now(), Action: "added", ID: item.ID, Path: item.Path, Detail: "container expires " + item.ExpiresAt.Format(time.RFC3339)})
+		queueAudit(st, Event{Time: s.now(), Action: "added", ID: item.ID, Path: item.Path, Detail: "container expires " + item.ExpiresAt.Format(time.RFC3339)})
 		return nil
 	})
 	return item, err
@@ -100,44 +101,6 @@ func containerIndex(items []Item, id docker.Identity) int {
 		}
 	}
 	return -1
-}
-
-func validateContainerState(st State) error {
-	for _, it := range st.Items {
-		if err := validateObjectKind(it.Kind, it.Container, it.Identity); err != nil {
-			return err
-		}
-	}
-	for _, b := range st.Burials {
-		if err := validateObjectKind(b.Kind, b.Container, b.Identity); err != nil {
-			return err
-		}
-	}
-	for _, p := range st.Proposals {
-		for _, c := range p.Candidates {
-			if err := validateObjectKind(c.Kind, c.Container, nil); err != nil {
-				return err
-			}
-		}
-	}
-	return validateContainerIntents(st)
-}
-
-func validateObjectKind(kind string, container *docker.Identity, file *Identity) error {
-	if kind == "" && container == nil {
-		return nil
-	}
-	if kind != KindContainer || container == nil || !container.Valid() || file != nil {
-		return docker.ErrIdentity
-	}
-	return nil
-}
-
-func containerIdentity(kind string, id *docker.Identity) error {
-	if kind != KindContainer || id == nil || !id.Valid() {
-		return docker.ErrIdentity
-	}
-	return nil
 }
 
 // Containers are removed from the file sweep snapshot before any filesystem gates.
@@ -173,4 +136,8 @@ func (s *Service) sweepContainers(state *State, dryRun bool) ([]Outcome, error) 
 	}
 	state.Items = files
 	return rows, nil
+}
+
+func containerIdentity(kind string, id *docker.Identity) error {
+	return ledger.ContainerIdentity(kind, id)
 }

@@ -1,4 +1,4 @@
-package core
+package ledger
 
 import (
 	"bytes"
@@ -47,7 +47,7 @@ func (s Store) prepareLedgerMigration(st *State) error {
 	if err := writeDurably(path, data); err != nil {
 		return fmt.Errorf("preserve migration backup: %w", err)
 	}
-	st.queueAudit(Event{Time: time.Now(), Action: "store-migrated", Path: s.statePath(),
+	QueueAudit(st, Event{Time: time.Now(), Action: "store-migrated", Path: s.statePath(),
 		Detail: fmt.Sprintf("ledger v%d to v%d; original bytes retained in %s", header.Version, stateVersion, name)})
 	return nil
 }

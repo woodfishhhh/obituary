@@ -18,7 +18,7 @@ func (s *Service) recoverContainerStops(state *State) ([]Outcome, map[int64]bool
 			if p.Item == nil {
 				continue
 			}
-			blocked[p.id()] = true
+			blocked[containerIntentID(p)] = true
 			out := Outcome{Item: *p.Item, Path: p.Item.Path, Action: ActionRetry}
 			if p.Operation == "resume" {
 				err = s.resumeContainer(p, &out)
@@ -72,13 +72,13 @@ func (s *Service) settleContainerGrave(p ContainerIntent, r *GraveResult) error 
 		r.Error = "container remains stopped; operation cleared for retry"
 	}
 	err = s.Store.UpdateGraveyard(func(st *State) error {
-		if err := st.checkContainerIntent(p); err != nil {
+		if err := checkContainerIntent(st, p); err != nil {
 			return err
 		}
 		if err := checkContainerBurial(st, *p.Burial); err != nil {
 			return err
 		}
-		st.dropContainerIntent(p)
+		dropContainerIntent(st, p)
 		if action != "" {
 			finishContainerGrave(st, *p.Burial, action, s.now(), detail)
 		}
@@ -97,17 +97,17 @@ func (s *Service) checkContainerRemoval(p ContainerIntent) error {
 	if p.Operation != "rm" || len(p.RemovalIDs) == 0 {
 		return nil
 	}
-	ids, err := s.Docker.ListIDs(docker.WithTarget(s.Store.Context(), p.identity().Target))
+	ids, err := s.Docker.ListIDs(docker.WithTarget(s.Store.Context(), containerIntentIdentity(p).Target))
 	if err != nil {
 		return err
 	}
-	return docker.CheckRemoval(p.RemovalIDs, ids, p.identity().ID)
+	return docker.CheckRemoval(p.RemovalIDs, ids, containerIntentIdentity(p).ID)
 }
 
 func (s *Service) commitContainerRetry(out Outcome) error {
 	return s.Store.UpdateGraveyard(func(st *State) error {
 		// A pending stop owns the original revision until its effect is known.
-		if st.containerIntent(out.Item.ID) == nil {
+		if containerIntent(st, out.Item.ID) == nil {
 			s.commitOutcome(st, out)
 		}
 		return nil
@@ -119,5 +119,5 @@ func (s *Service) pendingContainerGrave(b Burial) (*ContainerIntent, error) {
 	if err != nil {
 		return nil, err
 	}
-	return st.containerIntent(b.ID), nil
+	return containerIntent(&st, b.ID), nil
 }

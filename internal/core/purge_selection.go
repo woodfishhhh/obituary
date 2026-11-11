@@ -48,7 +48,7 @@ func (s *Service) purgeLocked(run *purgeRun) error {
 	}
 	s.resolvePurgeRefs(run, &state)
 	due := func(b Burial) bool {
-		return s.purgeDue(b, run) || run.refs == nil && state.containerIntent(b.ID) != nil
+		return s.purgeDue(b, run) || run.refs == nil && containerIntent(&state, b.ID) != nil
 	}
 	if !slices.ContainsFunc(state.Burials, due) {
 		return nil

@@ -10,14 +10,11 @@ import (
 	"strings"
 	"unicode/utf16"
 	"unicode/utf8"
+
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
-// Write restore metadata before moving the object and retain the manifest
-// until its ledger commit succeeds, so an interrupted restore can be recovered.
-type restoreIntent struct {
-	Parent Identity `json:"parent"`
-	Name   string   `json:"name"`
-}
+type restoreIntent = ledger.RestoreIntent
 
 func validRestoreIntent(intent *restoreIntent, identity *Identity) bool {
 	return validRestoreParent(intent, identity) && validRestoreName(intent.Name)
@@ -120,7 +117,7 @@ func (s *Service) inspectRestoreIntent(p PendingGrave, st State) PendingGrave {
 			return fail(err)
 		}
 		p.Status = "restore-committed"
-		if i := st.cleanupIndex(b.ID); i >= 0 {
+		if i := cleanupIndex(&st, b.ID); i >= 0 {
 			c := st.RestoreCleanups[i]
 			if c.Burial.Grave != "" && !sameBurial(c.Burial, b) {
 				return fail(errors.New("cleanup receipt conflicts with manifest"))
@@ -211,7 +208,7 @@ func (s *Service) commitResurrection(b Burial, path, detail string, intent *rest
 			if !sameBurial(st.Burials[j], b) {
 				return fmt.Errorf("burial changed during resurrection: %w", ErrUnsafe)
 			}
-			st.spareRestoredWatch(st.Burials[j], path, s.now())
+			spareRestoredWatch(st, st.Burials[j], path, s.now())
 			s.spareWatchObject(st, b.WatchID, b.Identity, path, "restored")
 			s.spareAutomaticObject(st, b.Identity, path)
 			st.Stats.Resurrected++

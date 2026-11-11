@@ -1,6 +1,8 @@
 package core
 
-import "slices"
+import (
+	"slices"
+)
 
 // Keep the first session's review intact and check under the store lock so
 // concurrent finishes cannot each publish the same candidate.
@@ -28,26 +30,9 @@ func (s *Service) leftoverUnavailable(st *State, project, session string, c Cand
 	return pending
 }
 
-// LeftoverPathRejected applies a file decision across sessions in its project.
-// Reusing the bounded rejection history also covers decisions from old ledgers.
-// Container decisions continue to use their session-scoped identity keys.
-func (st *State) LeftoverPathRejected(project, path string) bool {
-	for _, r := range st.LeftoverRejections {
-		if !samePath(r.Project, project) {
-			continue
-		}
-		for _, rejected := range r.Paths {
-			if samePath(path, rejected) || isInside(path, rejected) || isInside(rejected, path) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 // Legacy proposals may share a path with different local revision numbers.
 // Remove only twins of candidates whose own decision actually settled.
-func (st *State) removeLeftoverTwins(decided Proposal, settled []Candidate) {
+func removeLeftoverTwins(st *State, decided Proposal, settled []Candidate) {
 	if decided.Kind != ProposalLeftovers || len(settled) == 0 {
 		return
 	}

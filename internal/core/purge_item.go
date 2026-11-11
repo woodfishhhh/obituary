@@ -86,7 +86,7 @@ func (s *Service) requirePurgeAuditSpace(b Burial, dryRun bool) error {
 	if err != nil {
 		return err
 	}
-	return current.requireAuditSpace()
+	return requireAuditSpace(&current)
 }
 
 func (s *Service) purgeBurial(r *GraveResult, state State, selected, all, dryRun bool) error {
@@ -175,7 +175,7 @@ func (s *Service) commitPurge(r GraveResult) error {
 			st.Stats.Purged++
 			st.Stats.PurgedBytes += b.Size
 		}
-		st.queueAudit(Event{Time: s.now(), Action: r.Action, ID: b.ID, Path: b.Path, Detail: b.Grave})
+		queueAudit(st, Event{Time: s.now(), Action: r.Action, ID: b.ID, Path: b.Path, Detail: b.Grave})
 		return nil
 	})
 }

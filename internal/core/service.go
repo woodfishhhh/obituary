@@ -80,7 +80,7 @@ type Service struct {
 func (s *Service) trackChanges() (*Service, func()) {
 	copy := *s
 	changed := false
-	copy.Store.changed = &changed
+	copy.Store = copy.Store.WithChangeFlag(&changed)
 	return &copy, func() {
 		if changed {
 			copy.notifyChange()
@@ -115,19 +115,7 @@ func (s *Service) WithContext(ctx context.Context) *Service {
 	return &copy
 }
 
-// automatic reports whether an item was registered without an explicit
-// request for that exact path, and so needs the Git re-check.
-func automatic(it Item) bool {
-	return it.Source == "watch" || it.Project != "" && automaticSource(it.Source)
-}
-
-func automaticSource(source string) bool {
-	switch source {
-	case "rule", "proposal", "session":
-		return true
-	}
-	return false
-}
+func automatic(it Item) bool { return it.Automatic() }
 
 func (s *Service) retention() time.Duration {
 	if s.Retention > 0 {

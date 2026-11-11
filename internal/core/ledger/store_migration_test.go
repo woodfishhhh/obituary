@@ -1,4 +1,4 @@
-package core
+package ledger
 
 import (
 	"bytes"
@@ -37,7 +37,7 @@ func legacyLedgerVersion(t *testing.T, version int, indented bool) (Store, []byt
 		st.Burials = append(st.Burials, b)
 		b.ID += 10
 		st.RestoreCleanups = append(st.RestoreCleanups, RestoreCleanup{Kind: ActionResurrected, Burial: b,
-			Path: b.Path + "-restored", Restore: &restoreIntent{Parent: *benchmarkIdentity(i + 600), Name: "restored"}, CommittedAt: now})
+			Path: b.Path + "-restored", Restore: &RestoreIntent{Parent: *benchmarkIdentity(i + 600), Name: "restored"}, CommittedAt: now})
 	}
 	data, err := json.Marshal(st)
 	if indented {

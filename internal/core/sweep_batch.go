@@ -12,6 +12,7 @@ import (
 // syscall/Sync already in flight cannot be preempted; no further item starts
 // after this budget. Preparation and size walks run without store.lock.
 const sweepBatchSize = 32
+
 const sweepBatchWork = 100 * time.Millisecond
 
 func (s *Service) sweepBurials(state State, roots []resolvedGraveyardRoot, blocked map[int64]bool) (outcomes []Outcome, finalErr error) {
@@ -37,7 +38,7 @@ func (s *Service) sweepBurials(state State, roots []resolvedGraveyardRoot, block
 		return err
 	}
 	for _, snapshot := range state.Items {
-		if blocked[snapshot.ID] || !snapshot.Due(s.now()) || state.awaitingWatchBurial(snapshot) {
+		if blocked[snapshot.ID] || !snapshot.Due(s.now()) || awaitingWatchBurial(&state, snapshot) {
 			continue
 		}
 		if refresh {
@@ -49,7 +50,7 @@ func (s *Service) sweepBurials(state State, roots []resolvedGraveyardRoot, block
 			refresh = false
 		}
 		idx := current.Index(snapshot.ID)
-		if idx < 0 || !current.Items[idx].Due(s.now()) || current.awaitingWatchBurial(current.Items[idx]) {
+		if idx < 0 || !current.Items[idx].Due(s.now()) || awaitingWatchBurial(&current, current.Items[idx]) {
 			continue
 		}
 		item := current.Items[idx]
@@ -145,7 +146,7 @@ func (s *Service) moveBurialPrefix(st *State, pending []*preparedBurial, owners 
 		if processed > 0 && time.Since(started) >= sweepBatchWork {
 			break
 		}
-		if err := st.requireAuditSpace(); err != nil {
+		if err := requireAuditSpace(st); err != nil {
 			return processed, err, nil
 		}
 		if p.out.Action == "" {
@@ -167,7 +168,7 @@ func (s *Service) moveBurialPrefix(st *State, pending []*preparedBurial, owners 
 			if reason == ReasonExpired {
 				s.commitOutcome(st, p.out)
 			}
-			st.queueAudit(Event{Time: s.now(), Action: p.out.Action, ID: p.out.Item.ID, Path: p.out.Path, Detail: p.out.Detail})
+			queueAudit(st, Event{Time: s.now(), Action: p.out.Action, ID: p.out.Item.ID, Path: p.out.Path, Detail: p.out.Detail})
 		}
 	}
 	return processed, nil, nil
