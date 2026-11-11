@@ -79,7 +79,7 @@ func generate(root, release, only string) error {
 }
 
 func brandIcon(root string) (*winres.Icon, error) {
-	data, err := os.ReadFile(filepath.Join(root, "docs", "assets", "brand", "obituary-icon-128.png"))
+	data, err := os.ReadFile(filepath.Join(root, "docs", "assets", "brand", "obituary-mark-512.png"))
 	if err != nil {
 		return nil, err
 	}
@@ -87,14 +87,14 @@ func brandIcon(root string) (*winres.Icon, error) {
 	if err != nil {
 		return nil, err
 	}
-	// The repository's largest square source is 128px; Lanczos resizing in
-	// tc-hib/winres supplies the requested 256px layer as well as the tray sizes.
+	// The 512px mark is cut from the horizontal logo, the largest drawing of
+	// the stone; Lanczos resizing in tc-hib/winres makes every icon size from it.
 	return winres.NewIconFromResizedImage(squareAroundMark(img), iconSizes)
 }
 
-// squareAroundMark crops the brand image to a square around the tombstone.
-// The source draws it in the middle half of a 128px canvas with wide grass,
-// which left the mark only a few pixels tall in the taskbar and tray.
+// squareAroundMark crops the brand image to a square around the tombstone,
+// so wide grass or a padded canvas never shrinks the mark in the taskbar and
+// tray. The current source is already square around it; the crop stays as a guard.
 func squareAroundMark(img image.Image) image.Image {
 	b := img.Bounds()
 	alpha := func(x, y int) uint8 { return color.NRGBAModel.Convert(img.At(x, y)).(color.NRGBA).A }

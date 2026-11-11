@@ -1,4 +1,4 @@
-<img src="assets/brand/obituary-icon-128.png" width="64" height="64" align="right" alt="讣告 Obituary">
+<img src="assets/brand/obituary-mark-512.png" width="72" height="72" align="right" alt="讣告 Obituary">
 
 # 讣告 Obituary 架构
 

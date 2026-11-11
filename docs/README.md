@@ -1,4 +1,4 @@
-<img src="assets/brand/obituary-icon-128.png" width="64" height="64" align="right" alt="讣告 Obituary">
+<img src="assets/brand/obituary-mark-512.png" width="72" height="72" align="right" alt="讣告 Obituary">
 
 # 讣告 Obituary 文档
 
@@ -31,7 +31,8 @@
 |---|---|---|
 | `obituary-horizontal-light.png` | 双语横版标志，浅色页面用 | README 页头（浅色主题） |
 | `obituary-horizontal-dark.png` | 双语横版标志，深色页面用 | README 页头（深色主题） |
-| `obituary-icon-128.png` | 128 px 图标 | 各文档页头 |
+| `obituary-mark-512.png` | 512 px 方形标志，墓碑占满画面，从横版标志里裁出 | 各文档页头、程序和托盘图标、小窗口里的标志、头像 |
+| `obituary-icon-128.png` | 128 px 图标，留白较多 | 插件清单里要求的图标 |
 
 README 用 `<picture>` 按访问者的主题在浅色版和深色版之间切换。用 PNG 而不用 SVG，是因为 PNG 保留了草叶、水彩渐变和微光的细节，全彩 SVG 是重建的路径，单个约 1.5 MB。完整的品牌包（SVG、16–1024 px 图标、favicon、单色版）没有放进仓库。
 
