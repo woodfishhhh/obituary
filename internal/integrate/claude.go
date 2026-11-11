@@ -94,11 +94,6 @@ func PlanClaude(s Scope, command string, uninstall bool) ([]Change, error) {
 		}
 	}
 	changes = append(changes[:2], references...)
-	if !s.Global {
-		for i := range changes {
-			changes[i].project = s.Project
-		}
-	}
 	return changes, nil
 }
 

@@ -141,7 +141,11 @@ func TestNestedHookConfigLifecycle(t *testing.T) {
 				if string(enabled) != "true" {
 					t.Fatal("uninstall reset user's switch")
 				}
-				if read(t, path+".bak") != original {
+				backup := path + ".bak"
+				if !s.Global {
+					backup = testBackupPath(t, path)
+				}
+				if read(t, backup) != original {
 					t.Fatal("backup changed")
 				}
 			})
@@ -220,7 +224,7 @@ func TestHookConfigShapesLifecycle(t *testing.T) {
 				}
 				ch, err := PlanHookConfig(s, path, spec, true)
 				applyIntegration(t, []Change{ch}, err)
-				if !sameConfigJSON([]byte(strings.TrimPrefix(read(t, path), bom)), []byte(original)) || read(t, path+".bak") != bom+original {
+				if !sameConfigJSON([]byte(strings.TrimPrefix(read(t, path), bom)), []byte(original)) || read(t, testBackupPath(t, path)) != bom+original {
 					t.Fatal("uninstall/backup changed user configuration")
 				}
 			})

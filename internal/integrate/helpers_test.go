@@ -17,8 +17,27 @@ import (
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/hook"
 	"github.com/woodfishhhh/obituary/internal/rules"
+	"github.com/woodfishhhh/obituary/internal/userdirs"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
+
+func testBackupPath(t *testing.T, path string) string {
+	t.Helper()
+	result, err := userdirs.ReceiptPath(path, "integration-backups", ".bak")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return result
+}
+
+func testAssetReceiptPath(t *testing.T, path string) string {
+	t.Helper()
+	result, err := userdirs.ReceiptPath(path, "integration-receipts", ".obituary-asset")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return result
+}
 
 func checkAgentSkillTargets(t *testing.T, agent string) {
 	t.Helper()

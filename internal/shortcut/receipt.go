@@ -1,35 +1,16 @@
 package shortcut
 
 import (
-	"crypto/sha256"
 	"errors"
-	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/woodfishhhh/obituary/internal/integrate"
-	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
 )
 
 // ReceiptPath separates ownership metadata from Shell-visible entry points.
 func ReceiptPath(path string) (string, error) {
-	abs, err := pathutil.Abs(path)
-	if err != nil {
-		return "", err
-	}
-	home, err := userdirs.Data()
-	if err != nil {
-		return "", err
-	}
-	key := strings.Map(func(r rune) rune {
-		if r >= 'A' && r <= 'Z' {
-			return r + ('a' - 'A')
-		}
-		return r
-	}, filepath.Clean(abs))
-	return filepath.Join(home, "shortcut-receipts", fmt.Sprintf("%x.obituary-asset", sha256.Sum256([]byte(key)))), nil
+	return userdirs.ReceiptPath(path, "shortcut-receipts", ".obituary-asset")
 }
 
 func planReceipt(executable, path string, content []byte, uninstall bool) ([]integrate.Change, error) {

@@ -13,7 +13,7 @@ import (
 
 func relocatedFixture(t *testing.T) (Scope, ManagedAsset, string) {
 	t.Helper()
-	s := Scope{Project: t.TempDir()}
+	s := Scope{Global: true, Project: t.TempDir()}
 	asset := pluginAsset(s)
 	return s, asset, filepath.Join(s.Project, "receipts", "asset.json")
 }

@@ -64,7 +64,7 @@ func TestApplyPinsParentForWrites(t *testing.T) {
 			} else if got := read(t, original); got != "new" {
 				t.Fatalf("pinned write missed authorized file: %q", got)
 			}
-			if action != "create" && read(t, original+".bak") != "old" {
+			if action != "create" && read(t, testBackupPath(t, original)) != "old" {
 				t.Fatal("pinned backup missed authorized file")
 			}
 		})

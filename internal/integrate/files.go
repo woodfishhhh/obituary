@@ -14,6 +14,7 @@ func planFile(s Scope, path string, content []byte, uninstall bool) (Change, err
 	if err != nil {
 		return ch, err
 	}
+	ch.generated = true
 	data, exists := ch.orig, ch.existed
 	// A quoted marker is not whole-file ownership. Legacy files have no
 	// receipt, so only the complete shipped document proves its contents.

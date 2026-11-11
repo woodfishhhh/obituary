@@ -53,7 +53,7 @@ func TestTraeInstallationLifecycle(t *testing.T) {
 				plan, err = PlanAgent(agent, s, Commands{}, true)
 				applyIntegration(t, plan, err)
 				got := read(t, path)
-				if strings.Contains(got, "new location") || !strings.Contains(got, "echo user && obit hook "+agent) || !strings.Contains(got, `"theme": "dark"`) || read(t, path+".bak") != input {
+				if strings.Contains(got, "new location") || !strings.Contains(got, "echo user && obit hook "+agent) || !strings.Contains(got, `"theme": "dark"`) || read(t, testBackupPath(t, path)) != input {
 					t.Fatal("uninstall changed user config", got)
 				}
 				plan, err = PlanAgent(agent, s, Commands{}, true)

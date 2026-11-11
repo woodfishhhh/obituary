@@ -11,10 +11,12 @@ type hermesConfigParents struct {
 
 func planHermesConfigParents(s Scope, registration Change, kind string, uninstall bool) ([]Change, error) {
 	path := registration.Path + ".obituary-hermes-" + kind
-	before, err := readIntegrationChange(s, path)
+	asset := ManagedAsset{Path: path, ID: "hermes-config-" + kind, Owner: "hermes", Version: "1"}
+	p, err := readSharedAsset(s, asset)
 	if err != nil {
 		return nil, err
 	}
+	before := p.file
 	container := "mcp_servers"
 	if kind == "hooks" {
 		container = "plugins"
@@ -42,7 +44,8 @@ func planHermesConfigParents(s Scope, registration Change, kind string, uninstal
 			return nil, err
 		}
 	}
-	assets, err := PlanManagedAssets(s, []ManagedAsset{{Path: path, ID: "hermes-config-" + kind, Owner: "hermes", Version: "1", Content: content}}, uninstall)
+	asset.Content = content
+	assets, err := planSharedRegistration(s, asset, nil, []string{"hermes"}, uninstall)
 	if err != nil {
 		return nil, err
 	}

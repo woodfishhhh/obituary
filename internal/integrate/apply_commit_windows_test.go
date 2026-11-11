@@ -31,7 +31,7 @@ func TestCommitBlocksConcurrentEdits(t *testing.T) {
 			if err := Apply([]Change{c}); err != nil || !attempted {
 				t.Fatalf("verified commit did not finish: %v (attempted=%v)", err, attempted)
 			}
-			if read(t, path+".bak") != "authorized original" || read(t, filepath.Join(root, "editor.tmp")) != "NEW USER POLICY" {
+			if read(t, testBackupPath(t, path)) != "authorized original" || read(t, filepath.Join(root, "editor.tmp")) != "NEW USER POLICY" {
 				t.Fatal("commit did not retain the verified backup and pending editor save")
 			}
 			if action == "remove" {
@@ -189,7 +189,7 @@ func TestCommitProtectsTemporarySource(t *testing.T) {
 			if err != nil || string(data) != string(c.data) {
 				t.Fatalf("temporary source protection failed: published %q: %v", data, err)
 			}
-			if c.existed && read(t, path+".bak") != "authorized original" {
+			if c.existed && read(t, testBackupPath(t, path)) != "authorized original" {
 				t.Fatal("temporary source attack changed the verified backup")
 			}
 			assertIntegrationTempRemoved(t, root)

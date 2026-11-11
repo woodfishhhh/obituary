@@ -36,27 +36,36 @@ func planSkillAsset(s Scope, root, id, owner string, content []byte, uninstall b
 	path := filepath.Join(root, "obituary", "SKILL.md")
 	asset := ManagedAsset{Path: path, ID: id, Owner: owner, Version: "1", Content: content}
 	bound := nativeSpecialScope(s, root)
+	if id != sharedSkillID {
+		changes, err := planProjectAsset(bound, asset, uninstall)
+		return skillDetails(changes, path), err
+	}
 	file, err := readIntegrationChange(bound, path)
 	if err != nil {
 		return nil, err
 	}
-	receiptPath := ManagedAssetReceiptPath(path)
-	if id == sharedSkillID {
-		receiptPath = filepath.Join(filepath.Dir(path), ".obituary-skill")
-	}
+	receiptPath := filepath.Join(filepath.Dir(path), ".obituary-skill")
 	receipt, err := readIntegrationChange(bound, receiptPath)
 	if err != nil {
 		return nil, err
 	}
+	legacyLock, err := readIntegrationChange(bound, path+".lock")
+	if err != nil {
+		return nil, err
+	}
 	changes, err := planSharedOwners(sharedRegistrationPlan{asset: managedAssetPlan{
-		asset: asset, owners: []string{owner}, uninstall: uninstall, file: file, receipt: receipt,
+		asset: asset, owners: []string{owner}, uninstall: uninstall, file: file, receipt: receipt, legacyLock: &legacyLock,
 	}})
+	return skillDetails(changes, path), err
+}
+
+func skillDetails(changes []Change, path string) []Change {
 	for i := range changes {
 		if changes[i].Path == path && changes[i].Detail == "" {
 			changes[i].Detail = "Agent Skill → " + path
 		}
 	}
-	return changes, err
+	return changes
 }
 
 // Remove a previous host-specific copy only when its receipt proves ownership.

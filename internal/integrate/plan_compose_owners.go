@@ -159,6 +159,8 @@ func composeOwnerGroup(changes []Change, indices []int, key string) ([]Change, b
 		if err == nil {
 			plan, err = planSharedOwners(sharedRegistrationPlan{asset: first, registration: registration})
 		}
+	} else if move := first.receiptMove; move != nil {
+		plan, err = planRelocatedOwners(first.asset, first.file, move.receipt, move.checks[2], first.owners, first.uninstall)
 	} else {
 		plan, err = planAssetOwners(first.file, first.receipt, first.asset, first.owners, first.uninstall)
 	}

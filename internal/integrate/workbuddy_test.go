@@ -100,7 +100,7 @@ func TestWorkBuddyInstallationLifecycle(t *testing.T) {
 				if strings.HasPrefix(installed, "\xef\xbb\xbf") != (bom != "") || !strings.Contains(installed, "<keep>&") || strings.Index(installed, `"first"`) > strings.Index(installed, `"mcpServers"`) || strings.Index(installed, `"last"`) < strings.Index(installed, `"mcpServers"`) {
 					t.Fatal("BOM, literal text or user key order changed", installed)
 				}
-				if read(t, path+".bak") != original || read(t, filepath.Join(export, "SKILL.md")) != string(skillContent) {
+				if read(t, testBackupPath(t, path)) != original || read(t, filepath.Join(export, "SKILL.md")) != string(skillContent) {
 					t.Fatal("backup or existing skill bytes changed")
 				}
 				if !strings.Contains(read(t, filepath.Join(export, "SETUP.md")), "没有插件 manifest") || !json.Valid([]byte(read(t, filepath.Join(export, "sources.json")))) {
@@ -145,7 +145,7 @@ func TestWorkBuddyInstallationLifecycle(t *testing.T) {
 					t.Fatal(err)
 				}
 				remaining := read(t, path)
-				if strings.Contains(remaining, `"obituary"`) || !strings.Contains(remaining, `"other"`) || strings.HasPrefix(remaining, "\xef\xbb\xbf") != (bom != "") || read(t, path+".bak") != original {
+				if strings.Contains(remaining, `"obituary"`) || !strings.Contains(remaining, `"other"`) || strings.HasPrefix(remaining, "\xef\xbb\xbf") != (bom != "") || read(t, testBackupPath(t, path)) != original {
 					t.Fatal("uninstall damaged user MCP settings or first backup", remaining)
 				}
 				for _, name := range []string{"SKILL.md", "SETUP.md", "sources.json"} {
@@ -188,7 +188,14 @@ func TestWorkBuddyCapabilitiesAndExportScope(t *testing.T) {
 	}
 	f.scope.GuardRM = false
 	for _, change := range workBuddyPlan(t, f, `C:\tools\obit.exe`, false) {
-		rel, err := filepath.Rel(f.root, change.Path)
+		root := f.root
+		if change.relocated != nil {
+			root = filepath.Dir(testAssetReceiptPath(t, filepath.Join(f.root, "unused")))
+		}
+		rel, err := filepath.Rel(root, change.Path)
+		if change.relocated != nil && change.Path == change.asset.asset.Path {
+			rel, err = filepath.Rel(f.root, change.Path)
+		}
 		if err != nil || strings.HasPrefix(rel, "..") || strings.Contains(rel, "plugin.json") || strings.Contains(rel, "hooks") || strings.Contains(rel, "settings") || change.Detail == "" {
 			t.Fatal("unverified activation or out-of-scope write", change)
 		}

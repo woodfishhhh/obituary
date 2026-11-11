@@ -84,7 +84,7 @@ func planHermesEnabled(s Scope, path string, uninstall bool) (Change, error) {
 	}
 	if slices.Contains(enabled, "obituary") {
 		manifest := filepath.Join(filepath.Dir(path), "plugins", "obituary", "plugin.yaml")
-		receipt, err := readIntegrationChange(s, ManagedAssetReceiptPath(manifest))
+		receipt, err := readAssetReceipt(s, manifest)
 		if err != nil {
 			return ch, err
 		}

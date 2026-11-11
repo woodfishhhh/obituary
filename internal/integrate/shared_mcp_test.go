@@ -45,7 +45,7 @@ func TestSharedMCPOwnersLifecycle(t *testing.T) {
 					t.Fatal("last owner left MCP registered")
 				}
 			}
-			if _, err := os.Stat(ManagedAssetReceiptPath(path + ".obituary-owners")); !os.IsNotExist(err) {
+			if _, err := os.Stat(ManagedAssetReceiptPath(testSidecarPath(t, path+".obituary-owners"))); !os.IsNotExist(err) {
 				t.Fatal("last owner left receipt", err)
 			}
 		})
@@ -61,7 +61,7 @@ func TestSharedMCPLegacyReceiptMigration(t *testing.T) {
 	s := Scope{Project: t.TempDir()}
 	path := filepath.Join(s.Project, ".mcp.json")
 	asset := ManagedAsset{Path: path + ".obituary-owners", ID: "codebuddy-mcp", Owner: "codebuddy", Version: "1", Content: []byte("Obituary shared registration: codebuddy-mcp\n")}
-	plan, err := PlanManagedAssets(s, []ManagedAsset{asset}, false)
+	plan, err := PlanManagedAssets(dataScope(s), []ManagedAsset{asset}, false)
 	applyIntegration(t, plan, err)
 	writeIntegrationFile(t, path, `{"mcpServers":{"obituary":{"command":"obit","args":["mcp"],"env":{"KEEP":"yes"}}}}`)
 	plan, err = PlanCopilotMCP(s, "C:/tools/obit.exe", false)
@@ -107,13 +107,13 @@ func TestSharedMCPLegacyReceiptProtectsUnrecordedClaude(t *testing.T) {
 			if err == nil || !strings.Contains(err.Error(), "legacy") {
 				t.Fatalf("legacy owner needs an explicit verification warning: %v", err)
 			}
-			receipt := read(t, ManagedAssetReceiptPath(path+".obituary-owners"))
+			receipt := read(t, ManagedAssetReceiptPath(testSidecarPath(t, path+".obituary-owners")))
 			if !strings.Contains(receipt, "legacy-unverified") || !strings.Contains(receipt, `"schema":2`) {
 				t.Fatalf("legacy protection not persisted: %s", receipt)
 			}
 			plan, err = PlanMCP(s, "claude", "C:/tools/obit.exe", false)
 			applyIntegration(t, plan, err)
-			if strings.Contains(read(t, ManagedAssetReceiptPath(path+".obituary-owners")), "legacy-unverified") {
+			if strings.Contains(read(t, ManagedAssetReceiptPath(testSidecarPath(t, path+".obituary-owners"))), "legacy-unverified") {
 				t.Fatal("explicit Claude confirmation did not resolve legacy ownership")
 			}
 			plan, err = PlanMCP(s, "claude", "", true)
@@ -131,7 +131,7 @@ func installLegacyMCP(t *testing.T, s Scope, path, owner string) {
 	if owner == "codebuddy" {
 		asset.ID, asset.Content = "codebuddy-mcp", []byte("Obituary shared registration: codebuddy-mcp\n")
 	}
-	plan, err := PlanManagedAssets(s, []ManagedAsset{asset}, false)
+	plan, err := PlanManagedAssets(dataScope(s), []ManagedAsset{asset}, false)
 	applyIntegration(t, plan, err)
 	writeIntegrationFile(t, path, `{"mcpServers":{"obituary":{"command":"C:/tools/obit.exe","args":["mcp"]}}}`)
 	ch, err := readIntegrationChange(s, path)

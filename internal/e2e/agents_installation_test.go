@@ -37,6 +37,12 @@ func lifecycleLayout(t *testing.T, agent, root, repo string, global bool) agentL
 	}
 	manual := func(steps ...string) { l.exit, l.steps = 1, append(l.steps, steps...) }
 	skill := "skills/obituary/SKILL.md"
+	sharedSkill := func(home string) {
+		if !global {
+			home = repo
+		}
+		add(home, ".agents/skills/obituary/SKILL.md")
+	}
 	switch agent {
 	case "claude":
 		add(dir, "settings.json", "OBIT.md", skill)
@@ -62,7 +68,8 @@ func lifecycleLayout(t *testing.T, agent, root, repo string, global bool) agentL
 		if !global {
 			dir = filepath.Join(repo, ".github")
 		}
-		add(dir, "hooks/obituary.json", "copilot-instructions.md", skill)
+		add(dir, "hooks/obituary.json", "copilot-instructions.md")
+		sharedSkill(user)
 		mcp := filepath.Join(repo, ".mcp.json")
 		if global {
 			mcp = filepath.Join(dir, "mcp-config.json")
@@ -78,13 +85,15 @@ func lifecycleLayout(t *testing.T, agent, root, repo string, global bool) agentL
 		} else {
 			add(dir, "rules/obituary.mdc")
 		}
-		add(dir, "hooks.json", "mcp.json", skill)
+		add(dir, "hooks.json", "mcp.json")
+		sharedSkill(user)
 		jsonSeed(filepath.Join(dir, "hooks.json"))
 	case "gemini":
 		if global {
 			dir = filepath.Join(root, "gemini", ".gemini")
 		}
-		add(dir, "settings.json", skill)
+		add(dir, "settings.json")
+		sharedSkill(filepath.Join(root, "gemini"))
 		jsonSeed(filepath.Join(dir, "settings.json"))
 		if global {
 			add(dir, "GEMINI.md")
@@ -96,7 +105,8 @@ func lifecycleLayout(t *testing.T, agent, root, repo string, global bool) agentL
 		if global {
 			dir = filepath.Join(root, "factory", ".factory")
 		}
-		add(dir, "hooks.json", "mcp.json", "AGENTS.md", skill)
+		add(dir, "hooks.json", "mcp.json", "AGENTS.md")
+		sharedSkill(user)
 		jsonSeed(filepath.Join(dir, "hooks.json"))
 	case "antigravity":
 		dir = filepath.Join(repo, ".agents")
@@ -120,13 +130,12 @@ func lifecycleLayout(t *testing.T, agent, root, repo string, global bool) agentL
 		add(dir, "hooks.toml", "config.toml")
 		l.seeds[filepath.Join(dir, "hooks.toml")] = "# user-sentinel 中文\n"
 	case "kimi":
+		sharedSkill(user)
 		if global {
 			add(dir, "config.toml", "mcp.json")
-			add(user, ".kimi/skills/obituary/SKILL.md")
 			l.seeds[filepath.Join(dir, "config.toml")] = "# user-sentinel 中文\n"
 		} else {
 			add(repo, "AGENTS.md")
-			add(dir, skill)
 			manual("--mcp-config-file", "mcpServers", "mcp")
 			l.absent = append(l.absent, filepath.Join(dir, "config.toml"), filepath.Join(dir, "mcp.json"))
 		}
@@ -147,6 +156,11 @@ func lifecycleLayout(t *testing.T, agent, root, repo string, global bool) agentL
 		jsonSeed(mcp)
 		l.steps = append(l.steps, "OBIT_OPENCODE_LOCAL=1", "SHELL=bash or powershell")
 	case "openclaw":
+		if global {
+			add(dir, skill)
+		} else {
+			sharedSkill(user)
+		}
 		add(dir, "extensions/obituary/index.ts", "extensions/obituary/openclaw.plugin.json", "extensions/obituary/runtime.json")
 		manual("plugins.entries.obituary.enabled=true", "plugins.allow", "openclaw plugins list", "mcp.servers.obituary", "OBIT_OPENCLAW_LOCAL=1", "OBIT_OPENCLAW_CWD")
 		config := filepath.Join(root, "openclaw", "openclaw.json")
@@ -234,7 +248,15 @@ func lifecycleLayout(t *testing.T, agent, root, repo string, global bool) agentL
 		}
 	case "qoderwork":
 		manual("QoderWork", "MCP/connector UI", "mcpServers", "mcp")
-		l.absent = append(l.absent, filepath.Join(user, ".qoderwork"), filepath.Join(repo, ".qoderwork"))
+		l.absent = append(l.absent, filepath.Join(repo, ".qoderwork"))
+		if global {
+			add(user, ".qoderwork/skills/obituary/SKILL.md")
+			for _, name := range []string{"settings.json", "hooks.json", "mcp.json"} {
+				l.absent = append(l.absent, filepath.Join(user, ".qoderwork", name))
+			}
+		} else {
+			l.absent = append(l.absent, filepath.Join(user, ".qoderwork"))
+		}
 	case "deepseek-harness":
 		dir = filepath.Join(repo, ".dsh")
 		if global {

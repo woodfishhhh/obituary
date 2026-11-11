@@ -30,6 +30,8 @@ type Change struct {
 	location     *integrationLocation
 	identity     os.FileInfo
 	relocated    *relocatedAssetPlan
+	generated    bool              // ownership verified; no backup of reproducible bytes
+	backup       *Change           // project originals are backed up outside the project
 	readOnly     bool              // inspection skipped the identity snapshot; never executable
 	asset        *managedAssetPlan // owner intent, composed before generating a receipt transaction
 	shared       *sharedRegistrationPlan
@@ -37,8 +39,9 @@ type Change struct {
 	textEdit     *composeTextEdit // exact marked range; avoids shifting across identical block headers
 }
 
-// Apply writes planned changes: a .bak copy of every existing file first,
-// then an atomic replace. Files Obituary created are removed on uninstall.
+// Apply writes planned changes with numbered backups for user configuration,
+// then an atomic replace. Verified generated files need no backup. Project
+// backups live in the data directory. Owned files are removed on uninstall.
 //
 // Before writing anything it checks that every file still holds what it held
 // when the changes were planned (a user may save their settings while the
@@ -84,8 +87,8 @@ func apply(changes []Change, afterWrite func(string) error) (err error) {
 			c.location = &p.location
 		}
 		err = p.checkOriginal(*c)
-		if err == nil && c.existed && c.Action != "unchanged" && c.claude == nil && c.relocated == nil {
-			err = p.backup(nil, false)
+		if err == nil && c.existed && c.Action != "unchanged" && c.claude == nil && c.relocated == nil && !c.generated {
+			err = p.backupChange(*c, nil, false)
 		}
 		p.root.Close()
 		if err != nil {

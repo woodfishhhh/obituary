@@ -157,18 +157,22 @@ func TestApplyRejectsBackupLinkAfterPreflight(t *testing.T) {
 	c.Action, c.delete = "remove", true
 	gate := filepath.Join(root, "gate")
 	plan := []Change{{Path: gate, Action: "create", data: []byte("gate"), project: root, phase: -1}, c}
+	backup := testBackupPath(t, path)
+	if err := os.MkdirAll(filepath.Dir(backup), 0700); err != nil {
+		t.Fatal(err)
+	}
 	afterIntegrationWrite := func(written string) error {
 		if written == gate {
-			makeIntegrationJunction(t, path+".bak", outside)
+			makeIntegrationJunction(t, backup, outside)
 		}
 		return nil
 	}
-	t.Cleanup(func() { _ = os.Remove(path + ".bak") })
+	t.Cleanup(func() { _ = os.Remove(backup) })
 	err = apply(plan, afterIntegrationWrite)
 	if err == nil || read(t, path) != "old" || read(t, filepath.Join(outside, "sentinel")) != "external" {
 		t.Fatalf("backup link planted after preflight accepted: %v", err)
 	}
-	info, statErr := os.Lstat(path + ".bak")
+	info, statErr := os.Lstat(backup)
 	if statErr != nil || info.Mode()&(os.ModeSymlink|os.ModeIrregular) == 0 {
 		t.Fatalf("planted backup link was not preserved: %v", statErr)
 	}

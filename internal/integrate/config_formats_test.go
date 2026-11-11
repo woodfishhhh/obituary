@@ -31,7 +31,7 @@ func TestConfigEditsExpectedAndNoop(t *testing.T) {
 			edit.Expected, edit.Value = json.RawMessage(`true`), json.RawMessage(`false`)
 			ch, err = PlanConfigEdits(s, path, format, []ConfigEdit{edit})
 			applyIntegration(t, []Change{ch}, err)
-			if read(t, path+".bak") != input || !strings.HasPrefix(read(t, path), "\xef\xbb\xbf") {
+			if read(t, testBackupPath(t, path)) != input || !strings.HasPrefix(read(t, path), "\xef\xbb\xbf") {
 				t.Fatal("BOM or backup changed")
 			}
 			got, err := configJSON([]byte(read(t, path)), format)

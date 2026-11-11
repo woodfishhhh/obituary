@@ -67,7 +67,7 @@ func TestVibeInstallationLifecycle(t *testing.T) {
 			}
 			plan, err = PlanVibe(s, Commands{}, true)
 			applyIntegration(t, plan, err)
-			if strings.TrimSpace(read(t, path)) != strings.TrimSpace(input) || read(t, path+".bak") != input {
+			if strings.TrimSpace(read(t, path)) != strings.TrimSpace(input) || read(t, testBackupPath(t, path)) != input {
 				t.Fatal("user hooks lost")
 			}
 			if !global && !strings.Contains(read(t, filepath.Join(s.Project, "AGENTS.md")), "keep these") {

@@ -92,6 +92,10 @@ func TestMCPInstallLifecycle(t *testing.T) {
 					t.Fatalf("plan: %v %v", plan, err)
 				}
 				path := plan[0].Path
+				backup := path + ".bak"
+				if !global {
+					backup = testBackupPath(t, path)
+				}
 				original := "\xef\xbb\xbf" + "# user formatting\r\nmodel = 'test'\r\n\r\n[mcp_servers.other]\r\ncommand = 'other' # retain this\r\n"
 				if agent == "claude" {
 					original = "\xef\xbb\xbf" + `{"theme":"dark","mcpServers":{"other":{"command":"user && helper","args":["x"]}},"projects":{"private":{}}}`
@@ -105,7 +109,7 @@ func TestMCPInstallLifecycle(t *testing.T) {
 					t.Fatal("planning wrote configuration")
 				}
 				applyIntegration(t, plan, err)
-				if read(t, path+".bak") != original || !strings.HasPrefix(read(t, path), "\xef\xbb\xbf") {
+				if read(t, backup) != original || !strings.HasPrefix(read(t, path), "\xef\xbb\xbf") {
 					t.Fatal("original backup or BOM lost")
 				}
 				plan, err = PlanMCP(scope, agent, "C:/old/obit.exe", false)
@@ -117,7 +121,7 @@ func TestMCPInstallLifecycle(t *testing.T) {
 				if !strings.Contains(read(t, path), "C:/new path/obit.exe") {
 					t.Fatal("binary path not refreshed")
 				}
-				if _, err := os.Stat(path + ".bak.1"); err != nil {
+				if _, err := os.Stat(backup + ".1"); err != nil {
 					t.Fatal("numbered backup missing", err)
 				}
 				plan, err = PlanMCP(scope, agent, "C:/new path/obit.exe", true)

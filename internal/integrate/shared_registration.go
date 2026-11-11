@@ -10,18 +10,12 @@ type sharedRegistrationPlan struct {
 }
 
 func planSharedRegistration(s Scope, asset ManagedAsset, registration []Change, requested []string, uninstall bool) ([]Change, error) {
-	file, err := readIntegrationChange(s, asset.Path)
+	p, err := readSharedAsset(s, asset)
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := readIntegrationChange(s, ManagedAssetReceiptPath(asset.Path))
-	if err != nil {
-		return nil, err
-	}
-	return planSharedOwners(sharedRegistrationPlan{
-		asset:        managedAssetPlan{asset: asset, owners: requested, uninstall: uninstall, file: file, receipt: receipt},
-		registration: registration,
-	})
+	p.owners, p.uninstall = requested, uninstall
+	return planSharedOwners(sharedRegistrationPlan{asset: p, registration: registration})
 }
 
 func planSharedOwners(intent sharedRegistrationPlan) (changes []Change, err error) {
@@ -66,5 +60,17 @@ func planSharedOwners(intent sharedRegistrationPlan) (changes []Change, err erro
 			registration[i].phase = -40
 		}
 	}
-	return append(owners, registration...), nil
+	for i := range owners {
+		owners[i].generated = true
+		if owners[i].next != nil {
+			owners[i].next.generated = true
+		}
+	}
+	owners, err = migrateSidecarPlan(owners, p)
+	if lock := p.legacyLock; lock != nil && p.receipt.existed && PreservedError(owners) == nil && lock.existed && len(lock.orig) == 0 {
+		cleanup := *lock
+		cleanup.Action, cleanup.delete, cleanup.generated, cleanup.phase = "remove", true, true, -11
+		owners = append(owners, cleanup)
+	}
+	return append(owners, registration...), err
 }

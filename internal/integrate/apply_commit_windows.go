@@ -65,8 +65,8 @@ func (p *integrationTarget) commitOriginal(c Change) (*os.File, error) {
 	if err == nil {
 		err = integrationCommitHook(c.Path)
 	}
-	if err == nil && c.relocated == nil {
-		if backupErr := p.backup(data, true); backupErr != nil {
+	if err == nil && c.relocated == nil && !c.generated {
+		if backupErr := p.backupChange(c, data, true); backupErr != nil {
 			err = fmt.Errorf("back up %s: %w", c.Path, backupErr)
 		}
 	}

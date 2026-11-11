@@ -21,7 +21,7 @@ func TestSharedMCPLegacyDomesticRefreshKeepsUnknownOwners(t *testing.T) {
 				plan, err := a.PlanMCP(s, "C:/tools/obit.exe", false)
 				applyIntegration(t, plan, err)
 			}
-			if !strings.Contains(read(t, ManagedAssetReceiptPath(path+".obituary-owners")), legacyMCPOwner) {
+			if !strings.Contains(read(t, ManagedAssetReceiptPath(testSidecarPath(t, path+".obituary-owners"))), legacyMCPOwner) {
 				t.Fatal("domestic refresh lost unverified legacy owners")
 			}
 			plan, err := a.PlanMCP(s, "", true)
@@ -40,7 +40,7 @@ func TestSharedMCPReceiptRejectsFutureSchema(t *testing.T) {
 	path := filepath.Join(s.Project, ".mcp.json")
 	plan, err := PlanMCP(s, "claude", "C:/tools/obit.exe", false)
 	applyIntegration(t, plan, err)
-	receipt := ManagedAssetReceiptPath(path + ".obituary-owners")
+	receipt := ManagedAssetReceiptPath(testSidecarPath(t, path+".obituary-owners"))
 	writeIntegrationFile(t, receipt, strings.Replace(read(t, receipt), `"schema":2`, `"schema":3`, 1))
 	original := read(t, path)
 	if _, err := PlanMCP(s, "claude", "C:/tools/obit.exe", false); err == nil {

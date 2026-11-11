@@ -283,7 +283,7 @@ func qoderMCPLayers(bounded Scope, paths []string, agent string, global, uninsta
 		return nil, 0, fmt.Errorf("%s MCP obituary exists in multiple layers; review settings.json, .mcp.json and settings.local.json before installation or removal", agent)
 	}
 	if !global && !uninstall && entries[active] != nil {
-		receipt, err := readIntegrationChange(bounded, ManagedAssetReceiptPath(paths[active]+".obituary-owners"))
+		receipt, err := readSharedReceipt(bounded, paths[active]+".obituary-owners")
 		if err != nil {
 			return nil, 0, err
 		}

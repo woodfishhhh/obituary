@@ -50,7 +50,7 @@ func TestTOMLBlockLifecycleCommentsAndScope(t *testing.T) {
 	}
 	ch, err = PlanTOMLBlock(s, path, vibeBlock(""), true)
 	applyIntegration(t, []Change{ch}, err)
-	if strings.TrimSpace(read(t, path)) != strings.TrimSpace(input) || read(t, path+".bak") != input {
+	if strings.TrimSpace(read(t, path)) != strings.TrimSpace(input) || read(t, testBackupPath(t, path)) != input {
 		t.Fatal("uninstall or backup changed original", read(t, path))
 	}
 }

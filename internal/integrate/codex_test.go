@@ -318,10 +318,9 @@ func TestApplyRechecksNumberedBackupLinks(t *testing.T) {
 	}
 	path := filepath.Join(root, ".codex", "hooks.json")
 	orig := read(t, path)
-	if err := os.WriteFile(path+".bak", []byte("earlier backup"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if out, err := exec.Command("cmd", "/c", "mklink", "/J", path+".bak.1", outside).CombinedOutput(); err != nil {
+	backup := testBackupPath(t, path)
+	writeIntegrationFile(t, backup, "earlier backup")
+	if out, err := exec.Command("cmd", "/c", "mklink", "/J", backup+".1", outside).CombinedOutput(); err != nil {
 		t.Fatalf("mklink: %v %s", err, out)
 	}
 	if err := Apply(changes); err == nil {

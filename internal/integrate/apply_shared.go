@@ -10,8 +10,8 @@ import (
 	"github.com/woodfishhhh/obituary/internal/core"
 )
 
-// Lock each actual shared sidecar, independent of agent and data home. Keep all
-// locks until Apply finishes the registration, sidecar and final receipt.
+// Lock each shared resource in the data directory. Keep all locks until Apply
+// finishes the registration, sidecar and final receipt.
 // Use core's LockFileEx wrapper (see core/lock_windows.go for the flock limits).
 // Contention fails before writes so callers can replan against fresh owners.
 type sharedApplyLocks struct {
@@ -45,7 +45,11 @@ func (l *sharedApplyLocks) acquire(changes []Change) error {
 	}
 	intents := sharedApplyIntents(changes)
 	for _, intent := range intents {
-		release, err := lockSharedResource(intent.asset.file)
+		lock, err := sharedResourceLock(intent.asset)
+		if err != nil {
+			return err
+		}
+		release, err := lockSharedResource(lock)
 		if err != nil {
 			return err
 		}
@@ -53,6 +57,12 @@ func (l *sharedApplyLocks) acquire(changes []Change) error {
 	}
 	for _, intent := range intents {
 		checks := append([]Change{intent.asset.file, intent.asset.receipt}, intent.registration...)
+		if m := intent.asset.migration; m != nil {
+			checks = append(checks, m.file, m.receipt, m.legacyFile, m.legacyReceipt, m.legacyLock)
+		}
+		if lock := intent.asset.legacyLock; lock != nil {
+			checks = append(checks, *lock)
+		}
 		for _, ch := range checks {
 			if err := checkOriginal(ch); err != nil {
 				return err
@@ -79,6 +89,17 @@ func sharedApplyIntents(changes []Change) []*sharedRegistrationPlan {
 		return strings.Compare(a.asset.asset.Path, b.asset.asset.Path)
 	})
 	return intents
+}
+
+func sharedResourceLock(p managedAssetPlan) (Change, error) {
+	if p.migration != nil {
+		return p.migration.receipt, nil
+	}
+	path, err := sidecarPath(p.asset.Path)
+	if err != nil {
+		return Change{}, err
+	}
+	return readIntegrationChange(Scope{Global: true}, path)
 }
 
 func lockSharedResource(ch Change) (func(), error) {

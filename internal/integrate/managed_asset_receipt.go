@@ -27,7 +27,7 @@ func PlanManagedAssetReceipt(s Scope, asset ManagedAsset, receiptPath string, un
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := readIntegrationChange(s, receiptPath)
+	receipt, err := readIntegrationChange(dataScope(s), receiptPath)
 	if err != nil {
 		return nil, err
 	}
@@ -39,11 +39,15 @@ func PlanManagedAssetReceipt(s Scope, asset ManagedAsset, receiptPath string, un
 }
 
 func planRelocatedAsset(asset ManagedAsset, file, receipt, legacy Change, uninstall bool) ([]Change, error) {
+	return planRelocatedOwners(asset, file, receipt, legacy, []string{asset.Owner}, uninstall)
+}
+
+func planRelocatedOwners(asset ManagedAsset, file, receipt, legacy Change, owners []string, uninstall bool) ([]Change, error) {
 	source := receipt
 	if !receipt.existed && legacy.existed {
 		source = legacy
 	}
-	plan, err := planAssetOwners(file, source, asset, []string{asset.Owner}, uninstall)
+	plan, err := planAssetOwners(file, source, asset, owners, uninstall)
 	if err != nil {
 		return nil, err
 	}
@@ -66,9 +70,10 @@ func planRelocatedAsset(asset ManagedAsset, file, receipt, legacy Change, uninst
 	if legacy.existed {
 		plan = append(plan, legacy)
 	}
+	ownerIntent := &managedAssetPlan{asset: asset, owners: owners, uninstall: uninstall, file: file, receipt: source, receiptMove: intent}
 	for i := range plan {
 		// Ownership and content were verified; generated files need no backup.
-		plan[i].asset, plan[i].relocated = nil, intent
+		plan[i].asset, plan[i].relocated = ownerIntent, intent
 		if plan[i].next != nil {
 			plan[i].next.relocated = intent
 		}
@@ -89,6 +94,7 @@ func relocateAssetReceipt(planned, destination Change, uninstall bool) Change {
 	if result.next != nil {
 		result.next.Path = destination.Path
 		result.next.location = destination.location
+		result.next.project, result.next.backup = destination.project, destination.backup
 		result.next.identity = nil // the pending write supplies its new identity
 	}
 	return result
@@ -98,7 +104,7 @@ func relocatedApplyIntents(changes []Change) []*relocatedAssetPlan {
 	var intents []*relocatedAssetPlan
 	seen := map[string]bool{}
 	for _, ch := range changes {
-		if ch.relocated != nil && !seen[ch.relocated.receipt.Path] {
+		if ch.relocated != nil && ch.shared == nil && !seen[ch.relocated.receipt.Path] {
 			intents = append(intents, ch.relocated)
 			seen[ch.relocated.receipt.Path] = true
 		}

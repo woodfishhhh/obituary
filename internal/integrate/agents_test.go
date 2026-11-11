@@ -219,6 +219,17 @@ func agentGoldenNormalize(data []byte, root string) []byte {
 func agentGoldenAssetHashes(tree any, root string, hashes map[string]string) {
 	switch v := tree.(type) {
 	case map[string]any:
+		if path, ok := v["Path"].(string); ok && strings.HasPrefix(path, root) {
+			key := func(value string) string {
+				return strings.Map(func(r rune) rune {
+					if r >= 'A' && r <= 'Z' {
+						return r + ('a' - 'A')
+					}
+					return r
+				}, filepath.Clean(value))
+			}
+			hashes[fmt.Sprintf("%x", sha256.Sum256([]byte(key(path))))] = fmt.Sprintf("%x", sha256.Sum256(agentGoldenPaths([]byte(key(path)), strings.ToLower(root))))
+		}
 		// ManagedAsset content may include absolute runtime paths (DeepSeek).
 		// Normalize its derived receipt digest, never the payload bytes.
 		if v["Owner"] != nil && v["ID"] != nil {
@@ -352,7 +363,7 @@ func TestAgentRegistryPlansExistingAgents(t *testing.T) {
 					} else {
 						want, err = PlanCodex(scope, commands.POSIX, commands.Native, uninstall)
 					}
-					if err != nil || !reflect.DeepEqual(got, want) {
+					if err != nil || !reflect.DeepEqual(agentGoldenValue(reflect.ValueOf(got)), agentGoldenValue(reflect.ValueOf(want))) {
 						t.Fatalf("planner changed behavior: %+v %+v %v", got, want, err)
 					}
 				}

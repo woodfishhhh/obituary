@@ -211,7 +211,7 @@ func miniMaxProjectMCPOwnership(s Scope, before Change, uninstall bool) error {
 	if err != nil || entry == nil {
 		return err
 	}
-	receipt, err := readIntegrationChange(s, ManagedAssetReceiptPath(before.Path+".obituary-owners"))
+	receipt, err := readSharedReceipt(s, before.Path+".obituary-owners")
 	if err != nil {
 		return err
 	}

@@ -66,6 +66,17 @@ func planSkillContent(s Scope, agent string, content []byte, uninstall bool) ([]
 	if err != nil {
 		return nil, err
 	}
+	file.generated, receipt.generated = true, true
+	lock, err := sidecarPath(path)
+	if err != nil {
+		return nil, err
+	}
+	lockChange, err := readIntegrationChange(dataScope(s), lock)
+	if err != nil {
+		return nil, err
+	}
+	intent := &relocatedAssetPlan{receipt: lockChange, checks: []Change{file, receipt}}
+	file.relocated, receipt.relocated = intent, intent
 	ours := file.existed && (bytes.Equal(receipt.orig, skillReceipt(file.orig)) || pendingSkillMatches(receipt.orig, file))
 	staleReceipt := !file.existed && (strings.HasPrefix(string(receipt.orig), skillReceiptPrefix) || pendingSkillMatches(receipt.orig, file))
 	if (file.existed && !ours) || (receipt.existed && !ours && !staleReceipt) {

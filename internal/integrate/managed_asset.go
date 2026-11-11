@@ -82,6 +82,9 @@ func OrderManagedInstallation(assets, registration []Change, uninstall bool) ([]
 }
 
 func planManagedAsset(s Scope, asset ManagedAsset, uninstall bool) ([]Change, error) {
+	if !s.Global {
+		return planProjectAsset(s, asset, uninstall)
+	}
 	file, err := readIntegrationChange(s, asset.Path)
 	if err != nil {
 		return nil, err
@@ -98,6 +101,9 @@ type managedAssetPlan struct {
 	owners        []string
 	uninstall     bool
 	file, receipt Change
+	migration     *sidecarMigration
+	receiptMove   *relocatedAssetPlan
+	legacyLock    *Change
 }
 
 func planAssetOwners(file, receipt Change, asset ManagedAsset, requested []string, uninstall bool) (changes []Change, err error) {

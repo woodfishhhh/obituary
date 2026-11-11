@@ -48,7 +48,7 @@ func TestManagedAssetLifecycleAndSharedOwners(t *testing.T) {
 	asset.Owner, asset.Version = "pi", "2"
 	plan, err = PlanManagedAssets(s, []ManagedAsset{asset}, false)
 	applyIntegration(t, plan, err)
-	if read(t, asset.Path) != "different" || !strings.Contains(read(t, ManagedAssetReceiptPath(asset.Path)), `"version":"2"`) {
+	if read(t, asset.Path) != "different" || !strings.Contains(read(t, testAssetReceiptPath(t, asset.Path)), `"version":"2"`) {
 		t.Fatal("upgrade failed")
 	}
 	user := filepath.Join(filepath.Dir(asset.Path), "user.ts")
@@ -112,7 +112,7 @@ func TestManagedAssetInterruptedWriteRecovery(t *testing.T) {
 				}
 				plan, err = PlanManagedAssets(s, []ManagedAsset{asset}, false)
 				applyIntegration(t, plan, err)
-				if read(t, asset.Path) != string(asset.Content) || strings.Contains(read(t, ManagedAssetReceiptPath(asset.Path)), "previous") {
+				if read(t, asset.Path) != string(asset.Content) || strings.Contains(read(t, testAssetReceiptPath(t, asset.Path)), "previous") {
 					t.Fatal("recovery failed")
 				}
 			})
@@ -133,7 +133,7 @@ func TestManagedAssetPreservesEditsReceiptsAndConcurrentWrites(t *testing.T) {
 			applyIntegration(t, plan, err)
 			target := asset.Path
 			if edit != "file" {
-				target = ManagedAssetReceiptPath(asset.Path)
+				target = testAssetReceiptPath(t, asset.Path)
 			}
 			writeIntegrationFile(t, target, "user edited")
 			if edit == "orphan receipt" {
@@ -160,7 +160,7 @@ func TestManagedAssetPreservesEditsReceiptsAndConcurrentWrites(t *testing.T) {
 	if err := Apply(plan); err == nil || read(t, asset.Path) != "saved after plan" {
 		t.Fatal("concurrent edit overwritten")
 	}
-	if _, err := os.Stat(ManagedAssetReceiptPath(asset.Path)); !os.IsNotExist(err) {
+	if _, err := os.Stat(testAssetReceiptPath(t, asset.Path)); !os.IsNotExist(err) {
 		t.Fatal("receipt written before preflight")
 	}
 	outside := t.TempDir()
@@ -195,7 +195,7 @@ func TestManagedAssetOrphanRecoveryAndUnownedCopies(t *testing.T) {
 			state.Previous = "absent"
 		}
 		raw, _ := marshal(state)
-		writeIntegrationFile(t, ManagedAssetReceiptPath(asset.Path), string(raw)+"\n")
+		writeIntegrationFile(t, testAssetReceiptPath(t, asset.Path), string(raw)+"\n")
 		plan, err := PlanManagedAssets(s, []ManagedAsset{asset}, false)
 		applyIntegration(t, plan, err)
 		if read(t, asset.Path) != string(asset.Content) {
@@ -206,7 +206,7 @@ func TestManagedAssetOrphanRecoveryAndUnownedCopies(t *testing.T) {
 		}
 		plan, err = PlanManagedAssets(s, []ManagedAsset{asset}, true)
 		applyIntegration(t, plan, err)
-		if _, err := os.Stat(ManagedAssetReceiptPath(asset.Path)); !os.IsNotExist(err) {
+		if _, err := os.Stat(testAssetReceiptPath(t, asset.Path)); !os.IsNotExist(err) {
 			t.Fatal("orphaned owned receipt retained", err)
 		}
 	}

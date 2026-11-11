@@ -42,7 +42,7 @@ func TestKimiGlobalHookLifecycle(t *testing.T) {
 	}
 	plan, err = PlanKimi(s, Commands{}, true)
 	applyIntegration(t, plan, err)
-	if strings.TrimSpace(read(t, path)) != strings.TrimSpace(input) || read(t, path+".bak") != input {
+	if strings.TrimSpace(read(t, path)) != strings.TrimSpace(input) || read(t, testBackupPath(t, path)) != input {
 		t.Fatal("user config lost")
 	}
 	plan, err = PlanKimi(s, Commands{}, true)

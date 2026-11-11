@@ -80,7 +80,7 @@ func TestSharedAgentRulesLegacyOwnersRemainProtected(t *testing.T) {
 			t.Fatal("migration discarded an unknown legacy owner")
 		}
 	}
-	if _, err := os.Stat(path + ".obituary-owners"); err != nil {
+	if _, err := os.Stat(testSidecarPath(t, path+".obituary-owners")); err != nil {
 		t.Fatal("legacy owner protection was not persisted", err)
 	}
 }

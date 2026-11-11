@@ -41,7 +41,7 @@ func TestAntigravityBundleLifecycle(t *testing.T) {
 				t.Fatal(err)
 			}
 			manifest := filepath.Join(dir, "plugin.json")
-			if writes[len(writes)-2] != manifest || writes[len(writes)-1] != ManagedAssetReceiptPath(manifest) {
+			if writes[len(writes)-2] != manifest || writes[len(writes)-1] != testAssetReceiptPath(t, manifest) {
 				t.Fatal("activation was not last", writes)
 			}
 			hooksPath := filepath.Join(dir, "hooks.json")
@@ -78,7 +78,7 @@ func TestAntigravityBundleLifecycle(t *testing.T) {
 				if _, err := os.Stat(path); !os.IsNotExist(err) {
 					t.Fatal("owned asset remains", path)
 				}
-				if _, err := os.Stat(ManagedAssetReceiptPath(path)); !os.IsNotExist(err) {
+				if _, err := os.Stat(testAssetReceiptPath(t, path)); !os.IsNotExist(err) {
 					t.Fatal("receipt remains", path)
 				}
 			}
@@ -107,6 +107,9 @@ func TestAntigravityPreservesEditedAssetsAndConcurrentChanges(t *testing.T) {
 			applyIntegration(t, plan, err)
 			dir := filepath.Join(s.Project, ".agents", "plugins", "obituary")
 			path := filepath.Join(dir, name)
+			if name == "hooks.json.obituary-asset" {
+				path = testAssetReceiptPath(t, filepath.Join(dir, "hooks.json"))
+			}
 			writeIntegrationFile(t, path, "user-modified")
 			if _, err := PlanAntigravity(s, commands, false); err == nil {
 				t.Fatal("edited asset claimed")

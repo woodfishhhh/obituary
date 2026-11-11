@@ -67,9 +67,14 @@ func readIntegrationChange(s Scope, path string) (Change, error) {
 	ch := Change{Path: path, Action: "unchanged"}
 	if !s.Global {
 		ch.project = s.Project
-		if err := s.checkInside(s.Project, path, path+".bak"); err != nil {
+		if err := s.checkInside(s.Project, path); err != nil {
 			return ch, err
 		}
+		backup, err := projectBackup(s, path)
+		if err != nil {
+			return ch, err
+		}
+		ch.backup = &backup
 	}
 	if s.inspection != nil {
 		return s.readIntegrationPreview(ch)

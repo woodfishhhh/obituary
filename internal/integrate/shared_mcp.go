@@ -23,10 +23,11 @@ func planSharedMCP(s Scope, path, agent string, spec MCPConfig, executable strin
 	}
 	mcp.Path = actual
 	asset := ManagedAsset{Path: actual + ".obituary-owners", ID: "pi-omp-mcp", Owner: agent, Version: "1", Content: []byte("Obituary Pi/OMP MCP registration\n"), receiptSchema: 2}
-	receipt, err := readIntegrationChange(s, ManagedAssetReceiptPath(asset.Path))
+	p, err := readSharedAsset(s, asset)
 	if err != nil {
 		return nil, err
 	}
+	receipt := p.receipt
 	legacy := asset
 	legacy.ID, legacy.Content = "codebuddy-mcp", []byte("Obituary shared registration: codebuddy-mcp\n")
 	if _, valid := decodeAssetReceipt(receipt.orig, legacy); valid {

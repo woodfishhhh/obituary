@@ -82,6 +82,26 @@ func TestOpenClawPluginDeferredContext(t *testing.T) {
 	testPluginContext(t, "openclaw")
 }
 
+func TestOpenClawSkillRetainedUntilGatewayDeactivation(t *testing.T) {
+	for _, global := range []bool{false, true} {
+		t.Run(map[bool]string{true: "global", false: "project"}[global], func(t *testing.T) {
+			s, dir := pluginScope(t, "openclaw", global)
+			writeIntegrationFile(t, filepath.Join(dir, "extensions", "obituary", "openclaw.plugin.json"), "installed plugin")
+			plan, err := PlanOpenClawSkill(s, false)
+			applyIntegration(t, plan, err)
+			path := plan[0].Path
+			before := read(t, path)
+			plan, err = PlanOpenClawSkill(s, true)
+			if err != nil || Pending(plan) || PreservedError(plan) == nil {
+				t.Fatalf("active Gateway skill removal planned: %v", err)
+			}
+			if Apply(plan) == nil || read(t, path) != before {
+				t.Fatal("active Gateway skill removed")
+			}
+		})
+	}
+}
+
 func TestOpenClawSkillTargets(t *testing.T) {
 	checkAgentSkillTargets(t, "openclaw")
 }

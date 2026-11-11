@@ -105,8 +105,16 @@ func TestNativeSpecialGlobalLinksAndProjectBackups(t *testing.T) {
 	s := Scope{Project: t.TempDir()}
 	path := filepath.Join(s.Project, "AGENTS.md")
 	writeIntegrationFile(t, path, "user rules\n")
-	makeIntegrationJunction(t, path+".bak", t.TempDir())
-	if _, err := PlanKimi(s, Commands{}, false); err == nil {
+	backup := testBackupPath(t, path)
+	if err := os.MkdirAll(filepath.Dir(backup), 0700); err != nil {
+		t.Fatal(err)
+	}
+	makeIntegrationJunction(t, backup, t.TempDir())
+	plan, err := PlanKimi(s, Commands{}, false)
+	if err == nil {
+		err = Apply(plan)
+	}
+	if err == nil {
 		t.Fatal("external backup accepted")
 	}
 }

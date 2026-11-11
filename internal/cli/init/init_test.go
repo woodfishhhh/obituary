@@ -13,6 +13,81 @@ import (
 	initcmd "github.com/woodfishhhh/obituary/internal/cli/init"
 )
 
+func TestInitProjectKeepsSidecarsInData(t *testing.T) {
+	if testing.Short() {
+		t.Skip("requires a real Git repository")
+	}
+	repo, _ := clitest.CommandRepo(t)
+	_, executable := clitest.DoctorFixture(t)
+	clitest.WriteFixture(t, filepath.Join(repo, "CLAUDE.md"), "user Claude instructions\n")
+	clitest.WriteFixture(t, filepath.Join(repo, "AGENTS.md"), "user agent instructions\n")
+	before := clitest.TreeSnapshot(t, repo)
+	args := []string{"--agent", "claude,codex", "--no-context-menu", "--no-shortcuts"}
+	out, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), append(args, "--dry-run")...)
+	if err != nil || !reflect.DeepEqual(before, clitest.TreeSnapshot(t, repo)) {
+		t.Fatal("preview changed project", out, err)
+	}
+	var installed map[string]string
+	for i, action := range []string{"--yes", "--yes", "--uninstall"} {
+		out, _, err = clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), append(args, action, "--yes")...)
+		if err != nil {
+			t.Fatal(out, err)
+		}
+		if i == 0 {
+			installed = clitest.TreeSnapshot(t, repo)
+		}
+		if i == 1 && !reflect.DeepEqual(installed, clitest.TreeSnapshot(t, repo)) {
+			t.Fatal("repeat init changed project files")
+		}
+		entries, err := os.ReadDir(repo)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, entry := range entries {
+			if strings.Contains(entry.Name(), ".obituary-") || strings.Contains(entry.Name(), ".bak") || strings.HasSuffix(entry.Name(), ".lock") {
+				t.Errorf("unexpected project sidecar: %s", entry.Name())
+			}
+		}
+	}
+	for name, want := range map[string]string{"CLAUDE.md": "user Claude instructions\n", "AGENTS.md": "user agent instructions\n"} {
+		got, err := os.ReadFile(filepath.Join(repo, name))
+		if err != nil || string(got) != want {
+			t.Fatalf("user content changed: %s %q %v", name, got, err)
+		}
+	}
+}
+
+func TestInitGlobalSkillDirectoriesStayClean(t *testing.T) {
+	clitest.CommandDir(t)
+	root, executable := clitest.DoctorFixture(t)
+	args := []string{"-g", "--agent", "claude,codex", "--no-context-menu", "--no-shortcuts", "--yes"}
+	for range 2 {
+		out, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), args...)
+		if err != nil {
+			t.Fatal(out, err)
+		}
+		if strings.Contains(out, "(Agent Skill →") {
+			t.Error("duplicate skill target", out)
+		}
+		for _, dir := range []string{filepath.Join(root, "claude", "skills", "obituary"), filepath.Join(root, "home", ".agents", "skills", "obituary")} {
+			if strings.Count(out, filepath.Join(dir, "SKILL.md")) != 1 {
+				t.Error("skill target must appear once", out)
+			}
+			entries, err := os.ReadDir(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var names []string
+			for _, entry := range entries {
+				names = append(names, entry.Name())
+			}
+			if !reflect.DeepEqual(names, []string{".obituary-skill", "SKILL.md"}) {
+				t.Errorf("skill contains auxiliary files: %s %v", dir, names)
+			}
+		}
+	}
+}
+
 func BenchmarkInitShow(b *testing.B) {
 	root, executable := clitest.DoctorFixture(b)
 	b.Chdir(root)

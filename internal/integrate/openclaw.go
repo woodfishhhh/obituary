@@ -78,7 +78,12 @@ func PlanOpenClawMCP(s Scope, executable string, uninstall bool) ([]Change, erro
 	return []Change{{Path: config, Action: "preserve", Manual: true, Detail: "manual MCP step required: in the OpenClaw Control UI for " + config + ", " + operation + "; Gateway owns this JSON5 state; confirm native local Windows execution, then reload it yourself; project MCP activation also uses this Gateway configuration"}}, nil
 }
 
-func PlanOpenClawSkill(s Scope, uninstall bool) ([]Change, error) {
+func PlanOpenClawSkill(s Scope, uninstall bool) (changes []Change, err error) {
+	defer func() {
+		if uninstall && err == nil {
+			changes, err = retainOpenClawSkill(s, changes)
+		}
+	}()
 	if !s.Global {
 		return PlanSharedSkill(s, "openclaw", uninstall)
 	}
@@ -91,6 +96,34 @@ func PlanOpenClawSkill(s Scope, uninstall bool) ([]Change, error) {
 		id = sharedSkillID
 	}
 	return planSkillAsset(s, root, id, "openclaw", skillContent, uninstall)
+}
+
+func retainOpenClawSkill(s Scope, changes []Change) ([]Change, error) {
+	dir := filepath.Join(s.Project, ".openclaw")
+	if s.Global {
+		var err error
+		dir, err = userdirs.OpenClawDir()
+		if err != nil {
+			return nil, err
+		}
+	}
+	manifest, err := readIntegrationChange(s, filepath.Join(dir, "extensions", "obituary", "openclaw.plugin.json"))
+	if err != nil {
+		return nil, err
+	}
+	if !manifest.existed {
+		return changes, nil
+	}
+	for i := range changes {
+		ch := &changes[i]
+		ch.Action, ch.data, ch.delete, ch.next = "unchanged", nil, false, nil
+		ch.asset, ch.shared, ch.relocated = nil, nil, nil
+		if ch.existed {
+			ch.Action = "preserve"
+			ch.Detail = "OpenClaw skill and owner receipt retained until manual Gateway deactivation is verified; remove them only after disabling plugins.entries.obituary and reloading the Gateway"
+		}
+	}
+	return append(changes, manifest), nil
 }
 
 func init() {

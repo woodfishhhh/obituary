@@ -13,10 +13,11 @@ func planSharedAgentRules(s Scope, path, agent string, uninstall bool) (changes 
 		return nil, err
 	}
 	asset := ManagedAsset{Path: path + ".obituary-owners", ID: "agent-rules", Owner: agent, Version: "1", Content: []byte("Obituary shared agent instructions\n")}
-	receipt, err := readIntegrationChange(s, ManagedAssetReceiptPath(asset.Path))
+	p, err := readSharedAsset(s, asset)
 	if err != nil {
 		return nil, err
 	}
+	receipt := p.receipt
 	start, _, err := markdownMarkedRange(string(rule.orig), blockBegin, blockEnd)
 	if err != nil {
 		return nil, err

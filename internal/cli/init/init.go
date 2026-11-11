@@ -217,11 +217,12 @@ func incompleteIntegration(changes []integrate.Change) error {
 func printChanges(changes []integrate.Change) {
 	for _, c := range changes {
 		detail := ""
-		if c.Detail != "" {
+		if c.Detail != "" && c.Detail != "Agent Skill → "+c.Path {
 			detail = "  (" + c.Detail + ")"
 		}
 		if c.Extension == "skill" && strings.HasSuffix(c.Path, "SKILL.md") {
-			fmt.Printf("  Agent Skill → %s\n", c.Path)
+			fmt.Printf("  Agent Skill → %s%s\n", c.Path, detail)
+			continue
 		}
 		fmt.Printf("  %-9s %s%s\n", c.Action, c.Path, detail)
 		for _, args := range c.Commands {

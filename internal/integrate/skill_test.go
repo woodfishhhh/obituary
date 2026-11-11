@@ -10,6 +10,37 @@ import (
 	"testing"
 )
 
+func TestSkillDirectoryContainsOnlyOwnedFiles(t *testing.T) {
+	for _, agent := range []string{"claude", "codex"} {
+		t.Run(agent, func(t *testing.T) {
+			s := Scope{Project: t.TempDir()}
+			path, err := skillPath(s, agent)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, content := range [][]byte{[]byte("old"), skillContent, skillContent} {
+				plan, err := planSkillContent(s, agent, content, false)
+				applyIntegration(t, plan, err)
+				entries, err := os.ReadDir(filepath.Dir(path))
+				if err != nil || len(entries) != 2 || entries[0].Name() != ".obituary-skill" || entries[1].Name() != "SKILL.md" {
+					t.Fatal("auxiliary files in skill directory", entries, err)
+				}
+			}
+			if agent == "codex" {
+				writeIntegrationFile(t, path+".lock", "")
+			}
+			plan, err := PlanSkill(s, agent, false)
+			applyIntegration(t, plan, err)
+			plan, err = PlanSkill(s, agent, true)
+			applyIntegration(t, plan, err)
+			entries, err := os.ReadDir(filepath.Dir(path))
+			if err != nil || len(entries) != 0 {
+				t.Fatal("owned files remain after uninstall", entries, err)
+			}
+		})
+	}
+}
+
 func TestSkillOrphanedUpgradeReceipt(t *testing.T) {
 	t.Parallel()
 	for _, uninstall := range []bool{false, true} {
