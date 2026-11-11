@@ -5,6 +5,9 @@ import (
 	"debug/pe"
 	_ "embed"
 	"fmt"
+	"image"
+	"image/color"
+	"image/draw"
 	"image/png"
 	"os"
 	"path/filepath"
@@ -86,7 +89,47 @@ func brandIcon(root string) (*winres.Icon, error) {
 	}
 	// The repository's largest square source is 128px; Lanczos resizing in
 	// tc-hib/winres supplies the requested 256px layer as well as the tray sizes.
-	return winres.NewIconFromResizedImage(img, iconSizes)
+	return winres.NewIconFromResizedImage(squareAroundMark(img), iconSizes)
+}
+
+// squareAroundMark crops the brand image to a square around the tombstone.
+// The source draws it in the middle half of a 128px canvas with wide grass,
+// which left the mark only a few pixels tall in the taskbar and tray.
+func squareAroundMark(img image.Image) image.Image {
+	b := img.Bounds()
+	alpha := func(x, y int) uint8 { return color.NRGBAModel.Convert(img.At(x, y)).(color.NRGBA).A }
+	x0, y0, x1, y1 := b.Max.X, b.Max.Y, b.Min.X-1, b.Min.Y-1
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			if alpha(x, y) > 40 {
+				x0, y0, x1, y1 = min(x0, x), min(y0, y), max(x1, x), max(y1, y)
+			}
+		}
+	}
+	if x1 < x0 {
+		return img
+	}
+	// The stone is the solid part of the upper rows; the grass below spreads
+	// wider and must not pull the centre sideways.
+	var sum, n int
+	for y := y0; y <= y0+(y1-y0)*6/10; y++ {
+		for x := x0; x <= x1; x++ {
+			if alpha(x, y) > 200 {
+				sum += x
+				n++
+			}
+		}
+	}
+	cx := (x0 + x1) / 2
+	if n > 0 {
+		cx = sum / n
+	}
+	pad := (y1 - y0 + 1) / 25
+	side := y1 - y0 + 1 + 2*pad
+	src := image.Rect(cx-side/2, y0-pad, cx-side/2+side, y0-pad+side)
+	out := image.NewNRGBA(image.Rect(0, 0, side, side))
+	draw.Draw(out, out.Bounds(), img, src.Min, draw.Src)
+	return out
 }
 
 func resources(root string, app application, release string, icon *winres.Icon) (*winres.ResourceSet, error) {
