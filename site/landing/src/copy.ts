@@ -178,9 +178,7 @@ const zh = {
     next: "下一个是你",
     howTo: "怎么参与",
     stars: "Star 走势",
-    map: "Star 来自哪里",
     starHistoryAlt: "讣告仓库的 Star 数随时间变化的曲线",
-    starMapAlt: "给讣告点了 Star 的人在世界地图上的分布",
   },
   install: {
     head: "安装",
@@ -369,9 +367,7 @@ const en: Copy = {
     next: "You could be next",
     howTo: "How to contribute",
     stars: "Stars over time",
-    map: "Where the stars come from",
     starHistoryAlt: "Stars of the Obituary repository over time",
-    starMapAlt: "Where the people who starred Obituary are, on a world map",
   },
   install: {
     head: "Install",

@@ -30,7 +30,7 @@ async function download(url, name) {
   return `community/${file}`;
 }
 
-const data = { stars: 0, contributors: [], starHistory: null, starMap: null };
+const data = { stars: 0, contributors: [], starHistory: null };
 await rm(publicDir, { recursive: true, force: true });
 await mkdir(new URL("avatars/", publicDir), { recursive: true });
 await mkdir(new URL("src/generated/", root), { recursive: true });
@@ -56,11 +56,6 @@ if (data.stars >= minStars) {
     data.starHistory = await download(`https://api.star-history.com/svg?repos=${repo}&type=Date`, "star-history");
   } catch (e) {
     console.warn(`community: no star history (${e.message})`);
-  }
-  try {
-    data.starMap = await download(`https://starmapper.bruniaux.com/api/map-image/${repo}`, "star-map");
-  } catch (e) {
-    console.warn(`community: no star map (${e.message})`);
   }
 }
 

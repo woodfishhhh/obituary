@@ -81,6 +81,16 @@
 读 https://obituary.woodfish.site/agent-install.md ，照里面的步骤帮我安装讣告并接入你自己。
 ```
 
+这些 agent 都能接，卡片下面的小字是 `obit init --agent` 后面写的名字，一次接好几家用逗号隔开。完整的 30 家见[接入其他 agent](#接入其他-agent)。
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/agents/agents-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/agents/agents-light.svg">
+    <img alt="讣告能接入的 agent：Claude Code、Codex、Cursor、GitHub Copilot、Gemini CLI、Windsurf、Trae、Qoder、CodeBuddy、Kimi、DeepSeek Harness、WorkBuddy、OpenCode、Cline、Roo Code、Kilo Code、OpenClaw、Hermes" src="docs/assets/readme/agents/agents-light.svg" width="100%">
+  </picture>
+</p>
+
 **自己装**：下面三种方式任选其一，装好后执行 `obit doctor` 体检。
 
 ```powershell
@@ -413,13 +423,7 @@ go test -short ./...                                           # 快的一档；
   <a href="https://star-history.com/#woodfishhhh/obituary&Date">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=woodfishhhh/obituary&type=Date&theme=dark">
-      <img alt="star 增长曲线" src="https://api.star-history.com/svg?repos=woodfishhhh/obituary&type=Date" width="49%">
-    </picture>
-  </a>
-  <a href="https://starmapper.bruniaux.com/woodfishhhh/obituary">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://starmapper.bruniaux.com/api/map-image/woodfishhhh/obituary?theme=dark">
-      <img alt="star 来自哪里" src="https://starmapper.bruniaux.com/api/map-image/woodfishhhh/obituary?theme=light" width="49%">
+      <img alt="star 增长曲线" src="https://api.star-history.com/svg?repos=woodfishhhh/obituary&type=Date" width="100%">
     </picture>
   </a>
 </p>

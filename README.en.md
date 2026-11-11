@@ -81,6 +81,16 @@ Windows 10 / 11 (x64 and ARM64).
 Read https://obituary.woodfish.site/agent-install.md and follow it to install Obituary and connect it to yourself.
 ```
 
+All of these connect; the small name under each card is what goes after `obit init --agent`, and a comma-separated list connects several at once. All 30 are under [Other agents](#other-agents).
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/agents/agents-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/agents/agents-light.svg">
+    <img alt="Agents Obituary connects to: Claude Code, Codex, Cursor, GitHub Copilot, Gemini CLI, Windsurf, Trae, Qoder, CodeBuddy, Kimi, DeepSeek Harness, WorkBuddy, OpenCode, Cline, Roo Code, Kilo Code, OpenClaw, Hermes" src="docs/assets/readme/agents/agents-light.svg" width="100%">
+  </picture>
+</p>
+
 **By hand:** pick one of the three, then run `obit doctor` to check the installation.
 
 ```powershell
@@ -417,13 +427,7 @@ Issues and pull requests are welcome. The most welcome is an issue that comes wi
   <a href="https://star-history.com/#woodfishhhh/obituary&Date">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=woodfishhhh/obituary&type=Date&theme=dark">
-      <img alt="Star history" src="https://api.star-history.com/svg?repos=woodfishhhh/obituary&type=Date" width="49%">
-    </picture>
-  </a>
-  <a href="https://starmapper.bruniaux.com/woodfishhhh/obituary">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://starmapper.bruniaux.com/api/map-image/woodfishhhh/obituary?theme=dark">
-      <img alt="Where the stars come from" src="https://starmapper.bruniaux.com/api/map-image/woodfishhhh/obituary?theme=light" width="49%">
+      <img alt="Star history" src="https://api.star-history.com/svg?repos=woodfishhhh/obituary&type=Date" width="100%">
     </picture>
   </a>
 </p>

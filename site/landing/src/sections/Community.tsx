@@ -7,13 +7,12 @@ interface Community {
   stars: number;
   contributors: { login: string; url: string; avatar: string; contributions: number }[];
   starHistory: string | null;
-  starMap: string | null;
 }
 
 // Written by scripts/community.mjs at build time; absent in a bare checkout,
 // which leaves only the open slots.
 const generated = import.meta.glob<Community>("../generated/community.json", { eager: true, import: "default" });
-const data: Community = Object.values(generated)[0] ?? { stars: 0, contributors: [], starHistory: null, starMap: null };
+const data: Community = Object.values(generated)[0] ?? { stars: 0, contributors: [], starHistory: null };
 
 const contributing = `${repo}/blob/main/CONTRIBUTING.md`;
 const local = (path: string) => `${import.meta.env.BASE_URL}${path}`;
@@ -48,7 +47,6 @@ export function Community({ c }: { c: Copy }) {
   const open = 3 + ((8 - ((data.contributors.length + 3) % 8)) % 8);
   const charts = [
     data.starHistory && { src: data.starHistory, title: m.stars, alt: m.starHistoryAlt },
-    data.starMap && { src: data.starMap, title: m.map, alt: m.starMapAlt },
   ].filter((x): x is { src: string; title: string; alt: string } => Boolean(x));
   return (
     <section aria-labelledby="community-head" className="relative border-t border-line bg-paper-2 py-24 md:pt-32">
