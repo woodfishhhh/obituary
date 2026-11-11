@@ -14,6 +14,26 @@ import (
 	"github.com/woodfishhhh/obituary/internal/core"
 )
 
+func TestBuryBatchReservationUsesHotTransaction(t *testing.T) {
+	f := newFixture(t)
+	tracked := f.add(f.file("tracked"), time.Hour)
+	path := f.file("untracked")
+	id, err := f.fs.Identify(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before, restore := unreadableSnapshot(t, f.svc.Store)
+	items, err := core.ReserveBuryIdentities(f.svc, []core.Item{tracked, {Path: path, Identity: &id}})
+	if err != nil || len(items) != 2 || items[0].ID != tracked.ID || items[0].Rev != tracked.Rev || items[1].ID != before.NextID || items[1].Rev != 0 {
+		t.Fatal("batch reservation read cold evidence or lost IDs", items, err)
+	}
+	restore()
+	after, err := f.svc.Store.ReadSnapshot()
+	if err != nil || after.NextID != before.NextID+1 || len(after.Items) != 1 || after.Items[0].Rev != tracked.Rev || *after.Graveyard != *before.Graveyard {
+		t.Fatal("batch reservation changed evidence or lost allocation", after, err)
+	}
+}
+
 func TestBuryBatchInterruptedMovesRecoverOnce(t *testing.T) {
 	f := newFixture(t)
 	paths := []string{f.file("first"), f.file("second"), f.file("untouched")}

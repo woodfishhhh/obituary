@@ -175,7 +175,7 @@ func (s *Service) commit(o Outcome) error {
 	if o.err != nil || o.Action == ActionBuried || o.Action == ActionSkipped || o.Action == ActionProposed {
 		return o.err // burial was committed in the same transaction as its move
 	}
-	return s.Store.UpdateGraveyard(func(st *State) error {
+	return s.Store.UpdateHot(func(st *State) error {
 		s.commitOutcome(st, o)
 		return nil
 	})

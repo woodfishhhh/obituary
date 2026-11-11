@@ -51,7 +51,7 @@ func TestHotLedgerRejectsDowngradedReference(t *testing.T) {
 }
 
 func TestHotTransactionRejectsGraveyardChanges(t *testing.T) {
-	for _, part := range []string{"burials", "cleanups", "clear-burials", "clear-cleanups", "loaded", "version", "reference", "index"} {
+	for _, part := range []string{"burials", "cleanups", "clear-burials", "clear-cleanups", "loaded", "version", "reference", "index", "gc-cursor"} {
 		t.Run(part, func(t *testing.T) {
 			store := Store{Home: t.TempDir()}
 			if err := store.save(benchmarkLedger()); err != nil {
@@ -79,6 +79,8 @@ func TestHotTransactionRejectsGraveyardChanges(t *testing.T) {
 					st.Graveyard.Hash = strings.Repeat("0", 64)
 				case "index":
 					st.GraveyardIndex.Keys = nil
+				case "gc-cursor":
+					st.GraveyardGCCursor = "changed"
 				}
 				st.NextID++
 				return nil

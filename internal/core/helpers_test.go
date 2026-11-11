@@ -460,6 +460,29 @@ func (f *fixture) items() []core.Item {
 
 func exists(path string) bool { _, err := os.Lstat(path); return err == nil }
 
+func unreadableSnapshot(t *testing.T, store core.Store) (core.State, func()) {
+	t.Helper()
+	st, err := store.ReadSnapshot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(store.Home, st.Graveyard.File)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("unreadable snapshot"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	restore := func() {
+		if err := os.WriteFile(path, data, 0600); err != nil {
+			t.Error(err)
+		}
+	}
+	t.Cleanup(restore)
+	return st, restore
+}
+
 func samePath(a, b string) bool { return strings.EqualFold(filepath.Clean(a), filepath.Clean(b)) }
 
 func rejectPath(t *testing.T, f *fixture, operation, input string) bool {

@@ -56,7 +56,8 @@ func hotBoundary(st State) ([]byte, error) {
 		Previous *GraveyardReference
 		Index    *graveyardIndex
 		Intents  []ContainerIntent
-	}{st.Version, st.DataID, st.Graveyard, st.PreviousGraveyard, st.GraveyardIndex, st.ContainerIntents})
+		GCCursor string
+	}{st.Version, st.DataID, st.Graveyard, st.PreviousGraveyard, st.GraveyardIndex, st.ContainerIntents, st.GraveyardGCCursor})
 }
 
 type hotGraveyardGuard struct {

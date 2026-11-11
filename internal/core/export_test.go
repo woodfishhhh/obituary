@@ -24,6 +24,27 @@ func SyncFileForTesting(file *os.File) error { return fileio.SyncFile(file) }
 
 func ObserveStoreLocks(s *Store, fn func(time.Duration)) { *s = s.WithLockObserver(fn) }
 
+func ReserveBuryIdentity(s *Service, id Identity) (Item, error) {
+	return s.reserveBuryItem(&candidate{identity: id})
+}
+
+func ReserveBuryIdentities(s *Service, items []Item) ([]Item, error) {
+	batch := make([]burialRequest, len(items))
+	for i, it := range items {
+		batch[i].candidate = &candidate{path: it.Path, identity: *it.Identity, isDir: it.IsDir}
+	}
+	_, err := s.reserveBuryBatch(batch, false, "", "cli")
+	var reserved []Item
+	for _, request := range batch {
+		reserved = append(reserved, request.item)
+	}
+	return reserved, err
+}
+
+func CommitSweepOutcome(s *Service, o Outcome) error { return s.commit(o) }
+
+func CommitContainerRetry(s *Service, o Outcome) error { return s.commitContainerRetry(o) }
+
 func CheckWatchDownload(path string) error { return checkWatchDownload(path) }
 
 func ObserveWatchTree(s *Service, path string, id Identity, isDir, hold bool) (WatchSnapshot, func(), error) {

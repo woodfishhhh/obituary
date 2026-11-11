@@ -134,6 +134,7 @@ func (s Store) update(fn func(*State) error, confirm bool) error {
 		}
 		originalRef, originalPrevious := copyGraveyardReference(state.Graveyard), copyGraveyardReference(state.PreviousGraveyard)
 		originalDigest := state.graveyardOriginal
+		originalCursor := state.GraveyardGCCursor
 		if err := fn(&state); err != nil {
 			return err
 		}
@@ -141,6 +142,7 @@ func (s Store) update(fn func(*State) error, confirm bool) error {
 		// the whole State while importing a complete snapshot.
 		state.Graveyard, state.PreviousGraveyard = originalRef, originalPrevious
 		state.graveyardOriginal = originalDigest
+		state.GraveyardGCCursor = originalCursor
 		after, err := marshalLedger(state)
 		if err != nil {
 			return err
@@ -392,6 +394,13 @@ func (s Store) save(state State) error {
 }
 
 func (s Store) saveHot(state State, graveyardChanged bool) error {
+	var snapshots []string
+	if graveyardChanged {
+		snapshots = s.snapshotCollectionBatch(state)
+		if len(snapshots) > 0 {
+			state.GraveyardGCCursor = snapshots[len(snapshots)-1]
+		}
+	}
 	data, err := marshalHot(state)
 	if err != nil {
 		return err
@@ -407,7 +416,7 @@ func (s Store) saveHot(state State, graveyardChanged bool) error {
 		}
 	}
 	if err == nil && graveyardChanged {
-		s.collectGraveyardSnapshots(state)
+		s.collectGraveyardSnapshots(state, snapshots)
 	}
 	return err
 }

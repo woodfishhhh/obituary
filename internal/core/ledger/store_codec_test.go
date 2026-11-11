@@ -21,7 +21,7 @@ func BenchmarkStoreLedger(b *testing.B) {
 	previous := fileio.SyncFile
 	fileio.SyncFile = (*os.File).Sync
 	b.Cleanup(func() { fileio.SyncFile = previous })
-	for _, operation := range []string{"load", "load-hot", "save", "update-single", "update-joint"} {
+	for _, operation := range []string{"load", "load-hot", "save", "update-single", "update-joint-hot", "update-joint", "update-orphans"} {
 		b.Run(operation, func(b *testing.B) {
 			store := Store{Home: b.TempDir()}
 			state := benchmarkLedger()
@@ -42,7 +42,14 @@ func BenchmarkStoreLedger(b *testing.B) {
 			}
 			b.ReportAllocs()
 			b.SetBytes(info.Size())
+			var holds []time.Duration
+			store = store.WithLockObserver(func(d time.Duration) { holds = append(holds, d) })
 			for b.Loop() {
+				if operation == "update-orphans" {
+					b.StopTimer()
+					writeSnapshotOrphans(b, store, committed, 128)
+					b.StartTimer()
+				}
 				switch operation {
 				case "load":
 					_, _, err = store.load()
@@ -52,7 +59,9 @@ func BenchmarkStoreLedger(b *testing.B) {
 					err = store.save(state)
 				case "update-single":
 					err = store.UpdateHot(func(st *State) error { st.Items[0].Rev++; return nil })
-				case "update-joint":
+				case "update-joint-hot":
+					err = store.Update(func(st *State) error { st.Items[0].Rev++; return nil })
+				case "update-joint", "update-orphans":
 					err = store.UpdateGraveyard(func(st *State) error { st.Items[0].Rev++; st.Burials[0].Size++; return nil })
 				}
 				if err != nil {
@@ -61,6 +70,11 @@ func BenchmarkStoreLedger(b *testing.B) {
 			}
 			b.ReportMetric(float64(info.Size()), "ledger-B")
 			b.ReportMetric(float64(snapshot.Size()), "snapshot-B")
+			if len(holds) > 0 {
+				slices.Sort(holds)
+				b.ReportMetric(float64(holds[len(holds)/2].Nanoseconds())/1e6, "lock-p50-ms")
+				b.ReportMetric(float64(holds[len(holds)-1].Nanoseconds())/1e6, "lock-max-ms")
+			}
 		})
 	}
 }

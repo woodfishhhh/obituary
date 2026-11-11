@@ -202,7 +202,7 @@ func (s *Service) buryRef(ref string, force bool, note, source string, recovery 
 
 func (s *Service) reserveBuryItem(c *candidate) (Item, error) {
 	var item Item
-	err := s.Store.UpdateGraveyard(func(st *State) error {
+	err := s.Store.UpdateHot(func(st *State) error {
 		idx := st.FindIdentity(c.identity)
 		if idx >= 0 {
 			item = st.Items[idx]

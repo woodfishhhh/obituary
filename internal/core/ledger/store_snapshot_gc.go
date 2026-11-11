@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 )
 
@@ -44,31 +45,56 @@ func graveyardSnapshotName(name string) bool {
 	return validGraveyardGeneration(strings.TrimSuffix(strings.TrimPrefix(name, "graveyard."), ".json"))
 }
 
+// Bound validation attempts, including damaged or foreign files, so orphan
+// accumulation cannot monopolize store.lock. Two leaves room for hook writers
+// while retiring snapshots faster than one new generation per joint commit.
+const snapshotCollectionLimit = 2
+
+// Advance the cursor in the existing hot commit, without another write/flush.
+// Sorted cyclic traversal survives new Store instances and does not let an
+// unreadable or undeletable early name starve later candidates.
+func (s Store) snapshotCollectionBatch(st State) []string {
+	root, err := os.OpenRoot(s.Home)
+	if err != nil {
+		return nil
+	}
+	defer root.Close()
+	dir, err := root.Open(".")
+	if err != nil {
+		return nil
+	}
+	names, err := dir.Readdirnames(-1)
+	dir.Close()
+	if err != nil {
+		return nil
+	}
+	names = slices.DeleteFunc(names, func(name string) bool {
+		return !graveyardSnapshotName(name) ||
+			st.Graveyard != nil && name == st.Graveyard.File ||
+			st.PreviousGraveyard != nil && name == st.PreviousGraveyard.File
+	})
+	slices.Sort(names)
+	start, found := slices.BinarySearch(names, st.GraveyardGCCursor)
+	if found {
+		start++
+	}
+	var batch []string
+	for i := range min(len(names), snapshotCollectionLimit) {
+		batch = append(batch, names[(start+i)%len(names)])
+	}
+	return batch
+}
+
 // The caller owns store.lock exclusively and has confirmed the hot commit.
 // Keep its predecessor for unlocked diagnostics; sharing-delete reads finish
 // on their open handle, and a reader that has not opened it retries the reference.
-func (s Store) collectGraveyardSnapshots(st State) {
+func (s Store) collectGraveyardSnapshots(st State, names []string) {
 	root, err := os.OpenRoot(s.Home)
 	if err != nil {
 		return
 	}
 	defer root.Close()
-	dir, err := root.Open(".")
-	if err != nil {
-		return
-	}
-	names, err := dir.Readdirnames(-1)
-	dir.Close()
-	if err != nil {
-		return
-	}
 	for _, name := range names {
-		if !graveyardSnapshotName(name) {
-			continue
-		}
-		if st.Graveyard != nil && name == st.Graveyard.File || st.PreviousGraveyard != nil && name == st.PreviousGraveyard.File {
-			continue
-		}
 		if !ownedGraveyardSnapshot(root, name, st.DataID) {
 			continue
 		}

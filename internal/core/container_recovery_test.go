@@ -11,6 +11,34 @@ import (
 	"github.com/woodfishhhh/obituary/internal/core"
 )
 
+func TestContainerRetryUsesHotTransaction(t *testing.T) {
+	for _, pending := range []bool{false, true} {
+		t.Run(fmt.Sprint(pending), func(t *testing.T) {
+			f, _, it := containerFixture(t)
+			if pending {
+				saveContainerIntent(t, f, stopIntent(f, it))
+			}
+			before, restore := unreadableSnapshot(t, f.svc.Store)
+			out := core.Outcome{Item: it, Path: it.Path, Action: core.ActionRetry, Detail: "retry reason"}
+			if err := core.CommitContainerRetry(f.svc, out); err != nil {
+				t.Fatal("container retry read cold evidence", err)
+			}
+			restore()
+			after, err := f.svc.Store.ReadSnapshot()
+			if err != nil || *after.Graveyard != *before.Graveyard || len(after.ContainerIntents) != len(before.ContainerIntents) {
+				t.Fatal("container retry changed cold evidence or intent", after, err)
+			}
+			wantRev := it.Rev + 1
+			if pending {
+				wantRev = it.Rev
+			}
+			if len(after.Items) != 1 || after.Items[0].Rev != wantRev {
+				t.Fatal("container retry changed pending revision or lost retry", after.Items)
+			}
+		})
+	}
+}
+
 func stopIntent(f *fixture, it core.Item) core.ContainerIntent {
 	running := true
 	return core.ContainerIntent{Token: "interrupted-stop", Operation: "stop", Phase: "sent", WasRunning: &running, At: f.clock, Item: &it}

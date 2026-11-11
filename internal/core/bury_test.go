@@ -17,6 +17,29 @@ import (
 	"github.com/woodfishhhh/obituary/internal/core"
 )
 
+func TestBuryReservationUsesHotTransaction(t *testing.T) {
+	f := newFixture(t)
+	tracked := f.add(f.file("tracked"), time.Hour)
+	newID, err := f.fs.Identify(f.file("untracked"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	before, restore := unreadableSnapshot(t, f.svc.Store)
+	old, err := core.ReserveBuryIdentity(f.svc, *tracked.Identity)
+	if err != nil || old.ID != tracked.ID || old.Rev != tracked.Rev {
+		t.Fatal("burial reservation read cold evidence or changed tracked revision", old, err)
+	}
+	reserved, err := core.ReserveBuryIdentity(f.svc, newID)
+	if err != nil || reserved.ID != before.NextID || reserved.Rev != 0 {
+		t.Fatal("burial reservation failed to allocate hot ID", reserved, err)
+	}
+	restore()
+	after, err := f.svc.Store.ReadSnapshot()
+	if err != nil || after.NextID != before.NextID+1 || !reflect.DeepEqual(after.Items, before.Items) || !reflect.DeepEqual(after.Graveyard, before.Graveyard) {
+		t.Fatal("reservation changed evidence or lost allocation", after, err)
+	}
+}
+
 func TestBuryBatchFailureBoundaries(t *testing.T) {
 	for _, stage := range []string{"inspect", "reserve", "settle", "recycle-commit"} {
 		t.Run(stage, func(t *testing.T) {

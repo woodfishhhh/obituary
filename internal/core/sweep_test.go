@@ -14,6 +14,32 @@ import (
 	"github.com/woodfishhhh/obituary/internal/core"
 )
 
+func TestSweepCommitUsesHotTransaction(t *testing.T) {
+	for _, action := range []string{core.ActionRetry, core.ActionRecycled, core.ActionVanished, core.ActionRefused} {
+		t.Run(action, func(t *testing.T) {
+			f := newFixture(t)
+			it := f.add(f.file("tracked"), time.Hour)
+			before, restore := unreadableSnapshot(t, f.svc.Store)
+			out := core.Outcome{Item: it, Path: it.Path, Action: action, Detail: "retry reason"}
+			if err := core.CommitSweepOutcome(f.svc, out); err != nil {
+				t.Fatal("sweep outcome read cold evidence", err)
+			}
+			restore()
+			after, err := f.svc.Store.ReadSnapshot()
+			if err != nil || *after.Graveyard != *before.Graveyard {
+				t.Fatal("sweep outcome changed graveyard", err)
+			}
+			if action == core.ActionRetry {
+				if len(after.Items) != 1 || after.Items[0].Rev != it.Rev+1 || after.Items[0].Attempts != 1 || after.Items[0].LastError != out.Detail || !after.Items[0].NextAttempt.After(f.clock) {
+					t.Fatal("sweep retry lost revision or backoff", after.Items)
+				}
+			} else if len(after.Items) != 0 {
+				t.Fatal("sweep outcome retained completed item", after.Items)
+			}
+		})
+	}
+}
+
 func BenchmarkSweepNoDue(b *testing.B) {
 	for _, n := range []int{1000, 5000} {
 		b.Run(fmt.Sprint(n), func(b *testing.B) {

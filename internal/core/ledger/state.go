@@ -201,6 +201,7 @@ type State struct {
 	Graveyard           *GraveyardReference `json:"graveyard,omitempty"`
 	PreviousGraveyard   *GraveyardReference `json:"previousGraveyard,omitempty"`
 	GraveyardIndex      *graveyardIndex     `json:"graveyardIndex,omitempty"`
+	GraveyardGCCursor   string              `json:"graveyardGCCursor,omitempty"` // maintenance only; never deletion authority
 	graveyardLoaded     bool
 	graveyardOriginal   [32]byte
 	DataID              string                  `json:"dataId,omitempty"` // paired with .obituary-data for explicit uninstall

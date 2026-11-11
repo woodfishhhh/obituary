@@ -105,7 +105,7 @@ func (s *Service) checkContainerRemoval(p ContainerIntent) error {
 }
 
 func (s *Service) commitContainerRetry(out Outcome) error {
-	return s.Store.UpdateGraveyard(func(st *State) error {
+	return s.Store.UpdateHot(func(st *State) error {
 		// A pending stop owns the original revision until its effect is known.
 		if containerIntent(st, out.Item.ID) == nil {
 			s.commitOutcome(st, out)
