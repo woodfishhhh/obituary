@@ -403,6 +403,28 @@ Keep the three executables in one folder. The small window's frontend is in `cmd
 - [Architecture](docs/architecture.md) (Chinese): how things flow, where each decision is made, which contracts must not break
 - [Agent coverage](docs/agents.md): how far each of the 30 agents is supported (generated; do not edit by hand)
 - [AGENTS.md](AGENTS.md): conventions for writing code in this repository
+- [CONTRIBUTING.md](CONTRIBUTING.md): how to send issues and pull requests
+
+## Build Obituary with us
+
+Issues and pull requests are welcome. The most welcome is an issue that comes with its fix: you found it, you fixed it, and once it is merged your avatar shows up here. [CONTRIBUTING.md](CONTRIBUTING.md) says how to start; report anything that could delete the wrong file privately, as [SECURITY.md](SECURITY.md) describes.
+
+<a href="https://github.com/woodfishhhh/obituary/graphs/contributors"><img alt="Contributors" src="https://contrib.rocks/image?repo=woodfishhhh/obituary&max=100"></a>
+
+<p>
+  <a href="https://star-history.com/#woodfishhhh/obituary&Date">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=woodfishhhh/obituary&type=Date&theme=dark">
+      <img alt="Star history" src="https://api.star-history.com/svg?repos=woodfishhhh/obituary&type=Date" width="49%">
+    </picture>
+  </a>
+  <a href="https://starmapper.bruniaux.com/woodfishhhh/obituary">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://starmapper.bruniaux.com/api/map-image/woodfishhhh/obituary?theme=dark">
+      <img alt="Where the stars come from" src="https://starmapper.bruniaux.com/api/map-image/woodfishhhh/obituary?theme=light" width="49%">
+    </picture>
+  </a>
+</p>
 
 ## License
 

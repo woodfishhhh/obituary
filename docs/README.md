@@ -15,6 +15,8 @@
 | [agent-install.md](agent-install.md) | 一段可以直接发给 agent 的话：让它装好讣告、接到自己身上，要你拍板的地方停下来问你（中英文） | 想让 agent 替自己装的人 |
 | [agents.md](agents.md) | agent 覆盖表：30 家 agent 按接入方式分组，写文件后登记、会话提示、删除护栏、MCP、Skill 各支持到哪一步、为什么。由 `obit init --show --format markdown` 生成，不要手改 | 想知道自己用的 agent 能接到什么程度的人 |
 | [AGENTS.md](../AGENTS.md) | 代码约定：布局、规则、命令、已知坑 | 在这个仓库里写代码的 agent |
+| [CONTRIBUTING.md](../CONTRIBUTING.md) | 怎么提 issue 和 PR，提交前跑什么 | 想参与的人 |
+| [SECURITY.md](../SECURITY.md) | 可能误删文件的问题怎么私下报告 | 发现安全问题的人 |
 
 ## 从哪里读起
 

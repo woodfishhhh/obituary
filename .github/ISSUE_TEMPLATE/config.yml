@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 安全问题 / Security problem
+    url: https://github.com/woodfishhhh/obituary/security/advisories/new
+    about: 可能误删或移错文件的问题请私下报告。 / Report anything that could delete or move the wrong file privately.

@@ -1,0 +1,24 @@
+name: 想法 / Idea
+description: 想让讣告多做点什么。 / Something you'd like Obituary to do.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 遇到了什么麻烦 / The problem
+      description: 用讣告时卡在哪里，现在怎么绕过去的。 / Where you got stuck and how you work around it today.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: 你的想法 / Your idea
+    validations:
+      required: true
+  - type: dropdown
+    id: help
+    attributes:
+      label: 愿意自己动手吗 / Would you build it?
+      options:
+        - 我想自己写 PR / I'd like to send the PR
+        - 先听听意见 / I'd like to discuss it first

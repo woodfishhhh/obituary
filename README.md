@@ -399,6 +399,28 @@ go test -short ./...                                           # 快的一档；
 - [架构](docs/architecture.md)：东西怎么流动，每个决定在哪里做出，哪些约定不能破
 - [agent 覆盖表](docs/agents.md)：30 家 agent 各自支持到哪一步（生成的，不要手改）
 - [AGENTS.md](AGENTS.md)：在这个仓库里写代码的约定
+- [CONTRIBUTING.md](CONTRIBUTING.md)：怎么提 issue 和 PR
+
+## 一起做讣告
+
+欢迎提 issue 和 PR。最欢迎的是带着修复来的 issue：发现问题，顺手修好，合进去之后你的头像就会出现在这里。怎么开始见 [CONTRIBUTING.md](CONTRIBUTING.md)；可能误删文件的问题请按 [SECURITY.md](SECURITY.md) 私下报告。
+
+<a href="https://github.com/woodfishhhh/obituary/graphs/contributors"><img alt="贡献者" src="https://contrib.rocks/image?repo=woodfishhhh/obituary&max=100"></a>
+
+<p>
+  <a href="https://star-history.com/#woodfishhhh/obituary&Date">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=woodfishhhh/obituary&type=Date&theme=dark">
+      <img alt="star 增长曲线" src="https://api.star-history.com/svg?repos=woodfishhhh/obituary&type=Date" width="49%">
+    </picture>
+  </a>
+  <a href="https://starmapper.bruniaux.com/woodfishhhh/obituary">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://starmapper.bruniaux.com/api/map-image/woodfishhhh/obituary?theme=dark">
+      <img alt="star 来自哪里" src="https://starmapper.bruniaux.com/api/map-image/woodfishhhh/obituary?theme=light" width="49%">
+    </picture>
+  </a>
+</p>
 
 ## 许可证
 

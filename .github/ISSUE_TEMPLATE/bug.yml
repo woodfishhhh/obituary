@@ -1,0 +1,38 @@
+name: 问题 / Bug
+description: 讣告做错了什么。带上你的修复最好。 / Something Obituary got wrong. Best with your fix.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: 发生了什么 / What happened
+      description: 你以为会怎样，实际怎样。 / What you expected and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 怎么复现 / How to reproduce
+      placeholder: |
+        1. obit add debug.log 2h
+        2. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 版本 / Version
+      description: obit --version
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: obit doctor 的输出 / obit doctor output
+      description: 贴之前删掉不想公开的路径。 / Remove paths you don't want public.
+      render: text
+  - type: textarea
+    id: fix
+    attributes:
+      label: 你的修复（可选，最欢迎）/ Your fix (optional, most welcome)
+      description: 改了哪里、为什么这样改。已经开了 PR 就贴链接；合进去之后你的头像会出现在贡献者墙上。 / What you changed and why. Link the pull request if you opened one; once merged, your avatar joins the contributor wall.
