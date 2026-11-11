@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/docker"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 )
@@ -65,7 +65,7 @@ func TestDockerDoctorUnavailable(t *testing.T) {
 }
 
 func TestDockerDoctorLegacyTarget(t *testing.T) {
-	st := core.State{Items: []core.Item{{Container: &docker.Identity{ID: "legacy"}}}}
+	st := ledger.State{Items: []ledger.Item{{Container: &docker.Identity{ID: "legacy"}}}}
 	c := diagnoseDockerTargets(st)
 	if c.Status != "WARN" || !strings.Contains(c.Detail, "legacy v14") {
 		t.Fatal(c)

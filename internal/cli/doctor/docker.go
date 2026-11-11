@@ -3,11 +3,11 @@ package doctor
 import (
 	"context"
 	"fmt"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/docker"
 )
 
-func diagnoseDockerTargets(st core.State) DoctorCheck {
+func diagnoseDockerTargets(st ledger.State) DoctorCheck {
 	count := 0
 	check := func(id *docker.Identity) {
 		if id != nil && id.Target == nil {

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func TestSharedApplyHoldsResourceLockThroughWrites(t *testing.T) {
@@ -29,7 +29,7 @@ func TestSharedApplyHoldsResourceLockThroughWrites(t *testing.T) {
 					if before == 1 {
 						return nil // scheduling gap before Apply acquires the resource locks
 					}
-					release, ok, err := core.TryLockExclusive(ManagedAssetReceiptPath(testSidecarPath(t, path+".obituary-owners")) + ".lock")
+					release, ok, err := ledger.TryLockExclusive(ManagedAssetReceiptPath(testSidecarPath(t, path+".obituary-owners")) + ".lock")
 					if ok {
 						release()
 						t.Fatal("shared resource lock released before receipt commit")
@@ -38,7 +38,7 @@ func TestSharedApplyHoldsResourceLockThroughWrites(t *testing.T) {
 				}
 				afterWrite := func(string) error {
 					checks++
-					release, ok, err := core.TryLockExclusive(ManagedAssetReceiptPath(testSidecarPath(t, path+".obituary-owners")) + ".lock")
+					release, ok, err := ledger.TryLockExclusive(ManagedAssetReceiptPath(testSidecarPath(t, path+".obituary-owners")) + ".lock")
 					if ok {
 						release()
 						t.Fatal("shared resource lock released before receipt commit")
@@ -56,7 +56,7 @@ func TestSharedApplyHoldsResourceLockThroughWrites(t *testing.T) {
 				if !uninstall && checks < 3 {
 					t.Fatalf("did not exercise all transaction writes: %d", checks)
 				}
-				release, ok, err := core.TryLockExclusive(ManagedAssetReceiptPath(testSidecarPath(t, path+".obituary-owners")) + ".lock")
+				release, ok, err := ledger.TryLockExclusive(ManagedAssetReceiptPath(testSidecarPath(t, path+".obituary-owners")) + ".lock")
 				if err != nil || !ok {
 					t.Fatalf("resource lock leaked after Apply: %v", err)
 				}

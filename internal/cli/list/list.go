@@ -10,6 +10,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifespan"
 )
 
 func NewCmd() *cobra.Command {
@@ -39,9 +41,9 @@ func NewCmd() *cobra.Command {
 	return cmd
 }
 
-func printItemsJSON(svc *core.Service, items []core.Item, now time.Time) error {
+func printItemsJSON(svc *core.Service, items []ledger.Item, now time.Time) error {
 	type row struct {
-		core.Item
+		ledger.Item
 		Stability *core.WatchStatus `json:"stability,omitempty"`
 	}
 	rows := make([]row, 0, len(items))
@@ -51,7 +53,7 @@ func printItemsJSON(svc *core.Service, items []core.Item, now time.Time) error {
 	return cmdutil.PrintJSON(rows)
 }
 
-func printItems(svc *core.Service, items []core.Item, now time.Time) error {
+func printItems(svc *core.Service, items []ledger.Item, now time.Time) error {
 	if len(items) == 0 {
 		fmt.Println("nothing is tracked")
 		return nil
@@ -70,7 +72,7 @@ func printItems(svc *core.Service, items []core.Item, now time.Time) error {
 			note += fmt.Sprintf("; quiet for %s more (stable_window=%s); next check %s", status.QuietFor, status.StableWindow, status.NextCheck.Format(time.RFC3339))
 		}
 		fmt.Fprintf(w, "#%d\t%s\t%s\t%s\t%s\n", item.ID, item.ExpiresAt.Local().Format(cmdutil.TimeLayout),
-			core.FormatRemaining(time.Until(item.ExpiresAt)), item.Path, note)
+			lifespan.FormatRemaining(time.Until(item.ExpiresAt)), item.Path, note)
 	}
 	return w.Flush()
 }

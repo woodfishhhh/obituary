@@ -10,6 +10,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func TestWatchListShowsExemptionsAndStability(t *testing.T) {
@@ -28,11 +29,11 @@ func TestWatchListShowsExemptionsAndStability(t *testing.T) {
 		t.Fatal(err)
 	}
 	now := time.Now().UTC().Truncate(time.Second)
-	if err := svc.Store.Update(func(st *core.State) error {
+	if err := svc.Store.Update(func(st *ledger.State) error {
 		for _, reason := range []string{"rejected", "restored", "spared"} {
-			st.WatchExemptions = append(st.WatchExemptions, core.WatchExemption{WatchID: p.ID, Path: path, Reason: reason, KeptAt: now})
+			st.WatchExemptions = append(st.WatchExemptions, ledger.WatchExemption{WatchID: p.ID, Path: path, Reason: reason, KeptAt: now})
 		}
-		st.Items = []core.Item{{ID: st.NextID, Source: "watch", WatchID: p.ID, Path: path, ExpiresAt: now, Watch: &core.WatchTiming{StableSince: now}}}
+		st.Items = []ledger.Item{{ID: st.NextID, Source: "watch", WatchID: p.ID, Path: path, ExpiresAt: now, Watch: &ledger.WatchTiming{StableSince: now}}}
 		st.NextID++
 		return nil
 	}); err != nil {

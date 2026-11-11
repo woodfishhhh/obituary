@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/auto"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifespan"
 	"github.com/woodfishhhh/obituary/internal/rules"
 )
 
@@ -40,7 +40,7 @@ func NewCmd() *cobra.Command {
 			for _, r := range set.Rules {
 				life := "off"
 				if !r.Negate {
-					life = core.FormatRemaining(r.Lifespan)
+					life = lifespan.FormatRemaining(r.Lifespan)
 				}
 				fmt.Printf("  %-24s %-6s %s:%d\n", r.Pattern, life, r.Source, r.Line)
 			}

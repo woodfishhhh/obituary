@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/textutil"
 )
 
@@ -21,7 +22,7 @@ type WatchCheck struct {
 	Skipped          []core.WatchSkip `json:"skipped,omitempty"`
 }
 
-func diagnoseWatches(state core.State, err error, now time.Time, watchPath func(core.WatchPolicy) (string, error)) DoctorCheck {
+func diagnoseWatches(state ledger.State, err error, now time.Time, watchPath func(ledger.WatchPolicy) (string, error)) DoctorCheck {
 	c := DoctorCheck{Name: "watch", Status: "PASS"}
 	if err != nil {
 		c.Status, c.Detail = "FAIL", "cannot inspect folder policies: "+err.Error()+"; check store.json"
@@ -72,13 +73,13 @@ func diagnoseWatches(state core.State, err error, now time.Time, watchPath func(
 	return c
 }
 
-func watchAwaitingStability(item core.Item, now time.Time) bool {
+func watchAwaitingStability(item ledger.Item, now time.Time) bool {
 	if item.Source != "watch" || item.CreatedAt.IsZero() || !item.CreatedAt.Before(now.Add(-24*time.Hour)) {
 		return false
 	}
 	// StableSince is the latest observation, not the start of an uninterrupted
 	// wait. Report old items still waiting, never a claimed continuous duration.
-	if item.Watch != nil && !item.Watch.StableSince.IsZero() && !item.Watch.StableSince.After(now) && now.Sub(item.Watch.StableSince) < core.WatchStableWindow {
+	if item.Watch != nil && !item.Watch.StableSince.IsZero() && !item.Watch.StableSince.After(now) && now.Sub(item.Watch.StableSince) < ledger.WatchStableWindow {
 		return true
 	}
 	return strings.HasPrefix(item.LastError, "folder child is still active") ||

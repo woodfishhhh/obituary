@@ -17,6 +17,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/auto"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func TestPostToolUseDeliversReplayedProposal(t *testing.T) {
@@ -33,7 +34,7 @@ func TestPostToolUseDeliversReplayedProposal(t *testing.T) {
 				if _, err := e.engine.Svc.Store.Read(); err != nil {
 					t.Fatal(err)
 				}
-				release, err := core.LockFile(filepath.Join(e.engine.Svc.Store.Home, "store.lock"), true)
+				release, err := ledger.LockFile(filepath.Join(e.engine.Svc.Store.Home, "store.lock"), true)
 				if err != nil {
 					t.Fatal(err)
 				}

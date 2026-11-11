@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 // Paths are native Windows absolute paths. Numeric references are ledger IDs,
@@ -25,7 +25,7 @@ func mcpReferences(paths []string, allowIDs, burialIDs bool) error {
 	}
 	for i, path := range paths {
 		if burialIDs {
-			_, numeric, err := core.BurialReferenceID(path)
+			_, numeric, err := ledger.BurialReferenceID(path)
 			if err != nil {
 				return err
 			}

@@ -10,10 +10,12 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifespan"
 )
 
 type GraveyardListing struct {
-	Burials      []core.Burial       `json:"burials"`
+	Burials      []ledger.Burial     `json:"burials"`
 	Pending      []core.PendingGrave `json:"pending"`
 	PendingCount int                 `json:"pendingCount"`
 	Restored     []core.GraveResult  `json:"restored,omitempty"`
@@ -90,8 +92,8 @@ func printListing(listing GraveyardListing, scanErr error) error {
 	return nil
 }
 
-func printBurial(w io.Writer, b core.Burial) {
-	purge := "in " + core.FormatRemaining(time.Until(b.PurgeAt))
+func printBurial(w io.Writer, b ledger.Burial) {
+	purge := "in " + lifespan.FormatRemaining(time.Until(b.PurgeAt))
 	if b.PurgeIntent != nil {
 		retry := b.NextPurgeAttempt
 		if retry.IsZero() {

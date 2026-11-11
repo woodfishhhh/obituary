@@ -11,7 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
@@ -135,7 +136,7 @@ func (t TrustStore) write(f trustFile) error {
 func (t TrustStore) Check(path string) (FileState, error) {
 	state := FileState{Path: path}
 	real, err := rulePath(path)
-	if errors.Is(err, os.ErrNotExist) || errors.Is(err, core.ErrNotFound) {
+	if errors.Is(err, os.ErrNotExist) || errors.Is(err, corefs.ErrNotFound) {
 		return t.missingState(path)
 	}
 	if err != nil {
@@ -242,7 +243,7 @@ func (t TrustStore) locked(fn func() error) error {
 	if err := os.MkdirAll(filepath.Dir(t.Path), 0o700); err != nil {
 		return err
 	}
-	release, err := core.LockFile(t.Path+".lock", true)
+	release, err := ledger.LockFile(t.Path+".lock", true)
 	if err != nil {
 		return err
 	}
@@ -257,7 +258,7 @@ func (t TrustStore) Untrust(path string) (bool, error) {
 		return false, err
 	}
 	id, idErr := winfs.IdentifyFollowing(real)
-	if idErr != nil && !errors.Is(idErr, os.ErrNotExist) && !errors.Is(idErr, core.ErrNotFound) {
+	if idErr != nil && !errors.Is(idErr, os.ErrNotExist) && !errors.Is(idErr, corefs.ErrNotFound) {
 		return false, idErr
 	}
 	was := false
@@ -272,7 +273,7 @@ func (t TrustStore) Untrust(path string) (bool, error) {
 			other, otherErr := winfs.IdentifyFollowing(saved)
 			sameID := idErr == nil && otherErr == nil && id.Serial == other.Serial && id.FileID == other.FileID
 			sameMissing := false
-			if idErr != nil && (errors.Is(otherErr, os.ErrNotExist) || errors.Is(otherErr, core.ErrNotFound)) {
+			if idErr != nil && (errors.Is(otherErr, os.ErrNotExist) || errors.Is(otherErr, corefs.ErrNotFound)) {
 				sameMissing, err = winfs.SameDirectoryEntry(real, saved)
 				if err != nil {
 					return err
@@ -292,7 +293,7 @@ func (t TrustStore) Untrust(path string) (bool, error) {
 // surviving parent for aliases; never use Unicode folding to match a name.
 func revocationPath(path string) (string, error) {
 	real, err := rulePath(path)
-	if err == nil || !errors.Is(err, os.ErrNotExist) && !errors.Is(err, core.ErrNotFound) {
+	if err == nil || !errors.Is(err, os.ErrNotExist) && !errors.Is(err, corefs.ErrNotFound) {
 		return real, err
 	}
 	abs, err := pathutil.Abs(path)

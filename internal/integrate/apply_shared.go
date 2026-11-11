@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 // Lock each shared resource in the data directory. Keep all locks until Apply
@@ -120,7 +120,7 @@ func lockSharedResource(ch Change) (func(), error) {
 		p.root.Close()
 		return nil, err
 	}
-	release, ok, err := core.TryLockExclusive(ch.Path)
+	release, ok, err := ledger.TryLockExclusive(ch.Path)
 	if err != nil || !ok {
 		p.root.Close()
 		return nil, fmt.Errorf("%s: shared installation busy or unavailable; run obit init again: %w", ch.Path, errors.Join(err, os.ErrPermission))

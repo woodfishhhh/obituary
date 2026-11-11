@@ -15,6 +15,7 @@ import (
 	initcmd "github.com/woodfishhhh/obituary/internal/cli/init"
 	"github.com/woodfishhhh/obituary/internal/config"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/hook"
 	"github.com/woodfishhhh/obituary/internal/integrate"
 	"github.com/woodfishhhh/obituary/internal/project"
@@ -24,17 +25,17 @@ import (
 )
 
 type DoctorCheck struct {
-	Name         string                       `json:"name"`
-	Status       string                       `json:"status"`
-	Detail       string                       `json:"detail"`
-	Errors       int                          `json:"errors,omitempty"`
-	Capabilities *hook.Capabilities           `json:"capabilities,omitempty"`
-	Installation string                       `json:"installation,omitempty"`
-	Watch        *WatchCheck                  `json:"watch,omitempty"`
-	Explorer     *ExplorerCheck               `json:"explorer,omitempty"`
-	GUI          *GUICheck                    `json:"gui,omitempty"`
-	KTM          *KTMCheck                    `json:"ktm,omitempty"`
-	Queue        *core.ObservationQueueStatus `json:"queue,omitempty"`
+	Name         string                         `json:"name"`
+	Status       string                         `json:"status"`
+	Detail       string                         `json:"detail"`
+	Errors       int                            `json:"errors,omitempty"`
+	Capabilities *hook.Capabilities             `json:"capabilities,omitempty"`
+	Installation string                         `json:"installation,omitempty"`
+	Watch        *WatchCheck                    `json:"watch,omitempty"`
+	Explorer     *ExplorerCheck                 `json:"explorer,omitempty"`
+	GUI          *GUICheck                      `json:"gui,omitempty"`
+	KTM          *KTMCheck                      `json:"ktm,omitempty"`
+	Queue        *ledger.ObservationQueueStatus `json:"queue,omitempty"`
 }
 
 func NewCmd() *cobra.Command { return NewCmdWithExecutable(nil) }
@@ -178,7 +179,7 @@ func diagnose(now time.Time, executable cmdutil.Executable, agents ...string) []
 		}
 	} else {
 		checks = append(checks, diagnoseData(home))
-		state, err := (core.Store{Home: home}).Inspect()
+		state, err := (ledger.Store{Home: home}).Inspect()
 		check("store", "store.json and its referenced graveyard snapshot are readable (absent store means empty)", err)
 		checks = append(checks, diagnoseWatches(state, err, now, (&core.Service{FS: winfs.FS{}}).WatchPath))
 		if err == nil {
@@ -243,7 +244,7 @@ func diagnoseCodexWindowsShell() DoctorCheck {
 
 func diagnoseRecovery(home string) DoctorCheck {
 	c := DoctorCheck{Name: "graveyard-recovery", Status: "PASS"}
-	pending, err := (&core.Service{Store: core.Store{Home: home}, FS: winfs.FS{}}).PendingGraves()
+	pending, err := (&core.Service{Store: ledger.Store{Home: home}, FS: winfs.FS{}}).PendingGraves()
 	c.Detail = fmt.Sprintf("%d graveyard records need attention", len(pending))
 	if len(pending) > 0 || err != nil {
 		c.Status = "WARN"

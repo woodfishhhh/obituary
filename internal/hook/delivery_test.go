@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func TestDeferredObservationAndSnapshot(t *testing.T) {
@@ -155,7 +156,7 @@ func TestDeferredWriteSurvivesLedgerTimeout(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			release, err := core.LockFile(filepath.Join(e.engine.Svc.Store.Home, "store.lock"), true)
+			release, err := ledger.LockFile(filepath.Join(e.engine.Svc.Store.Home, "store.lock"), true)
 			if err != nil {
 				t.Fatal(err)
 			}

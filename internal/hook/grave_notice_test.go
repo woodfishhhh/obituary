@@ -15,6 +15,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/auto"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func noticeFixture(t testing.TB, directory bool) (*auto.Engine, string, core.Burial) {
@@ -126,7 +127,7 @@ func TestGraveNoticeSkipsUnavailableAndUnrelated(t *testing.T) {
 
 func TestGraveNoticeLockedLedgerSkipsWithoutQueue(t *testing.T) {
 	e, root, b := noticeFixture(t, false)
-	unlock, ok, err := core.TryLockExclusive(filepath.Join(e.Svc.Store.Home, "store.lock"))
+	unlock, ok, err := ledger.TryLockExclusive(filepath.Join(e.Svc.Store.Home, "store.lock"))
 	if err != nil || !ok {
 		t.Fatal(err)
 	}

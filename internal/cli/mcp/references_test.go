@@ -10,7 +10,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	graveyardcmd "github.com/woodfishhhh/obituary/internal/cli/graveyard"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func TestMCPUnknownIDsNeverResolveAgainstCWD(t *testing.T) {
@@ -37,7 +37,7 @@ func TestMCPUnknownIDsNeverResolveAgainstCWD(t *testing.T) {
 					t.Fatal("unknown ID resurrected a relative filename")
 				}
 			} else {
-				var list struct{ Items []core.Item }
+				var list struct{ Items []ledger.Item }
 				clitest.CallMCP(t, s, "obit_list", struct{}{}, false, &list)
 				if len(list.Items) != 2 {
 					t.Fatal("unknown ID changed a relative filename")

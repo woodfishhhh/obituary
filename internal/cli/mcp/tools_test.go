@@ -19,6 +19,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	graveyardcmd "github.com/woodfishhhh/obituary/internal/cli/graveyard"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/docker"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 	"golang.org/x/sys/windows"
@@ -33,10 +34,10 @@ func TestMCPContainerLists(t *testing.T) {
 	}
 	now := time.Now()
 	id := docker.Identity{ID: strings.Repeat("a", 64), ShortID: strings.Repeat("a", 12), Name: "cache", Created: now}
-	if err := svc.Store.Update(func(st *core.State) error {
-		st.Items = []core.Item{{ID: 1, Rev: 1, Kind: core.KindContainer, Container: &id, Path: id.Display(), ExpiresAt: now.Add(time.Hour)}}
-		st.Burials = []core.Burial{{ID: 2, Kind: core.KindContainer, Container: &id, Path: id.Display(), BuriedAt: now, PurgeAt: now.Add(time.Hour)}}
-		st.Proposals = []core.Proposal{{ID: 3, Kind: core.ProposalContainer, Candidates: []core.Candidate{{Kind: core.KindContainer, Container: &id, Path: id.Display(), Lifespan: "2d"}}}}
+	if err := svc.Store.Update(func(st *ledger.State) error {
+		st.Items = []ledger.Item{{ID: 1, Rev: 1, Kind: ledger.KindContainer, Container: &id, Path: id.Display(), ExpiresAt: now.Add(time.Hour)}}
+		st.Burials = []ledger.Burial{{ID: 2, Kind: ledger.KindContainer, Container: &id, Path: id.Display(), BuriedAt: now, PurgeAt: now.Add(time.Hour)}}
+		st.Proposals = []ledger.Proposal{{ID: 3, Kind: core.ProposalContainer, Candidates: []ledger.Candidate{{Kind: ledger.KindContainer, Container: &id, Path: id.Display(), Lifespan: "2d"}}}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -72,7 +73,7 @@ func TestMCPContainerOperations(t *testing.T) {
 	session := clitest.ConnectMCP(t, NewServer(svc, "test"))
 	var items struct{ Results []core.Result }
 	clitest.CallMCP(t, session, "obit_extend", map[string]any{"refs": []string{fmt.Sprint(it.ID)}, "lifespan": "1h"}, false, &items)
-	if len(items.Results) != 1 || items.Results[0].Item.Kind != core.KindContainer {
+	if len(items.Results) != 1 || items.Results[0].Item.Kind != ledger.KindContainer {
 		t.Fatal("container extend lost receipt", items)
 	}
 	now = now.Add(3 * time.Hour)
@@ -212,7 +213,7 @@ func TestMCPGraveyardHereAndBurialBatches(t *testing.T) {
 		t.Fatal("MCP calls shared a deletion batch")
 	}
 	var listing struct {
-		Burials            []core.Burial
+		Burials            []ledger.Burial
 		Total              int
 		NextAfter, Version string
 		HasMore            bool
@@ -285,7 +286,7 @@ func TestMCPFileLifecycle(t *testing.T) {
 	}
 	clitest.CallMCP(t, s, "obit_mark", map[string]any{"paths": []string{path}, "lifespan": "1h"}, false, nil)
 	clitest.CallMCP(t, s, "obit_spare", map[string]any{"refs": []string{path}}, false, nil)
-	var list struct{ Items []core.Item }
+	var list struct{ Items []ledger.Item }
 	clitest.CallMCP(t, s, "obit_list", struct{}{}, false, &list)
 	if len(list.Items) != 0 {
 		t.Fatal("spare left tracked items")
@@ -324,7 +325,7 @@ func TestMCPMktempUsesExplicitProject(t *testing.T) {
 	t.Chdir(t.TempDir())
 	var result struct {
 		Path string
-		Item core.Item
+		Item ledger.Item
 	}
 	clitest.CallMCP(t, s, "obit_mktemp", map[string]any{"cwd": repo, "lifespan": "1d", "name": "scratch", "session": "mcp-test"}, false, &result)
 	if !strings.HasPrefix(result.Path, filepath.Join(repo, ".obit", "tmp")) || result.Item.Source != "mktemp" || result.Item.Session != "mcp-test" || len(*starts) != 1 {
@@ -391,7 +392,7 @@ func TestMCPResurrectReportsPartialCommit(t *testing.T) {
 	}
 	unlock()
 	var view struct {
-		Burials  []core.Burial
+		Burials  []ledger.Burial
 		Restored []core.GraveResult
 	}
 	clitest.CallMCP(t, s, "obit_graveyard", map[string]any{}, false, &view)
@@ -406,7 +407,7 @@ func TestMCPGraveyardIncludesConcurrentRecovery(t *testing.T) {
 	s := clitest.ConnectMCP(t, NewServer(svc, "0.1.0-dev"))
 	for range 2 {
 		var page struct {
-			Burials []core.Burial
+			Burials []ledger.Burial
 			Pending []core.PendingGrave
 		}
 		clitest.CallMCP(t, s, "obit_graveyard", map[string]any{}, false, &page)
@@ -424,14 +425,14 @@ func TestMCPProposalsOmitsMissingCandidates(t *testing.T) {
 	root, store := clitest.CommandDir(t)
 	keep, gone := filepath.Join(root, "keep.txt"), filepath.Join(root, "gone.txt")
 	clitest.WriteFixture(t, keep, "keep")
-	clitest.AddProposal(t, store, root, core.Candidate{Path: keep, Lifespan: "1d"}, core.Candidate{Path: gone, Lifespan: "1d"})
+	clitest.AddProposal(t, store, root, ledger.Candidate{Path: keep, Lifespan: "1d"}, ledger.Candidate{Path: gone, Lifespan: "1d"})
 	svc, err := cmdutil.Open()
 	if err != nil {
 		t.Fatal(err)
 	}
 	session := clitest.ConnectMCP(t, NewServer(svc, "0.1.0-dev"))
 	t.Setenv("PATH", t.TempDir())
-	var data struct{ Proposals []core.Proposal }
+	var data struct{ Proposals []ledger.Proposal }
 	clitest.CallMCP(t, session, "obit_proposals", struct{}{}, false, &data)
 	if len(data.Proposals) != 1 || len(data.Proposals[0].Candidates) != 1 || data.Proposals[0].Candidates[0].Path != keep {
 		t.Fatalf("MCP displayed missing candidates: %+v", data)
@@ -469,7 +470,7 @@ func TestMCPMkTempReportsFailedRollback(t *testing.T) {
 	})
 	var data struct {
 		Path string
-		Item *core.Item
+		Item *ledger.Item
 	}
 	r := clitest.CallMCP(t, clitest.ConnectMCP(t, server), "obit_mktemp", map[string]any{"cwd": repo, "lifespan": "1d", "name": "rollback"}, true, &data)
 	encoded, err := json.Marshal(r.StructuredContent)
@@ -539,8 +540,8 @@ func TestMCPListsLegacyLongNotes(t *testing.T) {
 	}
 	path := filepath.Join(repo, "note.txt")
 	clitest.WriteFixture(t, path, "keep")
-	if err := svc.Store.Update(func(st *core.State) error {
-		st.Items = []core.Item{{ID: 1, Path: path, Note: strings.Repeat("n", 9<<20), ExpiresAt: time.Now().Add(time.Hour)}}
+	if err := svc.Store.Update(func(st *ledger.State) error {
+		st.Items = []ledger.Item{{ID: 1, Path: path, Note: strings.Repeat("n", 9<<20), ExpiresAt: time.Now().Add(time.Hour)}}
 		st.NextID = 2
 		return nil
 	}); err != nil {

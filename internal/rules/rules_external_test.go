@@ -11,6 +11,8 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/auto"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/guard"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/rules"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
@@ -30,8 +32,8 @@ func TestRuleScanLimitIsDefinitive(t *testing.T) {
 	}
 	now := time.Now()
 	svc := &core.Service{
-		Store: core.Store{Home: home},
-		Guard: core.Guard{System: []string{home}},
+		Store: ledger.Store{Home: home},
+		Guard: guard.Guard{System: []string{home}},
 		FS:    winfs.FS{},
 		Now:   func() time.Time { return now },
 	}
@@ -95,7 +97,7 @@ func TestRuleScanLimitIsDefinitive(t *testing.T) {
 		}
 		now = registered[0].Item.ExpiresAt.Add(time.Second)
 		out, err := svc.Sweep(false)
-		if err != nil || len(out) != 1 || out[0].Action != core.ActionRefused {
+		if err != nil || len(out) != 1 || out[0].Action != ledger.ActionRefused {
 			t.Errorf("scan limit must refuse, not retry: %+v, %v", out, err)
 		}
 		st, err := svc.Store.Read()

@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	core "github.com/woodfishhhh/obituary/internal/core/fs"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"golang.org/x/sys/windows"
 )
 
@@ -69,13 +69,13 @@ func hresult(r uintptr, what string) error {
 // it, narrowing the window in which a swapped-in object could be hit. The
 // nuke warning plus no-UI flags make the shell skip, not permanently delete,
 // anything that cannot be recycled; the result is then verified on disk.
-func (fs FS) Recycle(path string, want core.Identity) error {
+func (fs FS) Recycle(path string, want corefs.Identity) error {
 	got, err := fs.Identify(path)
 	if err != nil {
 		return err
 	}
 	if got != want {
-		return fmt.Errorf("%s is no longer the tracked object: %w", path, core.ErrUnsafe)
+		return fmt.Errorf("%s is no longer the tracked object: %w", path, corefs.ErrUnsafe)
 	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()

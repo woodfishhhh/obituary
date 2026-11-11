@@ -6,6 +6,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 type watchChild struct {
@@ -15,11 +16,11 @@ type watchChild struct {
 }
 
 type listing struct {
-	core.WatchPolicy
-	Exemptions []core.WatchExemption `json:"exemptions"`
-	Stability  []watchChild          `json:"stability,omitempty"`
-	Skipped    []core.WatchSkip      `json:"skipped,omitempty"`
-	ScanError  string                `json:"scanError,omitempty"`
+	ledger.WatchPolicy
+	Exemptions []ledger.WatchExemption `json:"exemptions"`
+	Stability  []watchChild            `json:"stability,omitempty"`
+	Skipped    []core.WatchSkip        `json:"skipped,omitempty"`
+	ScanError  string                  `json:"scanError,omitempty"`
 }
 
 func (o *options) printPolicies(svc *core.Service) error {
@@ -41,7 +42,7 @@ func (o *options) printPolicies(svc *core.Service) error {
 	return nil
 }
 
-func policyListing(svc *core.Service, st core.State, p core.WatchPolicy, now time.Time) listing {
+func policyListing(svc *core.Service, st ledger.State, p ledger.WatchPolicy, now time.Time) listing {
 	row := listing{WatchPolicy: p, Exemptions: svc.WatchExemptionDetails(st, p.ID)}
 	path, err := svc.WatchPath(p)
 	if err == nil {

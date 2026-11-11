@@ -8,14 +8,14 @@ import (
 	"strings"
 	"unsafe"
 
-	core "github.com/woodfishhhh/obituary/internal/core/fs"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"golang.org/x/sys/windows"
 )
 
 type restoreParent struct {
 	h       windows.Handle
 	path    string
-	id      core.Identity
+	id      corefs.Identity
 	created bool
 }
 
@@ -42,14 +42,14 @@ func (p *restoreParent) Rollback() error {
 	return err
 }
 
-func (p *restoreParent) Close() error            { return windows.CloseHandle(p.h) }
-func (p *restoreParent) Path() string            { return p.path }
-func (p *restoreParent) Identity() core.Identity { return p.id }
+func (p *restoreParent) Close() error              { return windows.CloseHandle(p.h) }
+func (p *restoreParent) Path() string              { return p.path }
+func (p *restoreParent) Identity() corefs.Identity { return p.id }
 
 // OpenRestoreParent pins the checked destination without following its final
 // reparse point. FILE_RENAME_INFORMATION requires traverse/read-attribute access
 // on RootDirectory; sharing delete permits ordinary concurrent directory moves.
-func (FS) OpenRestoreParent(path string) (core.RestoreParent, error) {
+func (FS) OpenRestoreParent(path string) (corefs.RestoreParent, error) {
 	name, err := windows.UTF16PtrFromString(path)
 	if err != nil {
 		return nil, err
@@ -62,9 +62,9 @@ func (FS) OpenRestoreParent(path string) (core.RestoreParent, error) {
 	var info windows.ByHandleFileInformation
 	err = windows.GetFileInformationByHandle(h, &info)
 	if err == nil && (info.FileAttributes&windows.FILE_ATTRIBUTE_DIRECTORY == 0 || info.FileAttributes&windows.FILE_ATTRIBUTE_REPARSE_POINT != 0) {
-		err = fmt.Errorf("restore parent is not an ordinary directory: %w", core.ErrUnsafe)
+		err = fmt.Errorf("restore parent is not an ordinary directory: %w", corefs.ErrUnsafe)
 	}
-	var id core.Identity
+	var id corefs.Identity
 	if err == nil {
 		id, err = identify(h, volumeRoot(path))
 	}
@@ -81,10 +81,10 @@ func (FS) OpenRestoreParent(path string) (core.RestoreParent, error) {
 // MkdirRestoreParent creates directories relative to the pinned parent,
 // retaining the returned handle and rejecting every reparse tag. os.Root's
 // traversal intentionally follows in-root links, which restore cannot accept.
-func (FS) MkdirRestoreParent(parent core.RestoreParent, name string) (core.RestoreParent, error) {
+func (FS) MkdirRestoreParent(parent corefs.RestoreParent, name string) (corefs.RestoreParent, error) {
 	p, ok := parent.(*restoreParent)
 	if !ok || name == "" || name == "." || name == ".." || strings.ContainsAny(name, `\/:`) {
-		return nil, fmt.Errorf("invalid restore child: %w", core.ErrUnsafe)
+		return nil, fmt.Errorf("invalid restore child: %w", corefs.ErrUnsafe)
 	}
 	n, err := windows.NewNTUnicodeString(name)
 	if err != nil {
@@ -103,9 +103,9 @@ func (FS) MkdirRestoreParent(parent core.RestoreParent, name string) (core.Resto
 	var info windows.ByHandleFileInformation
 	err = windows.GetFileInformationByHandle(h, &info)
 	if err == nil && info.FileAttributes&windows.FILE_ATTRIBUTE_REPARSE_POINT != 0 {
-		err = fmt.Errorf("restore child is a reparse point: %w", core.ErrUnsafe)
+		err = fmt.Errorf("restore child is a reparse point: %w", corefs.ErrUnsafe)
 	}
-	var id core.Identity
+	var id corefs.Identity
 	var path string
 	if err == nil {
 		id, err = identify(h, volumeRoot(p.path))
@@ -115,7 +115,7 @@ func (FS) MkdirRestoreParent(parent core.RestoreParent, name string) (core.Resto
 	}
 	child := &restoreParent{h: h, path: filepath.Clean(path), id: id, created: iosb.Information == 2 /* FILE_CREATED */}
 	if err == nil && id.Serial != p.id.Serial {
-		err = core.ErrUnsafe
+		err = corefs.ErrUnsafe
 	}
 	if err != nil {
 		err = errors.Join(err, child.Rollback())
@@ -127,11 +127,11 @@ func (FS) MkdirRestoreParent(parent core.RestoreParent, name string) (core.Resto
 
 // FindRestored searches only the recorded parent and compares file IDs on
 // opened handles. A matching filename alone never proves a committed restore.
-func (fs FS) FindRestored(parent, source core.Identity) (string, error) {
+func (fs FS) FindRestored(parent, source corefs.Identity) (string, error) {
 	return fs.findRestored(parent, source, fs.Locate)
 }
 
-func (fs FS) findRestored(parent, source core.Identity, locateParent func(core.Identity) (string, error)) (string, error) {
+func (fs FS) findRestored(parent, source corefs.Identity, locateParent func(corefs.Identity) (string, error)) (string, error) {
 	dir, err := locateParent(parent)
 	if err != nil {
 		return "", err
@@ -143,7 +143,7 @@ func (fs FS) findRestored(parent, source core.Identity, locateParent func(core.I
 	defer pinned.Close()
 	p := pinned.(*restoreParent)
 	if p.id.Serial != parent.Serial || p.id.FileID != parent.FileID {
-		return "", core.ErrUnsafe
+		return "", corefs.ErrUnsafe
 	}
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -177,7 +177,7 @@ func (fs FS) findRestored(parent, source core.Identity, locateParent func(core.I
 	if inspectErr != nil {
 		return "", fmt.Errorf("restored identity could not be located in its recorded parent: %w", inspectErr)
 	}
-	return "", fmt.Errorf("restored identity is absent from its recorded parent: %w", core.ErrNotFound)
+	return "", fmt.Errorf("restored identity is absent from its recorded parent: %w", corefs.ErrNotFound)
 }
 
 func openRestoredChild(parent windows.Handle, name *windows.NTUnicodeString) (windows.Handle, error) {
@@ -192,10 +192,10 @@ func openRestoredChild(parent windows.Handle, name *windows.NTUnicodeString) (wi
 
 // MovePinnedInto uses a single-component relative name and the already opened
 // parent handle. The source identity is checked on the handle being renamed.
-func (FS) MovePinnedInto(path string, want core.Identity, parent core.RestoreParent, name string) (string, error) {
+func (FS) MovePinnedInto(path string, want corefs.Identity, parent corefs.RestoreParent, name string) (string, error) {
 	p, ok := parent.(*restoreParent)
 	if !ok || name == "" || name == "." || name == ".." || strings.ContainsAny(name, `\/:`) {
-		return "", fmt.Errorf("invalid restore parent or filename: %w", core.ErrUnsafe)
+		return "", fmt.Errorf("invalid restore parent or filename: %w", corefs.ErrUnsafe)
 	}
 	var restored string
 	err := movePinned(path, want, func(h windows.Handle) error {

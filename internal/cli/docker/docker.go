@@ -7,6 +7,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifespan"
 )
 
 func NewCmd() *cobra.Command {
@@ -18,7 +20,7 @@ func NewCmd() *cobra.Command {
 func newAdd() *cobra.Command {
 	var asJSON bool
 	cmd := &cobra.Command{Use: "add <container name|ID> <lifespan>", Short: "Register one Docker container; expiry stops it", Args: cobra.ExactArgs(2), RunE: func(cmd *cobra.Command, args []string) error {
-		d, err := core.ParseDuration(args[1])
+		d, err := lifespan.ParseDuration(args[1])
 		if err != nil {
 			return err
 		}
@@ -52,9 +54,9 @@ func newList() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		items := []core.Item{}
+		items := []ledger.Item{}
 		for _, it := range st.Items {
-			if it.Kind == core.KindContainer {
+			if it.Kind == ledger.KindContainer {
 				items = append(items, it)
 			}
 		}

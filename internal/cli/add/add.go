@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifespan"
 )
 
 func NewCmd() *cobra.Command {
@@ -53,13 +54,13 @@ func NewCmd() *cobra.Command {
 
 func parseExpiry(args []string, at string, now time.Time) ([]string, time.Time, error) {
 	if at != "" {
-		expires, err := core.ParseAt(at, now)
+		expires, err := lifespan.ParseAt(at, now)
 		return args, expires, err
 	}
 	if len(args) < 2 {
 		return nil, time.Time{}, errors.New("give a duration after the paths (for example 2h), or use --at")
 	}
-	d, err := core.ParseDuration(args[len(args)-1])
+	d, err := lifespan.ParseDuration(args[len(args)-1])
 	if err != nil {
 		return nil, time.Time{}, err
 	}

@@ -9,6 +9,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
@@ -53,13 +54,13 @@ func StatusCmd(home func() (string, error)) *cobra.Command {
 }
 
 func readStatus(home string) (DaemonStatus, error) {
-	state, err := (core.Store{Home: home}).Read()
+	state, err := (ledger.Store{Home: home}).Read()
 	if err != nil {
 		return DaemonStatus{}, err
 	}
 	st := DaemonStatus{Running: cmdutil.RunnerRunning(home), Autostart: cmdutil.RunnerAutostart(), Home: home, Tracked: len(state.Items),
 		ScheduleInstalled: cmdutil.RunnerInstalled(), ScheduleServesHome: cmdutil.RunnerServes(home)}
-	pending, scanErr := (&core.Service{Store: core.Store{Home: home}, FS: winfs.FS{}}).PendingGraves()
+	pending, scanErr := (&core.Service{Store: ledger.Store{Home: home}, FS: winfs.FS{}}).PendingGraves()
 	st.PendingRecovery = len(pending)
 	if scanErr != nil {
 		st.RecoveryWarning = scanErr.Error()

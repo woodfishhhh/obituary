@@ -12,6 +12,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/auto"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/rules"
 )
 
@@ -201,7 +202,7 @@ func TestSessionContextOmitsMissingProposalCandidatesWithoutGit(t *testing.T) {
 func TestLogfDoesNotWaitIndefinitelyForLogLock(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
-	release, err := core.LockFile(filepath.Join(home, "hook.log.lock"), true)
+	release, err := ledger.LockFile(filepath.Join(home, "hook.log.lock"), true)
 	if err != nil {
 		t.Fatal(err)
 	}

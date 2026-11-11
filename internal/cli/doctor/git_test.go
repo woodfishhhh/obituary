@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func TestDoctorSlowGit(t *testing.T) {
@@ -18,7 +19,7 @@ func TestDoctorSlowGit(t *testing.T) {
 		home := t.TempDir()
 		var lines []byte
 		for i := 0; i < count; i++ {
-			data, err := json.Marshal(core.Event{Time: now.Add(-time.Minute).Add(time.Duration(i) * time.Second), Action: core.ActionRetry, ID: 7, Detail: timeout})
+			data, err := json.Marshal(ledger.Event{Time: now.Add(-time.Minute).Add(time.Duration(i) * time.Second), Action: ledger.ActionRetry, ID: 7, Detail: timeout})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -44,7 +45,7 @@ func TestDoctorSlowGit(t *testing.T) {
 
 func TestDoctorSlowGitDeduplicatesEventsAcrossRotation(t *testing.T) {
 	now := time.Now().UTC()
-	base := core.Event{Time: now.Add(-time.Minute), Action: core.ActionRetry, ID: 7, Path: "keep.log", Detail: "could not ask Git whether it is tracked: context deadline exceeded"}
+	base := ledger.Event{Time: now.Add(-time.Minute), Action: ledger.ActionRetry, ID: 7, Path: "keep.log", Detail: "could not ask Git whether it is tracked: context deadline exceeded"}
 	for _, distinct := range []string{"none", "time", "id", "path", "detail"} {
 		t.Run(distinct, func(t *testing.T) {
 			home := t.TempDir()
@@ -59,7 +60,7 @@ func TestDoctorSlowGitDeduplicatesEventsAcrossRotation(t *testing.T) {
 			case "detail":
 				other.Detail = "final Git verification budget exhausted: context deadline exceeded"
 			}
-			for name, events := range map[string][]core.Event{"audit.jsonl.1": {base, base}, "audit.jsonl": {base, other, other}} {
+			for name, events := range map[string][]ledger.Event{"audit.jsonl.1": {base, base}, "audit.jsonl": {base, other, other}} {
 				var lines []byte
 				for _, event := range events {
 					data, err := json.Marshal(event)
@@ -90,16 +91,16 @@ func TestGitTimeoutRetry(t *testing.T) {
 		age            time.Duration
 		want           bool
 	}{
-		{core.ActionRetry, "could not ask Git whether it is tracked: context deadline exceeded", 0, true},
-		{core.ActionRetry, "final Git verification budget exhausted: context deadline exceeded", 24 * time.Hour, true},
-		{core.ActionRetry, "could not ask Git whether it is tracked: context deadline exceeded", 25 * time.Hour, false},
-		{core.ActionRetry, "could not ask Git whether it is tracked: context deadline exceeded", -time.Second, false},
-		{core.ActionRetry, "could not ask Git whether it is tracked: context canceled", 0, false},
-		{core.ActionRetry, "could not ask Git whether it is tracked: access denied", 0, false},
-		{core.ActionRetry, "Guard: context deadline exceeded", 0, false},
+		{ledger.ActionRetry, "could not ask Git whether it is tracked: context deadline exceeded", 0, true},
+		{ledger.ActionRetry, "final Git verification budget exhausted: context deadline exceeded", 24 * time.Hour, true},
+		{ledger.ActionRetry, "could not ask Git whether it is tracked: context deadline exceeded", 25 * time.Hour, false},
+		{ledger.ActionRetry, "could not ask Git whether it is tracked: context deadline exceeded", -time.Second, false},
+		{ledger.ActionRetry, "could not ask Git whether it is tracked: context canceled", 0, false},
+		{ledger.ActionRetry, "could not ask Git whether it is tracked: access denied", 0, false},
+		{ledger.ActionRetry, "Guard: context deadline exceeded", 0, false},
 		{core.ActionBuried, "could not ask Git whether it is tracked: context deadline exceeded", 0, false},
 	} {
-		if got := gitTimeoutRetry(core.Event{Time: now.Add(-tc.age), Action: tc.action, Detail: tc.detail}, now); got != tc.want {
+		if got := gitTimeoutRetry(ledger.Event{Time: now.Add(-tc.age), Action: tc.action, Detail: tc.detail}, now); got != tc.want {
 			t.Errorf("Git timeout classification: %+v got=%v", tc, got)
 		}
 	}

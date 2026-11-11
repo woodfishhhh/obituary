@@ -20,6 +20,7 @@ import (
 	initcmd "github.com/woodfishhhh/obituary/internal/cli/init"
 	"github.com/woodfishhhh/obituary/internal/config"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/hook"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
@@ -63,9 +64,9 @@ func TestDoctorNewChecksJSONAndTextReadOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 	now := time.Now()
-	if err := (core.Store{Home: home}).Update(func(st *core.State) error {
-		st.Watches = []core.WatchPolicy{{ID: 1, Path: path, Identity: id, Consent: "pending"}}
-		st.Items = []core.Item{{ID: 2, Path: filepath.Join(path, "download"), Source: "watch", CreatedAt: now.Add(-25 * time.Hour), Watch: &core.WatchTiming{StableSince: now}}}
+	if err := (ledger.Store{Home: home}).Update(func(st *ledger.State) error {
+		st.Watches = []ledger.WatchPolicy{{ID: 1, Path: path, Identity: id, Consent: "pending"}}
+		st.Items = []ledger.Item{{ID: 2, Path: filepath.Join(path, "download"), Source: "watch", CreatedAt: now.Add(-25 * time.Hour), Watch: &ledger.WatchTiming{StableSince: now}}}
 		st.NextID = 3
 		return nil
 	}); err != nil {
@@ -194,7 +195,7 @@ func TestDoctorWarnsForUnverifiedWatchDirectory(t *testing.T) {
 	b.Size, b.Source, b.Reason = 0, "watch", core.ReasonExpired
 	data, err := json.Marshal(struct {
 		Version int `json:"version"`
-		core.Burial
+		ledger.Burial
 		WatchCheck core.WatchSnapshot `json:"watchCheck"`
 		WatchError string             `json:"watchError"`
 	}{3, b, core.WatchSnapshot{Identity: *b.Identity, Directory: true}, "rollback destination is occupied"})
@@ -202,7 +203,7 @@ func TestDoctorWarnsForUnverifiedWatchDirectory(t *testing.T) {
 		t.Fatal(err)
 	}
 	clitest.WriteFixture(t, filepath.Dir(b.Grave)+".json", string(data))
-	if err := svc.Store.Update(func(st *core.State) error { st.Burials = nil; return nil }); err != nil {
+	if err := svc.Store.Update(func(st *ledger.State) error { st.Burials = nil; return nil }); err != nil {
 		t.Fatal(err)
 	}
 	before := clitest.TreeSnapshot(t, svc.Store.Home)
@@ -252,7 +253,7 @@ func TestDoctorSeesEmptyGraveWithCommittedManifest(t *testing.T) {
 	b.Size = 0
 	data, err := json.Marshal(struct {
 		Version int `json:"version"`
-		core.Burial
+		ledger.Burial
 	}{1, b})
 	if err != nil {
 		t.Fatal(err)
@@ -750,7 +751,7 @@ func TestDoctorWarnsForGraveWithoutManifest(t *testing.T) {
 
 func TestDoctorWarnsForConflictingManifestRetention(t *testing.T) {
 	svc, _, p := clitest.PendingCommandBurial(t, false)
-	if err := svc.Store.Update(func(st *core.State) error {
+	if err := svc.Store.Update(func(st *ledger.State) error {
 		b := *p.Burial
 		b.PurgeAt = b.BuriedAt.Add(time.Second)
 		st.Burials = append(st.Burials, b)

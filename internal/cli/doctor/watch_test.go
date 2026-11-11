@@ -11,6 +11,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
@@ -27,11 +28,11 @@ func TestDoctorWatches(t *testing.T) {
 		{"unreadable", core.ConsentApproved, "WARN", os.ErrPermission},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			state := core.State{Watches: []core.WatchPolicy{{ID: 1, Path: `C:\downloads`, Consent: tc.consent,
-				Exclusions: []core.WatchExclusion{{ID: 2}}}}, WatchExemptions: []core.WatchExemption{{WatchID: 1}}}
+			state := ledger.State{Watches: []ledger.WatchPolicy{{ID: 1, Path: `C:\downloads`, Consent: tc.consent,
+				Exclusions: []core.WatchExclusion{{ID: 2}}}}, WatchExemptions: []ledger.WatchExemption{{WatchID: 1}}}
 			calls := 0
 			folder := t.TempDir()
-			got := diagnoseWatches(state, nil, now, func(policy core.WatchPolicy) (string, error) {
+			got := diagnoseWatches(state, nil, now, func(policy ledger.WatchPolicy) (string, error) {
 				calls++
 				return folder, tc.pathErr
 			})
@@ -50,7 +51,7 @@ func TestDoctorWatches(t *testing.T) {
 			}
 		})
 	}
-	got := diagnoseWatches(core.State{}, errors.New("bad store"), now, nil)
+	got := diagnoseWatches(ledger.State{}, errors.New("bad store"), now, nil)
 	if got.Status != "FAIL" || !strings.Contains(got.Detail, "bad store") {
 		t.Fatal(got)
 	}
@@ -70,7 +71,7 @@ func TestDoctorWatchStability(t *testing.T) {
 		{"boundary age", 24 * time.Hour, now, "", "watch", false},
 		{"new active", time.Hour, now, "", "watch", false},
 		{"old stable", 48 * time.Hour, now.Add(-24 * time.Hour), "", "watch", false},
-		{"stable window elapsed", 25 * time.Hour, now.Add(-core.WatchStableWindow), "", "watch", false},
+		{"stable window elapsed", 25 * time.Hour, now.Add(-ledger.WatchStableWindow), "", "watch", false},
 		{"clock in future", 25 * time.Hour, now.Add(time.Hour), "", "watch", false},
 		{"legacy unknown", 25 * time.Hour, time.Time{}, "", "watch", false},
 		{"unfinished download", 25 * time.Hour, time.Time{}, "download temporary name is still present: part", "watch", true},
@@ -79,9 +80,9 @@ func TestDoctorWatchStability(t *testing.T) {
 		{"manual item", 25 * time.Hour, now, "", "cli", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			it := core.Item{ID: 1, Path: `C:\downloads\file.zip`, CreatedAt: now.Add(-tc.age), Source: tc.source,
-				LastError: tc.lastErr, Watch: &core.WatchTiming{StableSince: tc.stable}}
-			got := diagnoseWatches(core.State{Items: []core.Item{it}}, nil, now, nil)
+			it := ledger.Item{ID: 1, Path: `C:\downloads\file.zip`, CreatedAt: now.Add(-tc.age), Source: tc.source,
+				LastError: tc.lastErr, Watch: &ledger.WatchTiming{StableSince: tc.stable}}
+			got := diagnoseWatches(ledger.State{Items: []ledger.Item{it}}, nil, now, nil)
 			if (got.Status == "WARN") != tc.unstable || (got.Watch.Unstable == 1) != tc.unstable {
 				t.Fatalf("stability diagnosis: %+v %+v", got, got.Watch)
 			}
@@ -103,7 +104,7 @@ func TestDoctorWatchIdentityReadOnly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	state := core.State{Watches: []core.WatchPolicy{{ID: 1, Path: path, Identity: id, Consent: core.ConsentApproved}}}
+	state := ledger.State{Watches: []ledger.WatchPolicy{{ID: 1, Path: path, Identity: id, Consent: core.ConsentApproved}}}
 	svc := &core.Service{FS: fs}
 	for _, status := range []string{"PASS", "WARN"} {
 		before := clitest.TreeSnapshot(t, root)
@@ -129,7 +130,7 @@ func TestDoctorExplainsDownloadSkips(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	st := core.State{Watches: []core.WatchPolicy{{ID: 1, Path: path, Identity: id, Consent: core.ConsentApproved}}}
+	st := ledger.State{Watches: []ledger.WatchPolicy{{ID: 1, Path: path, Identity: id, Consent: core.ConsentApproved}}}
 	svc := &core.Service{FS: winfs.FS{}}
 	got := diagnoseWatches(st, nil, time.Now(), svc.WatchPath)
 	if !strings.Contains(got.Detail, "archive.tmp") || !strings.Contains(got.Detail, "obit add") || !strings.Contains(got.Detail, "download") {

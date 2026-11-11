@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func relocatedFixture(t *testing.T) (Scope, ManagedAsset, string) {
@@ -75,7 +75,7 @@ func TestManagedAssetReceiptHoldsLockThroughMigrationAndRemoval(t *testing.T) {
 			if calls == 1 {
 				return nil
 			}
-			release, ok, err := core.TryLockExclusive(receipt + ".lock")
+			release, ok, err := ledger.TryLockExclusive(receipt + ".lock")
 			if ok {
 				release()
 				t.Fatal("receipt transaction lock released before completion")

@@ -15,6 +15,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func TestMCPGraveyardKeepsBoundaryIDGroup(t *testing.T) {
@@ -23,9 +24,9 @@ func TestMCPGraveyardKeepsBoundaryIDGroup(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := svc.Store.Update(func(st *core.State) error {
+	if err := svc.Store.Update(func(st *ledger.State) error {
 		for i := int64(1); i <= 201; i++ {
-			st.Burials = append(st.Burials, core.Burial{ID: i, Path: filepath.Join(repo, fmt.Sprint(i))})
+			st.Burials = append(st.Burials, ledger.Burial{ID: i, Path: filepath.Join(repo, fmt.Sprint(i))})
 		}
 		st.NextID = 202
 		return nil
@@ -40,7 +41,7 @@ func TestMCPGraveyardKeepsBoundaryIDGroup(t *testing.T) {
 		}
 		var envelope struct {
 			Data struct {
-				Burials   []core.Burial
+				Burials   []ledger.Burial
 				Pending   []core.PendingGrave
 				NextAfter string
 				Total     int
@@ -68,7 +69,7 @@ func TestMCPGraveyardSingleIDGroupLimit(t *testing.T) {
 			t.Parallel()
 			pending := make([]core.PendingGrave, count)
 			for i := range pending {
-				pending[i] = core.PendingGrave{Burial: &core.Burial{ID: 1}, Status: "unverifiable"}
+				pending[i] = core.PendingGrave{Burial: &ledger.Burial{ID: 1}, Status: "unverifiable"}
 			}
 			page := mcpGravePage(nil, pending, mcpPageInput{Limit: 1}, nil)
 			if count > 200 {
@@ -103,16 +104,16 @@ func TestMCPListPagination(t *testing.T) {
 			if tool == "obit_proposals" {
 				key = "proposals"
 			}
-			if err := svc.Store.Update(func(st *core.State) error {
+			if err := svc.Store.Update(func(st *ledger.State) error {
 				for i := range 205 {
 					id := int64(205 - i)
 					switch tool {
 					case "obit_list":
-						st.Items = append(st.Items, core.Item{ID: id, Path: path, ExpiresAt: time.Now().Add(time.Duration(i) * time.Second)})
+						st.Items = append(st.Items, ledger.Item{ID: id, Path: path, ExpiresAt: time.Now().Add(time.Duration(i) * time.Second)})
 					case "obit_graveyard":
-						st.Burials = append(st.Burials, core.Burial{ID: id, Path: path, Grave: filepath.Join(svc.Store.Home, "graveyard", fmt.Sprint(id), "candidate.log")})
+						st.Burials = append(st.Burials, ledger.Burial{ID: id, Path: path, Grave: filepath.Join(svc.Store.Home, "graveyard", fmt.Sprint(id), "candidate.log")})
 					case "obit_proposals":
-						st.Proposals = append(st.Proposals, core.Proposal{ID: id, Project: repo, Candidates: []core.Candidate{{Path: path, Lifespan: "1d"}}})
+						st.Proposals = append(st.Proposals, ledger.Proposal{ID: id, Project: repo, Candidates: []ledger.Candidate{{Path: path, Lifespan: "1d"}}})
 					}
 				}
 				st.NextID = 206
@@ -181,7 +182,7 @@ func TestMCPGraveyardCursorSurvivesChanges(t *testing.T) {
 				}
 			}
 			var page struct {
-				Burials   []core.Burial
+				Burials   []ledger.Burial
 				NextAfter string
 				HasMore   bool
 			}
@@ -212,7 +213,7 @@ func TestMCPGraveyardCursorSurvivesChanges(t *testing.T) {
 			var ids []int64
 			for range 5 {
 				page = struct {
-					Burials   []core.Burial
+					Burials   []ledger.Burial
 					NextAfter string
 					HasMore   bool
 				}{}
@@ -239,12 +240,12 @@ func TestMCPGraveyardMergesPendingByID(t *testing.T) {
 	}
 	b := *pending.Burial
 	b.ID++
-	if err := svc.Store.Update(func(st *core.State) error { st.Burials = append(st.Burials, b); st.NextID = b.ID + 1; return nil }); err != nil {
+	if err := svc.Store.Update(func(st *ledger.State) error { st.Burials = append(st.Burials, b); st.NextID = b.ID + 1; return nil }); err != nil {
 		t.Fatal(err)
 	}
 	s := clitest.ConnectMCP(t, NewServer(svc, "0.1.0-dev"))
 	var page struct {
-		Burials   []core.Burial
+		Burials   []ledger.Burial
 		Pending   []core.PendingGrave
 		NextAfter string
 		HasMore   bool
@@ -255,7 +256,7 @@ func TestMCPGraveyardMergesPendingByID(t *testing.T) {
 	}
 	after := page.NextAfter
 	page = struct {
-		Burials   []core.Burial
+		Burials   []ledger.Burial
 		Pending   []core.PendingGrave
 		NextAfter string
 		HasMore   bool

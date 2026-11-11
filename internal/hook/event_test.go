@@ -17,6 +17,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/auto"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/docker"
 	"github.com/woodfishhhh/obituary/internal/project"
 	"github.com/woodfishhhh/obituary/internal/testenv"
@@ -512,7 +513,7 @@ func TestObservationIdentityCapturedBeforeLedgerWait(t *testing.T) {
 		e.write("debug.log")
 		replaced = true
 	}}
-	release, err := core.LockFile(filepath.Join(e.engine.Svc.Store.Home, "store.lock"), true)
+	release, err := ledger.LockFile(filepath.Join(e.engine.Svc.Store.Home, "store.lock"), true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -546,7 +547,7 @@ func TestDeferredObservationDoesNotRegisterReplacement(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	release, err := core.LockFile(filepath.Join(e.engine.Svc.Store.Home, "store.lock"), true)
+	release, err := ledger.LockFile(filepath.Join(e.engine.Svc.Store.Home, "store.lock"), true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -626,7 +627,7 @@ func TestContendedObservationRejectsReplacementDuringReplay(t *testing.T) {
 			}); err != nil {
 				t.Fatal(err)
 			}
-			release, err := core.LockFile(filepath.Join(e.engine.Svc.Store.Home, "store.lock"), true)
+			release, err := ledger.LockFile(filepath.Join(e.engine.Svc.Store.Home, "store.lock"), true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -678,7 +679,7 @@ func TestTimedOutObservationQueuesAlternatePathSpellings(t *testing.T) {
 			if err := e.engine.Svc.Store.Update(func(*core.State) error { return nil }); err != nil {
 				t.Fatal(err)
 			}
-			release, err := core.LockFile(filepath.Join(e.engine.Svc.Store.Home, "store.lock"), true)
+			release, err := ledger.LockFile(filepath.Join(e.engine.Svc.Store.Home, "store.lock"), true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -714,7 +715,7 @@ func TestHookReturnsQuietlyWhenStoreLocked(t *testing.T) {
 			if err := os.MkdirAll(e.engine.Svc.Store.Home, 0o700); err != nil {
 				t.Fatal(err)
 			}
-			release, err := core.LockFile(filepath.Join(e.engine.Svc.Store.Home, "store.lock"), true)
+			release, err := ledger.LockFile(filepath.Join(e.engine.Svc.Store.Home, "store.lock"), true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -808,7 +809,7 @@ func TestNoticeRedeliveredAfterContextOrNotificationTimeout(t *testing.T) {
 				}
 				consent, err := previous(svc, root)
 				if err == nil {
-					release, err = core.LockFile(filepath.Join(svc.Store.Home, "store.lock"), false)
+					release, err = ledger.LockFile(filepath.Join(svc.Store.Home, "store.lock"), false)
 				}
 				return consent, err
 			}
@@ -932,7 +933,7 @@ func TestNotificationWriteTimeoutDoesNotAcknowledgePreparedContext(t *testing.T)
 		if err != nil {
 			return "", err
 		}
-		release, err = core.LockFile(filepath.Join(svc.Store.Home, "store.lock"), false)
+		release, err = ledger.LockFile(filepath.Join(svc.Store.Home, "store.lock"), false)
 		return consent, err
 	}
 	text, err := Handle(e.engine, Event{Name: "PostToolUse", Cwd: e.root, Session: "retry", Paths: []string{e.write("debug.log")}}, nil)

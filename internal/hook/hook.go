@@ -18,6 +18,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/auto"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/rules"
 	"github.com/woodfishhhh/obituary/internal/textutil"
 )
@@ -122,7 +123,7 @@ func appendLog(home, name, format string, args ...any) {
 	for deadline := time.Now().Add(150 * time.Millisecond); ; {
 		var ok bool
 		var err error
-		release, ok, err = core.TryLockExclusive(path + ".lock")
+		release, ok, err = ledger.TryLockExclusive(path + ".lock")
 		if err != nil {
 			return
 		}

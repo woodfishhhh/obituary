@@ -12,6 +12,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
@@ -21,9 +22,9 @@ func TestListShowsConfiguredQuietWindow(t *testing.T) {
 	t.Setenv("OBIT_CONFIG_DIR", filepath.Join(root, "config"))
 	clitest.WriteFixture(t, filepath.Join(root, "config", "config.toml"), "[watch]\nstable_window = \"30m\"\n")
 	now := time.Now()
-	store := core.Store{Home: os.Getenv("OBIT_HOME")}
-	if err := store.Update(func(st *core.State) error {
-		st.Items = []core.Item{{ID: 1, Source: "watch", Path: filepath.Join(root, "active.txt"), ExpiresAt: now.Add(-time.Minute), Attempts: 1, LastError: "folder child is still active", Watch: &core.WatchTiming{StableSince: now}}}
+	store := ledger.Store{Home: os.Getenv("OBIT_HOME")}
+	if err := store.Update(func(st *ledger.State) error {
+		st.Items = []ledger.Item{{ID: 1, Source: "watch", Path: filepath.Join(root, "active.txt"), ExpiresAt: now.Add(-time.Minute), Attempts: 1, LastError: "folder child is still active", Watch: &ledger.WatchTiming{StableSince: now}}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -54,9 +55,9 @@ func BenchmarkList(b *testing.B) {
 	if out, err := build.CombinedOutput(); err != nil {
 		b.Fatal(string(out), err)
 	}
-	store := core.Store{Home: filepath.Join(base, "data")}
+	store := ledger.Store{Home: filepath.Join(base, "data")}
 	now := time.Now()
-	if err := store.Update(func(st *core.State) error {
+	if err := store.Update(func(st *ledger.State) error {
 		for i := range 1000 {
 			path := filepath.Join(base, fmt.Sprintf("live-%04d", i))
 			grave := filepath.Join(store.Home, "graveyard", fmt.Sprintf("%d-%s-abcdef", 1001+i, now.UTC().Format("20060102T150405Z")), "buried")
@@ -80,8 +81,8 @@ func BenchmarkList(b *testing.B) {
 			if err != nil {
 				return err
 			}
-			st.Items = append(st.Items, core.Item{ID: int64(i + 1), Rev: 1, Path: path, Identity: &id, ExpiresAt: now.Add(time.Hour)})
-			st.Burials = append(st.Burials, core.Burial{ID: int64(1001 + i), Path: filepath.Join(base, fmt.Sprintf("old-%04d", i)), Grave: grave, Identity: &objectID, GraveID: &graveID, BuriedAt: now, PurgeAt: now.Add(24 * time.Hour), Reason: core.ReasonBury})
+			st.Items = append(st.Items, ledger.Item{ID: int64(i + 1), Rev: 1, Path: path, Identity: &id, ExpiresAt: now.Add(time.Hour)})
+			st.Burials = append(st.Burials, ledger.Burial{ID: int64(1001 + i), Path: filepath.Join(base, fmt.Sprintf("old-%04d", i)), Grave: grave, Identity: &objectID, GraveID: &graveID, BuriedAt: now, PurgeAt: now.Add(24 * time.Hour), Reason: core.ReasonBury})
 		}
 		st.NextID = 2001
 		return nil

@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifespan"
 )
 
 func NewCmd() *cobra.Command {
@@ -21,7 +21,7 @@ func NewCmd() *cobra.Command {
   obit mktemp 2h --name screenshots`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d, err := core.ParseDuration(args[0])
+			d, err := lifespan.ParseDuration(args[0])
 			if err != nil {
 				return err
 			}

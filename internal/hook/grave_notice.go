@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 // A hook's shared-lock budget is one second; optional advisories use only 25 ms.
@@ -36,7 +37,7 @@ func prepareGraveNotices(store core.Store, ev Event, d *delivery) {
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return
 	}
-	unlock, ok, err := core.TryLockExclusive(path + ".lock")
+	unlock, ok, err := ledger.TryLockExclusive(path + ".lock")
 	if err != nil || !ok {
 		return
 	}

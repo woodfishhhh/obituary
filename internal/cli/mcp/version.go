@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func mcpMemberKey(row any) string {
 	switch r := row.(type) {
-	case core.Item:
+	case ledger.Item:
 		if r.Container != nil {
 			return fmt.Sprintf("%q:%s:%s", r.Path, r.Container.ID, r.Container.Created)
 		}
@@ -19,7 +19,7 @@ func mcpMemberKey(row any) string {
 			identity = fmt.Sprintf("%d:%s", r.Identity.Serial, r.Identity.FileID)
 		}
 		return fmt.Sprintf("%q:%s", r.Path, identity)
-	case core.Proposal:
+	case ledger.Proposal:
 		candidates := make([]string, len(r.Candidates))
 		for i, c := range r.Candidates {
 			candidates[i] = fmt.Sprintf("%q:%d", c.Path, c.Rev)

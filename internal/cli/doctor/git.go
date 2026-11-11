@@ -10,13 +10,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func diagnoseSlowGit(home string, now time.Time) DoctorCheck {
 	c := DoctorCheck{Name: "slow-git", Status: "PASS"}
-	var latest core.Event
-	seen := make(map[core.Event]bool)
+	var latest ledger.Event
+	seen := make(map[ledger.Event]bool)
 	for _, name := range []string{"audit.jsonl.1", "audit.jsonl"} {
 		if err := scanGitRetries(filepath.Join(home, name), now, &c, &latest, seen); err != nil {
 			c.Status, c.Detail = "FAIL", err.Error()
@@ -31,7 +31,7 @@ func diagnoseSlowGit(home string, now time.Time) DoctorCheck {
 	return c
 }
 
-func scanGitRetries(path string, now time.Time, c *DoctorCheck, latest *core.Event, seen map[core.Event]bool) error {
+func scanGitRetries(path string, now time.Time, c *DoctorCheck, latest *ledger.Event, seen map[ledger.Event]bool) error {
 	f, err := os.Open(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil
@@ -43,7 +43,7 @@ func scanGitRetries(path string, now time.Time, c *DoctorCheck, latest *core.Eve
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 64<<10), 1<<20) // same line bound as core.Store.History
 	for scanner.Scan() {
-		var event core.Event
+		var event ledger.Event
 		if json.Unmarshal(scanner.Bytes(), &event) != nil || !gitTimeoutRetry(event, now) {
 			continue
 		}
@@ -60,8 +60,8 @@ func scanGitRetries(path string, now time.Time, c *DoctorCheck, latest *core.Eve
 	return scanner.Err()
 }
 
-func gitTimeoutRetry(event core.Event, now time.Time) bool {
-	return event.Action == core.ActionRetry && !event.Time.Before(now.Add(-24*time.Hour)) && !event.Time.After(now) &&
+func gitTimeoutRetry(event ledger.Event, now time.Time) bool {
+	return event.Action == ledger.ActionRetry && !event.Time.Before(now.Add(-24*time.Hour)) && !event.Time.After(now) &&
 		strings.Contains(event.Detail, "context deadline exceeded") &&
 		(strings.HasPrefix(event.Detail, "could not ask Git whether it is tracked:") ||
 			strings.HasPrefix(event.Detail, "final Git verification budget exhausted:"))

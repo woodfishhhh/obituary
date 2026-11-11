@@ -11,7 +11,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifespan"
 )
 
 // Parse reads rules text. source labels the rules in diagnostics.
@@ -81,7 +81,7 @@ func ruleLifespan(text string) (time.Duration, error) {
 	if strings.EqualFold(text, "off") || strings.EqualFold(text, "never") {
 		return 0, nil
 	}
-	return core.ParseDuration(text)
+	return lifespan.ParseDuration(text)
 }
 
 // compile turns a .gitignore pattern into a regexp over slash-separated

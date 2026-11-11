@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/textutil"
 )
 
 func diagnoseHookQueue(home string, now time.Time) DoctorCheck {
-	status, err := (core.Store{Home: home}).InspectObservations()
+	status, err := (ledger.Store{Home: home}).InspectObservations()
 	c := DoctorCheck{Name: "hook-queue", Status: "PASS", Queue: &status}
 	if err != nil {
 		c.Status, c.Detail = "FAIL", err.Error()

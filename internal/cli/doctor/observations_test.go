@@ -10,11 +10,12 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func TestDoctorObservationQueueIsReadOnly(t *testing.T) {
 	home := t.TempDir()
-	store := core.Store{Home: home}
+	store := ledger.Store{Home: home}
 	now := time.Now()
 	row := core.Observation{Path: filepath.Join(home, "debug.log"), Session: "s", Token: "request", Identity: &core.Identity{}, ObservedAt: now.Add(-2 * time.Hour)}
 	if err := store.DeferObservations([]core.Observation{row}); err != nil {

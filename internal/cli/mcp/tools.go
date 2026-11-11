@@ -8,6 +8,8 @@ import (
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifespan"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 	"github.com/woodfishhhh/obituary/internal/project"
 )
@@ -99,12 +101,12 @@ func markMCP(svc *core.Service, in mcpMarkInput) mcpReply {
 	var expires time.Time
 	if in.At != "" {
 		var err error
-		expires, err = core.ParseAt(in.At, now)
+		expires, err = lifespan.ParseAt(in.At, now)
 		if err != nil {
 			return mcpResult(nil, err)
 		}
 	} else {
-		d, err := core.ParseDuration(in.Lifespan)
+		d, err := lifespan.ParseDuration(in.Lifespan)
 		if err != nil {
 			return mcpResult(nil, err)
 		}
@@ -122,7 +124,7 @@ func mktempMCP(svc *core.Service, in mcpTempInput) mcpReply {
 	if err := mcpPaths([]string{in.Cwd}, false); err != nil {
 		return mcpResult(nil, err)
 	}
-	d, err := core.ParseDuration(in.Lifespan)
+	d, err := lifespan.ParseDuration(in.Lifespan)
 	if err != nil {
 		return mcpResult(nil, err)
 	}
@@ -165,7 +167,7 @@ func extendMCP(svc *core.Service, in mcpExtendInput) mcpReply {
 	if err := mcpPaths(in.Refs, true); err != nil {
 		return mcpResult(nil, err)
 	}
-	d, err := core.ParseDuration(in.Lifespan)
+	d, err := lifespan.ParseDuration(in.Lifespan)
 	if err != nil {
 		return mcpResult(nil, err)
 	}
@@ -183,7 +185,7 @@ func spareMCP(svc *core.Service, in mcpRefsInput) mcpReply {
 
 func listMCP(svc *core.Service, in mcpPageInput) mcpReply {
 	st, err := svc.Store.Read()
-	return mcpPageResult("items", st.Items, func(it core.Item) int64 { return it.ID }, in, err)
+	return mcpPageResult("items", st.Items, func(it ledger.Item) int64 { return it.ID }, in, err)
 }
 
 func graveyardMCP(svc *core.Service, in mcpGraveyardInput) mcpReply {
@@ -213,7 +215,7 @@ func graveyardMCP(svc *core.Service, in mcpGraveyardInput) mcpReply {
 
 func proposalsMCP(svc *core.Service, in mcpPageInput) mcpReply {
 	st, err := svc.Store.Read()
-	return mcpPageResult("proposals", core.ExistingProposals(st.Proposals), func(p core.Proposal) int64 { return p.ID }, in, err)
+	return mcpPageResult("proposals", core.ExistingProposals(st.Proposals), func(p ledger.Proposal) int64 { return p.ID }, in, err)
 }
 
 func statsMCP(svc *core.Service, _ struct{}) mcpReply {

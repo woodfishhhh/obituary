@@ -12,6 +12,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func TestMCPItemVersionTracksReplacement(t *testing.T) {
@@ -58,12 +59,12 @@ func TestMCPProposalVersionTracksCandidates(t *testing.T) {
 			a, b := filepath.Join(repo, "a.log"), filepath.Join(repo, "b.log")
 			clitest.WriteFixture(t, a, "a")
 			clitest.WriteFixture(t, b, "b")
-			clitest.AddProposal(t, store, repo, core.Candidate{Path: a, Rev: 1, Lifespan: "1d"})
+			clitest.AddProposal(t, store, repo, ledger.Candidate{Path: a, Rev: 1, Lifespan: "1d"})
 			var first struct{ Version string }
 			clitest.CallMCP(t, s, "obit_proposals", map[string]any{}, false, &first)
-			if err := store.Update(func(st *core.State) error {
+			if err := store.Update(func(st *ledger.State) error {
 				if change == "added" {
-					st.Proposals[0].Candidates = append(st.Proposals[0].Candidates, core.Candidate{Path: b, Rev: 1})
+					st.Proposals[0].Candidates = append(st.Proposals[0].Candidates, ledger.Candidate{Path: b, Rev: 1})
 				} else {
 					st.Proposals[0].Candidates[0].Rev++
 				}
@@ -95,11 +96,11 @@ func TestMCPVersionExcludesUnrelatedFields(t *testing.T) {
 	if got, err := svc.Add([]string{path}, core.AddOptions{ExpiresAt: time.Now().Add(time.Hour)}); err != nil || core.Failed(got) {
 		t.Fatal(got, err)
 	}
-	clitest.AddProposal(t, store, repo, core.Candidate{Path: path, Rev: 1, Lifespan: "1d"})
+	clitest.AddProposal(t, store, repo, ledger.Candidate{Path: path, Rev: 1, Lifespan: "1d"})
 	for _, tool := range []string{"obit_list", "obit_proposals"} {
 		var first struct{ Version string }
 		clitest.CallMCP(t, s, tool, map[string]any{}, false, &first)
-		if err := store.Update(func(st *core.State) error {
+		if err := store.Update(func(st *ledger.State) error {
 			st.Items[0].Note = "edited"
 			st.Items[0].ExpiresAt = st.Items[0].ExpiresAt.Add(time.Hour)
 			st.Items[0].Rev++
@@ -129,17 +130,17 @@ func TestMCPListVersions(t *testing.T) {
 			}
 			path := filepath.Join(repo, "candidate.log")
 			clitest.WriteFixture(t, path, "keep")
-			seed := func(st *core.State, id int64) {
+			seed := func(st *ledger.State, id int64) {
 				switch tool {
 				case "obit_list":
-					st.Items = append(st.Items, core.Item{ID: id, Path: path})
+					st.Items = append(st.Items, ledger.Item{ID: id, Path: path})
 				case "obit_graveyard":
-					st.Burials = append(st.Burials, core.Burial{ID: id, Path: path})
+					st.Burials = append(st.Burials, ledger.Burial{ID: id, Path: path})
 				case "obit_proposals":
-					st.Proposals = append(st.Proposals, core.Proposal{ID: id, Candidates: []core.Candidate{{Path: path}}})
+					st.Proposals = append(st.Proposals, ledger.Proposal{ID: id, Candidates: []ledger.Candidate{{Path: path}}})
 				}
 			}
-			if err := svc.Store.Update(func(st *core.State) error { seed(st, 3); seed(st, 2); st.NextID = 4; return nil }); err != nil {
+			if err := svc.Store.Update(func(st *ledger.State) error { seed(st, 3); seed(st, 2); st.NextID = 4; return nil }); err != nil {
 				t.Fatal(err)
 			}
 			var first struct{ Version, NextAfter string }
@@ -149,7 +150,7 @@ func TestMCPListVersions(t *testing.T) {
 			}
 			for _, changed := range []bool{false, true} {
 				if changed {
-					if err := svc.Store.Update(func(st *core.State) error { seed(st, 1); return nil }); err != nil {
+					if err := svc.Store.Update(func(st *ledger.State) error { seed(st, 1); return nil }); err != nil {
 						t.Fatal(err)
 					}
 				}
@@ -204,7 +205,7 @@ func TestMCPGraveyardLateBurialVersion(t *testing.T) {
 		t.Fatalf("old ID did not enter the graveyard: %+v %v", got, err)
 	}
 	var page struct {
-		Burials []core.Burial
+		Burials []ledger.Burial
 		Changed bool
 		Version string
 	}
@@ -220,8 +221,8 @@ func TestMCPGraveyardLateBurialVersion(t *testing.T) {
 
 func TestMCPGraveyardVersionTracksPendingStatus(t *testing.T) {
 	t.Parallel()
-	burials := []core.Burial{{ID: 3}, {ID: 2}}
-	pending := []core.PendingGrave{{Burial: &core.Burial{ID: 1}, Manifest: "manifest", Status: "pending"}}
+	burials := []ledger.Burial{{ID: 3}, {ID: 2}}
+	pending := []core.PendingGrave{{Burial: &ledger.Burial{ID: 1}, Manifest: "manifest", Status: "pending"}}
 	first := mcpGravePage(burials, pending, mcpPageInput{Limit: 1}, nil)
 	version := first.Data.(map[string]any)["version"].(string)
 	burials[0], burials[1] = burials[1], burials[0]
@@ -249,7 +250,7 @@ func TestMCPProposalVersionSurvivesPruneAndReadd(t *testing.T) {
 	a, b := filepath.Join(repo, "a.log"), filepath.Join(repo, "b.log")
 	clitest.WriteFixture(t, a, "a")
 	clitest.WriteFixture(t, b, "b")
-	p, _, _, err := svc.Propose(core.ProposalLarge, repo, "", []core.Candidate{{Path: a, Lifespan: "1d"}, {Path: b, Lifespan: "1d"}})
+	p, _, _, err := svc.Propose(core.ProposalLarge, repo, "", []ledger.Candidate{{Path: a, Lifespan: "1d"}, {Path: b, Lifespan: "1d"}})
 	if err != nil {
 		t.Fatal(err)
 	}

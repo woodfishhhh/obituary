@@ -20,6 +20,7 @@ import (
 	daemoncmd "github.com/woodfishhhh/obituary/internal/cli/daemon"
 	mcpcmd "github.com/woodfishhhh/obituary/internal/cli/mcp"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
@@ -111,10 +112,10 @@ func BenchmarkGraveyardJSON(b *testing.B) {
 	for _, n := range []int{1000, 5000} {
 		b.Run(fmt.Sprint(n), func(b *testing.B) {
 			base := b.TempDir()
-			store := core.Store{Home: filepath.Join(base, "home")}
+			store := ledger.Store{Home: filepath.Join(base, "home")}
 			fs := winfs.FS{}
 			now := time.Now()
-			st := core.State{NextID: int64(2*n + 1)}
+			st := ledger.State{NextID: int64(2*n + 1)}
 			for i := range n {
 				path := filepath.Join(base, fmt.Sprintf("live-%d", i))
 				if err := os.WriteFile(path, nil, 0600); err != nil {
@@ -124,7 +125,7 @@ func BenchmarkGraveyardJSON(b *testing.B) {
 				if err != nil {
 					b.Fatal(err)
 				}
-				st.Items = append(st.Items, core.Item{ID: int64(i + 1), Rev: 1, Path: path, Identity: &id, ExpiresAt: now.Add(time.Hour)})
+				st.Items = append(st.Items, ledger.Item{ID: int64(i + 1), Rev: 1, Path: path, Identity: &id, ExpiresAt: now.Add(time.Hour)})
 				grave := filepath.Join(store.Home, "graveyard", fmt.Sprintf("%d-%s-abcdef", n+i+1, now.UTC().Format("20060102T150405Z")), "buried")
 				if err := os.MkdirAll(filepath.Dir(grave), 0700); err != nil {
 					b.Fatal(err)
@@ -140,9 +141,9 @@ func BenchmarkGraveyardJSON(b *testing.B) {
 				if err != nil {
 					b.Fatal(err)
 				}
-				st.Burials = append(st.Burials, core.Burial{ID: int64(n + i + 1), Path: filepath.Join(base, fmt.Sprintf("old-%d", i), "buried"), Grave: grave, Identity: &objectID, GraveID: &graveID, BuriedAt: now, PurgeAt: now.Add(24 * time.Hour), Reason: core.ReasonBury})
+				st.Burials = append(st.Burials, ledger.Burial{ID: int64(n + i + 1), Path: filepath.Join(base, fmt.Sprintf("old-%d", i), "buried"), Grave: grave, Identity: &objectID, GraveID: &graveID, BuriedAt: now, PurgeAt: now.Add(24 * time.Hour), Reason: core.ReasonBury})
 			}
-			if err := store.Update(func(current *core.State) error { *current = st; return nil }); err != nil {
+			if err := store.Update(func(current *ledger.State) error { *current = st; return nil }); err != nil {
 				b.Fatal(err)
 			}
 			var output []byte
@@ -277,7 +278,7 @@ func TestPendingManifestVisibleInQueries(t *testing.T) {
 			}
 			out, _, err := clitest.Execute(t, NewCmd(), "--json")
 			var graves struct {
-				Burials      []core.Burial       `json:"burials"`
+				Burials      []ledger.Burial     `json:"burials"`
 				Pending      []core.PendingGrave `json:"pending"`
 				PendingCount int                 `json:"pendingCount"`
 			}
