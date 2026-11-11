@@ -72,9 +72,12 @@ func TestPendingFolderDecisionHasZeroCommitsAndWakeups(t *testing.T) {
 func TestIdleResidentSleepsUntilMaintenance(t *testing.T) {
 	svc := &core.Service{Store: core.Store{Home: t.TempDir()}, FS: winfs.FS{}}
 	r := resident(svc, log.New(io.Discard, "", 0))
+	// The delay counts down from when the step began, so allow for the time
+	// the step itself took on a busy machine.
+	start := time.Now()
 	delay, stop, err := r.step(Interval)
-	if err != nil || stop || delay < Interval-time.Second {
-		t.Fatalf("idle delay %v, stop %v, err %v", delay, stop, err)
+	if err != nil || stop || delay < Interval-time.Since(start)-time.Second {
+		t.Fatalf("idle delay %v after %v, stop %v, err %v", delay, time.Since(start), stop, err)
 	}
 }
 
