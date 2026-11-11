@@ -14,9 +14,9 @@ type directoryRead struct{ file, variable string }
 var directoryExemptions = map[directoryRead]string{
 	{"internal/testenv/desktop_windows.go", "windows.KnownFolderPath"}: "Read-only leak snapshots must inspect real shell folders despite test directory overrides",
 	{"internal/testenv/fakeclaude.go", "CLAUDE_CONFIG_DIR"}:            "The test-only fake requires an explicit redirected directory; userdirs would create a TestMain import cycle",
-	{"internal/core/safety.go", "USERPROFILE"}:                         "DefaultGuard protects real user locations; it does not store data there",
-	{"internal/core/safety.go", "APPDATA"}:                             "DefaultGuard protects real user locations; it does not store data there",
-	{"internal/core/safety.go", "LOCALAPPDATA"}:                        "DefaultGuard protects real user locations; it does not store data there",
+	{"internal/core/guard/safety.go", "USERPROFILE"}:                   "DefaultGuard protects real user locations; it does not store data there",
+	{"internal/core/guard/safety.go", "APPDATA"}:                       "DefaultGuard protects real user locations; it does not store data there",
+	{"internal/core/guard/safety.go", "LOCALAPPDATA"}:                  "DefaultGuard protects real user locations; it does not store data there",
 	{"internal/app/guard_windows.go", "windows.KnownFolderPath"}:       "Guard and Explorer labels use redirected known folders; state stays in userdirs",
 	{"internal/hook/discovery_windows.go", "windows.KnownFolderPath"}:  "Discovery diagnostics classify system locations without reading or storing user data there",
 }

@@ -9,7 +9,7 @@ import (
 )
 
 func (s *Service) prepareRestoreParent(b Burial, dest string) (_ *restoreParentChain, err error) {
-	if reason := s.Guard.protected(dest); reason != "" {
+	if reason := s.Guard.ProtectedReason(dest); reason != "" {
 		return nil, &RefusedError{Path: dest, Reason: reason}
 	}
 	dir := filepath.Dir(dest)
@@ -73,7 +73,7 @@ func (s *Service) prepareRestoreParent(b Burial, dest string) (_ *restoreParentC
 		return nil, fmt.Errorf("original parent %s no longer names the pinned directory: %w", dir, ErrUnsafe)
 	}
 	path := filepath.Join(parent.Path(), filepath.Base(dest))
-	if reason := s.Guard.protected(path); reason != "" {
+	if reason := s.Guard.ProtectedReason(path); reason != "" {
 		return nil, &RefusedError{Path: path, Reason: reason}
 	}
 	return &restoreParentChain{RestoreParent: parent, parents: parents}, nil

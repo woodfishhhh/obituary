@@ -47,7 +47,7 @@ func (s *Service) preflightRestoreParent(b Burial, dest, nearest string, parent 
 		return err
 	}
 	path := filepath.Join(parent.Path(), rel)
-	if reason := s.Guard.protected(path); reason != "" {
+	if reason := s.Guard.ProtectedReason(path); reason != "" {
 		return &RefusedError{Path: path, Reason: reason}
 	}
 	return nil

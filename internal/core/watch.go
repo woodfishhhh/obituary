@@ -151,7 +151,7 @@ func (s *Service) watchDirectory(path string) (string, Identity, error) {
 	if insideGitMetadata(path) {
 		return "", Identity{}, &RefusedError{Path: path, Reason: "Git metadata cannot have a folder policy"}
 	}
-	if reason := s.watchGuard().protected(path); reason != "" {
+	if reason := s.watchGuard().ProtectedReason(path); reason != "" {
 		return "", Identity{}, &RefusedError{Path: path, Reason: reason}
 	}
 	id, err := s.FS.Identify(path)

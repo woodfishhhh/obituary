@@ -71,7 +71,7 @@ func (s *Service) renameResurrection(b Burial, parent RestoreParent) (string, bo
 
 func (s *Service) checkResurrectionTarget(dest string, parent RestoreParent) error {
 	for _, path := range []string{dest, filepath.Join(parent.Path(), filepath.Base(dest))} {
-		if reason := s.Guard.protected(path); reason != "" {
+		if reason := s.Guard.ProtectedReason(path); reason != "" {
 			return &RefusedError{Path: path, Reason: reason}
 		}
 	}
