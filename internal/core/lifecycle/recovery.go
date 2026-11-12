@@ -52,18 +52,7 @@ func (s *Service) manifestIDs(st State, p PendingGrave) []int64 {
 		b = p.partial
 	}
 	if b != nil {
-		if b.ID > 0 && b.ID != p.id {
-			ids = append(ids, b.ID)
-		}
-		ids = append(ids, b.Contains...)
-		for _, child := range b.Children {
-			ids = append(ids, child.ID)
-			if child.Identity != nil {
-				if idx := st.FindIdentity(*child.Identity); idx >= 0 {
-					ids = append(ids, st.Items[idx].ID)
-				}
-			}
-		}
+		ids = appendManifestBurialIDs(ids, st, b, p.id)
 	}
 	if p.root != "" {
 		for _, it := range st.Items {
@@ -74,6 +63,22 @@ func (s *Service) manifestIDs(st State, p PendingGrave) []int64 {
 		for _, b := range st.Burials {
 			if samePath(s.graveyardRoot(b.Path), p.root) {
 				ids = append(ids, b.ID)
+			}
+		}
+	}
+	return ids
+}
+
+func appendManifestBurialIDs(ids []int64, st State, b *Burial, manifestID int64) []int64 {
+	if b.ID > 0 && b.ID != manifestID {
+		ids = append(ids, b.ID)
+	}
+	ids = append(ids, b.Contains...)
+	for _, child := range b.Children {
+		ids = append(ids, child.ID)
+		if child.Identity != nil {
+			if idx := st.FindIdentity(*child.Identity); idx >= 0 {
+				ids = append(ids, st.Items[idx].ID)
 			}
 		}
 	}

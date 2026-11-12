@@ -102,11 +102,7 @@ func (s *Service) validatePrepared(st *State, p *preparedBurial, reason string) 
 		*out = failedMove(*out, err)
 		return "", nil
 	}
-	b.Children, b.Contains = nil, nil
-	for _, child := range children {
-		b.Children = append(b.Children, BuriedChild{ID: child.ID, Identity: child.Identity, WatchID: child.WatchID})
-		b.Contains = append(b.Contains, child.ID)
-	}
+	setBurialChildren(b, children)
 	if len(children) > 0 {
 		// Publish this transaction's children before moving their parent.
 		if err := writeManifest(p.manifest, *b); err != nil {
@@ -131,6 +127,14 @@ func (s *Service) validatePrepared(st *State, p *preparedBurial, reason string) 
 		return real, nil
 	}
 	return "", nil
+}
+
+func setBurialChildren(b *Burial, children []Item) {
+	b.Children, b.Contains = nil, nil
+	for _, child := range children {
+		b.Children = append(b.Children, BuriedChild{ID: child.ID, Identity: child.Identity, WatchID: child.WatchID})
+		b.Contains = append(b.Contains, child.ID)
+	}
 }
 
 func (s *Service) movePrepared(st *State, p *preparedBurial, reason string) error {

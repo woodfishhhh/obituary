@@ -88,13 +88,7 @@ func (s *Service) prepareSettlement(item Item, dryRun bool, reason string, roots
 		// Batches check the complete Guard under store.lock in movePrepared.
 		// Avoid resolving the same canonical path twice before one move.
 		if err := s.Guard.Check(target, item.Force); err != nil {
-			var refused *RefusedError
-			if errors.As(err, &refused) {
-				out.Action, out.Detail = ActionRefused, err.Error()
-			} else {
-				out.Action, out.Detail = ActionRetry, err.Error()
-			}
-			return out
+			return settlementGuardFailure(out, err)
 		}
 	}
 	if moved {
@@ -103,6 +97,21 @@ func (s *Service) prepareSettlement(item Item, dryRun bool, reason string, roots
 	if reason == ReasonExpired && item.Source == "watch" && item.IsDir {
 		return s.proposeWatchBurial(out, dryRun)
 	}
+	return s.finishSettlementPreparation(out, dryRun, reason, roots, state, batchSnapshot)
+}
+
+func settlementGuardFailure(out Outcome, err error) Outcome {
+	var refused *RefusedError
+	if errors.As(err, &refused) {
+		out.Action, out.Detail = ActionRefused, err.Error()
+	} else {
+		out.Action, out.Detail = ActionRetry, err.Error()
+	}
+	return out
+}
+
+func (s *Service) finishSettlementPreparation(out Outcome, dryRun bool, reason string, roots []resolvedGraveyardRoot, state *State, batchSnapshot bool) Outcome {
+	item, target := out.Item, out.Path
 	done := ActionBuried
 	if s.recycleMode() {
 		done = ActionRecycled
@@ -123,19 +132,24 @@ func (s *Service) prepareSettlement(item Item, dryRun bool, reason string, roots
 		if batchSnapshot {
 			// The sweep already collected this snapshot's discoverable roots.
 			// Rebuilding them for each item performs quadratic Win32 path work.
-			out.retryCommand = fmt.Sprintf("the original obit bury command for %q", target)
-			root := s.graveyardRoot(target)
-			for _, known := range roots {
-				if samePath(root, known.path) {
-					out.retryCommand = "obit reap"
-					break
-				}
-			}
+			out.retryCommand = s.snapshotBurialRetry(target, roots)
 		} else {
 			out.retryCommand = s.pendingBurialRetry(*state, target)
 		}
 	}
 	return out
+}
+
+func (s *Service) snapshotBurialRetry(target string, roots []resolvedGraveyardRoot) string {
+	command := fmt.Sprintf("the original obit bury command for %q", target)
+	root := s.graveyardRoot(target)
+	for _, known := range roots {
+		if samePath(root, known.path) {
+			command = "obit reap"
+			break
+		}
+	}
+	return command
 }
 
 // burialRevision runs in the transaction that moves the object. Rev == 0

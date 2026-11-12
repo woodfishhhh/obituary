@@ -109,60 +109,83 @@ func (s *Service) inspectRestoreIntent(p PendingGrave, st State) PendingGrave {
 	}
 	p.restoreValid = true
 	if idx < 0 {
-		// Only metadata cleanup remains after the durable removal of the index.
-		if st.Index(b.ID) >= 0 || st.ProposalIndex(b.ID) >= 0 || st.NextID <= b.ID {
-			return fail(errors.New("intent ID is not a committed burial"))
-		}
-		if err := s.checkCommittedGrave(b); err != nil {
+		if err := s.inspectCommittedRestore(&p, st); err != nil {
 			return fail(err)
-		}
-		p.Status = "restore-committed"
-		if i := cleanupIndex(&st, b.ID); i >= 0 {
-			c := st.RestoreCleanups[i]
-			if c.Burial.Grave != "" && !sameBurial(c.Burial, b) {
-				return fail(errors.New("cleanup receipt conflicts with manifest"))
-			}
-			if c.Kind != ActionResurrected && c.Kind != ActionAbandoned {
-				return fail(errors.New("unknown cleanup kind"))
-			}
-			if c.Restore != nil && !validRestoreIntent(c.Restore, b.Identity) {
-				return fail(errors.New("invalid destination identity or name"))
-			}
-			if c.Kind == ActionAbandoned {
-				p.Status = "restore-abandoned"
-			}
-			p.cleanup = &c
 		}
 		return p
 	}
+	if err := s.inspectUncommittedRestore(&p); err != nil {
+		return fail(err)
+	}
+	return p
+}
+
+func (s *Service) inspectCommittedRestore(p *PendingGrave, st State) error {
+	b := *p.Burial
+	// Only metadata cleanup remains after the durable removal of the index.
+	if st.Index(b.ID) >= 0 || st.ProposalIndex(b.ID) >= 0 || st.NextID <= b.ID {
+		return errors.New("intent ID is not a committed burial")
+	}
+	if err := s.checkCommittedGrave(b); err != nil {
+		return err
+	}
+	p.Status = "restore-committed"
+	if i := cleanupIndex(&st, b.ID); i >= 0 {
+		c := st.RestoreCleanups[i]
+		if err := checkRestoreCleanupIntent(c, b); err != nil {
+			return err
+		}
+		if c.Kind == ActionAbandoned {
+			p.Status = "restore-abandoned"
+		}
+		p.cleanup = &c
+	}
+	return nil
+}
+
+func checkRestoreCleanupIntent(c RestoreCleanup, b Burial) error {
+	if c.Burial.Grave != "" && !sameBurial(c.Burial, b) {
+		return errors.New("cleanup receipt conflicts with manifest")
+	}
+	if c.Kind != ActionResurrected && c.Kind != ActionAbandoned {
+		return errors.New("unknown cleanup kind")
+	}
+	if c.Restore != nil && !validRestoreIntent(c.Restore, b.Identity) {
+		return errors.New("invalid destination identity or name")
+	}
+	return nil
+}
+
+func (s *Service) inspectUncommittedRestore(p *PendingGrave) error {
+	b, intent := *p.Burial, p.restore
 	dir, err := s.graveDir(b)
 	if err != nil {
-		return fail(err)
+		return err
 	}
 	got, err := s.FS.Identify(dir)
 	if err != nil {
-		return fail(err)
+		return err
 	}
 	if got != *b.GraveID {
-		return fail(errors.New("grave directory identity changed"))
+		return errors.New("grave directory identity changed")
 	}
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return fail(err)
+		return err
 	}
 	if len(entries) != 0 {
 		if _, err := s.verifyGrave(b); err != nil {
-			return fail(err)
+			return err
 		}
 		p.Status = "restore-ready" // interrupted before the move; safe to retry normally
-		return p
+		return nil
 	}
 	path, err := s.FS.FindRestored(intent.Parent, *b.Identity)
 	if err != nil {
-		return fail(err)
+		return err
 	}
 	p.Status, p.Path = "resurrected", path
-	return p
+	return nil
 }
 
 func (s *Service) checkCommittedGrave(b Burial) error {

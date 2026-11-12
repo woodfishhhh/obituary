@@ -56,25 +56,8 @@ func (s *Service) inspectCleanup(c RestoreCleanup, st State) PendingGrave {
 	if c.Restore != nil && !validRestoreIntent(c.Restore, b.Identity) {
 		return fail(errors.New("invalid destination identity or name"))
 	}
-	realRoot, err := s.FS.RealPath(root)
-	if err != nil {
-		// A validated receipt can outlive both its empty grave and root.
-		// checkCommittedGrave below also proves the grave is gone online.
-		if !s.missingOnOnlineVolume(root, err, burialVolume(b)) {
-			return fail(err)
-		}
-	} else {
-		parent, err := s.FS.RealPath(filepath.Dir(filepath.Dir(grave)))
-		if err != nil {
-			return fail(err)
-		}
-		same, err := s.sameDirectory(parent, realRoot)
-		if err != nil {
-			return fail(err)
-		}
-		if !same {
-			return fail(errors.New("cleanup grave escapes this ledger's graveyard root"))
-		}
+	if err := s.checkCleanupRoot(b, root, grave); err != nil {
+		return fail(err)
 	}
 	if err := s.checkCommittedGrave(b); err != nil {
 		return fail(err)
@@ -85,6 +68,30 @@ func (s *Service) inspectCleanup(c RestoreCleanup, st State) PendingGrave {
 	}
 	p.Path = c.Path
 	return p
+}
+
+func (s *Service) checkCleanupRoot(b Burial, root, grave string) error {
+	realRoot, err := s.FS.RealPath(root)
+	if err != nil {
+		// A validated receipt can outlive both its empty grave and root.
+		// The caller also proves the grave is gone online with checkCommittedGrave.
+		if !s.missingOnOnlineVolume(root, err, burialVolume(b)) {
+			return err
+		}
+		return nil
+	}
+	parent, err := s.FS.RealPath(filepath.Dir(filepath.Dir(grave)))
+	if err != nil {
+		return err
+	}
+	same, err := s.sameDirectory(parent, realRoot)
+	if err != nil {
+		return err
+	}
+	if !same {
+		return errors.New("cleanup grave escapes this ledger's graveyard root")
+	}
+	return nil
 }
 
 // Retain a manifest-only receipt before removing any metadata.

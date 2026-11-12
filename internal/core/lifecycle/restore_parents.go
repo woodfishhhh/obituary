@@ -94,17 +94,8 @@ func (s *Service) inspectRestoreParents(b Burial, allowMissing bool) error {
 			return err
 		}
 		if !b.LongNames {
-			expanded, complete, err := s.FS.LongPath(dir)
-			if err != nil {
+			if err := s.checkLegacyRestoreParent(dir, recorded, id); err != nil {
 				return err
-			}
-			equal, err := s.FS.SameName(filepath.Base(expanded), filepath.Base(dir))
-			if err != nil {
-				return err
-			}
-			alias := !equal || !complete
-			if alias && (recorded == nil || id.Serial != recorded.Identity.Serial || id.FileID != recorded.Identity.FileID) {
-				return fmt.Errorf("legacy short-name parent %s cannot be verified; original long name is unavailable: %w", dir, ErrUnsafe)
 			}
 		}
 		if recorded != nil && (id.Serial != recorded.Identity.Serial || recorded.Reparse && (!isReparse(info) || id.FileID != recorded.Identity.FileID)) {
@@ -116,6 +107,22 @@ func (s *Service) inspectRestoreParents(b Burial, allowMissing bool) error {
 	}
 	if len(b.Parents) > 0 && index != len(b.Parents) {
 		return fmt.Errorf("original parent chain has extra entries: %w", ErrUnsafe)
+	}
+	return nil
+}
+
+func (s *Service) checkLegacyRestoreParent(dir string, recorded *BurialParent, id Identity) error {
+	expanded, complete, err := s.FS.LongPath(dir)
+	if err != nil {
+		return err
+	}
+	equal, err := s.FS.SameName(filepath.Base(expanded), filepath.Base(dir))
+	if err != nil {
+		return err
+	}
+	alias := !equal || !complete
+	if alias && (recorded == nil || id.Serial != recorded.Identity.Serial || id.FileID != recorded.Identity.FileID) {
+		return fmt.Errorf("legacy short-name parent %s cannot be verified; original long name is unavailable: %w", dir, ErrUnsafe)
 	}
 	return nil
 }

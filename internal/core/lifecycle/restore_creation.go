@@ -14,18 +14,9 @@ func (s *Service) prepareRestoreParent(b Burial, dest string) (_ *restoreParentC
 		return nil, &RefusedError{Path: dest, Reason: reason}
 	}
 	dir := filepath.Dir(dest)
-	nearest := dir
-	var missing []string
-	for {
-		_, err := os.Lstat(nearest)
-		if err == nil {
-			break
-		}
-		if !os.IsNotExist(err) || pathutil.Parent(nearest) == nearest {
-			return nil, err
-		}
-		missing = append(missing, filepath.Base(nearest))
-		nearest = pathutil.Parent(nearest)
+	nearest, missing, err := existingRestoreAncestor(dir)
+	if err != nil {
+		return nil, err
 	}
 	// Resolve supplies only a spelling to pin. Validate the original chain
 	// after pinning and before the first handle-relative directory creation.
@@ -62,22 +53,46 @@ func (s *Service) prepareRestoreParent(b Burial, dest string) (_ *restoreParentC
 	// Pin first, then check the entire original lexical chain, then prove that
 	// this checked spelling still reaches that handle (not a freshly resolved
 	// replacement). Ordinary rebuilt parents keep their original path contract.
-	if err := s.checkRestoreParents(b); err != nil {
+	if err := s.checkCreatedRestoreParent(b, dest, dir, parent); err != nil {
 		return nil, err
+	}
+	return &restoreParentChain{RestoreParent: parent, parents: parents}, nil
+}
+
+func existingRestoreAncestor(dir string) (string, []string, error) {
+	nearest := dir
+	var missing []string
+	for {
+		_, err := os.Lstat(nearest)
+		if err == nil {
+			break
+		}
+		if !os.IsNotExist(err) || pathutil.Parent(nearest) == nearest {
+			return "", nil, err
+		}
+		missing = append(missing, filepath.Base(nearest))
+		nearest = pathutil.Parent(nearest)
+	}
+	return nearest, missing, nil
+}
+
+func (s *Service) checkCreatedRestoreParent(b Burial, dest, dir string, parent RestoreParent) error {
+	if err := s.checkRestoreParents(b); err != nil {
+		return err
 	}
 	current, err := s.FS.IdentifyFollowing(dir)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	pinned := parent.Identity()
 	if current.Serial != pinned.Serial || current.FileID != pinned.FileID {
-		return nil, fmt.Errorf("original parent %s no longer names the pinned directory: %w", dir, ErrUnsafe)
+		return fmt.Errorf("original parent %s no longer names the pinned directory: %w", dir, ErrUnsafe)
 	}
 	path := filepath.Join(parent.Path(), filepath.Base(dest))
 	if reason := s.Guard.ProtectedReason(path); reason != "" {
-		return nil, &RefusedError{Path: path, Reason: reason}
+		return &RefusedError{Path: path, Reason: reason}
 	}
-	return &restoreParentChain{RestoreParent: parent, parents: parents}, nil
+	return nil
 }
 
 // Keep creation handles until the rename succeeds, so later refusal can also

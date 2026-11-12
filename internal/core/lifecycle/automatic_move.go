@@ -171,31 +171,10 @@ func (b *ownershipBatch) lookup(ctx context.Context, real string) Ownership {
 			return Ownership{Tracked: true, Err: err}
 		}
 		if owner, ok := b.answers[real]; ok {
-			if owner.Err != nil || owner.Current == nil {
-				fresh := b.query(ctx, []string{real})[0]
-				b.answers[real] = fresh
-				if fresh.Err != nil || fresh.Current == nil {
-					return fresh
-				}
-				continue
+			if checked, done := b.lookupCachedOwner(ctx, real, owner); done {
+				return checked
 			}
-			if owner.Current != nil {
-				current, checkedAt, err := owner.Current(ctx)
-				owner.CheckedAt = checkedAt
-				if err != nil {
-					owner.Tracked, owner.Err = true, err
-					return owner
-				}
-				if current {
-					if time.Since(checkedAt) > gitMoveFreshness {
-						owner.Tracked, owner.Err = true, context.DeadlineExceeded
-					}
-					return owner
-				}
-				if b.requestRefresh(real) {
-					return Ownership{Tracked: true, Err: errOwnerSnapshotRefresh}
-				}
-			}
+			continue
 		}
 		owner := b.fill(ctx, real)
 		if owner.Err != nil || owner.Current == nil {
@@ -203,4 +182,44 @@ func (b *ownershipBatch) lookup(ctx context.Context, real string) Ownership {
 		}
 		// A new answer is subject to the same final generation check.
 	}
+}
+
+func (b *ownershipBatch) lookupCachedOwner(ctx context.Context, real string, owner Ownership) (Ownership, bool) {
+	if owner.Err != nil || owner.Current == nil {
+		fresh := b.query(ctx, []string{real})[0]
+		b.answers[real] = fresh
+		if fresh.Err != nil || fresh.Current == nil {
+			return fresh, true
+		}
+		return Ownership{}, false
+	}
+	if owner.Current != nil {
+		if checked, done := b.checkOwnerGeneration(ctx, real, owner); done {
+			return checked, true
+		}
+	}
+	owner = b.fill(ctx, real)
+	if owner.Err != nil || owner.Current == nil {
+		return owner, true
+	}
+	return Ownership{}, false
+}
+
+func (b *ownershipBatch) checkOwnerGeneration(ctx context.Context, real string, owner Ownership) (Ownership, bool) {
+	current, checkedAt, err := owner.Current(ctx)
+	owner.CheckedAt = checkedAt
+	if err != nil {
+		owner.Tracked, owner.Err = true, err
+		return owner, true
+	}
+	if current {
+		if time.Since(checkedAt) > gitMoveFreshness {
+			owner.Tracked, owner.Err = true, context.DeadlineExceeded
+		}
+		return owner, true
+	}
+	if b.requestRefresh(real) {
+		return Ownership{Tracked: true, Err: errOwnerSnapshotRefresh}, true
+	}
+	return Ownership{}, false
 }
