@@ -237,10 +237,8 @@ func TestTickPrunesAndWithdrawsStaleProposals(t *testing.T) {
 	if err := engine.Snapshot(root, "s"); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"committed.txt", "deleted.txt", "keep.txt"} {
-		if err := os.WriteFile(filepath.Join(root, name), []byte(name), 0o600); err != nil {
-			t.Fatal(err)
-		}
+	for _, name := range []string{"dist", "coverage", "node_modules"} {
+		testenv.Leftover(t, root, name)
 	}
 	if _, err := engine.Leftovers(root, "s"); err != nil {
 		t.Fatal(err)
@@ -250,19 +248,19 @@ func TestTickPrunesAndWithdrawsStaleProposals(t *testing.T) {
 		t.Fatalf("leftovers fixture: %+v %v", st.Proposals, err)
 	}
 	id := st.Proposals[0].ID
-	git("add", "--", "committed.txt")
+	git("add", "-f", "--", "dist/index.js")
 	git("commit", "-qm", "track proposal candidate")
-	if err := os.Remove(filepath.Join(root, "deleted.txt")); err != nil {
+	if err := os.RemoveAll(filepath.Join(root, "coverage")); err != nil {
 		t.Fatal(err)
 	}
 	if _, _, err := Tick(svc); err != nil {
 		t.Fatal(err)
 	}
 	st, err = svc.Store.Read()
-	if err != nil || len(st.Proposals) != 1 || st.Proposals[0].ID != id || len(st.Proposals[0].Candidates) != 1 || filepath.Base(st.Proposals[0].Candidates[0].Path) != "keep.txt" {
+	if err != nil || len(st.Proposals) != 1 || st.Proposals[0].ID != id || len(st.Proposals[0].Candidates) != 1 || filepath.Base(st.Proposals[0].Candidates[0].Path) != "node_modules" {
 		t.Fatalf("background tick retained stale proposal candidates: %+v %v", st.Proposals, err)
 	}
-	git("add", "--", "keep.txt")
+	git("add", "-f", "--", "node_modules/index.js")
 	git("commit", "-qm", "track last candidate")
 	if _, _, err := Tick(svc); err != nil {
 		t.Fatal(err)

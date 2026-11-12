@@ -197,23 +197,26 @@ func describeProposal(p core.Proposal, consent string) string {
 func describeProposalCandidates(p core.Proposal, consent, candidates string) string {
 	switch p.Kind {
 	case core.ProposalContainer:
-		return fmt.Sprintf("Obituary proposal #%d: containers created during a session are awaiting the user's decision: %s. `obit approve %d` assigns lifespans; `obit reject %d` drops this proposal. Expiry stops containers and preserves their writable layers.", p.ID, candidates, p.ID, p.ID)
+		return fmt.Sprintf("Obituary proposal #%d, recommended for approval: the session started %s tied to this project by a compose working directory or a bind mount: %s. "+
+			"Approval (`obit approve %d`) gives each a %s lifespan; at expiry the container is stopped with its writable layer kept, `obit resurrect` starts it again, and volumes are never touched. `obit reject %d` leaves them unmanaged.",
+			p.ID, textutil.Count(len(p.Candidates), "container"), candidates, p.ID, auto.LeftoverLifespan, p.ID)
 	case core.ProposalOnboard:
 		if consent == core.ConsentApproved {
 			return fmt.Sprintf("Obituary proposal #%d: automatic registration in this project is already approved. These candidates remain pending after temporary problems: %s. `obit approve %d` is available to retry them.",
 				p.ID, candidates, p.ID)
 		}
-		return fmt.Sprintf("Obituary (讣告) proposal #%d: %s in this project could get lifespans by rule, %s in total: %s. "+
-			"Obituary registers and deletes nothing here until the user approves; approval also lets it handle such artefacts here automatically from then on. "+
+		return fmt.Sprintf("Obituary (讣告) proposal #%d, recommended for approval: %s in this project could get lifespans by rule, %s in total: %s. "+
+			"Obituary registers and deletes nothing here until the user approves; approval also lets it handle such artefacts here automatically from then on, and each is buried at expiry and stays restorable until it is purged. "+
 			"The user can approve with `obit approve %d` or decline with `obit reject %d`.",
 			p.ID, textutil.Count(len(p.Candidates), "agent artefact"), humanBytes(p.Size()), candidates, p.ID, p.ID)
 	case core.ProposalLarge:
-		return fmt.Sprintf("Obituary proposal #%d: %s (%s) matched a rule; awaiting approval: %s. `obit approve %d` registers the listed candidates.",
+		return fmt.Sprintf("Obituary proposal #%d, recommended for approval: %s (%s) matched a rule: %s. Approval (`obit approve %d`) registers them with the rule's lifespan; each is buried at expiry and stays restorable until it is purged.",
 			p.ID, textutil.Count(len(p.Candidates), "unusually large artefact"), humanBytes(p.Size()), candidates, p.ID)
 	default:
-		return fmt.Sprintf("Obituary proposal #%d: an earlier session left %s that no rule covers (%s): %s. "+
-			"No lifespan is assigned and nothing happens unless approved: `obit approve %d` gives each %s, `obit mark <path> <lifespan>` handles one, `obit reject %d` drops the list.",
-			p.ID, textutil.Count(len(p.Candidates), "untracked item"), humanBytes(p.Size()), candidates, p.ID, auto.LeftoverLifespan, p.ID)
+		return fmt.Sprintf("Obituary proposal #%d, recommended for approval: an earlier session left %s that Git ignores and tools regenerate (dependencies, build output, caches), %s in total: %s. "+
+			"Approval (`obit approve %d`) gives each a %s lifespan; at expiry each is buried and stays restorable until it is purged. "+
+			"Files Git does not ignore are uncommitted work and are never proposed. `obit reject %d` leaves these unmanaged.",
+			p.ID, textutil.Count(len(p.Candidates), "regenerable item"), humanBytes(p.Size()), candidates, p.ID, auto.LeftoverLifespan, p.ID)
 	}
 }
 

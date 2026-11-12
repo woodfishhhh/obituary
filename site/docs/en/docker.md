@@ -28,6 +28,6 @@ Obituary manages containers only. Volumes hold data and removing one is permanen
 
 ## Containers from an agent session are only proposed
 
-When a session ends, Obituary lists in the background the containers created during it: those whose compose working directory or bind mounts are inside the project are attributed to it, the rest are listed as created during the session. Nothing is tracked until you `obit approve`.
+When a session ends, Obituary lists in the background the containers created during it: only those whose compose working directory or bind mounts are inside the project; others may be ones you started elsewhere and are not listed. Nothing is tracked until you `obit approve`.
 
 Hooks never call Docker; if Docker is not installed or not running, this is skipped quietly and `obit doctor` explains why.
