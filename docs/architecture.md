@@ -48,6 +48,19 @@ flowchart TD
 
 一个二进制做所有判断，hook 只是把各家的 JSON 换成同一种 `hook.Event`。`obitd` 只是换了个入口的同一套 `core.Service`。
 
+`internal/core` 按职责分成子包，根包只保留原来的名字（类型别名和转发），外部包可以照旧写 `core.X`：
+
+| 子包 | 负责 |
+|---|---|
+| `core/lifecycle` | `Service` 和它的全部操作：登记、续命、收割、下葬、复活、火化、提议、监视、容器 |
+| `core/ledger` | 账本：热账本 `store.json` 和不可变的墓地快照、事务、锁、审计 |
+| `core/guard` | 哪些路径可以给寿命：登记时和下葬前各查一次，数据目录和必须保住的位置连同祖先一律拒绝 |
+| `core/fs` | `core.FS` 接口和身份类型 |
+| `core/lifespan` | 寿命和时间的解析、格式化 |
+| `core/internal/fileio`、`core/internal/pathcheck` | 落盘同步和路径检查，只给 core 的子包用 |
+
+导入只往下走：`core → lifecycle → ledger / guard / lifespan / fs`，子包从不反过来导入根 `core`。
+
 ## 原则
 
 - **每个决定只在一处做出。** 下面「关卡」一节列出了每类决定的唯一位置。新入口必须调用这些关卡，不准另写一份判断。
@@ -208,7 +221,7 @@ flowchart TD
 
 ### Docker 容器（D-0042）
 
-- 容器是第二种条目（`kind: "container"`），和文件共用编号序列；账本 v14 起保存完整容器 ID 和创建时间。文件的下葬、复活、火化路径遇到容器条目一律跳过，容器走 `internal/core/container*.go` 和 `internal/docker`。
+- 容器是第二种条目（`kind: "container"`），和文件共用编号序列；账本 v14 起保存完整容器 ID 和创建时间。文件的下葬、复活、火化路径遇到容器条目一律跳过，容器走 `internal/core/lifecycle/container*.go` 和 `internal/docker`。
 - 到期是 `docker stop`（保留可写层），复活是 `docker start`，保留期过后火化是 `docker rm`（不带 `-v`、`-f`）。每次动手前都重新 inspect，完整 ID 和创建时间对不上就不动；火化时正在运行的当作复活。AutoRemove 容器拒绝登记。
 - 会话差分在后台的 `obit hook finish` 里按会话时间窗找新建的容器，生成提议；hook 进程本身从不调用 docker。docker stop 等待容器自己的 StopTimeout 再加 5 秒（不给 docker stop 传 `--timeout`，尊重用户设的宽限期），其他调用 5 秒。
 - **绑定原来的 daemon。** 登记、提议和意图都记下 Docker 上下文或端点和 daemon ID，之后每次调用都显式带 `--context` / `--host`；daemon 对不上就不动并诊断。只有在原来的 daemon 上确认容器不存在，才按「外部移除」结案（清掉意图和记录，计入 `containersLost`）。旧的 v14 记录没有这些字段：在当前端点找到同一个 ID 和创建时间时补记，找不到就保留记录。
