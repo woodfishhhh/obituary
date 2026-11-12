@@ -139,18 +139,11 @@ func (s *Service) ProposeObserved(kind, project, session string, candidates []Ca
 		}
 		project = filepath.Clean(root)
 	}
-	candidates = slices.Clone(candidates)
-	for i := range candidates {
-		if candidates[i].Kind == KindContainer {
-			continue
-		}
-		path, _, err := s.FS.LongPath(candidates[i].Path)
-		if err != nil {
-			return out, false, 0, err
-		}
-		candidates[i].Path = filepath.Clean(path)
+	candidates, err := s.proposalCandidatePaths(candidates)
+	if err != nil {
+		return out, false, 0, err
 	}
-	err := s.Store.UpdateHot(func(st *State) error {
+	err = s.Store.UpdateHot(func(st *State) error {
 		if err := s.CheckObservation(observed); err != nil {
 			return err
 		}
@@ -165,42 +158,14 @@ func (s *Service) ProposeObserved(kind, project, session string, candidates []Ca
 				return nil
 			}
 		}
-		idx := -1
-		for i, p := range st.Proposals {
-			if p.Kind == kind && samePath(p.Project, project) && ((kind != ProposalLeftovers && kind != ProposalContainer) || p.Session == session) {
-				idx = i
-			}
-		}
+		idx := matchingProposalIndex(st, kind, project, session)
 		if idx < 0 {
 			st.Proposals = append(st.Proposals, Proposal{ID: st.NextID, Kind: kind, Project: project, Session: session, CreatedAt: s.now()})
 			st.NextID++
 			idx, created = len(st.Proposals)-1, true
 		}
 		p := &st.Proposals[idx]
-		for _, c := range p.Candidates {
-			p.CandidateSeq = max(p.CandidateSeq, c.Rev)
-		}
-		for _, c := range candidates {
-			if (kind == ProposalLeftovers || kind == ProposalContainer) && st.LeftoverRejected(project, session, candidateKey(c)) {
-				continue
-			}
-			dup := false
-			for i, have := range p.Candidates {
-				if sameCandidate(have, c) {
-					p.CandidateSeq++
-					c.Rev = p.CandidateSeq
-					p.Candidates[i] = c
-					dup = true
-					break
-				}
-			}
-			if !dup {
-				p.CandidateSeq++
-				c.Rev = p.CandidateSeq
-				p.Candidates = append(p.Candidates, c)
-				added++
-			}
-		}
+		added += mergeProposalCandidates(st, p, kind, project, session, candidates)
 		if created && added == 0 {
 			st.Proposals = st.Proposals[:idx]
 			created = false
@@ -211,6 +176,59 @@ func (s *Service) ProposeObserved(kind, project, session string, candidates []Ca
 		return nil
 	})
 	return out, created, added, err
+}
+
+func matchingProposalIndex(st *State, kind, project, session string) int {
+	idx := -1
+	for i, p := range st.Proposals {
+		if p.Kind == kind && samePath(p.Project, project) && ((kind != ProposalLeftovers && kind != ProposalContainer) || p.Session == session) {
+			idx = i
+		}
+	}
+	return idx
+}
+
+func (s *Service) proposalCandidatePaths(candidates []Candidate) ([]Candidate, error) {
+	candidates = slices.Clone(candidates)
+	for i := range candidates {
+		if candidates[i].Kind == KindContainer {
+			continue
+		}
+		path, _, err := s.FS.LongPath(candidates[i].Path)
+		if err != nil {
+			return nil, err
+		}
+		candidates[i].Path = filepath.Clean(path)
+	}
+	return candidates, nil
+}
+
+func mergeProposalCandidates(st *State, p *Proposal, kind, project, session string, candidates []Candidate) (added int) {
+	for _, c := range p.Candidates {
+		p.CandidateSeq = max(p.CandidateSeq, c.Rev)
+	}
+	for _, c := range candidates {
+		if (kind == ProposalLeftovers || kind == ProposalContainer) && st.LeftoverRejected(project, session, candidateKey(c)) {
+			continue
+		}
+		dup := false
+		for i, have := range p.Candidates {
+			if sameCandidate(have, c) {
+				p.CandidateSeq++
+				c.Rev = p.CandidateSeq
+				p.Candidates[i] = c
+				dup = true
+				break
+			}
+		}
+		if !dup {
+			p.CandidateSeq++
+			c.Rev = p.CandidateSeq
+			p.Candidates = append(p.Candidates, c)
+			added++
+		}
+	}
+	return added
 }
 
 // MarkNotified records that a session was told about a proposal and reports
@@ -391,25 +409,7 @@ func (s *Service) reject(refs []string, review func(int, Proposal) error) ([]Pro
 					return nil
 				}
 			}
-			for i := range st.Watches {
-				if r.Proposal.Kind == ProposalWatch && st.Watches[i].ID == r.Proposal.WatchID {
-					st.Watches[i].Consent = ConsentDeclined
-				}
-			}
-			if r.Proposal.Kind == ProposalWatchBurial {
-				rejectWatchBurial(st, r.Proposal, s.now())
-			}
-			if r.Proposal.Kind == ProposalLeftovers || r.Proposal.Kind == ProposalContainer {
-				rememberRejectedLeftovers(st, r.Proposal, s.now())
-			}
-			st.Proposals = append(st.Proposals[:idx], st.Proposals[idx+1:]...)
-			removeLeftoverTwins(st, r.Proposal, r.Proposal.Candidates)
-			if r.Proposal.Kind == ProposalOnboard {
-				if st.Projects == nil {
-					st.Projects = map[string]ProjectState{}
-				}
-				st.Projects[ProjectKey(r.Proposal.Project)] = ProjectState{Consent: ConsentDeclined, At: s.now()}
-			}
+			s.recordProposalRejection(st, idx, r)
 			return nil
 		})
 		if err != nil {
@@ -418,6 +418,28 @@ func (s *Service) reject(refs []string, review func(int, Proposal) error) ([]Pro
 		out = append(out, r)
 	}
 	return out, nil
+}
+
+func (s *Service) recordProposalRejection(st *State, idx int, r ProposalResult) {
+	for i := range st.Watches {
+		if r.Proposal.Kind == ProposalWatch && st.Watches[i].ID == r.Proposal.WatchID {
+			st.Watches[i].Consent = ConsentDeclined
+		}
+	}
+	if r.Proposal.Kind == ProposalWatchBurial {
+		rejectWatchBurial(st, r.Proposal, s.now())
+	}
+	if r.Proposal.Kind == ProposalLeftovers || r.Proposal.Kind == ProposalContainer {
+		rememberRejectedLeftovers(st, r.Proposal, s.now())
+	}
+	st.Proposals = append(st.Proposals[:idx], st.Proposals[idx+1:]...)
+	removeLeftoverTwins(st, r.Proposal, r.Proposal.Candidates)
+	if r.Proposal.Kind == ProposalOnboard {
+		if st.Projects == nil {
+			st.Projects = map[string]ProjectState{}
+		}
+		st.Projects[ProjectKey(r.Proposal.Project)] = ProjectState{Consent: ConsentDeclined, At: s.now()}
+	}
 }
 
 const (

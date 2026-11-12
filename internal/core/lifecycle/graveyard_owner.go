@@ -53,6 +53,16 @@ func (s *Service) checkGraveyardOwner(root string, create bool) error {
 		return err
 	}
 	defer release()
+	if err := s.writeGraveyardOwner(marker, home); err != nil {
+		return err
+	}
+	if s.confirmedOwners != nil {
+		s.confirmedOwners[root] = true
+	}
+	return nil
+}
+
+func (s *Service) writeGraveyardOwner(marker, home string) error {
 	owner, _, err := s.readGraveyardOwner(marker, home)
 	if err != nil {
 		return err
@@ -70,13 +80,7 @@ func (s *Service) checkGraveyardOwner(root string, create bool) error {
 	}
 	// Also reconfirm an existing marker: a previous rename may have been
 	// readable after a failed flush. No grave is created until this succeeds.
-	if err := writeDurably(marker, append(data, '\n')); err != nil {
-		return err
-	}
-	if s.confirmedOwners != nil {
-		s.confirmedOwners[root] = true
-	}
-	return nil
+	return writeDurably(marker, append(data, '\n'))
 }
 
 type graveyardOwner struct {

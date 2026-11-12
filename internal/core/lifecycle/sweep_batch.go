@@ -18,15 +18,7 @@ const sweepBatchWork = 100 * time.Millisecond
 func (s *Service) sweepBurials(state State, roots []resolvedGraveyardRoot, blocked map[int64]bool) (outcomes []Outcome, finalErr error) {
 	owners := s.prepareBatchOwners(state.Items, blocked)
 	defer func() {
-		var measured []Burial
-		for _, out := range outcomes {
-			if out.Action == ActionBuried && out.Burial != nil {
-				measured = append(measured, *out.Burial)
-			}
-		}
-		if len(measured) > 0 {
-			finalErr = errors.Join(finalErr, s.saveBurialSizes(measured))
-		}
+		finalErr = s.saveSweepBurialSizes(outcomes, finalErr)
 	}()
 	var pending []*preparedBurial
 	current, refresh := state, false
@@ -54,11 +46,7 @@ func (s *Service) sweepBurials(state State, roots []resolvedGraveyardRoot, block
 			continue
 		}
 		item := current.Items[idx]
-		out := s.prepareSettlement(item, false, ReasonExpired, roots, &current)
-		p := &preparedBurial{out: out}
-		if out.Action == "" && out.err == nil {
-			p = s.prepareBurial(out, ReasonExpired)
-		}
+		p := s.prepareExpiredBurial(item, roots, &current)
 		pending = append(pending, p)
 		if p.out.err != nil {
 			// A fault seam models a stopped process: do not discard evidence.
@@ -77,6 +65,28 @@ func (s *Service) sweepBurials(state State, roots []resolvedGraveyardRoot, block
 		finalErr = flush()
 	}
 	return outcomes, finalErr
+}
+
+func (s *Service) prepareExpiredBurial(item Item, roots []resolvedGraveyardRoot, current *State) *preparedBurial {
+	out := s.prepareSettlement(item, false, ReasonExpired, roots, current)
+	p := &preparedBurial{out: out}
+	if out.Action == "" && out.err == nil {
+		p = s.prepareBurial(out, ReasonExpired)
+	}
+	return p
+}
+
+func (s *Service) saveSweepBurialSizes(outcomes []Outcome, finalErr error) error {
+	var measured []Burial
+	for _, out := range outcomes {
+		if out.Action == ActionBuried && out.Burial != nil {
+			measured = append(measured, *out.Burial)
+		}
+	}
+	if len(measured) > 0 {
+		finalErr = errors.Join(finalErr, s.saveBurialSizes(measured))
+	}
+	return finalErr
 }
 
 func (s *Service) commitBurialBatch(pending []*preparedBurial, owners *ownershipBatch, reason string) (outcomes []Outcome, finalErr error) {

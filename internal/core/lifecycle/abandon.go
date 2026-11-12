@@ -19,26 +19,8 @@ func abandonHint(id int64) string {
 func (s *Service) purgeRestoreIntent(b Burial, p PendingGrave, dryRun bool) (GraveResult, error) {
 	r := GraveResult{Ref: fmt.Sprintf("#%d", b.ID), Burial: &b, Action: ActionBlocked}
 	refuse := func(err error) (GraveResult, error) { r.Error = err.Error(); return r, nil }
-	if !p.restoreValid || !sameBurial(b, *p.Burial) {
-		return refuse(ErrUnsafe)
-	}
-	dir, err := s.graveDir(b)
-	if err != nil {
+	if err := s.verifyAbandonedGrave(b, p); err != nil {
 		return refuse(err)
-	}
-	got, err := s.FS.Identify(dir)
-	if err != nil {
-		return refuse(err)
-	}
-	if got != *b.GraveID {
-		return refuse(fmt.Errorf("grave directory identity changed: %w", ErrUnsafe))
-	}
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return refuse(err)
-	}
-	if len(entries) != 0 {
-		return refuse(fmt.Errorf("grave is not empty; obit reap or obit resurrect %d retries the pending intent: %w", b.ID, ErrUnsafe))
 	}
 	path, err := s.FS.FindRestored(p.restore.Parent, *b.Identity)
 	if err == nil {
@@ -77,6 +59,31 @@ func (s *Service) purgeRestoreIntent(b Burial, p PendingGrave, dryRun bool) (Gra
 		r.Warning = errorText(s.cleanAbandonedRestore(b))
 	}
 	return r, err
+}
+
+func (s *Service) verifyAbandonedGrave(b Burial, p PendingGrave) error {
+	if !p.restoreValid || !sameBurial(b, *p.Burial) {
+		return ErrUnsafe
+	}
+	dir, err := s.graveDir(b)
+	if err != nil {
+		return err
+	}
+	got, err := s.FS.Identify(dir)
+	if err != nil {
+		return err
+	}
+	if got != *b.GraveID {
+		return fmt.Errorf("grave directory identity changed: %w", ErrUnsafe)
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+	if len(entries) != 0 {
+		return fmt.Errorf("grave is not empty; obit reap or obit resurrect %d retries the pending intent: %w", b.ID, ErrUnsafe)
+	}
+	return nil
 }
 
 func (s *Service) cleanAbandonedRestore(b Burial) error {

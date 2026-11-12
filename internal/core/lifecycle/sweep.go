@@ -109,6 +109,10 @@ func (s *Service) sweep(dryRun bool, blocked map[int64]bool) (outcomes []Outcome
 		batchOut, err := s.sweepBurials(state, roots, blocked)
 		return append(outcomes, batchOut...), errors.Join(auditErr, err)
 	}
+	return s.sweepItems(state, dryRun, roots, blocked, outcomes, auditErr)
+}
+
+func (s *Service) sweepItems(state State, dryRun bool, roots []resolvedGraveyardRoot, blocked map[int64]bool, outcomes []Outcome, auditErr error) ([]Outcome, error) {
 	for _, snapshot := range state.Items {
 		if blocked[snapshot.ID] || !snapshot.Due(s.now()) || awaitingWatchBurial(&state, snapshot) {
 			continue

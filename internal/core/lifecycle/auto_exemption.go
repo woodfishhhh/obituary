@@ -18,12 +18,7 @@ func (s *Service) spareAutomaticObject(st *State, identity *Identity, path strin
 	snap, release, err := s.FS.ObserveWatch(path, false)
 	if err == nil {
 		release()
-		if snap.Directory {
-			snap, release, err = s.observeObjectTree(path, *identity, true, false, false)
-			if err == nil {
-				release()
-			}
-		}
+		snap, err = s.completeAutomaticExemptionSnapshot(path, identity, snap)
 		if err == nil && sameWatchIdentity(snap.Identity, *identity) {
 			e.Snapshot = &snap
 		}
@@ -38,6 +33,18 @@ func (s *Service) spareAutomaticObject(st *State, identity *Identity, path strin
 	} else {
 		st.AutoExemptions[idx] = e
 	}
+}
+
+func (s *Service) completeAutomaticExemptionSnapshot(path string, identity *Identity, snap WatchSnapshot) (WatchSnapshot, error) {
+	var err error
+	if snap.Directory {
+		var release func()
+		snap, release, err = s.observeObjectTree(path, *identity, true, false, false)
+		if err == nil {
+			release()
+		}
+	}
+	return snap, err
 }
 
 // AutomaticExempt protects the kept object and prevents a containing unit

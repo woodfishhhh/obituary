@@ -28,36 +28,9 @@ func (s *Service) FilterGraveyard(view *GraveyardView, directory string) error {
 	for _, r := range view.Restored {
 		burials = append(burials, r.Burial)
 	}
-	prefixes := make([]string, len(burials))
-	for i, b := range burials {
-		if b == nil {
-			continue // no known original location to include
-		}
-		original := b.Path
-		if b.Kind == KindContainer {
-			if b.Project == "" {
-				continue
-			}
-			original = b.Project
-		}
-		path, err := pathutil.Abs(original)
-		if err != nil {
-			return err
-		}
-		if !b.LongNames {
-			path, err = s.referencePath(path)
-			if err != nil {
-				return err
-			}
-		}
-		path = filepath.Clean(path)
-		if len(path) < len(directory) {
-			continue
-		}
-		if len(path) > len(directory) && !strings.HasSuffix(directory, `\`) && path[len(directory)] != filepath.Separator {
-			continue
-		}
-		prefixes[i] = path[:len(directory)]
+	prefixes, err := s.graveyardOriginalPrefixes(burials, directory)
+	if err != nil {
+		return err
 	}
 	matches, exact := matchingPaths(prefixes, directory)
 	keep := make(map[int]bool, len(matches))
@@ -89,4 +62,39 @@ func (s *Service) FilterGraveyard(view *GraveyardView, directory string) error {
 	}
 	*view = filtered
 	return nil
+}
+
+func (s *Service) graveyardOriginalPrefixes(burials []*Burial, directory string) ([]string, error) {
+	prefixes := make([]string, len(burials))
+	for i, b := range burials {
+		if b == nil {
+			continue // no known original location to include
+		}
+		original := b.Path
+		if b.Kind == KindContainer {
+			if b.Project == "" {
+				continue
+			}
+			original = b.Project
+		}
+		path, err := pathutil.Abs(original)
+		if err != nil {
+			return nil, err
+		}
+		if !b.LongNames {
+			path, err = s.referencePath(path)
+			if err != nil {
+				return nil, err
+			}
+		}
+		path = filepath.Clean(path)
+		if len(path) < len(directory) {
+			continue
+		}
+		if len(path) > len(directory) && !strings.HasSuffix(directory, `\`) && path[len(directory)] != filepath.Separator {
+			continue
+		}
+		prefixes[i] = path[:len(directory)]
+	}
+	return prefixes, nil
 }

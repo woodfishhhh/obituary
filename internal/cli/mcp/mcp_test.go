@@ -477,7 +477,7 @@ func TestMCPMutations(t *testing.T) {
 			"./internal/core/lifecycle", "TestRegistrationExpandsShortNames/add", "short alias entered ledger"},
 		{"restore-legacy-short-missing", "internal/core/lifecycle/restore_parents.go", "if !b.LongNames && shortComponent.MatchString(filepath.Base(dir)) {", "if false && !b.LongNames && shortComponent.MatchString(filepath.Base(dir)) {",
 			"./internal/core/lifecycle", "TestResurrectRejectsMissingLegacyShortParent", "legacy short parent was guessed"},
-		{"proposal-reused-revision", "internal/core/lifecycle/proposals.go", "p.CandidateSeq++\n\t\t\t\tc.Rev = p.CandidateSeq", "p.CandidateSeq++\n\t\t\t\tc.Rev = 1",
+		{"proposal-reused-revision", "internal/core/lifecycle/proposals.go", "p.CandidateSeq++\n\t\t\tc.Rev = p.CandidateSeq", "p.CandidateSeq++\n\t\t\tc.Rev = 1",
 			"./internal/cli/mcp", "TestMCPProposalVersionSurvivesPruneAndReadd", "readded candidate reused pagination version"},
 		{"graveyard-ready-cleanup", "internal/core/lifecycle/graveyard.go", "&& p.Status != \"restore-ready\"", "",
 			"./internal/core/lifecycle", "TestReadGraveyardClearsReadyRestore", "graveyard retained ready restore intent"},

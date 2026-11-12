@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 )
 
 // Check against the current transaction, including manual and newly added
@@ -41,7 +42,12 @@ func (s *Service) childLifespans(st *State, item Item, path, reason string) ([]I
 	if reason == ReasonBury {
 		expires = s.now()
 	}
+	return s.containedLifespans(st, item, real, expires)
+}
+
+func (s *Service) containedLifespans(st *State, item Item, real string, expires time.Time) ([]Item, error) {
 	var children []Item
+	var err error
 	for _, other := range st.Items {
 		if other.Kind == KindContainer {
 			continue

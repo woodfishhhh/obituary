@@ -101,8 +101,12 @@ func (s *Service) settleContainerStop(p ContainerIntent, out *Outcome) error {
 	if got.Running && (p.Phase == "sent" || p.Phase == "") {
 		return s.observeRunningStop(p, out)
 	}
+	return s.commitContainerStop(p, out, got)
+}
+
+func (s *Service) commitContainerStop(p ContainerIntent, out *Outcome, got docker.Container) error {
 	resume := false
-	err = s.Store.UpdateGraveyard(func(st *State) error {
+	err := s.Store.UpdateGraveyard(func(st *State) error {
 		if err := checkContainerIntent(st, p); err != nil {
 			return err
 		}
