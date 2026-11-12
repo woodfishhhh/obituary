@@ -11,7 +11,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	core "github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
 	"golang.org/x/sys/windows"
 )

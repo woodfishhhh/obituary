@@ -1,4 +1,4 @@
-package core_test
+package ledger_test
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	core "github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func TestGraveNoticeIndexNegativeFilter(t *testing.T) {

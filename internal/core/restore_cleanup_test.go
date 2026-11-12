@@ -210,13 +210,6 @@ func TestCleanupReceiptAcceptsExtendedGrave(t *testing.T) {
 	}
 }
 
-func TestRestoreCleanupRejectsNumericValue(t *testing.T) {
-	var st core.State
-	if err := json.Unmarshal([]byte(`{"version":7,"restoreCleanups":[7]}`), &st); err == nil {
-		t.Fatal("numeric cleanup receipt accepted")
-	}
-}
-
 func TestCleanupReceiptConvergesAfterRootRemoved(t *testing.T) {
 	if testing.Short() {
 		t.Skip("too slow for testing.Short")

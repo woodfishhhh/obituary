@@ -197,7 +197,7 @@ jobs:
         run: |
           go test ./internal/winfs ./internal/pathutil ./internal/app ./internal/config ./internal/cli/daemon
           # Native burial fixtures stay on Windows while POSIX moves are unsupported.
-          go test -run '^TestPOSIX' ./internal/core ./internal/auto ./internal/hook ./internal/integrate
+          go test -run '^TestPOSIX' ./internal/core/... ./internal/auto ./internal/hook ./internal/integrate
 
   # Every push and PR, and on demand: the four slowest areas each get a
   # runner; the wall time is the slowest shard instead of the sum. Keep
@@ -214,7 +214,7 @@ jobs:
       matrix:
         shard:
           - { name: e2e, pkgs: "./internal/e2e" }
-          - { name: core, pkgs: "./internal/core" }
+          - { name: core, pkgs: "./internal/core/..." }
           - { name: install, pkgs: "./internal/integrate ./internal/cli/init ./internal/cli/doctor" }
           - { name: rest, pkgs: "" }
     name: test (${{ matrix.shard.name }})
@@ -232,7 +232,7 @@ jobs:
           # @() keeps a single package an array; a bare string would be split.
           $pkgs = @("${{ matrix.shard.pkgs }}" -split ' ' | Where-Object { $_ })
           if ($pkgs.Count -eq 0) {
-            $pkgs = @(go list ./... | Where-Object { $_ -notmatch '/internal/(e2e|core|integrate|cli/init|cli/doctor)$' })
+            $pkgs = @(go list ./... | Where-Object { $_ -notmatch '/internal/(core(/|$)|(e2e|integrate|cli/init|cli/doctor)$)' })
           }
           go run ${{ env.GOTESTSUM }} --format testname --jsonfile test.json -- -count=1 -timeout 30m $pkgs
       - name: Slowest 30 tests

@@ -5,7 +5,7 @@ package regtxn
 import (
 	"fmt"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	core "github.com/woodfishhhh/obituary/internal/core/fs"
 )
 
 func Probe() error {
