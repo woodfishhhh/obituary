@@ -534,7 +534,7 @@ func TestMCPMutations(t *testing.T) {
 			"./internal/cli/mcp", "TestMCPRejectsOversizedMetadataAndBatches", "oversized MCP input accepted"},
 		{"mcp-output-length", "internal/cli/mcp/transport.go", "out := boundMCPReply(run(svc.WithContext(ctx), in))", "out := run(svc.WithContext(ctx), in)",
 			"./internal/cli/mcp", "TestMCPListsLegacyLongNotes", "legacy note blocked listing"},
-		{"worktree-metadata-pruning", "internal/auto/proposals.go", "errs = append(errs, &ProposalProjectError{Project: root, Err: err})\n\t\t\tcontinue\n\t\t} else {", "errs = append(errs, &ProposalProjectError{Project: root, Err: err})\n\t\t} else {",
+		{"worktree-metadata-pruning", "internal/auto/proposals.go", "errs = append(errs, &ProposalProjectError{Project: root, Err: err})\n\t\treturn errs\n\t} else {", "errs = append(errs, &ProposalProjectError{Project: root, Err: err})\n\t} else {",
 			"./internal/auto", "TestRefreshProposalsRetainsUnavailableWorktreeMetadata", "unavailable worktree metadata pruned proposals"},
 		{"extended-unc-root", "internal/pathutil/path.go", "if strings.TrimRight(path, `\\/`) == strings.TrimRight(root, `\\/`) {", "if false && strings.TrimRight(path, `\\/`) == strings.TrimRight(root, `\\/`) {",
 			"./internal/pathutil", "TestParentStopsAtVolumeRoot", "parent crossed volume root"},

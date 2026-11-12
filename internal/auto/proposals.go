@@ -29,59 +29,70 @@ func (e *Engine) RefreshProposals() error {
 	}
 	var errs []error
 	for _, proposals := range groups {
-		root := proposals[0].Project
-		if err := accessibleProposalProject(root); err != nil {
-			deleted, deletionErr := e.Svc.ProposalProjectDeleted(root)
-			if !deleted || deletionErr != nil {
-				errs = append(errs, &ProposalProjectError{Project: root, Err: errors.Join(err, deletionErr)})
-				continue
-			}
-			for _, p := range proposals {
-				if err := e.Svc.PruneDeletedProposal(p); err != nil {
-					errs = append(errs, err)
-				}
-			}
-			continue
-		}
-		var paths []string
-		stale := make(map[string]bool)
-		for _, p := range proposals {
-			for _, c := range p.Candidates {
-				paths = append(paths, c.Path)
-				if _, err := os.Lstat(c.Path); errors.Is(err, os.ErrNotExist) {
-					stale[c.Path] = true
-				} else if err != nil {
-					errs = append(errs, err)
-				}
-			}
-		}
-		tracked, err := (project.Project{Root: root}).TrackedBatch(paths)
-		if err != nil {
-			// Git failures prevent registration, but are not evidence for
-			// withdrawing a proposal, including missing candidates in worktrees
-			// whose .git pointer survives unavailable main-repository metadata.
-			errs = append(errs, &ProposalProjectError{Project: root, Err: err})
-			continue
-		} else {
-			for i, path := range paths {
-				if tracked[i] {
-					stale[path] = true
-				}
-			}
-		}
-		for _, p := range proposals {
-			var removed []core.Candidate
-			for _, c := range p.Candidates {
-				if stale[c.Path] {
-					removed = append(removed, c)
-				}
-			}
-			if err := e.Svc.PruneProposal(p, removed); err != nil {
+		errs = append(errs, e.refreshProjectProposals(proposals)...)
+	}
+	return errors.Join(errs...)
+}
+
+func (e *Engine) refreshProjectProposals(proposals []core.Proposal) []error {
+	root := proposals[0].Project
+	if err := accessibleProposalProject(root); err != nil {
+		return e.pruneDeletedProposals(proposals, err)
+	}
+	var errs []error
+	var paths []string
+	stale := make(map[string]bool)
+	for _, p := range proposals {
+		for _, c := range p.Candidates {
+			paths = append(paths, c.Path)
+			if _, err := os.Lstat(c.Path); errors.Is(err, os.ErrNotExist) {
+				stale[c.Path] = true
+			} else if err != nil {
 				errs = append(errs, err)
 			}
 		}
 	}
-	return errors.Join(errs...)
+	tracked, err := (project.Project{Root: root}).TrackedBatch(paths)
+	if err != nil {
+		// Git failures prevent registration, but are not evidence for
+		// withdrawing a proposal, including missing candidates in worktrees
+		// whose .git pointer survives unavailable main-repository metadata.
+		errs = append(errs, &ProposalProjectError{Project: root, Err: err})
+		return errs
+	} else {
+		for i, path := range paths {
+			if tracked[i] {
+				stale[path] = true
+			}
+		}
+	}
+	for _, p := range proposals {
+		var removed []core.Candidate
+		for _, c := range p.Candidates {
+			if stale[c.Path] {
+				removed = append(removed, c)
+			}
+		}
+		if err := e.Svc.PruneProposal(p, removed); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
+}
+
+func (e *Engine) pruneDeletedProposals(proposals []core.Proposal, cause error) []error {
+	root := proposals[0].Project
+	deleted, err := e.Svc.ProposalProjectDeleted(root)
+	if !deleted || err != nil {
+		return []error{&ProposalProjectError{Project: root, Err: errors.Join(cause, err)}}
+	}
+	var errs []error
+	for _, p := range proposals {
+		if err := e.Svc.PruneDeletedProposal(p); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
 }
 
 // ProposalProjectError preserves the cause while allowing runners to log state
@@ -144,28 +155,7 @@ func (e *Engine) approve(refs []string, claim func(int, string) (core.Proposal, 
 			continue
 		}
 		r.Proposal = p
-		if p.Kind == core.ProposalWatchBurial {
-			outcome, err := e.Svc.ApproveWatchBurial(p)
-			if err == nil && outcome.Action != core.ActionBuried {
-				err = errors.New(outcome.Detail)
-			}
-			if err != nil {
-				r.Error = err.Error()
-			} else {
-				r.Results = []core.Result{{Ref: outcome.Path, Item: &outcome.Item}}
-			}
-			release()
-			out = append(out, r)
-			continue
-		}
-		if p.Kind == core.ProposalWatch {
-			err := e.Svc.ApproveWatch(p)
-			if err == nil {
-				err = e.Svc.ResolveProposal(p, nil)
-			}
-			if err != nil {
-				r.Error = err.Error()
-			}
+		if e.approveWatchProposal(p, &r) {
 			release()
 			out = append(out, r)
 			continue
@@ -189,6 +179,32 @@ func (e *Engine) approve(refs []string, claim func(int, string) (core.Proposal, 
 		return out, retryErr
 	}
 	return out, auditErr
+}
+
+func (e *Engine) approveWatchProposal(p core.Proposal, r *core.ProposalResult) bool {
+	if p.Kind == core.ProposalWatchBurial {
+		outcome, err := e.Svc.ApproveWatchBurial(p)
+		if err == nil && outcome.Action != core.ActionBuried {
+			err = errors.New(outcome.Detail)
+		}
+		if err != nil {
+			r.Error = err.Error()
+		} else {
+			r.Results = []core.Result{{Ref: outcome.Path, Item: &outcome.Item}}
+		}
+		return true
+	}
+	if p.Kind == core.ProposalWatch {
+		err := e.Svc.ApproveWatch(p)
+		if err == nil {
+			err = e.Svc.ResolveProposal(p, nil)
+		}
+		if err != nil {
+			r.Error = err.Error()
+		}
+		return true
+	}
+	return false
 }
 
 func (e *Engine) approveCandidates(p core.Proposal, located locations) ([]core.Result, []core.Candidate, error) {

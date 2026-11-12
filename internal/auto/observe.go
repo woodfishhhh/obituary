@@ -338,6 +338,56 @@ func (e *Engine) Leftovers(root, session string) ([]Notice, error) {
 	if err != nil {
 		return nil, err
 	}
+	fresh, err := e.freshLeftovers(root, snap)
+	if err != nil {
+		return nil, err
+	}
+	if len(fresh) == 0 {
+		return nil, nil
+	}
+	located := locations{}
+	_, notices, observeErr := e.observe(fresh, session, located, nil)
+	state, err := e.Svc.Store.ReadHot()
+	if err != nil {
+		return notices, err
+	}
+	cands := e.leftoverCandidates(fresh, &state, located)
+	n, err := e.propose(core.ProposalLeftovers, root, session, cands, nil)
+	if n != nil {
+		notices = append(notices, *n)
+	}
+	return notices, errors.Join(observeErr, err)
+}
+
+func (e *Engine) leftoverCandidates(paths []string, state *core.State, located locations) []core.Candidate {
+	var cands []core.Candidate
+	seen := map[string]bool{}
+	for _, p := range paths {
+		d := e.decide(p, state, seen, located)
+		if d.Action != Skipped || d.Reason != reasonNoRule {
+			continue // handled by rule, already tracked, or not ours to touch
+		}
+		proj, ok, err := project.Find(d.Unit)
+		if err != nil || !ok {
+			continue
+		}
+		if reason, err := e.vetUnit(proj, d.Unit, state, located); err != nil || reason != "" {
+			continue
+		}
+		set, _, err := e.RuleSet(proj.Root)
+		if err != nil {
+			continue
+		}
+		if protected, err := set.Protects(d.Unit, isDirectory(d.Unit)); err != nil || protected {
+			continue
+		}
+		bytes, _ := size(d.Unit)
+		cands = append(cands, core.Candidate{Path: d.Unit, Lifespan: LeftoverLifespan, Size: bytes})
+	}
+	return cands
+}
+
+func (e *Engine) freshLeftovers(root string, snap snapshot) ([]string, error) {
 	before := map[string]bool{}
 	for _, p := range snap.Paths {
 		before[strings.ToLower(filepath.Clean(p))] = true
@@ -374,44 +424,7 @@ func (e *Engine) Leftovers(root, session string) ([]Notice, error) {
 		}
 		fresh = append(fresh, p)
 	}
-	if len(fresh) == 0 {
-		return nil, nil
-	}
-	located := locations{}
-	_, notices, observeErr := e.observe(fresh, session, located, nil)
-	state, err = e.Svc.Store.ReadHot()
-	if err != nil {
-		return notices, err
-	}
-	var cands []core.Candidate
-	seen := map[string]bool{}
-	for _, p := range fresh {
-		d := e.decide(p, &state, seen, located)
-		if d.Action != Skipped || d.Reason != reasonNoRule {
-			continue // handled by rule, already tracked, or not ours to touch
-		}
-		proj, ok, err := project.Find(d.Unit)
-		if err != nil || !ok {
-			continue
-		}
-		if reason, err := e.vetUnit(proj, d.Unit, &state, located); err != nil || reason != "" {
-			continue
-		}
-		set, _, err := e.RuleSet(proj.Root)
-		if err != nil {
-			continue
-		}
-		if protected, err := set.Protects(d.Unit, isDirectory(d.Unit)); err != nil || protected {
-			continue
-		}
-		bytes, _ := size(d.Unit)
-		cands = append(cands, core.Candidate{Path: d.Unit, Lifespan: LeftoverLifespan, Size: bytes})
-	}
-	n, err := e.propose(core.ProposalLeftovers, root, session, cands, nil)
-	if n != nil {
-		notices = append(notices, *n)
-	}
-	return notices, errors.Join(observeErr, err)
+	return fresh, nil
 }
 
 func isDirectory(path string) bool {

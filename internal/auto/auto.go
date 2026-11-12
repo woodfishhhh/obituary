@@ -134,37 +134,43 @@ func (e *Engine) apply(paths []string, opts Options, located locations) ([]Decis
 			out = append(out, d)
 			continue
 		}
-		lifespan, _ := core.ParseDuration(d.Lifespan)
-		proj, ok, err := project.Find(d.Unit)
-		if err != nil || !ok {
-			d.Action, d.Reason = Skipped, "could not confirm its Git work tree"
-			if err != nil {
-				d = failedDecision(d, err)
-			}
-			out = append(out, d)
-			continue
-		}
-		results, err := e.Svc.Add([]string{d.Unit}, core.AddOptions{
-			ExpiresAt: e.now().Add(lifespan), Source: source, Project: proj.Root,
-			Session: opts.Session, Note: "rule " + d.Rule, OnlyNew: true,
-			Observed: opts.Observed,
-		})
-		if err != nil && results == nil {
+		d, err = e.registerDecision(d, source, opts, &state)
+		if err != nil {
 			return out, err
-		}
-		if results[0].Error != "" {
-			cause := results[0].Err
-			if cause == nil {
-				cause = errors.New(results[0].Error)
-			}
-			d = inspectionDecision(d, cause)
-		} else {
-			d.Action, d.Item = Registered, results[0].Item
-			state.Items = append(state.Items, *results[0].Item)
 		}
 		out = append(out, d)
 	}
 	return out, nil
+}
+
+func (e *Engine) registerDecision(d Decision, source string, opts Options, state *core.State) (Decision, error) {
+	lifespan, _ := core.ParseDuration(d.Lifespan)
+	proj, ok, err := project.Find(d.Unit)
+	if err != nil || !ok {
+		d.Action, d.Reason = Skipped, "could not confirm its Git work tree"
+		if err != nil {
+			d = failedDecision(d, err)
+		}
+		return d, nil
+	}
+	results, err := e.Svc.Add([]string{d.Unit}, core.AddOptions{
+		ExpiresAt: e.now().Add(lifespan), Source: source, Project: proj.Root,
+		Session: opts.Session, Note: "rule " + d.Rule, OnlyNew: true,
+		Observed: opts.Observed,
+	})
+	if err != nil && results == nil {
+		return d, err
+	}
+	if results[0].Error != "" {
+		cause := results[0].Err
+		if cause == nil {
+			cause = errors.New(results[0].Error)
+		}
+		return inspectionDecision(d, cause), nil
+	}
+	d.Action, d.Item = Registered, results[0].Item
+	state.Items = append(state.Items, *results[0].Item)
+	return d, nil
 }
 
 func (e *Engine) now() time.Time {
@@ -267,7 +273,21 @@ func (e *Engine) vetUnit(proj project.Project, unit string, state *core.State, l
 	}
 	scope := e.Svc.RegistrationScope(unit, id)
 	defer scope.Close()
-	for _, it := range state.Items {
+	if reason, err := e.vetLifespans(unit, id, state.Items, scope, located); err != nil || reason != "" {
+		return reason, err
+	}
+	tracked, err := e.trackedByGit(proj, unit)
+	switch {
+	case err != nil:
+		return "", fmt.Errorf("could not ask Git whether it is tracked: %w", err)
+	case tracked:
+		return "Git tracks it (or something inside it)", nil
+	}
+	return "", nil
+}
+
+func (e *Engine) vetLifespans(unit string, id core.Identity, items []core.Item, scope *core.RegistrationScope, located locations) (string, error) {
+	for _, it := range items {
 		if !scope.Related(it) {
 			continue
 		}
@@ -302,13 +322,6 @@ func (e *Engine) vetUnit(proj project.Project, unit string, state *core.State, l
 		if reason := lifespanConflict(path, unit, it.ID); reason != "" {
 			return reason, nil
 		}
-	}
-	tracked, err := e.trackedByGit(proj, unit)
-	switch {
-	case err != nil:
-		return "", fmt.Errorf("could not ask Git whether it is tracked: %w", err)
-	case tracked:
-		return "Git tracks it (or something inside it)", nil
 	}
 	return "", nil
 }

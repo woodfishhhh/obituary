@@ -46,11 +46,7 @@ func queryOwners(ctx context.Context, paths []string, observers map[string]prepa
 		if observers == nil {
 			tracked, err = (project.Project{Root: root}).TrackedBatchContext(ctx, group)
 		} else {
-			prepared, ok := observers[root]
-			if !ok {
-				prepared.observer, prepared.err = (project.Project{Root: root}).ObserveIndex(ctx)
-				observers[root] = prepared
-			}
+			prepared := prepareOwnerIndex(ctx, root, observers)
 			afterFind = prepared.afterFind
 			err = prepared.err
 			if err != nil {
@@ -91,6 +87,15 @@ func queryOwners(ctx context.Context, paths []string, observers map[string]prepa
 	return answers
 }
 
+func prepareOwnerIndex(ctx context.Context, root string, observers map[string]preparedIndex) preparedIndex {
+	prepared, ok := observers[root]
+	if !ok {
+		prepared.observer, prepared.err = (project.Project{Root: root}).ObserveIndex(ctx)
+		observers[root] = prepared
+	}
+	return prepared
+}
+
 func formatLifespan(d time.Duration) string {
 	for _, u := range []struct {
 		unit time.Duration
@@ -109,23 +114,9 @@ var unsafeName = regexp.MustCompile(`[^A-Za-z0-9._-]+`)
 // Inside a Git project it lives in .obit/tmp (excluded from Git); elsewhere
 // in the system temporary directory.
 func (e *Engine) MkTemp(lifespan time.Duration, name, cwd, session string) (string, *core.Item, error) {
-	var err error
-	cwd, err = pathutil.Abs(cwd)
+	cwd, err := validateTempRequest(cwd, name, session)
 	if err != nil {
 		return "", nil, err
-	}
-	info, err := os.Stat(cwd)
-	if err != nil {
-		return "", nil, fmt.Errorf("mktemp cwd must be an existing directory: %w", err)
-	}
-	if !info.IsDir() {
-		return "", nil, fmt.Errorf("mktemp cwd %q is not a directory", cwd)
-	}
-	if err := core.ValidateMetadata("session", session); err != nil {
-		return "", nil, err
-	}
-	if len(name) > 128 {
-		return "", nil, errors.New("temporary directory name exceeds 128 bytes")
 	}
 	if err := e.Svc.Store.Context().Err(); err != nil {
 		return "", nil, err
@@ -173,4 +164,25 @@ func (e *Engine) MkTemp(lifespan time.Duration, name, cwd, session string) (stri
 		return rollback(fmt.Errorf("%s", results[0].Error))
 	}
 	return dir, results[0].Item, err
+}
+
+func validateTempRequest(cwd, name, session string) (string, error) {
+	cwd, err := pathutil.Abs(cwd)
+	if err != nil {
+		return "", err
+	}
+	info, err := os.Stat(cwd)
+	if err != nil {
+		return "", fmt.Errorf("mktemp cwd must be an existing directory: %w", err)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("mktemp cwd %q is not a directory", cwd)
+	}
+	if err := core.ValidateMetadata("session", session); err != nil {
+		return "", err
+	}
+	if len(name) > 128 {
+		return "", errors.New("temporary directory name exceeds 128 bytes")
+	}
+	return cwd, nil
 }
