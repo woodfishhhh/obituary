@@ -62,12 +62,12 @@ func TestDeleteGuardMutations(t *testing.T) {
 		t.Fatal(err)
 	}
 	for i, mutation := range []struct{ name, file, from, to, pkg, test string }{
-		{"bury-batch-disabled", "internal/core/bury.go",
+		{"bury-batch-disabled", "internal/core/lifecycle/bury.go",
 			"if !s.recycleMode() {\n\t\treturn results, errors.Join(auditErr, s.buryBatches", "if false && !s.recycleMode() {\n\t\treturn results, errors.Join(auditErr, s.buryBatches",
-			"./internal/core", "TestBuryBatchInterruptedMovesRecoverOnce"},
-		{"bury-batch-revision", "internal/core/bury_move.go",
+			"./internal/core/lifecycle", "TestBuryBatchInterruptedMovesRecoverOnce"},
+		{"bury-batch-revision", "internal/core/lifecycle/bury_move.go",
 			"if _, err := s.burialRevision(st, out.Item, reason); err != nil {", "if err := error(nil); err != nil {",
-			"./internal/core", "TestBuryBatchRechecksEachRevision"},
+			"./internal/core/lifecycle", "TestBuryBatchRechecksEachRevision"},
 		{"suggest-glob-ambiguity", "internal/guardrm/rewrite.go",
 			`if ambiguousGlobLocation {`, `if false && ambiguousGlobLocation {`,
 			"./internal/guardrm", "TestSuggestSummaryAndGlobDecisions"},
@@ -413,7 +413,7 @@ func TestDeleteGuardMutations(t *testing.T) {
 		{"m2a-wsl-context", "internal/hook/delete_guard.go",
 			"if context.WSL {", "if false && context.WSL {",
 			"./internal/hook", "TestDeleteWSLContext"},
-		{"m2a-recovery-count", "internal/core/bury.go",
+		{"m2a-recovery-count", "internal/core/lifecycle/bury.go",
 			"st.Stats.DeleteBuried++", "st.Stats.DeleteBuried += 0",
 			"./internal/cli/stats", "TestDeleteStatsAfterRecovery"},
 		{"quoted-string", "internal/guardrm/rewrite.go",
