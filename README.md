@@ -118,7 +118,7 @@ obit log                                    # 生平记录：做过的所有事
 
 <a href="https://github.com/woodfishhhh/obituary/graphs/contributors"><img alt="贡献者" src="https://contrib.rocks/image?repo=woodfishhhh/obituary&max=100"></a>
 
-用着有问题、有想法，也可以来 QQ 用户群聊：**1135603207**
+用着有问题、有想法，也可以来 QQ 用户群聊：**1135603207**，或者到 [LINUX DO](https://linux.do) 社区找我们。
 
 <img alt="讣告用户群二维码，群号 1135603207" src="docs/assets/community/qq-group.png" width="220">
 
