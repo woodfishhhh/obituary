@@ -270,7 +270,7 @@ func (p *integrationTarget) write(c Change) (err error) {
 	published := false
 	defer func() {
 		if !published {
-			err = errors.Join(err, deleteIntegrationHandle(f))
+			err = errors.Join(err, p.removeTemporary(f, tmp))
 		}
 		err = errors.Join(err, f.Close())
 	}()

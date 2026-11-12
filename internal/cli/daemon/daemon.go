@@ -52,7 +52,7 @@ func enableCmd(home func() (string, error), self cmdutil.Executable) *cobra.Comm
 	var resident, dryRun bool
 	cmd := &cobra.Command{
 		Use:   "enable",
-		Short: "Enable the login tray and the hidden 5-minute fallback runner",
+		Short: "Enable the 5-minute user scheduler (and the login tray on Windows)",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			h, err := home()
@@ -78,7 +78,7 @@ func enable(home string, resident bool) error {
 		if err := app.InstallSchedule(home); err != nil {
 			return err
 		}
-		fmt.Println("user timer enabled; automatic burial remains unsupported on this platform")
+		fmt.Printf("user scheduler enabled; checks expiries every %d minutes\n", int(app.Interval.Minutes()))
 		return nil
 	}
 	if !resident {

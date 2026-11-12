@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 
@@ -81,9 +82,11 @@ func wslHookPath(exe string) bool {
 }
 
 // OwnedHookExec recognises argv execution, never shell source or PATH lookup.
-// An older absolute obit.exe location remains owned so moves can be refreshed.
+// An older absolute executable location remains owned so moves can be refreshed.
 func OwnedHookExec(command string, args []string, agent string, events []string) bool {
-	if !filepath.IsAbs(command) || !strings.EqualFold(filepath.Base(command), "obit.exe") ||
+	base := filepath.Base(command)
+	native := strings.EqualFold(base, "obit.exe") || runtime.GOOS != "windows" && base == "obit"
+	if !filepath.IsAbs(command) || !native ||
 		strings.ContainsAny(command, "\x00\r\n\"|<>*") || strings.HasSuffix(command, "/") || strings.HasSuffix(command, `\`) {
 		return false
 	}

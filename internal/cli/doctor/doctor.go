@@ -120,7 +120,6 @@ func diagnose(now time.Time, executable cmdutil.Executable, agents ...string) []
 	daemon := filepath.Join(filepath.Dir(self), "obitd.exe")
 	if runtime.GOOS != "windows" {
 		daemon = filepath.Join(filepath.Dir(self), "obitd")
-		checks = append(checks, DoctorCheck{Name: "automatic-burial", Status: "WARN", Detail: "automatic burial and resurrection are unsupported on this platform; files and tracked entries are preserved"})
 	}
 	daemonErr := selfErr
 	if daemonErr == nil {
@@ -230,6 +229,10 @@ func diagnoseProjectRules(home string) []DoctorCheck {
 
 func diagnoseCodexWindowsShell() DoctorCheck {
 	c := DoctorCheck{Name: "codex-windows-shell", Status: "WARN"}
+	if runtime.GOOS != "windows" {
+		c.Status, c.Detail = "INFO", "native POSIX shell; no Windows shell declaration needed"
+		return c
+	}
 	cfg, err := config.Load()
 	if err != nil {
 		c.Status, c.Detail = "FAIL", err.Error()

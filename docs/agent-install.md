@@ -8,12 +8,13 @@
 请帮我安装讣告（Obituary，命令是 obit），并把它接入你自己。按顺序做，每一步把命令和输出给我看：
 
 1. 先运行 obit --version。已经装了就跳到第 3 步。
-2. 安装（这台电脑是 Windows），按这个顺序选第一个可用的：
+2. 先确认操作系统。Windows 安装，按这个顺序选第一个可用的：
    - 有 scoop：scoop bucket add obituary https://github.com/woodfishhhh/scoop-bucket，再 scoop install obituary
    - 没有 scoop：在 PowerShell 里 irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1，把脚本内容给我过目，我同意后再运行 .\install.ps1 -Version 1.0.0
+   - macOS / Linux：curl -fsSL https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh -o install.sh，把脚本内容给我过目。我同意后运行 bash install.sh --version VERSION（VERSION 用包含本机平台 tar.gz 的发布版本号）。默认装到 ~/.local/bin，可用 --install-dir 指定目录；按输出提示配置 PATH。
    装完新开一个终端，确认 obit --version 能运行。
 3. 运行 obit init --show，找到你自己对应的 agent 名字。
-4. 运行 obit init -g --agent <你的名字> --dry-run，把计划给我看。默认会装所选 agent 的 Agent Skill、右键菜单、开始菜单和桌面快捷方式，不想要可以用 --no-skill / --no-context-menu / --no-shortcuts，右键菜单和快捷方式以后在设置里也能关。问我要不要同时打开删除护栏（--guard-rm：拦下 rm -rf 这类删除，改用可以复活的 obit 命令）。我同意后，去掉 --dry-run、加上 --yes 再执行一次。
+4. 运行 obit init -g --agent <你的名字> --dry-run，把计划给我看。默认会装所选 agent 的 Agent Skill；Windows 还会装右键菜单、开始菜单和桌面快捷方式，可用 --no-skill / --no-context-menu / --no-shortcuts 跳过。问我要不要同时打开删除护栏（--guard-rm：拦下 rm -rf 这类删除，改用可以复活的 obit 命令）。我同意后，去掉 --dry-run、加上 --yes 再执行一次。macOS / Linux 再运行 obit daemon enable --dry-run，确认后用 obit daemon enable 启用用户级 launchd / systemd 定时检查；Linux 没有 systemd 时给我用户 crontab 的 obitd --once 配置步骤。
 5. 运行 obit doctor，把 FAIL 和 WARN 逐条告诉我，说明哪些是正常的。
 6. 告诉我接下来要做什么：通常是重启你自己；如果你是 Codex，要在 Codex 里运行 /hooks 信任讣告的 hook。
 
@@ -33,12 +34,13 @@ Paste this to the agent you use and it will install Obituary, connect it to itse
 Please install Obituary (the command is obit) and integrate it with yourself. Go step by step and show me each command and its output:
 
 1. Run obit --version. If it is already installed, skip to step 3.
-2. Install it (this is Windows), using the first option that is available:
+2. Identify the operating system first. On Windows install it, using the first option that is available:
    - scoop: scoop bucket add obituary https://github.com/woodfishhhh/scoop-bucket, then scoop install obituary
    - no scoop: in PowerShell, irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1, show me the script, and only after I agree run .\install.ps1 -Version 1.0.0
+   - macOS / Linux: curl -fsSL https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh -o install.sh, show me the script, and only after I agree run bash install.sh --version VERSION (use a release containing a tar.gz for this platform). The default directory is ~/.local/bin; --install-dir overrides it. Follow the printed PATH instructions.
    Then open a new terminal and confirm that obit --version runs.
 3. Run obit init --show and find your own agent name.
-4. Run obit init -g --agent <your name> --dry-run and show me the plan. The selected agent's Agent Skill, context menus, a Start menu shortcut and a desktop shortcut are installed by default; skip them with --no-skill / --no-context-menu / --no-shortcuts; context menus and shortcuts can also be turned off later in Settings. Ask me whether to turn on the delete guard as well (--guard-rm: deletions such as rm -rf are stopped and replaced by restorable obit commands). After I agree, run it again without --dry-run and with --yes.
+4. Run obit init -g --agent <your name> --dry-run and show me the plan. The selected agent's Agent Skill is installed by default; Windows also gets context menus and Start menu / desktop shortcuts. Skip them with --no-skill / --no-context-menu / --no-shortcuts. Ask me whether to turn on the delete guard as well (--guard-rm: deletions such as rm -rf are stopped and replaced by restorable obit commands). After I agree, run it again without --dry-run and with --yes. On macOS / Linux also preview obit daemon enable --dry-run, then run obit daemon enable after confirmation for the user launchd / systemd scheduler; on Linux without systemd, show me user crontab steps for obitd --once.
 5. Run obit doctor and go through every FAIL and WARN with me, saying which ones are expected.
 6. Tell me what to do next: usually restart yourself; if you are Codex, run /hooks in Codex and trust Obituary's hooks.
 

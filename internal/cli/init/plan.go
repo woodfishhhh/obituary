@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"runtime"
 	"slices"
 	"strings"
 
@@ -64,7 +65,7 @@ func (p Planner) integrationPlan(agent string, scope integrate.Scope, uninstall 
 	} else if err != nil {
 		return nil, err
 	}
-	if scope.GuardRM && !uninstall && slices.Contains([]string{"codex", "codebuddy", "codebuddy-ide", "minimax-code"}, agent) {
+	if runtime.GOOS == "windows" && scope.GuardRM && !uninstall && slices.Contains([]string{"codex", "codebuddy", "codebuddy-ide", "minimax-code"}, agent) {
 		declaration, err := integrate.PlanAgentWindowsShell(scope, agent)
 		if err != nil {
 			return nil, err

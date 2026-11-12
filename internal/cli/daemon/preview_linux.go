@@ -44,6 +44,6 @@ func preview(out io.Writer, self cmdutil.Executable, home string, enabled, resid
 		}
 		fmt.Fprintf(out, "  systemctl --user %s --now %s\n", action, app.TaskName)
 	}
-	fmt.Fprintln(out, "  automatic burial remains unsupported on this platform; preview made no changes")
+	fmt.Fprintln(out, "  preview made no changes")
 	return nil
 }

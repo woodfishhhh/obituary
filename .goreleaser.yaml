@@ -1,4 +1,4 @@
-# Ship Windows zip archives with LICENSE and SHA-256 checksums so downloads
+# Ship platform archives with LICENSE and SHA-256 checksums so downloads
 # can be verified before installation.
 version: 2
 project_name: obituary
@@ -41,8 +41,49 @@ builds:
     ldflags:
       - -s -w -H windowsgui -X github.com/woodfishhhh/obituary/internal/buildinfo.Version={{ .Version }}
 
+  - id: obit-darwin
+    main: ./cmd/obit
+    binary: obit
+    env: [CGO_ENABLED=0]
+    goos: [darwin]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags:
+      - -s -w -X github.com/woodfishhhh/obituary/internal/buildinfo.Version={{ .Version }}
+
+  - id: obitd-darwin
+    main: ./cmd/obitd
+    binary: obitd
+    env: [CGO_ENABLED=0]
+    goos: [darwin]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags:
+      - -s -w -X github.com/woodfishhhh/obituary/internal/buildinfo.Version={{ .Version }}
+
+  - id: obit-linux
+    main: ./cmd/obit
+    binary: obit
+    env: [CGO_ENABLED=0]
+    goos: [linux]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags:
+      - -s -w -X github.com/woodfishhhh/obituary/internal/buildinfo.Version={{ .Version }}
+
+  - id: obitd-linux
+    main: ./cmd/obitd
+    binary: obitd
+    env: [CGO_ENABLED=0]
+    goos: [linux]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags:
+      - -s -w -X github.com/woodfishhhh/obituary/internal/buildinfo.Version={{ .Version }}
+
 archives:
-  - ids: [obit, obitd, obit-gui]
+  - id: windows
+    ids: [obit, obitd, obit-gui]
     formats: [zip]
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     # The desktop GUI is amd64-only; arm64 ships the CLI and daemon.
@@ -50,6 +91,22 @@ archives:
     files:
       - LICENSE
       - src: packaging/README.txt
+        strip_parent: true
+  - id: darwin
+    ids: [obit-darwin, obitd-darwin]
+    formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - src: packaging/posix/README.txt
+        strip_parent: true
+  - id: linux
+    ids: [obit-linux, obitd-linux]
+    formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - src: packaging/posix/README.txt
         strip_parent: true
 
 checksum:
@@ -74,6 +131,7 @@ changelog:
 # scripts/finalize-manifests.mjs adds Scoop notes and WinGet's directory PATH.
 scoops:
   - name: obituary
+    ids: [windows]
     repository:
       owner: woodfishhhh
       name: scoop-bucket
@@ -82,6 +140,7 @@ scoops:
 
 winget:
   - name: obituary
+    ids: [windows]
     package_identifier: woodfishhhh.Obituary
     package_name: Obituary
     publisher: woodfishhhh
@@ -103,6 +162,28 @@ winget:
       name: winget-pkgs
     skip_upload: true
     url_template: "https://github.com/woodfishhhh/obituary/releases/download/v{{ .Version }}/{{ .ArtifactName }}"
+
+# Generate a macOS cask for review; the owner publishes it separately.
+homebrew_casks:
+  - name: obituary
+    ids: [darwin]
+    repository:
+      owner: woodfishhhh
+      name: homebrew-tap
+    directory: Casks
+    skip_upload: true
+    homepage: https://obituary.woodfish.site
+    description: Give files a lifespan and restore them from a graveyard
+    license: MIT
+    url:
+      template: "https://github.com/woodfishhhh/obituary/releases/download/v{{ .Version }}/{{ .ArtifactName }}"
+    binaries: [obit, obitd]
+    caveats: |
+      Run obit init --dry-run to review agent integration.
+      Run obit daemon enable --dry-run to review the user scheduler.
+      On first use, run obit --version and obitd --help. If Gatekeeper asks
+      for approval, open System Settings > Privacy & Security, choose Open
+      Anyway for each verified executable, and retry the command.
 
 # WinGet's portable installer and 1.10 installer schema do not provide Start
 # menu shortcuts (microsoft/winget-cli Workflows/PortableFlow.cpp); use the

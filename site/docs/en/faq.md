@@ -6,7 +6,7 @@ Something you are not sure about cannot come back once deleted. Obituary buries 
 
 ## macOS and Linux?
 
-Windows only for now; macOS and Linux compile but cannot bury yet.
+Yes. Both provide x64 / ARM64 command-line and background programs with a graveyard, resurrection and automatic burial. macOS uses launchd and Linux uses a systemd user timer to check expiries; agent hooks also start checks when needed. See [Quick start](./index). Recycle Bin mode, the small window, tray and context menus are provided by the Windows edition.
 
 ## Windows says "Windows protected your PC"?
 

@@ -5,9 +5,27 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
+
+func TestPOSIXOwnedHookExec(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("native POSIX executable names")
+	}
+	for _, tc := range []struct {
+		path string
+		want bool
+	}{
+		{"/opt/obituary/obit", true}, {"/tmp/bin with spaces/obit", true},
+		{"obit", false}, {"./obit", false}, {"/tmp/other", false}, {"/tmp/OBIT", false},
+	} {
+		if got := OwnedHookExec(tc.path, []string{"hook", "claude"}, "claude", nil); got != tc.want {
+			t.Fatalf("ownership %q = %t", tc.path, got)
+		}
+	}
+}
 
 func TestOwnedHookCommand(t *testing.T) {
 	t.Parallel()

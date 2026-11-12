@@ -33,7 +33,7 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 		Short: "Install (or --uninstall) Obituary's hooks and instructions for an agent",
 		Example: `  obit init -g                 # Claude Code, for every project (~/.claude)
   obit init                    # Claude Code, this project only (.claude/)
-  obit init -g --agent codex   # Codex (~/.codex/hooks.json + AGENTS.md), Windows and WSL
+  obit init -g --agent codex   # Codex (~/.codex/hooks.json + AGENTS.md)
   obit init -g --uninstall     # remove only what Obituary added
   obit init -g --show          # what is installed
   obit init --show --format markdown > docs/agents.md`,

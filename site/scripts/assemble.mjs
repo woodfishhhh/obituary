@@ -29,6 +29,8 @@ for (const [from, to] of parts) await cp(from, to, { recursive: true });
 // mirror: Scoop (and winget, once listed) download from GitHub, so their lines go.
 function mirrorGuide(text, host) {
   const swaps = [
+    ["https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh", `${host}install.sh`],
+    ["bash install.sh --version VERSION", "bash install.sh --version VERSION --mirror cn"],
     ["https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1", `${host}install.ps1`],
     [".\\install.ps1 -Version 1.0.0", ".\\install.ps1 -Version 1.0.0 -Mirror cn"],
     ["，按这个顺序选第一个可用的：", "，用国内镜像上的安装脚本："],
@@ -55,4 +57,5 @@ if (mirror) {
   // GitHub Pages serves this build at the custom domain.
   await writeFile(new URL("CNAME", out), "obituary.woodfish.site\n");
 }
+await cp(new URL("install.sh", repo), new URL("install.sh", out));
 console.log(`assembled ${out.pathname}`);

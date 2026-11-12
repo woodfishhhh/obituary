@@ -4,7 +4,7 @@ Obituary gives files and folders a lifespan. When it runs out they are buried in
 
 ## 1. Install
 
-Windows 10 / 11 (x64 and ARM64).
+Windows 10 / 11, macOS and Linux (x64 and ARM64). macOS and Linux provide the CLI, graveyard, resurrection and automatic burial. Recycle Bin mode, the small window, tray and context menus are provided by the Windows edition.
 
 **Easiest: let your agent do it.** Send this sentence to the agent you use (Claude Code, Codex, Cursor…). It installs Obituary, connects it to itself and stops wherever a decision is yours:
 
@@ -12,7 +12,25 @@ Windows 10 / 11 (x64 and ARM64).
 Read https://obituary.woodfish.site/agent-install.md and follow it to install Obituary and connect it to yourself.
 ```
 
-**By hand:** pick one of the three, then run `obit doctor` to check the installation.
+**By hand:** choose your operating system below, then run `obit doctor` to check the installation.
+
+### macOS / Linux
+
+Download and read the script before running it. Replace `VERSION` with a release that includes macOS / Linux archives:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh -o install.sh
+bash install.sh --version VERSION
+# Custom directory: --install-dir "$HOME/bin"; preview only: --dry-run
+```
+
+The script detects the OS and architecture, verifies SHA-256 from the same download source, and installs `obit` and `obitd` into `~/.local/bin`. Follow its PATH instructions, then run `obit --version`. Use `--mirror cn` for the mainland China mirror; its script is at `https://cn.obituary.woodfish.site/install.sh`.
+
+On first use in macOS, run `obit --version` and `obitd --help`. If Gatekeeper asks for approval, open System Settings → Privacy & Security, choose Open Anyway for each executable whose source you verified, then retry the command.
+
+In WSL, keep projects and agent configuration on the Linux filesystem (for example, under `~/projects`). Windows mounts such as `/mnt/c` may not support the safe renames required for installation; the operation reports an error and preserves the original configuration. You can also use the Windows edition of Obituary directly.
+
+### Windows
 
 ::: code-group
 
@@ -48,11 +66,23 @@ obit doctor              # read-only check: PATH, obitd, runner, Claude Code / C
 ## 2. Connect your agents
 
 ```powershell
-obit init -g                 # Claude Code, all projects; also the Skill, context menu and shortcuts
+obit init -g                 # Claude Code, all projects; also the Skill (and desktop integration on Windows)
 obit init -g --agent codex   # Codex
 ```
 
 Restart the agent afterwards. Other agents, the MCP server and the Agent Skill: [Connect agents](./agents).
+
+On macOS / Linux, Claude Code uses `~/.claude`, Codex uses `~/.codex`, and shared Skills use `~/.agents/skills`. `CLAUDE_CONFIG_DIR` and `CODEX_HOME` overrides are also respected.
+
+Enable the user scheduler to check expiries every 5 minutes:
+
+```bash
+obit daemon enable --dry-run
+obit daemon enable
+obit doctor
+```
+
+macOS uses the signed-in user's launchd; Linux uses `systemd --user`. On Linux without systemd, schedule `obitd --once` every 5 minutes in the user's crontab, supplying absolute paths for `obitd`, the `--home` data directory and the `--config-dir` configuration directory. Agent hooks also start a background check when work is due.
 
 ## 3. Common commands
 

@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -11,6 +12,22 @@ import (
 	"github.com/woodfishhhh/obituary/internal/integrate"
 	"github.com/woodfishhhh/obituary/internal/shortcut"
 )
+
+func TestPOSIXDesktopDiagnostics(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("native POSIX desktop diagnostics")
+	}
+	target := func(string) (string, error) {
+		t.Fatal("POSIX diagnosis tried to inspect a Windows shortcut")
+		return "", nil
+	}
+	checks := append(diagnoseIcons(), diagnoseShortcut("/tmp/obit", target), diagnoseDesktop("/tmp/obit", target))
+	for _, check := range checks {
+		if check.Status != "INFO" {
+			t.Fatalf("Windows-only feature reported as an installation failure: %+v", check)
+		}
+	}
+}
 
 func TestStartMenuShortcutDiagnosis(t *testing.T) {
 	menu := t.TempDir()
