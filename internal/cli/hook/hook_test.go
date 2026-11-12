@@ -142,7 +142,7 @@ func TestHookDefersExplorerRefresh(t *testing.T) {
 	}
 	input, _ := json.Marshal(map[string]any{"hook_event_name": "PostToolUse", "session_id": "labels", "cwd": root, "tool_name": "apply_patch",
 		"tool_input": map[string]string{"command": "*** Begin Patch\n*** Add File: first.log\n+x\n*** Add File: second.log\n+x\n*** End Patch"}})
-	out, err := executeHookPayload(t, string(input), "codex")
+	out, err := executeHookPayloadInBubble(t, string(input), "codex")
 	if err != nil || out != "" {
 		t.Fatalf("hook response: %q %v", out, err)
 	}
@@ -192,7 +192,7 @@ func TestPostToolUseDeliversQueuedProposal(t *testing.T) {
 				t.Fatal(err)
 			}
 			input, _ := json.Marshal(map[string]any{"hook_event_name": "PostToolUse", "session_id": "pending", "cwd": root})
-			out, err := executeHookPayload(t, string(input), agent)
+			out, err := executeHookPayloadInBubble(t, string(input), agent)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -204,7 +204,7 @@ func TestPostToolUseDeliversQueuedProposal(t *testing.T) {
 			if store.HasDeferredObservations() {
 				t.Fatal("successful replay retained the queued write")
 			}
-			if out, err := executeHookPayload(t, string(input), agent); err != nil || out != "" {
+			if out, err := executeHookPayloadInBubble(t, string(input), agent); err != nil || out != "" {
 				t.Fatalf("proposal repeated: %q %v", out, err)
 			}
 			checkDeliveredProposal(t, store, root, "pending")
@@ -224,7 +224,7 @@ func TestPostToolUseDeliveryDeadline(t *testing.T) {
 				input := latencyPayload(t, root, "PostToolUse/pending")
 				resetLatencyFixture(t, root, store, "PostToolUse/pending")
 				release := injectDeliveryDeadline(t, store, stage)
-				out, err := executeHookPayload(t, input, agent)
+				out, err := executeHookPayloadInBubble(t, input, agent)
 				release()
 				if err != nil {
 					t.Fatal(err)
@@ -253,8 +253,10 @@ func TestHookLatencyReport(t *testing.T) {
 			for range 10 {
 				resetLatencyFixture(t, root, store, name)
 				previousLog := readHookLog(t, store)
+				// Measure real elapsed time outside the bubble so stalls remain in
+				// the report without changing the functional result being checked.
 				start := time.Now()
-				out, err := executeHookPayload(t, input, "claude")
+				out, err := executeHookPayloadInBubble(t, input, "claude")
 				elapsed := time.Since(start)
 				if err != nil {
 					t.Fatal(err)
@@ -269,7 +271,7 @@ func TestHookLatencyReport(t *testing.T) {
 					}
 				}
 			}
-			scope := fmt.Sprintf("service open + handler; process launch measured separately; deferred observations=%d notices=%d included; replay checks outside samples", deferred["observation"], deferred["notice"])
+			scope := fmt.Sprintf("service open + handler wall time, virtual lock clock; process launch measured separately; deferred observations=%d notices=%d included; replay checks outside samples", deferred["observation"], deferred["notice"])
 			clitest.ReportHookLatency(t, name, scope, samples)
 		})
 	}

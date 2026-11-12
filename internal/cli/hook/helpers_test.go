@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/app"
@@ -17,6 +18,21 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/core"
 )
+
+// Functional callbacks keep real Git and filesystem operations, while scheduler
+// stalls cannot consume their lock budget. Explicit sleeps still expire it.
+func executeHookPayloadInBubble(t *testing.T, input string, args ...string) (string, error) {
+	t.Helper()
+	now := time.Now()
+	var out string
+	var err error
+	synctest.Test(t, func(t *testing.T) {
+		// Keep timestamps consistent with fixtures created outside the bubble.
+		time.Sleep(time.Until(now))
+		out, err = executeHookPayload(t, input, args...)
+	})
+	return out, err
+}
 
 func isolateLatencyRunner(t *testing.T) {
 	t.Helper()
@@ -55,13 +71,13 @@ func checkPendingLatency(t *testing.T, store core.Store, root, agent, out, previ
 	if err != nil {
 		t.Fatal(err)
 	}
-	out, err = executeHookPayload(t, string(input), agent)
+	out, err = executeHookPayloadInBubble(t, string(input), agent)
 	if err != nil {
 		t.Fatal(err)
 	}
 	checkLatencyResult(t, store, "PostToolUse/pending", out)
 	checkDeliveredProposal(t, store, root, "latency")
-	if out, err = executeHookPayload(t, string(input), agent); err != nil || out != "" {
+	if out, err = executeHookPayloadInBubble(t, string(input), agent); err != nil || out != "" {
 		t.Fatalf("proposal repeated: %q %v", out, err)
 	}
 	checkDeliveredProposal(t, store, root, "latency")
