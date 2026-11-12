@@ -2,13 +2,13 @@
 
 package shortcut
 
-import "fmt"
+import "errors"
 
 type Native struct{}
 
 func (Native) Encode(string) ([]byte, error) {
-	return nil, fmt.Errorf("Windows shortcuts are unsupported on this platform")
+	return nil, errors.New("shortcuts are only available on Windows")
 }
 func (Native) Target([]byte) (string, error) {
-	return "", fmt.Errorf("Windows shortcuts are unsupported on this platform")
+	return "", errors.New("shortcuts are only available on Windows")
 }
