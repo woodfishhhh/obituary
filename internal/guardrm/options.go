@@ -3,6 +3,7 @@ package guardrm
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 )
 
@@ -46,7 +47,7 @@ func ParseRemove(args []string, directoryOnly bool) (RemoveOptions, error) {
 		return o, fmt.Errorf("missing operand")
 	}
 	for _, path := range o.Paths {
-		if posixAbsolutePath(path) {
+		if runtime.GOOS == "windows" && posixAbsolutePath(path) {
 			return o, fmt.Errorf("POSIX absolute path is ambiguous on Windows; use a drive-qualified or relative path: %s", path)
 		}
 		if driveRelativePath(path) {
@@ -161,7 +162,7 @@ func ParseClean(args []string) (CleanOptions, error) {
 			continue
 		}
 		if !flags || !strings.HasPrefix(arg, "-") || arg == "-" {
-			if posixAbsolutePath(arg) {
+			if runtime.GOOS == "windows" && posixAbsolutePath(arg) {
 				return o, fmt.Errorf("POSIX absolute path is ambiguous on Windows; use a drive-qualified or relative path: %s", arg)
 			}
 			if driveRelativePath(arg) {

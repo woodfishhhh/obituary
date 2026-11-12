@@ -42,7 +42,8 @@ func readBurialManifest(path string, p *PendingGrave) (m burialManifest, err err
 func validateManifestMetadata(m burialManifest, id int64) ([]*Identity, error) {
 	b := m.Burial
 	validVersion := m.Version == 1 && m.Resurrect == nil || m.Version == 2 && m.Resurrect != nil ||
-		m.Version == 3 && m.Resurrect == nil && m.WatchCheck != nil && b.Source == "watch"
+		m.Version == 3 && m.Resurrect == nil && m.WatchCheck != nil && b.Source == "watch" ||
+		m.Version == 4 && m.Resurrect == nil && b.IdentityMismatch != ""
 	if m.Version != 3 && (m.WatchCheck != nil || m.WatchError != "") {
 		validVersion = false
 	}

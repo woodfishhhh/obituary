@@ -86,6 +86,7 @@ type Burial struct {
 	NextPurgeAttempt time.Time        `json:"nextPurgeAttempt,omitzero"`
 	LastPurgeError   string           `json:"lastPurgeError,omitempty"`
 	PurgeIntent      *PurgeIntent     `json:"purgeIntent,omitempty"`
+	IdentityMismatch string           `json:"identityMismatch,omitempty"` // retained after a failed move rollback; never purge
 }
 
 // PurgeIntent records authorization after verifyGrave, before deletion. The

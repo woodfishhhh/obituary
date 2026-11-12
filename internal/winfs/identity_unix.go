@@ -16,7 +16,12 @@ import (
 )
 
 // FS retains the existing import boundary while selecting a POSIX backend.
-type FS struct{}
+type FS struct {
+	// Per-instance seams keep race tests deterministic without global hooks.
+	beforeRename   func()
+	beforeRollback func()
+	rename         func(int, string, int, string) error
+}
 
 var _ corefs.FS = FS{}
 

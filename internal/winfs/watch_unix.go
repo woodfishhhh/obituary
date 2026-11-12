@@ -4,6 +4,7 @@ package winfs
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
@@ -12,7 +13,7 @@ import (
 
 func (FS) ObserveWatch(path string, hold bool) (corefs.WatchSnapshot, func(), error) {
 	if hold {
-		return corefs.WatchSnapshot{}, nil, unsupportedMove()
+		return corefs.WatchSnapshot{}, nil, fmt.Errorf("excluding concurrent writers is unavailable; watch entry retained: %w", corefs.ErrUnsupported)
 	}
 	fd, err := unix.Open(path, unix.O_RDONLY|unix.O_CLOEXEC|unix.O_NOFOLLOW|unix.O_NONBLOCK, 0)
 	if errors.Is(err, unix.ELOOP) {

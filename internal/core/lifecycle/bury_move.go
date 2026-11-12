@@ -177,7 +177,7 @@ func (s *Service) movePrepared(st *State, p *preparedBurial, reason string) erro
 	}
 	if err := s.FS.MovePinned(out.Path, *out.Item.Identity, b.Grave); err != nil {
 		*out = failedMove(*out, err)
-		return nil
+		return retainMoveMismatch(p, err)
 	}
 	if !s.verifyWatchMovement(st, p) {
 		return nil

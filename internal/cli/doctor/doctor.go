@@ -120,6 +120,7 @@ func diagnose(now time.Time, executable cmdutil.Executable, agents ...string) []
 	daemon := filepath.Join(filepath.Dir(self), "obitd.exe")
 	if runtime.GOOS != "windows" {
 		daemon = filepath.Join(filepath.Dir(self), "obitd")
+		checks = append(checks, DoctorCheck{Name: "automatic-burial", Status: "INFO", Detail: "graveyard burial and resurrection use a no-replace rename, then verify the moved object; mismatches are kept for manual recovery and never purged; recycle mode is Windows-only"})
 	}
 	daemonErr := selfErr
 	if daemonErr == nil {

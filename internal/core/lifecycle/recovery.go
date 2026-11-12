@@ -16,7 +16,7 @@ func (s *Service) reconcileChildren(st *State, b *Burial) error {
 			idx >= 0 && (st.Items[idx].Identity == nil || *st.Items[idx].Identity != *child.Identity) {
 			return fmt.Errorf("contained #%d belongs to another object: %w", child.ID, ErrUnsafe)
 		}
-		current, err := s.FS.Locate(*child.Identity)
+		current, err := s.findBuriedChild(*b, *child.Identity)
 		if errors.Is(err, ErrNotFound) {
 			continue
 		}

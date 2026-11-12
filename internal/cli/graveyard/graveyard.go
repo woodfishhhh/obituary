@@ -101,6 +101,9 @@ func printBurial(w io.Writer, b ledger.Burial) {
 		}
 		purge = "purging (retry at " + retry.Local().Format(cmdutil.TimeLayout) + ")"
 	}
+	if b.IdentityMismatch != "" {
+		purge = "never (identity mismatch)"
+	}
 	fmt.Fprintf(w, "#%d\t%s\t%s\t%s\t%s", b.ID, b.BuriedAt.Local().Format(cmdutil.TimeLayout),
 		purge, cmdutil.HumanBytes(b.Size), b.Path)
 	if len(b.Contains) > 0 {
@@ -111,6 +114,9 @@ func printBurial(w io.Writer, b ledger.Burial) {
 	}
 	if b.PurgeIntent != nil && b.LastPurgeError != "" {
 		fmt.Fprint(w, "  WARN: ", b.LastPurgeError)
+	}
+	if b.IdentityMismatch != "" {
+		fmt.Fprint(w, "  WARN: ", b.IdentityMismatch)
 	}
 	fmt.Fprintln(w)
 }

@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -12,9 +13,33 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	gitcleancmd "github.com/woodfishhhh/obituary/internal/cli/gitclean"
 	removeitemcmd "github.com/woodfishhhh/obituary/internal/cli/removeitem"
+	resurrectcmd "github.com/woodfishhhh/obituary/internal/cli/resurrect"
 	rmcmd "github.com/woodfishhhh/obituary/internal/cli/rm"
 	rmdircmd "github.com/woodfishhhh/obituary/internal/cli/rmdir"
 )
+
+func TestPOSIXRemoveAbsoluteAndRestore(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX native path syntax")
+	}
+	clitest.IsolateRunner(t)
+	root, store := clitest.CommandDir(t)
+	path := filepath.Join(root, "删除-文件.txt")
+	clitest.WriteFixture(t, path, "restore me")
+	if out, stderr, err := clitest.Execute(t, rmcmd.NewCmd(), "-v", path); err != nil || stderr != "" || !strings.Contains(out, "buried") {
+		t.Fatalf("POSIX absolute rm failed: %q %q %v", out, stderr, err)
+	}
+	st, err := store.ReadSnapshot()
+	if err != nil || len(st.Burials) != 1 {
+		t.Fatalf("missing rm burial: %+v %v", st, err)
+	}
+	if out, stderr, err := clitest.Execute(t, resurrectcmd.NewCmd(), path); err != nil || stderr != "" {
+		t.Fatalf("POSIX rm resurrection failed: %q %q %v", out, stderr, err)
+	}
+	if data, err := os.ReadFile(path); err != nil || string(data) != "restore me" {
+		t.Fatalf("POSIX rm changed content: %q %v", data, err)
+	}
+}
 
 func TestRemoveRejectsTerminalDotOperands(t *testing.T) {
 	if testing.Short() {
