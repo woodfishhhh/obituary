@@ -354,8 +354,10 @@ func TestLeftoversAreProposedNotRegistered(t *testing.T) {
 	e := newEnv(t)
 	e.write("before.txt") // untracked before the session: not its doing
 	e.event(map[string]any{"hook_event_name": "SessionStart", "source": "startup"})
-	e.write("new_feature.go")    // fresh work, not yet committed
-	e.write("scratch/notes.txt") // a whole new directory
+	e.write("new_feature.go")    // fresh work, not yet committed: never proposed
+	e.write("scratch/notes.txt") // a whole new directory of work: never proposed
+	testenv.Leftover(t, e.root, "node_modules")
+	testenv.Leftover(t, e.root, "dist")
 	e.finishEvent("Stop", "s1")
 	st := e.state()
 	if len(st.Items) != 0 || len(st.Proposals) != 1 || st.Proposals[0].Kind != core.ProposalLeftovers {
@@ -365,11 +367,11 @@ func TestLeftoversAreProposedNotRegistered(t *testing.T) {
 	for _, c := range st.Proposals[0].Candidates {
 		paths = append(paths, filepath.Base(c.Path))
 	}
-	if strings.Join(paths, ",") != "new_feature.go,scratch" {
-		t.Fatalf("leftovers %v; before.txt predates the session", paths)
+	if strings.Join(paths, ",") != "dist,node_modules" {
+		t.Fatalf("leftovers %v; only ignored regenerable items are proposed", paths)
 	}
 	next := e.event(map[string]any{"hook_event_name": "SessionStart", "source": "startup", "session_id": "s2"})
-	if !strings.Contains(next, "new_feature.go") || !strings.Contains(next, "obit approve") {
+	if !strings.Contains(next, "node_modules") || !strings.Contains(next, "recommended for approval") || !strings.Contains(next, "obit approve") || strings.Contains(next, "new_feature.go") {
 		t.Fatalf("the next session must hear about the leftovers, got %q", next)
 	}
 }
@@ -386,7 +388,7 @@ func TestLeftoversSurviveInlineFinishDeadline(t *testing.T) {
 			if err := e.engine.Snapshot(e.root, "s1"); err != nil {
 				t.Fatal(err)
 			}
-			path := e.write("new_feature.go")
+			path := testenv.Leftover(t, e.root, "node_modules")
 			engine, svc := *e.engine, *e.engine.Svc
 			// Model Git/filesystem work having exhausted the hook's shared
 			// deadline, without a sleep or changing the production budget.
@@ -840,8 +842,8 @@ func TestRejectedLeftoversStayRejectedAcrossSessions(t *testing.T) {
 	e := newEnv(t)
 	e.event(map[string]any{"hook_event_name": "SessionStart"})
 	e.event(map[string]any{"hook_event_name": "SessionStart", "session_id": "s2"})
-	e.write("work.txt")
-	e.write("scratch/notes.txt")
+	testenv.Leftover(t, e.root, "node_modules")
+	testenv.Leftover(t, e.root, "dist")
 	e.finishEvent("Stop", "s1")
 	proposals := e.state().Proposals
 	if len(proposals) == 0 {
@@ -870,15 +872,15 @@ func TestRejectedLeftoversStayRejectedAcrossSessions(t *testing.T) {
 			t.Fatalf("rejected leftovers reproposed: %+v", st)
 		}
 	}
-	e.write("fresh.txt")
+	testenv.Leftover(t, e.root, "coverage")
 	e.finishEvent("Stop", "s1")
 	st := e.state()
-	if len(st.Proposals) != 1 || len(st.Proposals[0].Candidates) != 1 || !strings.HasSuffix(st.Proposals[0].Candidates[0].Path, "fresh.txt") {
+	if len(st.Proposals) != 1 || len(st.Proposals[0].Candidates) != 1 || !strings.HasSuffix(st.Proposals[0].Candidates[0].Path, "coverage") {
 		t.Fatalf("new leftovers suppressed: %+v", st)
 	}
 	e.finishEvent("SessionEnd", "s2")
 	st = e.state()
-	if len(st.Proposals) != 1 || len(st.Proposals[0].Candidates) != 1 || !strings.HasSuffix(st.Proposals[0].Candidates[0].Path, "fresh.txt") {
+	if len(st.Proposals) != 1 || len(st.Proposals[0].Candidates) != 1 || !strings.HasSuffix(st.Proposals[0].Candidates[0].Path, "coverage") {
 		t.Fatalf("another session repeated decided or pending leftovers: %+v", st)
 	}
 }

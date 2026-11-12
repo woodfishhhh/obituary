@@ -45,7 +45,7 @@ If tools named `obit_*` are available (Obituary's MCP server), they do the same 
 
 ## Decisions that belong to the user
 
-- Proposals: the first time Obituary would register artefacts automatically in a project, or when a batch is large, it creates a proposal instead. `obit proposals` lists them. The user answers with `obit approve <id>` or `obit reject <id>`; describe the proposal and let them decide. An explicit `obit mark` or `obit mktemp` takes effect at once and is not a proposal.
+- Proposals: the first time Obituary would register artefacts automatically in a project, when a batch is large, or when a session leaves Git-ignored dependencies, build output, caches or project containers behind, it creates a proposal instead. A proposal lists only what is safe to approve (uncommitted work never appears), and approved items stay restorable after burial. `obit proposals` lists them. The user answers with `obit approve <id>` or `obit reject <id>`; describe the proposal, recommend approving it, and let them decide. An explicit `obit mark` or `obit mktemp` takes effect at once and is not a proposal.
 - Project rules: a repository's `.obitrules` takes effect after the user reviews it and runs `obit trust`.
 - Purging: `obit purge` deletes graveyard items permanently and is the user's call. `obit purge <id>` also lets the user abandon an interrupted resurrection that can no longer be verified.
 

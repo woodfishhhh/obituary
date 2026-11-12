@@ -18,11 +18,11 @@ No. `obit-gui.exe` is x64 only; the ARM64 build has the command line and the tra
 
 ## Could it register code I have not committed yet?
 
-Automatic registration only touches untracked items inside a Git work tree, and leftovers no rule covers are only proposed, not registered, because new untracked files may be code you have not committed yet. Anything registered by rule or proposal is not buried if it has been committed by the time it expires. See [Automatic lifespans](./auto-register).
+Automatic registration only touches untracked items inside a Git work tree, and of the leftovers no rule covers, only ignored, regenerable dependencies, build output and caches are proposed; new files Git does not ignore (code you have not committed yet) are never listed. Anything registered by rule or proposal is not buried if it has been committed by the time it expires. See [Automatic lifespans](./auto-register).
 
 ## What if Git fails, or my `.gitignore` is very broad?
 
-Nothing is put at risk. Before registering anything, Obituary asks Git whether it is tracked; if Git cannot answer (not installed, timed out, a damaged repository), nothing is registered. Folders outside a Git repository are never registered automatically; only you or an agent can give them a lifespan with `obit mark`. A broad `.gitignore` only makes more things untracked: automatic registration still covers just the built-in rules and the `.obitrules` you trusted, and any other leftover is only proposed until you approve it.
+Nothing is put at risk. Before registering anything, Obituary asks Git whether it is tracked; if Git cannot answer (not installed, timed out, a damaged repository), nothing is registered. Folders outside a Git repository are never registered automatically; only you or an agent can give them a lifespan with `obit mark`. A broad `.gitignore` only makes more things untracked: automatic registration still covers just the built-in rules and the `.obitrules` you trusted, and proposals list only ignored, regenerable dependencies, build output and caches, waiting for your approval.
 
 ## Can an agent approve proposals for me?
 

@@ -321,10 +321,10 @@ func (e *Engine) pruneSnapshots(dir string) {
 }
 
 // Leftovers compares the project with the session's snapshot. New paths a
-// rule covers go through Observe; the rest, which no rule covers, become a
-// leftovers proposal: they are listed for the agent and the user to decide,
-// never registered on their own, because a new untracked file may be fresh
-// work that simply has not been committed yet.
+// rule covers go through Observe. Of the rest, only what Git ignores and a
+// tool regenerates (dependencies, build output, caches) becomes a leftovers
+// proposal, so the agent can recommend approving it; a new file Git does not
+// ignore is uncommitted work and is never proposed (see regenerableNames).
 func (e *Engine) Leftovers(root, session string) ([]Notice, error) {
 	e.sets = nil
 	root, err := pathutil.LongAbs(root)
@@ -338,12 +338,20 @@ func (e *Engine) Leftovers(root, session string) ([]Notice, error) {
 	if err != nil {
 		return nil, err
 	}
-	fresh, err := e.freshLeftovers(root, snap)
+	repo := project.Project{Root: root}
+	fresh, err := e.freshLeftovers(root, snap, repo.Untracked)
+	if err != nil || len(fresh) == 0 {
+		return nil, err // nothing new untracked means nothing new ignored either
+	}
+	ignored, err := e.freshLeftovers(root, snap, repo.Ignored)
 	if err != nil {
 		return nil, err
 	}
-	if len(fresh) == 0 {
-		return nil, nil
+	var disposable []string
+	for _, p := range ignored {
+		if regenerable(p) {
+			disposable = append(disposable, p)
+		}
 	}
 	located := locations{}
 	_, notices, observeErr := e.observe(fresh, session, located, nil)
@@ -351,7 +359,7 @@ func (e *Engine) Leftovers(root, session string) ([]Notice, error) {
 	if err != nil {
 		return notices, err
 	}
-	cands := e.leftoverCandidates(fresh, &state, located)
+	cands := e.leftoverCandidates(disposable, &state, located)
 	n, err := e.propose(core.ProposalLeftovers, root, session, cands, nil)
 	if n != nil {
 		notices = append(notices, *n)
@@ -387,7 +395,9 @@ func (e *Engine) leftoverCandidates(paths []string, state *core.State, located l
 	return cands
 }
 
-func (e *Engine) freshLeftovers(root string, snap snapshot) ([]string, error) {
+// freshLeftovers lists what list reports now that predates neither the
+// snapshot nor a rejection.
+func (e *Engine) freshLeftovers(root string, snap snapshot, list func() ([]string, error)) ([]string, error) {
 	before := map[string]bool{}
 	for _, p := range snap.Paths {
 		before[strings.ToLower(filepath.Clean(p))] = true
@@ -407,7 +417,7 @@ func (e *Engine) freshLeftovers(root string, snap snapshot) ([]string, error) {
 			dir = parent
 		}
 	}
-	now, err := project.Project{Root: root}.Untracked()
+	now, err := list()
 	if err != nil {
 		return nil, err
 	}

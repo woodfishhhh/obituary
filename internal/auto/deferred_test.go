@@ -422,7 +422,7 @@ func TestReplayFailureDoesNotBlockOtherObservationsOrLeftovers(t *testing.T) {
 		t.Fatal(err)
 	}
 	good := r.write("good.log", "register")
-	r.write("notes.txt", "propose")
+	r.leftover("node_modules")
 	if err := r.engine.Svc.Store.Update(func(st *core.State) error {
 		st.Projects = map[string]core.ProjectState{core.ProjectKey(r.root): {Consent: core.ConsentApproved}}
 		return nil
@@ -457,7 +457,7 @@ func TestFinishStillComputesLeftoversWhenQueueUnreadable(t *testing.T) {
 	if err := r.engine.Snapshot(r.root, "s"); err != nil {
 		t.Fatal(err)
 	}
-	r.write("notes.txt", "propose")
+	r.leftover("node_modules")
 	if err := os.WriteFile(filepath.Join(r.engine.Svc.Store.Home, "observations.jsonl"), []byte("{broken"), 0o600); err != nil {
 		t.Fatal(err)
 	}
