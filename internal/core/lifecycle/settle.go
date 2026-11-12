@@ -58,6 +58,12 @@ func (s *Service) prepareSettlement(item Item, dryRun bool, reason string, roots
 		out.Action, out.Detail = ActionRefused, "record has no file identity; add the path again"
 		return out
 	}
+	if reason == ReasonExpired {
+		if err := item.Identity.RequirePersistent(); err != nil {
+			out.Action, out.Detail = ActionRetry, err.Error()
+			return out
+		}
+	}
 	target, moved, verdict, detail := s.locate(item)
 	if verdict != "" {
 		out.Action, out.Detail = verdict, detail

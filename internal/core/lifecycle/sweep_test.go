@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strconv"
 	"testing"
 	"time"
@@ -264,6 +265,12 @@ func TestDifferentFileAtTheSamePathIsLeftAlone(t *testing.T) {
 	f.file("report.txt") // a new file reuses the name
 
 	out := f.sweepAt(time.Hour)
+	if runtime.GOOS != "windows" {
+		if len(out) != 1 || out[0].Action != core.ActionRetry || !exists(path) || len(f.items()) != 1 {
+			t.Fatalf("replacement must stay with its uncertain old entry: %+v", out)
+		}
+		return
+	}
 	if len(out) != 1 || out[0].Action != core.ActionReplaced || !exists(path) {
 		t.Fatalf("want replacement kept, got %+v (exists=%v)", out, exists(path))
 	}

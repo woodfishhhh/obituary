@@ -31,14 +31,14 @@ func (p *restoreParent) Rollback() error {
 	return nil
 }
 
-func (FS) OpenRestoreParent(path string) (corefs.RestoreParent, error) {
+func (fs FS) OpenRestoreParent(path string) (corefs.RestoreParent, error) {
 	fd, err := unix.Open(path, unix.O_RDONLY|unix.O_DIRECTORY|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0)
 	if err != nil {
 		return nil, err
 	}
 	f := os.NewFile(uintptr(fd), path)
-	var st unix.Stat_t
-	if err := unix.Fstat(fd, &st); err != nil {
+	st, err := fs.statAt(fd, "")
+	if err != nil {
 		f.Close()
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (FS) OpenRestoreParent(path string) (corefs.RestoreParent, error) {
 		f.Close()
 		return nil, err
 	}
-	back, err := (FS{}).Identify(real)
+	back, err := fs.Identify(real)
 	if err != nil || back != id {
 		f.Close()
 		return nil, fmt.Errorf("restore parent changed while opening %s: %w", path, corefs.ErrUnsafe)
@@ -60,7 +60,7 @@ func (FS) OpenRestoreParent(path string) (corefs.RestoreParent, error) {
 	return &restoreParent{file: f, path: real, id: id}, nil
 }
 
-func (FS) MkdirRestoreParent(parent corefs.RestoreParent, name string) (corefs.RestoreParent, error) {
+func (fs FS) MkdirRestoreParent(parent corefs.RestoreParent, name string) (corefs.RestoreParent, error) {
 	p, ok := parent.(*restoreParent)
 	if !ok || !singleName(name) {
 		return nil, fmt.Errorf("invalid restore parent or filename: %w", corefs.ErrUnsafe)
@@ -76,8 +76,8 @@ func (FS) MkdirRestoreParent(parent corefs.RestoreParent, name string) (corefs.R
 	}
 	path := filepath.Join(p.path, name)
 	f := os.NewFile(uintptr(fd), path)
-	var st unix.Stat_t
-	if err := unix.Fstat(fd, &st); err != nil {
+	st, err := fs.statAt(fd, "")
+	if err != nil {
 		f.Close()
 		return nil, err
 	}
@@ -92,6 +92,9 @@ func (FS) MkdirRestoreParent(parent corefs.RestoreParent, name string) (corefs.R
 // FindRestoredIn supplies a spelling, never an identity assertion. The pinned
 // parent and each candidate must still match the durable restore intent.
 func (fs FS) FindRestoredIn(path string, parent, source corefs.Identity) (string, error) {
+	if err := parent.RequirePersistent(); err != nil {
+		return "", err
+	}
 	real, err := fs.Resolve(path)
 	if err != nil {
 		return "", fmt.Errorf("cannot locate recorded restore parent: %w", err)
@@ -105,25 +108,25 @@ func (fs FS) FindRestoredIn(path string, parent, source corefs.Identity) (string
 	if p.id != parent {
 		return "", fmt.Errorf("recorded restore parent is no longer at %s; identity lookup is unavailable; retain record", path)
 	}
-	return findRestoredChild(p, source)
+	return fs.findRestoredChild(p, source)
 }
 
 func (fs FS) FindRestored(parent, source corefs.Identity) (string, error) {
 	return fs.FindRestoredIn(parent.Volume, parent, source)
 }
 
-func findRestoredChild(parent *restoreParent, source corefs.Identity) (string, error) {
+func (fs FS) findRestoredChild(parent *restoreParent, source corefs.Identity) (string, error) {
 	entries, err := parent.file.ReadDir(-1)
 	if err != nil {
 		return "", err
 	}
 	for _, entry := range entries {
-		fd, _, err := pinMoveSource(parent, entry.Name(), source)
+		fd, _, err := fs.pinMoveSource(parent, entry.Name(), source)
 		if err != nil {
 			continue
 		}
 		unix.Close(fd)
-		if path := verifiedChildPath(parent, entry.Name(), source); path != "" {
+		if path := fs.verifiedChildPath(parent, entry.Name(), source); path != "" {
 			return path, nil
 		}
 	}

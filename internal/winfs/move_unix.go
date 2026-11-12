@@ -46,7 +46,7 @@ func (fs FS) moveInto(path string, want corefs.Identity, parent *restoreParent, 
 	if parent.id.Serial != want.Serial || from.id.Serial != want.Serial {
 		return "", fmt.Errorf("move parents are not on the object's device: %w", corefs.ErrUnsafe)
 	}
-	fd, before, err := pinMoveSource(from, filepath.Base(path), want)
+	fd, before, err := fs.pinMoveSource(from, filepath.Base(path), want)
 	if err != nil {
 		return "", err
 	}
@@ -57,19 +57,27 @@ func (fs FS) moveInto(path string, want corefs.Identity, parent *restoreParent, 
 	if err := fs.renameNoReplace(from.fd(), filepath.Base(path), parent.fd(), name); err != nil {
 		return "", err
 	}
-	if err := verifyMoved(parent.fd(), name, &before); err != nil {
+	if err := fs.verifyMoved(parent.fd(), name, &before); err != nil {
 		return "", fs.rollbackMove(from, filepath.Base(path), parent, name, restore, err)
 	}
-	return verifiedChildPath(parent, name, want), nil
+	return fs.verifiedChildPath(parent, name, want), nil
 }
 
-func pinMoveSource(parent *restoreParent, name string, want corefs.Identity) (int, unix.Stat_t, error) {
+func (fs FS) pinMoveSource(parent *restoreParent, name string, want corefs.Identity) (int, posixStat, error) {
+	if err := want.RequirePersistent(); err != nil {
+		if _, pinned := fs.pins[want]; !pinned {
+			return -1, posixStat{}, err
+		}
+	}
 	fd, err := unix.Openat(parent.fd(), name, moveOpenFlags, 0)
-	var st unix.Stat_t
+	var st posixStat
 	if err != nil {
 		return -1, st, mapNotFound(err)
 	}
-	err = unix.Fstat(fd, &st)
+	if fs.afterSourcePin != nil {
+		fs.afterSourcePin()
+	}
+	st, err = fs.statAt(fd, "")
 	if err == nil {
 		err = ordinaryMoveObject(&st)
 	}
@@ -84,7 +92,7 @@ func pinMoveSource(parent *restoreParent, name string, want corefs.Identity) (in
 	return fd, st, nil
 }
 
-func ordinaryMoveObject(st *unix.Stat_t) error {
+func ordinaryMoveObject(st *posixStat) error {
 	kind := st.Mode & unix.S_IFMT
 	if st.Nlink == 0 || kind != unix.S_IFDIR && (kind != unix.S_IFREG || st.Nlink != 1) {
 		return fmt.Errorf("source is not an ordinary directory or singly linked file: %w", corefs.ErrUnsafe)
@@ -92,12 +100,12 @@ func ordinaryMoveObject(st *unix.Stat_t) error {
 	return nil
 }
 
-func verifyMoved(parent int, name string, before *unix.Stat_t) error {
-	var after unix.Stat_t
-	if err := unix.Fstatat(parent, name, &after, unix.AT_SYMLINK_NOFOLLOW); err != nil {
+func (fs FS) verifyMoved(parent int, name string, before *posixStat) error {
+	after, err := fs.statAt(parent, name)
+	if err != nil {
 		return err
 	}
-	if after.Dev != before.Dev || after.Ino != before.Ino || after.Mode&unix.S_IFMT != before.Mode&unix.S_IFMT {
+	if after.Dev != before.Dev || after.Ino != before.Ino || after.Incarnation != before.Incarnation || after.Mode&unix.S_IFMT != before.Mode&unix.S_IFMT {
 		return fmt.Errorf("moved object's device, inode or type changed")
 	}
 	return ordinaryMoveObject(&after)
@@ -127,13 +135,13 @@ func (fs FS) rollbackMove(from *restoreParent, old string, to *restoreParent, na
 	return failure
 }
 
-func verifiedChildPath(parent *restoreParent, name string, want corefs.Identity) string {
+func (fs FS) verifiedChildPath(parent *restoreParent, name string, want corefs.Identity) string {
 	path := filepath.Join(parent.path, name)
-	id, err := (FS{}).IdentifyFollowing(parent.path)
+	id, err := fs.IdentifyFollowing(parent.path)
 	if err != nil || id != parent.id {
 		return ""
 	}
-	id, err = (FS{}).Identify(path)
+	id, err = fs.Identify(path)
 	if err != nil || id != want {
 		return ""
 	}

@@ -18,9 +18,21 @@ type MetadataStamp struct {
 }
 
 func ReadMetadata(path string) (MetadataStamp, error) {
-	var st unix.Stat_t
-	if err := unix.Stat(path, &st); err != nil {
+	return (FS{}).readMetadata(path)
+}
+
+func (fs FS) readMetadata(path string) (MetadataStamp, error) {
+	real, err := Resolve(path)
+	if err != nil {
 		return MetadataStamp{}, err
+	}
+	st, err := fs.statAt(unix.AT_FDCWD, real)
+	if err != nil {
+		return MetadataStamp{}, err
+	}
+	if st.Incarnation == 0 {
+		// An inode-only stamp cannot authorize reuse of a cached Git answer.
+		return MetadataStamp{}, fmt.Errorf("persistent metadata identity unavailable: %w", corefs.ErrUnsupported)
 	}
 	return MetadataStamp{Serial: uint64(st.Dev), FileID: inodeBytes(&st), Size: uint64(st.Size), Modified: st.Mtim.Nano(), Directory: st.Mode&unix.S_IFMT == unix.S_IFDIR}, nil
 }

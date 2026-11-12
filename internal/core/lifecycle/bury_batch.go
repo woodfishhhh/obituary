@@ -36,6 +36,18 @@ func (s *Service) buryBatches(paths []string, results []GraveResult, force bool,
 			results[i] = row
 			continue
 		}
+		if c.immediateFS != nil {
+			if commitFailed(flush()) {
+				c.release()
+				return finalErr
+			}
+			err := s.buryPinnedRequest(c, i, paths, results, force, note, source, recovery)
+			finalErr = errors.Join(finalErr, err)
+			if commitFailed(err) {
+				return finalErr
+			}
+			continue
+		}
 		batch = append(batch, burialRequest{index: i, candidate: c})
 	}
 	flush()
@@ -81,11 +93,41 @@ func (s *Service) inspectBuryRequest(ref string, force bool, recovery recovery) 
 		r.Action, r.Error = ActionBlocked, detail
 		return nil, r
 	}
-	c, err := s.inspect(ref, force)
+	c, err := s.inspectImmediate(ref, force)
 	if err != nil {
 		return nil, s.recoveredBuryRef(ref, abs, recovery.burials, err)
 	}
 	return c, r
+}
+
+func (s *Service) inspectImmediate(ref string, force bool) (*candidate, error) {
+	c, err := s.inspect(ref, force)
+	if err != nil || c.identity.RequirePersistent() == nil {
+		return c, err
+	}
+	backend, ok := s.FS.(interface{ BeginImmediate() (FS, func()) })
+	if !ok {
+		return nil, c.identity.RequirePersistent()
+	}
+	scoped, release := backend.BeginImmediate()
+	copy := *s
+	copy.FS = scoped
+	// The first inspection only selects this path. The identity that can
+	// authorize a move is acquired anew while its inode is held open.
+	c, err = copy.inspect(ref, force)
+	if err != nil {
+		release()
+		return nil, err
+	}
+	c.immediateFS, c.release = scoped, release
+	return c, nil
+}
+
+func (s *Service) buryPinnedRequest(c *candidate, index int, paths []string, results []GraveResult, force bool, note, source string, recovery recovery) error {
+	defer c.release()
+	copy := *s
+	copy.FS = c.immediateFS
+	return copy.buryRequestBatch([]burialRequest{{index: index, candidate: c}}, paths, results, force, note, source, recovery)
 }
 
 func (s *Service) reserveBuryBatch(batch []burialRequest, force bool, note, source string) (state State, err error) {

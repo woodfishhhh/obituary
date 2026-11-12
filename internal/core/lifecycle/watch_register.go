@@ -23,6 +23,9 @@ func (s *Service) RegisterWatchChild(policy WatchPolicy, path string) error {
 		return &RefusedError{Path: path, Reason: "Git metadata is never registered automatically"}
 	}
 	c, err := s.inspect(path, false)
+	if err == nil {
+		err = c.identity.RequirePersistent()
+	}
 	if err != nil {
 		return err
 	}

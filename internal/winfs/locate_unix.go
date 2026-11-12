@@ -8,16 +8,17 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"syscall"
 
 	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
-	"golang.org/x/sys/unix"
 )
 
 // LocateIn searches only a known buried tree. os.Root prevents concurrent
 // ancestor symlinks from redirecting enumeration outside that tree. Absence
 // here is uncertainty about the inode's location, never permission to drop it.
 func (f FS) LocateIn(dir string, want corefs.Identity) (string, error) {
+	if err := want.RequirePersistent(); err != nil {
+		return "", err
+	}
 	parent, err := f.Identify(dir)
 	if err != nil {
 		return "", err
@@ -35,11 +36,11 @@ func (f FS) LocateIn(dir string, want corefs.Identity) (string, error) {
 		if entry.Type()&os.ModeSymlink != 0 {
 			return nil
 		}
-		info, err := root.Lstat(name)
+		matches, err := f.matchesPOSIXInfo(root, name, want)
 		if err != nil {
 			return err
 		}
-		if matchesPOSIXInfo(info, want) {
+		if matches {
 			found = filepath.Join(dir, name)
 			return fs.SkipAll
 		}
@@ -60,12 +61,19 @@ func (f FS) LocateIn(dir string, want corefs.Identity) (string, error) {
 	return found, nil
 }
 
-func matchesPOSIXInfo(info os.FileInfo, want corefs.Identity) bool {
-	st := info.Sys().(*syscall.Stat_t)
-	stat := unix.Stat_t{Dev: st.Dev, Ino: st.Ino, Mode: st.Mode, Nlink: st.Nlink}
-	if ordinaryMoveObject(&stat) != nil {
-		return false
+func (f FS) matchesPOSIXInfo(root *os.Root, name string, want corefs.Identity) (bool, error) {
+	file, err := root.OpenFile(name, moveOpenFlags, 0)
+	if err != nil {
+		return false, err
 	}
-	id := inodeBytes(&stat)
-	return uint64(st.Dev) == want.Serial && hex.EncodeToString(id[:]) == want.FileID
+	defer file.Close()
+	st, err := f.statAt(int(file.Fd()), "")
+	if err != nil {
+		return false, err
+	}
+	if ordinaryMoveObject(&st) != nil {
+		return false, nil
+	}
+	id := inodeBytes(&st)
+	return st.Dev == want.Serial && hex.EncodeToString(id[:]) == want.FileID, nil
 }

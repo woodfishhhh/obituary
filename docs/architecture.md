@@ -317,6 +317,12 @@ agent ──stdio──► obit mcp ──► mcpPaths（只收绝对路径；�
 
 ## core.FS 契约
 
+POSIX 身份不只记录设备号和 inode：删除重建可能立即复用 inode。`FileID` 的低 8 字节是大端 inode，高 8 字节是持久创建标识。Linux 使用 `name_to_handle_at` 的完整不透明文件句柄（含 generation），将句柄类型、`statx` 创建时间和句柄字节的 SHA-256 前 8 字节放在高位；不把 mount ID 编进去。创建时间可在同一个文件系统时钟刻度内重复，不能单独作为 Linux 的持久身份。macOS 高位使用出生时间的纳秒数。改名、改内容和 chmod 不改变该标识；固定 fd 后只从该 fd 读取元数据及句柄。
+
+普通 export handle 不可用时，不把 `AT_HANDLE_FID` 编码成功视为持久身份：未启用导出的 overlayfs 可以返回只含可复用 inode、generation 为零的 FID，删除重建后字节完全相同；copy-up 又可能改变创建时间。因此这类文件系统拒绝长期登记，仍可按立即移动的固定 fd 规则处理。
+
+高位为零表示没有可用的持久身份，包括旧 POSIX 账本。该类对象不能登记寿命，旧条目到期保留，`list` 和 `doctor` 提示检查路径后重新 `obit mark`。显式重新登记替换旧身份，不自动迁移。立即 `bury` / `rm` 在独立的操作作用域内固定 fd 后重新识别对象，并保持 fd 打开直到提交，因此仍可移动；没有持久身份的墓地只能人工恢复，后续自动恢复和火化均拒绝。Windows 身份格式及移动语义不变。
+
 `internal/core` 只通过这个接口碰文件系统，`internal/winfs` 是 Windows 实现，测试用不进回收站的 `testFS`：
 
 | 方法 | 承诺 |
@@ -333,6 +339,17 @@ agent ──stdio──► obit mcp ──► mcpPaths（只收绝对路径；�
 | `FindRestored(parent, source)` | 同时核对源对象和它直接父目录的身份，给中断的复活找回实际位置 |
 | `MakeGrave(dir)` | 独占创建坟墓目录，已存在就失败；第一次在其他盘上建 `.obituary` 时把它设为隐藏 |
 | `RealPath(path)` | 真实路径（还原 8.3 短名，解析父目录里的 junction 和符号链接，最后一级不跟随），所有「在不在某个项目里」的判断都用它 |
+
+### macOS / Linux 的实现（D-0043）
+
+POSIX 没有「在同一个源句柄上改名」，所以换一种做法：先移，再核对，不对就放回。
+
+- `MovePinned` / `MovePinnedInto`：打开并固定源和目标的父目录 fd，源对象另外用 `openat` 固定（Linux `O_PATH`，macOS `O_EVTONLY`），在 fd 上核对完整身份、类型和链接数；用不覆盖的改名移过去（Linux `renameat2(RENAME_NOREPLACE)`，macOS `renameatx_np(RENAME_EXCL)`），随后在新位置 `fstatat` 再核对一次。源 fd 整个过程保持打开，移动期间 inode 不会被释放复用。
+- 核对不符：用同样的不覆盖改名放回原处，返回可重试的错误。放不回（原位置已被占）时对象留在墓地，墓地记录和 v4 清单标 `IdentityMismatch`，**永远不火化**；`graveyard`、`doctor` 显示位置和人工处理办法。复活时坟墓原名被占，就放进坟墓里一个随机的隔离名字。
+- 文件系统不支持不覆盖改名（WSL 的 DrvFS、部分网络盘返回 `EINVAL` / `ENOTSUP`）时返回 `ErrUnsupported`，不退回普通 `rename`。
+- `MkdirRestoreParent` 在父目录 fd 上 `mkdirat` / `openat`，不跟随最后一级符号链接。POSIX 不能按创建 fd 删除目录，按路径复查再删可能删到别人的目录，所以复活失败时**保留**本次新建的空父目录并报告路径，不删。
+- `FindRestored` / `LocateIn`：没有全卷按 inode 打开的能力，只在已知的父目录或坟墓树里（`os.Root` + `WalkDir`）按完整身份找；找不到只说明「不确定」，条目保留，绝不当成已消失。
+- 回收站模式只在 Windows 上有；POSIX 上 `Recycle` 返回 `ErrUnsupported`，提示改用墓地。
 
 ## 数据布局
 
@@ -386,6 +403,7 @@ agent ──stdio──► obit mcp ──► mcpPaths（只收绝对路径；�
 ## 运行器
 
 - **定时任务**（默认，`obit daemon enable`）：任务计划程序里的隐藏任务 `Obituary Runner`，每 5 分钟和每次登录运行 `obitd --once --home … --config-dir …`。用 XML 定义（UTF-16 带 BOM，描述只用 ASCII，因为 `schtasks /Query /XML` 按控制台代码页输出），用电池时也运行，错过的会补跑，已有一个在跑时不重复启动。
+- **macOS / Linux**：macOS 是 launchd 用户代理 `~/Library/LaunchAgents/site.woodfish.obituary.plist`（`StartInterval` 5 分钟、`RunAtLoad`），Linux 是 systemd 用户单元 `obituary.timer` + `obituary.service`（`OnCalendar=*:0/5`、`Persistent=true`），都运行同样的 `obitd --once --home … --config-dir …`。文件头带讣告的所有者标记，被别人改过或不是讣告写的就保留不动、只报告。
 - **常驻**（`--resident`）：命名互斥量标识「谁在服务这个数据目录」，`obitd.stop` 让它退出，开机自启写 HKCU Run。启动时和之后每 5 分钟都会 Tick 一次（不只在有条目到期时），所以只剩待恢复清单时也有人处理。
 - **提议重试日志**：同项目、同原因只写一次，原因变化或后台确认恢复时再写；按项目分别比较，避免项目遍历顺序或其他 tick 错误造成重复。去重保存在数据目录，覆盖每次重新启动的 `--once`；暂停或未完成的提议刷新保留原诊断状态。原始错误继续由 `Tick` 返回，`--once` 仍失败退出，缓存读写错误也保留并输出原诊断。
 - **兜底**：登记、批准、`mktemp`、`rules apply`、`bury` 成功后调用 `cmdutil.EnsureDaemon`：有常驻进程在服务这个数据目录，或定时任务的 `--home` 正好是它（`ScheduleServes`，用和 obitd 相同的参数解析），就什么都不做；否则临时起一个常驻进程。`--json` 模式下不往 stderr 写提示。
