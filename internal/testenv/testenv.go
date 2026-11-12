@@ -78,22 +78,7 @@ func runIsolatedTests(m *testing.M, pkg string) (code int) {
 	scratch = filepath.Clean(scratch)
 	discardScratch := false
 	defer func() {
-		// Only this process's newly created scratch directory is removed.
-		if err := os.RemoveAll(scratch); err != nil {
-			fmt.Fprintln(os.Stderr, "test cleanup:", err)
-			code = 1
-			return
-		}
-		if code == 0 {
-			ignored := ""
-			if discardScratch {
-				ignored = scratch
-			}
-			if err := compactTestLog(ignored); err != nil {
-				fmt.Fprintln(os.Stderr, "test cache log:", err)
-				code = 1
-			}
-		}
+		code = finishIsolatedTests(scratch, discardScratch, code)
 	}()
 	if err := writeScratchOwner(scratch, pkg); err != nil {
 		fmt.Fprintln(os.Stderr, "test scratch owner:", err)
@@ -124,6 +109,26 @@ func runIsolatedTests(m *testing.M, pkg string) (code int) {
 	}
 	code = m.Run()
 	return code
+}
+
+func finishIsolatedTests(scratch string, discardScratch bool, code int) int {
+	// Only this process's newly created scratch directory is removed.
+	if err := os.RemoveAll(scratch); err != nil {
+		fmt.Fprintln(os.Stderr, "test cleanup:", err)
+		return 1
+	}
+	if code != 0 {
+		return code
+	}
+	ignored := ""
+	if discardScratch {
+		ignored = scratch
+	}
+	if err := compactTestLog(ignored); err != nil {
+		fmt.Fprintln(os.Stderr, "test cache log:", err)
+		return 1
+	}
+	return 0
 }
 
 func newGraveyardEntries(before, after map[string]bool) []string {
@@ -165,6 +170,9 @@ func isolate(scratch string) error {
 		return err
 	}
 	if err := clearInheritedEnvironment(); err != nil {
+		return err
+	}
+	if err := preserveGoEnvironment(); err != nil {
 		return err
 	}
 	if err := isolateDirectories(scratch); err != nil {

@@ -2,6 +2,7 @@ package gui
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
 
@@ -84,15 +85,27 @@ func (a *API) ruleFiles() (RuleList, error) {
 	}
 	rows := RuleList{Rules: []RuleFile{}}
 	seen := map[string]bool{}
+	var projects []os.FileInfo
 	for _, root := range projectRoots(state) {
 		file, err := a.deps.Engine.Trust.Check(filepath.Join(root, ".obitrules"))
 		if err != nil {
 			return rows, err
 		}
-		if file.Status != rules.Absent && !seen[file.Path] {
-			rows.Rules = append(rows.Rules, RuleFile{FileState: file, Content: file.Content()})
-			seen[file.Path] = true
+		if file.Status == rules.Absent || seen[file.Path] {
+			continue
 		}
+		// Case aliases share a directory identity even when canonical path
+		// spelling is preserved. Distinct case-sensitive projects stay separate.
+		if info, err := os.Stat(root); err == nil {
+			if slices.ContainsFunc(projects, func(known os.FileInfo) bool { return os.SameFile(info, known) }) {
+				continue
+			}
+			projects = append(projects, info)
+		} else if !os.IsNotExist(err) {
+			return rows, err
+		}
+		rows.Rules = append(rows.Rules, RuleFile{FileState: file, Content: file.Content()})
+		seen[file.Path] = true
 	}
 	return rows, nil
 }

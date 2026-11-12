@@ -55,12 +55,12 @@ test-results/      off
 		{testenv.NativeFixture(`C:\repo\.playwright-mcp\shot.png`), false, testenv.NativeFixture(`C:\repo\.playwright-mcp`), 24 * time.Hour}, // directory rule wins at the top
 		{testenv.NativeFixture(`C:\repo\output\run1\a.txt`), false, testenv.NativeFixture(`C:\repo\output\run1`), 7 * 24 * time.Hour},        // output/** names each child, not output
 		{testenv.NativeFixture(`C:\repo\build\x.o`), false, testenv.NativeFixture(`C:\repo\build`), 48 * time.Hour},                          // anchored directory
-		{testenv.NativeFixture(`C:\repo\shot.PNG`), false, testenv.NativeFixture(`C:\repo\shot.PNG`), time.Hour},                             // case-insensitive on Windows
+		{testenv.NativeFixture(`C:\repo\shot.PNG`), false, testenv.NativeFixture(`C:\repo\shot.PNG`), time.Hour},                             // case-insensitive on Windows and macOS
 	}
 	for _, c := range cases {
-		if runtime.GOOS != "windows" && strings.HasSuffix(c.path, ".PNG") {
+		if runtime.GOOS != "windows" && runtime.GOOS != "darwin" && strings.HasSuffix(c.path, ".PNG") {
 			if _, ok, err := s.Match(c.path, c.isDir); err != nil || ok {
-				t.Fatalf("POSIX matching must preserve case: %v %v", ok, err)
+				t.Fatalf("matching must preserve case on %s: %v %v", runtime.GOOS, ok, err)
 			}
 			continue
 		}

@@ -19,7 +19,8 @@ ROOT = Path(__file__).resolve().parents[1]
 class InstallerTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.root = Path(tempfile.mkdtemp(prefix="obit-install-sh-", dir=os.environ.get("OBIT_INSTALL_TEST_ROOT")))
+        # Installation rejects symlink ancestors; macOS temporary paths use /var.
+        cls.root = Path(tempfile.mkdtemp(prefix="obit-install-sh-", dir=os.environ.get("OBIT_INSTALL_TEST_ROOT"))).resolve()
         cls.platform = "darwin" if platform.system() == "Darwin" else "linux"
         cls.arch = "arm64" if platform.machine() in ("aarch64", "arm64") else "amd64"
         cls.version = "0.0.0-test"
@@ -136,7 +137,7 @@ class InstallerTests(unittest.TestCase):
             # A native filesystem is required for POSIX no-replace renames.
             # Keep release artifacts on the caller's volume; isolate only HOME.
             with tempfile.TemporaryDirectory(prefix="obit-posix-release-", dir=native_root) as home:
-                self.verify_native_agent_integration(dest, env, Path(home))
+                self.verify_native_agent_integration(dest, env, Path(home).resolve())
         else:
             self.verify_native_agent_integration(dest, env, Path(env["HOME"]))
 
@@ -169,7 +170,9 @@ class InstallerTests(unittest.TestCase):
         self.assertFalse([row for row in checks.values() if row["status"] == "FAIL"])
         for name in ("path", "obitd", "claude", "codex", "skill"):
             self.assertEqual(checks[name]["status"], "PASS", checks[name])
-        self.assertNotIn("automatic-burial", checks)
+        self.assertIn("automatic-burial", checks)
+        self.assertEqual(checks["automatic-burial"]["status"], "INFO")
+        self.assertIn("no-replace rename", checks["automatic-burial"]["detail"])
         self.assertEqual(checks["codex-windows-shell"]["status"], "INFO")
 
 

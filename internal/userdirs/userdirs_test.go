@@ -14,8 +14,12 @@ func TestWinGetPackagesUsesLocalAppData(t *testing.T) {
 	base := t.TempDir()
 	t.Setenv("LOCALAPPDATA", base)
 	t.Setenv("XDG_DATA_HOME", base)
+	t.Setenv("HOME", base)
 	t.Setenv("OBIT_HOME", t.TempDir())
 	got, err := WinGetPackages()
+	if runtime.GOOS == "darwin" {
+		base = filepath.Join(base, "Library", "Application Support")
+	}
 	want := filepath.Join(base, "Microsoft", "WinGet", "Packages")
 	if err != nil || got != want {
 		t.Fatalf("WinGet packages: %q %v", got, err)
@@ -26,7 +30,11 @@ func TestRegistryLocksIndependentOfLedger(t *testing.T) {
 	base := t.TempDir()
 	t.Setenv("LOCALAPPDATA", base)
 	t.Setenv("XDG_DATA_HOME", base)
+	t.Setenv("HOME", base)
 	t.Setenv("OBIT_HOME", t.TempDir())
+	if runtime.GOOS == "darwin" {
+		base = filepath.Join(base, "Library", "Application Support")
+	}
 	want := filepath.Join(base, "obituary", "registry-locks")
 	for range 2 {
 		got, err := RegistryLocks()

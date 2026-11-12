@@ -126,7 +126,7 @@ func validateManifestIdentities(b Burial, identities []*Identity) error {
 		*id = id.Normalized()
 		raw, err := hex.DecodeString(id.FileID)
 		volume, volumeErr := pathutil.Abs(id.Volume)
-		if err != nil || volumeErr != nil || len(raw) != 16 || !samePath(pathutil.VolumeRoot(volume), pathutil.VolumeRoot(grave)) {
+		if err != nil || volumeErr != nil || !filepath.IsAbs(id.Volume) || len(raw) != 16 || !samePath(pathutil.VolumeRoot(volume), pathutil.VolumeRoot(grave)) {
 			return errors.New("invalid manifest object identity")
 		}
 	}
