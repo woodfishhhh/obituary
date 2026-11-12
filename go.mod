@@ -6,7 +6,7 @@ toolchain go1.26.11
 
 require (
 	fyne.io/systray v1.12.2
-	github.com/Microsoft/go-winio v0.6.2
+	github.com/Microsoft/go-winio v0.6.4
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/go-ole/go-ole v1.3.0
 	github.com/modelcontextprotocol/go-sdk v1.8.0
