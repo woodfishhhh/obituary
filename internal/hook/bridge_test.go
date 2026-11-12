@@ -1,9 +1,12 @@
 package hook
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"encoding/json"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -14,7 +17,7 @@ func bridgePayload(t *testing.T, change func(*BridgeRequest)) []byte {
 	t.Helper()
 	success := true
 	input := BridgeRequest{Version: BridgeVersion, Agent: "plugin", Event: "PostToolUse", HostEvent: "tool_result", Tool: "write",
-		Session: "session", Cwd: `C:\repo`, Local: true, Success: &success, Paths: []string{"debug.log"}, ContextDelivery: true}
+		Session: "session", Cwd: testenv.NativeFixture(`C:\repo`), Local: true, Success: &success, Paths: []string{"debug.log"}, ContextDelivery: true}
 	if change != nil {
 		change(&input)
 	}
@@ -30,7 +33,7 @@ func TestBridgeDecode(t *testing.T) {
 	adapter := BridgeAdapter{}
 	raw := bridgePayload(t, nil)
 	ev, err := adapter.Decode(raw, Invocation{Agent: "plugin"})
-	if err != nil || ev.Name != "PostToolUse" || ev.HostEvent != "tool_result" || ev.Tool != "write" || ev.Session != "plugin:session" || ev.Cwd != `C:\repo` || !reflect.DeepEqual(ev.Paths, []string{"debug.log"}) || ev.DeferContext {
+	if err != nil || ev.Name != "PostToolUse" || ev.HostEvent != "tool_result" || ev.Tool != "write" || ev.Session != "plugin:session" || ev.Cwd != testenv.NativeFixture(`C:\repo`) || !reflect.DeepEqual(ev.Paths, []string{"debug.log"}) || ev.DeferContext {
 		t.Fatalf("decode: %+v %v", ev, err)
 	}
 	bom, err := Decode(adapter, append([]byte("\xef\xbb\xbf"), raw...), Invocation{Agent: "plugin"})
@@ -44,7 +47,11 @@ func TestBridgeDecode(t *testing.T) {
 		in.ContextDelivery = false
 	})
 	ev, err = adapter.Decode(raw, Invocation{Agent: "plugin"})
-	if err != nil || ev.Cwd != `C:\repo` || !reflect.DeepEqual(ev.Paths, []string{`C:\repo\debug.log`, "other.log"}) || !strings.HasPrefix(ev.Session, "sha256:") || len(ev.Session) != 71 || !ev.DeferContext {
+	wantCwd, wantPaths := `C:\repo`, []string{`C:\repo\debug.log`, "other.log"}
+	if runtime.GOOS != "windows" {
+		wantCwd, wantPaths = "/mnt/c/repo", []string{"/mnt/c/repo/debug.log", "/home/remote.log", "other.log"}
+	}
+	if err != nil || ev.Cwd != wantCwd || !reflect.DeepEqual(ev.Paths, wantPaths) || !strings.HasPrefix(ev.Session, "sha256:") || len(ev.Session) != 71 || !ev.DeferContext {
 		t.Fatalf("normalization: %+v %v", ev, err)
 	}
 	again, _ := adapter.Decode(raw, Invocation{Agent: "plugin"})
@@ -65,7 +72,12 @@ func TestBridgeRejectsUnconfirmedObservation(t *testing.T) {
 		{"session", func(in *BridgeRequest) { in.Session = "" }},
 		{"local", func(in *BridgeRequest) { in.Local = false }},
 		{"cwd", func(in *BridgeRequest) { in.Cwd = "relative" }},
-		{"remote", func(in *BridgeRequest) { in.Cwd = "/home/user/repo" }},
+		{"remote", func(in *BridgeRequest) {
+			in.Cwd = "/home/user/repo"
+			if runtime.GOOS != "windows" {
+				in.Local = false
+			}
+		}},
 		{"success-missing", func(in *BridgeRequest) { in.Success = nil }},
 		{"failed", func(in *BridgeRequest) { b := false; in.Success = &b }},
 	} {
@@ -94,13 +106,13 @@ func TestBridgeGuardRequiresLocalShellEvidence(t *testing.T) {
 		cwd   string
 		want  bool
 	}{
-		{"local-bash", true, guardrm.Bash, `C:\repo`, true},
-		{"local-powershell", true, guardrm.PowerShell, `C:\repo`, true},
+		{"local-bash", true, guardrm.Bash, testenv.NativeFixture(`C:\repo`), true},
+		{"local-powershell", true, guardrm.PowerShell, testenv.NativeFixture(`C:\repo`), true},
 		{"wsl-bash", true, guardrm.Bash, "/mnt/c/repo", true},
-		{"unknown-shell", true, "", `C:\repo`, false},
-		{"uncertain-shell", true, guardrm.Uncertain, `C:\repo`, false},
-		{"remote", false, guardrm.Bash, `C:\repo`, false},
-		{"wsl-filesystem", true, guardrm.Bash, "/home/repo", false},
+		{"unknown-shell", true, "", testenv.NativeFixture(`C:\repo`), false},
+		{"uncertain-shell", true, guardrm.Uncertain, testenv.NativeFixture(`C:\repo`), false},
+		{"remote", false, guardrm.Bash, testenv.NativeFixture(`C:\repo`), false},
+		{"wsl-filesystem", true, guardrm.Bash, "/home/repo", runtime.GOOS != "windows"},
 		{"relative-cwd", true, guardrm.Bash, "repo", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

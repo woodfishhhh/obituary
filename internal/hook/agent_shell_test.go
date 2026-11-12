@@ -1,5 +1,7 @@
 package hook
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"os"
@@ -45,7 +47,7 @@ func TestAgentShellDeclarationRejectsRemote(t *testing.T) {
 			} {
 				t.Run(tc.name, func(t *testing.T) {
 					input := map[string]any{"command": "rm -rf scratch", "shell": "bash", "local": true}
-					payload := map[string]any{"hook_event_name": "PreToolUse", "cwd": `C:\repo`, "tool_name": "Bash", "tool_input": input}
+					payload := map[string]any{"hook_event_name": "PreToolUse", "cwd": testenv.NativeFixture(`C:\repo`), "tool_name": "Bash", "tool_input": input}
 					if tc.toolInput {
 						input[tc.field] = tc.value
 					} else {
@@ -72,13 +74,14 @@ func TestAgentShellDeclarationRejectsRemote(t *testing.T) {
 }
 
 func TestAgentShellDeclarationsStayScoped(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows host shell declarations do not apply to native POSIX Bash")
 	dir := t.TempDir()
 	t.Setenv("OBIT_CONFIG_DIR", dir)
 	if err := os.WriteFile(filepath.Join(dir, "config.toml"), []byte("[agent_shells]\ncodebuddy = 'bash'\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	for _, name := range []string{"codebuddy-ide", "minimax-code", "codex"} {
-		if got := guardSuggestion(t, name, `C:\repo`, "Bash", map[string]any{"command": "rm -rf scratch"}); got != "" {
+		if got := guardSuggestion(t, name, testenv.NativeFixture(`C:\repo`), "Bash", map[string]any{"command": "rm -rf scratch"}); got != "" {
 			t.Fatalf("codebuddy declaration affected %s: %s", name, got)
 		}
 	}

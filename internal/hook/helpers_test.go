@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -234,6 +235,9 @@ func (e *env) state() core.State {
 }
 
 func wsl(path string) string {
+	if runtime.GOOS != "windows" {
+		return path
+	}
 	vol := filepath.VolumeName(path)
 	return "/mnt/" + strings.ToLower(vol[:1]) + filepath.ToSlash(path[len(vol):])
 }
@@ -302,7 +306,7 @@ func testAgentShellDeclaration(t *testing.T, agent, declarationAgent string, too
 					if err := os.WriteFile(filepath.Join(dir, "config.toml"), []byte(declaration), 0600); err != nil {
 						t.Fatal(err)
 					}
-					got := guardSuggestion(t, agent, `C:\repo`, tool, map[string]any{"command": tc.command, "shell": "bash", "local": true})
+					got := guardSuggestion(t, agent, testenv.NativeFixture(`C:\repo`), tool, map[string]any{"command": tc.command, "shell": "bash", "local": true})
 					want := tc.want
 					if want != "" {
 						want = expectedGuardExecutable(t, guardrm.Shell(tc.shell)) + " " + want

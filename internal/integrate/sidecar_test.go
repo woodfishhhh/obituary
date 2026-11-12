@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"errors"
 	"fmt"
@@ -39,7 +41,7 @@ func TestProjectPlansKeepMetadataInData(t *testing.T) {
 			plans = append(plans, extra...)
 		}
 		if agent.PlanMCP != nil {
-			extra, _ := agent.PlanMCP(s, "C:/tools/obit.exe", false)
+			extra, _ := agent.PlanMCP(s, testenv.NativeFixture("C:/tools/obit.exe"), false)
 			plans = append(plans, extra...)
 		}
 		for _, ch := range plans {

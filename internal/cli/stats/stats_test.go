@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -129,7 +130,11 @@ func TestDeleteStats(t *testing.T) {
 		t.Fatal(err)
 	}
 	clitest.WriteFixture(t, filepath.Join(repo, "two"), "two")
-	if _, _, err := clitest.Execute(t, itemCommand(), "two"); err != nil {
+	secondCommand := itemCommand()
+	if runtime.GOOS != "windows" {
+		secondCommand = rmcmd.NewCmd()
+	}
+	if _, _, err := clitest.Execute(t, secondCommand, "two"); err != nil {
 		t.Fatal(err)
 	}
 	clitest.WriteFixture(t, filepath.Join(repo, "three"), "three")

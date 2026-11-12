@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"path/filepath"
 	"strings"
@@ -18,7 +20,7 @@ func TestSharedMCPLegacyDomesticRefreshKeepsUnknownOwners(t *testing.T) {
 			installLegacyMCP(t, s, path, owner)
 			a, _ := LookupAgent(owner)
 			for range 2 {
-				plan, err := a.PlanMCP(s, "C:/tools/obit.exe", false)
+				plan, err := a.PlanMCP(s, testenv.NativeFixture("C:/tools/obit.exe"), false)
 				applyIntegration(t, plan, err)
 			}
 			if !strings.Contains(read(t, ManagedAssetReceiptPath(testSidecarPath(t, path+".obituary-owners"))), legacyMCPOwner) {
@@ -38,12 +40,12 @@ func TestSharedMCPLegacyDomesticRefreshKeepsUnknownOwners(t *testing.T) {
 func TestSharedMCPReceiptRejectsFutureSchema(t *testing.T) {
 	s := Scope{Project: t.TempDir()}
 	path := filepath.Join(s.Project, ".mcp.json")
-	plan, err := PlanMCP(s, "claude", "C:/tools/obit.exe", false)
+	plan, err := PlanMCP(s, "claude", testenv.NativeFixture("C:/tools/obit.exe"), false)
 	applyIntegration(t, plan, err)
 	receipt := ManagedAssetReceiptPath(testSidecarPath(t, path+".obituary-owners"))
 	writeIntegrationFile(t, receipt, strings.Replace(read(t, receipt), `"schema":2`, `"schema":3`, 1))
 	original := read(t, path)
-	if _, err := PlanMCP(s, "claude", "C:/tools/obit.exe", false); err == nil {
+	if _, err := PlanMCP(s, "claude", testenv.NativeFixture("C:/tools/obit.exe"), false); err == nil {
 		t.Fatal("future receipt was adopted")
 	}
 	plan, err = PlanMCP(s, "claude", "", true)

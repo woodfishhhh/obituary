@@ -14,7 +14,7 @@ func TestKimiDirectory(t *testing.T) {
 		t.Fatalf("default: %q %v", got, err)
 	}
 	override := filepath.Join(home, "custom")
-	for _, value := range []string{override, `\\?\` + override} {
+	for _, value := range nativeDirectorySpellings([]string{override, `\\?\` + override}) {
 		t.Setenv("KIMI_SHARE_DIR", value)
 		if got, err := KimiDir(); err != nil || got != override {
 			t.Fatalf("override: %q %v", got, err)
@@ -26,17 +26,26 @@ func TestKimiDirectory(t *testing.T) {
 	if _, err := os.Stat(override); !os.IsNotExist(err) {
 		t.Fatalf("resolver created directory: %v", err)
 	}
-	t.Setenv("KIMI_SHARE_DIR", `\\?\`+override+`.\child`)
-	if got, err := KimiDir(); err == nil {
-		t.Fatalf("unstable override accepted: %q", got)
-	}
+	t.Run("windows-path-spelling", func(t *testing.T) {
+		windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+		t.Setenv("KIMI_SHARE_DIR", `\\?\`+override+`.\child`)
+		if got, err := KimiDir(); err == nil {
+			t.Fatalf("unstable override accepted: %q", got)
+		}
+	})
 	t.Setenv("KIMI_SHARE_DIR", "")
-	t.Setenv("OBIT_USER_HOME", `\\?\`+home)
-	if got, err := KimiDir(); err != nil || got != filepath.Join(home, ".kimi") {
-		t.Fatalf("extended home: %q %v", got, err)
-	}
-	t.Setenv("OBIT_USER_HOME", `\\?\`+home+`.\child`)
-	if got, err := KimiDir(); err == nil {
-		t.Fatalf("unstable home accepted: %q", got)
-	}
+	t.Run("windows-path-spelling", func(t *testing.T) {
+		windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+		t.Setenv("OBIT_USER_HOME", `\\?\`+home)
+		if got, err := KimiDir(); err != nil || got != filepath.Join(home, ".kimi") {
+			t.Fatalf("extended home: %q %v", got, err)
+		}
+	})
+	t.Run("windows-path-spelling", func(t *testing.T) {
+		windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+		t.Setenv("OBIT_USER_HOME", `\\?\`+home+`.\child`)
+		if got, err := KimiDir(); err == nil {
+			t.Fatalf("unstable home accepted: %q", got)
+		}
+	})
 }

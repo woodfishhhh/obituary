@@ -18,8 +18,11 @@ func TestLingmaDirectory(t *testing.T) {
 	if _, err := os.Stat(got); !os.IsNotExist(err) {
 		t.Fatal("resolver wrote", err)
 	}
-	t.Setenv("OBIT_USER_HOME", `\\?\`+home+`.\child`)
-	if _, err := LingmaDir(); err == nil {
-		t.Fatal("unsafe home accepted")
-	}
+	t.Run("windows-path-spelling", func(t *testing.T) {
+		windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+		t.Setenv("OBIT_USER_HOME", `\\?\`+home+`.\child`)
+		if _, err := LingmaDir(); err == nil {
+			t.Fatal("unsafe home accepted")
+		}
+	})
 }

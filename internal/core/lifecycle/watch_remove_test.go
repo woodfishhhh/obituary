@@ -1,9 +1,10 @@
 package lifecycle_test
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -40,9 +41,7 @@ func TestWatchRemoveThroughOriginalParentAlias(t *testing.T) {
 	real := filepath.Join(f.dir, "real")
 	path := filepath.Dir(f.file("real/downloads/keep.txt"))
 	alias := filepath.Join(f.dir, "alias")
-	if out, err := exec.Command("cmd", "/c", "mklink", "/J", alias, real).CombinedOutput(); err != nil {
-		t.Fatalf("junction: %s %v", out, err)
-	}
+	directoryLink(t, alias, real)
 	input := filepath.Join(alias, "downloads")
 	if _, err := f.svc.SetWatch(input, "1d", core.WatchFirstSeen); err != nil {
 		t.Fatal(err)
@@ -85,6 +84,7 @@ func TestWatchRemoveMissingDirectoryByAliasOrID(t *testing.T) {
 }
 
 func TestWatchDistinctUnicodePolicies(t *testing.T) {
+	testenv.RequireDistinctUnicodeNames(t)
 	f := newFixture(t)
 	var policies []core.WatchPolicy
 	for _, name := range []string{"K", "K"} {

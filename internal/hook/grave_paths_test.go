@@ -2,6 +2,7 @@ package hook
 
 import (
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -56,6 +57,12 @@ func TestGraveNoticeShellPaths(t *testing.T) {
 func TestGraveNoticeAmbiguousPathsStaySilent(t *testing.T) {
 	e, root, _ := noticeFixture(t, false)
 	for _, path := range []string{"~/.buried", "buried:stream", `\\?\` + filepath.Join(root, "buried."), "*.txt", "/home/elsewhere"} {
+		if runtime.GOOS != "windows" && path == "/home/elsewhere" {
+			if got := absentReferences(Event{Cwd: root, References: []string{path}}); len(got) != 1 || got[0] != path {
+				t.Fatalf("native absolute reference lost: %v", got)
+			}
+			continue
+		}
 		if got := absentReferences(Event{Cwd: root, References: []string{path}}); len(got) != 0 {
 			t.Fatalf("ambiguous %q: %v", path, got)
 		}

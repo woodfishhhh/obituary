@@ -227,6 +227,7 @@ func TestIndexSnapshotHonorsCancellation(t *testing.T) {
 }
 
 func TestIndexSnapshotSharedCaseAlias(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows split-index filenames are case insensitive")
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}

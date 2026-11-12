@@ -18,6 +18,9 @@ import (
 )
 
 func TestObservationsRejectChangedExtendedSpelling(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("extended path normalization is Windows-only")
+	}
 	f := newFixture(t)
 	path := f.file("neighbor.log")
 	rows, err := f.svc.CaptureObservations([]string{`\\?\` + path + "."}, "s1")
@@ -222,7 +225,11 @@ func TestObservationQueueKeepsNewWritesDuringReplay(t *testing.T) {
 	if err != nil || len(old) != 1 {
 		t.Fatalf("deduplication: %+v, %v", old, err)
 	}
-	if err := deferTestObservations(t, store, []string{strings.ToUpper(path)}, "s1"); err != nil {
+	replayPath := path
+	if runtime.GOOS == "windows" {
+		replayPath = strings.ToUpper(path)
+	}
+	if err := deferTestObservations(t, store, []string{replayPath}, "s1"); err != nil {
 		t.Fatal(err)
 	}
 	if err := store.DeferObservations(old); err != nil {

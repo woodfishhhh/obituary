@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"github.com/woodfishhhh/obituary/internal/rules"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 	"github.com/woodfishhhh/obituary/internal/winfs"
@@ -128,7 +129,7 @@ func (f *unavailableObservationFS) Identify(path string) (core.Identity, error) 
 		}
 		return core.Identity{}, core.ErrNotFound
 	}
-	if filepath.Clean(path) == filepath.Clean(filepath.VolumeName(f.path)+`\`) {
+	if filepath.Clean(path) == filepath.Clean(pathutil.VolumeRoot(f.path)) {
 		if f.volumeError == "volume serial changed" {
 			id, err := f.FS.Identify(path)
 			id.Serial++

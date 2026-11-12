@@ -1,5 +1,7 @@
 package init_test
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"os"
 	"path/filepath"
@@ -12,6 +14,7 @@ import (
 )
 
 func TestInitPlansInstallsAndRemovesTrayStartup(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}

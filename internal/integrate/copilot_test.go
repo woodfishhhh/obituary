@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"encoding/json"
@@ -18,11 +20,11 @@ func TestCopilotMCPPreservesOtherOwners(t *testing.T) {
 			t.Parallel()
 			s := Scope{Project: t.TempDir()}
 			a, _ := LookupAgent(owner)
-			plan, err := a.PlanMCP(s, `C:\tools\obit.exe`, false)
+			plan, err := a.PlanMCP(s, testenv.NativeFixture(`C:\tools\obit.exe`), false)
 			applyIntegration(t, plan, err)
 			path := filepath.Join(s.Project, ".mcp.json")
 			original := read(t, path)
-			plan, err = PlanCopilotMCP(s, `C:\tools\obit.exe`, true)
+			plan, err = PlanCopilotMCP(s, testenv.NativeFixture(`C:\tools\obit.exe`), true)
 			applyIntegration(t, plan, err)
 			if got := read(t, path); got != original {
 				t.Fatalf("uninstalling never-installed Copilot changed %s MCP: %s", owner, got)
@@ -114,7 +116,7 @@ func newNativeJSONInstallFixture(t *testing.T, name string, global bool) nativeJ
 }
 
 func nativeJSONCommands(name, location string) Commands {
-	exe := "C:/Program Files/" + location + "/obit.exe"
+	exe := testenv.NativeFixture("C:/Program Files/") + location + "/obit.exe"
 	return Commands{Native: `"` + exe + `" hook ` + name, POSIX: "'/mnt/c/Program Files/" + location + "/obit.exe' hook " + name, Executable: exe}
 }
 
@@ -243,7 +245,7 @@ func testNativeJSONInstallerBoundaries(t *testing.T, name string) {
 			t.Fatal("skill junction accepted")
 		}
 		if name != "copilot" {
-			if _, err := f.agent.PlanMCP(f.scope, "C:/tools/obit.exe", false); err == nil {
+			if _, err := f.agent.PlanMCP(f.scope, testenv.NativeFixture("C:/tools/obit.exe"), false); err == nil {
 				t.Fatal("MCP junction accepted")
 			}
 		}
@@ -265,7 +267,7 @@ func testNativeJSONExtensions(t *testing.T, name string) {
 			f := newNativeJSONInstallFixture(t, name, global)
 			original := "\xef\xbb\xbf" + `{"userSetting":7,"mcpServers":{"user":{"command":"user-tool","args":[]}},"tail":true}`
 			writeIntegrationFile(t, f.mcpPath, original)
-			plan, err := f.agent.PlanMCP(f.scope, "C:/old/obit.exe", false)
+			plan, err := f.agent.PlanMCP(f.scope, testenv.NativeFixture("C:/old/obit.exe"), false)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -278,7 +280,7 @@ func testNativeJSONExtensions(t *testing.T, name string) {
 			if !strings.HasPrefix(read(t, f.mcpPath), "\xef\xbb\xbf") {
 				t.Fatal("MCP lost BOM")
 			}
-			plan, err = f.agent.PlanMCP(f.scope, "C:/old/obit.exe", false)
+			plan, err = f.agent.PlanMCP(f.scope, testenv.NativeFixture("C:/old/obit.exe"), false)
 			if err != nil || Pending(plan) {
 				t.Fatal("MCP not idempotent", err)
 			}
@@ -296,7 +298,7 @@ func testNativeJSONExtensions(t *testing.T, name string) {
 			entry["tools"] = []string{"obit_list"}
 			data, _ := json.Marshal(object)
 			writeIntegrationFile(t, f.mcpPath, string(data))
-			plan, err = f.agent.PlanMCP(f.scope, "C:/moved/obit.exe", false)
+			plan, err = f.agent.PlanMCP(f.scope, testenv.NativeFixture("C:/moved/obit.exe"), false)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -304,7 +306,7 @@ func testNativeJSONExtensions(t *testing.T, name string) {
 				t.Fatal(err)
 			}
 			refreshed := read(t, f.mcpPath)
-			for _, want := range []string{"C:/moved/obit.exe", "USER_VALUE", "kept", "obit_list", "user-tool"} {
+			for _, want := range []string{testenv.NativeFixture("C:/moved/obit.exe"), "USER_VALUE", "kept", "obit_list", "user-tool"} {
 				if !strings.Contains(refreshed, want) {
 					t.Fatalf("lost %q: %s", want, refreshed)
 				}
@@ -315,7 +317,7 @@ func testNativeJSONExtensions(t *testing.T, name string) {
 			if object["mcpServers"].(map[string]any)["obituary"].(map[string]any)["disabled"] != true {
 				t.Fatal("disabled flag changed")
 			}
-			plan, err = f.agent.PlanMCP(f.scope, "C:/moved/obit.exe", true)
+			plan, err = f.agent.PlanMCP(f.scope, testenv.NativeFixture("C:/moved/obit.exe"), true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -385,10 +387,10 @@ func testNativeJSONExtensions(t *testing.T, name string) {
 		f := newNativeJSONInstallFixture(t, name, false)
 		user := `{"mcpServers":{"obituary":{"command":"user-tool","args":["mcp"]}}}`
 		writeIntegrationFile(t, f.mcpPath, user)
-		if _, err := f.agent.PlanMCP(f.scope, "C:/tools/obit.exe", false); err == nil {
+		if _, err := f.agent.PlanMCP(f.scope, testenv.NativeFixture("C:/tools/obit.exe"), false); err == nil {
 			t.Fatal("unowned MCP overwritten")
 		}
-		plan, err := f.agent.PlanMCP(f.scope, "C:/tools/obit.exe", true)
+		plan, err := f.agent.PlanMCP(f.scope, testenv.NativeFixture("C:/tools/obit.exe"), true)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -458,20 +460,20 @@ func TestCopilotMCPSecondaryAndBareLayouts(t *testing.T) {
 
 	f := newNativeJSONInstallFixture(t, "copilot", false)
 	secondary := filepath.Join(f.dir, "mcp.json")
-	seed, err := planSharedMCP(f.scope, secondary, "copilot", MCPConfig{ServersPath: []string{"mcpServers"}, Codec: copilotMCP{}}, "C:/old/obit.exe", false)
+	seed, err := planSharedMCP(f.scope, secondary, "copilot", MCPConfig{ServersPath: []string{"mcpServers"}, Codec: copilotMCP{}}, testenv.NativeFixture("C:/old/obit.exe"), false)
 	applyIntegration(t, seed, err)
-	writeIntegrationFile(t, secondary, `{"mcpServers":{"obituary":{"type":"local","command":"C:/old/obit.exe","args":["mcp"]},"user":{"command":"user-tool"}}}`)
-	plan, err := PlanCopilotMCP(f.scope, "C:/moved/obit.exe", false)
+	writeIntegrationFile(t, secondary, testenv.NativeFixture(`{"mcpServers":{"obituary":{"type":"local","command":"C:/old/obit.exe","args":["mcp"]},"user":{"command":"user-tool"}}}`))
+	plan, err := PlanCopilotMCP(f.scope, testenv.NativeFixture("C:/moved/obit.exe"), false)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err := Apply(plan); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(read(t, secondary), "C:/moved/obit.exe") {
+	if !strings.Contains(read(t, secondary), testenv.NativeFixture("C:/moved/obit.exe")) {
 		t.Fatal("shadowed old entry was not refreshed")
 	}
-	plan, err = PlanCopilotMCP(f.scope, "C:/moved/obit.exe", true)
+	plan, err = PlanCopilotMCP(f.scope, testenv.NativeFixture("C:/moved/obit.exe"), true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -483,7 +485,7 @@ func TestCopilotMCPSecondaryAndBareLayouts(t *testing.T) {
 	}
 	bare := `{"user":{"command":"user-tool","args":[]}}`
 	writeIntegrationFile(t, f.mcpPath, bare)
-	plan, err = PlanCopilotMCP(f.scope, "C:/tools/obit.exe", false)
+	plan, err = PlanCopilotMCP(f.scope, testenv.NativeFixture("C:/tools/obit.exe"), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -494,10 +496,10 @@ func TestCopilotMCPSecondaryAndBareLayouts(t *testing.T) {
 		t.Fatal(err)
 	}
 	installed := read(t, f.mcpPath)
-	if strings.Contains(installed, `"mcpServers"`) || !strings.Contains(installed, "user-tool") || !strings.Contains(installed, "C:/tools/obit.exe") {
+	if strings.Contains(installed, `"mcpServers"`) || !strings.Contains(installed, "user-tool") || !strings.Contains(installed, testenv.NativeFixture("C:/tools/obit.exe")) {
 		t.Fatal("bare layout was not preserved", installed)
 	}
-	plan, err = PlanCopilotMCP(f.scope, "C:/tools/obit.exe", true)
+	plan, err = PlanCopilotMCP(f.scope, testenv.NativeFixture("C:/tools/obit.exe"), true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -513,7 +515,7 @@ func TestCopilotGlobalMCPRequiresItsDocumentedContainer(t *testing.T) {
 	f := newNativeJSONInstallFixture(t, "copilot", true)
 	before := `{"user":{"command":"user-tool","args":[]}}`
 	writeIntegrationFile(t, f.mcpPath, before)
-	if _, err := PlanCopilotMCP(f.scope, "C:/tools/obit.exe", false); err == nil || !strings.Contains(err.Error(), "mcpServers") {
+	if _, err := PlanCopilotMCP(f.scope, testenv.NativeFixture("C:/tools/obit.exe"), false); err == nil || !strings.Contains(err.Error(), "mcpServers") {
 		t.Fatal("invalid global layout accepted", err)
 	}
 	if read(t, f.mcpPath) != before {

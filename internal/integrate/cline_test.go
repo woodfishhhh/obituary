@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"os/exec"
 	"path/filepath"
@@ -42,7 +44,7 @@ func TestClineMCP(t *testing.T) {
 	initial := "\xef\xbb\xbf" + `{"theme":"keep","mcpServers":{"user":{"command":"user.exe"}}}`
 	writeIntegrationFile(t, path, initial)
 	checkMCPPlanCycle(t, PlanClineMCP, Scope{Global: true}, path, ConfigJSON, []string{"mcpServers"}, initial)
-	if _, err := PlanClineMCP(Scope{Project: t.TempDir()}, `C:\tools\obit.exe`, false); err == nil {
+	if _, err := PlanClineMCP(Scope{Project: t.TempDir()}, testenv.NativeFixture(`C:\tools\obit.exe`), false); err == nil {
 		t.Fatal("project MCP claimed installed")
 	}
 }
@@ -59,7 +61,7 @@ func checkJSPlugin(t *testing.T, agent string, source []byte) {
 	t.Helper()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "obituary.ts")
-	payload, err := pluginPayload(Scope{Project: dir, GuardRM: true}, path, source, `C:\Program Files\obit.exe`)
+	payload, err := pluginPayload(Scope{Project: dir, GuardRM: true}, path, source, testenv.NativeFixture(`C:\Program Files\obit.exe`))
 	if err != nil {
 		t.Fatal(err)
 	}

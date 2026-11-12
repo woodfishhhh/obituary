@@ -1,5 +1,7 @@
 package gui
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"fmt"
 	"os"
@@ -11,6 +13,7 @@ import (
 )
 
 func TestSettingsDefaultsAndParseFailure(t *testing.T) {
+	testenv.WindowsOnly(t, "GUI settings include Windows desktop integration; POSIX ships the CLI")
 	a, _ := fixture(t)
 	out, err := a.Settings()
 	if err != nil || out.Mode != config.ModeGraveyard || out.RetentionDays != 7 || out.ContextMenuInstalled || out.Autostart || out.Paused {
@@ -75,6 +78,7 @@ func TestPlanSettingsPreservesTOMLCommentsAndUnknownKeys(t *testing.T) {
 }
 
 func TestPlanSettingsCreationValidationAndStalePreview(t *testing.T) {
+	testenv.WindowsOnly(t, "GUI settings include Windows desktop integration; POSIX ships the CLI")
 	a, _ := fixture(t)
 	plan, err := a.PlanSettings("graveyard", 30)
 	if err != nil {
@@ -113,6 +117,7 @@ func TestPlanSettingsCreationValidationAndStalePreview(t *testing.T) {
 }
 
 func TestPlanSessionSummaryTogglesConfig(t *testing.T) {
+	testenv.WindowsOnly(t, "GUI settings include Windows desktop integration; POSIX ships the CLI")
 	a, _ := fixture(t)
 	path := filepath.Join(a.deps.ConfigDir, "config.toml")
 	write(t, path, "# keep\n[graveyard]\nmode = 'recycle'\n")
@@ -139,6 +144,7 @@ func TestPlanSessionSummaryTogglesConfig(t *testing.T) {
 }
 
 func TestSettingsReportLifetimeClearing(t *testing.T) {
+	testenv.WindowsOnly(t, "GUI settings include Windows desktop integration; POSIX ships the CLI")
 	a, root := fixture(t)
 	out, err := a.Settings()
 	if err != nil || out.Lifetime == nil || out.Lifetime.Buried != 0 {

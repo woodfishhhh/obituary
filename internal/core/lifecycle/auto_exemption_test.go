@@ -3,6 +3,7 @@ package lifecycle_test
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -107,7 +108,8 @@ func TestAutomaticExemptionMaintenance(t *testing.T) {
 			}
 			st, err := f.svc.Store.Read()
 			want := 0
-			if change == "uncertain" || change == "unchanged" {
+			// POSIX cannot locate an exemption by identity across the volume.
+			if runtime.GOOS != "windows" || change == "uncertain" || change == "unchanged" {
 				want = 1
 			}
 			if err != nil || len(st.AutoExemptions) != want {
@@ -151,7 +153,11 @@ func TestLegacyDirectoryExemptionLearnsTree(t *testing.T) {
 		t.Fatal(err)
 	}
 	st, err = f.svc.Store.Read()
-	if err != nil || len(st.AutoExemptions) != 0 {
+	want := 0
+	if runtime.GOOS != "windows" {
+		want = 1 // An unknown location cannot prove that the keep decision expired.
+	}
+	if err != nil || len(st.AutoExemptions) != want {
 		t.Fatalf("legacy directory ignored a later descendant write: %+v %v", st.AutoExemptions, err)
 	}
 }

@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"encoding/json"
@@ -26,7 +28,7 @@ func TestAntigravityBundleLifecycle(t *testing.T) {
 			dir := filepath.Join(root, "plugins", "obituary")
 			user := filepath.Join(dir, "user.txt")
 			writeIntegrationFile(t, user, "user asset")
-			commands := Commands{Native: `"C:/space & tools/obit.exe" hook antigravity`}
+			commands := Commands{Native: testenv.NativeFixture(`"C:/space & tools/obit.exe" hook antigravity`)}
 			plan, err := PlanAntigravity(s, commands, false)
 			if err != nil {
 				t.Fatal(err)
@@ -65,7 +67,7 @@ func TestAntigravityBundleLifecycle(t *testing.T) {
 			if err != nil || Pending(plan) {
 				t.Fatalf("idempotence: %v", err)
 			}
-			commands.Native = `"D:/new location/obit.exe" hook antigravity`
+			commands.Native = testenv.NativeFixture(`"D:/new location/obit.exe" hook antigravity`)
 			plan, err = PlanAntigravity(s, commands, false)
 			applyIntegration(t, plan, err)
 			if !strings.Contains(read(t, hooksPath), "new location") || strings.Contains(read(t, hooksPath), "space & tools") {
@@ -102,7 +104,7 @@ func TestAntigravityPreservesEditedAssetsAndConcurrentChanges(t *testing.T) {
 	for _, name := range []string{"plugin.json", "hooks.json", "rules/AGENTS.md", "hooks.json.obituary-asset"} {
 		t.Run(name, func(t *testing.T) {
 			s := Scope{Project: t.TempDir()}
-			commands := Commands{Native: "C:/tools/obit.exe hook antigravity"}
+			commands := Commands{Native: testenv.NativeFixture("C:/tools/obit.exe hook antigravity")}
 			plan, err := PlanAntigravity(s, commands, false)
 			applyIntegration(t, plan, err)
 			dir := filepath.Join(s.Project, ".agents", "plugins", "obituary")
@@ -126,7 +128,7 @@ func TestAntigravityPreservesEditedAssetsAndConcurrentChanges(t *testing.T) {
 		})
 	}
 	s := Scope{Project: t.TempDir()}
-	plan, err := PlanAntigravity(s, Commands{Native: "C:/tools/obit.exe hook antigravity"}, false)
+	plan, err := PlanAntigravity(s, Commands{Native: testenv.NativeFixture("C:/tools/obit.exe hook antigravity")}, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,11 +153,11 @@ func TestAntigravityMCPAndBoundaries(t *testing.T) {
 		root, _ := antigravityRoot(s)
 		path := filepath.Join(root, "mcp_config.json")
 		writeIntegrationFile(t, path, "\xef\xbb\xbf"+`{"user":true,"mcpServers":{"other":{"command":"keep"}}}`)
-		plan, err := PlanAntigravityMCP(s, "C:/space dir/obit.exe", false)
+		plan, err := PlanAntigravityMCP(s, testenv.NativeFixture("C:/space dir/obit.exe"), false)
 		applyIntegration(t, plan, err)
-		plan, err = PlanAntigravityMCP(s, "D:/new/obit.exe", false)
+		plan, err = PlanAntigravityMCP(s, testenv.NativeFixture("D:/new/obit.exe"), false)
 		applyIntegration(t, plan, err)
-		plan, err = PlanAntigravityMCP(s, "D:/new/obit.exe", false)
+		plan, err = PlanAntigravityMCP(s, testenv.NativeFixture("D:/new/obit.exe"), false)
 		if err != nil || Pending(plan) {
 			t.Fatal("MCP not idempotent", err)
 		}
@@ -167,7 +169,7 @@ func TestAntigravityMCPAndBoundaries(t *testing.T) {
 	}
 	s := Scope{Project: t.TempDir()}
 	makeIntegrationJunction(t, filepath.Join(s.Project, ".agents"), t.TempDir())
-	if _, err := PlanAntigravity(s, Commands{Native: "C:/tools/obit.exe hook antigravity"}, false); err == nil {
+	if _, err := PlanAntigravity(s, Commands{Native: testenv.NativeFixture("C:/tools/obit.exe hook antigravity")}, false); err == nil {
 		t.Fatal("external plugin root accepted")
 	}
 }

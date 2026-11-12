@@ -3,6 +3,7 @@ package doctor
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -21,13 +22,17 @@ func TestDiagnoseIdentitiesReportsUnrelatedUnsafeObject(t *testing.T) {
 	if err != nil || core.Failed(rows) {
 		t.Fatalf("add: %+v %v", rows, err)
 	}
-	if got := diagnoseIdentities(svc.Store.Home); got.Status != "PASS" {
+	want, detail := "PASS", "hard links"
+	if runtime.GOOS != "windows" {
+		want, detail = "WARN", "not supported"
+	}
+	if got := diagnoseIdentities(svc.Store.Home); got.Status != want {
 		t.Fatalf("healthy identity: %+v", got)
 	}
 	if err := os.Link(path, path+".alias"); err != nil {
 		t.Fatal(err)
 	}
-	if got := diagnoseIdentities(svc.Store.Home); got.Status != "WARN" || got.Errors != 1 || !strings.Contains(got.Detail, "hard links") {
+	if got := diagnoseIdentities(svc.Store.Home); got.Status != "WARN" || got.Errors != 1 || !strings.Contains(got.Detail, detail) {
 		t.Fatalf("doctor hid an unrelated unsafe identity: %+v", got)
 	}
 	history, err := svc.Store.History(10)

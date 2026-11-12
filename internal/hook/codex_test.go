@@ -1,5 +1,7 @@
 package hook
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"encoding/json"
@@ -17,6 +19,22 @@ import (
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 )
 
+func TestPOSIXNativePathRejectsRemoteURIs(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("native POSIX path namespace")
+	}
+	for _, value := range []string{"ssh://host/work/file.log", "file:///tmp/file.log", "sftp://host/file.log"} {
+		if got, ok := NativePath(value); ok || got != "" {
+			t.Fatalf("URI was treated as a native path: %q -> %q %v", value, got, ok)
+		}
+	}
+	for _, value := range []string{"/tmp/a:b", "/mnt/c/repo/file.log", "relative.log"} {
+		if got, ok := NativePath(value); !ok || got != value {
+			t.Fatalf("native spelling changed: %q -> %q %v", value, got, ok)
+		}
+	}
+}
+
 func TestPOSIXNativePathsRemainNative(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("POSIX hook path contract")
@@ -32,27 +50,28 @@ func TestPOSIXNativePathsRemainNative(t *testing.T) {
 }
 
 func TestCodexWindowsShellDeclaration(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows host shell declarations and PowerShell commandWindows registration")
 	// Canonical hook shape from openai/codex rust-v0.167.0,
 	// core/src/tools/handlers/unified_exec/exec_command.rs: Bash + command.
 	for _, tc := range []struct{ name, config, cwd, command, want string }{
-		{"bash", `codex_windows_shell = "bash"`, `C:\repo`, `rm -rf build`, `rm -rf build`},
-		{"powershell", `codex_windows_shell = "powershell"`, `C:\repo`, `Remove-Item -LiteralPath 'build dir' -Recurse`, `remove-item -LiteralPath 'build dir' -Recurse`},
-		{"powershell-native-path", `codex_windows_shell = "powershell"`, `C:\repo`, `Remove-Item -LiteralPath .\build -Recurse`, `remove-item -LiteralPath .\build -Recurse`},
-		{"unset", "", `C:\repo`, `rm -rf build`, ""},
-		{"bash-table", "[agent_shells]\ncodex = 'bash'", `C:\repo`, `rm -rf build`, `rm -rf build`},
-		{"powershell-table", "[agent_shells]\ncodex = 'powershell'", `C:\repo`, `Remove-Item -LiteralPath build`, `remove-item -LiteralPath build`},
-		{"both", "codex_windows_shell = 'bash'\n[agent_shells]\ncodex = 'bash'", `C:\repo`, `rm -rf build`, `rm -rf build`},
-		{"conflict", "codex_windows_shell = 'bash'\n[agent_shells]\ncodex = 'powershell'", `C:\repo`, `rm -rf build`, ""},
-		{"invalid", `codex_windows_shell = "cmd"`, `C:\repo`, `rm -rf build`, ""},
-		{"ps-declared-bash-source", `codex_windows_shell = "powershell"`, `C:\repo`, `rm -rf build`, ""},
-		{"bash-declared-ps-source", `codex_windows_shell = "bash"`, `C:\repo`, `rm -LiteralPath build`, ""},
-		{"ps-declared-bash-escape", `codex_windows_shell = "powershell"`, `C:\repo`, `rm build\ dir`, ""},
-		{"ps-declared-bash-path", `codex_windows_shell = "powershell"`, `C:\repo`, `rm .\build`, ""},
-		{"bash-declared-ps-path", `codex_windows_shell = "bash"`, `C:\repo`, `rm .\build`, ""},
-		{"bash-declared-ps-array", `codex_windows_shell = "bash"`, `C:\repo`, `rm a,b`, ""},
-		{"bash-declared-ps-quote", `codex_windows_shell = "bash"`, `C:\repo`, `rm 'a''b'`, ""},
-		{"bash-declared-ps-git-quote", `codex_windows_shell = "bash"`, `C:\repo`, `git clean -fd -- 'a''b'`, ""},
-		{"bash-git-clean", `codex_windows_shell = "bash"`, `C:\repo`, `git clean -fdx`, `git-clean -fdx`},
+		{"bash", `codex_windows_shell = "bash"`, testenv.NativeFixture(`C:\repo`), `rm -rf build`, `rm -rf build`},
+		{"powershell", `codex_windows_shell = "powershell"`, testenv.NativeFixture(`C:\repo`), `Remove-Item -LiteralPath 'build dir' -Recurse`, `remove-item -LiteralPath 'build dir' -Recurse`},
+		{"powershell-native-path", `codex_windows_shell = "powershell"`, testenv.NativeFixture(`C:\repo`), `Remove-Item -LiteralPath .\build -Recurse`, `remove-item -LiteralPath .\build -Recurse`},
+		{"unset", "", testenv.NativeFixture(`C:\repo`), `rm -rf build`, ""},
+		{"bash-table", "[agent_shells]\ncodex = 'bash'", testenv.NativeFixture(`C:\repo`), `rm -rf build`, `rm -rf build`},
+		{"powershell-table", "[agent_shells]\ncodex = 'powershell'", testenv.NativeFixture(`C:\repo`), `Remove-Item -LiteralPath build`, `remove-item -LiteralPath build`},
+		{"both", "codex_windows_shell = 'bash'\n[agent_shells]\ncodex = 'bash'", testenv.NativeFixture(`C:\repo`), `rm -rf build`, `rm -rf build`},
+		{"conflict", "codex_windows_shell = 'bash'\n[agent_shells]\ncodex = 'powershell'", testenv.NativeFixture(`C:\repo`), `rm -rf build`, ""},
+		{"invalid", `codex_windows_shell = "cmd"`, testenv.NativeFixture(`C:\repo`), `rm -rf build`, ""},
+		{"ps-declared-bash-source", `codex_windows_shell = "powershell"`, testenv.NativeFixture(`C:\repo`), `rm -rf build`, ""},
+		{"bash-declared-ps-source", `codex_windows_shell = "bash"`, testenv.NativeFixture(`C:\repo`), `rm -LiteralPath build`, ""},
+		{"ps-declared-bash-escape", `codex_windows_shell = "powershell"`, testenv.NativeFixture(`C:\repo`), `rm build\ dir`, ""},
+		{"ps-declared-bash-path", `codex_windows_shell = "powershell"`, testenv.NativeFixture(`C:\repo`), `rm .\build`, ""},
+		{"bash-declared-ps-path", `codex_windows_shell = "bash"`, testenv.NativeFixture(`C:\repo`), `rm .\build`, ""},
+		{"bash-declared-ps-array", `codex_windows_shell = "bash"`, testenv.NativeFixture(`C:\repo`), `rm a,b`, ""},
+		{"bash-declared-ps-quote", `codex_windows_shell = "bash"`, testenv.NativeFixture(`C:\repo`), `rm 'a''b'`, ""},
+		{"bash-declared-ps-git-quote", `codex_windows_shell = "bash"`, testenv.NativeFixture(`C:\repo`), `git clean -fd -- 'a''b'`, ""},
+		{"bash-git-clean", `codex_windows_shell = "bash"`, testenv.NativeFixture(`C:\repo`), `git clean -fdx`, `git-clean -fdx`},
 		{"wsl", `codex_windows_shell = "powershell"`, "/mnt/c/repo", `rm -rf build`, `rm -rf build`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -152,7 +171,7 @@ func FuzzPatchPaths(f *testing.F) {
 		if again, ok := NativePath(mapped); !ok || again != mapped {
 			t.Fatalf("native path mapping is not idempotent: %q -> %q", candidate, mapped)
 		}
-		if strings.HasPrefix(candidate, "/") {
+		if strings.HasPrefix(candidate, "/") && runtime.GOOS == "windows" {
 			clean := path.Clean(candidate)
 			parts := strings.Split(strings.TrimPrefix(clean, "/"), "/")
 			if len(parts) < 2 || parts[0] != "mnt" || len(parts[1]) != 1 || !strings.Contains("abcdefghijklmnopqrstuvwxyz", strings.ToLower(parts[1])) {
@@ -271,10 +290,11 @@ func TestPatchPathsKeepsEnvironmentTextInHunks(t *testing.T) {
 }
 
 func TestNativePathBridgesWSL(t *testing.T) {
+	testenv.WindowsOnly(t, "WSL-to-Windows path translation is only performed by the Windows host")
 	t.Parallel()
 	cases := map[string]string{
-		"/mnt/d/Coding/x": `D:\Coding\x`,
-		"/mnt/c":          `C:\`,
+		"/mnt/d/Coding/x": testenv.NativeFixture(`D:\Coding\x`),
+		"/mnt/c":          testenv.NativeFixture(`C:\`),
 		"relative/a.log":  "relative/a.log",
 	}
 	for in, want := range cases {
@@ -290,6 +310,7 @@ func TestNativePathBridgesWSL(t *testing.T) {
 }
 
 func TestCodexFromWSLProposesFromAnApplyPatch(t *testing.T) {
+	testenv.WindowsOnly(t, "WSL-to-Windows path translation is only performed by the Windows host")
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}
@@ -417,6 +438,7 @@ func TestCodexIgnoresPathsItCannotReach(t *testing.T) {
 }
 
 func TestCodexUnreachablePatchLogsDiagnostic(t *testing.T) {
+	testenv.WindowsOnly(t, "WSL-to-Windows path translation is only performed by the Windows host")
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}
@@ -448,8 +470,8 @@ func TestCodexRelativeWorkdirScope(t *testing.T) {
 		cwd, workdir, shell string
 		deny                bool
 	}{
-		{`C:\repo\child`, `..\build`, "powershell.exe", true},
-		{`C:\repo`, "sub/../build", "powershell.exe", true},
+		{testenv.NativeFixture(`C:\repo\child`), `..\build`, "powershell.exe", true},
+		{testenv.NativeFixture(`C:\repo`), "sub/../build", "powershell.exe", true},
 		{"/mnt/c/repo/child", "../build", "bash", true},
 		{"/mnt/c/repo", "../../home", "bash", false},
 		{"/home/me", "../repo", "bash", false},
@@ -457,6 +479,12 @@ func TestCodexRelativeWorkdirScope(t *testing.T) {
 	} {
 		t.Run(tc.cwd+"/"+tc.workdir, func(t *testing.T) {
 			t.Parallel()
+			if tc.shell == "powershell.exe" {
+				testenv.WindowsOnly(t, "PowerShell Remove-Item integration is Windows-only")
+			}
+			if runtime.GOOS != "windows" {
+				tc.deny = true // All absolute POSIX workdirs are in the native namespace.
+			}
 			command := "rm -rf build"
 			if tc.shell == "powershell.exe" {
 				command = `Remove-Item -Recurse -Force .\build`

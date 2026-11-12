@@ -1,5 +1,7 @@
 package hook
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"encoding/json"
@@ -20,7 +22,7 @@ func cursorFixture(t *testing.T, name string) map[string]any {
 		t.Fatal(err)
 	}
 	var in map[string]any
-	if err := json.Unmarshal(raw, &in); err != nil {
+	if err := json.Unmarshal([]byte(testenv.NativeFixture(string(raw))), &in); err != nil {
 		t.Fatal(err)
 	}
 	return in
@@ -66,8 +68,12 @@ func TestCursorRejectsUnsupportedAndMissingEvidence(t *testing.T) {
 		{"failed", func(m map[string]any) { m["hook_event_name"] = "postToolUseFailure"; m["failure_type"] = "error" }},
 		{"missing-session", func(m map[string]any) { delete(m, "conversation_id"); m["session_id"] = "not-the-conversation" }},
 		{"background", func(m map[string]any) { m["is_background_agent"] = true }},
-		{"remote", func(m map[string]any) { m["workspace_roots"] = []string{"vscode-remote://ssh-remote+server/repo"} }},
-		{"ambiguous-roots", func(m map[string]any) { m["workspace_roots"] = []string{"C:/one", "C:/two"} }},
+		{"remote", func(m map[string]any) {
+			m["workspace_roots"] = []string{"vscode-remote://ssh-remote+server/repo"}
+		}},
+		{"ambiguous-roots", func(m map[string]any) {
+			m["workspace_roots"] = []string{testenv.NativeFixture("C:/one"), testenv.NativeFixture("C:/two")}
+		}},
 		{"relative-file", func(m map[string]any) { m["file_path"] = "debug.log" }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

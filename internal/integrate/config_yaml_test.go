@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"encoding/json"
 	"path/filepath"
@@ -24,7 +26,7 @@ theme: "dark" # keep theme
 	path := filepath.Join(s.Project, "config.yaml")
 	writeIntegrationFile(t, path, input)
 	spec := MCPConfig{Format: ConfigYAML, ServersPath: []string{"mcp_servers"}, Codec: CommandArgsMCP{}}
-	for _, exe := range []string{"C:/old/obit.exe", "C:/new/obit.exe"} {
+	for _, exe := range []string{testenv.NativeFixture("C:/old/obit.exe"), testenv.NativeFixture("C:/new/obit.exe")} {
 		ch, err := PlanMCPConfig(s, path, spec, exe, false)
 		applyIntegration(t, []Change{ch}, err)
 		ch, err = PlanMCPConfig(s, path, spec, exe, false)

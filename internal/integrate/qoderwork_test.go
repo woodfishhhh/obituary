@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"os"
 	"strings"
@@ -24,7 +26,7 @@ func TestQoderWorkManualCapabilities(t *testing.T) {
 			if err != nil || PreservedError(p) == nil || Apply(p) == nil {
 				t.Fatal("manual instructions claimed installed", p, err)
 			}
-			if p, err := agent.PlanMCP(s, "C:/tools with spaces/obit.exe", uninstall); err == nil || len(p) != 0 || !strings.Contains(err.Error(), "MCP") {
+			if p, err := agent.PlanMCP(s, testenv.NativeFixture("C:/tools with spaces/obit.exe"), uninstall); err == nil || len(p) != 0 || !strings.Contains(err.Error(), "MCP") {
 				t.Fatal("guessed MCP location", p, err)
 			}
 		}

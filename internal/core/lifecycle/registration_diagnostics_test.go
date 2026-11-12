@@ -3,6 +3,7 @@ package lifecycle_test
 import (
 	"os"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -17,7 +18,11 @@ func TestRegistrationLocationDiagnosticsPreserveLedger(t *testing.T) {
 	}
 	before := f.items()
 	events, err := f.svc.RegistrationLocationDiagnostics()
-	if err != nil || len(events) != 1 || events[0].ID != it.ID || events[0].Action != "identity-error" || !strings.Contains(events[0].Detail, "hard links") {
+	detail := "hard links"
+	if runtime.GOOS != "windows" {
+		detail = "not supported" // POSIX cannot locate the object across the volume.
+	}
+	if err != nil || len(events) != 1 || events[0].ID != it.ID || events[0].Action != "identity-error" || !strings.Contains(events[0].Detail, detail) {
 		t.Fatalf("identity diagnostic missing: %+v %v", events, err)
 	}
 	if after := f.items(); !reflect.DeepEqual(before, after) {

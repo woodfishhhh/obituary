@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"os"
 	"path/filepath"
@@ -19,7 +21,7 @@ func TestOpenClawStagingRequiresManualActivation(t *testing.T) {
 			t.Setenv("OPENCLAW_CONFIG_PATH", config)
 			original := "\xef\xbb\xbf{ // keep comment\n plugins: {allow:['user-plugin']}, broken: 'JSON5 preserved' }"
 			writeIntegrationFile(t, config, original)
-			cmd := Commands{Executable: `C:\Program Files\obit.exe`}
+			cmd := Commands{Executable: testenv.NativeFixture(`C:\Program Files\obit.exe`)}
 			plan, err := PlanOpenClaw(s, cmd, false)
 			if err != nil {
 				t.Fatal(err)
@@ -40,7 +42,7 @@ func TestOpenClawStagingRequiresManualActivation(t *testing.T) {
 			if err != nil || Pending(plan) {
 				t.Fatalf("staging not idempotent %v", err)
 			}
-			cmd.Executable = `C:\new\obit.exe`
+			cmd.Executable = testenv.NativeFixture(`C:\new\obit.exe`)
 			plan, err = PlanOpenClaw(s, cmd, false)
 			if err != nil {
 				t.Fatal(err)

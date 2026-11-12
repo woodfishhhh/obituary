@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -23,7 +24,11 @@ func TestOnceDeduplicatesProposalErrorsAcrossProcesses(t *testing.T) {
 	}
 	root := t.TempDir()
 	bin := filepath.Join(root, "obitd.exe")
-	if out, err := exec.Command("go", "build", "-ldflags=-H=windowsgui", "-o", bin, ".").CombinedOutput(); err != nil {
+	args := []string{"build", "-o", bin}
+	if runtime.GOOS == "windows" {
+		args = append(args, "-ldflags=-H=windowsgui")
+	}
+	if out, err := exec.Command("go", append(args, ".")...).CombinedOutput(); err != nil {
 		t.Fatalf("build: %v %s", err, out)
 	}
 	project := filepath.Join(root, "repo")
@@ -59,6 +64,9 @@ func TestOnceDeduplicatesProposalErrorsAcrossProcesses(t *testing.T) {
 }
 
 func TestDaemonRejectsChangedHomeArgument(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Win32 extended path normalization and context-menu dispatch")
+	}
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}

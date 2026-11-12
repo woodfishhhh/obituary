@@ -1,5 +1,7 @@
 package hook
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"encoding/json"
@@ -35,7 +37,7 @@ func TestTraeProtocol(t *testing.T) {
 			for _, response := range []any{nil, "success", map[string]any{"success": true}, map[string]any{"is_error": true}} {
 				post := cGroupFixture(t, "trae-post")
 				post["tool_response"] = response
-				post["tool_input"] = map[string]any{"file_path": "C:/repo/debug.log"}
+				post["tool_input"] = map[string]any{"file_path": testenv.NativeFixture("C:/repo/debug.log")}
 				cGroupNoObservation(t, agent, post, "")
 			}
 			cGroupFinish(t, agent, cGroupFixture(t, "trae-stop"), "", false)
@@ -50,7 +52,7 @@ func TestTraeProtocol(t *testing.T) {
 				}
 			}
 			input["hook_event_name"] = "SessionStart"
-			for _, cwd := range []string{"relative", "/home/remote", "ssh://server/repo"} {
+			for _, cwd := range []string{"relative", testenv.ForeignFixture("/home/remote"), "ssh://server/repo"} {
 				input["cwd"] = cwd
 				if _, err := Decode(agent.Adapter, cGroupRaw(t, input), Invocation{Agent: name}); err == nil {
 					t.Fatalf("accepted cwd %s", cwd)
@@ -91,7 +93,7 @@ func cGroupFixture(t *testing.T, name string) map[string]any {
 		t.Fatal(err)
 	}
 	var input map[string]any
-	if err := json.Unmarshal(raw, &input); err != nil {
+	if err := json.Unmarshal([]byte(testenv.NativeFixture(string(raw))), &input); err != nil {
 		t.Fatal(err)
 	}
 	return input
@@ -158,7 +160,7 @@ func cGroupGuardSkipped(t *testing.T, agent Agent, input map[string]any, event s
 	t.Helper()
 	delete(input, "session_id")
 	delete(input, "conversationId")
-	for _, cwd := range []string{"C:/repo", "/home/remote", "ssh://server/repo"} {
+	for _, cwd := range []string{testenv.NativeFixture("C:/repo"), "/home/remote", "ssh://server/repo"} {
 		input["cwd"] = cwd
 		input["tool_input"] = map[string]any{"command": "rm scratch.log", "shell": "bash", "local": true}
 		if tool, ok := input["toolCall"].(map[string]any); ok {

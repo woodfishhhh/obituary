@@ -181,7 +181,7 @@ jobs:
           version: v2.15.0
           args: ${{ github.event_name == 'push' && format('--new-from-rev={0}', github.event.before) || '' }}
 
-  # The supported POSIX suites run whenever the Windows shards do.
+  # Run every package on both POSIX platforms whenever the Windows shards do.
   linux:
     needs: changes
     if: >-
@@ -196,6 +196,9 @@ jobs:
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: go.mod
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "22"
       - name: Build POSIX packages
         run: go build ./...
       - name: Cross-build Linux ARM64
@@ -203,15 +206,16 @@ jobs:
       - name: POSIX tests
         env:
           TMPDIR: /tmp
-        run: |
-          go test ./internal/winfs ./internal/pathutil ./internal/app ./internal/config ./internal/cli/daemon
-          # Run the POSIX entry points; Windows-specific fixtures stay on Windows.
-          go test -run '^TestPOSIX' ./internal/core/... ./internal/auto ./internal/hook ./internal/integrate
-          go test -run '^TestPOSIX' ./internal/userdirs ./internal/cli/init ./internal/cli/doctor
+        run: go test ./...
       - name: POSIX installation mutations
         env:
           OBIT_TEST_POSIX_MUTATIONS: "1"
         run: go test -run '^TestPOSIXCommitMutations$' ./internal/integrate
+
+      - name: Native POSIX safety mutations
+        env:
+          OBIT_TEST_DELETE_MUTATIONS: "1"
+        run: go test -count=1 -run '^TestDeleteGuardMutations/native-posix-' ./internal/cli/remove
 
   macos:
     needs: changes
@@ -227,20 +231,25 @@ jobs:
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: go.mod
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "22"
       - name: Build POSIX packages and both macOS architectures
         run: |
           go build ./...
           GOOS=darwin GOARCH=amd64 go build ./cmd/obit ./cmd/obitd
           GOOS=darwin GOARCH=arm64 go build ./cmd/obit ./cmd/obitd
       - name: POSIX tests
-        run: |
-          go test ./internal/winfs ./internal/pathutil ./internal/app ./internal/config ./internal/cli/daemon
-          go test -run '^TestPOSIX' ./internal/core/... ./internal/auto ./internal/hook ./internal/integrate
-          go test -run '^TestPOSIX' ./internal/userdirs ./internal/cli/init ./internal/cli/doctor
+        run: go test ./...
       - name: POSIX installation mutations
         env:
           OBIT_TEST_POSIX_MUTATIONS: "1"
         run: go test -run '^TestPOSIXCommitMutations$' ./internal/integrate
+
+      - name: Native POSIX safety mutations
+        env:
+          OBIT_TEST_DELETE_MUTATIONS: "1"
+        run: go test -count=1 -run '^TestDeleteGuardMutations/native-posix-' ./internal/cli/remove
 
   install-posix:
     needs: build

@@ -1,5 +1,7 @@
 package doctor
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"errors"
 	"os"
@@ -28,7 +30,7 @@ func TestDoctorWatches(t *testing.T) {
 		{"unreadable", core.ConsentApproved, "WARN", os.ErrPermission},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			state := ledger.State{Watches: []ledger.WatchPolicy{{ID: 1, Path: `C:\downloads`, Consent: tc.consent,
+			state := ledger.State{Watches: []ledger.WatchPolicy{{ID: 1, Path: testenv.NativeFixture(`C:\downloads`), Consent: tc.consent,
 				Exclusions: []core.WatchExclusion{{ID: 2}}}}, WatchExemptions: []ledger.WatchExemption{{WatchID: 1}}}
 			calls := 0
 			folder := t.TempDir()
@@ -46,7 +48,7 @@ func TestDoctorWatches(t *testing.T) {
 			if (w.Pending == 1) != (tc.consent == "pending") || (w.Unavailable == 1) != (tc.pathErr != nil) {
 				t.Fatalf("policy counts: %+v", w)
 			}
-			if tc.pathErr != nil && (!strings.Contains(got.Detail, tc.pathErr.Error()) || w.FirstUnavailable != `C:\downloads`) {
+			if tc.pathErr != nil && (!strings.Contains(got.Detail, tc.pathErr.Error()) || w.FirstUnavailable != testenv.NativeFixture(`C:\downloads`)) {
 				t.Fatalf("missing folder failure reason: %+v", got)
 			}
 		})
@@ -80,7 +82,7 @@ func TestDoctorWatchStability(t *testing.T) {
 		{"manual item", 25 * time.Hour, now, "", "cli", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			it := ledger.Item{ID: 1, Path: `C:\downloads\file.zip`, CreatedAt: now.Add(-tc.age), Source: tc.source,
+			it := ledger.Item{ID: 1, Path: testenv.NativeFixture(`C:\downloads\file.zip`), CreatedAt: now.Add(-tc.age), Source: tc.source,
 				LastError: tc.lastErr, Watch: &ledger.WatchTiming{StableSince: tc.stable}}
 			got := diagnoseWatches(ledger.State{Items: []ledger.Item{it}}, nil, now, nil)
 			if (got.Status == "WARN") != tc.unstable || (got.Watch.Unstable == 1) != tc.unstable {

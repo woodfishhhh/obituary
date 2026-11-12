@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"path/filepath"
@@ -164,7 +166,7 @@ func TestComposeTOMLBlocks(t *testing.T) {
 	writeIntegrationFile(t, path, original)
 	spec := func(id, table string) TOMLBlock {
 		return TOMLBlock{ID: id, Content: []byte("[" + table + "]\ncommand = 'obit.exe'\n"), Owns: func(map[string]any) bool { return true }, Refresh: func(data []byte) ([]byte, error) {
-			return RefreshTOMLString(data, []string{table}, "command", "C:/new/obit.exe")
+			return RefreshTOMLString(data, []string{table}, "command", testenv.NativeFixture("C:/new/obit.exe"))
 		}}
 	}
 	hooks, mcp := spec("hooks", "hooks"), spec("mcp", "mcp")

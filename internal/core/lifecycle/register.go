@@ -319,7 +319,7 @@ func (s *Service) checkNew(st *State, c *candidate, roots []resolvedGraveyardRoo
 		}
 		path := it.Path
 		if it.Identity != nil && (scope != nil || it.Identity.Serial == c.identity.Serial) {
-			current, err := s.FS.Locate(*it.Identity)
+			current, err := s.LocateKnown(it.Path, *it.Identity)
 			if errors.Is(err, ErrNotFound) {
 				continue
 			}

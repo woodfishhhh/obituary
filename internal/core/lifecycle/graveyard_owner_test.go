@@ -1,5 +1,7 @@
 package lifecycle_test
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"context"
 	"encoding/json"
@@ -8,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -91,7 +94,7 @@ func TestLegacyOwnerMigrationHonorsStoreDeadline(t *testing.T) {
 }
 
 func (fs ownerBranchFS) SameName(a, b string) (bool, error) {
-	if strings.HasSuffix(a, `\graveyard`) && strings.HasSuffix(b, `\graveyard`) {
+	if filepath.Base(a) == "graveyard" && filepath.Base(b) == "graveyard" {
 		return false, nil
 	}
 	return fs.FS.SameName(a, b)
@@ -311,7 +314,11 @@ func TestGraveyardOwnerMigratesLegacyAndRejectsReplacement(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(root), 0700); err != nil {
 		t.Fatal(err)
 	}
-	data, _ := json.Marshal(strings.ToUpper(f.svc.Store.Home))
+	home := f.svc.Store.Home
+	if runtime.GOOS == "windows" {
+		home = strings.ToUpper(home) // Windows accepts alternate casing of the same directory.
+	}
+	data, _ := json.Marshal(home)
 	if err := os.WriteFile(root+".owner", data, 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -368,6 +375,7 @@ func TestPendingGravesLeavesLegacyOwnerReadOnly(t *testing.T) {
 }
 
 func TestGraveyardOwnerRejectsUnicodeKeyCollision(t *testing.T) {
+	testenv.RequireDistinctUnicodeNames(t)
 	f := newFixture(t)
 	first, second := *f.svc, *f.svc
 	first.Store.Home = filepath.Join(filepath.Dir(f.dir), "K")
@@ -423,7 +431,9 @@ func TestGraveyardOwnerRejectsUnicodeKeyCollision(t *testing.T) {
 	if err := json.Unmarshal([]byte(read(t, root+".owner")), &owner); err != nil || owner.Path != first.Store.Home || owner.Identity.FileID != a.FileID {
 		t.Fatalf("owner marker lost exact Home spelling: %+v %v", owner, err)
 	}
-	first.Store.Home = `\\?\` + filepath.Join(filepath.Dir(first.Store.Home), "k")
+	if runtime.GOOS == "windows" {
+		first.Store.Home = `\\?\` + filepath.Join(filepath.Dir(first.Store.Home), "k")
+	}
 	if err := core.CheckGraveyardOwner(&first, root, true); err != nil {
 		t.Fatal("ordinary casing or extended spelling changed ownership", err)
 	}
@@ -433,6 +443,7 @@ func TestGraveyardOwnerRejectsUnicodeKeyCollision(t *testing.T) {
 }
 
 func TestGraveyardOwnerSerializesFirstClaim(t *testing.T) {
+	testenv.RequireDistinctUnicodeNames(t)
 	f := newFixture(t)
 	a, b := *f.svc, *f.svc
 	a.Store.Home = filepath.Join(f.dir, "K")

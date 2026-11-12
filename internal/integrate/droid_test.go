@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"os"
 	"path/filepath"
@@ -64,8 +66,8 @@ func TestDroidPreservesExistingLegacyHookLocations(t *testing.T) {
 func TestDroidMixedLoaderConfigurationNeedsManualResolution(t *testing.T) {
 	f := newNativeJSONInstallFixture(t, "droid", false)
 	settings := filepath.Join(f.dir, "settings.json")
-	root := `{"SessionStart":[{"hooks":[{"command":"C:/tools/obit.exe hook droid"},{"command":"root-user"}]}]}`
-	nested := `{"hooks":{"Stop":[{"hooks":[{"command":"C:/tools/obit.exe hook droid"},{"command":"settings-user"}]}]}}`
+	root := testenv.NativeFixture(`{"SessionStart":[{"hooks":[{"command":"C:/tools/obit.exe hook droid"},{"command":"root-user"}]}]}`)
+	nested := testenv.NativeFixture(`{"hooks":{"Stop":[{"hooks":[{"command":"C:/tools/obit.exe hook droid"},{"command":"settings-user"}]}]}}`)
 	writeIntegrationFile(t, f.hookPath, root)
 	writeIntegrationFile(t, settings, nested)
 	commands := nativeJSONCommands("droid", "tools")

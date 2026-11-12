@@ -1,3 +1,4 @@
+import { nativePath } from "../bridge/native-fixture.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -8,7 +9,7 @@ let reply = { version: 1, deny: true, reason: "obit rm scratch.log" }, raw, fail
 const sandbox = vm.createContext({ Buffer, process: { env: { OBIT_KILOCODE_LOCAL_SHELL: "bash" } } });
 const cp = new vm.SyntheticModule(["execFile"], function () {
   this.setExport("execFile", (exe, args, options, callback) => {
-    assert.equal(exe, "C:\\Program Files\\obit.exe");
+    assert.equal(exe, nativePath("C:\\Program Files\\obit.exe"));
     assert.deepEqual(Array.from(args), ["hook", "kilocode"]);
     assert.equal(options.shell, false); assert.equal(options.windowsHide, true);
     assert.ok(options.timeout < 3000); assert.equal(options.maxBuffer, 16384);
@@ -20,7 +21,7 @@ const cp = new vm.SyntheticModule(["execFile"], function () {
 const paths = new vm.SyntheticModule(["default"], function () { this.setExport("default", path); }, { context: sandbox });
 const module = new vm.SourceTextModule(readFileSync(process.argv[2], "utf8"), { context: sandbox });
 await module.link((name) => name === "node:child_process" ? cp : paths); await module.evaluate();
-const hooks = await module.namespace.default.server({ directory: "C:\\repo" });
+const hooks = await module.namespace.default.server({ directory: nativePath("C:\\repo") });
 const input = { tool: "bash", sessionID: "stable", callID: "call" }, output = { args: { command: "rm scratch.log" } };
 let executed = false;
 await assert.rejects(async () => { await hooks["tool.execute.before"](input, output); executed = true; }, /obit rm scratch.log/);
@@ -55,7 +56,7 @@ const delivered = requests.length;
 await hooks["experimental.chat.system.transform"]({}, { system: [] });
 await hooks["experimental.chat.system.transform"]({ sessionID: "stable" }, {});
 sandbox.process.env = {};
-const remoteHooks = await module.namespace.default.server({ directory: "C:\\repo" });
+const remoteHooks = await module.namespace.default.server({ directory: nativePath("C:\\repo") });
 await remoteHooks["experimental.chat.system.transform"]({ sessionID: "stable" }, { system: [] });
 assert.equal(requests.length, delivered);
 console.log("Kilo plugin: argv, intentional veto reaches host, failed writes, silent lifecycle, fail-open passed");

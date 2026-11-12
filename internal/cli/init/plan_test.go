@@ -1,5 +1,7 @@
 package init_test
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"errors"
 	"os"
@@ -15,6 +17,7 @@ import (
 )
 
 func TestInitDeclaredAgentGuard(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows host shell declarations and PowerShell commandWindows registration")
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}

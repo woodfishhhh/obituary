@@ -18,14 +18,20 @@ func TestTraeDirectories(t *testing.T) {
 			if _, err := os.Stat(want); !os.IsNotExist(err) {
 				t.Fatalf("resolver created directory: %v", err)
 			}
-			t.Setenv("OBIT_USER_HOME", `\\?\`+home)
-			if got, err := AgentDir(tc.name); err != nil || got != want {
-				t.Fatalf("extended home: %q %v", got, err)
-			}
-			t.Setenv("OBIT_USER_HOME", `\\?\`+home+`.\child`)
-			if got, err := AgentDir(tc.name); err == nil {
-				t.Fatalf("unstable home accepted: %q", got)
-			}
+			t.Run("windows-path-spelling", func(t *testing.T) {
+				windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+				t.Setenv("OBIT_USER_HOME", `\\?\`+home)
+				if got, err := AgentDir(tc.name); err != nil || got != want {
+					t.Fatalf("extended home: %q %v", got, err)
+				}
+			})
+			t.Run("windows-path-spelling", func(t *testing.T) {
+				windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+				t.Setenv("OBIT_USER_HOME", `\\?\`+home+`.\child`)
+				if got, err := AgentDir(tc.name); err == nil {
+					t.Fatalf("unstable home accepted: %q", got)
+				}
+			})
 		})
 	}
 }

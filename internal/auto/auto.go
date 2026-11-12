@@ -298,7 +298,7 @@ func (e *Engine) vetLifespans(unit string, id core.Identity, items []core.Item, 
 		cached := false
 		if it.Identity != nil && (scope != nil || it.Identity.Serial == id.Serial) {
 			_, cached = located[*it.Identity]
-			if current, err := located.locate(e.Svc.FS, *it.Identity); err == nil {
+			if current, err := located.locate(e.Svc, it); err == nil {
 				path = current
 			} else if errors.Is(err, core.ErrNotFound) {
 				continue
@@ -310,7 +310,7 @@ func (e *Engine) vetLifespans(unit string, id core.Identity, items []core.Item, 
 			// Cached positions may only suggest a refusal. Confirm it against
 			// the live object before settling a proposal or skipping a unit.
 			delete(located, *it.Identity)
-			current, err := located.locate(e.Svc.FS, *it.Identity)
+			current, err := located.locate(e.Svc, it)
 			if err == nil {
 				path = current
 			} else if errors.Is(err, core.ErrNotFound) {
@@ -354,10 +354,11 @@ type location struct {
 // Cache errors too, without changing their retry/not-found semantics.
 type locations map[core.Identity]location
 
-func (l locations) locate(fs core.FS, id core.Identity) (string, error) {
+func (l locations) locate(svc *core.Service, it core.Item) (string, error) {
+	id := *it.Identity
 	got, ok := l[id]
 	if !ok {
-		got.path, got.err = fs.Locate(id)
+		got.path, got.err = svc.LocateKnown(it.Path, id)
 		l[id] = got
 	}
 	return got.path, got.err

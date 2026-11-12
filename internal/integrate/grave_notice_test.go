@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"path/filepath"
 	"strings"
@@ -12,7 +14,7 @@ func TestCodexMixedNoticeModesRequireGuardOptIn(t *testing.T) {
 			dir := t.TempDir()
 			t.Setenv("CODEX_HOME", dir)
 			path := filepath.Join(dir, "hooks.json")
-			writeIntegrationFile(t, path, `{"hooks":{"PreToolUse":[{"matcher":".*","hooks":[{"type":"command","command":"/mnt/c/old/obit.exe hook codex`+suffixes[0]+`","commandWindows":"C:/old/obit.exe hook codex`+suffixes[1]+`"}]}]}}`)
+			writeIntegrationFile(t, path, `{"hooks":{"PreToolUse":[{"matcher":".*","hooks":[{"type":"command","command":"/mnt/c/old/obit.exe hook codex`+suffixes[0]+testenv.NativeFixture(`","commandWindows":"C:/old/obit.exe hook codex`)+suffixes[1]+`"}]}]}}`)
 			s := Scope{Global: true, GuardRM: guard}
 			changes, err := PlanCodex(s, unixCmd, winCmd, false)
 			applyIntegration(t, changes, err)
@@ -43,9 +45,9 @@ func TestGraveNoticeInstallationPreservesGuardOptIn(t *testing.T) {
 				var changes []Change
 				var err error
 				if agent == "claude" {
-					changes, err = PlanClaude(s, "C:/tools/obit.exe hook claude", remove)
+					changes, err = PlanClaude(s, testenv.NativeFixture("C:/tools/obit.exe hook claude"), remove)
 				} else {
-					changes, err = PlanCodex(s, "C:/tools/obit.exe hook codex", "C:/tools/obit.exe hook codex", remove)
+					changes, err = PlanCodex(s, testenv.NativeFixture("C:/tools/obit.exe hook codex"), testenv.NativeFixture("C:/tools/obit.exe hook codex"), remove)
 				}
 				if err != nil {
 					t.Fatal(err)

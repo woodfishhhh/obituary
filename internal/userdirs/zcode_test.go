@@ -14,7 +14,7 @@ func TestZCodeDirectory(t *testing.T) {
 	t.Setenv("OBIT_USER_HOME", home)
 	t.Setenv("ZCODE_DATA_BASE_DIR", provider)
 	want := filepath.Join(home, ".zcode")
-	for _, root := range []string{home, `\\?\` + home} {
+	for _, root := range nativeDirectorySpellings([]string{home, `\\?\` + home}) {
 		t.Setenv("OBIT_USER_HOME", root)
 		if got, err := AgentDir(agentid.ZCode); err != nil || got != want {
 			t.Fatalf("runtime root must not follow provider override: %q %v", got, err)
@@ -23,7 +23,7 @@ func TestZCodeDirectory(t *testing.T) {
 	if _, err := os.Stat(want); !os.IsNotExist(err) {
 		t.Fatalf("resolver must not create directories: %v", err)
 	}
-	for _, root := range []string{home + ":stream", `\\?\` + home + `.\child`} {
+	for _, root := range nativeDirectorySpellings([]string{home + ":stream", `\\?\` + home + `.\child`}) {
 		t.Setenv("OBIT_USER_HOME", root)
 		if got, err := ZCodeDir(); err == nil {
 			t.Fatalf("invalid directory accepted: %s", got)

@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"os"
@@ -26,7 +28,7 @@ func TestVibeInstallationLifecycle(t *testing.T) {
 			if !global {
 				writeIntegrationFile(t, filepath.Join(s.Project, "AGENTS.md"), "# Project rules\nkeep these\n")
 			}
-			commands := Commands{Native: `"C:/tools/obit.exe" hook vibe`}
+			commands := Commands{Native: testenv.NativeFixture(`"C:/tools/obit.exe" hook vibe`)}
 			plan, err := PlanVibe(s, commands, false)
 			if err != nil || read(t, path) != input {
 				t.Fatalf("dry-run: %v", err)
@@ -42,11 +44,11 @@ func TestVibeInstallationLifecycle(t *testing.T) {
 				t.Fatal("unsupported or missing event", entries)
 			}
 			writeIntegrationFile(t, path, strings.Replace(got, "# obit:vibe-hooks:begin", "# obit:vibe-hooks:begin\n# retained owned comment", 1))
-			commands.Native = "D:/new/obit.exe hook vibe"
+			commands.Native = testenv.NativeFixture("D:/new/obit.exe hook vibe")
 			plan, err = PlanVibe(s, commands, false)
 			applyIntegration(t, plan, err)
 			got = read(t, path)
-			if !strings.HasPrefix(got, input) || !strings.Contains(got, "# retained owned comment") || strings.Contains(got, "C:/tools") || strings.Count(got, "D:/new/obit.exe hook vibe") != 2 {
+			if !strings.HasPrefix(got, input) || !strings.Contains(got, "# retained owned comment") || strings.Contains(got, testenv.NativeFixture("C:/tools")) || strings.Count(got, testenv.NativeFixture("D:/new/obit.exe hook vibe")) != 2 {
 				t.Fatal("refresh did not preserve comments", got)
 			}
 			plan, err = PlanVibe(s, commands, false)
@@ -87,12 +89,12 @@ func TestVibeRejectsUnmarkedHooksAndUnsafeLauncher(t *testing.T) {
 	}
 
 	t.Parallel()
-	for _, input := range []string{"[", "hooks = {}", "[[hooks]]\nname='obituary-write'\ncommand='user'\n", "[[hooks]]\ncommand='C:/tools/obit.exe hook vibe'\n", "# obit:vibe-hooks:begin\n[[hooks]]\ncommand='user'\n# obit:vibe-hooks:end\n"} {
+	for _, input := range []string{"[", "hooks = {}", "[[hooks]]\nname='obituary-write'\ncommand='user'\n", testenv.NativeFixture("[[hooks]]\ncommand='C:/tools/obit.exe hook vibe'\n"), "# obit:vibe-hooks:begin\n[[hooks]]\ncommand='user'\n# obit:vibe-hooks:end\n"} {
 		s := Scope{Project: t.TempDir()}
 		path := filepath.Join(s.Project, ".vibe", "hooks.toml")
 		writeIntegrationFile(t, path, input)
 		for _, uninstall := range []bool{false, true} {
-			if _, err := PlanVibe(s, Commands{Native: "C:/tools/obit.exe hook vibe"}, uninstall); err == nil {
+			if _, err := PlanVibe(s, Commands{Native: testenv.NativeFixture("C:/tools/obit.exe hook vibe")}, uninstall); err == nil {
 				t.Fatal("unowned or invalid hook accepted", input)
 			}
 		}
@@ -100,7 +102,7 @@ func TestVibeRejectsUnmarkedHooksAndUnsafeLauncher(t *testing.T) {
 			t.Fatal("planner wrote config")
 		}
 	}
-	for _, command := range []string{`"C:/space dir/obit.exe" hook vibe`, `"C:/tools&stuff/obit.exe" hook vibe`, "echo user && obit hook vibe", "& 'C:/tools/obit.exe' hook vibe"} {
+	for _, command := range []string{testenv.NativeFixture(`"C:/space dir/obit.exe" hook vibe`), testenv.NativeFixture(`"C:/tools&stuff/obit.exe" hook vibe`), "echo user && obit hook vibe", testenv.NativeFixture("& 'C:/tools/obit.exe' hook vibe")} {
 		if _, err := PlanVibe(Scope{Project: t.TempDir()}, Commands{Native: command}, false); err == nil {
 			t.Fatal("ambiguous shell accepted", command)
 		}
@@ -130,7 +132,7 @@ func TestVibeSkillLifecycleAndEditedPrompt(t *testing.T) {
 	}
 	t.Setenv("VIBE_HOME", t.TempDir())
 	s := Scope{Global: true}
-	plan, err := PlanVibe(s, Commands{Native: "C:/tools/obit.exe hook vibe"}, false)
+	plan, err := PlanVibe(s, Commands{Native: testenv.NativeFixture("C:/tools/obit.exe hook vibe")}, false)
 	applyIntegration(t, plan, err)
 	root, _ := vibeRoot(s)
 	path := filepath.Join(root, "prompts", "obituary.md")

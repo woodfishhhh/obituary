@@ -183,6 +183,9 @@ func localPatchPaths(patch string) ([]string, error) {
 // Windows, WSL's /mnt/<drive>/... becomes <DRIVE>:\...; relative paths pass
 // through; other POSIX absolute paths are unreachable (ok is false).
 func NativePath(p string) (string, bool) {
+	if runtime.GOOS != "windows" && strings.Contains(p, "://") {
+		return "", false
+	}
 	if runtime.GOOS != "windows" || !strings.HasPrefix(p, "/") {
 		return p, p != ""
 	}

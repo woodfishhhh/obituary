@@ -1,9 +1,12 @@
 package hook
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"errors"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -11,6 +14,7 @@ import (
 )
 
 func TestCodeBuddyShellDeclaration(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows host shell declarations and PowerShell commandWindows registration")
 	for _, name := range []string{"codebuddy", "codebuddy-ide"} {
 		t.Run(name, func(t *testing.T) {
 			testAgentShellDeclaration(t, name, name, []string{"Bash", "PowerShell"})
@@ -41,6 +45,12 @@ func TestCodeBuddyProtocol(t *testing.T) {
 			cGroupInputErrors(t, agent, start, "SessionStart", "hook_event_name", "session_id")
 			for _, fixture := range []string{"codebuddy-cli-pre", "codebuddy-ide-pre"} {
 				ev := cGroupDecode(t, agent, cGroupFixture(t, fixture), "")
+				if runtime.GOOS != "windows" {
+					if ev.Command == "" || ev.SkipReason == "" || ev.ShellDeclared {
+						t.Fatalf("Windows shell declaration must remain unconfirmed: %+v", ev)
+					}
+					continue
+				}
 				if ev.Command == "" || ev.Shell != guardrm.Uncertain || ev.ShellDeclared {
 					t.Fatalf("payload cannot declare a shell: %+v", ev)
 				}
@@ -81,7 +91,7 @@ func TestCodeBuddyWriteOutcomes(t *testing.T) {
 				}
 			}
 			post["tool_response"] = map[string]any{"success": true, "error": nil}
-			for _, path := range []string{"/home/remote/file", "ssh://host/work/file", ""} {
+			for _, path := range []string{testenv.ForeignFixture("/home/remote/file"), "ssh://host/work/file", ""} {
 				post["tool_input"] = map[string]any{key: path}
 				if ev, err := Decode(agent.Adapter, cGroupRaw(t, post), Invocation{Agent: agent.Name}); err == nil || len(ev.Paths) != 0 {
 					t.Fatalf("non-native write observed: %+v %v", ev, err)

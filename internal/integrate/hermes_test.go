@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"os"
 	"os/exec"
@@ -50,7 +52,7 @@ func TestHermesRejectsBadConfig(t *testing.T) {
 		t.Setenv("HERMES_HOME", dir)
 		path := filepath.Join(dir, "config.yaml")
 		writeIntegrationFile(t, path, bad)
-		if _, err := PlanHermes(Scope{Global: true}, Commands{Executable: `C:\tools\obit.exe`}, false); err == nil {
+		if _, err := PlanHermes(Scope{Global: true}, Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}, false); err == nil {
 			t.Fatalf("accepted %q", bad)
 		}
 		if read(t, path) != bad {
@@ -70,7 +72,7 @@ func TestHermesMCP(t *testing.T) {
 		writeIntegrationFile(t, path, initial)
 		checkMCPPlanCycle(t, PlanHermesMCP, Scope{Global: true}, path, ConfigYAML, []string{"mcp_servers"}, initial)
 	}
-	if _, err := PlanHermesMCP(Scope{Project: t.TempDir()}, `C:\tools\obit.exe`, false); err == nil {
+	if _, err := PlanHermesMCP(Scope{Project: t.TempDir()}, testenv.NativeFixture(`C:\tools\obit.exe`), false); err == nil {
 		t.Fatal("project MCP claimed installed")
 	}
 }
@@ -81,11 +83,11 @@ func TestHermesCombinedMCPInstallation(t *testing.T) {
 	path := filepath.Join(dir, "config.yaml")
 	writeIntegrationFile(t, path, "# keep\nplugins:\n  enabled: [other]\n")
 	for _, remove := range []bool{false, false, true, true} {
-		base, err := PlanHermes(Scope{Global: true}, Commands{Executable: `C:\tools\obit.exe`}, remove)
+		base, err := PlanHermes(Scope{Global: true}, Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}, remove)
 		if err != nil {
 			t.Fatal(err)
 		}
-		ext, err := PlanHermesMCP(Scope{Global: true}, `C:\tools\obit.exe`, remove)
+		ext, err := PlanHermesMCP(Scope{Global: true}, testenv.NativeFixture(`C:\tools\obit.exe`), remove)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -120,7 +122,7 @@ func TestHermesUninstallRestoresAbsentContainers(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				ext, err := PlanHermesMCP(Scope{Global: true}, "C:/tools/obit.exe", uninstall)
+				ext, err := PlanHermesMCP(Scope{Global: true}, testenv.NativeFixture("C:/tools/obit.exe"), uninstall)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -140,7 +142,7 @@ func TestHermesUnownedEnablement(t *testing.T) {
 	path := filepath.Join(dir, "config.yaml")
 	writeIntegrationFile(t, path, "plugins:\n  enabled: [obituary]\n")
 	for _, remove := range []bool{false, true} {
-		if _, err := PlanHermes(Scope{Global: true}, Commands{Executable: `C:\tools\obit.exe`}, remove); err == nil {
+		if _, err := PlanHermes(Scope{Global: true}, Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}, remove); err == nil {
 			t.Fatal("unowned enablement claimed")
 		}
 	}
@@ -152,7 +154,7 @@ func TestHermesPluginRuntime(t *testing.T) {
 	}
 	t.Parallel()
 	dir := t.TempDir()
-	payload, err := pluginPayload(Scope{Project: dir, GuardRM: true}, filepath.Join(dir, "__init__.py"), hermesPlugin, `C:\Program Files\obit.exe`)
+	payload, err := pluginPayload(Scope{Project: dir, GuardRM: true}, filepath.Join(dir, "__init__.py"), hermesPlugin, testenv.NativeFixture(`C:\Program Files\obit.exe`))
 	if err != nil {
 		t.Fatal(err)
 	}

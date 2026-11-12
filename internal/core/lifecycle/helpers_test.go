@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -19,6 +20,27 @@ import (
 	"github.com/woodfishhhh/obituary/internal/testenv"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
+
+func directoryLink(t *testing.T, link, target string) {
+	t.Helper()
+	if runtime.GOOS != "windows" {
+		if err := os.Symlink(target, link); err != nil {
+			t.Fatal(err)
+		}
+		return
+	}
+	if out, err := exec.Command("cmd", "/c", "mklink", "/J", link, target).CombinedOutput(); err != nil {
+		t.Fatalf("junction: %s %v", out, err)
+	}
+}
+
+func requireRetainedRetry(t *testing.T, f *fixture, out []core.Outcome) {
+	t.Helper()
+	items := f.items()
+	if len(out) != 1 || out[0].Action != core.ActionRetry || len(items) != 1 || items[0].ID != out[0].Item.ID || items[0].Identity == nil || items[0].LastError == "" || !items[0].NextAttempt.After(f.clock) || len(f.burials()) != 0 {
+		t.Fatalf("uncertain object must retain its identity and retry: outcomes=%+v items=%+v", out, items)
+	}
+}
 
 func delayedOwners(ctx context.Context, query core.OwnerBatchFunc, paths []string) []core.Ownership {
 	timer := time.NewTimer(350 * time.Millisecond)
@@ -265,6 +287,9 @@ func (fs *watchObserveCallbackFS) ObserveWatch(path string, hold bool) (core.Wat
 
 func spareWatchFixture(t *testing.T, f *fixture, path string, restore bool) {
 	t.Helper()
+	if restore && runtime.GOOS != "windows" {
+		t.Skip("watch burial requires Windows exclusion of concurrent writers; POSIX retention is covered by TestWatchExpiryAlwaysUsesRestorableGraveyard")
+	}
 	if !restore {
 		rows, err := f.svc.Cancel([]string{path})
 		if err != nil || core.Failed(rows) {

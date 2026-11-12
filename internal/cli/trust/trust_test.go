@@ -1,5 +1,7 @@
 package trust
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"os"
 	"path/filepath"
@@ -11,6 +13,7 @@ import (
 )
 
 func TestTrustRejectsChangedExtendedRulesFile(t *testing.T) {
+	testenv.WindowsOnly(t, "Win32 extended paths and Windows namespace normalization")
 	for _, operation := range []string{"trust", "untrust"} {
 		t.Run(operation, func(t *testing.T) {
 			clitest.IsolateRunner(t)
@@ -47,6 +50,7 @@ func TestTrustRejectsChangedExtendedRulesFile(t *testing.T) {
 }
 
 func TestTrustNormalizesExtendedRulesKey(t *testing.T) {
+	testenv.WindowsOnly(t, "Win32 extended paths and Windows namespace normalization")
 	clitest.IsolateRunner(t)
 	repo, store := clitest.CommandDir(t)
 	path := filepath.Join(repo, ".obitrules")

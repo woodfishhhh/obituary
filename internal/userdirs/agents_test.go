@@ -20,14 +20,20 @@ func TestAgentDirExistingLocations(t *testing.T) {
 			if got, err := AgentDir(tc.name); err != nil || got != override {
 				t.Fatalf("override: %q %v", got, err)
 			}
-			t.Setenv(tc.env, `\\?\`+override)
-			if got, err := AgentDir(tc.name); err != nil || got != override {
-				t.Fatalf("extended spelling: %q %v", got, err)
-			}
-			t.Setenv(tc.env, `\\?\`+override+".\\child")
-			if got, err := AgentDir(tc.name); err == nil {
-				t.Fatalf("unstable prefix accepted: %q", got)
-			}
+			t.Run("windows-path-spelling", func(t *testing.T) {
+				windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+				t.Setenv(tc.env, `\\?\`+override)
+				if got, err := AgentDir(tc.name); err != nil || got != override {
+					t.Fatalf("extended spelling: %q %v", got, err)
+				}
+			})
+			t.Run("windows-path-spelling", func(t *testing.T) {
+				windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+				t.Setenv(tc.env, `\\?\`+override+".\\child")
+				if got, err := AgentDir(tc.name); err == nil {
+					t.Fatalf("unstable prefix accepted: %q", got)
+				}
+			})
 		})
 	}
 	if _, err := AgentDir("unknown"); err == nil {

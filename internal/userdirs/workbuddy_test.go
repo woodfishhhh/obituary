@@ -19,16 +19,19 @@ func TestWorkBuddyDirectory(t *testing.T) {
 	if _, err := os.Stat(want); !os.IsNotExist(err) {
 		t.Fatalf("resolver created directory: %v", err)
 	}
-	t.Setenv("OBIT_USER_HOME", `\\?\`+home)
-	if got, err := WorkBuddyDir(); err != nil || got != want {
-		t.Fatalf("extended home = %q, %v", got, err)
-	}
+	t.Run("windows-path-spelling", func(t *testing.T) {
+		windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+		t.Setenv("OBIT_USER_HOME", `\\?\`+home)
+		if got, err := WorkBuddyDir(); err != nil || got != want {
+			t.Fatalf("extended home = %q, %v", got, err)
+		}
+	})
 	other := t.TempDir()
 	t.Setenv("OBIT_USER_HOME", other)
 	if got, err := WorkBuddyDir(); err != nil || got != filepath.Join(other, ".workbuddy") {
 		t.Fatalf("redirected home = %q, %v", got, err)
 	}
-	for _, unsafe := range []string{`\\?\` + home + `.\child`, home + `:stream`, `\\?\` + filepath.Join(home, "trailing.", "child")} {
+	for _, unsafe := range nativeDirectorySpellings([]string{`\\?\` + home + `.\child`, home + `:stream`, `\\?\` + filepath.Join(home, "trailing.", "child")}) {
 		t.Setenv("OBIT_USER_HOME", unsafe)
 		if got, err := WorkBuddyDir(); err == nil || got != "" {
 			t.Fatalf("unsafe home accepted: %q, %v", got, err)

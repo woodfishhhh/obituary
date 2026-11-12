@@ -1,8 +1,11 @@
 package rules
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -34,7 +37,7 @@ func TestLoadPausesInvalidOrChangedProjectRules(t *testing.T) {
 
 func TestMatchPicksTheUnitAndLifespan(t *testing.T) {
 	t.Parallel()
-	base := `C:\repo`
+	base := testenv.NativeFixture(`C:\repo`)
 	s := set(t, base, `
 output/**          7d
 !output/keep/**
@@ -48,30 +51,36 @@ test-results/      off
 		unit  string
 		life  time.Duration
 	}{
-		{`C:\repo\logs\app.log`, false, `C:\repo\logs\app.log`, 72 * time.Hour},                // builtin *.log at any depth
-		{`C:\repo\.playwright-mcp\shot.png`, false, `C:\repo\.playwright-mcp`, 24 * time.Hour}, // directory rule wins at the top
-		{`C:\repo\output\run1\a.txt`, false, `C:\repo\output\run1`, 7 * 24 * time.Hour},        // output/** names each child, not output
-		{`C:\repo\build\x.o`, false, `C:\repo\build`, 48 * time.Hour},                          // anchored directory
-		{`C:\repo\shot.PNG`, false, `C:\repo\shot.PNG`, time.Hour},                             // case-insensitive on Windows
+		{testenv.NativeFixture(`C:\repo\logs\app.log`), false, testenv.NativeFixture(`C:\repo\logs\app.log`), 72 * time.Hour},                // builtin *.log at any depth
+		{testenv.NativeFixture(`C:\repo\.playwright-mcp\shot.png`), false, testenv.NativeFixture(`C:\repo\.playwright-mcp`), 24 * time.Hour}, // directory rule wins at the top
+		{testenv.NativeFixture(`C:\repo\output\run1\a.txt`), false, testenv.NativeFixture(`C:\repo\output\run1`), 7 * 24 * time.Hour},        // output/** names each child, not output
+		{testenv.NativeFixture(`C:\repo\build\x.o`), false, testenv.NativeFixture(`C:\repo\build`), 48 * time.Hour},                          // anchored directory
+		{testenv.NativeFixture(`C:\repo\shot.PNG`), false, testenv.NativeFixture(`C:\repo\shot.PNG`), time.Hour},                             // case-insensitive on Windows
 	}
 	for _, c := range cases {
+		if runtime.GOOS != "windows" && strings.HasSuffix(c.path, ".PNG") {
+			if _, ok, err := s.Match(c.path, c.isDir); err != nil || ok {
+				t.Fatalf("POSIX matching must preserve case: %v %v", ok, err)
+			}
+			continue
+		}
 		m, ok, matchErr := s.Match(c.path, c.isDir)
 		if matchErr != nil || !ok || m.Unit != c.unit || m.Lifespan != c.life {
 			t.Errorf("Match(%s) = %+v, %v; want unit %s lifespan %v", c.path, m, ok, c.unit, c.life)
 		}
 	}
 	for _, path := range []string{
-		`C:\repo\output\keep\a.txt`,       // negated
-		`C:\repo\test-results\report.xml`, // builtin turned off
-		`C:\repo\src\build\x.o`,           // /build/ is anchored to the root
-		`C:\repo\src\main.go`,             // no rule
-		`C:\elsewhere\a.log`,              // outside the base
+		testenv.NativeFixture(`C:\repo\output\keep\a.txt`),       // negated
+		testenv.NativeFixture(`C:\repo\test-results\report.xml`), // builtin turned off
+		testenv.NativeFixture(`C:\repo\src\build\x.o`),           // /build/ is anchored to the root
+		testenv.NativeFixture(`C:\repo\src\main.go`),             // no rule
+		testenv.NativeFixture(`C:\elsewhere\a.log`),              // outside the base
 	} {
 		if m, ok, matchErr := s.Match(path, false); matchErr != nil || ok {
 			t.Errorf("Match(%s) = %+v; want no lifespan", path, m)
 		}
 	}
-	if _, ok, matchErr := s.Match(`C:\repo\output`, true); matchErr != nil || ok {
+	if _, ok, matchErr := s.Match(testenv.NativeFixture(`C:\repo\output`), true); matchErr != nil || ok {
 		t.Error("output/** must not give output itself a lifespan")
 	}
 }
@@ -125,7 +134,7 @@ func TestProjectRulesLoadOnlyOnceTrusted(t *testing.T) {
 func TestDirectoryHoldingAProtectedFileIsNotCollapsed(t *testing.T) {
 	t.Parallel()
 	base := t.TempDir()
-	for _, f := range []string{`output\run1\a.txt`, `output\run1\notes.keep`, `output\run2\b.txt`} {
+	for _, f := range []string{`output/run1/a.txt`, `output/run1/notes.keep`, `output/run2/b.txt`} {
 		path := filepath.Join(base, f)
 		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 			t.Fatal(err)
@@ -136,13 +145,13 @@ func TestDirectoryHoldingAProtectedFileIsNotCollapsed(t *testing.T) {
 	}
 	s := set(t, base, "output/** 7d\n!*.keep\n")
 
-	if m, ok, matchErr := s.Match(filepath.Join(base, `output\run1\a.txt`), false); matchErr != nil || !ok || m.Unit != filepath.Join(base, `output\run1\a.txt`) {
+	if m, ok, matchErr := s.Match(filepath.Join(base, `output/run1/a.txt`), false); matchErr != nil || !ok || m.Unit != filepath.Join(base, `output/run1/a.txt`) {
 		t.Fatalf("run1 holds a protected file, so only a.txt may be the unit; got %+v %v", m, ok)
 	}
-	if m, ok, matchErr := s.Match(filepath.Join(base, `output\run2\b.txt`), false); matchErr != nil || !ok || m.Unit != filepath.Join(base, `output\run2`) {
+	if m, ok, matchErr := s.Match(filepath.Join(base, `output/run2/b.txt`), false); matchErr != nil || !ok || m.Unit != filepath.Join(base, `output/run2`) {
 		t.Fatalf("run2 holds nothing protected and should be one unit; got %+v %v", m, ok)
 	}
-	if _, ok, matchErr := s.Match(filepath.Join(base, `output\run1\notes.keep`), false); matchErr != nil || ok {
+	if _, ok, matchErr := s.Match(filepath.Join(base, `output/run1/notes.keep`), false); matchErr != nil || ok {
 		t.Fatal("the protected file itself must never get a lifespan")
 	}
 }
@@ -151,7 +160,7 @@ func TestNegationWinsWhateverTheOrderAndCoversDescendants(t *testing.T) {
 	t.Parallel()
 	base := t.TempDir()
 	s := set(t, base, "!keep/\n!keep.log\n*.log 1d\n")
-	for _, rel := range []string{`keep\a.log`, `keep\deep\b.log`, `keep.log`} {
+	for _, rel := range []string{`keep/a.log`, `keep/deep/b.log`, `keep.log`} {
 		if m, ok, matchErr := s.Match(filepath.Join(base, rel), false); matchErr != nil || ok {
 			t.Errorf("%s is protected by a negation, got %+v", rel, m)
 		}

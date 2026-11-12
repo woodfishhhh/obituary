@@ -28,7 +28,7 @@ func TestMiniMaxDirectories(t *testing.T) {
 	if got, err := MiniMaxDir(); err != nil || got != legacy {
 		t.Fatalf("legacy override: %q %v", got, err)
 	}
-	for _, value := range []string{primary, `\\?\` + primary, " " + primary + " "} {
+	for _, value := range nativeDirectorySpellings([]string{primary, `\\?\` + primary, " " + primary + " "}) {
 		t.Setenv("MINIMAX_DATA_DIR", value)
 		if got, err := MiniMaxProfileDir("work"); err != nil || got != primary {
 			t.Fatalf("primary override: %q %v", got, err)
@@ -44,10 +44,13 @@ func TestMiniMaxDirectories(t *testing.T) {
 	if got, err := MiniMaxDir(); err != nil || got != primary {
 		t.Fatalf("install override changed data root: %q %v", got, err)
 	}
-	t.Setenv("MINIMAX_DATA_DIR", `\\?\`+primary+`.\child`)
-	if got, err := MiniMaxDir(); err == nil {
-		t.Fatalf("unsafe override: %q", got)
-	}
+	t.Run("windows-path-spelling", func(t *testing.T) {
+		windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+		t.Setenv("MINIMAX_DATA_DIR", `\\?\`+primary+`.\child`)
+		if got, err := MiniMaxDir(); err == nil {
+			t.Fatalf("unsafe override: %q", got)
+		}
+	})
 	entries, err := os.ReadDir(home)
 	if err != nil || len(entries) != 0 {
 		t.Fatalf("resolver wrote files: %v %v", entries, err)

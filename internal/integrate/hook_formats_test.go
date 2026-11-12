@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"encoding/json"
 	"fmt"
@@ -30,8 +32,8 @@ func TestPOSIXOwnedHookExec(t *testing.T) {
 func TestOwnedHookCommand(t *testing.T) {
 	t.Parallel()
 	for _, command := range []string{
-		`C:/tools/obit.exe hook cursor`, `"C:/Program Files/obit.exe" hook cursor --event preToolUse`,
-		`& 'C:\tools\obit.exe' hook cursor --event=preToolUse`, `/mnt/c/tools/obit.exe hook cursor`,
+		testenv.NativeFixture(`C:/tools/obit.exe hook cursor`), testenv.NativeFixture(`"C:/Program Files/obit.exe" hook cursor --event preToolUse`),
+		testenv.NativeFixture(`& 'C:\tools\obit.exe' hook cursor --event=preToolUse`), `/mnt/c/tools/obit.exe hook cursor`,
 	} {
 		if !OwnedHookCommand(command, "cursor", []string{"preToolUse"}) {
 			t.Errorf("owned command rejected: %s", command)
@@ -40,11 +42,17 @@ func TestOwnedHookCommand(t *testing.T) {
 	for _, command := range []string{
 		`obit hook cursor`, `obit.exe hook cursor`, `/mnt/not-a-drive/obit.exe hook cursor`,
 		`obit hook other`, `other hook cursor`, `./obit hook cursor`, `tools/obit.exe hook cursor`,
-		`echo x && C:/tools/obit.exe hook cursor`, `C:/tools/obit.exe hook cursor; echo x`, `C:/tools/obit.exe hook cursor > log`,
-		`C:/tools/obit.exe hook cursor --event unknown`, `C:/tools/obit.exe hook cursor --event preToolUse --yes`,
-		`C:/tools/obit.exe hook cursor --event=`, `C:/tools/obit.exe hook cursor --help`, `"$HOME/obit.exe" hook cursor`,
-		"C:/tools/obit.exe hook cursor\n", `C:/tools/obit.exe hook cursor --event "$(echo preToolUse)"`,
+		testenv.NativeFixture(`echo x && C:/tools/obit.exe hook cursor`), testenv.NativeFixture(`C:/tools/obit.exe hook cursor; echo x`), testenv.NativeFixture(`C:/tools/obit.exe hook cursor > log`),
+		testenv.NativeFixture(`C:/tools/obit.exe hook cursor --event unknown`), testenv.NativeFixture(`C:/tools/obit.exe hook cursor --event preToolUse --yes`),
+		testenv.NativeFixture(`C:/tools/obit.exe hook cursor --event=`), testenv.NativeFixture(`C:/tools/obit.exe hook cursor --help`), `"$HOME/obit.exe" hook cursor`,
+		testenv.NativeFixture("C:/tools/obit.exe hook cursor\n"), testenv.NativeFixture(`C:/tools/obit.exe hook cursor --event "$(echo preToolUse)"`),
 	} {
+		if runtime.GOOS != "windows" && command == `/mnt/not-a-drive/obit.exe hook cursor` {
+			if !OwnedHookCommand(command, "cursor", []string{"preToolUse"}) {
+				t.Fatal("native absolute executable was rejected")
+			}
+			continue
+		}
 		if OwnedHookCommand(command, "cursor", []string{"preToolUse"}) {
 			t.Errorf("foreign command claimed: %q", command)
 		}
@@ -55,8 +63,8 @@ func TestHookConfigExecOwnership(t *testing.T) {
 	t.Parallel()
 	spec := HookConfig{Agent: "zcode", EventArgs: []string{"PreToolUse"}}
 	for _, raw := range []string{
-		`{"type":"process","command":"C:/Program Files/obit.exe","args":["hook","zcode"]}`,
-		`{"type":"command","command":"C:/tools/obit.exe","args":["hook","zcode","--event","PreToolUse"]}`,
+		testenv.NativeFixture(`{"type":"process","command":"C:/Program Files/obit.exe","args":["hook","zcode"]}`),
+		testenv.NativeFixture(`{"type":"command","command":"C:/tools/obit.exe","args":["hook","zcode","--event","PreToolUse"]}`),
 	} {
 		if !spec.owns(json.RawMessage(raw)) {
 			t.Errorf("exec handler not recognized: %s", raw)
@@ -65,10 +73,10 @@ func TestHookConfigExecOwnership(t *testing.T) {
 	for _, raw := range []string{
 		`{"command":"obit hook zcode","args":["--help"]}`,
 		`{"type":"process","command":"obit.exe","args":["hook","zcode"]}`,
-		`{"command":"C:/tools/obit.exe","args":["hook","zcode","--help"]}`,
-		`{"command":"C:/tools/obit.exe","args":["hook","zcode"],"commandWindows":"user-command"}`,
-		`{"command":"C:/tools/obit.exe","args":["hook","zcode"],"shell":true}`,
-		`{"command":"C:/tools/obit.exe","args":["hook","zcode"],"ARGS":["--help"]}`,
+		testenv.NativeFixture(`{"command":"C:/tools/obit.exe","args":["hook","zcode","--help"]}`),
+		testenv.NativeFixture(`{"command":"C:/tools/obit.exe","args":["hook","zcode"],"commandWindows":"user-command"}`),
+		testenv.NativeFixture(`{"command":"C:/tools/obit.exe","args":["hook","zcode"],"shell":true}`),
+		testenv.NativeFixture(`{"command":"C:/tools/obit.exe","args":["hook","zcode"],"ARGS":["--help"]}`),
 	} {
 		if spec.owns(json.RawMessage(raw)) {
 			t.Errorf("foreign exec handler claimed: %s", raw)
@@ -83,21 +91,29 @@ func TestOwnedHookExec(t *testing.T) {
 		args    []string
 		want    bool
 	}{
-		{`C:\tools\obit.exe`, []string{"hook", "zcode"}, true},
-		{`C:/中文 ' $ folder/obit.exe`, []string{"hook", "zcode", "--event=PreToolUse"}, true},
+		{testenv.NativeFixture(`C:\tools\obit.exe`), []string{"hook", "zcode"}, true},
+		{testenv.NativeFixture(`C:/中文 ' $ folder/obit.exe`), []string{"hook", "zcode", "--event=PreToolUse"}, true},
 		{`\\server\share\obit.exe`, []string{"hook", "zcode"}, true},
 		{`obit.exe`, []string{"hook", "zcode"}, false},
 		{`./obit.exe`, []string{"hook", "zcode"}, false},
 		{`C:obit.exe`, []string{"hook", "zcode"}, false},
-		{`C:/tools/obit.exe hook zcode`, nil, false},
-		{`"C:/tools/obit.exe"`, []string{"hook", "zcode"}, false},
-		{`C:/tools/obit`, []string{"hook", "zcode"}, false},
-		{`C:/tools/obit.exe`, []string{"hook", "claude"}, false},
-		{`C:/tools/obit.exe`, []string{"hook", "zcode", "--event", "Other"}, false},
-		{`C:/tools/obit.exe`, []string{"hook", "zcode", "--event", "PreToolUse", "--event", "PreToolUse"}, false},
-		{`C:/tools/obit.exe`, []string{"hook", "zcode", "&&", "echo"}, false},
-		{`C:/tools/obit.exe`, []string{"hook", "zcode", ""}, false},
+		{testenv.NativeFixture(`C:/tools/obit.exe hook zcode`), nil, false},
+		{testenv.NativeFixture(`"C:/tools/obit.exe"`), []string{"hook", "zcode"}, false},
+		{testenv.NativeFixture(`C:/tools/obit`), []string{"hook", "zcode"}, false},
+		{testenv.NativeFixture(`C:/tools/obit.exe`), []string{"hook", "claude"}, false},
+		{testenv.NativeFixture(`C:/tools/obit.exe`), []string{"hook", "zcode", "--event", "Other"}, false},
+		{testenv.NativeFixture(`C:/tools/obit.exe`), []string{"hook", "zcode", "--event", "PreToolUse", "--event", "PreToolUse"}, false},
+		{testenv.NativeFixture(`C:/tools/obit.exe`), []string{"hook", "zcode", "&&", "echo"}, false},
+		{testenv.NativeFixture(`C:/tools/obit.exe`), []string{"hook", "zcode", ""}, false},
 	} {
+		if runtime.GOOS != "windows" {
+			if strings.HasPrefix(tc.command, `\\`) {
+				tc.want = false
+			}
+			if tc.command == "/tools/obit" {
+				tc.want = true
+			}
+		}
 		if got := OwnedHookExec(tc.command, tc.args, "zcode", []string{"PreToolUse"}); got != tc.want {
 			t.Errorf("%q %q: owned=%v", tc.command, tc.args, got)
 		}
@@ -119,7 +135,7 @@ func TestNestedHookConfigLifecycle(t *testing.T) {
 				original := "\xef\xbb\xbf{" + comment + `"theme":"深色","hooks":{"enabled":false,"audit":true,"events":{"Stop":[{"hooks":[{"command":"user-command"}]}]}},"last":9007199254740993}`
 				writeIntegrationFile(t, path, original)
 				spec := HookConfig{Agent: "zcode", Shape: GroupedHooks, Format: format, ContainerPath: []string{"hooks", "events"}, EnablePath: []string{"hooks", "enabled"}}
-				for _, binary := range []string{"C:/old/obit.exe", "C:/new folder/obit.exe"} {
+				for _, binary := range []string{testenv.NativeFixture("C:/old/obit.exe"), testenv.NativeFixture("C:/new folder/obit.exe")} {
 					handler := mustJSON(map[string]any{"type": "process", "command": binary, "args": []string{"hook", "zcode"}, "timeoutMs": 5000})
 					spec.Events = []HookRegistration{{Event: "SessionStart", Handler: handler}, {Event: "Stop", Handler: handler}}
 					ch, err := PlanHookConfig(s, path, spec, false)
@@ -127,7 +143,7 @@ func TestNestedHookConfigLifecycle(t *testing.T) {
 						t.Fatal(err)
 					}
 					before := read(t, path)
-					if !strings.Contains(before, "user-command") || binary == "C:/old/obit.exe" && before != original {
+					if !strings.Contains(before, "user-command") || binary == testenv.NativeFixture("C:/old/obit.exe") && before != original {
 						t.Fatal("dry run wrote config")
 					}
 					applyIntegration(t, []Change{ch}, nil)
@@ -177,7 +193,7 @@ func TestNestedHookEnableRequiresExplicitHook(t *testing.T) {
 	path := filepath.Join(s.Project, "config.json")
 	original := `{"hooks":{"enabled":false,"userFlag":"keep"}}`
 	writeIntegrationFile(t, path, original)
-	spec := HookConfig{Agent: "zcode", Shape: GroupedHooks, ContainerPath: []string{"hooks", "events"}, EnablePath: []string{"hooks", "enabled"}, Events: []HookRegistration{{Event: "Stop", Handler: json.RawMessage(`{"type":"process","command":"C:/obit.exe","args":["hook","zcode"]}`), Optional: true}}}
+	spec := HookConfig{Agent: "zcode", Shape: GroupedHooks, ContainerPath: []string{"hooks", "events"}, EnablePath: []string{"hooks", "enabled"}, Events: []HookRegistration{{Event: "Stop", Handler: json.RawMessage(testenv.NativeFixture(`{"type":"process","command":"C:/obit.exe","args":["hook","zcode"]}`)), Optional: true}}}
 	for _, uninstall := range []bool{false, true} {
 		ch, err := PlanHookConfig(s, path, spec, uninstall)
 		if err != nil || ch.Action != "unchanged" || read(t, path) != original {
@@ -224,7 +240,7 @@ func TestHookConfigShapesLifecycle(t *testing.T) {
 				}
 				writeIntegrationFile(t, path, bom+original)
 				spec := HookConfig{Agent: "gemini", Shape: shape, EventArgs: []string{"BeforeTool"}, Events: []HookRegistration{{Event: "BeforeTool", Matcher: "Bash"}}}
-				for _, binary := range []string{"C:/old/obit.exe", "C:/new/obit.exe"} {
+				for _, binary := range []string{testenv.NativeFixture("C:/old/obit.exe"), testenv.NativeFixture("C:/new/obit.exe")} {
 					spec.Events[0].Handler = mustJSON(map[string]any{"type": "command", "command": binary + " hook gemini --event BeforeTool", "timeout": 5000})
 					ch, err := PlanHookConfig(s, path, spec, false)
 					applyIntegration(t, []Change{ch}, err)
@@ -254,18 +270,18 @@ func TestHookConfigRefreshOptionalDeduplicateAndMetadata(t *testing.T) {
 	t.Parallel()
 	s := Scope{Project: t.TempDir()}
 	path := filepath.Join(s.Project, "hooks.json")
-	writeIntegrationFile(t, path, `{"hooks":{"Pre":[{"matcher":"Old","label":"user label","hooks":[{"command":"C:/tools/obit.exe hook trae"}]},{"matcher":"Shell","hooks":[{"command":"C:/tools/obit.exe hook trae"},{"command":"C:/tools/obit.exe hook trae"},{"type":"prompt","command":"C:/tools/obit.exe hook trae"}]}]}}`)
-	spec := HookConfig{Agent: "trae", Shape: GroupedHooks, Events: []HookRegistration{{Event: "Pre", Matcher: "Shell", Handler: json.RawMessage(`{"command":"C:/new/obit.exe hook trae"}`), Optional: true}, {Event: "Start", Handler: json.RawMessage(`{"command":"C:/tools/obit.exe hook trae"}`), Optional: true}}}
+	writeIntegrationFile(t, path, testenv.NativeFixture(`{"hooks":{"Pre":[{"matcher":"Old","label":"user label","hooks":[{"command":"C:/tools/obit.exe hook trae"}]},{"matcher":"Shell","hooks":[{"command":"C:/tools/obit.exe hook trae"},{"command":"C:/tools/obit.exe hook trae"},{"type":"prompt","command":"C:/tools/obit.exe hook trae"}]}]}}`))
+	spec := HookConfig{Agent: "trae", Shape: GroupedHooks, Events: []HookRegistration{{Event: "Pre", Matcher: "Shell", Handler: json.RawMessage(testenv.NativeFixture(`{"command":"C:/new/obit.exe hook trae"}`)), Optional: true}, {Event: "Start", Handler: json.RawMessage(testenv.NativeFixture(`{"command":"C:/tools/obit.exe hook trae"}`)), Optional: true}}}
 	ch, err := PlanHookConfig(s, path, spec, false)
 	applyIntegration(t, []Change{ch}, err)
 	got := read(t, path)
-	if strings.Count(got, "C:/new/obit.exe") != 1 || !strings.Contains(got, "user label") || !strings.Contains(got, `"prompt"`) || strings.Contains(got, `"Start"`) {
+	if strings.Count(got, testenv.NativeFixture("C:/new/obit.exe")) != 1 || !strings.Contains(got, "user label") || !strings.Contains(got, `"prompt"`) || strings.Contains(got, `"Start"`) {
 		t.Fatal(got)
 	}
 	ch, err = PlanHookConfig(s, path, spec, true)
 	applyIntegration(t, []Change{ch}, err)
 	got = read(t, path)
-	if strings.Contains(got, "C:/new") || !strings.Contains(got, "user label") || !strings.Contains(got, `"prompt"`) {
+	if strings.Contains(got, testenv.NativeFixture("C:/new")) || !strings.Contains(got, "user label") || !strings.Contains(got, `"prompt"`) {
 		t.Fatal(got)
 	}
 }
@@ -277,7 +293,7 @@ func TestHookConfigRejectsMalformedConcurrentAndOutside(t *testing.T) {
 	t.Parallel()
 	s := Scope{Project: t.TempDir()}
 	path := filepath.Join(s.Project, "hooks.json")
-	spec := HookConfig{Agent: "cursor", Shape: FlatHooks, Events: []HookRegistration{{Event: "pre", Handler: json.RawMessage(`{"command":"C:/tools/obit.exe hook cursor"}`)}}}
+	spec := HookConfig{Agent: "cursor", Shape: FlatHooks, Events: []HookRegistration{{Event: "pre", Handler: json.RawMessage(testenv.NativeFixture(`{"command":"C:/tools/obit.exe hook cursor"}`))}}}
 	for _, input := range []string{`{`, `{"hooks":null}`, `{"hooks":{"pre":null}}`, `{"hooks":{"pre":{}}}`} {
 		writeIntegrationFile(t, path, input)
 		if _, err := PlanHookConfig(s, path, spec, false); err == nil {
@@ -308,7 +324,7 @@ func TestHookConfigDefaultsAndDuplicateKeys(t *testing.T) {
 	s := Scope{Project: t.TempDir()}
 	path := filepath.Join(s.Project, "hooks.json")
 	writeIntegrationFile(t, path, `{"theme":"old","hooks":{},"theme":"last"}`)
-	spec := HookConfig{Agent: "cursor", Shape: FlatHooks, Defaults: json.RawMessage(`{"version":1}`), Events: []HookRegistration{{Event: "pre", Handler: json.RawMessage(`{"command":"C:/tools/obit.exe hook cursor"}`)}}}
+	spec := HookConfig{Agent: "cursor", Shape: FlatHooks, Defaults: json.RawMessage(`{"version":1}`), Events: []HookRegistration{{Event: "pre", Handler: json.RawMessage(testenv.NativeFixture(`{"command":"C:/tools/obit.exe hook cursor"}`))}}}
 	ch, err := PlanHookConfig(s, path, spec, false)
 	applyIntegration(t, []Change{ch}, err)
 	got := read(t, path)
@@ -325,8 +341,8 @@ func TestHookConfigCommandVariantsAndOwnedOnly(t *testing.T) {
 	t.Parallel()
 	s := Scope{Project: t.TempDir()}
 	path := filepath.Join(s.Project, "hooks.json")
-	spec := HookConfig{Agent: "copilot", Shape: FlatHooks, CommandKeys: []string{"powershell", "bash"}, Events: []HookRegistration{{Event: "pre", Handler: json.RawMessage(`{"type":"command","powershell":"C:/tools/obit.exe hook copilot","bash":"C:/tools/obit.exe hook copilot"}`)}}}
-	writeIntegrationFile(t, path, `{"hooks":{"pre":[{"powershell":"C:/tools/obit.exe hook copilot","bash":"user command"}]}}`)
+	spec := HookConfig{Agent: "copilot", Shape: FlatHooks, CommandKeys: []string{"powershell", "bash"}, Events: []HookRegistration{{Event: "pre", Handler: json.RawMessage(testenv.NativeFixture(`{"type":"command","powershell":"C:/tools/obit.exe hook copilot","bash":"C:/tools/obit.exe hook copilot"}`))}}}
+	writeIntegrationFile(t, path, testenv.NativeFixture(`{"hooks":{"pre":[{"powershell":"C:/tools/obit.exe hook copilot","bash":"user command"}]}}`))
 	ch, err := PlanHookConfig(s, path, spec, true)
 	if err != nil || ch.Action != "unchanged" {
 		t.Fatalf("mixed-owned handler removed: %+v %v", ch, err)

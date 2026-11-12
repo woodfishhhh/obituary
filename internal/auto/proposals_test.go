@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -458,6 +459,16 @@ func TestApproveReplacementOfGoneObject(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, err := r.engine.Approve([]string{fmt.Sprint(p.ID)})
+	if runtime.GOOS != "windows" {
+		st, readErr := r.engine.Svc.Store.ReadSnapshot()
+		if !errors.Is(err, core.ErrUnsupported) || readErr != nil || len(got) != 1 || len(got[0].Results) != 1 || !core.Failed(got[0].Results) || len(st.Items) != 1 || st.Items[0].ID != old[0].Item.ID || *st.Items[0].Identity != *old[0].Item.Identity || !st.Items[0].ExpiresAt.Equal(old[0].Item.ExpiresAt) || len(st.Proposals) != 1 || len(st.Proposals[0].Candidates) != 1 {
+			t.Fatalf("unlocated old identity or pending candidate was lost: %+v %+v %v %v", got, st, err, readErr)
+		}
+		if data, err := os.ReadFile(path); err != nil || string(data) != "new" {
+			t.Fatalf("unverified replacement was moved or changed: %q %v", data, err)
+		}
+		return
+	}
 	if err != nil || len(got) != 1 || len(got[0].Results) != 1 || core.Failed(got[0].Results) {
 		t.Fatalf("gone object must not refuse replacement: %+v, %v", got, err)
 	}

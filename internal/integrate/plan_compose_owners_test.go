@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"errors"
 	"path/filepath"
@@ -18,7 +20,7 @@ func TestComposeSharedMCPKeepsHooksAndReceiptInOneBatch(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				mcp, err := a.PlanMCP(s, "C:/tools/obit.exe", uninstall)
+				mcp, err := a.PlanMCP(s, testenv.NativeFixture("C:/tools/obit.exe"), uninstall)
 				if err != nil {
 					t.Fatal(err)
 				}

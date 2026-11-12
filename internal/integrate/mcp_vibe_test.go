@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"path/filepath"
 	"strings"
@@ -14,20 +16,20 @@ func TestVibeMCPLifecycle(t *testing.T) {
 		path := filepath.Join(root, "config.toml")
 		input := "\xef\xbb\xbf# model settings\nmodel='keep'\n[[mcp_servers]]\nname='user'\ncommand='echo user' # user comment\n"
 		writeIntegrationFile(t, path, input)
-		plan, err := PlanVibeMCP(s, "C:/space dir/obit.exe", false)
+		plan, err := PlanVibeMCP(s, testenv.NativeFixture("C:/space dir/obit.exe"), false)
 		if err != nil || read(t, path) != input {
 			t.Fatal("dry-run", err)
 		}
 		applyIntegration(t, plan, nil)
 		got := strings.Replace(read(t, path), "# obit:vibe-mcp:end", "env = { USER = 'keep' } # env comment\n# obit:vibe-mcp:end", 1)
 		writeIntegrationFile(t, path, got)
-		plan, err = PlanVibeMCP(s, "D:/new location/obit.exe", false)
+		plan, err = PlanVibeMCP(s, testenv.NativeFixture("D:/new location/obit.exe"), false)
 		applyIntegration(t, plan, err)
 		got = read(t, path)
-		if !strings.HasPrefix(got, input) || !strings.Contains(got, "# env comment") || !strings.Contains(got, "USER = 'keep'") || !strings.Contains(got, "D:/new location/obit.exe") {
+		if !strings.HasPrefix(got, input) || !strings.Contains(got, "# env comment") || !strings.Contains(got, "USER = 'keep'") || !strings.Contains(got, testenv.NativeFixture("D:/new location/obit.exe")) {
 			t.Fatal("refresh lost user fields", got)
 		}
-		plan, err = PlanVibeMCP(s, "D:/new location/obit.exe", false)
+		plan, err = PlanVibeMCP(s, testenv.NativeFixture("D:/new location/obit.exe"), false)
 		if err != nil || Pending(plan) {
 			t.Fatal("not idempotent", err)
 		}
@@ -54,7 +56,7 @@ func TestVibeMCPRejectsUnownedAndChangedConfig(t *testing.T) {
 		path := filepath.Join(s.Project, ".vibe", "config.toml")
 		writeIntegrationFile(t, path, input)
 		for _, uninstall := range []bool{false, true} {
-			if _, err := PlanVibeMCP(s, "C:/tools/obit.exe", uninstall); err == nil {
+			if _, err := PlanVibeMCP(s, testenv.NativeFixture("C:/tools/obit.exe"), uninstall); err == nil {
 				t.Fatal("invalid MCP accepted", input)
 			}
 		}
@@ -65,7 +67,7 @@ func TestVibeMCPRejectsUnownedAndChangedConfig(t *testing.T) {
 	s := Scope{Project: t.TempDir()}
 	path := filepath.Join(s.Project, ".vibe", "config.toml")
 	writeIntegrationFile(t, path, "")
-	plan, err := PlanVibeMCP(s, "C:/tools/obit.exe", false)
+	plan, err := PlanVibeMCP(s, testenv.NativeFixture("C:/tools/obit.exe"), false)
 	if err != nil {
 		t.Fatal(err)
 	}

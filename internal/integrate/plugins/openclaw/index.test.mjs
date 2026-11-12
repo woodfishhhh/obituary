@@ -1,3 +1,4 @@
+import { nativePath } from "../bridge/native-fixture.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { plugin, fixture, host } from "../bridge/testing.mjs";
@@ -5,7 +6,7 @@ import { plugin, fixture, host } from "../bridge/testing.mjs";
 test("OpenClaw block survives transport catch and code mode is skipped", async () => {
   const f = fixture("openclaw"), h = host();
   plugin.registerOpenClaw(h.api, f.options);
-  const event = { toolName: "exec", params: { command: "rm a", workdir: "C:\\repo" } };
+  const event = { toolName: "exec", params: { command: "rm a", workdir: nativePath("C:\\repo") } };
   const ctx = { sessionId: "s" };
   f.reply({ version: 1, deny: true, reason: "obit rm a" });
   assert.deepEqual(await h.handlers.before_tool_call(event, ctx), { block: true, blockReason: "obit rm a" });
@@ -23,7 +24,7 @@ test("OpenClaw observer does not acknowledge or inject notices", async () => {
   const f = fixture("openclaw"), h = host();
   plugin.registerOpenClaw(h.api, f.options);
   f.reply({ version: 1, context: "must stay pending" });
-  const ctx = { sessionId: "s", workspaceDir: "C:\\repo" };
+  const ctx = { sessionId: "s", workspaceDir: nativePath("C:\\repo") };
   assert.equal(await h.handlers.after_tool_call({ toolName: "write", params: { path: "a" }, result: { content: [] } }, ctx), undefined);
   assert.deepEqual(f.calls[0].paths, ["a"]);
   assert.equal(f.calls[0].context_delivery, false);
@@ -52,7 +53,7 @@ test("OpenClaw context needs both host permissions and local evidence", async ()
   const hooks = { allowConversationAccess: false, allowPromptModification: true };
   h.api.config = { plugins: { entries: { obituary: { hooks } } } };
   plugin.registerOpenClaw(h.api, f.options);
-  const ctx = { sessionId: "s", workspaceDir: "C:\\repo" };
+  const ctx = { sessionId: "s", workspaceDir: nativePath("C:\\repo") };
   f.reply({ version: 1, context: "proposal" });
   assert.equal(await h.handlers.before_prompt_build({}, ctx), undefined);
   hooks.allowConversationAccess = true; hooks.allowPromptModification = false;

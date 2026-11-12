@@ -187,7 +187,14 @@ func TestMoveIdentitySwapRemainsRetryable(t *testing.T) {
 	if len(out) != 1 || out[0].Action != core.ActionRetry || len(items) != 1 || items[0].ID != item.ID || items[0].Attempts != 1 || !exists(path) || !exists(backup) {
 		t.Fatalf("identity swap discarded the original's retry: %+v, %+v", out, items)
 	}
-	f.sweepAt(time.Minute)
+	out = f.sweepAt(time.Minute)
+	if runtime.GOOS != "windows" {
+		requireRetainedRetry(t, f, out)
+		if read(t, path) != "editor.txt" || read(t, backup) != "editor.txt" {
+			t.Fatal("unlocated original or replacement changed")
+		}
+		return
+	}
 	if !exists(path) || exists(backup) || len(f.burials()) != 1 {
 		t.Fatal("retry must follow the original to its backup name")
 	}
@@ -250,6 +257,13 @@ func TestRenamedItemIsFollowedToItsNewPath(t *testing.T) {
 	}
 
 	out := f.sweepAt(time.Hour)
+	if runtime.GOOS != "windows" {
+		requireRetainedRetry(t, f, out)
+		if read(t, moved) != "a/shot.png" {
+			t.Fatal("unlocated renamed object changed")
+		}
+		return
+	}
 	if len(out) != 1 || out[0].Action != core.ActionBuried || !samePath(out[0].Path, moved) || exists(moved) {
 		t.Fatalf("want renamed file recycled at %s, got %+v", moved, out)
 	}
@@ -288,6 +302,13 @@ func TestVanishedItemIsDroppedWithoutRecycling(t *testing.T) {
 	}
 
 	out := f.sweepAt(time.Hour)
+	if runtime.GOOS != "windows" {
+		requireRetainedRetry(t, f, out)
+		if len(f.fs.recycled) != 0 {
+			t.Fatal("unlocated object reached the move boundary")
+		}
+		return
+	}
 	if len(out) != 1 || out[0].Action != core.ActionVanished || len(f.fs.recycled) != 0 {
 		t.Fatalf("want vanished, got %+v recycled=%v", out, f.fs.recycled)
 	}

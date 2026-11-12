@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"encoding/json"
@@ -105,7 +107,7 @@ func testPluginLifecycle(t *testing.T, agent string) {
 			if !ok {
 				t.Fatalf("agent %s missing", agent)
 			}
-			cmd := Commands{Executable: `C:\Program Files\obit\obit.exe`}
+			cmd := Commands{Executable: testenv.NativeFixture(`C:\Program Files\obit\obit.exe`)}
 			rules := filepath.Join(s.Project, "AGENTS.md")
 			if global {
 				rules = filepath.Join(dir, "AGENTS.md")
@@ -137,7 +139,7 @@ func testPluginLifecycle(t *testing.T, agent string) {
 			if err != nil || Pending(plan) {
 				t.Fatalf("not idempotent: %v %+v", err, plan)
 			}
-			cmd.Executable = `C:\New Tools\obit.exe`
+			cmd.Executable = testenv.NativeFixture(`C:\New Tools\obit.exe`)
 			s.GuardRM = false
 			plan, err = a.Plan(s, cmd, false)
 			applyIntegration(t, plan, err)
@@ -180,7 +182,7 @@ func TestPluginPlansPreserveEditedAssetsAndRejectRaces(t *testing.T) {
 		t.Run(agent, func(t *testing.T) {
 			s, dir := pluginScope(t, agent, false)
 			a, _ := LookupAgent(agent)
-			cmd := Commands{Executable: `C:\tools\obit.exe`}
+			cmd := Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}
 			plan, err := a.Plan(s, cmd, false)
 			applyIntegration(t, plan, err)
 			folder := "extensions"
@@ -204,7 +206,7 @@ func TestPluginPlansPreserveEditedAssetsAndRejectRaces(t *testing.T) {
 		t.Run(agent+"/race", func(t *testing.T) {
 			s, _ := pluginScope(t, agent, false)
 			a, _ := LookupAgent(agent)
-			plan, err := a.Plan(s, Commands{Executable: `C:\tools\obit.exe`}, false)
+			plan, err := a.Plan(s, Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}, false)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -226,7 +228,7 @@ func TestPluginPlansPreserveEditedAssetsAndRejectRaces(t *testing.T) {
 			outside := t.TempDir()
 			makeIntegrationJunction(t, dir, outside)
 			a, _ := LookupAgent(agent)
-			if _, err := a.Plan(s, Commands{Executable: `C:\tools\obit.exe`}, false); err == nil {
+			if _, err := a.Plan(s, Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}, false); err == nil {
 				t.Fatal("followed external junction")
 			}
 			entries, err := os.ReadDir(outside)
@@ -259,7 +261,7 @@ func TestPluginRulesPreserveAndValidate(t *testing.T) {
 
 func TestPluginPlansRejectUnownedRuntime(t *testing.T) {
 	for _, agent := range []string{"pi", "omp", "opencode", "openclaw"} {
-		for _, content := range []string{"", "\xef\xbb\xbf{}", "{broken", `{\"executable\":\"C:/tools/obit.exe\",\"guardRM\":true}`} {
+		for _, content := range []string{"", "\xef\xbb\xbf{}", "{broken", testenv.NativeFixture(`{\"executable\":\"C:/tools/obit.exe\",\"guardRM\":true}`)} {
 			t.Run(agent+"/"+content, func(t *testing.T) {
 				s, dir := pluginScope(t, agent, false)
 				folder := "extensions"
@@ -272,7 +274,7 @@ func TestPluginPlansRejectUnownedRuntime(t *testing.T) {
 				}
 				writeIntegrationFile(t, path, content)
 				a, _ := LookupAgent(agent)
-				if _, err := a.Plan(s, Commands{Executable: `C:\tools\obit.exe`}, false); err == nil {
+				if _, err := a.Plan(s, Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}, false); err == nil {
 					t.Fatal("claimed unowned runtime")
 				}
 				if read(t, path) != content {
@@ -285,11 +287,11 @@ func TestPluginPlansRejectUnownedRuntime(t *testing.T) {
 
 func TestPluginRuntimeChangeAfterPlanRejected(t *testing.T) {
 	s, dir := pluginScope(t, "pi", false)
-	cmd := Commands{Executable: `C:\tools\obit.exe`}
+	cmd := Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}
 	plan, err := PlanPi(s, cmd, false)
 	applyIntegration(t, plan, err)
 	path := filepath.Join(dir, "extensions", "obituary", "pi.json")
-	cmd.Executable = `C:\new\obit.exe`
+	cmd.Executable = testenv.NativeFixture(`C:\new\obit.exe`)
 	plan, err = PlanPi(s, cmd, false)
 	if err != nil {
 		t.Fatal(err)

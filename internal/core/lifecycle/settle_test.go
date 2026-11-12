@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -27,6 +28,13 @@ func TestWatchExpiryAlwaysUsesRestorableGraveyard(t *testing.T) {
 	}
 	f.svc.Mode = core.ModeRecycle
 	out := f.sweepAt(2 * time.Hour)
+	if runtime.GOOS != "windows" {
+		requireRetainedRetry(t, f, out)
+		if read(t, path) != "downloads/file" || len(f.fs.recycled) != 0 || !strings.Contains(out[0].Detail, "excluding concurrent writers") {
+			t.Fatalf("unsupported watch exclusion moved the source: %+v", out)
+		}
+		return
+	}
 	if len(out) != 1 || out[0].Action != core.ActionBuried || out[0].Burial == nil || !exists(out[0].Grave) {
 		t.Fatalf("folder policy must use restorable burial: %+v", out)
 	}
@@ -37,6 +45,13 @@ func TestWatchExpiryAlwaysUsesRestorableGraveyard(t *testing.T) {
 }
 
 func TestPendingBurialRetryUsesDiscoverableRoot(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		svc := &core.Service{Store: core.Store{Home: t.TempDir()}}
+		if got := core.PendingBurialRetry(svc, core.State{}, filepath.Join(t.TempDir(), "payload.txt")); got != "obit reap" {
+			t.Fatalf("POSIX root is discoverable through the home: %s", got)
+		}
+		return
+	}
 	svc := &core.Service{Store: core.Store{Home: `C:\isolated-home`}}
 	path := `D:\work\payload.txt`
 	for _, tc := range []struct {
@@ -63,6 +78,9 @@ func TestPendingBurialRetryUsesDiscoverableRoot(t *testing.T) {
 }
 
 func TestRemovedNamedStreamNeverBuriesHost(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("NTFS alternate streams share their host's identity")
+	}
 	for _, extended := range []bool{false, true} {
 		t.Run(fmt.Sprint(extended), func(t *testing.T) {
 			f := newFixture(t)
@@ -93,6 +111,22 @@ func TestRemovedNamedStreamNeverBuriesHost(t *testing.T) {
 				t.Fatalf("removed named stream selected host file: %+v %v", out, err)
 			}
 		})
+	}
+}
+
+func TestPOSIXColonNameDoesNotSelectNeighbor(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("a colon names an ordinary POSIX file, not an NTFS stream")
+	}
+	f := newFixture(t)
+	host, path := f.file("document.txt"), f.file("document.txt:review")
+	rows, err := f.svc.Bury([]string{path}, false, "")
+	if err != nil || len(rows) != 1 || rows[0].Action != core.ActionBuried || read(t, host) != "document.txt" || read(t, rows[0].Burial.Grave) != "document.txt:review" {
+		t.Fatalf("colon spelling selected its neighbor: %+v %v", rows, err)
+	}
+	rows, err = f.svc.Resurrect([]string{path})
+	if err != nil || core.GraveFailed(rows) || read(t, path) != "document.txt:review" || read(t, host) != "document.txt" {
+		t.Fatalf("colon spelling was not restored literally: %+v %v", rows, err)
 	}
 }
 

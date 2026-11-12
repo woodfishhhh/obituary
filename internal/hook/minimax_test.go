@@ -1,11 +1,14 @@
 package hook
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -16,6 +19,7 @@ import (
 )
 
 func TestMiniMaxShellDeclaration(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows host shell declarations and PowerShell commandWindows registration")
 	testAgentShellDeclaration(t, "minimax-code", "minimax-code", []string{"bash", "Bash", "PowerShell"})
 }
 
@@ -26,7 +30,7 @@ func minimaxFixture(t *testing.T, name string) map[string]any {
 		t.Fatal(err)
 	}
 	var input map[string]any
-	if err := json.Unmarshal(raw, &input); err != nil {
+	if err := json.Unmarshal([]byte(testenv.NativeFixture(string(raw))), &input); err != nil {
 		t.Fatal(err)
 	}
 	return input
@@ -42,6 +46,7 @@ func minimaxDecode(t *testing.T, input map[string]any) (Event, error) {
 }
 
 func TestMiniMaxProtocolFixtures(t *testing.T) {
+	testenv.WindowsOnly(t, "MiniMax captured-success hooks document only local Windows paths")
 	t.Parallel()
 	agent, ok := Lookup("minimax-code")
 	if !ok || agent.Capabilities.DeleteGuard.Level != Limited {
@@ -57,7 +62,11 @@ func TestMiniMaxProtocolFixtures(t *testing.T) {
 			if name == "post" && (len(ev.Paths) != 1 || ev.Paths[0] != filepath.Join(ev.Cwd, "debug.log")) {
 				t.Fatalf("paths: %+v", ev)
 			}
-			if strings.HasSuffix(name, "pre") && (ev.Shell != guardrm.Uncertain || ev.ShellDeclared || ev.Command == "") {
+			wantShell := guardrm.Uncertain
+			if runtime.GOOS != "windows" {
+				wantShell = guardrm.Bash
+			}
+			if strings.HasSuffix(name, "pre") && (ev.Shell != wantShell || ev.ShellDeclared || ev.Command == "") {
 				t.Fatalf("unattested shell: %+v", ev)
 			}
 			raw, _ := json.Marshal(input)
@@ -75,6 +84,7 @@ func TestMiniMaxProtocolFixtures(t *testing.T) {
 }
 
 func TestMiniMaxObservationRequiresCapturedSuccess(t *testing.T) {
+	testenv.WindowsOnly(t, "MiniMax captured-success hooks document only local Windows paths")
 	t.Parallel()
 	for _, tc := range []struct {
 		name, tool, key string
@@ -83,8 +93,8 @@ func TestMiniMaxObservationRequiresCapturedSuccess(t *testing.T) {
 	}{
 		{"native-write", "write", "path", map[string]any{"content": []any{map[string]any{"type": "text", "text": "ok"}}, "details": map[string]any{"created": false, "bytes_written": 0}}, true},
 		{"native-edit", "edit", "file_path", map[string]any{"content": []any{map[string]any{"type": "text"}}, "details": map[string]any{"diff": ""}}, true},
-		{"compatible-write", "Write", "file_path", map[string]any{"type": "create", "filePath": `C:\repo\debug.log`, "structuredPatch": []any{}}, true},
-		{"compatible-edit", "Edit", "file_path", map[string]any{"filePath": `C:\repo\debug.log`, "structuredPatch": []any{}}, true},
+		{"compatible-write", "Write", "file_path", map[string]any{"type": "create", "filePath": testenv.NativeFixture(`C:\repo\debug.log`), "structuredPatch": []any{}}, true},
+		{"compatible-edit", "Edit", "file_path", map[string]any{"filePath": testenv.NativeFixture(`C:\repo\debug.log`), "structuredPatch": []any{}}, true},
 		{"text-only", "write", "path", map[string]any{"content": []any{map[string]any{"type": "text", "text": "Successfully wrote"}}}, false},
 		{"missing", "write", "path", nil, false},
 		{"error", "write", "path", map[string]any{"isError": true, "details": map[string]any{"created": true, "bytes_written": 10}}, false},
@@ -117,6 +127,7 @@ func TestMiniMaxObservationRequiresCapturedSuccess(t *testing.T) {
 }
 
 func TestMiniMaxWriteObservedAndFinishSilent(t *testing.T) {
+	testenv.WindowsOnly(t, "MiniMax captured-success hooks document only local Windows paths")
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}
@@ -193,6 +204,7 @@ func TestMiniMaxEncodingAndNeutralFailures(t *testing.T) {
 }
 
 func TestMiniMaxNativePathNormalizationKeepsUntouchedNeighbor(t *testing.T) {
+	testenv.WindowsOnly(t, "Win32 extended-name normalization and named streams")
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}
@@ -243,7 +255,7 @@ func TestMiniMaxNativePathNormalizationKeepsUntouchedNeighbor(t *testing.T) {
 
 func TestMiniMaxResultPathMustCorrespondToInput(t *testing.T) {
 	t.Parallel()
-	for _, path := range []string{`C:\repo\neighbor.log`, "debug.log", "/mnt/c/repo/debug.log"} {
+	for _, path := range []string{testenv.NativeFixture(`C:\repo\neighbor.log`), "debug.log", "/mnt/c/repo/debug.log"} {
 		input := minimaxFixture(t, "post")
 		input["tool_name"] = "Write"
 		input["tool_input"] = map[string]any{"file_path": "debug.log"}

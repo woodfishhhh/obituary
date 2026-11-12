@@ -1,5 +1,7 @@
 package shortcut
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"github.com/woodfishhhh/obituary/internal/integrate"
 	"os"
@@ -35,6 +37,7 @@ func writeLink(t *testing.T, path, target string) {
 }
 
 func TestShortcutDirectoriesContainOnlyLinks(t *testing.T) {
+	testenv.WindowsOnly(t, "Start Menu and desktop lnk cleanup are Windows-only")
 	for _, place := range []Location{StartMenu, Desktop} {
 		t.Run(string(place), func(t *testing.T) {
 			exe := fixture(t)

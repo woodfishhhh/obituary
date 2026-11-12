@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"sync"
 	"testing"
@@ -29,6 +30,9 @@ var fakeClaudeImage = sync.OnceValues(func() (string, error) {
 // without invoking a compiler or an installed client.
 func FakeClaude(t *testing.T) (executable, log string) {
 	t.Helper()
+	if runtime.GOOS != "windows" {
+		t.Skip("the Claude CLI registration path requires Windows process containment; POSIX rejects it before execution")
+	}
 	dir := t.TempDir()
 	executable, log = filepath.Join(dir, "claude.exe"), filepath.Join(dir, "calls.jsonl")
 	FakeClaudeAt(t, executable)

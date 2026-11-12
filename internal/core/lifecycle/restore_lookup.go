@@ -17,9 +17,9 @@ func (s *Service) findRestored(b Burial, intent *restoreIntent) (string, error) 
 	return s.FS.FindRestored(intent.Parent, *b.Identity)
 }
 
-// The remembered spelling is useful only if it still names the same object.
+// LocateKnown uses a remembered spelling only if it still names the same object.
 // A missing or replaced spelling cannot establish that an inode is gone.
-func (s *Service) locateKnown(path string, want Identity) (string, error) {
+func (s *Service) LocateKnown(path string, want Identity) (string, error) {
 	current, err := s.FS.Locate(want)
 	if !errors.Is(err, ErrUnsupported) {
 		return current, err

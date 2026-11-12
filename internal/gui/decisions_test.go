@@ -56,6 +56,7 @@ func TestProposalListMatchesCLIAndRejectsReappearingCandidate(t *testing.T) {
 }
 
 func TestGUIExpiredWatchDirectoryDecisions(t *testing.T) {
+	testenv.WindowsOnly(t, "GUI watch burial uses the Windows writer-exclusion capability; POSIX retention is covered by core watch tests")
 	if testing.Short() {
 		t.Skip("folder approval uses a real Git repository")
 	}

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"unicode/utf16"
 	"unicode/utf8"
@@ -32,6 +33,9 @@ func validRestoreParent(intent *restoreIntent, identity *Identity) bool {
 }
 
 func validRestoreName(name string) bool {
+	if runtime.GOOS != "windows" {
+		return name != "" && name != "." && name != ".." && len(name) <= 255 && utf8.ValidString(name) && !strings.ContainsAny(name, "/\x00")
+	}
 	// IsLocal reuses Go's Windows device-name rules. It does not enforce a
 	// single component, forbidden Win32 characters, or the NTFS UTF-16 limit.
 	if !filepath.IsLocal(name) || name == "." || !utf8.ValidString(name) ||

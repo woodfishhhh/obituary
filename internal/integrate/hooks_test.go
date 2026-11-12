@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"encoding/json"
@@ -48,12 +50,12 @@ func TestHookConfigBOMLifecycle(t *testing.T) {
 					uninstall    bool
 					unchanged    bool
 				}{
-					{"install", "C:/old/obit.exe", false, false},
-					{"repeat-install", "C:/old/obit.exe", false, true},
-					{"refresh", "C:/new/obit.exe", false, false},
-					{"repeat-refresh", "C:/new/obit.exe", false, true},
-					{"uninstall", "C:/new/obit.exe", true, false},
-					{"repeat-uninstall", "C:/new/obit.exe", true, true},
+					{"install", testenv.NativeFixture("C:/old/obit.exe"), false, false},
+					{"repeat-install", testenv.NativeFixture("C:/old/obit.exe"), false, true},
+					{"refresh", testenv.NativeFixture("C:/new/obit.exe"), false, false},
+					{"repeat-refresh", testenv.NativeFixture("C:/new/obit.exe"), false, true},
+					{"uninstall", testenv.NativeFixture("C:/new/obit.exe"), true, false},
+					{"repeat-uninstall", testenv.NativeFixture("C:/new/obit.exe"), true, true},
 				} {
 					before, err := os.ReadFile(path)
 					if err != nil && !os.IsNotExist(err) {
@@ -135,7 +137,7 @@ func TestHookConfigBOMLifecycle(t *testing.T) {
 						// A no-op install also preserves the user's compact formatting.
 						writeIntegrationFile(t, path, tc.prefix+compact.String())
 					case "refresh":
-						if want := strings.ReplaceAll(installed, "C:/old/obit.exe", step.binary); got != want {
+						if want := strings.ReplaceAll(installed, testenv.NativeFixture("C:/old/obit.exe"), step.binary); got != want {
 							t.Fatalf("refresh changed more than the hook command: %q", got)
 						}
 					case "uninstall", "repeat-uninstall":
@@ -154,13 +156,13 @@ func TestGuardRMStatusDecodedArguments(t *testing.T) {
 		name, agent, handler string
 		guard                bool
 	}{
-		{"escaped-args", "claude", `{"type":"command","command":"C:/tools/obit.exe","args":["hook","claude","\u002d\u002dnotice-only"]}`, false},
-		{"escaped-command", "codex", `{"type":"command","command":"C:/tools/obit.exe hook codex \u002d\u002dnotice-only"}`, false},
-		{"directory", "claude", `{"type":"command","command":"C:/--notice-only/obit.exe hook claude"}`, true},
-		{"metadata", "codex", `{"type":"command","command":"C:/tools/obit.exe hook codex","description":"--notice-only"}`, true},
-		{"mixed-modes", "codex", `{"type":"command","command":"/mnt/c/tools/obit.exe hook codex --notice-only","commandWindows":"C:/tools/obit.exe hook codex"}`, false},
-		{"mixed-modes-escaped", "codex", `{"type":"command","command":"/mnt/c/tools/obit.exe hook codex","commandWindows":"C:/tools/obit.exe hook codex \u002d\u002dnotice-only"}`, false},
-		{"both-guard", "codex", `{"type":"command","command":"/mnt/c/tools/obit.exe hook codex","commandWindows":"C:/tools/obit.exe hook codex"}`, true},
+		{"escaped-args", "claude", testenv.NativeFixture(`{"type":"command","command":"C:/tools/obit.exe","args":["hook","claude","\u002d\u002dnotice-only"]}`), false},
+		{"escaped-command", "codex", testenv.NativeFixture(`{"type":"command","command":"C:/tools/obit.exe hook codex \u002d\u002dnotice-only"}`), false},
+		{"directory", "claude", testenv.NativeFixture(`{"type":"command","command":"C:/--notice-only/obit.exe hook claude"}`), true},
+		{"metadata", "codex", testenv.NativeFixture(`{"type":"command","command":"C:/tools/obit.exe hook codex","description":"--notice-only"}`), true},
+		{"mixed-modes", "codex", testenv.NativeFixture(`{"type":"command","command":"/mnt/c/tools/obit.exe hook codex --notice-only","commandWindows":"C:/tools/obit.exe hook codex"}`), false},
+		{"mixed-modes-escaped", "codex", testenv.NativeFixture(`{"type":"command","command":"/mnt/c/tools/obit.exe hook codex","commandWindows":"C:/tools/obit.exe hook codex \u002d\u002dnotice-only"}`), false},
+		{"both-guard", "codex", testenv.NativeFixture(`{"type":"command","command":"/mnt/c/tools/obit.exe hook codex","commandWindows":"C:/tools/obit.exe hook codex"}`), true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			data := `{"hooks":{"PreToolUse":[{"matcher":".*","hooks":[` + tc.handler + `]}]}}`
@@ -170,7 +172,7 @@ func TestGuardRMStatusDecodedArguments(t *testing.T) {
 			}
 			path := filepath.Join(t.TempDir(), "hooks.json")
 			writeIntegrationFile(t, path, data)
-			command, err := graveNoticeCommand(Scope{Global: true}, path, tc.agent, "C:/new/obit.exe hook "+tc.agent)
+			command, err := graveNoticeCommand(Scope{Global: true}, path, tc.agent, testenv.NativeFixture("C:/new/obit.exe hook ")+tc.agent)
 			if err != nil || strings.HasSuffix(command, " --notice-only") == tc.guard {
 				t.Errorf("refresh changed guard opt-in: %q %v", command, err)
 			}
@@ -182,7 +184,7 @@ func TestGuardRMInstalledWithBOM(t *testing.T) {
 	t.Parallel()
 	for _, agent := range []string{"claude", "codex"} {
 		for _, bom := range []string{"", "\xef\xbb\xbf"} {
-			data := bom + `{"hooks":{"PreToolUse":[{"hooks":[{"type":"command","command":"C:/tools/obit.exe hook ` + agent + `"}]}]}}`
+			data := bom + testenv.NativeFixture(`{"hooks":{"PreToolUse":[{"hooks":[{"type":"command","command":"C:/tools/obit.exe hook `) + agent + `"}]}]}}`
 			if !GuardRMInstalled([]Change{{orig: []byte(data)}}, agent) {
 				t.Errorf("installed %s guard missed (BOM %t)", agent, bom != "")
 			}
@@ -206,7 +208,7 @@ func TestGuardRMMatcherCoverage(t *testing.T) {
 		{"codex", ".*", true}, {"codex", "apply_patch", false},
 	} {
 		t.Run(tc.agent+"/"+tc.matcher, func(t *testing.T) {
-			data, _ := json.Marshal(map[string]any{"hooks": map[string]any{"PreToolUse": []any{map[string]any{"matcher": tc.matcher, "hooks": []handler{{Type: "command", Command: "C:/tools/obit.exe hook " + tc.agent}}}}}})
+			data, _ := json.Marshal(map[string]any{"hooks": map[string]any{"PreToolUse": []any{map[string]any{"matcher": tc.matcher, "hooks": []handler{{Type: "command", Command: testenv.NativeFixture("C:/tools/obit.exe hook ") + tc.agent}}}}}})
 			changes := []Change{{orig: data}}
 			registered, effective := GuardRMStatus(changes, tc.agent)
 			if !registered || effective != tc.want || GuardRMInstalled(changes, tc.agent) != tc.want {
@@ -214,12 +216,12 @@ func TestGuardRMMatcherCoverage(t *testing.T) {
 			}
 		})
 	}
-	data := `{"hooks":{"PreToolUse":[{"matcher":"Bash|exec_command","hooks":[{"type":"command","command":"C:/tools/obit.exe hook codex"}]},{"matcher":"shell_command|shell|local_shell","hooks":[{"type":"command","command":"C:/tools/obit.exe hook codex"}]}]}}`
+	data := testenv.NativeFixture(`{"hooks":{"PreToolUse":[{"matcher":"Bash|exec_command","hooks":[{"type":"command","command":"C:/tools/obit.exe hook codex"}]},{"matcher":"shell_command|shell|local_shell","hooks":[{"type":"command","command":"C:/tools/obit.exe hook codex"}]}]}}`)
 	if !GuardRMInstalled([]Change{{orig: []byte(data)}}, "codex") {
 		t.Fatal("split matcher coverage missed")
 	}
 	for _, data := range []string{
-		`{"hooks":{"PostToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"C:/tools/obit.exe hook claude"}]}]}}`,
+		testenv.NativeFixture(`{"hooks":{"PostToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"C:/tools/obit.exe hook claude"}]}]}}`),
 		`{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"echo user"}]}]}}`,
 	} {
 		if registered, effective := GuardRMStatus([]Change{{orig: []byte(data)}}, "claude"); registered || effective {
@@ -247,9 +249,9 @@ func TestGuardPlanOwnershipBackupsAndConflict(t *testing.T) {
 				var changes []Change
 				var err error
 				if agent == "codex" {
-					changes, err = PlanCodex(scope, "C:/tools/obit.exe hook codex", "C:/tools/obit.exe hook codex", uninstall)
+					changes, err = PlanCodex(scope, testenv.NativeFixture("C:/tools/obit.exe hook codex"), testenv.NativeFixture("C:/tools/obit.exe hook codex"), uninstall)
 				} else {
-					changes, err = PlanClaude(scope, "C:/tools/obit.exe hook claude", uninstall)
+					changes, err = PlanClaude(scope, testenv.NativeFixture("C:/tools/obit.exe hook claude"), uninstall)
 				}
 				if err != nil {
 					t.Fatal(err)
@@ -285,7 +287,7 @@ func TestGuardPlanOwnershipBackupsAndConflict(t *testing.T) {
 			found := false
 			for _, group := range root.Hooks["PreToolUse"] {
 				for _, h := range group.Hooks {
-					if h.Command == "C:/tools/obit.exe hook "+agent || OwnedHookExec(h.Command, h.Args, agent, nil) {
+					if h.Command == testenv.NativeFixture("C:/tools/obit.exe hook ")+agent || OwnedHookExec(h.Command, h.Args, agent, nil) {
 						found = true
 						if group.Matcher != ".*" {
 							t.Fatal("wrong matcher", group.Matcher)

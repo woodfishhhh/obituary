@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"path/filepath"
 	"strings"
@@ -32,11 +34,11 @@ func TestTOMLBlockLifecycleCommentsAndScope(t *testing.T) {
 	path := filepath.Join(s.Project, "hooks.toml")
 	input := "\xef\xbb\xbf# user settings\nroot = 'value'\n[[hooks]]\nname = 'user'\ncommand = 'echo user' # user command\n"
 	writeIntegrationFile(t, path, input)
-	ch, err := PlanTOMLBlock(s, path, vibeBlock("C:/tools/obit.exe hook vibe"), false)
+	ch, err := PlanTOMLBlock(s, path, vibeBlock(testenv.NativeFixture("C:/tools/obit.exe hook vibe")), false)
 	applyIntegration(t, []Change{ch}, err)
 	installed := read(t, path)
-	writeIntegrationFile(t, path, strings.Replace(installed, "command = 'C:/tools/obit.exe hook vibe'", "command = 'C:/tools/obit.exe hook vibe' # owned comment", 1))
-	for _, command := range []string{"C:/new/obit.exe hook vibe", "C:/new/obit.exe hook vibe"} {
+	writeIntegrationFile(t, path, strings.Replace(installed, testenv.NativeFixture("command = 'C:/tools/obit.exe hook vibe'"), testenv.NativeFixture("command = 'C:/tools/obit.exe hook vibe' # owned comment"), 1))
+	for _, command := range []string{testenv.NativeFixture("C:/new/obit.exe hook vibe"), testenv.NativeFixture("C:/new/obit.exe hook vibe")} {
 		ch, err = PlanTOMLBlock(s, path, vibeBlock(command), false)
 		applyIntegration(t, []Change{ch}, err)
 		got := read(t, path)
@@ -44,7 +46,7 @@ func TestTOMLBlockLifecycleCommentsAndScope(t *testing.T) {
 			t.Fatal("comments/prefix changed", got)
 		}
 	}
-	ch, err = PlanTOMLBlock(s, path, vibeBlock("C:/new/obit.exe hook vibe"), false)
+	ch, err = PlanTOMLBlock(s, path, vibeBlock(testenv.NativeFixture("C:/new/obit.exe hook vibe")), false)
 	if err != nil || ch.Action != "unchanged" {
 		t.Fatalf("not idempotent: %+v %v", ch, err)
 	}
@@ -64,7 +66,7 @@ func TestTOMLBlockUninstallRestoresOriginalNewlines(t *testing.T) {
 			path := filepath.Join(s.Project, "hooks.toml")
 			writeIntegrationFile(t, path, original)
 			for _, uninstall := range []bool{false, false, true} {
-				ch, err := PlanTOMLBlock(s, path, vibeBlock("C:/tools/obit.exe hook vibe"), uninstall)
+				ch, err := PlanTOMLBlock(s, path, vibeBlock(testenv.NativeFixture("C:/tools/obit.exe hook vibe")), uninstall)
 				applyIntegration(t, []Change{ch}, err)
 			}
 			if got := read(t, path); got != original {
@@ -81,10 +83,10 @@ func TestTOMLBlockPreservesLaterUserArrayEntries(t *testing.T) {
 	before := "[[hooks]]\ncommand='first user'\n"
 	after := "[[hooks]]\ncommand='later user' # added later\n"
 	writeIntegrationFile(t, path, before)
-	ch, err := PlanTOMLBlock(s, path, vibeBlock("C:/tools/obit.exe hook vibe"), false)
+	ch, err := PlanTOMLBlock(s, path, vibeBlock(testenv.NativeFixture("C:/tools/obit.exe hook vibe")), false)
 	applyIntegration(t, []Change{ch}, err)
 	writeIntegrationFile(t, path, read(t, path)+after)
-	ch, err = PlanTOMLBlock(s, path, vibeBlock("C:/new/obit.exe hook vibe"), false)
+	ch, err = PlanTOMLBlock(s, path, vibeBlock(testenv.NativeFixture("C:/new/obit.exe hook vibe")), false)
 	applyIntegration(t, []Change{ch}, err)
 	ch, err = PlanTOMLBlock(s, path, vibeBlock(""), true)
 	applyIntegration(t, []Change{ch}, err)
@@ -100,9 +102,9 @@ func TestTOMLBlockRejectsScopeLeaksAndForgedMarkers(t *testing.T) {
 
 	t.Parallel()
 	for _, input := range []string{
-		"# obit:vibe-hooks:begin\n[[hooks]]\ncommand='C:/tools/obit.exe hook vibe'\n# obit:vibe-hooks:end\nuser='belongs to hook'\n",
+		testenv.NativeFixture("# obit:vibe-hooks:begin\n[[hooks]]\ncommand='C:/tools/obit.exe hook vibe'\n# obit:vibe-hooks:end\nuser='belongs to hook'\n"),
 		"# obit:vibe-hooks:begin\n[[hooks]]\ncommand='user'\n# obit:vibe-hooks:end\n",
-		"# obit:vibe-hooks:begin\n[[hooks]]\ncommand='C:/tools/obit.exe hook vibe'\n",
+		testenv.NativeFixture("# obit:vibe-hooks:begin\n[[hooks]]\ncommand='C:/tools/obit.exe hook vibe'\n"),
 		"# obit:vibe-hooks:end\n",
 		"# obit:vibe-hooks:begin\n# obit:vibe-hooks:begin\n# obit:vibe-hooks:end\n",
 		"broken = [",
@@ -111,7 +113,7 @@ func TestTOMLBlockRejectsScopeLeaksAndForgedMarkers(t *testing.T) {
 		path := filepath.Join(s.Project, "hooks.toml")
 		writeIntegrationFile(t, path, input)
 		for _, uninstall := range []bool{false, true} {
-			if _, err := PlanTOMLBlock(s, path, vibeBlock("C:/tools/obit.exe hook vibe"), uninstall); err == nil {
+			if _, err := PlanTOMLBlock(s, path, vibeBlock(testenv.NativeFixture("C:/tools/obit.exe hook vibe")), uninstall); err == nil {
 				t.Fatal("accepted unsafe TOML", input)
 			}
 		}
@@ -129,7 +131,7 @@ func TestTOMLBlockRejectsScopeLeaksAndForgedMarkers(t *testing.T) {
 func TestRefreshTOMLStringUsesASTRanges(t *testing.T) {
 	t.Parallel()
 	input := []byte("# c\r\n[[hooks]]\r\ncommand = '''old\nmultiline''' # after\r\nother='value'\r\n[[hooks]]\r\ncommand='old'\r\n[unrelated]\r\ncommand='keep'\r\n")
-	out, err := RefreshTOMLString(input, []string{"hooks"}, "command", `C:\space & tools\obit.exe hook vibe`)
+	out, err := RefreshTOMLString(input, []string{"hooks"}, "command", testenv.NativeFixture(`C:\space & tools\obit.exe hook vibe`))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,5 +1,7 @@
 package hook
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"encoding/json"
@@ -20,7 +22,7 @@ func geminiFixture(t *testing.T, name string) map[string]any {
 		t.Fatal(err)
 	}
 	var in map[string]any
-	if err := json.Unmarshal(raw, &in); err != nil {
+	if err := json.Unmarshal([]byte(testenv.NativeFixture(string(raw))), &in); err != nil {
 		t.Fatal(err)
 	}
 	return in
@@ -69,8 +71,10 @@ func TestGeminiIgnoresUnverifiedWrites(t *testing.T) {
 		{"failed-response", func(m map[string]any) {
 			m["tool_response"] = map[string]any{"llmContent": "pretend success", "error": map[string]any{"message": "write denied"}}
 		}},
-		{"remote", func(m map[string]any) { m["cwd"] = "/workspace/remote" }},
-		{"remote-file", func(m map[string]any) { m["tool_input"] = map[string]any{"file_path": "/workspace/remote/file.log"} }},
+		{"remote", func(m map[string]any) { m["cwd"] = testenv.ForeignFixture("/workspace/remote") }},
+		{"remote-file", func(m map[string]any) {
+			m["tool_input"] = map[string]any{"file_path": testenv.ForeignFixture("/workspace/remote/file.log")}
+		}},
 		{"shell-result-path", func(m map[string]any) { m["tool_name"] = "run_shell_command" }},
 		{"code-mode", func(m map[string]any) { m["tool_name"] = "code" }},
 	} {
@@ -156,7 +160,7 @@ func TestGeminiLifecycleAndReplies(t *testing.T) {
 	a := geminiAdapter{}
 	id := strings.Repeat("会", 5000)
 	for _, host := range []string{"SessionStart", "AfterAgent", "SessionEnd"} {
-		in := map[string]any{"hook_event_name": host, "session_id": id, "cwd": "C:/repo"}
+		in := map[string]any{"hook_event_name": host, "session_id": id, "cwd": testenv.NativeFixture("C:/repo")}
 		raw, _ := json.Marshal(in)
 		ev, err := Decode(a, raw, Invocation{Agent: "gemini"})
 		if err != nil || ev.Session != core.NormalizeSession("gemini:"+id) {

@@ -1,5 +1,7 @@
 package hook
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"fmt"
@@ -99,7 +101,7 @@ func TestGraveSessionStartDelivery(t *testing.T) {
 }
 
 func TestGraveSessionContextBudget(t *testing.T) {
-	b := core.Burial{ID: 1, Project: `C:\repo`, Path: `C:\repo\` + strings.Repeat("文", 3000), PurgeAt: time.Now().Add(time.Hour)}
+	b := core.Burial{ID: 1, Project: testenv.NativeFixture(`C:\repo`), Path: testenv.NativeFixture(`C:\repo\`) + strings.Repeat("文", 3000), PurgeAt: time.Now().Add(time.Hour)}
 	out := graveSessionContext([]core.Burial{b}, b.Project, "new")
 	if len(out) > maxContext/2 || !strings.Contains(out, "obit graveyard --here") {
 		t.Fatal(out)

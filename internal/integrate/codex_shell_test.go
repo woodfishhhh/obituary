@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"os"
@@ -11,6 +13,7 @@ import (
 )
 
 func TestCodexWindowsShellPlan(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows host shell declarations and PowerShell commandWindows registration")
 	for _, tc := range []struct {
 		name, original, codex, want string
 		noShell, warning            bool

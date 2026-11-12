@@ -60,7 +60,7 @@ func (s *Service) containedLifespans(st *State, item Item, real string, expires 
 			if other.Identity.Serial != item.Identity.Serial {
 				continue
 			}
-			current, err = s.locateKnown(other.Path, *other.Identity)
+			current, err = s.LocateKnown(other.Path, *other.Identity)
 		} else {
 			current, err = s.FS.RealPath(current)
 		}

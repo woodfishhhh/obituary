@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -63,8 +64,13 @@ func Main(m *testing.M) (code int) {
 }
 
 func runIsolatedTests(m *testing.M, pkg string) (code int) {
-	reapScratch(os.TempDir(), time.Now(), os.Stderr)
-	scratch, err := os.MkdirTemp("", "obit-tests-")
+	tempRoot := os.TempDir()
+	if runtime.GOOS == "darwin" && (strings.HasPrefix(tempRoot, "/var/") || strings.HasPrefix(tempRoot, "/private/var/")) {
+		// Darwin's per-user temp defaults lie below the protected /var tree.
+		tempRoot = "/private/tmp"
+	}
+	reapScratch(tempRoot, time.Now(), os.Stderr)
+	scratch, err := os.MkdirTemp(tempRoot, "obit-tests-")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "test isolation:", err)
 		return 1
@@ -102,6 +108,13 @@ func runIsolatedTests(m *testing.M, pkg string) (code int) {
 		return 1
 	}
 	scratch = longScratch
+	if runtime.GOOS != "windows" {
+		// /tmp is a symlink on macOS; fixtures compare canonical FS receipts.
+		if scratch, err = filepath.EvalSymlinks(scratch); err != nil {
+			fmt.Fprintln(os.Stderr, "test scratch canonical path:", err)
+			return 1
+		}
+	}
 	discardScratch = scratchOutsideModule(scratch)
 	fakeClaudeScratch = scratch
 	gitTemplateRoot = scratch
@@ -188,6 +201,8 @@ func clearInheritedEnvironment() error {
 func isolateDirectories(scratch string) error {
 	for name, sub := range map[string]string{
 		"OBIT_HOME": "data", "OBIT_CONFIG_DIR": "config", "OBIT_USER_HOME": "home",
+		"HOME":          "home",
+		"XDG_DATA_HOME": "xdg-data", "XDG_STATE_HOME": "xdg-state", "XDG_CACHE_HOME": "xdg-cache",
 		"LOCALAPPDATA":        "localappdata",
 		"OBIT_START_MENU_DIR": "programs",
 		"CLAUDE_CONFIG_DIR":   "claude", "CODEX_HOME": "codex",

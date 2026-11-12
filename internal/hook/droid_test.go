@@ -1,5 +1,7 @@
 package hook
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"encoding/json"
@@ -20,7 +22,7 @@ func droidFixture(t *testing.T, name string) map[string]any {
 		t.Fatal(err)
 	}
 	var in map[string]any
-	if err := json.Unmarshal(raw, &in); err != nil {
+	if err := json.Unmarshal([]byte(testenv.NativeFixture(string(raw))), &in); err != nil {
 		t.Fatal(err)
 	}
 	return in
@@ -127,7 +129,7 @@ func TestDroidLifecycleAndReplies(t *testing.T) {
 			t.Fatal("missing session accepted")
 		}
 		in["session_id"] = "s"
-		in["cwd"] = "/remote/repo"
+		in["cwd"] = testenv.ForeignFixture("/remote/repo")
 		raw, _ = json.Marshal(in)
 		if _, err := Decode(a, raw, Invocation{Agent: "droid"}); !errors.Is(err, ErrSkip) {
 			t.Fatal("remote filesystem accepted")

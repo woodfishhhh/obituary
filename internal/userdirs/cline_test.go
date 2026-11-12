@@ -52,16 +52,22 @@ func TestClineDirectoriesRejectUnstablePrefixes(t *testing.T) {
 			t.Setenv("CLINE_DIR", "")
 			t.Setenv("CLINE_DATA_DIR", "")
 			base := filepath.Join(t.TempDir(), "config")
-			t.Setenv(tc.env, `\\?\`+base)
-			got, err := tc.get()
-			if err != nil || got == "" {
-				t.Fatalf("extended spelling: %q %v", got, err)
-			}
-			for _, tail := range []string{".\\child", " \\child", ":stream", "\\NUL"} {
-				t.Setenv(tc.env, `\\?\`+base+tail)
-				if got, err := tc.get(); err == nil {
-					t.Fatalf("unstable prefix accepted: %q", got)
+			t.Run("windows-path-spelling", func(t *testing.T) {
+				windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+				t.Setenv(tc.env, `\\?\`+base)
+				got, err := tc.get()
+				if err != nil || got == "" {
+					t.Fatalf("extended spelling: %q %v", got, err)
 				}
+			})
+			for _, tail := range []string{".\\child", " \\child", ":stream", "\\NUL"} {
+				t.Run("windows-path-spelling", func(t *testing.T) {
+					windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+					t.Setenv(tc.env, `\\?\`+base+tail)
+					if got, err := tc.get(); err == nil {
+						t.Fatalf("unstable prefix accepted: %q", got)
+					}
+				})
 			}
 		})
 	}

@@ -77,6 +77,9 @@ func TestRemoveRejectsTerminalDotOperands(t *testing.T) {
 func TestRmMissingParentKeepsFile(t *testing.T) {
 	for _, spelling := range []string{"slash", "backslash", "absolute"} {
 		t.Run(spelling, func(t *testing.T) {
+			if spelling == "backslash" && runtime.GOOS != "windows" {
+				t.Skip("backslash is a filename character on POSIX")
+			}
 			clitest.IsolateRunner(t)
 			repo, store := clitest.CommandDir(t)
 			clitest.WriteFixture(t, filepath.Join(repo, "keep.txt"), "keep")
@@ -109,6 +112,9 @@ func TestDeleteParentTraversal(t *testing.T) {
 	for _, name := range []string{"rm", "rmdir", "remove-item", "git-clean"} {
 		for _, kind := range []string{"missing", "file", "junction", "ancestor-junction", "nested-missing", "valid"} {
 			t.Run(name+"/"+kind, func(t *testing.T) {
+				if name == "remove-item" && runtime.GOOS != "windows" {
+					t.Skip("remove-item implements Windows PowerShell operands")
+				}
 				clitest.IsolateRunner(t)
 				repo, store := clitest.CommandRepo(t)
 				for _, dir := range []string{"keep", "real/child", "prefix"} {
@@ -123,8 +129,12 @@ func TestDeleteParentTraversal(t *testing.T) {
 					ref = "./file/../keep"
 				case "junction", "ancestor-junction":
 					link := filepath.Join(repo, "link")
-					if out, err := exec.Command("cmd", "/c", "mklink", "/J", link, filepath.Join(repo, "real")).CombinedOutput(); err != nil {
-						t.Fatalf("mklink: %s %v", out, err)
+					if runtime.GOOS == "windows" {
+						if out, err := exec.Command("cmd", "/c", "mklink", "/J", link, filepath.Join(repo, "real")).CombinedOutput(); err != nil {
+							t.Fatalf("mklink: %s %v", out, err)
+						}
+					} else if err := os.Symlink(filepath.Join(repo, "real"), link); err != nil {
+						t.Fatal(err)
 					}
 					ref = "./link/../keep"
 					if kind == "ancestor-junction" {
@@ -169,6 +179,9 @@ func TestDeleteParentTraversal(t *testing.T) {
 }
 
 func TestDeleteRejectsPOSIXAbsolutePaths(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("single-slash absolute paths are ambiguous only on Windows")
+	}
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}
@@ -285,6 +298,9 @@ func TestRemovePreservesMSYSRoots(t *testing.T) {
 }
 
 func TestDeleteRejectsTrailingWindowsNames(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Win32 trailing-dot and trailing-space normalization")
+	}
 	if testing.Short() {
 		t.Skip("too slow for testing.Short")
 	}

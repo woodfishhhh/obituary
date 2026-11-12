@@ -24,7 +24,7 @@ func TestOMPDir(t *testing.T) {
 		t.Fatalf("config name: %q %v", got, err)
 	}
 	custom := filepath.Join(home, "custom")
-	for _, value := range []string{custom, `\\?\` + custom} {
+	for _, value := range nativeDirectorySpellings([]string{custom, `\\?\` + custom}) {
 		t.Setenv("PI_CODING_AGENT_DIR", value)
 		if got, err := OMPDir(); err != nil || got != custom {
 			t.Fatalf("override precedence: %q %v", got, err)
@@ -47,6 +47,8 @@ func TestOMPDir(t *testing.T) {
 }
 
 func TestOMPDirRejectsUnstableOverrides(t *testing.T) {
+	windowsDirectoryTest(t, "Win32 extended names, alternate streams, and trailing-dot normalization")
+
 	home := t.TempDir()
 	t.Setenv("OBIT_USER_HOME", home)
 	t.Setenv("OMP_PROFILE", "")

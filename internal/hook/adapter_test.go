@@ -1,5 +1,7 @@
 package hook
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"context"
@@ -199,7 +201,7 @@ func TestAdapterMatchesLegacyEntryPoints(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			agent, _ := Lookup(name)
-			input := []byte(`{"hook_event_name":"PreToolUse","cwd":"C:\\repo","tool_name":"Bash","tool_input":{"command":"rm scratch.log","shell":"bash"}}`)
+			input := []byte(testenv.NativeFixture(`{"hook_event_name":"PreToolUse","cwd":"C:\\repo","tool_name":"Bash","tool_input":{"command":"rm scratch.log","shell":"bash"}}`))
 			ev, err := agent.Adapter.Decode(input, Invocation{Agent: name})
 			if err != nil || ev.Name != "PreToolUse" || ev.Command != "rm scratch.log" {
 				t.Fatalf("decode: %+v %v", ev, err)

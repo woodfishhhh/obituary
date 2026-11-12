@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/woodfishhhh/obituary/internal/guardrm"
@@ -38,7 +39,10 @@ func guardDelete(home string, ev Event) (string, error) {
 }
 
 func deleteGuardContext(ev Event) (guardrm.Context, string) {
-	context := guardrm.Context{Shell: ev.Shell, DeclaredShell: ev.ShellDeclared, WSL: strings.HasPrefix(ev.Cwd, "/") || strings.HasPrefix(ev.Cwd, "~")}
+	// Only a Windows executable needs WSL interop translation. A Linux binary
+	// uses native paths even when the kernel or environment belongs to WSL.
+	wsl := runtime.GOOS == "windows" && (strings.HasPrefix(ev.Cwd, "/") || strings.HasPrefix(ev.Cwd, "~"))
+	context := guardrm.Context{Shell: ev.Shell, DeclaredShell: ev.ShellDeclared, WSL: wsl}
 	context.Cwd, _ = NativePath(ev.Cwd) // read-only glob check; preserve ev.Cwd's shell namespace
 	var why string
 	if context.WSL && (!guardrm.WSLMountedPath(ev.Cwd) || context.Shell != guardrm.Bash) {

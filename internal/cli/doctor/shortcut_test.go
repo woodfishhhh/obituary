@@ -1,5 +1,7 @@
 package doctor
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"os"
 	"path/filepath"
@@ -30,6 +32,7 @@ func TestPOSIXDesktopDiagnostics(t *testing.T) {
 }
 
 func TestStartMenuShortcutDiagnosis(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	menu := t.TempDir()
 	t.Setenv("OBIT_START_MENU_DIR", menu)
 	exe := filepath.Join(t.TempDir(), "obit.exe")
@@ -56,6 +59,7 @@ func TestStartMenuShortcutDiagnosis(t *testing.T) {
 }
 
 func TestShortcutDiagnosisUsesRelocatedAndLegacyReceipts(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	for _, place := range []shortcut.Location{shortcut.StartMenu, shortcut.Desktop} {
 		t.Run(string(place), func(t *testing.T) {
 			root := t.TempDir()
@@ -97,6 +101,7 @@ func TestShortcutDiagnosisUsesRelocatedAndLegacyReceipts(t *testing.T) {
 }
 
 func TestDesktopShortcutDiagnosis(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	home := t.TempDir()
 	t.Setenv("OBIT_USER_HOME", home)
 	exe := filepath.Join(home, "obit.exe")

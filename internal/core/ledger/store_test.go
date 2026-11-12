@@ -131,7 +131,8 @@ func TestStoreReplaceUsesOneDirectory(t *testing.T) {
 
 func TestStoreReplaceLongDirectory(t *testing.T) {
 	home := t.TempDir()
-	for len(home) < 420 {
+	// Leave room for the final component regardless of the temporary root length.
+	for len(home)+1+40 < 467-len("store.json")-1 {
 		home = filepath.Join(home, strings.Repeat("long", 10))
 	}
 	home = filepath.Join(home, strings.Repeat("x", 467-len(home)-len("store.json")-1))
