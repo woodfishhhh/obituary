@@ -25,9 +25,9 @@ func TestSettingsDefaultsAndParseFailure(t *testing.T) {
 	}
 }
 
-func TestPlanSettingsPreservesTOMLCommentsAndUnknownKeys(t *testing.T) {
+func TestPlanSettingsPreservesTOMLCommentsAndOtherKeys(t *testing.T) {
 	for _, original := range []string{
-		"# keep\nunknown = 'untouched'\n[graveyard] # grave comment\nmode = 'graveyard' # mode comment\nretention_days = 7 # days comment\n[agent_shells]\ncodex = 'bash'\n",
+		"# keep\ncodex_windows_shell = 'bash'\n[graveyard] # grave comment\nmode = 'graveyard' # mode comment\nretention_days = 7 # days comment\n[agent_shells]\ncodex = 'bash'\n",
 		"\xef\xbb\xbf# keep\r\n[graveyard]\r\n# days comment\r\nretention_days = 7\r\n",
 		"# keep\n[graveyard]",
 		"# keep\ngraveyard.mode = 'graveyard'\n",

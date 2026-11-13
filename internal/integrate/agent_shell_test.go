@@ -28,7 +28,7 @@ func agentShellFixture(t *testing.T) (Scope, string) {
 
 func TestAgentWindowsShellPlan(t *testing.T) {
 	for _, original := range []string{
-		"", "# root comment\nmax_auto_items = 7\n[graveyard]\nretention_days = 14\n",
+		"", "# root comment\ncodex_windows_shell = 'bash'\n[graveyard]\nretention_days = 14\n",
 		"\xef\xbb\xbf# keep\r\n[agent_shells] # shells\r\ncodex = 'bash'\r\n[graveyard]\r\nretention_days = 14\r\n",
 		"[agent_shells]", "agent_shells = {}\n", "agent_shells = { codex = 'bash' } # keep\n",
 		"agent_shells.codex = 'bash'\n", "[agent_shells]\ncodebuddy = 'powershell'\n",

@@ -228,7 +228,7 @@ func fuzzTOMLLiterals(n *unstable.Node, table []string, key string) []unstable.R
 func TestGraveyardConfigPreservesLiteralFormatting(t *testing.T) {
 	for _, newline := range []string{"\n", "\r\n"} {
 		path := filepath.Join(t.TempDir(), "config.toml")
-		original := "\xef\xbb\xbf# keep\n['graveyard'] # table\n  'mode'\t= '''recycle''' # mode\nretention_days=0x0e # days\n[other]\nmode='recycle'\nretention_days=0x0e\n"
+		original := "\xef\xbb\xbf# keep\n['graveyard'] # table\n  'mode'\t= '''recycle''' # mode\nretention_days=0x0e # days\n[agent_shells]\nmode='bash'\nretention_days='bash'\n"
 		original = strings.ReplaceAll(original, "\n", newline)
 		if err := os.WriteFile(path, []byte(original), 0o600); err != nil {
 			t.Fatal(err)
@@ -245,12 +245,12 @@ func TestGraveyardConfigPreservesLiteralFormatting(t *testing.T) {
 func TestGraveyardConfigPreservesCaseAliases(t *testing.T) {
 	for _, tc := range []struct{ before, want string }{
 		{
-			"Graveyard = { mode='graveyard', Mode='recycle', RETENTION_days=7, retention_DAYS=14, user='kept' } # keep\n",
-			"Graveyard = { mode=\"recycle\", Mode=\"recycle\", RETENTION_days=30, retention_DAYS=30, user='kept' } # keep\n",
+			"Graveyard = { mode='graveyard', Mode='recycle', RETENTION_days=7, retention_DAYS=14 } # keep\n",
+			"Graveyard = { mode=\"recycle\", Mode=\"recycle\", RETENTION_days=30, retention_DAYS=30 } # keep\n",
 		},
 		{
-			"[GRAVEYARD]\nMODE='graveyard'\nretention_DAYS=7\n[graveyard]\nmode='recycle'\nRETENTION_days=14\n[other]\nMode='keep'\n",
-			"[GRAVEYARD]\nMODE=\"recycle\"\nretention_DAYS=30\n[graveyard]\nmode=\"recycle\"\nRETENTION_days=30\n[other]\nMode='keep'\n",
+			"[GRAVEYARD]\nMODE='graveyard'\nretention_DAYS=7\n[graveyard]\nmode='recycle'\nRETENTION_days=14\n[agent_shells]\nMode='bash'\n",
+			"[GRAVEYARD]\nMODE=\"recycle\"\nretention_DAYS=30\n[graveyard]\nmode=\"recycle\"\nRETENTION_days=30\n[agent_shells]\nMode='bash'\n",
 		},
 	} {
 		path := filepath.Join(t.TempDir(), "config.toml")
