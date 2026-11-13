@@ -66,7 +66,7 @@ go build -ldflags=-H=windowsgui -o bin/obitd.exe ./cmd/obitd
 - 本机（worker 和协调员都一样）：只跑改动涉及的包，不加 `-count=1`（让 `go test` 的缓存跳过没变的包），例如 `go test ./internal/core -run TestBury`；想快速摸一遍全仓库用 `go test -short ./...`。变异只跑相关的几项，子测试按名字过滤：`OBIT_TEST_MCP_MUTATIONS=1 go test -count=1 -run 'TestMCPMutations/purge-' ./internal/cli/mcp`，删除护栏同理（`TestDeleteGuardMutations/<名字>`）。
 - 交付前：`gofmt -l`、`go vet ./...`、`golangci-lint run ./...`，加上改动涉及的包和相关变异。本机不跑全量和两组全量变异。
 - 合并把关分三层：worker 交付前把改动的包用完整模式跑一遍、上层包跑 -short；协调员合并后直接推送，看 CI 的全量结果（推送就跑全量，见下一条），不必先在本机跑整树全量；发版前、账本格式升级后、大规模机械改动后手动触发一次带变异的 CI（`gh workflow run ci.yml -f full=true -f mutations=true`；变异测试在 CI 上按编号拆到 8 台机器并行，本地可以用 `OBIT_MUTATION_SHARD=k/n` 只跑其中一份）。本机确实要跑整树全量时，同一时间只跑一处。
-- 全量和变异在 CI 上跑。仓库公开，标准机器不计分钟：每次推送和 PR 都跑全量（按包拆成四个并行任务，列出最慢的 30 个测试）和 Linux 上的 POSIX 测试，大约 10 分钟出结果；变异每周跑一次，也可以手动触发。打包和安装测试只在打包相关文件改动时跑（最慢的一项，为省时间）。推送不用攒批，推完看一眼 CI。
+- 全量和变异在 CI 上跑。仓库公开，标准机器不计分钟：每次推送和 PR 都跑全量（按包拆成四个并行任务，列出最慢的 30 个测试）和 Linux（带 `-race`）、macOS 上的 POSIX 测试，大约 10 分钟出结果；变异每周跑一次，也可以手动触发。打包和安装测试只在打包相关文件改动时跑（最慢的一项，为省时间）。推送不用攒批，推完看一眼 CI。
 - 新写的测试：只要会起子进程、建 Git 仓库或要等超过 1 秒，就在开头写 `if testing.Short() { t.Skip("…") }`，并保证同一处逻辑在 `-short` 下还有一个快的测试覆盖。测试里默认不 fsync，只有专门检查落盘顺序的测试打开。
 
 ## 已知坑

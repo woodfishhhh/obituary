@@ -203,10 +203,12 @@ jobs:
         run: go build ./...
       - name: Cross-build Linux ARM64
         run: GOOS=linux GOARCH=arm64 go build ./cmd/...
-      - name: POSIX tests
+      # The race detector runs here only: Linux has cgo and a C compiler on the
+      # runner, and the tests are the same ones macOS runs without it.
+      - name: POSIX tests (race detector)
         env:
           TMPDIR: /tmp
-        run: go test ./...
+        run: go test -race ./...
       - name: POSIX installation mutations
         env:
           OBIT_TEST_POSIX_MUTATIONS: "1"
