@@ -7,6 +7,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
+	"github.com/woodfishhhh/obituary/internal/textutil"
 )
 
 func NewCmd() *cobra.Command {
@@ -41,13 +42,13 @@ func NewCmd() *cobra.Command {
 			if sum.NextDue != nil {
 				fmt.Printf("  (next due %s)", cmdutil.When(*sum.NextDue))
 			}
-			fmt.Printf("\ngraveyard    %d  %s", sum.Graves, cmdutil.HumanBytes(sum.GraveBytes))
+			fmt.Printf("\ngraveyard    %d  %s", sum.Graves, textutil.Bytes(sum.GraveBytes))
 			if sum.NextPurge != nil {
 				fmt.Printf("  (next purge %s)", cmdutil.When(*sum.NextPurge))
 			}
-			fmt.Printf("\n\nburied       %d  %s\n", l.Buried, cmdutil.HumanBytes(l.BuriedBytes))
-			fmt.Printf("reclaimed    %d  %s\n", l.Purged, cmdutil.HumanBytes(l.PurgedBytes))
-			fmt.Printf("resurrected  %d  %s\n", l.Resurrected, cmdutil.HumanBytes(l.ResurrectedBytes))
+			fmt.Printf("\n\nburied       %d  %s\n", l.Buried, textutil.Bytes(l.BuriedBytes))
+			fmt.Printf("reclaimed    %d  %s\n", l.Purged, textutil.Bytes(l.PurgedBytes))
+			fmt.Printf("resurrected  %d  %s\n", l.Resurrected, textutil.Bytes(l.ResurrectedBytes))
 			fmt.Printf("delete commands denied  %d\ndelete command burials  %d\n", guardCounts.Denied, guardCounts.Buried)
 			if guardCounts.Oversized > 0 {
 				fmt.Printf("delete audit lines skipped (too long)  %d\n", guardCounts.Oversized)

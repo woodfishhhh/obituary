@@ -152,19 +152,6 @@ const maxListed = 5
 // Separate the fallible context read from notification acknowledgement.
 var proposalConsent = (*core.Service).Consent
 
-func humanBytes(n int64) string {
-	const unit = 1024
-	if n < unit {
-		return fmt.Sprintf("%d B", n)
-	}
-	div, exp := int64(unit), 0
-	for m := n / unit; m >= unit; m /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%.1f %ciB", float64(n)/float64(div), "KMGTPE"[exp])
-}
-
 func rel(root, path string) string {
 	if r, err := filepath.Rel(root, path); err == nil && !strings.HasPrefix(r, "..") {
 		return filepath.ToSlash(r)
@@ -179,7 +166,7 @@ func listCandidates(p core.Proposal) string {
 			parts = append(parts, fmt.Sprintf("and %d more", len(p.Candidates)-maxListed))
 			break
 		}
-		parts = append(parts, fmt.Sprintf("%s (%s, %s)", rel(p.Project, c.Path), humanBytes(c.Size), c.Lifespan))
+		parts = append(parts, fmt.Sprintf("%s (%s, %s)", rel(p.Project, c.Path), textutil.Bytes(c.Size), c.Lifespan))
 	}
 	return strings.Join(parts, ", ")
 }
@@ -208,15 +195,15 @@ func describeProposalCandidates(p core.Proposal, consent, candidates string) str
 		return fmt.Sprintf("Obituary (讣告) proposal #%d, recommended for approval: %s in this project could get lifespans by rule, %s in total: %s. "+
 			"Obituary registers and deletes nothing here until the user approves; approval also lets it handle such artefacts here automatically from then on, and each is buried at expiry and stays restorable until it is purged. "+
 			"The user can approve with `obit approve %d` or decline with `obit reject %d`.",
-			p.ID, textutil.Count(len(p.Candidates), "agent artefact"), humanBytes(p.Size()), candidates, p.ID, p.ID)
+			p.ID, textutil.Count(len(p.Candidates), "agent artefact"), textutil.Bytes(p.Size()), candidates, p.ID, p.ID)
 	case core.ProposalLarge:
 		return fmt.Sprintf("Obituary proposal #%d, recommended for approval: %s (%s) matched a rule: %s. Approval (`obit approve %d`) registers them with the rule's lifespan; each is buried at expiry and stays restorable until it is purged.",
-			p.ID, textutil.Count(len(p.Candidates), "unusually large artefact"), humanBytes(p.Size()), candidates, p.ID)
+			p.ID, textutil.Count(len(p.Candidates), "unusually large artefact"), textutil.Bytes(p.Size()), candidates, p.ID)
 	default:
 		return fmt.Sprintf("Obituary proposal #%d, recommended for approval: an earlier session left %s that Git ignores and tools regenerate (dependencies, build output, caches), %s in total: %s. "+
 			"Approval (`obit approve %d`) gives each a %s lifespan; at expiry each is buried and stays restorable until it is purged. "+
 			"Files Git does not ignore are uncommitted work and are never proposed. `obit reject %d` leaves these unmanaged.",
-			p.ID, textutil.Count(len(p.Candidates), "regenerable item"), humanBytes(p.Size()), candidates, p.ID, auto.LeftoverLifespan, p.ID)
+			p.ID, textutil.Count(len(p.Candidates), "regenerable item"), textutil.Bytes(p.Size()), candidates, p.ID, auto.LeftoverLifespan, p.ID)
 	}
 }
 

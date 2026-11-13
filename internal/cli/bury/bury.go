@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/textutil"
 )
 
 func NewCmd() *cobra.Command {
@@ -44,7 +45,7 @@ func NewCmd() *cobra.Command {
 					return fmt.Sprintf("%-8s %s", r.Action, r.Ref)
 				}
 				return fmt.Sprintf("#%d buried   %s  (%s, restorable until %s)", r.Burial.ID, r.Burial.Path,
-					cmdutil.HumanBytes(r.Burial.Size), r.Burial.PurgeAt.Local().Format(cmdutil.TimeLayout))
+					textutil.Bytes(r.Burial.Size), r.Burial.PurgeAt.Local().Format(cmdutil.TimeLayout))
 			})
 			if err := cmdutil.Committed(err); err != nil {
 				return err
