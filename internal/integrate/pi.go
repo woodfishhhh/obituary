@@ -61,12 +61,6 @@ func PlanPiMCP(s Scope, executable string, uninstall bool) ([]Change, error) {
 	return planPiMCP(s, executable, "pi", uninstall)
 }
 
-func unsupportedPluginSkill(agent string) func(Scope, bool) ([]Change, error) {
-	return func(Scope, bool) ([]Change, error) {
-		return nil, fmt.Errorf("%s: automatic Skill installation is not verified; existing skills are left untouched; the installed AGENTS.md block provides Obituary instructions", agent)
-	}
-}
-
 func PlanPiSkill(s Scope, uninstall bool) ([]Change, error) {
 	return PlanSharedSkill(s, "pi", uninstall)
 }

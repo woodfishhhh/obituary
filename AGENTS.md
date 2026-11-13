@@ -59,7 +59,7 @@ go build -ldflags=-H=windowsgui -o bin/obitd.exe ./cmd/obitd
 
 `bin/` 已忽略。只格式化改过的文件（`gofmt -w <files>`）。
 
-**静态检查（所有者 2026-11-10 定）。** `.golangci.yml` 只开 staticcheck、errorlint、funlen（50 行）、nestif（复杂度 4），对应上面「函数不超过 50 行、嵌套不超过 4 层」的规则。只拦新增的问题（`new-from-merge-base: main`）；已有的超长函数和深嵌套是重构清单，记在 docs/milestones/m3-speed.md。交付前和 vet 一起跑，新代码不许新增告警；确需例外用 `//nolint:<linter> // 原因` 写明理由。
+**静态检查（所有者 2026-11-10 定）。** `.golangci.yml` 只开 staticcheck、errorlint、funlen（50 行）、nestif（复杂度 4），对应上面「函数不超过 50 行、嵌套不超过 4 层」的规则。只拦新增的问题（`new-from-merge-base: main`）；已有的超长函数和深嵌套是重构清单，记在 docs/milestones/m3-speed.md。交付前和 vet 一起跑，新代码不许新增告警；确需例外用 `//nolint:<linter> // 原因` 写明理由。`unused` 不在 CI 里：Linux 构建下，只被 Windows 代码调用的共用函数会被误报。拆包或删掉调用方之后，手动跑一次 `golangci-lint run --new-from-merge-base= --enable-only unused ./...` 查死代码，Windows 构建下应当是 0。
 
 **测试分两档，全量只在 CI 上跑（所有者 2026-11-10 定，决策 D-0038）。** 测试大多碰真实文件系统、Git 和子进程。几个 worker 在同一台机器上同时跑全量时，全部慢二三十倍，所以：
 

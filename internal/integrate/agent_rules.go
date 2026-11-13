@@ -138,12 +138,6 @@ func pluginPayload(s Scope, path string, source []byte, executable string) ([]by
 	return bytes.ReplaceAll(source, []byte("__OBIT_SETTINGS__"), settings), nil
 }
 
-func unsupportedAgentSkill(agent string) func(Scope, bool) ([]Change, error) {
-	return func(Scope, bool) ([]Change, error) {
-		return nil, fmt.Errorf("%s: managed Skill discovery has not been verified; the installed rules describe Obituary; no Skill was installed", agent)
-	}
-}
-
 func manualAgentMCP(agent, entryPoint, executable string, uninstall bool) ([]Change, error) {
 	if uninstall {
 		return nil, manualf("%s: open %s; remove only mcpServers.obituary after verifying command is obit.exe and args are [\"mcp\"]; automatic removal is unavailable", agent, entryPoint)
