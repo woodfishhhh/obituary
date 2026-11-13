@@ -19,9 +19,12 @@ import (
 // Every case must compile and hit its named behavioral assertion. Local
 // cross-compilation can apply this same table before executing the test binary.
 func TestPOSIXMoveMutations(t *testing.T) {
-	if testing.Short() || os.Getenv("OBIT_TEST_POSIX_MUTATIONS") != "1" {
-		t.Skip("set OBIT_TEST_POSIX_MUTATIONS=1 for compiled POSIX safety mutations")
+	if testing.Short() {
+		t.Skip("runs compiled mutation subprocesses")
 	}
+	// Anchors are checked on every full run so a refactor that moves a
+	// target fails CI at once; OBIT_TEST_POSIX_MUTATIONS=1 also compiles them.
+	compile := os.Getenv("OBIT_TEST_POSIX_MUTATIONS") == "1"
 	for i, tc := range []struct{ name, file, from, to, test, assertion string }{
 		{"overlay-fid-refused-linux", "stat_linux.go", "lookup(fd, name, unix.AT_EMPTY_PATH)", "lookup(fd, name, unix.AT_EMPTY_PATH|0x200)", "TestPOSIXIdentityRefusesInodeOnlyFID", "inode-only FID authorized a durable identity"},
 		{"metadata-persistent", "metadata_unix.go", "if st.Incarnation == 0 {", "if false && st.Incarnation == 0 {", "TestPOSIXMetadataRequiresPersistentIdentity", "weak metadata stamp returned"},
@@ -69,6 +72,9 @@ func TestPOSIXMoveMutations(t *testing.T) {
 			}
 			if !strings.Contains(string(data), tc.from) {
 				t.Fatal("mutation anchor missing")
+			}
+			if !compile {
+				return
 			}
 			dir := t.TempDir()
 			replacement := filepath.Join(dir, "mutant.go")

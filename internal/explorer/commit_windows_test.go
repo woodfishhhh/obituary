@@ -17,9 +17,9 @@ func TestExplorerMutations(t *testing.T) {
 	if testing.Short() {
 		t.Skip("runs compiled mutation subprocesses")
 	}
-	if os.Getenv("OBIT_TEST_MCP_MUTATIONS") != "1" {
-		t.Skip("set OBIT_TEST_MCP_MUTATIONS=1 for compiled Explorer mutations")
-	}
+	// Anchors are checked on every full run so a refactor that moves a
+	// target fails CI at once; OBIT_TEST_MCP_MUTATIONS=1 also compiles them.
+	compile := os.Getenv("OBIT_TEST_MCP_MUTATIONS") == "1"
 	for _, tc := range []struct{ name, file, from, to, test, assertion string }{
 		{"explorer-authorized-child", "authorization_windows.go", "if got != want {", "if false && got != want {", "TestAuditItemLocationReplacedBeforeParent", "item location replacement was authorized"},
 		{"explorer-authorization-pin", "apply_windows.go", "windows.FILE_LIST_DIRECTORY|windows.FILE_READ_ATTRIBUTES|windows.FILE_WRITE_ATTRIBUTES", "windows.FILE_READ_ATTRIBUTES|windows.FILE_WRITE_ATTRIBUTES", "TestAuditDirectoryReplacedBeforeIdentity", "Git directory replacement was authorized"},
@@ -41,6 +41,9 @@ func TestExplorerMutations(t *testing.T) {
 			}
 			if strings.Count(string(data), tc.from) != 1 {
 				t.Fatal("mutation anchor missing or ambiguous")
+			}
+			if !compile {
+				return
 			}
 			dir := t.TempDir()
 			replacement := filepath.Join(dir, "mutant.go")

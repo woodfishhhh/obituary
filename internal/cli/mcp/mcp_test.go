@@ -21,9 +21,9 @@ func TestMCPMutations(t *testing.T) {
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}
-	if os.Getenv("OBIT_TEST_MCP_MUTATIONS") != "1" {
-		t.Skip("set OBIT_TEST_MCP_MUTATIONS=1 for compiled MCP safety mutations")
-	}
+	// Anchors are checked on every full run so a refactor that moves a
+	// target fails CI at once; OBIT_TEST_MCP_MUTATIONS=1 also compiles them.
+	compile := os.Getenv("OBIT_TEST_MCP_MUTATIONS") == "1"
 	root, err := filepath.Abs("../../..")
 	if err != nil {
 		t.Fatal(err)
@@ -719,6 +719,9 @@ func TestMCPMutations(t *testing.T) {
 					t.Fatal("mutation anchor missing or ambiguous")
 				}
 				mutant = strings.ReplaceAll(mutant, anchor, to[i])
+			}
+			if !compile {
+				return
 			}
 			dir := t.TempDir()
 			replacement := filepath.Join(dir, "mutant.go")

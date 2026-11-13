@@ -55,9 +55,9 @@ func TestDeleteGuardMutations(t *testing.T) {
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}
-	if os.Getenv("OBIT_TEST_DELETE_MUTATIONS") != "1" {
-		t.Skip("set OBIT_TEST_DELETE_MUTATIONS=1 to compile and run deletion safety mutations")
-	}
+	// Targets are checked on every full run so a refactor that moves one
+	// fails CI at once; OBIT_TEST_DELETE_MUTATIONS=1 also compiles them.
+	compile := os.Getenv("OBIT_TEST_DELETE_MUTATIONS") == "1"
 	root, err := filepath.Abs("../../..")
 	if err != nil {
 		t.Fatal(err)
@@ -506,6 +506,9 @@ func TestDeleteGuardMutations(t *testing.T) {
 			source, err := os.ReadFile(original)
 			if err != nil || !strings.Contains(string(source), mutation.from) {
 				t.Fatalf("mutation target changed: %v", err)
+			}
+			if !compile {
+				return
 			}
 			scratch := t.TempDir()
 			altered := filepath.Join(scratch, "mutant.go")
