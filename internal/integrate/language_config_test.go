@@ -11,12 +11,12 @@ import (
 
 func TestLanguageConfigPreservesSource(t *testing.T) {
 	for _, original := range []string{
-		"# keep\nunknown = 'untouched'\n[ui] # table\nlanguage = 'auto' # language\n[graveyard]\nmode = 'recycle'\n",
+		"# keep\ncodex_windows_shell = 'bash'\n[ui] # table\nlanguage = 'auto' # language\n[graveyard]\nmode = 'recycle'\n",
 		"\xef\xbb\xbf# keep\r\n[ui]\r\nlanguage = 'auto' # language\r\n",
 		"# keep\n[ui]", "# keep\n", "# keep\nui.language = 'auto'\n",
-		"# keep\nui = { language = 'auto', unknown = 'untouched' }\n",
-		"# keep\nui = {}\n", "# keep\nui = {\n# inner\nunknown = 'untouched',\n}\n",
-		"# keep\n[ui.extra]\nunknown = 'untouched'\n",
+		"# keep\nui = { language = 'auto', tray = false }\n",
+		"# keep\nui = {}\n", "# keep\nui = {\n# inner\ntaskbar = false,\n}\n",
+		"# keep\n[ui]\ntray = false\n",
 		"# keep\n[UI]\nLANGUAGE='en'\n[ui]\nlanguage='auto'\n",
 	} {
 		t.Run(original, func(t *testing.T) {
