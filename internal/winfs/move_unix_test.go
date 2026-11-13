@@ -25,6 +25,10 @@ func TestPOSIXMoveMutations(t *testing.T) {
 	// Anchors are checked on every full run so a refactor that moves a
 	// target fails CI at once; OBIT_TEST_POSIX_MUTATIONS=1 also compiles them.
 	compile := os.Getenv("OBIT_TEST_POSIX_MUTATIONS") == "1"
+	var goEnv []string
+	if compile {
+		goEnv = testenv.MutantGoEnv(t)
+	}
 	for i, tc := range []struct{ name, file, from, to, test, assertion string }{
 		{"overlay-fid-refused-linux", "stat_linux.go", "lookup(fd, name, unix.AT_EMPTY_PATH)", "lookup(fd, name, unix.AT_EMPTY_PATH|0x200)", "TestPOSIXIdentityRefusesInodeOnlyFID", "inode-only FID authorized a durable identity"},
 		{"metadata-persistent", "metadata_unix.go", "if st.Incarnation == 0 {", "if false && st.Incarnation == 0 {", "TestPOSIXMetadataRequiresPersistentIdentity", "weak metadata stamp returned"},
@@ -92,6 +96,7 @@ func TestPOSIXMoveMutations(t *testing.T) {
 			ctx, cancel := context.WithTimeout(t.Context(), 3*time.Minute)
 			defer cancel()
 			cmd := exec.CommandContext(ctx, "go", "test", "-overlay", overlayPath, ".", "-run", "^"+tc.test+"$", "-count=1")
+			cmd.Env = append(os.Environ(), goEnv...)
 			out, err := cmd.CombinedOutput()
 			if err == nil || ctx.Err() != nil || strings.Contains(string(out), "[build failed]") || !strings.Contains(string(out), "--- FAIL: "+tc.test) || !strings.Contains(string(out), tc.assertion) {
 				t.Fatalf("mutation needs its compiled behavioral assertion %q: %v\n%s", tc.assertion, err, out)

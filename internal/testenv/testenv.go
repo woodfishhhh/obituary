@@ -18,6 +18,13 @@ import (
 // Main runs a package's tests in disposable user and Git environments.
 // The caller may redirect TEMP/TMPDIR to choose where the scratch is created.
 func Main(m *testing.M) (code int) {
+	if len(os.Args) == 4 && os.Args[1] == goCacheProgArg { // see MutantGoEnv
+		if err := serveGoCache(os.Stdin, os.Stdout, os.Args[2], os.Args[3]); err != nil {
+			fmt.Fprintln(os.Stderr, "test GOCACHEPROG:", err)
+			return 1
+		}
+		return 0
+	}
 	restoreSync := ledger.SetFileSyncForTesting(func(*os.File) error { return nil })
 	defer restoreSync()
 	runkey.Current = NewRunRegistry()

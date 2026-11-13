@@ -62,6 +62,10 @@ func TestDeleteGuardMutations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	var goEnv []string
+	if compile {
+		goEnv = testenv.MutantGoEnv(t)
+	}
 	for i, mutation := range []struct{ name, file, from, to, pkg, test string }{
 		{"bury-batch-disabled", "internal/core/lifecycle/bury.go",
 			"if !s.recycleMode() {\n\t\treturn results, errors.Join(auditErr, s.buryBatches", "if false && !s.recycleMode() {\n\t\treturn results, errors.Join(auditErr, s.buryBatches",
@@ -522,7 +526,7 @@ func TestDeleteGuardMutations(t *testing.T) {
 			}
 			cmd := exec.Command("go", "test", "-overlay", overlay, mutation.pkg, "-run", "^"+mutation.test+"$", "-count=1")
 			cmd.Dir = root
-			cmd.Env = append(os.Environ(), "OBIT_E2E_OVERLAY="+overlay)
+			cmd.Env = append(append(os.Environ(), goEnv...), "OBIT_E2E_OVERLAY="+overlay)
 			out, err := cmd.CombinedOutput()
 			testName, _, _ := strings.Cut(mutation.test, "/")
 			if err == nil || strings.Contains(string(out), "build failed") || !strings.Contains(string(out), "--- FAIL: "+testName) {

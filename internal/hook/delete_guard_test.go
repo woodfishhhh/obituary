@@ -17,6 +17,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/auto"
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
+	"github.com/woodfishhhh/obituary/internal/testenv"
 	"golang.org/x/sys/windows"
 )
 
@@ -697,7 +698,7 @@ func TestPreToolUseGlobScanDeadline(t *testing.T) {
 		}
 		cmd := exec.Command("go", "test", "-overlay", overlay, "./internal/hook", "-run", "^TestPreToolUseGlobScanDeadline$", "-count=1")
 		cmd.Dir = root
-		cmd.Env = append(os.Environ(), "OBIT_TEST_GLOB_DEADLINE=1")
+		cmd.Env = append(append(os.Environ(), testenv.MutantGoEnv(t)...), "OBIT_TEST_GLOB_DEADLINE=1")
 		if out, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("hook with expired scan deadline: %s %v", out, err)
 		}

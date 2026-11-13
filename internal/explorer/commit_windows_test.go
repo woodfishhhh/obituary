@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/woodfishhhh/obituary/internal/testenv"
 )
 
 // Same compiled-overlay protocol as internal/cli/mcp/mcp_test.go, scoped here
@@ -20,6 +22,10 @@ func TestExplorerMutations(t *testing.T) {
 	// Anchors are checked on every full run so a refactor that moves a
 	// target fails CI at once; OBIT_TEST_MCP_MUTATIONS=1 also compiles them.
 	compile := os.Getenv("OBIT_TEST_MCP_MUTATIONS") == "1"
+	var goEnv []string
+	if compile {
+		goEnv = testenv.MutantGoEnv(t)
+	}
 	for _, tc := range []struct{ name, file, from, to, test, assertion string }{
 		{"explorer-authorized-child", "authorization_windows.go", "if got != want {", "if false && got != want {", "TestAuditItemLocationReplacedBeforeParent", "item location replacement was authorized"},
 		{"explorer-authorization-pin", "apply_windows.go", "windows.FILE_LIST_DIRECTORY|windows.FILE_READ_ATTRIBUTES|windows.FILE_WRITE_ATTRIBUTES", "windows.FILE_READ_ATTRIBUTES|windows.FILE_WRITE_ATTRIBUTES", "TestAuditDirectoryReplacedBeforeIdentity", "Git directory replacement was authorized"},
@@ -61,6 +67,7 @@ func TestExplorerMutations(t *testing.T) {
 			ctx, cancel := context.WithTimeout(t.Context(), 3*time.Minute)
 			defer cancel()
 			cmd := exec.CommandContext(ctx, "go", "test", "-overlay", overlayPath, "-run", "^"+tc.test+"$", "-count=1", ".")
+			cmd.Env = append(os.Environ(), goEnv...)
 			out, err := cmd.CombinedOutput()
 			if err == nil || ctx.Err() != nil || strings.Contains(string(out), "[build failed]") || !strings.Contains(string(out), "--- FAIL: "+tc.test) {
 				t.Fatalf("mutation needs a compiled assertion failure: %v\n%s", err, out)

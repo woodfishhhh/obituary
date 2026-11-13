@@ -15,6 +15,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/testenv"
 )
 
 func TestMCPReplyTotalBudget(t *testing.T) {
@@ -116,7 +117,7 @@ func init() {
 		defer cancel()
 		cmd := exec.CommandContext(ctx, "go", "test", "-overlay", overlayPath, "-count=1", "-run", "^TestMCPUnconfirmedLongHomeKeepsAdvice$", "./internal/cli/mcp")
 		cmd.Dir = root
-		cmd.Env = append(os.Environ(), "OBIT_TEST_MCP_SYNC_CHILD=1")
+		cmd.Env = append(append(os.Environ(), testenv.MutantGoEnv(t)...), "OBIT_TEST_MCP_SYNC_CHILD=1")
 		if out, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("MCP sync fault fixture failed: %v\n%s", err, out)
 		}
