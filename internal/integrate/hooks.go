@@ -84,10 +84,6 @@ type hookSpec struct {
 	PreserveNote func(handler json.RawMessage) string
 }
 
-func planSettings(path, command string, uninstall bool) (Change, error) {
-	return planHooks(Scope{Global: true}, path, claudeSpec(command), uninstall)
-}
-
 // planHooks adds or removes Obituary's handlers in a Claude-style hook file
 // (event, then matcher groups, then handlers), keeping everything else.
 //

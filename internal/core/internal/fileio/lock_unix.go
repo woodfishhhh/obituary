@@ -55,12 +55,6 @@ func tryLockFile(path string, exclusive bool) (func(), bool, error) {
 
 func TryLockExclusive(path string) (func(), bool, error) { return tryLockFile(path, true) }
 
-func lockFileBefore(path string, exclusive bool, deadline time.Time) (func(), error) {
-	ctx, cancel := context.WithDeadline(context.Background(), deadline)
-	defer cancel()
-	return lockFileContext(ctx, path, exclusive)
-}
-
 func lockFileContext(ctx context.Context, path string, exclusive bool) (func(), error) {
 	for {
 		if err := ctx.Err(); err != nil {
