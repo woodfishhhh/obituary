@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -322,6 +323,44 @@ func TestLeftoversDoNotMistakeExpandedDirectoriesForNewFiles(t *testing.T) {
 	}
 }
 
+func TestLeftoversProposeOnlyIgnoredRegenerableItems(t *testing.T) {
+	if testing.Short() {
+		t.Skip("session leftovers use a real Git repository")
+	}
+	t.Parallel()
+	r := newRepo(t)
+	r.write(".gitignore", "node_modules/\ndist/\n.env\n*.o\n")
+	r.write("src/main.go", "package main")
+	r.commit(".gitignore", "src/main.go")
+	if err := r.engine.Snapshot(r.root, "s"); err != nil {
+		t.Fatal(err)
+	}
+	r.write("src/feature.go", "package main // uncommitted work")
+	r.write("newpkg/a.go", "package newpkg")
+	r.write(".env", "TOKEN=secret")
+	r.write("build/x.o", "Git lists build/ as ignored although only x.o is")
+	r.write("node_modules/left-pad/index.js", "x")
+	r.write("dist/app.js", "x")
+	r.write("newpkg/node_modules/m/index.js", "x")
+	want := []string{filepath.Join(r.root, "node_modules"), filepath.Join(r.root, "dist"), filepath.Join(r.root, "newpkg", "node_modules")}
+	if _, err := r.engine.Leftovers(r.root, "s"); err != nil {
+		t.Fatal(err)
+	}
+	st, err := r.engine.Svc.Store.Read()
+	if err != nil || len(st.Proposals) != 1 || len(st.Items) != 0 {
+		t.Fatalf("want one leftovers proposal: %+v %v", st, err)
+	}
+	var got []string
+	for _, c := range st.Proposals[0].Candidates {
+		got = append(got, c.Path)
+	}
+	slices.Sort(got)
+	slices.Sort(want)
+	if !slices.Equal(got, want) {
+		t.Fatalf("leftover candidates = %q, want only ignored regenerable items %q", got, want)
+	}
+}
+
 func TestLeftoversDeduplicateSessions(t *testing.T) {
 	if testing.Short() {
 		t.Skip("session leftovers use a real Git repository")
@@ -334,7 +373,7 @@ func TestLeftoversDeduplicateSessions(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			path := r.write("research.md", "keep this research")
+			path := r.leftover("node_modules")
 			for _, session := range []string{"first", "second"} {
 				if _, err := r.engine.Leftovers(r.root, session); err != nil {
 					t.Fatal(err)
@@ -370,7 +409,7 @@ func TestLeftoversDeduplicateSessions(t *testing.T) {
 			if err != nil || len(st.Proposals) != 0 || len(st.Items) != wantItems || len(st.Burials) != 0 {
 				t.Fatalf("decided leftover was proposed again: %+v %v", st, err)
 			}
-			if data, err := os.ReadFile(path); err != nil || string(data) != "keep this research" {
+			if data, err := os.ReadFile(filepath.Join(path, "index.js")); err != nil || string(data) != "generated" {
 				t.Fatalf("leftover content changed: %q %v", data, err)
 			}
 		})
@@ -413,12 +452,12 @@ func TestShortPathSessionSharesSnapshotAndProposals(t *testing.T) {
 		if err := r.engine.Snapshot(roots[0], session); err != nil {
 			t.Fatal(err)
 		}
-		path := r.write("fresh.txt", "private")
+		path := r.leftover("dist")
 		notices, err := r.engine.Leftovers(roots[1], session)
 		if err != nil || len(notices) != 1 || notices[0].Proposal.Project != root || len(notices[0].Proposal.Candidates) != 1 || notices[0].Proposal.Candidates[0].Path != path {
 			t.Fatalf("aliases split snapshot or proposal: %+v %v", notices, err)
 		}
-		if err := os.Remove(path); err != nil {
+		if err := os.RemoveAll(path); err != nil {
 			t.Fatal(err)
 		}
 		if err := r.engine.RefreshProposals(); err != nil {

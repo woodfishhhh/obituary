@@ -19,6 +19,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/hook"
+	"github.com/woodfishhhh/obituary/internal/testenv"
 )
 
 type neutralTestAdapter struct{ hook.BridgeAdapter }
@@ -417,8 +418,7 @@ func TestFinalHookBypassesFinishDebounce(t *testing.T) {
 			if calls != 1 {
 				t.Fatalf("Stop must debounce: %d spawns", calls)
 			}
-			path := filepath.Join(root, "last-minute.txt")
-			clitest.WriteFixture(t, path, "left after the last Stop")
+			path := testenv.Leftover(t, root, "dist") // built after the last Stop
 			run("SessionEnd")
 			st, err := store.Read()
 			if calls != 2 || err != nil || len(st.Proposals) != 1 || len(st.Proposals[0].Candidates) != 1 || st.Proposals[0].Candidates[0].Path != path {

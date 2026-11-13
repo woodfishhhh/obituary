@@ -71,6 +71,11 @@ func (r *repo) write(rel, content string) string {
 	return path
 }
 
+func (r *repo) leftover(name string) string {
+	r.t.Helper()
+	return testenv.Leftover(r.t, r.root, name)
+}
+
 func (r *repo) commit(rels ...string) {
 	r.t.Helper()
 	r.git(append([]string{"add", "-f", "--"}, rels...)...)

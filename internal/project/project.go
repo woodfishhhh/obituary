@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -410,19 +411,61 @@ func gitCaseFold(path string) string {
 // Untracked lists untracked paths (ignored ones included), collapsing wholly
 // untracked directories into one entry, as `git ls-files --others --directory`.
 func (p Project) Untracked() ([]string, error) {
-	out, err := p.git("ls-files", "-z", "--others", "--directory")
+	rels, err := p.others()
+	return p.join(rels), err
+}
+
+// Ignored lists untracked paths that Git ignores (.gitignore, info/exclude,
+// core.excludesFile), collapsing wholly ignored directories into one entry.
+// Git also lists a directory that merely holds nothing but ignored files; it
+// is dropped (its ignored contents stay listed), because a file written there
+// later would not be ignored.
+func (p Project) Ignored() ([]string, error) {
+	ignored, err := p.others("--ignored", "--exclude-standard")
 	if err != nil {
 		return nil, err
 	}
-	var paths []string
-	for _, rel := range bytes.Split(out, []byte{0}) {
-		if len(rel) == 0 {
-			continue
-		}
-		name := strings.TrimSuffix(string(rel), "/")
-		paths = append(paths, filepath.Join(p.Root, filepath.FromSlash(name)))
+	plain, err := p.others("--exclude-standard")
+	if err != nil {
+		return nil, err
 	}
-	return paths, nil
+	notIgnored := map[string]bool{}
+	for _, rel := range plain {
+		for dir := rel; dir != "." && dir != "/"; dir = path.Dir(dir) {
+			notIgnored[dir] = true
+		}
+	}
+	var kept []string
+	for _, rel := range ignored {
+		if !notIgnored[rel] {
+			kept = append(kept, rel)
+		}
+	}
+	return p.join(kept), nil
+}
+
+// others runs `git ls-files --others --directory` and returns slash-separated
+// relative names without the trailing slash Git puts on directories.
+func (p Project) others(flags ...string) ([]string, error) {
+	out, err := p.git(append([]string{"ls-files", "-z", "--others", "--directory"}, flags...)...)
+	if err != nil {
+		return nil, err
+	}
+	var rels []string
+	for _, rel := range bytes.Split(out, []byte{0}) {
+		if len(rel) > 0 {
+			rels = append(rels, strings.TrimSuffix(string(rel), "/"))
+		}
+	}
+	return rels, nil
+}
+
+func (p Project) join(rels []string) []string {
+	var paths []string
+	for _, rel := range rels {
+		paths = append(paths, filepath.Join(p.Root, filepath.FromSlash(rel)))
+	}
+	return paths
 }
 
 // WorkDir is the project's private .obit directory.

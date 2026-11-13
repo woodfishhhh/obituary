@@ -12,10 +12,13 @@ import (
 	"github.com/woodfishhhh/obituary/internal/testenv"
 )
 
-func TestContainerOwnerUnattributed(t *testing.T) {
-	root, reason := containerOwner(docker.Container{}, t.TempDir())
-	if root != "" || reason != "会话期间新建" {
-		t.Fatal(root, reason)
+func TestProjectContainerNeedsProjectEvidence(t *testing.T) {
+	root := t.TempDir()
+	elsewhere := docker.Container{Labels: map[string]string{"com.docker.compose.project.working_dir": t.TempDir()}, Binds: []string{root + "-sibling"}}
+	for _, row := range []docker.Container{{}, elsewhere} {
+		if reason, ok := projectContainer(row, root); ok {
+			t.Fatal(row, reason)
+		}
 	}
 }
 
@@ -33,7 +36,7 @@ func TestContainerSessionProposals(t *testing.T) {
 	}
 	now = now.Add(time.Hour)
 	var rows []docker.Container
-	for i, name := range []string{"compose", "bind", "unattributed", "old"} {
+	for i, name := range []string{"compose", "bind", "unattributed", "old", "elsewhere"} {
 		row := docker.Container{Identity: docker.Identity{ID: strings.Repeat(fmt.Sprint(i+1), 64), Name: name, Created: now.Add(-time.Minute)}, Running: true}
 		if i == 0 {
 			row.Labels = map[string]string{"com.docker.compose.project.working_dir": r.root}
@@ -44,6 +47,9 @@ func TestContainerSessionProposals(t *testing.T) {
 		if i == 3 {
 			row.Created = now.Add(-2 * time.Hour)
 		}
+		if i == 4 {
+			row.Labels = map[string]string{"com.docker.compose.project.working_dir": t.TempDir()}
+		}
 		rows = append(rows, row)
 	}
 	testenv.WriteDocker(t, state, rows...)
@@ -51,29 +57,19 @@ func TestContainerSessionProposals(t *testing.T) {
 		t.Fatal(err)
 	}
 	st, err := r.engine.Svc.Store.Read()
-	if err != nil || len(st.Proposals) != 2 || len(st.Items) != 0 {
+	// Only containers tied to the project are proposed, so approval is always
+	// the recommended answer; unattributed ones may be the user's own.
+	if err != nil || len(st.Proposals) != 1 || len(st.Items) != 0 || st.Proposals[0].Project != r.root || len(st.Proposals[0].Candidates) != 2 {
 		t.Fatalf("proposals=%+v err=%v", st, err)
 	}
-	for _, p := range st.Proposals {
-		for _, c := range p.Candidates {
-			if c.Container.Name == "unattributed" && (p.Project != "" || c.Reason != "会话期间新建") {
-				t.Fatal(p)
-			}
-			if c.Container.Name != "unattributed" && p.Project != r.root {
-				t.Fatal(p)
-			}
+	for _, c := range st.Proposals[0].Candidates {
+		if c.Container.Name != "compose" && c.Container.Name != "bind" {
+			t.Fatal(c)
 		}
-		if p.Project == "" {
-			results, err := r.engine.Svc.Reject([]string{fmt.Sprint(p.ID)})
-			if err != nil || results[0].Error != "" {
-				t.Fatal(results, err)
-			}
-		} else {
-			results, err := r.engine.Approve([]string{fmt.Sprint(p.ID)})
-			if err != nil || len(results) != 1 || core.Failed(results[0].Results) {
-				t.Fatal(results, err)
-			}
-		}
+	}
+	results, err := r.engine.Approve([]string{fmt.Sprint(st.Proposals[0].ID)})
+	if err != nil || len(results) != 1 || core.Failed(results[0].Results) {
+		t.Fatal(results, err)
 	}
 	if _, err := r.engine.Finish(r.root, "session"); err != nil {
 		t.Fatal(err)

@@ -11,7 +11,7 @@ obit reject 3            # reject
 ```
 
 - **Large things** (over 1 GB or 200 files) are proposed as well.
-- **Session diff.** A snapshot is taken when a session starts (kept in the data directory, nothing is added to your repository) and compared when it ends. Items covered by rules are registered; leftovers no rule covers are **only proposed, not registered**, because new untracked files may be code you have not committed yet.
+- **Session diff.** A snapshot is taken when a session starts (kept in the data directory, nothing is added to your repository) and compared when it ends. Items covered by rules are registered. Of the rest, only what Git ignores and tools regenerate (dependencies, build output, caches such as `node_modules`, `dist`, `.turbo`) is proposed; once approved it is buried after 3 days and stays restorable. New files Git does not ignore are code you have not committed yet, and ignored local configuration such as `.env` cannot be regenerated, so neither ever appears in a proposal, and the agent can safely recommend approving.
 - **Git is asked again before burial.** Anything registered by rule or proposal is not buried if it has been committed by the time it expires.
 - **Proposals expire on their own.** Entries that were committed or deleted are dropped, and proposals with nothing left are withdrawn (recorded in the audit log, not counted as a rejection).
 

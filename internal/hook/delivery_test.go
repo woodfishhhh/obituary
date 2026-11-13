@@ -17,6 +17,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/testenv"
 )
 
 func TestDeferredObservationAndSnapshot(t *testing.T) {
@@ -73,7 +74,7 @@ func TestDeferredObservationAndSnapshot(t *testing.T) {
 			if st := e.state(); len(st.Proposals) != 1 || len(st.Proposals[0].Notified) != 0 || len(st.Items) != 0 || e.engine.Svc.Store.HasDeferredObservations() {
 				t.Fatalf("deferred write lost or acknowledged: %+v %s", st, out.String())
 			}
-			e.write("fresh.txt")
+			testenv.Leftover(t, e.root, "node_modules")
 			ev.Name, ev.Paths = "Stop", nil
 			// An expired hook context makes the finish handoff independent of
 			// machine speed. Background work uses the original engine below.
@@ -116,7 +117,7 @@ func TestDeferredObservationAndSnapshot(t *testing.T) {
 			out.Reset()
 			ev.Name, ev.DeferContext = next, false
 			RunEvent(agent, e.engine, ev, &out, &Runner{})
-			if !strings.Contains(out.String(), "debug.log") || !strings.Contains(out.String(), "fresh.txt") {
+			if !strings.Contains(out.String(), "debug.log") || !strings.Contains(out.String(), "node_modules") {
 				t.Fatalf("pending notice never delivered: %s", out.String())
 			}
 			for _, p := range e.state().Proposals {
