@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"slices"
 	"strings"
 	"time"
 )
@@ -143,30 +144,43 @@ func (c CLI) Inspect(ctx context.Context, ref string) (Container, error) {
 	return got, err
 }
 func (c CLI) inspect(ctx context.Context, ref string) (Container, error) {
-	out, err := c.run(ctx, "container", "inspect", "--", ref)
+	rows, err := c.inspectAll(ctx, []string{ref})
 	if err != nil {
-		return Container{}, err
-	}
-	var rows []inspection
-	if err := json.Unmarshal(out, &rows); err != nil {
 		return Container{}, err
 	}
 	if len(rows) != 1 {
 		return Container{}, errors.New("docker inspect did not return exactly one container")
 	}
-	row := rows[0]
-	id := Identity{Target: c.target, ID: row.ID, Created: row.Created, Name: strings.TrimPrefix(row.Name, "/")}
-	if !id.Valid() {
-		return Container{}, ErrIdentity
+	return rows[0], nil
+}
+
+// inspectAll reads several containers in one process; docker answers in
+// argument order and fails if any reference is gone.
+func (c CLI) inspectAll(ctx context.Context, refs []string) ([]Container, error) {
+	out, err := c.run(ctx, append([]string{"container", "inspect", "--"}, refs...)...)
+	if err != nil {
+		return nil, err
 	}
-	id.ShortID = id.ID[:12]
-	result := Container{Identity: id, StopTimeout: row.Config.StopTimeout, Running: row.State.Running, AutoRemove: row.HostConfig.AutoRemove, Labels: row.Config.Labels}
-	for _, mount := range row.Mounts {
-		if mount.Type == "bind" {
-			result.Binds = append(result.Binds, mount.Source)
+	var rows []inspection
+	if err := json.Unmarshal(out, &rows); err != nil {
+		return nil, err
+	}
+	containers := make([]Container, 0, len(rows))
+	for _, row := range rows {
+		id := Identity{Target: c.target, ID: row.ID, Created: row.Created, Name: strings.TrimPrefix(row.Name, "/")}
+		if !id.Valid() {
+			return nil, ErrIdentity
 		}
+		id.ShortID = id.ID[:12]
+		result := Container{Identity: id, StopTimeout: row.Config.StopTimeout, Running: row.State.Running, AutoRemove: row.HostConfig.AutoRemove, Labels: row.Config.Labels}
+		for _, mount := range row.Mounts {
+			if mount.Type == "bind" {
+				result.Binds = append(result.Binds, mount.Source)
+			}
+		}
+		containers = append(containers, result)
 	}
-	return result, nil
+	return containers, nil
 }
 
 func (c CLI) Available(ctx context.Context) error {
@@ -184,7 +198,7 @@ func (c CLI) List(ctx context.Context) ([]Container, error) {
 	if err != nil {
 		return nil, err
 	}
-	var rows []Container
+	var ids []string
 	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
 		if strings.TrimSpace(line) == "" {
 			continue
@@ -193,14 +207,25 @@ func (c CLI) List(ctx context.Context) ([]Container, error) {
 		if err := json.Unmarshal([]byte(line), &id); err != nil {
 			return nil, err
 		}
-		row, err := c.inspect(ctx, id)
+		ids = append(ids, id)
+	}
+	// One inspect per batch, not per container; 100 full IDs stay far below
+	// the Windows command-line limit.
+	var rows []Container
+	for batch := range slices.Chunk(ids, 100) {
+		got, err := c.inspectAll(ctx, batch)
 		if err != nil {
 			return nil, err
 		}
-		if row.ID != id {
+		if len(got) != len(batch) {
 			return nil, ErrIdentity
 		}
-		rows = append(rows, row)
+		for i, row := range got {
+			if row.ID != batch[i] {
+				return nil, ErrIdentity
+			}
+		}
+		rows = append(rows, got...)
 	}
 	return rows, nil
 }

@@ -198,6 +198,9 @@ func resolve(rows []container, ref string) int {
 }
 
 func action(path string, args []string, rows []container) error {
+	if len(args) > 2 && args[0] == "container" && args[1] == "inspect" && args[2] == "--" {
+		return inspect(path, args[3:], rows)
+	}
 	ref := args[len(args)-1]
 	if args[0] == "rm" && os.Getenv("OBIT_FAKE_DOCKER_RM_REPLACE") == ref {
 		if i := resolve(rows, ref); i >= 0 {
@@ -210,19 +213,6 @@ func action(path string, args []string, rows []container) error {
 	i := resolve(rows, ref)
 	if i < 0 {
 		return fmt.Errorf("No such container: %s", ref)
-	}
-	row := rows[i]
-	if args[0] == "container" && args[1] == "inspect" {
-		if os.Getenv("OBIT_FAKE_DOCKER_MODE") == "wrong-id" {
-			row.ID = strings.Repeat("b", 64)
-		}
-		if os.Getenv("OBIT_FAKE_DOCKER_DISAPPEAR_AFTER_INSPECT") == ref {
-			rows = append(rows[:i], rows[i+1:]...)
-			if err := save(path, rows); err != nil {
-				return err
-			}
-		}
-		return json.NewEncoder(os.Stdout).Encode([]container{row})
 	}
 	if len(args) != 3 || args[1] != "--" {
 		return fmt.Errorf("unsafe command %v", args)
@@ -239,7 +229,7 @@ func action(path string, args []string, rows []container) error {
 	case "start":
 		rows[i].State.Running = true
 	case "rm":
-		if row.State.Running {
+		if rows[i].State.Running {
 			return fmt.Errorf("container is running")
 		}
 		rows = append(rows[:i], rows[i+1:]...)
@@ -277,4 +267,36 @@ func save(path string, rows []container) error {
 		return err
 	}
 	return os.WriteFile(path, data, 0600)
+}
+
+// inspect answers like docker: the containers it found, in argument order,
+// then an error (exit 1) naming any reference it could not find.
+func inspect(path string, refs []string, rows []container) error {
+	var found []container
+	var missing []string
+	for _, ref := range refs {
+		i := resolve(rows, ref)
+		if i < 0 {
+			missing = append(missing, ref)
+			continue
+		}
+		row := rows[i]
+		if os.Getenv("OBIT_FAKE_DOCKER_MODE") == "wrong-id" {
+			row.ID = strings.Repeat("b", 64)
+		}
+		if os.Getenv("OBIT_FAKE_DOCKER_DISAPPEAR_AFTER_INSPECT") == ref {
+			rows = append(rows[:i], rows[i+1:]...)
+			if err := save(path, rows); err != nil {
+				return err
+			}
+		}
+		found = append(found, row)
+	}
+	if err := json.NewEncoder(os.Stdout).Encode(found); err != nil {
+		return err
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("No such container: %s", strings.Join(missing, ", "))
+	}
+	return nil
 }

@@ -293,6 +293,45 @@ func TestDockerRemoveLateReplacementReported(t *testing.T) {
 	}
 }
 
+// Session cleanup lists every container after each agent turn: one inspect
+// process covers them all instead of one per container.
+func TestDockerListInspectsInOneCall(t *testing.T) {
+	if testing.Short() {
+		t.Skip("fake Docker executable")
+	}
+	cli, first, state, log := dockerFixture(t)
+	rows := []docker.Container{first}
+	for _, c := range "bc" {
+		row := first
+		row.ID, row.ShortID, row.Name = strings.Repeat(string(c), 64), strings.Repeat(string(c), 12), "cache-"+string(c)
+		rows = append(rows, row)
+	}
+	testenv.WriteDocker(t, state, rows...)
+	got, err := cli.List(t.Context())
+	if err != nil || len(got) != len(rows) {
+		t.Fatal(got, err)
+	}
+	for i := range rows {
+		if !got[i].Same(rows[i].Identity) || got[i].Name != rows[i].Name {
+			t.Fatalf("row %d: %+v", i, got[i])
+		}
+	}
+	inspects := 0
+	for _, raw := range testenv.DockerCalls(t, log) {
+		if args := testenv.DockerCommand(raw); len(args) > 1 && args[0] == "container" && args[1] == "inspect" {
+			inspects++
+		}
+	}
+	if inspects != 1 {
+		t.Fatalf("%d inspect processes for %d containers", inspects, len(rows))
+	}
+	// Every listed ID must come back exactly once.
+	t.Setenv("OBIT_FAKE_DOCKER_MODE", "wrong-id")
+	if got, err := cli.List(t.Context()); !errors.Is(err, docker.ErrIdentity) {
+		t.Fatalf("mismatched inspection accepted: %+v %v", got, err)
+	}
+}
+
 func TestDockerUnavailableIncludesDiagnostic(t *testing.T) {
 	if testing.Short() {
 		t.Skip("fake Docker executable")
