@@ -178,6 +178,9 @@ func isolate(scratch string) error {
 	if err := isolateDirectories(scratch); err != nil {
 		return err
 	}
+	if err := disableGoTelemetry(scratch); err != nil {
+		return err
+	}
 	path := filepath.Join(scratch, "gitconfig")
 	if err := os.WriteFile(path, []byte("[user]\n\tname = Obituary Tests\n\temail = tests@obituary.invalid\n[init]\n\tdefaultBranch = main\n[core]\n\tautocrlf = false\n"), 0o600); err != nil {
 		return err

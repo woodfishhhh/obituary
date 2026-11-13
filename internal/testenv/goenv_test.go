@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -14,6 +15,19 @@ func TestGoBuildDirectoriesAreExplicit(t *testing.T) {
 		if os.Getenv(name) == "" {
 			t.Errorf("%s was left dependent on the isolated home", name)
 		}
+	}
+}
+
+func TestGoTelemetryOffInIsolatedConfig(t *testing.T) {
+	config, err := os.UserConfigDir()
+	if err != nil || runtime.GOOS == "windows" {
+		t.Skip("the user config directory is not isolated on this platform")
+	}
+	if data, err := os.ReadFile(filepath.Join(config, "go", "telemetry", "mode")); err != nil || string(data) != "off" {
+		t.Fatalf("Go telemetry may write into the isolated home during cleanup: %q %v", data, err)
+	}
+	if out, err := exec.Command("go", "env", "GOTELEMETRY").Output(); err != nil || strings.TrimSpace(string(out)) != "off" {
+		t.Fatalf("go command still sees telemetry enabled: %q %v", out, err)
 	}
 }
 
