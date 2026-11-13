@@ -80,6 +80,7 @@ Once a day at most, Obituary checks whether a new stable release is out. It read
 
 - Scoop: `scoop update obituary`
 - winget: `winget upgrade woodfishhhh.Obituary`
+- Homebrew (macOS): `brew upgrade --cask obituary`
 - Install script: run it again with the new version number
 
 Obituary checks and tells you; you run the update. In a terminal, `obit update` shows your version and the update command, and `obit update --check` checks right away.

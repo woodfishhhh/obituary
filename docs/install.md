@@ -80,6 +80,7 @@ obit doctor
 
 - Scoop：`scoop update obituary`
 - winget：`winget upgrade woodfishhhh.Obituary`
+- Homebrew（macOS）：`brew upgrade --cask obituary`
 - 安装脚本：用新的版本号再运行一次安装脚本
 
 讣告只负责检查和提醒，升级由你来运行。终端里用 `obit update` 看当前版本和升级命令，用 `obit update --check` 马上检查一次。

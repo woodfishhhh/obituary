@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/woodfishhhh/obituary/internal/userdirs"
@@ -17,6 +18,9 @@ func Channel(executable, wingetPackages string, hasReceipt bool) string {
 	exe := cleanPath(executable)
 	if strings.Contains(exe, "/scoop/apps/obituary/") {
 		return "scoop"
+	}
+	if strings.Contains(exe, "/caskroom/obituary/") {
+		return "homebrew"
 	}
 	if wingetPackages != "" {
 		prefix := cleanPath(wingetPackages) + "/"
@@ -39,6 +43,13 @@ func cleanPath(value string) string {
 }
 
 func DetectChannel(executable string) string {
+	// The Homebrew cask links bin/obit to its Caskroom copy; os.Executable
+	// reports the link. Windows channels are read from the path as launched.
+	if runtime.GOOS != "windows" {
+		if real, err := filepath.EvalSymlinks(executable); err == nil {
+			executable = real
+		}
+	}
 	packages, _ := userdirs.WinGetPackages()
 	info, err := os.Stat(filepath.Join(filepath.Dir(executable), ".obituary-install.json"))
 	return Channel(executable, packages, err == nil && info.Mode().IsRegular())
@@ -73,6 +84,8 @@ func Command(channel, latest, executable string) string {
 		return "scoop update obituary"
 	case "winget":
 		return "winget upgrade woodfishhhh.Obituary"
+	case "homebrew":
+		return "brew upgrade --cask obituary"
 	case "script":
 		dir := path.Dir(strings.ReplaceAll(executable, `\`, "/"))
 		script, flags := "https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1", ""

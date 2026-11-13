@@ -3,6 +3,7 @@ package update
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -23,6 +24,9 @@ func TestChannel(t *testing.T) {
 		{`C:\scoop\apps\obituary\..\other\obit.exe`, false, "other"},
 		{`C:\Programs\obituary\obit.exe`, true, "script"},
 		{`D:\source\bin\obit.exe`, false, "other"},
+		{"/opt/homebrew/Caskroom/obituary/1.1.1/obit", false, "homebrew"},
+		{"/usr/local/Caskroom/obituary/1.1.1/obitd", false, "homebrew"},
+		{"/opt/homebrew/Caskroom/obituary-extra/1.1.1/obit", false, "other"},
 	} {
 		t.Run(tc.exe, func(t *testing.T) {
 			if got := Channel(tc.exe, packages, tc.receipt); got != tc.want {
@@ -86,5 +90,38 @@ func TestCommand(t *testing.T) {
 	}
 	if got := Command("script", "1.0.1;bad", ""); got != "" {
 		t.Fatal(got)
+	}
+}
+
+func TestHomebrewCommand(t *testing.T) {
+	if got := Command("homebrew", "v1.2.0", "/opt/homebrew/Caskroom/obituary/1.1.1/obit"); got != "brew upgrade --cask obituary" {
+		t.Fatalf("command=%q", got)
+	}
+	if got := Command("homebrew", "v1.2.0-rc.1", ""); got != "" {
+		t.Fatalf("prerelease command=%q", got)
+	}
+}
+
+// The cask links bin/obit to its Caskroom copy; os.Executable reports the link.
+func TestDetectChannelFollowsHomebrewLink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Homebrew casks are macOS only")
+	}
+	root := t.TempDir()
+	real := filepath.Join(root, "Caskroom", "obituary", "1.1.1", "obit")
+	link := filepath.Join(root, "bin", "obit")
+	for _, dir := range []string{filepath.Dir(real), filepath.Dir(link)} {
+		if err := os.MkdirAll(dir, 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(real, nil, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(real, link); err != nil {
+		t.Fatal(err)
+	}
+	if got := DetectChannel(link); got != "homebrew" {
+		t.Fatalf("channel=%s", got)
 	}
 }
