@@ -354,26 +354,27 @@ func TestDoctorFailuresAreReportedWithoutWrites(t *testing.T) {
 		t.Skip("too slow for testing.Short")
 	}
 
-	for _, tc := range []struct{ name, path, content, check string }{
-		{"invalid store", "data/store.json", "{", "store"},
-		{"newer store", "data/store.json", `{"version":999}`, "store"},
-		{"duplicate ids", "data/store.json", `{"version":2,"items":[{"id":1},{"id":1}]}`, "store"},
-		{"invalid config", "config/config.toml", "[graveyard", "config"},
-		{"invalid config value", "config/config.toml", "[graveyard]\nretention_days = 0\n", "config"},
-		{"invalid trust", "data/trusted_rules.json", "{", "trust"},
-		{"invalid claude", "claude/settings.json", "{", "claude"},
-		{"invalid codex", "codex/hooks.json", "{", "codex"},
+	for _, tc := range []struct{ name, path, content, check, detail string }{
+		{"invalid store", "data/store.json", "{", "store", ""},
+		{"newer store", "data/store.json", `{"version":999}`, "store", ""},
+		{"duplicate ids", "data/store.json", `{"version":2,"items":[{"id":1},{"id":1}]}`, "store", ""},
+		{"invalid config", "config/config.toml", "[graveyard", "config", ""},
+		{"invalid config value", "config/config.toml", "[graveyard]\nretention_days = 0\n", "config", ""},
+		{"misspelled config key", "config/config.toml", "[graveyard]\nretention = 30\n", "config", `config.toml:2: unknown key "graveyard.retention" (did you mean "graveyard.retention_days"?)`},
+		{"invalid trust", "data/trusted_rules.json", "{", "trust", ""},
+		{"invalid claude", "claude/settings.json", "{", "claude", ""},
+		{"invalid codex", "codex/hooks.json", "{", "codex", ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			root, executable := clitest.DoctorFixture(t)
 			clitest.WriteFixture(t, filepath.Join(root, tc.path), tc.content)
 			before := clitest.TreeSnapshot(t, root)
 			checks, err := doctorChecks(t, executable)
-			if !errors.Is(err, cmdutil.ErrReported) || checks[tc.check].Status != "FAIL" {
+			if !errors.Is(err, cmdutil.ErrReported) || checks[tc.check].Status != "FAIL" || !strings.Contains(checks[tc.check].Detail, tc.detail) {
 				t.Fatalf("%+v: %v", checks, err)
 			}
 			out, _, err := clitest.Execute(t, NewCmdWithExecutable(executable, "claude", "codex"))
-			if !errors.Is(err, cmdutil.ErrReported) || !strings.Contains(out, "FAIL") {
+			if !errors.Is(err, cmdutil.ErrReported) || !strings.Contains(out, "FAIL") || !strings.Contains(out, tc.detail) {
 				t.Fatalf("%s: %v", out, err)
 			}
 			if !reflect.DeepEqual(before, clitest.TreeSnapshot(t, root)) {
