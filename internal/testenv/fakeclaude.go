@@ -70,16 +70,18 @@ func copyFakeClaude(from, to string) error {
 		return err
 	}
 	defer src.Close()
-	dst, err := os.OpenFile(to, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o700)
-	if err != nil {
-		return err
-	}
-	_, err = io.Copy(dst, src)
-	closeErr := dst.Close()
-	if err != nil || closeErr != nil {
-		return fmt.Errorf("copy fake claude: %w", errors.Join(err, closeErr))
-	}
-	return nil
+	return withoutForks(func() error { // the copy runs next; see WriteExecutable
+		dst, err := os.OpenFile(to, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o700)
+		if err != nil {
+			return err
+		}
+		_, err = io.Copy(dst, src)
+		closeErr := dst.Close()
+		if err != nil || closeErr != nil {
+			return fmt.Errorf("copy fake claude: %w", errors.Join(err, closeErr))
+		}
+		return nil
+	})
 }
 
 func runFakeClaude() error {

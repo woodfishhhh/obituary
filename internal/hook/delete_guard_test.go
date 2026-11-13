@@ -145,15 +145,10 @@ func runGuardExecutableTest(t *testing.T) {
 		t.Fatal(err)
 	}
 	binary := filepath.Join(t.TempDir(), "obit.exe")
-	if err := os.WriteFile(binary, data, 0o700); err != nil {
-		t.Fatal(err)
-	}
-	out, err := runFreshExecutable(func() *exec.Cmd {
-		cmd := exec.Command(binary, "-test.run=^TestDeleteGuardExecutablePATH$", "-test.v")
-		cmd.Env = append(os.Environ(), "OBIT_TEST_GUARD_EXECUTABLE=1")
-		return cmd
-	})
-	if err != nil {
+	testenv.WriteExecutable(t, binary, data)
+	cmd := exec.Command(binary, "-test.run=^TestDeleteGuardExecutablePATH$", "-test.v")
+	cmd.Env = append(os.Environ(), "OBIT_TEST_GUARD_EXECUTABLE=1")
+	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("executable PATH subprocess: %s %v", out, err)
 	}
 }

@@ -511,13 +511,9 @@ func TestDeleteWSLExecutableWithApostrophe(t *testing.T) {
 		t.Fatal(err)
 	}
 	copy := filepath.Join(t.TempDir(), "agent's hook.exe")
-	if err := os.WriteFile(copy, data, 0o700); err != nil {
-		t.Fatal(err)
-	}
-	out, err := runFreshExecutable(func() *exec.Cmd {
-		return exec.Command(copy, "-test.run=^TestDeleteReview5MainScenarios/codex-wsl", "-test.count=1")
-	})
-	if err != nil {
+	testenv.WriteExecutable(t, copy, data)
+	cmd := exec.Command(copy, "-test.run=^TestDeleteReview5MainScenarios/codex-wsl", "-test.count=1")
+	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("WSL expectation must use the original executable path: %s %v", out, err)
 	}
 }
