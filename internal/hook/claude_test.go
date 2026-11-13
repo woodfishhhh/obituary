@@ -41,15 +41,16 @@ func TestClaudePowerShellPayload(t *testing.T) {
 		{"literal", `Remove-Item -LiteralPath 'build dir' -Recurse -Force`, `remove-item -LiteralPath 'build dir' -Recurse -Force`},
 		{"alias", `ri -LiteralPath build`, `remove-item -LiteralPath build`},
 		{"rm-alias", `rm -Recurse -Force build`, `remove-item -Recurse -Force build`},
-		{"wildcard", `Remove-Item *.log`, ""},
-		{"pipeline", `Get-ChildItem | Remove-Item`, ""},
-		{"bash-options", `rm -rf build`, ""},
+		{"wildcard", `Remove-Item *.log`, noEquivalent},
+		{"pipeline", `Get-ChildItem | Remove-Item`, noEquivalent},
+		{"bash-options", `rm -rf build`, noEquivalent},
+		{"string", `Write-Output 'Remove-Item build'`, ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			got := guardSuggestion(t, "claude", testenv.NativeFixture(`C:\repo`), "PowerShell", map[string]any{"command": tc.command})
 			want := tc.want
-			if want != "" {
+			if want != "" && want != noEquivalent {
 				want = expectedGuardExecutable(t, guardrm.PowerShell) + " " + want
 			}
 			if got != want {

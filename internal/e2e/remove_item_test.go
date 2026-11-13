@@ -69,16 +69,17 @@ func TestRemoveItemSuggestionAndNativeArgv(t *testing.T) {
 					Reason string `json:"permissionDecisionReason"`
 				} `json:"hookSpecificOutput"`
 			}
+			if json.Unmarshal(output.Bytes(), &reply) != nil {
+				t.Fatalf("literal Remove-Item was not denied: %s", output.String())
+			}
 			suggestion := "& '" + strings.ReplaceAll(self, "'", "''") + "' remove-item" + strings.TrimPrefix(tc.command, "Remove-Item")
 			if !tc.suggest {
-				if output.Len() != 0 {
-					t.Fatalf("unsupported suggestion was denied: %s", output.String())
+				// Still denied, without an equivalent; direct native
+				// invocations have their own argv contract.
+				if !strings.Contains(reply.Hook.Reason, "no exact obit equivalent applies") {
+					t.Fatalf("unsupported form received a suggestion: %s", output.String())
 				}
-				// Direct native invocations have their own argv contract.
 			} else {
-				if json.Unmarshal(output.Bytes(), &reply) != nil {
-					t.Fatalf("missing suggestion: %s", output.String())
-				}
 				parts := strings.Split(reply.Hook.Reason, "`")
 				if len(parts) < 3 || parts[1] != suggestion {
 					t.Fatalf("suggestion changed arguments: %s", output.String())

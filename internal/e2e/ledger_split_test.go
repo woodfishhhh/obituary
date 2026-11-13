@@ -45,7 +45,7 @@ func TestHookProcessesInterleaveGraveyardCommits(t *testing.T) {
 	hooks, outputs := startQueuedHooks(t, root, hookPaths)
 	var terminals []*exec.Cmd
 	var terminalOutputs []*bytes.Buffer
-	for i, args := range [][]string{{"resurrect", fmt.Sprint(graves[0].Burial.ID)}, {"purge", fmt.Sprint(graves[1].Burial.ID)}} {
+	for i, args := range [][]string{{"resurrect", fmt.Sprint(graves[0].Burial.ID)}, {"purge", fmt.Sprint(graves[1].Burial.ID), "--yes"}} {
 		cmd := exec.Command(binaryPath(t, "obit"), args...)
 		output := new(bytes.Buffer)
 		cmd.Stdout, cmd.Stderr = output, output
