@@ -42,7 +42,7 @@ func TestMenuRefreshUsesCurrentLanguage(t *testing.T) {
 	var tooltip string
 	r := &app.Resident{Service: &core.Service{Store: core.Store{Home: filepath.Join(root, "home")}}}
 	gui := newGUIAction(filepath.Join(root, "obitd.exe"), func(string) error { t.Fatal("desktop launcher called"); return nil })
-	m := makeMenu(r, gui, menuUI{addItem: items.AddSubMenuItem, addSeparator: func() {}, tooltip: func(text string) { tooltip = text }}, config.UILanguage)
+	m := makeMenu(r, gui, menuUI{addItem: items.AddSubMenuItem, addSeparator: func() {}, tooltip: func(text string) { tooltip = text }, notify: func(string, string) error { return nil }}, config.UILanguage)
 	defer func() {
 		if m.rowCancel != nil {
 			m.rowCancel()

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"time"
+	"unicode/utf16"
 	"unsafe"
 
 	"github.com/woodfishhhh/obituary/internal/config"
@@ -30,16 +31,30 @@ type iconState struct {
 }
 
 func setVisible(enabled bool) error {
+	data := iconState{Flags: 8, Mask: 1} // NIF_STATE, NIS_HIDDEN
+	if !enabled {
+		data.State = 1
+	}
+	return modifyIcon(data)
+}
+
+// showBalloon reports a menu action's result from the icon. Windows 10 and 11
+// show it as a toast, which needs no registered AppUserModelID this way.
+func showBalloon(title, text string) error {
+	data := iconState{Flags: 0x10, InfoFlags: 0x11} // NIF_INFO; NIIF_INFO | NIIF_NOSOUND
+	copy(data.InfoTitle[:len(data.InfoTitle)-1], utf16.Encode([]rune(title)))
+	copy(data.Info[:len(data.Info)-1], utf16.Encode([]rune(text)))
+	return modifyIcon(data)
+}
+
+func modifyIcon(data iconState) error {
 	hwnd, err := desktop.OwnWindow("SystrayClass")
 	if err != nil {
 		return err
 	}
-	data := iconState{Window: hwnd, ID: 100, Flags: 8, Mask: 1}
+	data.Window, data.ID = hwnd, 100
 	data.Size = uint32(unsafe.Sizeof(data))
-	if !enabled {
-		data.State = 1
-	}
-	result, _, err := windows.NewLazySystemDLL("shell32.dll").NewProc("Shell_NotifyIconW").Call(1, uintptr(unsafe.Pointer(&data)))
+	result, _, err := windows.NewLazySystemDLL("shell32.dll").NewProc("Shell_NotifyIconW").Call(1, uintptr(unsafe.Pointer(&data))) // NIM_MODIFY
 	if result == 0 {
 		return err
 	}

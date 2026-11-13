@@ -31,6 +31,7 @@ type menuUI struct {
 	addItem      func(string, string) menuItem
 	addSeparator func()
 	tooltip      func(string)
+	notify       func(title, text string) error
 }
 
 func makeMenu(r *app.Resident, gui guiAction, ui menuUI, language func() i18n.Language) *menu {

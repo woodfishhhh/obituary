@@ -84,6 +84,7 @@ func newMenu(r *app.Resident) *menu {
 		addItem:      func(title, tooltip string) menuItem { return nativeItem{systray.AddMenuItem(title, tooltip)} },
 		addSeparator: systray.AddSeparator,
 		tooltip:      systray.SetTooltip,
+		notify:       showBalloon,
 	}, config.UILanguage)
 }
 
@@ -113,8 +114,10 @@ func (m *menu) run(ctx context.Context, cancel context.CancelFunc, changed <-cha
 			m.refresh(ctx)
 		}
 		if err != nil {
-			m.status.SetTitle(label(fmt.Sprintf(m.language.Text(i18n.Incomplete), err)))
+			text := fmt.Sprintf(m.language.Text(i18n.Incomplete), err)
+			m.status.SetTitle(label(text))
 			logger.Printf("tray: %v", err)
+			m.tell(text)
 		}
 	}
 }
@@ -180,12 +183,20 @@ func (m *menu) recentRows(ctx context.Context) error {
 		go m.listen(ctx, row, func() error {
 			result, err := m.resident.Restore(id)
 			if result.Action == core.ActionResurrected {
-				m.status.SetTitle(label(fmt.Sprintf(m.language.Text(i18n.Restored), result.Path, result.Warning)))
+				text := fmt.Sprintf(m.language.Text(i18n.Restored), result.Path, result.Warning)
+				m.status.SetTitle(label(text))
+				m.tell(text)
 			}
 			return err
 		})
 	}
 	return nil
+}
+
+// tell shows a click's outcome after the menu has closed. It is best effort:
+// the status row keeps the text for the next time the menu opens.
+func (m *menu) tell(text string) {
+	_ = m.ui.notify(m.language.Text(i18n.AppName), text)
 }
 
 // listen hands a row's clicks to the menu loop until the rows are rebuilt.

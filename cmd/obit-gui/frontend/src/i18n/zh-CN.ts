@@ -81,6 +81,7 @@ export const zh = {
   "ask.purgeBody": "火化就是永久删除，之后不能再复活。",
   "ask.resurrect": (n: number) => `复活这 ${n} 项？`,
   "ask.resurrectBody": "放回原处；原处已有同名的东西时不会覆盖。",
+  "grave.backAt": (path: string) => `已复活，放回 ${path}`,
   "ask.extend": (n: number, label: string) => (n === 1 ? `给这一项延长 ${label}？` : `给这 ${n} 项各延长 ${label}？`),
   "ask.extendBody": "已经过期的从现在算起。",
   "ask.cancel": (n: number) => `不再跟踪这 ${n} 项？`,

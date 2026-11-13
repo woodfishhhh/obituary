@@ -72,6 +72,7 @@ export const en: Messages = {
   "ask.purgeBody": "Cremating deletes for good. Nothing can be resurrected afterwards.",
   "ask.resurrect": (n) => plural(n, "Resurrect this item?", `Resurrect these ${n} items?`),
   "ask.resurrectBody": "Each goes back where it was. If something with the same name is there now, it is left alone and that item is reported.",
+  "grave.backAt": (path) => `Resurrected to ${path}`,
   "ask.extend": (n, label) => plural(n, `Extend this item by ${label}?`, `Extend each of these ${n} items by ${label}?`),
   "ask.extendBody": "Added to the current expiry; anything already expired counts from now.",
   "ask.cancel": (n) => plural(n, "Stop tracking this item?", `Stop tracking these ${n} items?`),

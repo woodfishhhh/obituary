@@ -2,6 +2,7 @@ package tray
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log"
 	"os"
@@ -21,7 +22,7 @@ func TestUpdateMenuLocalizedAndOpensGUI(t *testing.T) {
 	opened := make(chan string, 1)
 	gui := guiAction{enabled: true, path: "fixture-gui", start: func(path string) error { opened <- path; return nil }}
 	language := i18n.Chinese
-	m := makeMenu(r, gui, menuUI{addItem: items.AddSubMenuItem, addSeparator: func() {}, tooltip: func(string) {}}, func() i18n.Language { return language })
+	m := makeMenu(r, gui, menuUI{addItem: items.AddSubMenuItem, addSeparator: func() {}, tooltip: func(string) {}, notify: func(string, string) error { return nil }}, func() i18n.Language { return language })
 	m.refreshUpdate()
 	if items.children[1] != m.update || !m.update.(*fakeItem).hidden {
 		t.Fatal("empty cache displayed update, or the update item is not under the window item")
@@ -86,4 +87,27 @@ func TestRowTitleNamesDayFileAndFolder(t *testing.T) {
 	if got := rowTitle(i18n.English, "debug.log", now, now); got != "Today 00:20   debug.log" {
 		t.Fatalf("bare name: %q", got)
 	}
+}
+
+func TestFailedClickIsToldAfterTheMenuCloses(t *testing.T) {
+	items := &fakeItem{}
+	r := &app.Resident{Service: &core.Service{Store: core.Store{Home: t.TempDir()}}}
+	told := make(chan string, 1)
+	m := makeMenu(r, guiAction{}, menuUI{addItem: items.AddSubMenuItem, addSeparator: func() {}, tooltip: func(string) {},
+		notify: func(title, text string) error { told <- title + " | " + text; return nil }}, func() i18n.Language { return i18n.Chinese })
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := make(chan struct{})
+	go func() { defer close(done); m.run(ctx, cancel, make(chan struct{}), log.New(io.Discard, "", 0)) }()
+	m.actions <- func() error { return errors.New("磁盘已满") }
+	select {
+	case got := <-told:
+		if got != "讣告 Obituary | 未完成：磁盘已满" {
+			t.Fatal(got)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("failure was not told")
+	}
+	cancel()
+	<-done
 }

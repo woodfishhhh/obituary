@@ -54,6 +54,8 @@
 .cal-btn.gold { border-color: var(--gold); background: var(--gold); color: var(--on-gold); }
 .cal-btn.cobalt { border-color: var(--cobalt); background: var(--cobalt); color: var(--on-accent); }
 .cal-btn.ink { border-color: var(--text); background: var(--text); color: var(--panel); }
+/* Faded solid ink still read as a live button; disabled it is an outline. */
+.cal-btn.ink:disabled { border-color: var(--line-2); background: var(--panel); color: var(--text); }
 .cal-btn.gold:hover:not(:disabled), .cal-btn.cobalt:hover:not(:disabled), .cal-btn.ink:hover:not(:disabled) { filter: brightness(1.1); }
 .cal-btn.gold:hover:not(:disabled) { background: var(--gold); }
 .cal-btn.cobalt:hover:not(:disabled) { background: var(--cobalt); }
