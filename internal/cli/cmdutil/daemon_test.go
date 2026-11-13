@@ -3,6 +3,7 @@ package cmdutil_test
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -166,5 +167,22 @@ func TestEnsureDaemonUsesHomeAndKeepsJSONQuiet(t *testing.T) {
 				t.Fatalf("missing warning: %q", stderr)
 			}
 		})
+	}
+}
+
+// macOS and Linux have no resident daemon. The note says what does act on
+// lifespans there, not that starting one is unsupported.
+func TestEnsureDaemonExplainsMissingTimer(t *testing.T) {
+	starts := clitest.IsolateRunner(t)
+	cmdutil.RunnerRunning = func(string) bool { return false }
+	cmdutil.RunnerServes = func(string) bool { return false }
+	cmdutil.RunnerStart = func(home string) error {
+		*starts = append(*starts, home)
+		return fmt.Errorf("resident mode is unavailable: %w", core.ErrUnsupported)
+	}
+	_, stderr, err := clitest.Execute(t, &cobra.Command{Use: "test", Run: func(*cobra.Command, []string) { cmdutil.EnsureDaemon("isolated", false) }})
+	if err != nil || len(*starts) != 1 || !strings.Contains(stderr, "obit reap") || !strings.Contains(stderr, "obit daemon enable") ||
+		strings.Contains(stderr, "could not start") || strings.Contains(stderr, core.ErrUnsupported.Error()) {
+		t.Fatalf("stderr=%q err=%v", stderr, err)
 	}
 }

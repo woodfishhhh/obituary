@@ -1,10 +1,12 @@
 package cmdutil
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/woodfishhhh/obituary/internal/app"
+	"github.com/woodfishhhh/obituary/internal/core"
 )
 
 // Process and scheduler boundaries shared by commands and diagnostics.
@@ -24,7 +26,11 @@ func EnsureDaemon(home string, quiet bool) error {
 		return nil
 	}
 	if err := RunnerStart(home); err != nil {
-		if !quiet {
+		switch {
+		case quiet:
+		case errors.Is(err, core.ErrUnsupported): // macOS / Linux: no resident daemon, only the user timer
+			fmt.Fprintln(os.Stderr, "note: no background timer serves this data directory, so lifespans run out at the next `obit reap` or agent hook; `obit daemon enable` installs a 5-minute user timer")
+		default:
 			fmt.Fprintf(os.Stderr, "warning: could not start the daemon (%v); run `obit reap` or `obit daemon enable`\n", err)
 		}
 		return err
