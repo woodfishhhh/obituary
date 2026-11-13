@@ -173,7 +173,7 @@ homebrew_casks:
     directory: Casks
     skip_upload: true
     homepage: https://obituary.woodfish.site
-    description: Trash bin for AI agents: files get a lifespan and stay restorable
+    description: "Trash bin for AI agents: files get a lifespan and stay restorable"
     license: MIT
     url:
       template: "https://github.com/woodfishhhh/obituary/releases/download/v{{ .Version }}/{{ .ArtifactName }}"
