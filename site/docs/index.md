@@ -16,11 +16,17 @@
 
 ### macOS / Linux
 
-下载脚本，阅读后运行。把 `VERSION` 换成发布页上包含 macOS / Linux 压缩包的版本号：
+macOS 用 Homebrew 一行装好：
+
+```bash
+brew install --cask woodfishhhh/tap/obituary
+```
+
+也可以下载安装脚本，阅读后运行（macOS 和 Linux 通用）：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh -o install.sh
-bash install.sh --version VERSION
+bash install.sh --version 1.1.0
 # 自定义目录：加 --install-dir "$HOME/bin"；只预览：加 --dry-run
 ```
 
@@ -47,14 +53,14 @@ winget install woodfishhhh.Obituary
 ```powershell [安装脚本]
 # 先下载、看一眼，再运行（装到 %LOCALAPPDATA%\Programs\obituary，加进用户 PATH，建开始菜单快捷方式）
 irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1
-.\install.ps1 -Version 1.0.0          # -WhatIf 只预览，-NoPath 不改 PATH
+.\install.ps1 -Version 1.1.0          # -WhatIf 只预览，-NoPath 不改 PATH
 ```
 
 :::
 
 - 三种方式下载的都是 GitHub Release 里的同一个压缩包，安装前都会核对 SHA-256，对不上就不解压。
 - 代码签名：Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/)。详见[代码签名政策](code-signing)和[隐私政策](privacy)。
-- 1.0.0 还没有代码签名。用浏览器手动下载压缩包时，Windows 可能弹出「Windows 已保护你的电脑」，点「更多信息 → 仍要运行」即可；Scoop、winget 和安装脚本一般不会遇到。
+- 讣告还没有代码签名。用浏览器手动下载压缩包时，Windows 可能弹出「Windows 已保护你的电脑」，点「更多信息 → 仍要运行」即可；Scoop、winget 和安装脚本一般不会遇到。
 - 小窗口 `obit-gui.exe` 需要 WebView2 运行时（Windows 11 自带，Windows 10 多数已经装好），目前只有 x64 版；ARM64 版只有命令行和后台托盘。
 装好后先体检一遍：
 

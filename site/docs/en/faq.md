@@ -10,7 +10,7 @@ Yes. Both provide x64 / ARM64 command-line and background programs with a gravey
 
 ## Windows says "Windows protected your PC"?
 
-1.0.0 is not code-signed yet. If you download the archive with a browser, choose "More info → Run anyway". Scoop, winget and the install script usually do not trigger this, and all three check the archive's SHA-256 first.
+Obituary is not code-signed yet. If you download the archive with a browser, choose "More info → Run anyway". Scoop, winget and the install script usually do not trigger this, and all three check the archive's SHA-256 first.
 
 ## Is there a small window on ARM64?
 

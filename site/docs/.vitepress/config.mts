@@ -15,9 +15,9 @@ const mirrorHost = "https://cn.obituary.woodfish.site/";
 function toMirror(src: string): string {
   return src
     .replaceAll("https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh", `${mirrorHost}install.sh`)
-    .replaceAll("bash install.sh --version VERSION", "bash install.sh --version VERSION --mirror cn")
+    .replace(/bash install\.sh --version ([\w.-]+)(?![\w.-]| --mirror)/g, "bash install.sh --version $1 --mirror cn")
     .replaceAll("https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1", `${mirrorHost}install.ps1`)
-    .replaceAll(".\\install.ps1 -Version 1.0.0", ".\\install.ps1 -Version 1.0.0 -Mirror cn");
+    .replace(/\.\\install\.ps1 -Version ([\w.-]+)(?![\w.-]| -Mirror)/g, ".\\install.ps1 -Version $1 -Mirror cn");
 }
 const home = { zh: `${siteUrl}${siteBase}`, en: `${siteUrl}${siteBase}en/` };
 const repo = "https://github.com/woodfishhhh/obituary";

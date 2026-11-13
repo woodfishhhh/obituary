@@ -16,11 +16,17 @@ Read https://obituary.woodfish.site/agent-install.md and follow it to install Ob
 
 ### macOS / Linux
 
-Download and read the script before running it. Replace `VERSION` with a release that includes macOS / Linux archives:
+On macOS, Homebrew installs it in one line:
+
+```bash
+brew install --cask woodfishhhh/tap/obituary
+```
+
+Or download and read the install script, then run it (macOS and Linux):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh -o install.sh
-bash install.sh --version VERSION
+bash install.sh --version 1.1.0
 # Custom directory: --install-dir "$HOME/bin"; preview only: --dry-run
 ```
 
@@ -48,14 +54,14 @@ winget install woodfishhhh.Obituary
 # Install script: download it, read it, then run it
 # (installs to %LOCALAPPDATA%\Programs\obituary, adds it to your user PATH, creates a Start menu shortcut)
 irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1
-.\install.ps1 -Version 1.0.0          # -WhatIf previews, -NoPath leaves PATH alone
+.\install.ps1 -Version 1.1.0          # -WhatIf previews, -NoPath leaves PATH alone
 ```
 
 :::
 
 - All three download the same archive from the GitHub release and check its SHA-256 before unpacking; a mismatch stops the install.
 - Code signing: Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/). See the [code signing policy](code-signing) and the [privacy policy](privacy).
-- 1.0.0 is not code-signed yet. If you download the archive with a browser, Windows may show "Windows protected your PC"; choose "More info → Run anyway". Scoop, winget and the install script usually do not trigger this.
+- Obituary is not code-signed yet. If you download the archive with a browser, Windows may show "Windows protected your PC"; choose "More info → Run anyway". Scoop, winget and the install script usually do not trigger this.
 - The small window `obit-gui.exe` needs the WebView2 runtime (built into Windows 11 and present on most Windows 10 machines) and is x64 only; the ARM64 build has the command line and the tray.
 Then check the installation:
 
