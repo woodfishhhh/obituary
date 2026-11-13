@@ -83,6 +83,33 @@ func TestResurrectRecreatesMissingParents(t *testing.T) {
 	}
 }
 
+func TestResurrectNamesAncestorReplacedByFile(t *testing.T) {
+	f := newFixture(t)
+	b := buryOne(t, f, "output/deep/payload.txt")
+	ancestor := filepath.Dir(filepath.Dir(b.Path))
+	if err := os.Remove(filepath.Dir(b.Path)); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(ancestor); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(ancestor, []byte("squatter"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	got, err := f.svc.Resurrect([]string{fmt.Sprint(b.ID)})
+	want := "original folder " + ancestor + " is now a file; the item is still in the graveyard"
+	if err != nil || len(got) != 1 || !strings.HasPrefix(got[0].Error, want) || !exists(b.Grave) || read(t, ancestor) != "squatter" {
+		t.Fatalf("ancestor file not explained: %+v %v", got, err)
+	}
+	if err := os.Rename(ancestor, ancestor+".moved"); err != nil {
+		t.Fatal(err)
+	}
+	got, err = f.svc.Resurrect([]string{fmt.Sprint(b.ID)})
+	if err != nil || core.GraveFailed(got) || read(t, b.Path) != "output/deep/payload.txt" {
+		t.Fatalf("restore after moving the file failed: %+v %v", got, err)
+	}
+}
+
 func TestResurrectRetriesAfterRecreatingParents(t *testing.T) {
 	f := newFixture(t)
 	b := buryOne(t, f, "output/payload.txt")

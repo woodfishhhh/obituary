@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"syscall"
 
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 )
@@ -63,11 +64,15 @@ func existingRestoreAncestor(dir string) (string, []string, error) {
 	nearest := dir
 	var missing []string
 	for {
-		_, err := os.Lstat(nearest)
+		info, err := os.Lstat(nearest)
+		if err == nil && info.Mode().IsRegular() {
+			return "", nil, fmt.Errorf("original folder %s is now a file; the item is still in the graveyard, and after that file is moved or renamed, obit resurrect can restore it", nearest)
+		}
 		if err == nil {
 			break
 		}
-		if !os.IsNotExist(err) || pathutil.Parent(nearest) == nearest {
+		// POSIX reports ENOTDIR below a file; keep walking up to name that file.
+		if !os.IsNotExist(err) && !errors.Is(err, syscall.ENOTDIR) || pathutil.Parent(nearest) == nearest {
 			return "", nil, err
 		}
 		missing = append(missing, filepath.Base(nearest))
