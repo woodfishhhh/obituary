@@ -32,6 +32,10 @@ func TestMCPMutations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	var goEnv []string
+	if compile {
+		goEnv = testenv.MutantGoEnv(t)
+	}
 	for i, tc := range []struct{ name, file, from, to, pkg, test, assertion string }{
 		{"snapshot-gc-budget", "internal/core/ledger/store_snapshot_gc.go", "min(len(names), snapshotCollectionLimit)", "len(names)", "./internal/core/ledger", "TestSnapshotCollectionBoundsCandidates", "snapshot candidate budget exceeded or order changed"},
 		{"snapshot-gc-progress", "internal/core/ledger/store_snapshot_gc.go", "slices.BinarySearch(names, st.GraveyardGCCursor)", "slices.BinarySearch(names, \"\")", "./internal/core/ledger", "TestSnapshotCollectionProgressAcrossStores", "snapshot collection starved later candidates"},
@@ -743,8 +747,9 @@ func TestMCPMutations(t *testing.T) {
 			ctx, cancel := context.WithTimeout(t.Context(), 3*time.Minute)
 			defer cancel()
 			cmd := exec.CommandContext(ctx, "go", "test", "-overlay", overlayPath, tc.pkg, "-run", "^"+tc.test+"$", "-count=1")
+			cmd.Env = append(os.Environ(), goEnv...)
 			if tc.pkg == "./cmd/obitd" {
-				cmd.Env = append(os.Environ(), "OBIT_TEST_BUILD_OVERLAY="+overlayPath)
+				cmd.Env = append(cmd.Env, "OBIT_TEST_BUILD_OVERLAY="+overlayPath)
 			}
 			cmd.Dir = root
 			out, err := cmd.CombinedOutput()

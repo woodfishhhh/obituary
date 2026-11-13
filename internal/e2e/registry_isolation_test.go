@@ -44,6 +44,7 @@ func registryIsolationBinary(t *testing.T, fallback string) string {
 	binary := filepath.Join(dir, "obit.exe")
 	cmd := exec.Command("go", "build", "-overlay", manifest, "-o", binary, "./cmd/obit")
 	cmd.Dir = root
+	cmd.Env = append(os.Environ(), testenv.MutantGoEnv(t)...)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("build isolated fallback: %s %v", out, err)
 	}

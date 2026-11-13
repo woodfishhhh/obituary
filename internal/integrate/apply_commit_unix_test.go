@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/woodfishhhh/obituary/internal/testenv"
 )
 
 func TestPOSIXInstallationCommitPreservesExistingAndAbsentFiles(t *testing.T) {
@@ -150,18 +152,19 @@ func TestPOSIXCommitMutations(t *testing.T) {
 	if testing.Short() || os.Getenv("OBIT_TEST_POSIX_MUTATIONS") != "1" {
 		t.Skip("set OBIT_TEST_POSIX_MUTATIONS=1 for compiled POSIX commit mutations")
 	}
+	goEnv := testenv.MutantGoEnv(t)
 	for _, tc := range []struct{ name, from, to, test, assertion string }{
 		{"final-check", "if _, err := p.verifiedPOSIXOriginal(c); err != nil {\n\t\treturn err\n\t}\n\tname :=", "if _, err := p.verifiedPOSIXOriginal(c); false && err != nil {\n\t\treturn err\n\t}\n\tname :=", "TestPOSIXCommitPreservesEditorReplacement/update", "commit lost editor replacement"},
 		{"removal-identity", "if _, err := moved.verifiedPOSIXOriginal(c); err != nil {", "if _, err := moved.verifiedPOSIXOriginal(c); false && err != nil {", "TestPOSIXCommitPreservesEditorReplacement/remove", "commit lost editor replacement"},
 		{"metadata", "if c.identity != nil && (info.Size()", "if false && c.identity != nil && (info.Size()", "TestPOSIXCommitRejectsChangedMetadata", "commit accepted changed metadata"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			runPOSIXCommitMutation(t, tc.from, tc.to, tc.test, tc.assertion)
+			runPOSIXCommitMutation(t, goEnv, tc.from, tc.to, tc.test, tc.assertion)
 		})
 	}
 }
 
-func runPOSIXCommitMutation(t *testing.T, from, to, test, assertion string) {
+func runPOSIXCommitMutation(t *testing.T, goEnv []string, from, to, test, assertion string) {
 	t.Helper()
 	source, err := filepath.Abs("apply_commit_unix.go")
 	if err != nil {
@@ -185,6 +188,7 @@ func runPOSIXCommitMutation(t *testing.T, from, to, test, assertion string) {
 		t.Fatal(err)
 	}
 	cmd := exec.CommandContext(t.Context(), "go", "test", "-overlay", path, "-run", "^"+test+"$", ".")
+	cmd.Env = append(os.Environ(), goEnv...)
 	out, err := cmd.CombinedOutput()
 	if err == nil || strings.Contains(string(out), "[build failed]") || !strings.Contains(string(out), assertion) || !strings.Contains(string(out), "--- FAIL:") {
 		t.Fatalf("expected compiled assertion failure: %v\n%s", err, out)
