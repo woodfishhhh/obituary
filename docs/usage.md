@@ -230,6 +230,8 @@ mode = "graveyard"      # 或 "recycle"：直接进系统回收站
 retention_days = 7      # 墓地保留天数
 ```
 
+写错的键会让配置无效，而不是被悄悄忽略：报错和 `obit doctor` 都会指出文件、行号和键名，并给出最接近的正确写法（例如 `retention` → `retention_days`）。否则一个拼写错误就会让默认值继续生效，坟墓比你以为的早火化。
+
 可以用环境变量 `OBIT_HOME`（数据目录）、`OBIT_CONFIG_DIR`（配置目录）、`OBIT_USER_HOME`（用户主目录）换位置；`obit init` 找 Claude Code 和 Codex 的配置时，也认它们自己的 `CLAUDE_CONFIG_DIR` 和 `CODEX_HOME`。测试就是靠这几个变量隔离的。
 
 ## 构建

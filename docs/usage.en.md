@@ -233,6 +233,8 @@ mode = "graveyard"      # or "recycle": straight to the system Recycle Bin
 retention_days = 7      # days the graveyard keeps things
 ```
 
+A misspelled key makes the configuration invalid instead of being ignored: the error and `obit doctor` name the file, line and key, and suggest the closest correct key (for example `retention` → `retention_days`). Otherwise a typo would leave the default in force and graves would be purged earlier than you expect.
+
 `OBIT_HOME` (data), `OBIT_CONFIG_DIR` (configuration) and `OBIT_USER_HOME` (user home) move these locations; when looking for Claude Code and Codex configuration, `obit init` also honours `CLAUDE_CONFIG_DIR` and `CODEX_HOME`. The tests use these variables for isolation.
 
 ## Build

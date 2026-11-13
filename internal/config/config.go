@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/pelletier/go-toml/v2"
@@ -189,10 +191,84 @@ func Load() (Config, error) {
 // it plans a byte-preserving update through integrate.Apply.
 func Parse(data []byte, path string) (Config, error) {
 	cfg := Default()
-	if err := toml.Unmarshal(bytes.TrimPrefix(data, []byte("\xef\xbb\xbf")), &cfg); err != nil {
+	// A misspelled key would otherwise leave its default in force silently,
+	// e.g. "retention = 30" keeps the 7-day retention.
+	dec := toml.NewDecoder(bytes.NewReader(bytes.TrimPrefix(data, []byte("\xef\xbb\xbf")))).DisallowUnknownFields()
+	if err := dec.Decode(&cfg); err != nil {
+		var strict *toml.StrictMissingError
+		if errors.As(err, &strict) {
+			return Default(), unknownKeys(path, strict)
+		}
 		return Default(), fmt.Errorf("%s: %w", path, err)
 	}
 	return cfg, cfg.validate(path)
+}
+
+func unknownKeys(path string, strict *toml.StrictMissingError) error {
+	lines := make([]string, 0, len(strict.Errors))
+	for _, e := range strict.Errors {
+		row, _ := e.Position()
+		key := strings.Join(e.Key(), ".")
+		line := fmt.Sprintf("%s:%d: unknown key %q", path, row, key)
+		if near := nearestKey(key); near != "" {
+			line += fmt.Sprintf(" (did you mean %q?)", near)
+		}
+		lines = append(lines, line)
+	}
+	return errors.New(strings.Join(lines, "; "))
+}
+
+// nearestKey suggests the closest known key in the same table, if any is
+// within half its own length of edits.
+func nearestKey(key string) string {
+	key = strings.ToLower(key)
+	parent := key[:strings.LastIndex(key, ".")+1]
+	best, bestDistance := "", -1
+	for _, known := range knownKeys("", reflect.TypeFor[Config]()) {
+		leaf, ok := strings.CutPrefix(known, parent)
+		if !ok || strings.Contains(leaf, ".") {
+			continue
+		}
+		if d := editDistance(key, known); d < len(leaf)/2 && (bestDistance < 0 || d < bestDistance) {
+			best, bestDistance = known, d
+		}
+	}
+	return best
+}
+
+// knownKeys lists every table and key Config accepts, from its toml tags.
+func knownKeys(prefix string, t reflect.Type) []string {
+	var keys []string
+	for field := range t.Fields() {
+		name, _, _ := strings.Cut(field.Tag.Get("toml"), ",")
+		keys = append(keys, prefix+name)
+		if field.Type.Kind() == reflect.Struct {
+			keys = append(keys, knownKeys(prefix+name+".", field.Type)...)
+		}
+	}
+	return keys
+}
+
+// editDistance is the Levenshtein distance; the standard library has none and
+// cobra's copy is unexported.
+func editDistance(a, b string) int {
+	prev := make([]int, len(b)+1)
+	for j := range prev {
+		prev[j] = j
+	}
+	for i := 1; i <= len(a); i++ {
+		cur := make([]int, len(b)+1)
+		cur[0] = i
+		for j := 1; j <= len(b); j++ {
+			cost := 1
+			if a[i-1] == b[j-1] {
+				cost = 0
+			}
+			cur[j] = min(prev[j]+1, cur[j-1]+1, prev[j-1]+cost)
+		}
+		prev = cur
+	}
+	return prev[len(b)]
 }
 
 func (c Config) validate(path string) error {

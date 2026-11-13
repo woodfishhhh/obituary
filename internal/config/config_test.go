@@ -154,3 +154,61 @@ func TestUIIconConfigDefaultsAndSwitches(t *testing.T) {
 		}
 	}
 }
+
+func TestUnknownKeysAreRejected(t *testing.T) {
+	for _, tc := range []struct{ text, want string }{
+		{"[graveyard]\nretention = 30\n", `fixture.toml:2: unknown key "graveyard.retention" (did you mean "graveyard.retention_days"?)`},
+		{"[graveyard]\nretention_day = 30\n", `"graveyard.retention_day" (did you mean "graveyard.retention_days"?)`},
+		{"[graveyrd]\nretention_days = 30\n", `fixture.toml:1: unknown key "graveyrd" (did you mean "graveyard"?)`},
+		{"[ui]\ntray = false\nlanguag = 'en'\n", `fixture.toml:3: unknown key "ui.languag" (did you mean "ui.language"?)`},
+		{"codex_shell = 'bash'\n", `unknown key "codex_shell"`},
+		{"[graveyard]\nzzz = 1\n", `unknown key "graveyard.zzz"`},
+	} {
+		cfg, err := Parse([]byte(tc.text), "fixture.toml")
+		if err == nil || !strings.Contains(err.Error(), tc.want) || cfg.Graveyard.RetentionDays != 7 {
+			t.Errorf("%q: %+v %v, want %s", tc.text, cfg.Graveyard, err, tc.want)
+		}
+	}
+	if _, err := Parse([]byte("[graveyard]\nzzz = 1\n"), "fixture.toml"); err != nil && strings.Contains(err.Error(), "did you mean") {
+		t.Errorf("unrelated key got a suggestion: %v", err)
+	}
+	_, err := Parse([]byte("[graveyard]\nretention = 30\n[ui]\ntray2 = false\n"), "fixture.toml")
+	if err == nil || !strings.Contains(err.Error(), `"graveyard.retention"`) || !strings.Contains(err.Error(), `"ui.tray2"`) {
+		t.Errorf("every unknown key is not reported: %v", err)
+	}
+}
+
+// Every key the template documents or Obituary writes stays accepted, along
+// with the case-insensitive spellings go-toml has always matched.
+func TestEveryKnownKeyIsAccepted(t *testing.T) {
+	text := `codex_windows_shell = "powershell"
+[graveyard]
+Mode = "recycle"
+retention_days = 30
+[agent_shells]
+codex = "powershell"
+some-future-agent = "bash"
+[hooks]
+session_summary = true
+[update]
+check = false
+[watch]
+stable_window = "5m"
+[explorer]
+enabled = false
+everywhere = true
+in_git = true
+[ui]
+language = "en"
+tray = false
+taskbar = false
+`
+	cfg, err := Parse([]byte(text), "fixture.toml")
+	if err != nil || cfg.Graveyard.Mode != ModeRecycle || cfg.Graveyard.RetentionDays != 30 || cfg.AgentShells["some-future-agent"] != "bash" || cfg.UI.Taskbar {
+		t.Fatalf("%+v %v", cfg, err)
+	}
+	uncommented := strings.NewReplacer("# codex", "codex", "# codebuddy", "codebuddy", "# minimax", "minimax").Replace(Template)
+	if _, err := Parse([]byte(uncommented), "fixture.toml"); err != nil {
+		t.Fatalf("template with its examples enabled: %v", err)
+	}
+}
