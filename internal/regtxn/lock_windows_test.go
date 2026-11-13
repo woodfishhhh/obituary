@@ -195,3 +195,26 @@ func assertConcurrentInstallerWaits(t *testing.T, root string, release func()) {
 		t.Fatal(err)
 	}
 }
+
+// Uninstall removes the lock directory only while it holds nothing but these.
+func TestRegistryLockFilesAreRecognisable(t *testing.T) {
+	resource := "obituary-test-" + rand.Text()
+	release, err := regtxn.Lock(resource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	release()
+	dir, err := userdirs.RegistryLocks()
+	if err != nil {
+		t.Fatal(err)
+	}
+	name := regtxn.LockName(resource)
+	if info, err := os.Stat(filepath.Join(dir, name)); err != nil || info.Size() != 0 || !regtxn.IsLockName(name) {
+		t.Fatalf("lock file %s is not an empty LockName: %v %v", name, info, err)
+	}
+	for _, other := range []string{"x.lock", fmt.Sprintf("%X.lock", sha256.Sum256(nil)), fmt.Sprintf("%x", sha256.Sum256(nil)), fmt.Sprintf("%x.lock.tmp", sha256.Sum256(nil))} {
+		if regtxn.IsLockName(other) {
+			t.Errorf("%s accepted as a registry lock", other)
+		}
+	}
+}

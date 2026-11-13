@@ -10,6 +10,9 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/hook"
+	"github.com/woodfishhhh/obituary/internal/regtxn"
+	"github.com/woodfishhhh/obituary/internal/userdirs"
 )
 
 func TestUninstallRemovesOwnedUpdateMetadata(t *testing.T) {
@@ -31,6 +34,88 @@ func TestUninstallRemovesOwnedUpdateMetadata(t *testing.T) {
 	if _, err := os.Stat(svc.Store.Home); !os.IsNotExist(err) {
 		t.Fatalf("update metadata retained: %v", err)
 	}
+}
+
+// A real installation: hook logging leaves lock files beside its logs, and
+// installers keep per-user locks in the default data directory.
+func TestUninstallPurgeRemovesHookAndInstallerLocks(t *testing.T) {
+	d, _, _ := fixture(t)
+	useDefaultData(t)
+	svc, err := app.Open()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.Store.Update(func(*core.State) error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	hook.Logf(svc.Store.Home, "fixture")
+	hook.Auditf(svc.Store.Home, "fixture")
+	locks, err := userdirs.RegistryLocks()
+	if err != nil || filepath.Dir(locks) != svc.Store.Home {
+		t.Fatalf("registry locks %s outside data %s: %v", locks, svc.Store.Home, err)
+	}
+	write(t, filepath.Join(locks, regtxn.LockName("context menu")), "")
+	out, err := execute(t, d, "", "--yes", "--purge-data")
+	if err != nil {
+		t.Fatal(out, err)
+	}
+	if _, err := os.Stat(svc.Store.Home); !os.IsNotExist(err) {
+		t.Fatalf("owned data retained: %v\n%s", err, out)
+	}
+}
+
+// The lock directory counts as owned only where installers put it, and only
+// while it holds nothing but their lock files.
+func TestUninstallPurgeKeepsUnrecognisedRegistryLocks(t *testing.T) {
+	// Each case passes every check but the one it names.
+	for name, files := range map[string]map[string]string{
+		"other home":    {regtxn.LockName("context menu"): ""},
+		"user file":     {"notes.txt": ""},
+		"nonempty lock": {regtxn.LockName("context menu"): "USER DATA"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			d, root, _ := fixture(t)
+			useDefaultData(t)
+			if name == "other home" {
+				t.Setenv("OBIT_HOME", filepath.Join(root, "OBIT_HOME"))
+				locks, err := userdirs.RegistryLocks()
+				if err != nil || os.MkdirAll(locks, 0o700) != nil {
+					t.Fatal(err)
+				}
+			}
+			svc, err := app.Open()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := svc.Store.Update(func(*core.State) error { return nil }); err != nil {
+				t.Fatal(err)
+			}
+			dir := filepath.Join(svc.Store.Home, "registry-locks")
+			for file, data := range files {
+				write(t, filepath.Join(dir, file), data)
+			}
+			out, err := execute(t, d, "", "--yes", "--purge-data")
+			if err == nil || !strings.Contains(err.Error(), "data retained") {
+				t.Fatalf("unrecognised registry-locks accepted: %v\n%s", err, out)
+			}
+			for file, data := range files {
+				if got, err := os.ReadFile(filepath.Join(dir, file)); err != nil || string(got) != data {
+					t.Fatalf("%s changed: %q %v", file, got, err)
+				}
+			}
+		})
+	}
+}
+
+// useDefaultData selects the default data directory under a fresh base, the
+// directory installers also keep their registry locks in.
+func useDefaultData(t *testing.T) {
+	t.Helper()
+	base := t.TempDir()
+	for _, key := range []string{"LOCALAPPDATA", "XDG_DATA_HOME", "HOME"} {
+		t.Setenv(key, base)
+	}
+	t.Setenv("OBIT_HOME", "")
 }
 
 func TestReviewPurgePreservesUnownedMetadataName(t *testing.T) {
