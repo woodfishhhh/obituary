@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -20,9 +21,13 @@ func TestWatchCommandsAndModifiedApproval(t *testing.T) {
 	for name, sub := range map[string]string{"OBIT_HOME": "data", "OBIT_CONFIG_DIR": "config", "OBIT_USER_HOME": "user"} {
 		t.Setenv(name, filepath.Join(root, sub))
 	}
-	dir := filepath.Join(root, "user", "Downloads")
+	name := "Downloads"
+	if runtime.GOOS != "windows" {
+		name = "Downloads/inbox" // POSIX Guard protects the whole Downloads directory.
+	}
+	dir := filepath.Join(root, "user", name)
 	clitest.WriteFixture(t, filepath.Join(dir, "file.txt"), "fixture")
-	out, _, err := clitest.Execute(t, NewCmd(), "~/Downloads", "30d", "--json")
+	out, _, err := clitest.Execute(t, NewCmd(), "~/"+name, "30d", "--json")
 	var policy core.WatchPolicy
 	if err != nil || json.Unmarshal([]byte(out), &policy) != nil || policy.Consent != "pending" || len(*starts) != 1 {
 		t.Fatalf("watch: %s %v starts=%v", out, err, *starts)
@@ -32,7 +37,7 @@ func TestWatchCommandsAndModifiedApproval(t *testing.T) {
 	if err != nil || json.Unmarshal([]byte(out), &policies) != nil || len(policies) != 1 || policies[0].Path != dir {
 		t.Fatalf("list: %s %v", out, err)
 	}
-	out, _, err = clitest.Execute(t, NewCmd(), "--remove", "~/Downloads", "--json")
+	out, _, err = clitest.Execute(t, NewCmd(), "--remove", "~/"+name, "--json")
 	if err != nil {
 		t.Fatalf("remove: %s %v", out, err)
 	}

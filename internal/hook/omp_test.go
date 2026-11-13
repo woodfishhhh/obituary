@@ -1,5 +1,7 @@
 package hook
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import "testing"
 
 func TestOMPBridge(t *testing.T) {
@@ -14,7 +16,7 @@ func TestOMPAndPiSessionNamespaces(t *testing.T) {
 	var sessions []string
 	for _, name := range []string{"pi", "omp"} {
 		agent, _ := Lookup(name)
-		input := BridgeRequest{Version: 1, Agent: name, Event: "Stop", HostEvent: "agent_end", Session: "same-id", Cwd: `C:\repo`, Local: true}
+		input := BridgeRequest{Version: 1, Agent: name, Event: "Stop", HostEvent: "agent_end", Session: "same-id", Cwd: testenv.NativeFixture(`C:\repo`), Local: true}
 		ev, err := Decode(agent.Adapter, pluginJSON(t, input), Invocation{Agent: name})
 		if err != nil || ev.Session != name+":same-id" {
 			t.Fatalf("%s session: %+v %v", name, ev, err)

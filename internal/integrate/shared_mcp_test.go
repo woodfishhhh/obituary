@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"os"
 	"path/filepath"
@@ -18,7 +20,7 @@ func TestSharedMCPOwnersLifecycle(t *testing.T) {
 			var plans []Change
 			for _, agent := range agents {
 				a, _ := LookupAgent(agent)
-				plan, err := a.PlanMCP(s, "C:/tools/obit.exe", false)
+				plan, err := a.PlanMCP(s, testenv.NativeFixture("C:/tools/obit.exe"), false)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -64,14 +66,14 @@ func TestSharedMCPLegacyReceiptMigration(t *testing.T) {
 	plan, err := PlanManagedAssets(dataScope(s), []ManagedAsset{asset}, false)
 	applyIntegration(t, plan, err)
 	writeIntegrationFile(t, path, `{"mcpServers":{"obituary":{"command":"obit","args":["mcp"],"env":{"KEEP":"yes"}}}}`)
-	plan, err = PlanCopilotMCP(s, "C:/tools/obit.exe", false)
+	plan, err = PlanCopilotMCP(s, testenv.NativeFixture("C:/tools/obit.exe"), false)
 	applyIntegration(t, plan, err)
 	plan, err = PlanCopilotMCP(s, "", true)
 	applyIntegration(t, plan, err)
 	if !strings.Contains(read(t, path), "KEEP") {
 		t.Fatal("legacy owner was replaced")
 	}
-	plan, err = PlanMCP(s, "claude", "C:/tools/obit.exe", false)
+	plan, err = PlanMCP(s, "claude", testenv.NativeFixture("C:/tools/obit.exe"), false)
 	applyIntegration(t, plan, err)
 	plan, err = PlanCodeBuddyMCP(s, "", true)
 	applyIntegration(t, plan, err)
@@ -111,7 +113,7 @@ func TestSharedMCPLegacyReceiptProtectsUnrecordedClaude(t *testing.T) {
 			if !strings.Contains(receipt, "legacy-unverified") || !strings.Contains(receipt, `"schema":2`) {
 				t.Fatalf("legacy protection not persisted: %s", receipt)
 			}
-			plan, err = PlanMCP(s, "claude", "C:/tools/obit.exe", false)
+			plan, err = PlanMCP(s, "claude", testenv.NativeFixture("C:/tools/obit.exe"), false)
 			applyIntegration(t, plan, err)
 			if strings.Contains(read(t, ManagedAssetReceiptPath(testSidecarPath(t, path+".obituary-owners"))), "legacy-unverified") {
 				t.Fatal("explicit Claude confirmation did not resolve legacy ownership")
@@ -133,18 +135,18 @@ func installLegacyMCP(t *testing.T, s Scope, path, owner string) {
 	}
 	plan, err := PlanManagedAssets(dataScope(s), []ManagedAsset{asset}, false)
 	applyIntegration(t, plan, err)
-	writeIntegrationFile(t, path, `{"mcpServers":{"obituary":{"command":"C:/tools/obit.exe","args":["mcp"]}}}`)
+	writeIntegrationFile(t, path, testenv.NativeFixture(`{"mcpServers":{"obituary":{"command":"C:/tools/obit.exe","args":["mcp"]}}}`))
 	ch, err := readIntegrationChange(s, path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	ch, err = planMCPJSON(ch, "C:/tools/obit.exe", false)
+	ch, err = planMCPJSON(ch, testenv.NativeFixture("C:/tools/obit.exe"), false)
 	applyIntegration(t, []Change{ch}, err)
 }
 
 func TestSharedMCPUninstallRechecksConcurrentOwners(t *testing.T) {
 	s := Scope{Project: t.TempDir()}
-	plan, err := PlanMCP(s, "claude", "C:/tools/obit.exe", false)
+	plan, err := PlanMCP(s, "claude", testenv.NativeFixture("C:/tools/obit.exe"), false)
 	applyIntegration(t, plan, err)
 	plan, err = PlanMCP(s, "claude", "", true)
 	if err != nil {
@@ -156,7 +158,7 @@ func TestSharedMCPUninstallRechecksConcurrentOwners(t *testing.T) {
 			return nil
 		}
 		beforeIntegrationWrite = nil
-		other, err := PlanCopilotMCP(s, "C:/tools/obit.exe", false)
+		other, err := PlanCopilotMCP(s, testenv.NativeFixture("C:/tools/obit.exe"), false)
 		if err != nil {
 			return err
 		}
@@ -186,7 +188,7 @@ func TestSharedMCPRequiresRecordedOwner(t *testing.T) {
 			original := `{"mcpServers":{"obituary":{"command":"obit","args":["mcp"]}}}`
 			writeIntegrationFile(t, path, original)
 			a, _ := LookupAgent(agent)
-			if _, err := a.PlanMCP(s, "C:/tools/obit.exe", false); err == nil {
+			if _, err := a.PlanMCP(s, testenv.NativeFixture("C:/tools/obit.exe"), false); err == nil {
 				t.Fatal("unrecorded shared registration adopted")
 			}
 			plan, err := a.PlanMCP(s, "", true)
@@ -217,7 +219,7 @@ func TestClaudeSharedMCPOwnershipOrders(t *testing.T) {
 					}
 					for _, agent := range []string{first, second} {
 						a, _ := LookupAgent(agent)
-						plan, err := a.PlanMCP(s, "C:/tools/obit.exe", false)
+						plan, err := a.PlanMCP(s, testenv.NativeFixture("C:/tools/obit.exe"), false)
 						applyIntegration(t, plan, err)
 					}
 					a, _ := LookupAgent(removeFirst)

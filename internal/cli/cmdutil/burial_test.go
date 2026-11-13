@@ -1,5 +1,7 @@
 package cmdutil_test
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"os"
 	"path/filepath"
@@ -99,6 +101,7 @@ func TestBurialSessionPrecedence(t *testing.T) {
 }
 
 func TestBurialWithoutProjectDiscovery(t *testing.T) {
+	testenv.WindowsOnly(t, "Win32 extended paths and Windows namespace normalization")
 	for _, command := range []string{"bury", "rm"} {
 		t.Run(command, func(t *testing.T) {
 			clitest.IsolateRunner(t)

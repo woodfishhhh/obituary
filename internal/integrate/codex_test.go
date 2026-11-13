@@ -1,10 +1,11 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -20,11 +21,11 @@ func TestCodexHookOwnershipLifecycle(t *testing.T) {
 				{"relative", "./tools/obit.exe", "", false, false},
 				{"bare", "obit.exe", "", false, false},
 				{"mixed-windows", "/mnt/c/old/obit.exe", "./tools/obit.exe", false, true},
-				{"mixed-posix", "user-tool", "C:/old/obit.exe", false, true},
-				{"absolute", "C:/old/obit.exe", "", true, false},
+				{"mixed-posix", "user-tool", testenv.NativeFixture("C:/old/obit.exe"), false, true},
+				{"absolute", testenv.NativeFixture("C:/old/obit.exe"), "", true, false},
 				{"wsl", "/mnt/c/old/obit.exe", "", true, false},
-				{"both", "/mnt/c/old/obit.exe", "C:/old/obit.exe", true, false},
-				{"windows-only", "", "C:/old/obit.exe", true, false},
+				{"both", "/mnt/c/old/obit.exe", testenv.NativeFixture("C:/old/obit.exe"), true, false},
+				{"windows-only", "", testenv.NativeFixture("C:/old/obit.exe"), true, false},
 			} {
 				t.Run(fmt.Sprintf("uninstall=%t/%s/%s", uninstall, suffix, tc.name), func(t *testing.T) {
 					h := codexHandler{Type: "command"}
@@ -233,9 +234,7 @@ func TestProjectInstallRefusesALinkedConfigDirectory(t *testing.T) {
 	}
 	t.Parallel()
 	root, outside := t.TempDir(), t.TempDir()
-	if out, err := exec.Command("cmd", "/c", "mklink", "/J", filepath.Join(root, ".codex"), outside).CombinedOutput(); err != nil {
-		t.Fatalf("mklink: %v %s", err, out)
-	}
+	makeIntegrationJunction(t, filepath.Join(root, ".codex"), outside)
 	if _, err := PlanCodex(Scope{Project: root}, unixCmd, winCmd, false); err == nil {
 		t.Fatal("a .codex junction pointing outside the project must be refused")
 	}
@@ -277,9 +276,7 @@ func TestApplyRechecksProjectLinks(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			if out, err := exec.Command("cmd", "/c", "mklink", "/J", config, outside).CombinedOutput(); err != nil {
-				t.Fatalf("mklink: %v %s", err, out)
-			}
+			makeIntegrationJunction(t, config, outside)
 			if err := Apply(changes); err == nil {
 				t.Error("Apply must reject a junction added after planning")
 			}
@@ -320,9 +317,7 @@ func TestApplyRechecksNumberedBackupLinks(t *testing.T) {
 	orig := read(t, path)
 	backup := testBackupPath(t, path)
 	writeIntegrationFile(t, backup, "earlier backup")
-	if out, err := exec.Command("cmd", "/c", "mklink", "/J", backup+".1", outside).CombinedOutput(); err != nil {
-		t.Fatalf("mklink: %v %s", err, out)
-	}
+	makeIntegrationJunction(t, backup+".1", outside)
 	if err := Apply(changes); err == nil {
 		t.Error("numbered backup link added after planning must be refused")
 	}

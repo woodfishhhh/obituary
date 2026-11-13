@@ -167,6 +167,10 @@ func (p PendingGrave) failedManifest(err error) PendingGrave {
 
 func (s *Service) inspectManifestState(p PendingGrave, m burialManifest, st State) PendingGrave {
 	b := *p.Burial
+	if b.IdentityMismatch != "" {
+		p.Status, p.Error = "identity-mismatch", b.IdentityMismatch
+		return p
+	}
 	if m.Resurrect != nil {
 		p.restore = m.Resurrect
 		return s.inspectRestoreIntent(p, st)
@@ -230,7 +234,7 @@ func sameBurial(a, b Burial) bool {
 	return a.ID == b.ID && samePath(a.Grave, b.Grave) && a.GraveID != nil && b.GraveID != nil &&
 		a.Identity != nil && b.Identity != nil && *a.GraveID == *b.GraveID && *a.Identity == *b.Identity &&
 		samePath(a.Path, b.Path) && a.LongNames == b.LongNames && a.IsDir == b.IsDir && a.BuriedAt.Equal(b.BuriedAt) &&
-		a.PurgeAt.Equal(b.PurgeAt) && a.Reason == b.Reason && slices.Equal(a.Parents, b.Parents) && slices.EqualFunc(a.Children, b.Children, sameBuriedChild)
+		a.PurgeAt.Equal(b.PurgeAt) && a.Reason == b.Reason && a.IdentityMismatch == b.IdentityMismatch && slices.Equal(a.Parents, b.Parents) && slices.EqualFunc(a.Children, b.Children, sameBuriedChild)
 }
 
 // Contains can shrink during recovery; the original identity snapshots agree.
@@ -306,6 +310,10 @@ func (s *Service) pendingGraves(st State) ([]PendingGrave, error) {
 			continue
 		}
 		if slices.ContainsFunc(pending, func(p PendingGrave) bool { return p.Number() == b.ID }) {
+			continue
+		}
+		if b.IdentityMismatch != "" {
+			pending = append(pending, PendingGrave{Manifest: filepath.Dir(b.Grave), Burial: &b, id: b.ID, Status: "identity-mismatch", Error: b.IdentityMismatch})
 			continue
 		}
 		if b.PurgeIntent != nil {

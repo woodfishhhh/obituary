@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"compress/gzip"
@@ -342,7 +344,7 @@ func TestAgentRegistryPlansExistingAgents(t *testing.T) {
 	}
 
 	t.Parallel()
-	commands := Commands{Native: `"C:/tools/obit.exe" hook claude`, POSIX: "'/mnt/c/tools/obit.exe' hook codex", Executable: "C:/tools/obit.exe"}
+	commands := Commands{Native: testenv.NativeFixture(`"C:/tools/obit.exe" hook claude`), POSIX: "'/mnt/c/tools/obit.exe' hook codex", Executable: testenv.NativeFixture("C:/tools/obit.exe")}
 	for _, name := range []string{"claude", "codex"} {
 		t.Run(name, func(t *testing.T) {
 			agent, ok := LookupAgent(name)

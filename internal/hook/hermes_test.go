@@ -1,5 +1,7 @@
 package hook
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"encoding/json"
@@ -53,7 +55,7 @@ func pluginBridgeFixture(t *testing.T, agent, kind string) BridgeRequest {
 		t.Fatal(err)
 	}
 	var in BridgeRequest
-	if err := json.Unmarshal(raw, &in); err != nil {
+	if err := json.Unmarshal([]byte(testenv.NativeFixture(string(raw))), &in); err != nil {
 		t.Fatal(err)
 	}
 	return in
@@ -81,6 +83,7 @@ func checkPluginBridge(t *testing.T, name string, deferred bool) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			raw = []byte(testenv.NativeFixture(string(raw)))
 			ev, err := Decode(agent.Adapter, raw, Invocation{Agent: name})
 			if err != nil || ev.Name != in.Event || ev.HostEvent != in.HostEvent || ev.Tool != in.Tool || ev.Session != name+":"+in.Session || ev.Command != in.Command {
 				t.Fatalf("fixture: %+v %v", ev, err)
@@ -131,7 +134,7 @@ func checkPluginBridge(t *testing.T, name string, deferred bool) {
 		{"failed-write", func(in *BridgeRequest) { b := false; in.Success = &b }},
 		{"unconfirmed-write", func(in *BridgeRequest) { in.Success = nil }},
 		{"remote", func(in *BridgeRequest) { in.Local = false }},
-		{"remote-cwd", func(in *BridgeRequest) { in.Cwd = "/home/remote" }},
+		{"remote-cwd", func(in *BridgeRequest) { in.Cwd = testenv.ForeignFixture("/home/remote") }},
 		{"relative-cwd", func(in *BridgeRequest) { in.Cwd = "repo" }},
 		{"code-mode", func(in *BridgeRequest) { in.SkipReason = "code-mode" }},
 	} {
@@ -183,7 +186,14 @@ func checkPluginBridge(t *testing.T, name string, deferred bool) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			in := pre
+			in.Cwd = t.TempDir()
+			if err := os.Mkdir(filepath.Join(in.Cwd, "scratch dir"), 0700); err != nil {
+				t.Fatal(err)
+			}
 			tc.edit(&in)
+			if tc.deny && in.Shell == "powershell" {
+				testenv.WindowsOnly(t, "PowerShell Remove-Item integration is Windows-only")
+			}
 			e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: t.TempDir()}}}
 			// A pre-hook has no Git, service FS or configuration dependency.
 			t.Setenv("PATH", t.TempDir())

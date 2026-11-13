@@ -42,7 +42,8 @@ func readBurialManifest(path string, p *PendingGrave) (m burialManifest, err err
 func validateManifestMetadata(m burialManifest, id int64) ([]*Identity, error) {
 	b := m.Burial
 	validVersion := m.Version == 1 && m.Resurrect == nil || m.Version == 2 && m.Resurrect != nil ||
-		m.Version == 3 && m.Resurrect == nil && m.WatchCheck != nil && b.Source == "watch"
+		m.Version == 3 && m.Resurrect == nil && m.WatchCheck != nil && b.Source == "watch" ||
+		m.Version == 4 && m.Resurrect == nil && b.IdentityMismatch != ""
 	if m.Version != 3 && (m.WatchCheck != nil || m.WatchError != "") {
 		validVersion = false
 	}
@@ -125,7 +126,7 @@ func validateManifestIdentities(b Burial, identities []*Identity) error {
 		*id = id.Normalized()
 		raw, err := hex.DecodeString(id.FileID)
 		volume, volumeErr := pathutil.Abs(id.Volume)
-		if err != nil || volumeErr != nil || len(raw) != 16 || !samePath(pathutil.VolumeRoot(volume), pathutil.VolumeRoot(grave)) {
+		if err != nil || volumeErr != nil || !filepath.IsAbs(id.Volume) || len(raw) != 16 || !samePath(pathutil.VolumeRoot(volume), pathutil.VolumeRoot(grave)) {
 			return errors.New("invalid manifest object identity")
 		}
 	}

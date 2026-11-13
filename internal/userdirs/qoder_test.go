@@ -20,7 +20,7 @@ func TestQoderDirectories(t *testing.T) {
 				t.Fatalf("default: %q %v", got, err)
 			}
 			custom := filepath.Join(t.TempDir(), "custom")
-			for _, path := range []string{custom, `\\?\` + custom} {
+			for _, path := range nativeDirectorySpellings([]string{custom, `\\?\` + custom}) {
 				t.Setenv(tc.env, path)
 				if got, err := AgentDir(tc.name); err != nil || got != custom {
 					t.Fatalf("override: %q %v", got, err)
@@ -31,7 +31,7 @@ func TestQoderDirectories(t *testing.T) {
 					t.Fatal("resolver wrote", path, err)
 				}
 			}
-			for _, path := range []string{custom + ":stream", `\\?\` + custom + `.\child`} {
+			for _, path := range nativeDirectorySpellings([]string{custom + ":stream", `\\?\` + custom + `.\child`}) {
 				t.Setenv(tc.env, path)
 				if got, err := AgentDir(tc.name); err == nil {
 					t.Fatal("unsafe override accepted", got)

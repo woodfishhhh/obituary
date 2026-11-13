@@ -4,11 +4,26 @@
 
 The easiest way is to let your agent install it: send it the sentence from the README. This page is for installing by hand.
 
-Obituary runs on Windows 10 and 11 (x64 and ARM64). The small window `obit-gui.exe` uses the WebView2 runtime, which comes with Windows 11 and is present on most Windows 10 machines.
+Obituary runs on Windows 10 / 11, macOS and Linux (x64 and ARM64). macOS / Linux provide the CLI, graveyard, resurrection and automatic burial. Recycle Bin mode, the small window, tray and context menus are provided by the Windows edition. The Windows small window uses WebView2.
 
 ## 1. Install the programs
 
-Pick one of the three:
+On macOS you can use Homebrew: `brew install --cask woodfishhhh/tap/obituary`.
+
+On macOS / Linux you can also download and read the install script, then run it:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh -o install.sh
+bash install.sh --version 1.1.0
+```
+
+The script verifies SHA-256, installs `obit` and `obitd` into `~/.local/bin`, and prints PATH instructions. Use `--install-dir` for another directory and `--dry-run` for a preview. In mainland China, use `https://cn.obituary.woodfish.site/install.sh` and add `--mirror cn`.
+
+On first use in macOS, run `obit --version` and `obitd --help`. If Gatekeeper asks for approval, open System Settings → Privacy & Security, choose Open Anyway for each executable whose source you verified, then retry the command.
+
+In WSL, keep projects and agent configuration on the Linux filesystem (for example, under `~/projects`). Windows mounts such as `/mnt/c` may not support the safe renames required for installation; the operation reports an error and preserves the original configuration. You can also use the Windows edition directly.
+
+On Windows, pick one of the three:
 
 ```powershell
 # Scoop
@@ -21,14 +36,14 @@ winget install woodfishhhh.Obituary
 # Install script: download it, read it, then run it
 # (installs to %LOCALAPPDATA%\Programs\obituary, adds it to your user PATH, creates a Start menu shortcut)
 irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1
-.\install.ps1 -Version 1.0.0          # -WhatIf previews, -NoPath leaves PATH alone
+.\install.ps1 -Version 1.1.0          # -WhatIf previews, -NoPath leaves PATH alone
 ```
 
 In mainland China, the install script downloads from the mainland mirror:
 
 ```powershell
 irm https://cn.obituary.woodfish.site/install.ps1 -OutFile install.ps1
-.\install.ps1 -Version 1.0.0 -Mirror cn
+.\install.ps1 -Version 1.1.0 -Mirror cn
 ```
 
 - All three install the same archive and check its SHA-256 before unpacking it.
@@ -46,6 +61,10 @@ obit init -g --agent claude --guard-rm --yes   # also turn on the delete guard: 
 ```
 
 `-g` applies to all projects; without it only the current project is connected. Restart the agent afterwards. In Codex, run `/hooks` once to trust Obituary's hooks.
+
+The same `obit init` commands work on macOS / Linux. Claude Code uses `~/.claude`, Codex uses `~/.codex`, and shared Skills use `~/.agents/skills`; `CLAUDE_CONFIG_DIR` / `CODEX_HOME` can override the configuration locations.
+
+Run `obit daemon enable --dry-run` to review the scheduler, then `obit daemon enable` for checks every 5 minutes: a user launchd agent on macOS or `systemd --user` on Linux. Without systemd, a user crontab can run the absolute path to `obitd --once --home <data> --config-dir <config>` every 5 minutes. Agent hooks also trigger background checks when needed.
 
 ## 3. Check the installation
 

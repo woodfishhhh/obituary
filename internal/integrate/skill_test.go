@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -32,8 +34,27 @@ func TestSkillDirectoryContainsOnlyOwnedFiles(t *testing.T) {
 			plan, err := PlanSkill(s, agent, false)
 			applyIntegration(t, plan, err)
 			plan, err = PlanSkill(s, agent, true)
+			oldSkill := read(t, path)
+			oldReceipt := read(t, filepath.Join(filepath.Dir(path), ".obituary-skill"))
 			applyIntegration(t, plan, err)
 			entries, err := os.ReadDir(filepath.Dir(path))
+			if runtime.GOOS != "windows" {
+				want := []string{".obituary-skill.bak", "SKILL.md.bak"}
+				if agent == "codex" {
+					want = append(want, "SKILL.md.lock.bak")
+					if read(t, path+".lock.bak") != "" {
+						t.Fatal("legacy lock bytes changed")
+					}
+				}
+				var names []string
+				for _, entry := range entries {
+					names = append(names, entry.Name())
+				}
+				if err != nil || !slices.Equal(names, want) || read(t, path+".bak") != oldSkill || read(t, filepath.Join(filepath.Dir(path), ".obituary-skill.bak")) != oldReceipt {
+					t.Fatal("POSIX uninstall must retain the verified original bytes", entries, err)
+				}
+				return
+			}
 			if err != nil || len(entries) != 0 {
 				t.Fatal("owned files remain after uninstall", entries, err)
 			}

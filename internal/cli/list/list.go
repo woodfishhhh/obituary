@@ -44,11 +44,12 @@ func NewCmd() *cobra.Command {
 func printItemsJSON(svc *core.Service, items []ledger.Item, now time.Time) error {
 	type row struct {
 		ledger.Item
-		Stability *core.WatchStatus `json:"stability,omitempty"`
+		Stability       *core.WatchStatus `json:"stability,omitempty"`
+		IdentityWarning string            `json:"identityWarning,omitempty"`
 	}
 	rows := make([]row, 0, len(items))
 	for _, it := range items {
-		rows = append(rows, row{it, svc.WatchStatus(it, now)})
+		rows = append(rows, row{it, svc.WatchStatus(it, now), identityWarning(it)})
 	}
 	return cmdutil.PrintJSON(rows)
 }
@@ -65,6 +66,9 @@ func printItems(svc *core.Service, items []ledger.Item, now time.Time) error {
 		if item.LastError != "" {
 			note = fmt.Sprintf("retry %d: %s", item.Attempts, item.LastError)
 		}
+		if warning := identityWarning(item); warning != "" {
+			note += "; " + warning
+		}
 		if status := svc.WatchStatus(item, now); status != nil {
 			if strings.HasPrefix(item.LastError, "folder child is still active") {
 				note = fmt.Sprintf("retry %d", item.Attempts)
@@ -75,4 +79,13 @@ func printItems(svc *core.Service, items []ledger.Item, now time.Time) error {
 			lifespan.FormatRemaining(time.Until(item.ExpiresAt)), item.Path, note)
 	}
 	return w.Flush()
+}
+
+func identityWarning(item ledger.Item) string {
+	if item.Identity != nil {
+		if err := item.Identity.RequirePersistent(); err != nil {
+			return err.Error()
+		}
+	}
+	return ""
 }

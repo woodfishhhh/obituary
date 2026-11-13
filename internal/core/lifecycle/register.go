@@ -45,9 +45,11 @@ func ValidateMetadata(field, value string) error {
 }
 
 type candidate struct {
-	path     string
-	isDir    bool
-	identity Identity
+	path        string
+	isDir       bool
+	identity    Identity
+	immediateFS FS
+	release     func()
 }
 
 // Add gives each path a lifespan. The same object (even under an older name)
@@ -109,6 +111,9 @@ func (s *Service) inspectRegistrations(paths []string, force bool) ([]Result, []
 	for i, ref := range paths {
 		results[i].Ref = ref
 		c, err := s.inspect(ref, force)
+		if err == nil {
+			err = c.identity.RequirePersistent()
+		}
 		if err != nil {
 			results[i].Error = err.Error()
 			results[i].Err = err
@@ -202,7 +207,7 @@ func (s *Service) registrationTarget(st *State, c *candidate, now time.Time) (in
 			return idx, events, Result{Error: err.Error(), Err: err}
 		}
 	}
-	if idx < 0 || st.Items[idx].Identity == nil {
+	if idx < 0 || st.Items[idx].Identity == nil || st.Items[idx].Identity.RequirePersistent() != nil {
 		return idx, events, Result{}
 	}
 	current, err := s.FS.Locate(*st.Items[idx].Identity)
@@ -314,7 +319,7 @@ func (s *Service) checkNew(st *State, c *candidate, roots []resolvedGraveyardRoo
 		}
 		path := it.Path
 		if it.Identity != nil && (scope != nil || it.Identity.Serial == c.identity.Serial) {
-			current, err := s.FS.Locate(*it.Identity)
+			current, err := s.LocateKnown(it.Path, *it.Identity)
 			if errors.Is(err, ErrNotFound) {
 				continue
 			}

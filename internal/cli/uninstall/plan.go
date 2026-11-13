@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/woodfishhhh/obituary/internal/app"
 	initcmd "github.com/woodfishhhh/obituary/internal/cli/init"
@@ -56,19 +57,34 @@ func prepare(d dependencies) (*plan, error) {
 	if err != nil {
 		return nil, err
 	}
-	p.schedule = d.previewSchedule(filepath.Join(filepath.Dir(exe), "obitd.exe"), svc.Store.Home, p.config)
-	p.startup, err = app.PlanAutostart(d.runRegistry, filepath.Join(filepath.Dir(exe), "obitd.exe"), svc.Store.Home, p.config, false)
-	if err != nil {
-		return nil, err
+	daemon := "obitd"
+	if runtime.GOOS == "windows" {
+		daemon += ".exe"
 	}
-	if p.menus, err = contextmenu.Plan(d.menuRegistry, exe, true); err != nil {
-		return nil, err
-	}
-	if p.labels, err = explorer.CleanupTargets(svc.Store.Home); err != nil {
-		return nil, err
+	p.schedule = d.previewSchedule(filepath.Join(filepath.Dir(exe), daemon), svc.Store.Home, p.config)
+	if runtime.GOOS == "windows" {
+		if err := p.prepareDesktop(d, exe); err != nil {
+			return nil, err
+		}
 	}
 	p.integrations, err = integrationPlans(initcmd.Planner{Executable: d.executable})
 	return p, err
+}
+
+func (p *plan) prepareDesktop(d dependencies, exe string) error {
+	var err error
+	svc := p.svc
+	p.startup, err = app.PlanAutostart(d.runRegistry, filepath.Join(filepath.Dir(exe), "obitd.exe"), svc.Store.Home, p.config, false)
+	if err != nil {
+		return err
+	}
+	if p.menus, err = contextmenu.Plan(d.menuRegistry, exe, true); err != nil {
+		return err
+	}
+	if p.labels, err = explorer.CleanupTargets(svc.Store.Home); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Route uninstall through each agent's existing planner so shared ownership
@@ -128,7 +144,7 @@ func (p *plan) print(out io.Writer, purge bool) {
 		}
 	}
 	fmt.Fprintf(out, "  %s\n  stop resident/tray for %s\n", p.schedule, p.svc.Store.Home)
-	if p.startup.Pending() {
+	if p.startup != nil && p.startup.Pending() {
 		fmt.Fprintf(out, "  remove HKCU Run %s\n", p.startup.Name)
 	}
 	for _, menu := range p.menus {
@@ -146,12 +162,14 @@ func (p *plan) print(out io.Writer, purge bool) {
 func (p *plan) apply(d dependencies, out io.Writer, purge bool) error {
 	// Disable wakeups before touching policies or their labels. An unsuccessful
 	// stop must block data cleanup, since a resident could recreate metadata.
-	serviceErr := errors.Join(d.removeSchedule(), p.startup.Apply(), d.stop(p.svc.Store.Home))
+	serviceErr := p.removeServices(d)
 	failures := []error{serviceErr}
 	for _, entry := range p.integrations {
 		failures = append(failures, initcmd.ApplyUninstall(entry.changes))
 	}
-	failures = append(failures, contextmenu.Apply(d.menuRegistry, p.menus))
+	if runtime.GOOS == "windows" {
+		failures = append(failures, contextmenu.Apply(d.menuRegistry, p.menus))
+	}
 	if serviceErr != nil {
 		return errors.Join(failures...)
 	}
@@ -169,4 +187,13 @@ func (p *plan) apply(d dependencies, out io.Writer, purge bool) error {
 	}
 	p.printData(out, false)
 	return nil
+}
+
+func (p *plan) removeServices(d dependencies) error {
+	scheduleErr := d.removeSchedule()
+	var startupErr error
+	if p.startup != nil {
+		startupErr = p.startup.Apply()
+	}
+	return errors.Join(scheduleErr, startupErr, d.stop(p.svc.Store.Home))
 }

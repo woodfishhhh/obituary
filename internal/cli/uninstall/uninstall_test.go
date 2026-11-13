@@ -1,5 +1,7 @@
 package uninstall
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"errors"
 	"os"
@@ -18,6 +20,7 @@ import (
 )
 
 func TestUninstallPrintsScheduleOwnershipPreview(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	for _, preview := range []string{"remove scheduled task owned", "preserve scheduled task: task belongs to another installation (C:\\other, C:\\home)", "query failed for scheduled task: denied"} {
 		t.Run(preview[:8], func(t *testing.T) {
 			d, _, calls := fixture(t)
@@ -80,6 +83,7 @@ func TestReviewUninstallReportsMalformedHookConfig(t *testing.T) {
 }
 
 func TestUninstallDryRunAndDefaultPreserveData(t *testing.T) {
+	testenv.WindowsOnly(t, "This fixture installs Windows Run and Explorer registrations; POSIX data preservation has separate coverage")
 	d, root, calls := fixture(t)
 	if err := os.Mkdir(filepath.Join(root, ".git"), 0o700); err != nil {
 		t.Fatal(err)
@@ -182,6 +186,7 @@ func TestUninstallConfirmationAndAbsentData(t *testing.T) {
 }
 
 func TestUninstallRemovesLabelsAndPoliciesWithoutMovingFiles(t *testing.T) {
+	testenv.WindowsOnly(t, "Explorer labels are Windows-only")
 	d, root, _ := fixture(t)
 	svc, err := app.Open()
 	if err != nil {

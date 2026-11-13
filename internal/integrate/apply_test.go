@@ -3,6 +3,7 @@ package integrate
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -22,7 +23,7 @@ func TestInstallRejectsProjectRootSwap(t *testing.T) {
 			if err := os.Mkdir(root, 0o700); err != nil {
 				t.Fatal(err)
 			}
-			commands := Commands{Native: `"C:/tools/obit.exe" hook ` + agent, Executable: `C:\tools\obit.exe`}
+			commands := Commands{Native: testenv.NativeFixture(`"C:/tools/obit.exe" hook `) + agent, Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}
 			plan, err := PlanAgent(agent, Scope{Project: root}, commands, false)
 			if err != nil {
 				t.Fatal(err)
@@ -110,7 +111,7 @@ func TestUninstallRejectsProjectRootSwap(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := Scope{Project: root}
-	commands := Commands{Native: `"C:/tools/obit.exe" hook gemini`, Executable: `C:\tools\obit.exe`}
+	commands := Commands{Native: testenv.NativeFixture(`"C:/tools/obit.exe" hook gemini`), Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}
 	plan, err := PlanGemini(s, commands, false)
 	applyIntegration(t, plan, err)
 	plan, err = PlanGemini(s, commands, true)
@@ -158,6 +159,9 @@ func TestApplyRejectsBackupLinkAfterPreflight(t *testing.T) {
 	gate := filepath.Join(root, "gate")
 	plan := []Change{{Path: gate, Action: "create", data: []byte("gate"), project: root, phase: -1}, c}
 	backup := testBackupPath(t, path)
+	if runtime.GOOS != "windows" {
+		backup = path + ".bak" // POSIX removal preserves the entry beside its pinned parent.
+	}
 	if err := os.MkdirAll(filepath.Dir(backup), 0700); err != nil {
 		t.Fatal(err)
 	}
@@ -169,6 +173,18 @@ func TestApplyRejectsBackupLinkAfterPreflight(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = os.Remove(backup) })
 	err = apply(plan, afterIntegrationWrite)
+	if runtime.GOOS != "windows" {
+		if err != nil || read(t, backup+".1") != "old" || read(t, filepath.Join(outside, "sentinel")) != "external" {
+			t.Fatalf("exclusive backup failed to preserve the original: %v", err)
+		}
+		if _, err := os.Stat(path); !os.IsNotExist(err) {
+			t.Fatalf("verified original was not retired: %v", err)
+		}
+		if info, err := os.Lstat(backup); err != nil || info.Mode()&os.ModeSymlink == 0 {
+			t.Fatalf("existing backup link was changed: %v", err)
+		}
+		return
+	}
 	if err == nil || read(t, path) != "old" || read(t, filepath.Join(outside, "sentinel")) != "external" {
 		t.Fatalf("backup link planted after preflight accepted: %v", err)
 	}
@@ -186,7 +202,7 @@ func TestApplyPinsMissingHostDirectory(t *testing.T) {
 	parent, outside := t.TempDir(), t.TempDir()
 	dir := filepath.Join(parent, "missing-config")
 	t.Setenv("CLAUDE_CONFIG_DIR", dir)
-	plan, err := PlanMCP(Scope{Global: true}, "claude", "C:/tools/obit.exe", false)
+	plan, err := PlanMCP(Scope{Global: true}, "claude", testenv.NativeFixture("C:/tools/obit.exe"), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -228,7 +244,7 @@ func TestApplyPinsMissingHostDirectory(t *testing.T) {
 
 func TestInstallFailureReportsAppliedAwarenessAndHooks(t *testing.T) {
 	dir, scope := setup(t)
-	changes, err := PlanClaude(scope, "C:/tools/obit.exe hook claude", false)
+	changes, err := PlanClaude(scope, testenv.NativeFixture("C:/tools/obit.exe hook claude"), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -260,7 +276,7 @@ func TestApplyRechecksUnchangedDependency(t *testing.T) {
 			if err := os.WriteFile(ref, []byte("user rules\n"), 0o600); err != nil {
 				t.Fatal(err)
 			}
-			changes, err := PlanClaude(scope, `"C:/tools/obit.exe" hook claude`, false)
+			changes, err := PlanClaude(scope, testenv.NativeFixture(`"C:/tools/obit.exe" hook claude`), false)
 			if err != nil {
 				t.Fatal(err)
 			}

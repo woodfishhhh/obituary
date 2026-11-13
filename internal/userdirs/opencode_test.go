@@ -37,17 +37,25 @@ func TestOpenCodeConfigOverride(t *testing.T) {
 		t.Fatalf("unset: %q %v", got, err)
 	}
 	path := filepath.Join(t.TempDir(), "config.jsonc")
-	t.Setenv("OPENCODE_CONFIG", `\\?\`+path)
-	if got, err := OpenCodeConfigOverride(); err != nil || got != path {
-		t.Fatalf("override: %q %v", got, err)
-	}
-	t.Setenv("OPENCODE_CONFIG", path+":stream")
-	if _, err := OpenCodeConfigOverride(); err == nil {
-		t.Fatal("accepted stream")
-	}
+	t.Run("windows-path-spelling", func(t *testing.T) {
+		windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+		t.Setenv("OPENCODE_CONFIG", `\\?\`+path)
+		if got, err := OpenCodeConfigOverride(); err != nil || got != path {
+			t.Fatalf("override: %q %v", got, err)
+		}
+	})
+	t.Run("windows-path-spelling", func(t *testing.T) {
+		windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+		t.Setenv("OPENCODE_CONFIG", path+":stream")
+		if _, err := OpenCodeConfigOverride(); err == nil {
+			t.Fatal("accepted stream")
+		}
+	})
 }
 
 func TestOpenCodeDirValidatesOverrides(t *testing.T) {
+	windowsDirectoryTest(t, "Win32 extended names, alternate streams, and trailing-dot normalization")
+
 	for _, variable := range []string{"OPENCODE_CONFIG_DIR", "XDG_CONFIG_HOME"} {
 		t.Run(variable, func(t *testing.T) {
 			t.Setenv("OPENCODE_CONFIG_DIR", "")

@@ -23,7 +23,7 @@ func TestOpenClawLocations(t *testing.T) {
 		t.Fatalf("resolver wrote directory: %v", err)
 	}
 	customHome := filepath.Join(home, "custom-home")
-	for _, value := range []string{customHome, "~/custom-home", `~\custom-home`} {
+	for _, value := range nativeDirectorySpellings([]string{customHome, "~/custom-home", `~\custom-home`}) {
 		t.Setenv("OPENCLAW_HOME", value)
 		if got, err := OpenClawDir(); err != nil || got != filepath.Join(customHome, ".openclaw") {
 			t.Fatalf("custom home: %q %v", got, err)
@@ -34,7 +34,7 @@ func TestOpenClawLocations(t *testing.T) {
 	if got, err := OpenClawDir(); err != nil || got != want {
 		t.Fatalf("tilde state: %q %v", got, err)
 	}
-	t.Setenv("OPENCLAW_CONFIG_PATH", `~\config\custom.json5`)
+	t.Setenv("OPENCLAW_CONFIG_PATH", "~/config/custom.json5")
 	if got, err := OpenClawConfigFile(); err != nil || got != filepath.Join(customHome, "config", "custom.json5") {
 		t.Fatalf("custom config: %q %v", got, err)
 	}
@@ -52,6 +52,8 @@ func TestOpenClawLocations(t *testing.T) {
 }
 
 func TestOpenClawValidatesOverrides(t *testing.T) {
+	windowsDirectoryTest(t, "Win32 extended names, alternate streams, and trailing-dot normalization")
+
 	for _, variable := range []string{"OPENCLAW_HOME", "OPENCLAW_STATE_DIR", "OPENCLAW_CONFIG_PATH"} {
 		t.Run(variable, func(t *testing.T) {
 			for _, key := range []string{"OPENCLAW_HOME", "OPENCLAW_STATE_DIR", "OPENCLAW_CONFIG_PATH", "OPENCLAW_PROFILE"} {
@@ -100,8 +102,11 @@ func TestOpenClawSharedSkillsIsolation(t *testing.T) {
 	if err != nil || shared || got != filepath.Join(home, "profile", "skills") {
 		t.Fatalf("profile: %q %t %v", got, shared, err)
 	}
-	t.Setenv("OPENCLAW_STATE_DIR", home+":stream")
-	if _, _, err := OpenClawSkillsDir(); err == nil {
-		t.Fatal("accepted unstable state")
-	}
+	t.Run("windows-path-spelling", func(t *testing.T) {
+		windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+		t.Setenv("OPENCLAW_STATE_DIR", home+":stream")
+		if _, _, err := OpenClawSkillsDir(); err == nil {
+			t.Fatal("accepted unstable state")
+		}
+	})
 }

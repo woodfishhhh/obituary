@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"unicode/utf16"
+	"unicode/utf8"
 )
 
 // From the first filesystem write through ledger commit, finish the transaction
@@ -35,7 +37,7 @@ func (s *Service) restoreBurial(result *GraveResult, b Burial, state State) erro
 	dest, pathUnavailable, err := s.renameResurrection(b, parent)
 	if err != nil {
 		result.Error = err.Error()
-		return nil
+		return tx.retainRestoreMismatch(b, err)
 	}
 	moved = true
 	result.Action, result.Burial, result.Path = ActionResurrected, &b, dest
@@ -101,18 +103,32 @@ func resurrectName(path string, n int) string {
 	}
 	// If the extension consumes the suffix budget, shorten the whole name.
 	// Keep ordinary extensions, but never sacrifice a legal collision suffix.
-	if len(utf16.Encode([]rune(suffix+ext))) >= 255 {
+	if filenameUnits(suffix+ext) >= 255 {
 		ext = ""
 	}
 	stem := strings.TrimSuffix(base, ext)
-	budget := 255 - len(utf16.Encode([]rune(suffix+ext)))
+	budget := 255 - filenameUnits(suffix+ext)
 	units := 0
 	for i, r := range stem {
-		units += utf16.RuneLen(r)
+		units += filenameRuneUnits(r)
 		if units > budget {
 			stem = stem[:i]
 			break
 		}
 	}
 	return filepath.Join(filepath.Dir(path), stem+suffix+ext)
+}
+
+func filenameUnits(name string) int {
+	if runtime.GOOS != "windows" {
+		return len(name)
+	}
+	return len(utf16.Encode([]rune(name)))
+}
+
+func filenameRuneUnits(r rune) int {
+	if runtime.GOOS != "windows" {
+		return utf8.RuneLen(r)
+	}
+	return utf16.RuneLen(r)
 }

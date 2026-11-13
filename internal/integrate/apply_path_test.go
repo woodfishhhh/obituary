@@ -3,6 +3,7 @@ package integrate
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -43,7 +44,7 @@ func TestApplyPinsParentForWrites(t *testing.T) {
 			if !attempted {
 				t.Fatalf("directory swap was not attempted: %v", err)
 			}
-			if swapped {
+			if runtime.GOOS == "windows" && swapped {
 				t.Fatalf("pinned parent allowed ancestor replacement: %v", err)
 			}
 			entries, readErr := os.ReadDir(filepath.Dir(outsideFile))
@@ -52,6 +53,20 @@ func TestApplyPinsParentForWrites(t *testing.T) {
 			}
 			if got, readErr := os.ReadFile(outsideFile); readErr != nil || string(got) != "old" || len(entries) != 2 || read(t, outsideFile+".bak") != "earlier backup" {
 				t.Fatalf("pinned install touched outside directory: Apply=%v read=%v contents=%q entries=%v", err, readErr, got, entries)
+			}
+			if runtime.GOOS != "windows" {
+				original := filepath.Join(root, "original", "config", "managed")
+				if !swapped || err == nil {
+					t.Fatalf("POSIX ancestor replacement must refuse: swapped=%v err=%v", swapped, err)
+				}
+				if action == "create" {
+					if _, err := os.Stat(original); !os.IsNotExist(err) {
+						t.Fatalf("refused creation wrote an original: %v", err)
+					}
+				} else if read(t, original) != "old" {
+					t.Fatal("refused installation changed the pinned original")
+				}
+				return
 			}
 			if err != nil {
 				t.Fatalf("pinned install did not finish in authorized directory: %v", err)

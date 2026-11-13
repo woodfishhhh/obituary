@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"path/filepath"
 	"strings"
@@ -13,7 +15,9 @@ func TestSharedApplyHoldsResourceLockThroughWrites(t *testing.T) {
 		t.Run(kind, func(t *testing.T) {
 			s := Scope{Project: t.TempDir()}
 			path := filepath.Join(s.Project, ".mcp.json")
-			planner := func(remove bool) ([]Change, error) { return PlanMCP(s, "claude", "C:/tools/obit.exe", remove) }
+			planner := func(remove bool) ([]Change, error) {
+				return PlanMCP(s, "claude", testenv.NativeFixture("C:/tools/obit.exe"), remove)
+			}
 			if kind == "rules" {
 				path = filepath.Join(s.Project, "AGENTS.md")
 				planner = func(remove bool) ([]Change, error) { return planSharedAgentRules(s, path, "hermes", remove) }
@@ -84,7 +88,7 @@ func TestSharedApplyRejectsInstallerDuringTransaction(t *testing.T) {
 			} else {
 				planner = func(owner string) ([]Change, error) {
 					a, _ := LookupAgent(owner)
-					return a.PlanMCP(s, "C:/tools/obit.exe", false)
+					return a.PlanMCP(s, testenv.NativeFixture("C:/tools/obit.exe"), false)
 				}
 			}
 			plan, err := planner(owner)

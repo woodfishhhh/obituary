@@ -59,7 +59,7 @@ jobs:
           if [ "$EVENT" != "push" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
             echo "package=true" >> "$GITHUB_OUTPUT"; exit 0
           fi
-          if git diff --name-only "$BEFORE" "$GITHUB_SHA" | grep -qE '^(\.goreleaser\.yaml|packaging/|scripts/|cmd/obit-gui/frontend/|cmd/[^/]+/resources\.go$|internal/tray/obituary\.ico$|\.github/workflows/|go\.(mod|sum)$|LICENSE$)'; then
+          if git diff --name-only "$BEFORE" "$GITHUB_SHA" | grep -qE '^(\.goreleaser\.yaml|install\.sh$|packaging/|scripts/|cmd/obit-gui/frontend/|cmd/[^/]+/resources\.go$|internal/tray/obituary\.ico$|\.github/workflows/|go\.(mod|sum)$|LICENSE$)'; then
             echo "package=true" >> "$GITHUB_OUTPUT"
           else
             echo "package=false" >> "$GITHUB_OUTPUT"
@@ -94,6 +94,13 @@ jobs:
           args: release --snapshot --clean --skip=publish
       - name: Verify Windows executable resources
         run: go run ./scripts/winres -check bin/release
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: posix-archives
+          if-no-files-found: error
+          path: |
+            bin/release/*.tar.gz
+            bin/release/checksums.txt
       - name: Finalize local channel manifests
         run: node scripts/finalize-manifests.mjs bin/release
       - name: Verify snapshot installer without changing user PATH
@@ -174,7 +181,7 @@ jobs:
           version: v2.15.0
           args: ${{ github.event_name == 'push' && format('--new-from-rev={0}', github.event.before) || '' }}
 
-  # The supported POSIX suites run whenever the Windows shards do.
+  # Run every package on both POSIX platforms whenever the Windows shards do.
   linux:
     needs: changes
     if: >-
@@ -189,15 +196,81 @@ jobs:
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: go.mod
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "22"
       - name: Build POSIX packages
         run: go build ./...
+      - name: Cross-build Linux ARM64
+        run: GOOS=linux GOARCH=arm64 go build ./cmd/...
       - name: POSIX tests
         env:
           TMPDIR: /tmp
+        run: go test ./...
+      - name: POSIX installation mutations
+        env:
+          OBIT_TEST_POSIX_MUTATIONS: "1"
+        run: go test -run '^TestPOSIXCommitMutations$' ./internal/integrate
+
+      - name: Native POSIX safety mutations
+        env:
+          OBIT_TEST_DELETE_MUTATIONS: "1"
+        run: go test -count=1 -run '^TestDeleteGuardMutations/native-posix-' ./internal/cli/remove
+
+  macos:
+    needs: changes
+    if: >-
+      github.event_name == 'push' || github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_dispatch' && inputs.full)
+    runs-on: macos-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "22"
+      - name: Build POSIX packages and both macOS architectures
         run: |
-          go test ./internal/winfs ./internal/pathutil ./internal/app ./internal/config ./internal/cli/daemon
-          # Native burial fixtures stay on Windows while POSIX moves are unsupported.
-          go test -run '^TestPOSIX' ./internal/core/... ./internal/auto ./internal/hook ./internal/integrate
+          go build ./...
+          GOOS=darwin GOARCH=amd64 go build ./cmd/obit ./cmd/obitd
+          GOOS=darwin GOARCH=arm64 go build ./cmd/obit ./cmd/obitd
+      - name: POSIX tests
+        run: go test ./...
+      - name: POSIX installation mutations
+        env:
+          OBIT_TEST_POSIX_MUTATIONS: "1"
+        run: go test -run '^TestPOSIXCommitMutations$' ./internal/integrate
+
+      - name: Native POSIX safety mutations
+        env:
+          OBIT_TEST_DELETE_MUTATIONS: "1"
+        run: go test -count=1 -run '^TestDeleteGuardMutations/native-posix-' ./internal/cli/remove
+
+  install-posix:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: posix-archives
+          path: ${{ runner.temp }}/posix-archives
+      - name: Install a verified snapshot and reject corrupt downloads
+        env:
+          OBIT_INSTALL_TEST_DIST: ${{ runner.temp }}/posix-archives
+        run: python3 scripts/install-sh.test.py
 
   # Every push and PR, and on demand: the four slowest areas each get a
   # runner; the wall time is the slowest shard instead of the sum. Keep

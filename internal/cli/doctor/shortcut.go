@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/woodfishhhh/obituary/internal/config"
@@ -20,6 +21,10 @@ func diagnoseDesktop(executable string, target func(string) (string, error)) Doc
 
 func diagnoseShortcutAt(executable string, place shortcut.Location, target func(string) (string, error)) DoctorCheck {
 	c := DoctorCheck{Name: string(place), Status: "WARN"}
+	if runtime.GOOS != "windows" {
+		c.Status, c.Detail = "INFO", "desktop shortcuts are provided by the Windows edition"
+		return c
+	}
 	paths, err := shortcut.Paths(place)
 	if err != nil {
 		c.Status, c.Detail = "FAIL", err.Error()
@@ -54,6 +59,12 @@ func diagnoseShortcutAt(executable string, place shortcut.Location, target func(
 func shortcutTarget(path string) (string, error) { return shortcut.ReadTarget(path) }
 
 func diagnoseIcons() []DoctorCheck {
+	if runtime.GOOS != "windows" {
+		return []DoctorCheck{
+			{Name: "tray-icon", Status: "INFO", Detail: "tray icon is provided by the Windows edition"},
+			{Name: "taskbar", Status: "INFO", Detail: "taskbar window is provided by the Windows edition"},
+		}
+	}
 	cfg, err := config.Load()
 	checks := []DoctorCheck{{Name: "tray-icon", Status: "PASS", Detail: "visible"}, {Name: "taskbar", Status: "PASS", Detail: "visible"}}
 	if !cfg.UI.Tray {

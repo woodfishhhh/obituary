@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"encoding/json"
@@ -83,7 +85,7 @@ func TestWorkBuddyInstallationLifecycle(t *testing.T) {
 						untouched = append(untouched, sentinel)
 					}
 				}
-				executable := `C:\工具 first\obit.exe`
+				executable := testenv.NativeFixture(`C:\工具 first\obit.exe`)
 				plan := workBuddyPlan(t, f, executable, false)
 				if !Pending(plan) || read(t, path) != original {
 					t.Fatal("planning changed configuration or produced no changes")
@@ -116,7 +118,7 @@ func TestWorkBuddyInstallationLifecycle(t *testing.T) {
 				if err := Apply(plan); err != nil || read(t, path) != installed {
 					t.Fatal("idempotent apply changed bytes", err)
 				}
-				executable = `C:\工具 next\obit.exe`
+				executable = testenv.NativeFixture(`C:\工具 next\obit.exe`)
 				plan = workBuddyPlan(t, f, executable, false)
 				if !Pending(plan) {
 					t.Fatal("executable change was not detected")
@@ -187,7 +189,7 @@ func TestWorkBuddyCapabilitiesAndExportScope(t *testing.T) {
 		t.Fatal("unsupported guard needs explicit manual guidance", changes, err)
 	}
 	f.scope.GuardRM = false
-	for _, change := range workBuddyPlan(t, f, `C:\tools\obit.exe`, false) {
+	for _, change := range workBuddyPlan(t, f, testenv.NativeFixture(`C:\tools\obit.exe`), false) {
 		root := f.root
 		if change.relocated != nil {
 			root = filepath.Dir(testAssetReceiptPath(t, filepath.Join(f.root, "unused")))
@@ -204,14 +206,14 @@ func TestWorkBuddyCapabilitiesAndExportScope(t *testing.T) {
 		if _, err := PlanWorkBuddy(scope, Commands{}, false); err == nil {
 			t.Fatal("relative project accepted")
 		}
-		if _, err := PlanWorkBuddyMCP(scope, `C:\tools\obit.exe`, false); err == nil {
+		if _, err := PlanWorkBuddyMCP(scope, testenv.NativeFixture(`C:\tools\obit.exe`), false); err == nil {
 			t.Fatal("relative MCP project accepted")
 		}
 		if _, err := PlanWorkBuddySkill(scope, false); err == nil {
 			t.Fatal("relative skill project accepted")
 		}
 	}
-	for _, exe := range []string{"obit.exe", "relative/obit.exe", `C:\tools\other.exe`} {
+	for _, exe := range []string{"obit.exe", "relative/obit.exe", testenv.NativeFixture(`C:\tools\other.exe`)} {
 		if _, err := PlanWorkBuddyMCP(f.scope, exe, false); err == nil {
 			t.Fatal("unfixed or unowned executable accepted", exe)
 		}
@@ -224,7 +226,7 @@ func TestWorkBuddyMCPRejectsInvalidConfiguration(t *testing.T) {
 			f := newWorkBuddyFixture(t, false)
 			path := filepath.Join(f.root, "mcp.json")
 			writeIntegrationFile(t, path, content)
-			if _, err := PlanWorkBuddyMCP(f.scope, `C:\tools\obit.exe`, false); err == nil {
+			if _, err := PlanWorkBuddyMCP(f.scope, testenv.NativeFixture(`C:\tools\obit.exe`), false); err == nil {
 				t.Fatal("invalid config accepted")
 			}
 			changes, err := PlanWorkBuddyMCP(f.scope, "", true)
@@ -240,7 +242,7 @@ func TestWorkBuddyMCPRejectsInvalidConfiguration(t *testing.T) {
 
 func TestWorkBuddyMCPFreshInstall(t *testing.T) {
 	f := newWorkBuddyFixture(t, false)
-	changes, err := PlanWorkBuddyMCP(f.scope, `C:\tools\obit.exe`, false)
+	changes, err := PlanWorkBuddyMCP(f.scope, testenv.NativeFixture(`C:\tools\obit.exe`), false)
 	applyIntegration(t, changes, err)
 	data := read(t, filepath.Join(f.root, "mcp.json"))
 	if strings.HasPrefix(data, "\xef\xbb\xbf") || !strings.Contains(data, `"obituary"`) || strings.Contains(data, `"type"`) {
@@ -259,7 +261,7 @@ func TestWorkBuddyPreservesEditedAndUnownedExports(t *testing.T) {
 				f := newWorkBuddyFixture(t, false)
 				path := filepath.Join(f.root, "obituary-export", filename)
 				if owned {
-					if err := Apply(workBuddyPlan(t, f, `C:\tools\obit.exe`, false)); err != nil {
+					if err := Apply(workBuddyPlan(t, f, testenv.NativeFixture(`C:\tools\obit.exe`), false)); err != nil {
 						t.Fatal(err)
 					}
 				}
@@ -287,7 +289,7 @@ func TestWorkBuddyRefusesChangedPlan(t *testing.T) {
 	for _, name := range []string{"mcp.json", filepath.Join("obituary-export", "SKILL.md")} {
 		t.Run(name, func(t *testing.T) {
 			f := newWorkBuddyFixture(t, false)
-			plan := workBuddyPlan(t, f, `C:\tools\obit.exe`, false)
+			plan := workBuddyPlan(t, f, testenv.NativeFixture(`C:\tools\obit.exe`), false)
 			path := filepath.Join(f.root, name)
 			writeIntegrationFile(t, path, "concurrent user edit")
 			if err := Apply(plan); err == nil {
@@ -315,7 +317,7 @@ func TestWorkBuddyRefusesJunctions(t *testing.T) {
 				writeIntegrationFile(t, filepath.Join(outside, "mcp.json"), `{"keep":true}`)
 				var plan []Change
 				if link == "late-root" {
-					plan = workBuddyPlan(t, f, `C:\tools\obit.exe`, false)
+					plan = workBuddyPlan(t, f, testenv.NativeFixture(`C:\tools\obit.exe`), false)
 				}
 				path := f.root
 				if link == "export" {
@@ -338,7 +340,7 @@ func TestWorkBuddyRefusesJunctions(t *testing.T) {
 							t.Fatal("skill junction accepted")
 						}
 						if link == "root" {
-							if _, err := PlanWorkBuddyMCP(f.scope, `C:\tools\obit.exe`, uninstall); err == nil {
+							if _, err := PlanWorkBuddyMCP(f.scope, testenv.NativeFixture(`C:\tools\obit.exe`), uninstall); err == nil {
 								t.Fatal("MCP junction accepted")
 							}
 						}

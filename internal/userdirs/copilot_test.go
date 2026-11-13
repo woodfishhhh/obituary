@@ -15,7 +15,7 @@ func TestCopilotDirectory(t *testing.T) {
 		t.Fatalf("default: %q %v", got, err)
 	}
 	custom := filepath.Join(t.TempDir(), "custom")
-	for _, value := range []string{custom, `\\?\` + custom} {
+	for _, value := range nativeDirectorySpellings([]string{custom, `\\?\` + custom}) {
 		t.Setenv("COPILOT_HOME", value)
 		got, err := CopilotDir()
 		if err != nil || got != custom {
@@ -25,12 +25,18 @@ func TestCopilotDirectory(t *testing.T) {
 	if _, err := os.Stat(custom); !os.IsNotExist(err) {
 		t.Fatal("resolver created directory", err)
 	}
-	t.Setenv("COPILOT_HOME", `\\?\`+custom+`.\child`)
-	if path, err := CopilotDir(); err == nil {
-		t.Fatal("unstable prefix accepted", path)
-	}
-	t.Setenv("COPILOT_HOME", custom+":stream")
-	if path, err := CopilotDir(); err == nil {
-		t.Fatal("ADS accepted", path)
-	}
+	t.Run("windows-path-spelling", func(t *testing.T) {
+		windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+		t.Setenv("COPILOT_HOME", `\\?\`+custom+`.\child`)
+		if path, err := CopilotDir(); err == nil {
+			t.Fatal("unstable prefix accepted", path)
+		}
+	})
+	t.Run("windows-path-spelling", func(t *testing.T) {
+		windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+		t.Setenv("COPILOT_HOME", custom+":stream")
+		if path, err := CopilotDir(); err == nil {
+			t.Fatal("ADS accepted", path)
+		}
+	})
 }

@@ -1,5 +1,7 @@
 package doctor
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"encoding/json"
 	"errors"
@@ -7,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -92,7 +95,11 @@ func TestDoctorSummarizesUninstalledAgents(t *testing.T) {
 	want := fmt.Sprintf("另有 %d 家 agent 可接入：obit init --show 查看", len(initcmd.AgentNames())-2)
 	rows := diagnose(time.Now(), executable)
 	last := rows[len(rows)-1]
-	if len(rows) != 33 || last.Status != "INFO" || last.Detail != want {
+	wantRows := 33
+	if runtime.GOOS != "windows" {
+		wantRows++ // POSIX reports its automatic-burial capability separately.
+	}
+	if len(rows) != wantRows || last.Status != "INFO" || last.Detail != want {
 		t.Fatalf("inventory summary: %+v", rows)
 	}
 	if check := checks["registration-identities"]; check.Status != "PASS" || check.Errors != 0 {
@@ -146,7 +153,7 @@ func TestDoctorExtraAgentLifecycle(t *testing.T) {
 	if !strings.Contains(string(data), filepath.ToSlash(self)) {
 		t.Fatalf("installed hook does not name %s: %s", self, data)
 	}
-	clitest.WriteFixture(t, path, strings.ReplaceAll(string(data), filepath.ToSlash(self), "C:/old/obit.exe"))
+	clitest.WriteFixture(t, path, strings.ReplaceAll(string(data), filepath.ToSlash(self), testenv.NativeFixture("C:/old/obit.exe")))
 	check("WARN", "outdated")
 	if err := os.Remove(path); err != nil {
 		t.Fatal(err)
@@ -173,7 +180,7 @@ func TestDoctorFindsExtraAgentInstallationTraces(t *testing.T) {
 		status      string
 	}{
 		{"hook entry", "gemini", func(t *testing.T, root string, executable cmdutil.Executable) {
-			clitest.WriteFixture(t, filepath.Join(root, "home", ".gemini", "settings.json"), `{"hooks":{"AfterTool":[{"hooks":[{"type":"command","command":"C:/old/obit.exe hook gemini --event AfterTool"}]}]}}`)
+			clitest.WriteFixture(t, filepath.Join(root, "home", ".gemini", "settings.json"), testenv.NativeFixture(`{"hooks":{"AfterTool":[{"hooks":[{"type":"command","command":"C:/old/obit.exe hook gemini --event AfterTool"}]}]}}`))
 		}, "WARN"},
 		{"rule marker", "gemini", func(t *testing.T, root string, executable cmdutil.Executable) {
 			clitest.WriteFixture(t, filepath.Join(root, "home", ".gemini", "GEMINI.md"), "<!-- obit:begin (managed by `obit init`; edits here are replaced) -->\nold instructions\n<!-- obit:end -->\n")

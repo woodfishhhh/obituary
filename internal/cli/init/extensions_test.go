@@ -42,7 +42,7 @@ func TestInitImplicitExtensionFailureKeepsHooks(t *testing.T) {
 					testenv.FakeClaude(t)
 					t.Setenv("OBIT_FAKE_CLAUDE_MODE", "fail")
 					path = filepath.Join(root, "claude", ".claude.json")
-					before = `{"mcpServers":{"obituary":{"type":"stdio","command":"C:/old/obit.exe","args":["mcp"]}}}`
+					before = testenv.NativeFixture(`{"mcpServers":{"obituary":{"type":"stdio","command":"C:/old/obit.exe","args":["mcp"]}}}`)
 				}
 				clitest.WriteFixture(t, path, before)
 			}
@@ -137,7 +137,7 @@ func TestInitClaudeRefreshRequiresExplicitMCP(t *testing.T) {
 	root, executable := clitest.DoctorFixture(t)
 	_, log := testenv.FakeClaude(t)
 	path := filepath.Join(root, "claude", ".claude.json")
-	before := `{"mcpServers":{"obituary":{"command":"C:/old/obit.exe","args":["mcp"],"env":{"OBIT_HOME":"D:/ledger"}}}}`
+	before := testenv.NativeFixture(`{"mcpServers":{"obituary":{"command":"C:/old/obit.exe","args":["mcp"],"env":{"OBIT_HOME":"D:/ledger"}}}}`)
 	clitest.WriteFixture(t, path, before)
 	out, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "-g", "--yes")
 	data, readErr := os.ReadFile(path)

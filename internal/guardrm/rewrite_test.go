@@ -3,6 +3,7 @@ package guardrm
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -42,6 +43,9 @@ func TestSuggestDecisionBoundaries(t *testing.T) {
 		{"explicit-executable", "rm  -- 'keep 文字'", "'/c/Program Files/obit.exe' rm  -- 'keep 文字'", "", Context{Shell: Bash, Executable: "'/c/Program Files/obit.exe'"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			if runtime.GOOS != "windows" && strings.HasPrefix(tc.name, "cmd-") {
+				tc.why = "cmd deletion switches"
+			}
 			got, why := Suggest(tc.command, tc.context)
 			if got != tc.want || why != tc.why {
 				t.Fatalf("decision = (%q, %q), want (%q, %q)", got, why, tc.want, tc.why)

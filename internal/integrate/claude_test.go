@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"encoding/json"
 	"fmt"
@@ -53,7 +55,7 @@ func TestInstallKeepsTheUsersSettingsAndIsIdempotent(t *testing.T) {
 		t.Fatalf("CLAUDE.md: %q", md)
 	}
 
-	again, err := PlanClaude(scope, `"C:/tools/obit.exe" hook claude`, false)
+	again, err := PlanClaude(scope, testenv.NativeFixture(`"C:/tools/obit.exe" hook claude`), false)
 	if err != nil || Pending(again) {
 		t.Fatalf("a second install must change nothing, got %+v %v", again, err)
 	}
@@ -62,9 +64,9 @@ func TestInstallKeepsTheUsersSettingsAndIsIdempotent(t *testing.T) {
 func TestClaudePowerShellGuardRefresh(t *testing.T) {
 	dir, scope := setup(t)
 	path := filepath.Join(dir, "settings.json")
-	old := `{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"C:/tools/obit.exe hook claude"}]},{"matcher":"PowerShell","hooks":[{"type":"command","command":"user-hook"}]}]}}`
+	old := testenv.NativeFixture(`{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"C:/tools/obit.exe hook claude"}]},{"matcher":"PowerShell","hooks":[{"type":"command","command":"user-hook"}]}]}}`)
 	writeIntegrationFile(t, path, old)
-	changes, err := PlanClaude(scope, "C:/tools/obit.exe hook claude", false)
+	changes, err := PlanClaude(scope, testenv.NativeFixture("C:/tools/obit.exe hook claude"), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +81,7 @@ func TestClaudePowerShellGuardRefresh(t *testing.T) {
 	if !strings.Contains(got, `"matcher": ".*"`) || !strings.Contains(got, "user-hook") {
 		t.Fatalf("PowerShell matcher missing or user hook lost: %s", got)
 	}
-	again, err := PlanClaude(scope, "C:/tools/obit.exe hook claude", false)
+	again, err := PlanClaude(scope, testenv.NativeFixture("C:/tools/obit.exe hook claude"), false)
 	if err != nil || Pending(again) || !GuardRMInstalled(again, "claude") {
 		t.Fatalf("refresh not current: %+v %v", again, err)
 	}
@@ -91,10 +93,10 @@ func TestClaudePowerShellGuardRefresh(t *testing.T) {
 func TestClaudeExecMigratesLegacyAndPreservesForeignArguments(t *testing.T) {
 	dir, scope := setup(t)
 	path := filepath.Join(dir, "settings.json")
-	foreign := `{"type":"command","command":"C:/tools/obit.exe hook claude","args":["--help"]}`
-	original := `{"hooks":{"PreToolUse":[{"matcher":"Bash|PowerShell","hooks":[{"type":"command","command":"C:/old/obit.exe hook claude"},` + foreign + `]}]}}`
+	foreign := testenv.NativeFixture(`{"type":"command","command":"C:/tools/obit.exe hook claude","args":["--help"]}`)
+	original := testenv.NativeFixture(`{"hooks":{"PreToolUse":[{"matcher":"Bash|PowerShell","hooks":[{"type":"command","command":"C:/old/obit.exe hook claude"},`) + foreign + `]}]}}`
 	writeIntegrationFile(t, path, original)
-	plan, err := PlanClaudeExec(scope, "C:/new folder/obit.exe", false)
+	plan, err := PlanClaudeExec(scope, testenv.NativeFixture("C:/new folder/obit.exe"), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,19 +104,19 @@ func TestClaudeExecMigratesLegacyAndPreservesForeignArguments(t *testing.T) {
 		t.Fatal("legacy inspection changed configuration")
 	}
 	applyIntegration(t, plan, nil)
-	if strings.Contains(read(t, path), "C:/old") || !strings.Contains(read(t, path), "--help") {
+	if strings.Contains(read(t, path), testenv.NativeFixture("C:/old")) || !strings.Contains(read(t, path), "--help") {
 		t.Fatal("migration or ownership failed")
 	}
-	plan, err = PlanClaudeExec(scope, "C:/new folder/obit.exe", false)
+	plan, err = PlanClaudeExec(scope, testenv.NativeFixture("C:/new folder/obit.exe"), false)
 	if err != nil || Pending(plan) || !GuardRMInstalled(plan, "claude") {
 		t.Fatalf("exec installation not current: %+v %v", plan, err)
 	}
-	plan, err = PlanClaudeExec(scope, "C:/new folder/obit.exe", true)
+	plan, err = PlanClaudeExec(scope, testenv.NativeFixture("C:/new folder/obit.exe"), true)
 	applyIntegration(t, plan, err)
-	if !strings.Contains(read(t, path), "--help") || strings.Contains(read(t, path), "C:/new") {
+	if !strings.Contains(read(t, path), "--help") || strings.Contains(read(t, path), testenv.NativeFixture("C:/new")) {
 		t.Fatal("foreign argv removed")
 	}
-	plan, err = PlanClaudeExec(scope, "C:/new folder/obit.exe", true)
+	plan, err = PlanClaudeExec(scope, testenv.NativeFixture("C:/new folder/obit.exe"), true)
 	if err != nil || GuardRMInstalled(plan, "claude") {
 		t.Fatal("foreign argv reported as installed guard")
 	}
@@ -144,7 +146,7 @@ func TestBrokenSettingsAreLeftUntouched(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "settings.json"), []byte(broken), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := PlanClaude(scope, "C:/tools/obit.exe hook claude", false); err == nil {
+	if _, err := PlanClaude(scope, testenv.NativeFixture("C:/tools/obit.exe hook claude"), false); err == nil {
 		t.Fatal("invalid JSON must be refused")
 	}
 	if read(t, filepath.Join(dir, "settings.json")) != broken {
@@ -155,7 +157,7 @@ func TestBrokenSettingsAreLeftUntouched(t *testing.T) {
 func TestReinstallRefreshesAStaleCommandWithoutDuplicates(t *testing.T) {
 	dir, scope := setup(t)
 	install(t, scope, false)
-	changes, err := PlanClaude(scope, `"D:/moved/obit.exe" hook claude`, false)
+	changes, err := PlanClaude(scope, testenv.NativeFixture(`"D:/moved/obit.exe" hook claude`), false)
 	if err != nil || !Pending(changes) {
 		t.Fatalf("a moved binary must be noticed, got %+v %v", changes, err)
 	}
@@ -163,7 +165,7 @@ func TestReinstallRefreshesAStaleCommandWithoutDuplicates(t *testing.T) {
 		t.Fatal(err)
 	}
 	settings := read(t, filepath.Join(dir, "settings.json"))
-	if strings.Contains(settings, "C:/tools/obit.exe") || strings.Count(settings, "D:/moved/obit.exe") != 5 {
+	if strings.Contains(settings, testenv.NativeFixture("C:/tools/obit.exe")) || strings.Count(settings, testenv.NativeFixture("D:/moved/obit.exe")) != 5 {
 		t.Fatalf("want exactly the five refreshed handlers:\n%s", settings)
 	}
 }
@@ -195,7 +197,7 @@ func TestMultilineUserHooksSurviveInstallAndUninstall(t *testing.T) {
 				command := "notify-me" + newline + "/mnt/d/tools/obit.exe hook " + agent
 				path := filepath.Join(dir, "settings.json")
 				plan := func(uninstall bool) ([]Change, error) {
-					return PlanClaude(Scope{Global: true}, "C:/tools/obit.exe hook claude", uninstall)
+					return PlanClaude(Scope{Global: true}, testenv.NativeFixture("C:/tools/obit.exe hook claude"), uninstall)
 				}
 				if agent == "codex" {
 					path = filepath.Join(dir, "hooks.json")
@@ -244,10 +246,10 @@ func TestAForeignOBITmdIsNeverReplaced(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "OBIT.md"), []byte(mine), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := PlanClaude(scope, "C:/tools/obit.exe hook claude", false); err == nil {
+	if _, err := PlanClaude(scope, testenv.NativeFixture("C:/tools/obit.exe hook claude"), false); err == nil {
 		t.Fatal("installing over someone else's OBIT.md must be refused")
 	}
-	if changes, err := PlanClaude(scope, "C:/tools/obit.exe hook claude", true); err != nil || Apply(changes) != nil {
+	if changes, err := PlanClaude(scope, testenv.NativeFixture("C:/tools/obit.exe hook claude"), true); err != nil || Apply(changes) != nil {
 		t.Fatalf("uninstall: %v", err)
 	}
 	if read(t, filepath.Join(dir, "OBIT.md")) != mine {
@@ -270,7 +272,7 @@ func TestTheOriginalBackupSurvivesReinstalls(t *testing.T) {
 
 func TestApplyRefusesAFileChangedAfterPlanning(t *testing.T) {
 	dir, scope := setup(t)
-	changes, err := PlanClaude(scope, "C:/tools/obit.exe hook claude", false)
+	changes, err := PlanClaude(scope, testenv.NativeFixture("C:/tools/obit.exe hook claude"), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -316,7 +318,7 @@ func TestTrailingDataAfterTheJSONIsRejected(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "settings.json"), []byte(`{"a":1}{"b":2}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := PlanClaude(scope, "C:/tools/obit.exe hook claude", false); err == nil {
+	if _, err := PlanClaude(scope, testenv.NativeFixture("C:/tools/obit.exe hook claude"), false); err == nil {
 		t.Fatal("two concatenated objects are not a settings file to rewrite")
 	}
 }
@@ -328,7 +330,7 @@ func TestClaudeFailureKeepsAwarenessDependencies(t *testing.T) {
 			if uninstall {
 				install(t, scope, false)
 			}
-			changes, err := PlanClaude(scope, "C:/tools/obit.exe hook claude", uninstall)
+			changes, err := PlanClaude(scope, testenv.NativeFixture("C:/tools/obit.exe hook claude"), uninstall)
 			if err != nil {
 				t.Fatal(err)
 			}

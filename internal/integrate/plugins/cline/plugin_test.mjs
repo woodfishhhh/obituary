@@ -1,3 +1,4 @@
+import { nativePath } from "../bridge/native-fixture.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -10,7 +11,7 @@ const env = { OBIT_CLINE_LOCAL_SHELL: "powershell" };
 const sandbox = vm.createContext({ Buffer, process: { env }, Date });
 const cp = new vm.SyntheticModule(["execFile"], function () {
   this.setExport("execFile", (exe, args, options, callback) => {
-    assert.equal(exe, "C:\\Program Files\\obit.exe");
+    assert.equal(exe, nativePath("C:\\Program Files\\obit.exe"));
     assert.deepEqual(Array.from(args), ["hook", "cline"]);
     assert.equal(options.shell, false); assert.equal(options.windowsHide, true);
     assert.ok(options.timeout <= 1500); assert.equal(options.maxBuffer, 16384);
@@ -27,7 +28,7 @@ await module.evaluate();
 const plugin = module.namespace.default;
 assert.equal(plugin.name, "obituary");
 let dispose;
-plugin.setup({}, { cwd: "C:\\repo", session: { sessionId: "stable" }, onDispose(fn) { dispose = fn; } });
+plugin.setup({}, { cwd: nativePath("C:\\repo"), session: { sessionId: "stable" }, onDispose(fn) { dispose = fn; } });
 const input = { commands: ["Remove-Item -LiteralPath scratch.log", { command: "rm", args: ["x"] }] };
 let result = await plugin.hooks.beforeTool({ tool: { name: "run_commands" }, input });
 assert.equal(result.skip, true); assert.equal(result.reason, reply.reason);

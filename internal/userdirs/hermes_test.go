@@ -47,6 +47,8 @@ func TestHermesDir(t *testing.T) {
 }
 
 func TestHermesDirRejectsUnstablePrefixes(t *testing.T) {
+	windowsDirectoryTest(t, "Win32 extended names, alternate streams, and trailing-dot normalization")
+
 	t.Setenv("HERMES_DATA_DIR_SUFFIX", "")
 	for _, variable := range []string{"HERMES_HOME", "LOCALAPPDATA", "OBIT_USER_HOME"} {
 		t.Run(variable, func(t *testing.T) {

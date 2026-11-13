@@ -53,6 +53,10 @@ func (s *Service) observePurge(b Burial, selected bool) purgeObservation {
 // decidePurge only classifies observations. It cannot alter a grave or ledger.
 func decidePurge(b Burial, selected bool, observed purgeObservation) purgeDecision {
 	decision := purgeDecision{dir: observed.dir}
+	if b.IdentityMismatch != "" {
+		decision.detail = b.IdentityMismatch
+		return decision
+	}
 	if err := observed.graveErr; err != nil && !errors.Is(err, ErrNotFound) {
 		decision.detail = "refusing to purge: " + err.Error()
 		return decision

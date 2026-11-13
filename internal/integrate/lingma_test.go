@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"os"
 	"path/filepath"
@@ -47,7 +49,7 @@ func TestLingmaInstallerLifecycle(t *testing.T) {
 func TestLingmaMCPManualAndIndependentRoots(t *testing.T) {
 	s, dir := qoderTestScope(t, "lingma", false)
 	for _, uninstall := range []bool{false, true} {
-		if p, err := PlanLingmaMCP(s, "C:/tools/obit.exe", uninstall); err == nil || len(p) != 0 || !strings.Contains(err.Error(), "MCP") {
+		if p, err := PlanLingmaMCP(s, testenv.NativeFixture("C:/tools/obit.exe"), uninstall); err == nil || len(p) != 0 || !strings.Contains(err.Error(), "MCP") {
 			t.Fatal("unverified MCP pretended installed", p, err)
 		}
 	}

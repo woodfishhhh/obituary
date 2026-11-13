@@ -1,10 +1,13 @@
 package hook
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -41,7 +44,7 @@ func TestQoderProtocol(t *testing.T) {
 			for _, tool := range []string{"Write", "Edit", "create_file", "search_replace", "edit_file"} {
 				in["tool_name"] = tool
 				ev := cGroupDecode(t, agent, in, "PostToolUse")
-				if len(ev.Paths) != 1 || filepath.ToSlash(ev.Paths[0]) != "C:/repo/debug.log" || !ev.DeferContext || ev.Tool != tool {
+				if len(ev.Paths) != 1 || filepath.ToSlash(ev.Paths[0]) != testenv.NativeFixture("C:/repo/debug.log") || !ev.DeferContext || ev.Tool != tool {
 					t.Fatalf("write %s: %+v", tool, ev)
 				}
 			}
@@ -52,7 +55,11 @@ func TestQoderProtocol(t *testing.T) {
 				}
 			}
 			in["hook_event_name"] = "PostToolUse"
-			for _, path := range []string{"", "relative.log", "/home/remote/debug.log", "ssh://host/debug.log", "C:/repo/file:stream", `\\?\C:\repo.\file`} {
+			invalid := []string{"", "relative.log", testenv.ForeignFixture("/home/remote/debug.log"), "ssh://host/debug.log"}
+			if runtime.GOOS == "windows" {
+				invalid = append(invalid, "C:/repo/file:stream", `\\?\C:\repo.\file`)
+			}
+			for _, path := range invalid {
 				in["tool_input"] = map[string]any{"file_path": path}
 				if _, err := Decode(agent.Adapter, cGroupRaw(t, in), Invocation{Agent: name}); err == nil {
 					t.Fatalf("accepted remote/missing path %q", path)

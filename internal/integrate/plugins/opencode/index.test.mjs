@@ -1,3 +1,4 @@
+import { nativePath } from "../bridge/native-fixture.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { plugin, fixture } from "../bridge/testing.mjs";
@@ -11,12 +12,12 @@ test("OpenCode V2 rejects via Tool.Error outside transport catch", async () => {
   const f = fixture("opencode");
   f.options.ToolError = ToolError;
   const tool = {}, session = {};
-  await plugin.createOpenCode(f.options).setup({ location: { directory: "C:\\repo" }, tool: { hook(n, cb) { tool[n] = cb; } }, session: { hook(n, cb) { session[n] = cb; } } });
+  await plugin.createOpenCode(f.options).setup({ location: { directory: nativePath("C:\\repo") }, tool: { hook(n, cb) { tool[n] = cb; } }, session: { hook(n, cb) { session[n] = cb; } } });
   const event = { tool: "bash", sessionID: "s", input: { command: "rm a" } };
   f.reply({ version: 1, deny: true, reason: "obit rm a" });
   await assert.rejects(tool["execute.before"](event), e => e._tag === "Tool.Error" && e.message === "obit rm a");
   assert.equal(event.input.command, "rm a");
-  assert.equal(f.calls[0].cwd, "C:\\repo");
+  assert.equal(f.calls[0].cwd, nativePath("C:\\repo"));
   f.reply("bad json");
   await tool["execute.before"](event);
   f.fail(new Error("timeout"));
@@ -40,7 +41,7 @@ test("OpenCode V1 preserves arguments and model-visible output", async () => {
   const f = fixture("opencode"), p = plugin.createOpenCode(f.options);
   assert.equal(typeof p, "object");
   assert.equal(p.id, "obituary");
-  const hooks = await p.server({ directory: "C:\\repo" });
+  const hooks = await p.server({ directory: nativePath("C:\\repo") });
   const event = { tool: "bash", sessionID: "s" }, output = { args: { command: "rm a" } };
   f.reply({ version: 1, deny: true, reason: "obit rm a" });
   await assert.rejects(hooks["tool.execute.before"](event, output), /obit rm a/);
@@ -58,7 +59,7 @@ test("OpenCode V1 preserves arguments and model-visible output", async () => {
 test("OpenCode ignores tool-claimed locality and guard defaults off", async () => {
   const f = fixture("opencode");
   f.options.env = {};
-  const hooks = await plugin.createOpenCode(f.options).server({ directory: "C:\\repo" });
+  const hooks = await plugin.createOpenCode(f.options).server({ directory: nativePath("C:\\repo") });
   await hooks["tool.execute.before"]({ tool: "bash" }, { args: { command: "rm a", local: true, shell: "bash" } });
   assert.equal(f.calls[0].local, false);
   assert.equal(f.calls[0].shell, "");

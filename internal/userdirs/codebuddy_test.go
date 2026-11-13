@@ -17,7 +17,7 @@ func TestCodeBuddyDirectories(t *testing.T) {
 		}
 	}
 	custom := filepath.Join(t.TempDir(), "custom")
-	for _, override := range []string{custom, `\\?\` + custom} {
+	for _, override := range nativeDirectorySpellings([]string{custom, `\\?\` + custom}) {
 		t.Setenv("CODEBUDDY_CONFIG_DIR", override)
 		got, err := CodeBuddyDir()
 		if err != nil || got != custom {
@@ -35,7 +35,7 @@ func TestCodeBuddyDirectories(t *testing.T) {
 	if _, err := os.Stat(custom); !os.IsNotExist(err) {
 		t.Fatal("resolver wrote a directory", err)
 	}
-	for _, value := range []string{custom + ":stream", `\\?\` + custom + `.\child`} {
+	for _, value := range nativeDirectorySpellings([]string{custom + ":stream", `\\?\` + custom + `.\child`}) {
 		t.Setenv("CODEBUDDY_CONFIG_DIR", value)
 		if got, err := CodeBuddyDir(); err == nil {
 			t.Fatal("unsafe override accepted", got)

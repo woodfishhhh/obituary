@@ -4,15 +4,16 @@ package winfs
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"golang.org/x/sys/unix"
 )
 
-func (FS) ObserveWatch(path string, hold bool) (corefs.WatchSnapshot, func(), error) {
+func (fs FS) ObserveWatch(path string, hold bool) (corefs.WatchSnapshot, func(), error) {
 	if hold {
-		return corefs.WatchSnapshot{}, nil, unsupportedMove()
+		return corefs.WatchSnapshot{}, nil, fmt.Errorf("excluding concurrent writers is unavailable; watch entry retained: %w", corefs.ErrUnsupported)
 	}
 	fd, err := unix.Open(path, unix.O_RDONLY|unix.O_CLOEXEC|unix.O_NOFOLLOW|unix.O_NONBLOCK, 0)
 	if errors.Is(err, unix.ELOOP) {
@@ -22,8 +23,8 @@ func (FS) ObserveWatch(path string, hold bool) (corefs.WatchSnapshot, func(), er
 		return corefs.WatchSnapshot{}, nil, err
 	}
 	release := func() { _ = unix.Close(fd) }
-	var stat unix.Stat_t
-	if err := unix.Fstat(fd, &stat); err != nil {
+	stat, err := fs.statAt(fd, "")
+	if err != nil {
 		release()
 		return corefs.WatchSnapshot{}, nil, err
 	}

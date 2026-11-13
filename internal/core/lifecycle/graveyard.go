@@ -186,6 +186,16 @@ func burialVolume(b Burial) *Identity {
 // hold nothing but the buried object, and that object must be the one buried.
 // A tampered or stale ledger therefore cannot aim either at anything else.
 func (s *Service) verifyGrave(b Burial) (string, error) {
+	if b.IdentityMismatch != "" {
+		return "", fmt.Errorf("#%d: identity mismatch; never purge: %s: %w", b.ID, b.IdentityMismatch, ErrUnsafe)
+	}
+	for _, id := range []*Identity{b.Identity, b.GraveID} {
+		if id != nil {
+			if err := id.RequirePersistent(); err != nil {
+				return "", err
+			}
+		}
+	}
 	dir, err := s.graveDir(b)
 	if err != nil {
 		return "", err

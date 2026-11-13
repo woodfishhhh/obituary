@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"encoding/json"
 	"strings"
@@ -25,7 +27,7 @@ func TestGeminiPreservesCommentedSettingsAcrossHookAndMCPEdits(t *testing.T) {
 	if err := Apply(plan); err != nil {
 		t.Fatal(err)
 	}
-	plan, err = PlanGeminiMCP(f.scope, "C:/tools/obit.exe", false)
+	plan, err = PlanGeminiMCP(f.scope, testenv.NativeFixture("C:/tools/obit.exe"), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +84,7 @@ func TestGeminiPreservesCommentedSettingsAcrossHookAndMCPEdits(t *testing.T) {
 	if !strings.Contains(read(t, f.hookPath), "mcpServers") {
 		t.Fatal("hook removal deleted MCP")
 	}
-	plan, err = PlanGeminiMCP(f.scope, "C:/tools/obit.exe", true)
+	plan, err = PlanGeminiMCP(f.scope, testenv.NativeFixture("C:/tools/obit.exe"), true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +99,7 @@ func TestGeminiPreservesCommentedSettingsAcrossHookAndMCPEdits(t *testing.T) {
 func TestGeminiMCPPlanDoesNotOverwriteNewHookConfiguration(t *testing.T) {
 	f := newNativeJSONInstallFixture(t, "gemini", false)
 	writeIntegrationFile(t, f.hookPath, f.userConfig)
-	stale, err := PlanGeminiMCP(f.scope, "C:/tools/obit.exe", false)
+	stale, err := PlanGeminiMCP(f.scope, testenv.NativeFixture("C:/tools/obit.exe"), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,7 +125,7 @@ func TestNativeMCPConfigBoundaries(t *testing.T) {
 			for _, invalid := range []string{"", "\xef\xbb\xbf", "{", "[]"} {
 				f := newNativeJSONInstallFixture(t, name, false)
 				writeIntegrationFile(t, f.mcpPath, invalid)
-				if _, err := f.agent.PlanMCP(f.scope, "C:/tools/obit.exe", false); err == nil {
+				if _, err := f.agent.PlanMCP(f.scope, testenv.NativeFixture("C:/tools/obit.exe"), false); err == nil {
 					t.Fatal("invalid MCP accepted", invalid)
 				}
 				if read(t, f.mcpPath) != invalid {
@@ -132,7 +134,7 @@ func TestNativeMCPConfigBoundaries(t *testing.T) {
 			}
 			f := newNativeJSONInstallFixture(t, name, false)
 			writeIntegrationFile(t, f.mcpPath, `{"mcpServers":{}}`)
-			plan, err := f.agent.PlanMCP(f.scope, "C:/tools/obit.exe", false)
+			plan, err := f.agent.PlanMCP(f.scope, testenv.NativeFixture("C:/tools/obit.exe"), false)
 			if err != nil {
 				t.Fatal(err)
 			}

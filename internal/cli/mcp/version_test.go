@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -34,6 +35,24 @@ func TestMCPItemVersionTracksReplacement(t *testing.T) {
 	}
 	clitest.WriteFixture(t, path, "replacement")
 	newRows, err := svc.Add([]string{path}, core.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
+	if runtime.GOOS != "windows" {
+		st, readErr := svc.Store.ReadSnapshot()
+		if err != nil || readErr != nil || len(newRows) != 1 || !core.Failed(newRows) || !strings.Contains(newRows[0].Error, "not supported") || len(st.Items) != 1 || st.Items[0].ID != added[0].Item.ID || *st.Items[0].Identity != *added[0].Item.Identity || !st.Items[0].ExpiresAt.Equal(added[0].Item.ExpiresAt) {
+			t.Fatalf("unverified replacement changed the tracked object: %+v %+v %v %v", newRows, st, err, readErr)
+		}
+		var next struct {
+			Changed bool
+			Version string
+		}
+		clitest.CallMCP(t, s, "obit_list", map[string]any{"version": first.Version}, false, &next)
+		if next.Changed || next.Version != first.Version {
+			t.Fatal("failed rebinding changed the list version")
+		}
+		if data, err := os.ReadFile(path); err != nil || string(data) != "replacement" {
+			t.Fatalf("unverified replacement was moved or changed: %q %v", data, err)
+		}
+		return
+	}
 	if err != nil || core.Failed(newRows) || newRows[0].Item.ID != added[0].Item.ID || *newRows[0].Item.Identity == *added[0].Item.Identity {
 		t.Fatalf("replacement fixture: %+v %v", newRows, err)
 	}

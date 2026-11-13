@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -100,6 +101,9 @@ func TestWatchDescendantExemptionBlocksExistingClaim(t *testing.T) {
 }
 
 func TestWatchRestoreAfterPolicyRemovalKeepsExemptionsEmpty(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("watch burial requires Windows writer exclusion; restore policy matching is covered by TestWatchRestoreExemptionRequiresExistingPolicy")
+	}
 	if testing.Short() {
 		t.Skip("folder policy evidence uses a real Git repository")
 	}
@@ -154,7 +158,14 @@ func TestWatchExemptionBindsObjectIdentity(t *testing.T) {
 	if len(it) != 1 || it[0].Path != path {
 		t.Fatalf("exemption followed name instead of identity: %+v", it)
 	}
-	f.sweepAt(2 * time.Hour)
+	out := f.sweepAt(2 * time.Hour)
+	if runtime.GOOS != "windows" {
+		requireRetainedRetry(t, f, out)
+		if !exists(renamed) || !exists(path) || f.items()[0].Path != path {
+			t.Fatal("unsupported watch exclusion lost the exempt original or replacement entry")
+		}
+		return
+	}
 	if !exists(renamed) || exists(path) {
 		t.Fatal("identity exemption lost or replacement inherited it")
 	}

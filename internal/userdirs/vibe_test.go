@@ -15,6 +15,9 @@ func TestVibeDirectory(t *testing.T) {
 		{`\\?\` + filepath.Join(home, "custom"), filepath.Join(home, "custom")},
 		{"~", home}, {"~/custom", filepath.Join(home, "custom")}, {`~\custom`, filepath.Join(home, "custom")},
 	} {
+		if len(nativeDirectorySpellings([]string{tc.env})) == 0 {
+			continue
+		}
 		t.Setenv("VIBE_HOME", tc.env)
 		if got, err := AgentDir("vibe"); err != nil || got != tc.want {
 			t.Fatalf("env %q: %q %v", tc.env, got, err)
@@ -23,15 +26,18 @@ func TestVibeDirectory(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(home, "custom")); !os.IsNotExist(err) {
 		t.Fatalf("resolver created directory: %v", err)
 	}
-	for _, bad := range []string{`\\?\` + home + `.\child`, `\\?\` + home + `\nul\child`, `\\?\` + home + `\file:stream`} {
+	for _, bad := range nativeDirectorySpellings([]string{`\\?\` + home + `.\child`, `\\?\` + home + `\nul\child`, `\\?\` + home + `\file:stream`}) {
 		t.Setenv("VIBE_HOME", bad)
 		if got, err := VibeDir(); err == nil {
 			t.Fatalf("unstable override accepted: %q", got)
 		}
 	}
 	t.Setenv("VIBE_HOME", "")
-	t.Setenv("OBIT_USER_HOME", `\\?\`+home+`.\child`)
-	if got, err := VibeDir(); err == nil {
-		t.Fatalf("unstable default home accepted: %q", got)
-	}
+	t.Run("windows-path-spelling", func(t *testing.T) {
+		windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+		t.Setenv("OBIT_USER_HOME", `\\?\`+home+`.\child`)
+		if got, err := VibeDir(); err == nil {
+			t.Fatalf("unstable default home accepted: %q", got)
+		}
+	})
 }

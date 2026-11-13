@@ -13,8 +13,13 @@ import (
 func TestWinGetPackagesUsesLocalAppData(t *testing.T) {
 	base := t.TempDir()
 	t.Setenv("LOCALAPPDATA", base)
+	t.Setenv("XDG_DATA_HOME", base)
+	t.Setenv("HOME", base)
 	t.Setenv("OBIT_HOME", t.TempDir())
 	got, err := WinGetPackages()
+	if runtime.GOOS == "darwin" {
+		base = filepath.Join(base, "Library", "Application Support")
+	}
 	want := filepath.Join(base, "Microsoft", "WinGet", "Packages")
 	if err != nil || got != want {
 		t.Fatalf("WinGet packages: %q %v", got, err)
@@ -24,7 +29,12 @@ func TestWinGetPackagesUsesLocalAppData(t *testing.T) {
 func TestRegistryLocksIndependentOfLedger(t *testing.T) {
 	base := t.TempDir()
 	t.Setenv("LOCALAPPDATA", base)
+	t.Setenv("XDG_DATA_HOME", base)
+	t.Setenv("HOME", base)
 	t.Setenv("OBIT_HOME", t.TempDir())
+	if runtime.GOOS == "darwin" {
+		base = filepath.Join(base, "Library", "Application Support")
+	}
 	want := filepath.Join(base, "obituary", "registry-locks")
 	for range 2 {
 		got, err := RegistryLocks()
@@ -36,6 +46,8 @@ func TestRegistryLocksIndependentOfLedger(t *testing.T) {
 }
 
 func TestDataNormalizesExtendedHome(t *testing.T) {
+	windowsDirectoryTest(t, "Win32 extended names, alternate streams, and trailing-dot normalization")
+
 	for _, home := range []string{filepath.Join(t.TempDir(), "home"), `\\localhost\C$\obit-home`} {
 		t.Setenv("OBIT_HOME", home)
 		plain, err := Data()
@@ -55,6 +67,8 @@ func TestDataNormalizesExtendedHome(t *testing.T) {
 }
 
 func TestDirectoryGettersRejectUnstablePrefixes(t *testing.T) {
+	windowsDirectoryTest(t, "Win32 extended names, alternate streams, and trailing-dot normalization")
+
 	for _, tc := range []struct {
 		env string
 		get func() (string, error)
@@ -177,8 +191,11 @@ func TestAgentSkillsDirectory(t *testing.T) {
 	if err != nil || got != filepath.Join(home, ".agents", "skills") {
 		t.Fatalf("shared skills: %q %v", got, err)
 	}
-	t.Setenv("OBIT_USER_HOME", home+":stream")
-	if _, err := AgentSkillsDir(); err == nil {
-		t.Fatal("accepted unstable home")
-	}
+	t.Run("windows-path-spelling", func(t *testing.T) {
+		windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+		t.Setenv("OBIT_USER_HOME", home+":stream")
+		if _, err := AgentSkillsDir(); err == nil {
+			t.Fatal("accepted unstable home")
+		}
+	})
 }

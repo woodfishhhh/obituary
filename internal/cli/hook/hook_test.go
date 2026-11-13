@@ -117,6 +117,7 @@ func TestAgentDecodePrecedesServiceOpen(t *testing.T) {
 }
 
 func TestHookDefersExplorerRefresh(t *testing.T) {
+	testenv.WindowsOnly(t, "Explorer label projection is Windows-only")
 	if testing.Short() {
 		t.Skip("uses a real Git repository and Explorer projection")
 	}

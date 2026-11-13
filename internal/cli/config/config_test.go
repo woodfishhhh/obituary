@@ -1,5 +1,7 @@
 package config
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"os"
 	"path/filepath"
@@ -67,6 +69,7 @@ func TestConfigShowsCodexWindowsShell(t *testing.T) {
 }
 
 func TestConfigCreateRejectsChangedExtendedDirectory(t *testing.T) {
+	testenv.WindowsOnly(t, "Win32 extended paths and Windows namespace normalization")
 	neighbor := filepath.Join(t.TempDir(), "config")
 	if err := os.Mkdir(neighbor, 0700); err != nil {
 		t.Fatal(err)

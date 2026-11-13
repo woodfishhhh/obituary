@@ -244,6 +244,9 @@ func (s *Service) recoveredBuryRef(ref, abs string, burials []Burial, err error)
 // outcomes in the receipt, and reports audit failures without stopping it.
 func (s *Service) finishBuryRef(ref string, item Item, o Outcome, audited bool) (GraveResult, error) {
 	r := GraveResult{Ref: ref, Action: o.Action, Burial: o.Burial}
+	if o.Action == ActionBuried && item.Identity != nil && item.Identity.RequirePersistent() != nil {
+		r.Warning = "buried while its inode was pinned; creation time unavailable: later recovery and purge cannot verify this object; preserve the grave and recover it manually"
+	}
 	if commitFailed(o.err) {
 		r.Error = o.err.Error()
 		if o.Grave != "" && o.Burial == nil {

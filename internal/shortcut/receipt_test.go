@@ -1,5 +1,7 @@
 package shortcut
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"crypto/sha256"
@@ -42,6 +44,7 @@ func TestReceiptPathUsesDataDirectory(t *testing.T) {
 }
 
 func TestShortcutLegacyReceiptMigration(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows shortcut directories retire owned receipts; POSIX removal preserves sibling backups")
 	for _, place := range []Location{StartMenu, Desktop} {
 		for _, uninstall := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%s/uninstall=%t", place, uninstall), func(t *testing.T) {

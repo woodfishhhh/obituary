@@ -5,12 +5,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/explorer"
+	"github.com/woodfishhhh/obituary/internal/testenv"
 	"github.com/woodfishhhh/obituary/internal/watch"
 )
 
@@ -49,6 +51,7 @@ func TestReconcileTopLevelAndOfflineArrivals(t *testing.T) {
 }
 
 func TestReconcileSkipsLabelInfrastructure(t *testing.T) {
+	testenv.WindowsOnly(t, "Explorer label projection is Windows-only")
 	svc, dir := fixture(t)
 	write(t, filepath.Join(dir, "report.log"))
 	if _, err := svc.SetWatch(dir, "2d", core.WatchFirstSeen); err != nil {
@@ -118,7 +121,11 @@ func TestReconcileGitConsentTrackedChildrenAndLaterTracking(t *testing.T) {
 	expiry := st.Items[0].ExpiresAt
 	svc.Now = func() time.Time { return expiry.Add(time.Second) }
 	outcomes, err := svc.Sweep(false)
-	if err != nil || len(outcomes) != 1 || outcomes[0].Action != core.ActionRefused {
+	want := core.ActionRefused
+	if runtime.GOOS != "windows" {
+		want = core.ActionRetry // Writer exclusion is unsupported; the tracked file stays put.
+	}
+	if err != nil || len(outcomes) != 1 || outcomes[0].Action != want {
 		t.Fatalf("later Git tracking was not protected: %+v %v", outcomes, err)
 	}
 	if _, err := os.Stat(filepath.Join(dir, "scratch.txt")); err != nil {

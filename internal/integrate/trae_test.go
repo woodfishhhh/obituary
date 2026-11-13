@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"os"
 	"path/filepath"
@@ -25,14 +27,14 @@ func TestTraeInstallationLifecycle(t *testing.T) {
 				path := filepath.Join(root, "hooks.json")
 				input := "\xef\xbb\xbf" + `{"theme":"dark","hooks":{"SessionStart":[{"hooks":[{"type":"command","command":"echo user && obit hook ` + agent + `"}]}]},"model":"user"}`
 				writeIntegrationFile(t, path, input)
-				commands := Commands{Native: `"C:/space & tools/obit.exe" hook ` + agent}
+				commands := Commands{Native: testenv.NativeFixture(`"C:/space & tools/obit.exe" hook `) + agent}
 				plan, err := PlanAgent(agent, s, commands, false)
 				if err != nil || read(t, path) != input {
 					t.Fatalf("dry-run: %v", err)
 				}
 				applyIntegration(t, plan, nil)
 				installed := read(t, path)
-				if !strings.HasPrefix(installed, "\xef\xbb\xbf") || !strings.Contains(installed, `& \"C:/space & tools/obit.exe\"`) || strings.Index(installed, `"theme"`) > strings.Index(installed, `"model"`) {
+				if !strings.HasPrefix(installed, "\xef\xbb\xbf") || !strings.Contains(installed, testenv.NativeFixture(`& \"C:/space & tools/obit.exe\"`)) || strings.Index(installed, `"theme"`) > strings.Index(installed, `"model"`) {
 					t.Fatal(installed)
 				}
 				for _, unexpected := range []string{"PreToolUse", "PostToolUse", "SessionEnd"} {
@@ -44,7 +46,7 @@ func TestTraeInstallationLifecycle(t *testing.T) {
 				if err != nil || Pending(plan) {
 					t.Fatalf("idempotence: %+v %v", plan, err)
 				}
-				commands.Native = `"D:/new location/obit.exe" hook ` + agent
+				commands.Native = testenv.NativeFixture(`"D:/new location/obit.exe" hook `) + agent
 				plan, err = PlanAgent(agent, s, commands, false)
 				applyIntegration(t, plan, err)
 				if strings.Contains(read(t, path), "space & tools") || !strings.Contains(read(t, path), "new location") {
@@ -68,11 +70,11 @@ func TestTraeInstallationLifecycle(t *testing.T) {
 func TestTraeVariantsDoNotInstallDuplicateProjectHooks(t *testing.T) {
 	t.Parallel()
 	s := Scope{Project: t.TempDir()}
-	plan, err := PlanTrae(s, Commands{Native: "C:/tools/obit.exe hook trae"}, false)
+	plan, err := PlanTrae(s, Commands{Native: testenv.NativeFixture("C:/tools/obit.exe hook trae")}, false)
 	applyIntegration(t, plan, err)
 	path := filepath.Join(s.Project, ".trae", "hooks.json")
 	before := read(t, path)
-	if _, err := PlanTraeCN(s, Commands{Native: "C:/tools/obit.exe hook trae-cn"}, false); err == nil {
+	if _, err := PlanTraeCN(s, Commands{Native: testenv.NativeFixture("C:/tools/obit.exe hook trae-cn")}, false); err == nil {
 		t.Fatal("second variant installed over shared project hooks")
 	}
 	plan, err = PlanTraeCN(s, Commands{}, true)
@@ -85,7 +87,7 @@ func TestTraeVariantsDoNotInstallDuplicateProjectHooks(t *testing.T) {
 func TestTraeChineseDiscoveryAndPreflight(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("OBIT_USER_HOME", home)
-	s, commands := Scope{Global: true}, Commands{Native: "C:/tools/obit.exe hook trae"}
+	s, commands := Scope{Global: true}, Commands{Native: testenv.NativeFixture("C:/tools/obit.exe hook trae")}
 	plan, err := PlanTrae(s, commands, false)
 	if err != nil || len(plan) != 1 {
 		t.Fatalf("invented absent CN installation: %+v %v", plan, err)
@@ -109,7 +111,7 @@ func TestTraeChineseDiscoveryAndPreflight(t *testing.T) {
 	}
 	plan, err = PlanTrae(s, commands, false)
 	applyIntegration(t, plan, err)
-	if !strings.Contains(read(t, cn), "C:/tools/obit.exe hook trae-cn") {
+	if !strings.Contains(read(t, cn), testenv.NativeFixture("C:/tools/obit.exe hook trae-cn")) {
 		t.Fatal("CN adapter identity lost")
 	}
 }
@@ -124,7 +126,7 @@ func TestTraeRejectsInvalidConfigAndLinks(t *testing.T) {
 		path := filepath.Join(s.Project, ".trae", "hooks.json")
 		writeIntegrationFile(t, path, input)
 		for _, uninstall := range []bool{false, true} {
-			if _, err := PlanTrae(s, Commands{Native: "C:/tools/obit.exe hook trae"}, uninstall); err == nil {
+			if _, err := PlanTrae(s, Commands{Native: testenv.NativeFixture("C:/tools/obit.exe hook trae")}, uninstall); err == nil {
 				t.Fatal("accepted invalid config", input)
 			}
 		}
@@ -135,11 +137,11 @@ func TestTraeRejectsInvalidConfigAndLinks(t *testing.T) {
 	s := Scope{Project: t.TempDir()}
 	outside := t.TempDir()
 	makeIntegrationJunction(t, filepath.Join(s.Project, ".trae"), outside)
-	if _, err := PlanTrae(s, Commands{Native: "C:/tools/obit.exe hook trae"}, false); err == nil {
+	if _, err := PlanTrae(s, Commands{Native: testenv.NativeFixture("C:/tools/obit.exe hook trae")}, false); err == nil {
 		t.Fatal("external link accepted")
 	}
 	s.GuardRM = true
-	if _, err := PlanTrae(s, Commands{Native: "C:/tools/obit.exe hook trae"}, false); err == nil {
+	if _, err := PlanTrae(s, Commands{Native: testenv.NativeFixture("C:/tools/obit.exe hook trae")}, false); err == nil {
 		t.Fatal("unsupported guard accepted")
 	}
 }
@@ -150,16 +152,16 @@ func TestTraeMCPLifecycleAndManualSteps(t *testing.T) {
 	path := filepath.Join(s.Project, ".trae", "mcp.json")
 	input := "\xef\xbb\xbf" + `{"theme":"keep","mcpServers":{"other":{"command":"other"}}}`
 	writeIntegrationFile(t, path, input)
-	plan, err := PlanTraeMCP(s, "C:/tools/obit.exe", false)
+	plan, err := PlanTraeMCP(s, testenv.NativeFixture("C:/tools/obit.exe"), false)
 	applyIntegration(t, plan, err)
 	got := strings.Replace(read(t, path), `"args": [`, `"env": {"USER":"keep"}, "args": [`, 1)
 	writeIntegrationFile(t, path, got)
-	plan, err = PlanTraeMCP(s, "D:/new/obit.exe", false)
+	plan, err = PlanTraeMCP(s, testenv.NativeFixture("D:/new/obit.exe"), false)
 	applyIntegration(t, plan, err)
 	if !strings.Contains(read(t, path), `"USER"`) {
 		t.Fatal("MCP env lost")
 	}
-	plan, err = PlanTraeMCP(s, "D:/new/obit.exe", false)
+	plan, err = PlanTraeMCP(s, testenv.NativeFixture("D:/new/obit.exe"), false)
 	if err != nil || Pending(plan) {
 		t.Fatalf("MCP not idempotent: %v", err)
 	}
@@ -169,11 +171,11 @@ func TestTraeMCPLifecycleAndManualSteps(t *testing.T) {
 		t.Fatal("MCP uninstall")
 	}
 	for _, uninstall := range []bool{false, true} {
-		if _, err := PlanTraeMCP(Scope{Global: true}, "C:/tools/obit.exe", uninstall); err == nil || !strings.Contains(err.Error(), "Settings > MCP") {
+		if _, err := PlanTraeMCP(Scope{Global: true}, testenv.NativeFixture("C:/tools/obit.exe"), uninstall); err == nil || !strings.Contains(err.Error(), "Settings > MCP") {
 			t.Fatalf("missing manual global instructions: %v", err)
 		}
 	}
-	if _, err := PlanTraeMCP(s, "C:/space dir/obit.exe", false); err == nil {
+	if _, err := PlanTraeMCP(s, testenv.NativeFixture("C:/space dir/obit.exe"), false); err == nil {
 		t.Fatal("unverified spaced MCP command accepted")
 	}
 }

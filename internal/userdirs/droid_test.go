@@ -16,7 +16,7 @@ func TestDroidDirectory(t *testing.T) {
 	}
 	custom := filepath.Join(t.TempDir(), "custom")
 	want := filepath.Join(custom, ".factory")
-	for _, value := range []string{custom, `\\?\` + custom} {
+	for _, value := range nativeDirectorySpellings([]string{custom, `\\?\` + custom}) {
 		t.Setenv("FACTORY_HOME_OVERRIDE", value)
 		got, err := DroidDir()
 		if err != nil || got != want {
@@ -26,12 +26,18 @@ func TestDroidDirectory(t *testing.T) {
 	if _, err := os.Stat(custom); !os.IsNotExist(err) {
 		t.Fatal("resolver created directory", err)
 	}
-	t.Setenv("FACTORY_HOME_OVERRIDE", `\\?\`+custom+`.\child`)
-	if path, err := DroidDir(); err == nil {
-		t.Fatal("unstable home accepted", path)
-	}
-	t.Setenv("FACTORY_HOME_OVERRIDE", custom+":stream")
-	if path, err := DroidDir(); err == nil {
-		t.Fatal("ADS accepted", path)
-	}
+	t.Run("windows-path-spelling", func(t *testing.T) {
+		windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+		t.Setenv("FACTORY_HOME_OVERRIDE", `\\?\`+custom+`.\child`)
+		if path, err := DroidDir(); err == nil {
+			t.Fatal("unstable home accepted", path)
+		}
+	})
+	t.Run("windows-path-spelling", func(t *testing.T) {
+		windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+		t.Setenv("FACTORY_HOME_OVERRIDE", custom+":stream")
+		if path, err := DroidDir(); err == nil {
+			t.Fatal("ADS accepted", path)
+		}
+	})
 }

@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"encoding/json"
 	"os"
@@ -35,7 +37,7 @@ func TestCodeBuddyInstallerLifecycle(t *testing.T) {
 				rulesBefore := "\xef\xbb\xbf# User rules\r\nKeep this text.\r\n"
 				writeIntegrationFile(t, path, original)
 				writeIntegrationFile(t, rules, rulesBefore)
-				commands := Commands{Executable: "C:/Program Files/old/obit.exe"}
+				commands := Commands{Executable: testenv.NativeFixture("C:/Program Files/old/obit.exe")}
 				plan, err := PlanAgent(name, s, commands, false)
 				if err != nil || read(t, path) != original || read(t, rules) != rulesBefore {
 					t.Fatal("dry-run", err)
@@ -52,7 +54,7 @@ func TestCodeBuddyInstallerLifecycle(t *testing.T) {
 				if err != nil || Pending(plan) {
 					t.Fatal("not idempotent", err, plan)
 				}
-				commands.Executable = "C:/Program Files/moved/obit.exe"
+				commands.Executable = testenv.NativeFixture("C:/Program Files/moved/obit.exe")
 				plan, err = PlanAgent(name, s, commands, false)
 				applyIntegration(t, plan, err)
 				if got := read(t, path); strings.Contains(got, "Program Files/old/") || !strings.Contains(got, "Program Files/moved/") {
@@ -81,7 +83,7 @@ func TestCodeBuddySharedHooksAndSkills(t *testing.T) {
 	}
 
 	s, dir, rules := codeBuddyTestScope(t, false)
-	commands := Commands{Executable: "C:/Program Files/obit.exe"}
+	commands := Commands{Executable: testenv.NativeFixture("C:/Program Files/obit.exe")}
 	for _, name := range []string{"codebuddy", "codebuddy-ide"} {
 		plan, err := PlanAgent(name, s, commands, false)
 		applyIntegration(t, plan, err)
@@ -120,22 +122,22 @@ func TestCodeBuddySharedHooksAndSkills(t *testing.T) {
 func TestCodeBuddyConfigurationScopes(t *testing.T) {
 	s, dir, _ := codeBuddyTestScope(t, false)
 	global := Scope{Global: true}
-	commands := Commands{Executable: "C:/global/obit.exe"}
+	commands := Commands{Executable: testenv.NativeFixture("C:/global/obit.exe")}
 	plan, err := PlanCodeBuddyIDE(global, commands, false)
 	applyIntegration(t, plan, err)
 	if _, err := PlanCodeBuddy(s, commands, false); err == nil || !strings.Contains(err.Error(), "merges user and project") {
 		t.Fatal("duplicated merged CLI hooks", err)
 	}
-	commands.Executable = "C:/project/obit.exe"
+	commands.Executable = testenv.NativeFixture("C:/project/obit.exe")
 	plan, err = PlanCodeBuddyIDE(s, commands, false)
 	applyIntegration(t, plan, err)
-	if !strings.Contains(read(t, filepath.Join(dir, "settings.json")), "C:/project/obit.exe") {
+	if !strings.Contains(read(t, filepath.Join(dir, "settings.json")), testenv.NativeFixture("C:/project/obit.exe")) {
 		t.Fatal("IDE project target missing")
 	}
 	// This verifies installed layers; actual IDE precedence remains a host test.
 	plan, err = PlanCodeBuddyIDE(s, commands, true)
 	applyIntegration(t, plan, err)
-	plan, err = PlanCodeBuddyIDE(global, Commands{Executable: "C:/global/obit.exe"}, false)
+	plan, err = PlanCodeBuddyIDE(global, Commands{Executable: testenv.NativeFixture("C:/global/obit.exe")}, false)
 	if err != nil || Pending(plan) {
 		t.Fatal("project uninstall changed user layer", err)
 	}
@@ -150,7 +152,7 @@ func TestCodeBuddyInstallerBoundaries(t *testing.T) {
 			s, dir, _ := codeBuddyTestScope(t, false)
 			path := filepath.Join(dir, "settings.json")
 			writeIntegrationFile(t, path, input)
-			if _, err := PlanCodeBuddy(s, Commands{Executable: "C:/obit.exe"}, false); err == nil {
+			if _, err := PlanCodeBuddy(s, Commands{Executable: testenv.NativeFixture("C:/obit.exe")}, false); err == nil {
 				t.Fatal("invalid settings accepted")
 			}
 			if read(t, path) != input {
@@ -160,7 +162,7 @@ func TestCodeBuddyInstallerBoundaries(t *testing.T) {
 	}
 	t.Run("changed-after-plan", func(t *testing.T) {
 		s, dir, rules := codeBuddyTestScope(t, false)
-		plan, err := PlanCodeBuddy(s, Commands{Executable: "C:/obit.exe"}, false)
+		plan, err := PlanCodeBuddy(s, Commands{Executable: testenv.NativeFixture("C:/obit.exe")}, false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -178,7 +180,7 @@ func TestCodeBuddyInstallerBoundaries(t *testing.T) {
 			s, dir, _ := codeBuddyTestScope(t, global)
 			outside := t.TempDir()
 			makeIntegrationJunction(t, dir, outside)
-			if _, err := PlanCodeBuddy(s, Commands{Executable: "C:/obit.exe"}, false); err == nil {
+			if _, err := PlanCodeBuddy(s, Commands{Executable: testenv.NativeFixture("C:/obit.exe")}, false); err == nil {
 				t.Fatal("link followed")
 			}
 			if _, err := PlanCodeBuddySharedSkill(s, "codebuddy", false); err == nil {
@@ -197,7 +199,7 @@ func TestCodeBuddyDeleteGuardInstallation(t *testing.T) {
 		t.Run(agent, func(t *testing.T) {
 			s, dir, _ := codeBuddyTestScope(t, false)
 			s.GuardRM = true
-			commands := Commands{Executable: "C:/obit.exe"}
+			commands := Commands{Executable: testenv.NativeFixture("C:/obit.exe")}
 			plan, err := PlanAgent(agent, s, commands, false)
 			applyIntegration(t, plan, err)
 			path := filepath.Join(dir, "settings.json")
@@ -239,7 +241,7 @@ func TestCodeBuddyMCPPriorityAndLifecycle(t *testing.T) {
 				path := filepath.Join(root, file)
 				original := "\xef\xbb\xbf{\n// existing services\n\"mcpServers\":{\"user\":{\"command\":\"user.exe\",\"args\":[],},},\n\"tail\":true,\n}\n"
 				writeIntegrationFile(t, path, original)
-				plan, err := PlanCodeBuddyMCP(s, "C:/Program Files/old/obit.exe", false)
+				plan, err := PlanCodeBuddyMCP(s, testenv.NativeFixture("C:/Program Files/old/obit.exe"), false)
 				if err != nil || read(t, path) != original {
 					t.Fatal("MCP dry-run", err)
 				}
@@ -253,23 +255,23 @@ func TestCodeBuddyMCPPriorityAndLifecycle(t *testing.T) {
 				if !strings.HasPrefix(installed, "\xef\xbb\xbf") || !strings.Contains(installed, "// existing services") || !strings.Contains(installed, "user.exe") {
 					t.Fatal("lost user MCP", installed)
 				}
-				plan, err = PlanCodeBuddyMCP(s, "C:/Program Files/old/obit.exe", false)
+				plan, err = PlanCodeBuddyMCP(s, testenv.NativeFixture("C:/Program Files/old/obit.exe"), false)
 				if err != nil || Pending(plan) {
 					t.Fatal("MCP not idempotent", err)
 				}
-				plan, err = PlanCodeBuddyMCP(s, "C:/Program Files/new/obit.exe", false)
+				plan, err = PlanCodeBuddyMCP(s, testenv.NativeFixture("C:/Program Files/new/obit.exe"), false)
 				applyIntegration(t, plan, err)
 				if got := read(t, path); strings.Contains(got, "/old/") || !strings.Contains(got, "/new/") {
 					t.Fatal("MCP refresh", got)
 				}
-				plan, err = PlanCodeBuddyMCP(s, "C:/Program Files/new/obit.exe", true)
+				plan, err = PlanCodeBuddyMCP(s, testenv.NativeFixture("C:/Program Files/new/obit.exe"), true)
 				applyIntegration(t, plan, err)
 				got, err := configJSON([]byte(read(t, path)), ConfigJSONC)
 				want, _ := configJSON([]byte(original), ConfigJSONC)
 				if err != nil || !sameConfigJSON(got, want) || !strings.Contains(read(t, path), "// existing services") {
 					t.Fatal("MCP uninstall", err)
 				}
-				plan, err = PlanCodeBuddyMCP(s, "C:/obit.exe", true)
+				plan, err = PlanCodeBuddyMCP(s, testenv.NativeFixture("C:/obit.exe"), true)
 				if err != nil || Pending(plan) {
 					t.Fatal("MCP repeated uninstall", err)
 				}
@@ -282,34 +284,34 @@ func TestCodeBuddyMCPManualAndSharedOwnership(t *testing.T) {
 	s, dir, _ := codeBuddyTestScope(t, true)
 	legacy := filepath.Join(filepath.Dir(dir), ".codebuddy.json")
 	writeIntegrationFile(t, legacy, `{"projects":{},"mcpServers":{"user":{"command":"user.exe"}}}`)
-	plan, err := PlanCodeBuddyMCP(s, "C:/obit.exe", false)
+	plan, err := PlanCodeBuddyMCP(s, testenv.NativeFixture("C:/obit.exe"), false)
 	if err != nil || PreservedError(plan) == nil || len(plan) != 1 || plan[0].Path != legacy {
 		t.Fatal("legacy state silently edited", plan, err)
 	}
-	if _, err := PlanCodeBuddyIDEMCP(s, "C:/obit.exe", false); err == nil || !strings.Contains(err.Error(), "MCP Server") {
+	if _, err := PlanCodeBuddyIDEMCP(s, testenv.NativeFixture("C:/obit.exe"), false); err == nil || !strings.Contains(err.Error(), "MCP Server") {
 		t.Fatal("guessed IDE MCP", err)
 	}
 	path := filepath.Join(dir, "selected-mcp.json")
 	writeIntegrationFile(t, path, `{"mcpServers":{}}`)
 	for _, owner := range []string{"codebuddy", "codebuddy-ide"} {
-		plan, err := PlanCodeBuddyMCPFile(s, path, owner, "C:/obit.exe", false)
+		plan, err := PlanCodeBuddyMCPFile(s, path, owner, testenv.NativeFixture("C:/obit.exe"), false)
 		applyIntegration(t, plan, err)
 	}
-	plan, err = PlanCodeBuddyMCPFile(s, path, "codebuddy", "C:/obit.exe", true)
+	plan, err = PlanCodeBuddyMCPFile(s, path, "codebuddy", testenv.NativeFixture("C:/obit.exe"), true)
 	applyIntegration(t, plan, err)
 	if !strings.Contains(read(t, path), "obituary") {
 		t.Fatal("removed other MCP owner")
 	}
-	plan, err = PlanCodeBuddyMCPFile(s, path, "codebuddy-ide", "C:/obit.exe", true)
+	plan, err = PlanCodeBuddyMCPFile(s, path, "codebuddy-ide", testenv.NativeFixture("C:/obit.exe"), true)
 	applyIntegration(t, plan, err)
 	if strings.Contains(read(t, path), "obituary") {
 		t.Fatal("last MCP owner not removed")
 	}
-	writeIntegrationFile(t, path, `{"mcpServers":{"obituary":{"command":"C:/other/obit.exe","args":["mcp"]}}}`)
-	if _, err = PlanCodeBuddyMCPFile(s, path, "codebuddy", "C:/obit.exe", false); err == nil {
+	writeIntegrationFile(t, path, testenv.NativeFixture(`{"mcpServers":{"obituary":{"command":"C:/other/obit.exe","args":["mcp"]}}}`))
+	if _, err = PlanCodeBuddyMCPFile(s, path, "codebuddy", testenv.NativeFixture("C:/obit.exe"), false); err == nil {
 		t.Fatal("claimed another host's MCP")
 	}
-	plan, err = PlanCodeBuddyMCPFile(s, path, "codebuddy", "C:/obit.exe", true)
+	plan, err = PlanCodeBuddyMCPFile(s, path, "codebuddy", testenv.NativeFixture("C:/obit.exe"), true)
 	if err != nil || PreservedError(plan) == nil {
 		t.Fatal("unowned MCP silently removed", err)
 	}
@@ -318,7 +320,7 @@ func TestCodeBuddyMCPManualAndSharedOwnership(t *testing.T) {
 func TestCodeBuddyMCPRefusesChangedPriority(t *testing.T) {
 	s, _, _ := codeBuddyTestScope(t, false)
 	writeIntegrationFile(t, filepath.Join(s.Project, "mcp.json"), `{"mcpServers":{}}`)
-	plan, err := PlanCodeBuddyMCP(s, "C:/obit.exe", false)
+	plan, err := PlanCodeBuddyMCP(s, testenv.NativeFixture("C:/obit.exe"), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -333,7 +335,7 @@ func TestCodeBuddyMCPRefusesChangedPriority(t *testing.T) {
 
 func TestCodeBuddyMCPKeepsUserFields(t *testing.T) {
 	s, _, _ := codeBuddyTestScope(t, false)
-	plan, err := PlanCodeBuddyMCP(s, "C:/old/obit.exe", false)
+	plan, err := PlanCodeBuddyMCP(s, testenv.NativeFixture("C:/old/obit.exe"), false)
 	applyIntegration(t, plan, err)
 	path := filepath.Join(s.Project, ".mcp.json")
 	raw, err := configJSON([]byte(read(t, path)), ConfigJSONC)
@@ -349,9 +351,9 @@ func TestCodeBuddyMCPKeepsUserFields(t *testing.T) {
 	entry["disabled"] = true
 	data, _ := json.Marshal(root)
 	writeIntegrationFile(t, path, string(data))
-	plan, err = PlanCodeBuddyMCP(s, "C:/new/obit.exe", false)
+	plan, err = PlanCodeBuddyMCP(s, testenv.NativeFixture("C:/new/obit.exe"), false)
 	applyIntegration(t, plan, err)
-	if got := read(t, path); !strings.Contains(got, "CUSTOM") || !strings.Contains(got, `"disabled":true`) || !strings.Contains(got, "C:/new/obit.exe") {
+	if got := read(t, path); !strings.Contains(got, "CUSTOM") || !strings.Contains(got, `"disabled":true`) || !strings.Contains(got, testenv.NativeFixture("C:/new/obit.exe")) {
 		t.Fatal("user server options lost", got)
 	}
 }
@@ -359,7 +361,7 @@ func TestCodeBuddyMCPKeepsUserFields(t *testing.T) {
 func TestCodeBuddyUnverifiedHookOwnershipIsReported(t *testing.T) {
 	s, dir, rules := codeBuddyTestScope(t, false)
 	path := filepath.Join(dir, "settings.json")
-	content := `{"hooks":{"SessionStart":[{"hooks":[{"type":"command","command":"C:/old/obit.exe hook codebuddy"}]}]}}`
+	content := testenv.NativeFixture(`{"hooks":{"SessionStart":[{"hooks":[{"type":"command","command":"C:/old/obit.exe hook codebuddy"}]}]}}`)
 	writeIntegrationFile(t, path, content)
 	writeIntegrationFile(t, rules, blockBegin+"\nuser-edited instructions\n"+blockEnd+"\n")
 	plan, err := PlanCodeBuddy(s, Commands{}, true)
@@ -374,9 +376,9 @@ func TestCodeBuddyUnverifiedHookOwnershipIsReported(t *testing.T) {
 func TestCodeBuddyRejectsSeparateIDEPostRegistration(t *testing.T) {
 	s, dir, _ := codeBuddyTestScope(t, false)
 	path := filepath.Join(dir, "settings.json")
-	content := `{"hooks":{"PostToolUse":[{"matcher":"write_to_file","hooks":[{"type":"command","command":"C:/old/obit.exe hook codebuddy-ide"}]}]}}`
+	content := testenv.NativeFixture(`{"hooks":{"PostToolUse":[{"matcher":"write_to_file","hooks":[{"type":"command","command":"C:/old/obit.exe hook codebuddy-ide"}]}]}}`)
 	writeIntegrationFile(t, path, content)
-	if _, err := PlanCodeBuddy(s, Commands{Executable: "C:/obit.exe"}, false); err == nil {
+	if _, err := PlanCodeBuddy(s, Commands{Executable: testenv.NativeFixture("C:/obit.exe")}, false); err == nil {
 		t.Fatal("separate IDE post hook would run twice")
 	}
 	if read(t, path) != content {

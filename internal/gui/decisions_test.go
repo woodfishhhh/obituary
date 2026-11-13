@@ -56,6 +56,7 @@ func TestProposalListMatchesCLIAndRejectsReappearingCandidate(t *testing.T) {
 }
 
 func TestGUIExpiredWatchDirectoryDecisions(t *testing.T) {
+	testenv.WindowsOnly(t, "GUI watch burial uses the Windows writer-exclusion capability; POSIX retention is covered by core watch tests")
 	if testing.Short() {
 		t.Skip("folder approval uses a real Git repository")
 	}
@@ -432,6 +433,36 @@ func TestRuleListDeduplicatesKnownProjectSpellings(t *testing.T) {
 	files, err := a.Rules()
 	if err != nil || len(files.Rules) != 1 {
 		t.Fatalf("duplicate decisions: %+v %v", files, err)
+	}
+}
+
+func TestRuleListUsesProjectDirectoryIdentity(t *testing.T) {
+	a, root := fixture(t)
+	first, second := filepath.Join(root, "Project"), filepath.Join(root, "project")
+	for _, repo := range []string{first, second} {
+		write(t, filepath.Join(repo, ".obitrules"), "*.log 2d\n")
+	}
+	left, err := os.Stat(first)
+	if err != nil {
+		t.Fatal(err)
+	}
+	right, err := os.Stat(second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := 2
+	if os.SameFile(left, right) {
+		want = 1
+	}
+	if err := a.deps.Service.Store.Update(func(st *core.State) error {
+		st.Projects = map[string]core.ProjectState{first: {}, second: {}}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	files, err := a.Rules()
+	if err != nil || len(files.Rules) != want {
+		t.Fatalf("project identities require %d rule decisions: %+v %v", want, files, err)
 	}
 }
 

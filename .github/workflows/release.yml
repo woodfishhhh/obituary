@@ -48,10 +48,12 @@ jobs:
           if-no-files-found: error
           path: |
             bin/release/*.zip
+            bin/release/*.tar.gz
             bin/release/checksums.txt
             bin/release/CHANGELOG.md
             bin/release/scoop/**
             bin/release/winget/**
+            bin/release/homebrew/**
 
   publish:
     needs: build
@@ -80,11 +82,11 @@ jobs:
           if [[ -n "$id" ]]; then
             # Recheck immediately before upload in case it was published meanwhile.
             gh api "repos/$GH_REPO/releases/$id" | jq -e '.draft == true' > /dev/null
-            gh release upload "$TAG" release/*.zip release/checksums.txt --clobber
+            gh release upload "$TAG" release/*.zip release/*.tar.gz release/checksums.txt --clobber
           else
             flags=(--draft --verify-tag --title "$TAG" --notes-file release/CHANGELOG.md)
             if [[ "$TAG" == *-* ]]; then flags+=(--prerelease); fi
-            gh release create "$TAG" release/*.zip release/checksums.txt "${flags[@]}"
+            gh release create "$TAG" release/*.zip release/*.tar.gz release/checksums.txt "${flags[@]}"
           fi
 
   # Copies the same archives and checksums.txt to the mainland China mirror
@@ -123,7 +125,7 @@ jobs:
           echo "$CN_DEPLOY_KEY" > "$ssh_dir/key"
           echo "$CN_DEPLOY_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
           mkdir -p "upload/$TAG"
-          cp release/*.zip release/checksums.txt "upload/$TAG/"
+          cp release/*.zip release/*.tar.gz release/checksums.txt "upload/$TAG/"
           # No --delete: download/ keeps every earlier version.
           ssh_cmd="ssh -i $ssh_dir/key -o IdentitiesOnly=yes -o UserKnownHostsFile=$ssh_dir/known_hosts -o StrictHostKeyChecking=yes"
           # The server lets one upload through at a time (rrsync); the release

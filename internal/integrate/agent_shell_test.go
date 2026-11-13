@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"os"
@@ -83,6 +85,7 @@ func TestAgentWindowsShellPlan(t *testing.T) {
 }
 
 func TestAgentWindowsShellInference(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows host shell declarations and PowerShell commandWindows registration")
 	for _, tc := range []struct {
 		name, agent, env, host, want string
 		powershell                   bool
@@ -131,6 +134,7 @@ func TestAgentWindowsShellInference(t *testing.T) {
 }
 
 func TestAgentWindowsShellPlanCompositionAndConflict(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows host shell declarations and PowerShell commandWindows registration")
 	s, path := agentShellFixture(t)
 	t.Setenv("CODEBUDDY_CODE_SHELL", "bash")
 	writeIntegrationFile(t, filepath.Join(os.Getenv("PATH"), "powershell.exe"), "never executed")

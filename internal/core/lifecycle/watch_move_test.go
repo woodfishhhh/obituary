@@ -3,6 +3,7 @@ package lifecycle_test
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -50,6 +51,9 @@ func TestWatchAriaSidecarArrivesDuringMove(t *testing.T) {
 }
 
 func TestWatchPostMoveChangeRetries(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("post-move watch validation requires Windows writer exclusion; POSIX retains the source before moving")
+	}
 	f := newFixture(t)
 	f.svc.Owner = auto.Owner
 	path := f.file("downloads/tree/file.zip")
@@ -79,6 +83,9 @@ func TestWatchPostMoveChangeRetries(t *testing.T) {
 }
 
 func TestWatchRollbackCollisionRetainsEvidence(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("watch rollback requires Windows writer exclusion; POSIX retains the source before moving")
+	}
 	if testing.Short() {
 		t.Skip("folder policy evidence uses a real Git repository")
 	}
@@ -133,6 +140,9 @@ func assertWatchQuarantine(t *testing.T, f *fixture, grave string) {
 }
 
 func TestWatchPostMoveObservationFailureRollsBack(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("post-move watch observation requires Windows writer exclusion; POSIX retains the source before moving")
+	}
 	if testing.Short() {
 		t.Skip("folder policy evidence uses a real Git repository")
 	}

@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -202,7 +203,7 @@ func checkSharedSkillOwners(t *testing.T, s Scope, names ...string) {
 }
 
 func ownershipCommands(agent string) Commands {
-	return Commands{Native: `"C:/tools/obit.exe" hook ` + agent, Executable: `C:\tools\obit.exe`}
+	return Commands{Native: testenv.NativeFixture(`"C:/tools/obit.exe" hook `) + agent, Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}
 }
 
 const userSettings = "\xef\xbb\xbf" + `{
@@ -230,7 +231,7 @@ func setup(t *testing.T) (dir string, scope Scope) {
 
 func install(t *testing.T, scope Scope, uninstall bool) []Change {
 	t.Helper()
-	changes, err := PlanClaude(scope, `"C:/tools/obit.exe" hook claude`, uninstall)
+	changes, err := PlanClaude(scope, testenv.NativeFixture(`"C:/tools/obit.exe" hook claude`), uninstall)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -254,9 +255,9 @@ func mustJSON(v any) []byte {
 	return b
 }
 
-const (
+var (
 	unixCmd = "/mnt/d/tools/obit.exe hook codex"
-	winCmd  = `"D:/tools/obit.exe" hook codex`
+	winCmd  = testenv.NativeFixture(`"D:/tools/obit.exe" hook codex`)
 )
 
 // The extra first write models an editor save after Apply's shared preflight,
@@ -274,6 +275,12 @@ func editAfterPreflight(t *testing.T, changes []Change, path, content string) []
 
 func makeIntegrationJunction(t *testing.T, path, target string) {
 	t.Helper()
+	if runtime.GOOS != "windows" {
+		if err := os.Symlink(target, path); err != nil {
+			t.Fatal(err)
+		}
+		return
+	}
 	if out, err := exec.Command("cmd", "/c", "mklink", "/J", path, target).CombinedOutput(); err != nil {
 		t.Fatalf("mklink: %v %s", err, out)
 	}
@@ -333,9 +340,9 @@ func pluginRoundTrip(t *testing.T, agent, root string, e *auto.Engine, fields ma
 	case "hermes":
 		module, interpreter = filepath.Join(dir, "plugin.py"), "python"
 		args = []string{"-B", "plugins/hermes/roundtrip.py"}
-		payload, err = pluginPayload(Scope{Project: dir}, module, hermesPlugin, `C:\test\obit.exe`)
+		payload, err = pluginPayload(Scope{Project: dir}, module, hermesPlugin, testenv.NativeFixture(`C:\test\obit.exe`))
 	case "kilocode":
-		payload, err = pluginPayload(Scope{Project: dir}, module, kiloCodePlugin, `C:\test\obit.exe`)
+		payload, err = pluginPayload(Scope{Project: dir}, module, kiloCodePlugin, testenv.NativeFixture(`C:\test\obit.exe`))
 	default:
 		host := agent
 		if host == "omp" {
@@ -355,6 +362,9 @@ func pluginRoundTrip(t *testing.T, agent, root string, e *auto.Engine, fields ma
 	fields["agent"], fields["cwd"] = agent, root
 	config := filepath.Join(dir, "input.json")
 	writeIntegrationFile(t, config, string(mustJSON(fields)))
+	if interpreter == "python" {
+		interpreter = testenv.PythonCommand()
+	}
 	cmd := exec.CommandContext(t.Context(), interpreter, append(args, module, config)...)
 	stdin, err := cmd.StdinPipe()
 	if err != nil {

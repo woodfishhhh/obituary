@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"encoding/json"
@@ -17,7 +19,7 @@ func minimaxScope(t *testing.T) (Scope, string, Commands) {
 	t.Helper()
 	root := t.TempDir()
 	t.Setenv("MINIMAX_DATA_DIR", root)
-	return Scope{Global: true}, root, Commands{Executable: `C:\工具 space\obit.exe`, Native: `"C:\工具 space\obit.exe" hook minimax-code`}
+	return Scope{Global: true}, root, Commands{Executable: testenv.NativeFixture(`C:\工具 space\obit.exe`), Native: testenv.NativeFixture(`"C:\工具 space\obit.exe" hook minimax-code`)}
 }
 
 func TestMiniMaxBundleLifecycle(t *testing.T) {
@@ -74,7 +76,7 @@ func TestMiniMaxBundleLifecycle(t *testing.T) {
 			if err != nil || Pending(changes) {
 				t.Fatalf("repeat installation %v %+v", err, changes)
 			}
-			cmd.Executable = `C:\other space\obit.exe`
+			cmd.Executable = testenv.NativeFixture(`C:\other space\obit.exe`)
 			changes, err = plan(false)
 			applyIntegration(t, changes, err)
 			if kind == "hooks" {
@@ -163,7 +165,7 @@ func TestMiniMaxProjectLifecycleAndSharedMCP(t *testing.T) {
 	mcp := filepath.Join(s.Project, ".mcp.json")
 	original := "\xef\xbb\xbf# User rules\r\n<!-- user comment -->\r\n"
 	writeIntegrationFile(t, rules, original)
-	cmd := Commands{Executable: `C:\tools\obit.exe`}
+	cmd := Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}
 	changes, err := PlanMiniMax(s, cmd, false)
 	if read(t, rules) != original {
 		t.Fatal("dry run changed rules")
@@ -191,7 +193,7 @@ func TestMiniMaxProjectLifecycleAndSharedMCP(t *testing.T) {
 	applyIntegration(t, changes, err)
 	withEnv := strings.Replace(read(t, mcp), `"args": [`, `"env": {"USER_SETTING": "keep"}, "args": [`, 1)
 	writeIntegrationFile(t, mcp, withEnv)
-	changes, err = PlanMiniMaxMCP(s, `C:\new\obit.exe`, false)
+	changes, err = PlanMiniMaxMCP(s, testenv.NativeFixture(`C:\new\obit.exe`), false)
 	applyIntegration(t, changes, err)
 	if !strings.Contains(read(t, mcp), `new`) || !strings.Contains(read(t, mcp), "USER_SETTING") {
 		t.Fatal("MCP refresh lost executable or user env")
@@ -221,7 +223,7 @@ func TestMiniMaxRefusesUnownedAndChangedFiles(t *testing.T) {
 		s := Scope{Project: t.TempDir()}
 		path := filepath.Join(s.Project, ".mcp.json")
 		writeIntegrationFile(t, path, bad)
-		if _, err := PlanMiniMaxMCP(s, `C:\tools\obit.exe`, false); err == nil {
+		if _, err := PlanMiniMaxMCP(s, testenv.NativeFixture(`C:\tools\obit.exe`), false); err == nil {
 			t.Fatalf("invalid config accepted %q", bad)
 		}
 		if read(t, path) != bad {
@@ -272,9 +274,9 @@ func TestMiniMaxMCPRefusesUnreceiptedSharedEntry(t *testing.T) {
 	t.Parallel()
 	s := Scope{Project: t.TempDir()}
 	path := filepath.Join(s.Project, ".mcp.json")
-	original := `{"mcpServers":{"obituary":{"command":"C:/tools/obit.exe","args":["mcp"]}}}`
+	original := testenv.NativeFixture(`{"mcpServers":{"obituary":{"command":"C:/tools/obit.exe","args":["mcp"]}}}`)
 	writeIntegrationFile(t, path, original)
-	if _, err := PlanMiniMaxMCP(s, `C:\tools\obit.exe`, false); err == nil {
+	if _, err := PlanMiniMaxMCP(s, testenv.NativeFixture(`C:\tools\obit.exe`), false); err == nil {
 		t.Fatal("adopted another host's unreceipted obituary entry")
 	}
 	if read(t, path) != original {
@@ -388,7 +390,7 @@ func TestMiniMaxCapabilitiesAndWindowsCommand(t *testing.T) {
 		t.Fatal("declared-shell guard installation rejected", err)
 	}
 	s.GuardRM = false
-	for _, bad := range []string{`relative\obit.exe`, `C:\%HOME%\obit.exe`, `C:\bad!\obit.exe`, `C:\a&b\obit.exe`} {
+	for _, bad := range []string{`relative\obit.exe`, testenv.NativeFixture(`C:\%HOME%\obit.exe`), testenv.NativeFixture(`C:\bad!\obit.exe`), testenv.NativeFixture(`C:\a&b\obit.exe`)} {
 		cmd.Executable = bad
 		if _, err := PlanMiniMax(s, cmd, false); err == nil {
 			t.Fatalf("unsafe cmd accepted %s", bad)

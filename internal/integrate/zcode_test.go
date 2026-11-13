@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"encoding/json"
@@ -58,7 +60,7 @@ func TestZCodeInstallLifecycle(t *testing.T) {
 			writeIntegrationFile(t, rules, userRules)
 			provider := filepath.Join(filepath.Dir(filepath.Dir(path)), "v2", "provider_config.json")
 			writeIntegrationFile(t, provider, "provider sentinel")
-			exe := `C:\tools with spaces\中文 $quote'\obit.exe`
+			exe := testenv.NativeFixture(`C:\tools with spaces\中文 $quote'\obit.exe`)
 			plan, err := zcodePlanAll(s, exe, false)
 			if err != nil {
 				t.Fatal(err)
@@ -117,7 +119,7 @@ func TestZCodeInstallLifecycle(t *testing.T) {
 					t.Fatal("not idempotent", ch.Path, ch.Action)
 				}
 			}
-			exe = `C:\new tools\obit.exe`
+			exe = testenv.NativeFixture(`C:\new tools\obit.exe`)
 			plan, err = zcodePlanAll(s, exe, false)
 			applyIntegration(t, plan, err)
 			if err := json.Unmarshal(zcodeReadMember(t, path, "hooks", "events", "SessionStart"), &groups); err != nil || groups[0].Hooks[0].Command != exe {
@@ -153,8 +155,8 @@ func TestZCodeInstallLifecycle(t *testing.T) {
 func TestZCodeMCPOnlyAndDisabledEntry(t *testing.T) {
 	s, path, _ := zcodeScope(t, false)
 	s.MCP = true
-	writeIntegrationFile(t, path, `{"hooks":{"enabled":false,"keep":true},"features":{"mcp":false},"mcp":{"servers":{"obituary":{"type":"stdio","command":"C:/old/obit.exe","args":["mcp"],"enabled":false,"env":{"KEY":"value"}}}}}`)
-	plan, err := PlanZCodeMCP(s, `C:\new\obit.exe`, false)
+	writeIntegrationFile(t, path, testenv.NativeFixture(`{"hooks":{"enabled":false,"keep":true},"features":{"mcp":false},"mcp":{"servers":{"obituary":{"type":"stdio","command":"C:/old/obit.exe","args":["mcp"],"enabled":false,"env":{"KEY":"value"}}}}}`))
+	plan, err := PlanZCodeMCP(s, testenv.NativeFixture(`C:\new\obit.exe`), false)
 	applyIntegration(t, plan, err)
 	for _, keys := range [][]string{{"hooks", "enabled"}, {"mcp", "servers", "obituary", "enabled"}} {
 		if !sameConfigJSON(zcodeReadMember(t, path, keys...), []byte("false")) {
@@ -170,13 +172,13 @@ func TestZCodeMCPOnlyAndDisabledEntry(t *testing.T) {
 	gate, err := PlanConfigEdits(s, path, ConfigJSON, []ConfigEdit{{Path: []string{"features", "mcp"}, Value: json.RawMessage("false")}})
 	applyIntegration(t, []Change{gate}, err)
 	s.MCP = false
-	plan, err = PlanZCodeMCP(s, `C:\refreshed\obit.exe`, false)
+	plan, err = PlanZCodeMCP(s, testenv.NativeFixture(`C:\refreshed\obit.exe`), false)
 	applyIntegration(t, plan, err)
 	if !sameConfigJSON(zcodeReadMember(t, path, "features", "mcp"), []byte("false")) {
 		t.Fatal("implicit refresh enabled MCP against user settings")
 	}
 	s.GuardRM = true
-	if _, err := PlanZCode(s, Commands{Executable: `C:\tools\obit.exe`}, false); err == nil || !strings.Contains(err.Error(), "CMD") {
+	if _, err := PlanZCode(s, Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}, false); err == nil || !strings.Contains(err.Error(), "CMD") {
 		t.Fatal("unknown shell guard installation accepted", err)
 	}
 }
@@ -189,9 +191,9 @@ func TestZCodeConfigRejectionAndConcurrentEdit(t *testing.T) {
 			for _, mcp := range []bool{false, true} {
 				var err error
 				if mcp {
-					_, err = PlanZCodeMCP(s, `C:\tools\obit.exe`, false)
+					_, err = PlanZCodeMCP(s, testenv.NativeFixture(`C:\tools\obit.exe`), false)
 				} else {
-					_, err = PlanZCode(s, Commands{Executable: `C:\tools\obit.exe`}, false)
+					_, err = PlanZCode(s, Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}, false)
 				}
 				if err == nil || read(t, path) != bad {
 					t.Fatalf("invalid config changed/accepted: %q %v", bad, err)
@@ -201,7 +203,7 @@ func TestZCodeConfigRejectionAndConcurrentEdit(t *testing.T) {
 	}
 	s, path, rules := zcodeScope(t, false)
 	writeIntegrationFile(t, path, `{"keep":1}`)
-	plan, err := zcodePlanAll(s, `C:\tools\obit.exe`, false)
+	plan, err := zcodePlanAll(s, testenv.NativeFixture(`C:\tools\obit.exe`), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -224,13 +226,13 @@ func TestZCodeLayersAndLinks(t *testing.T) {
 	s, path, _ := zcodeScope(t, false)
 	dot := filepath.Join(s.Project, ".zcode", "config.json")
 	writeIntegrationFile(t, dot, `{"keep":1}`)
-	plan, err := PlanZCode(s, Commands{Executable: `C:\tools\obit.exe`}, false)
+	plan, err := PlanZCode(s, Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}, false)
 	applyIntegration(t, plan, err)
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
 		t.Fatal("shadow config created", err)
 	}
 	writeIntegrationFile(t, path, `{"keep":2}`)
-	if _, err := PlanZCode(s, Commands{Executable: `C:\tools\obit.exe`}, false); err == nil {
+	if _, err := PlanZCode(s, Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}, false); err == nil {
 		t.Fatal("ambiguous project layers accepted")
 	}
 	plan, err = PlanZCode(s, Commands{}, true)
@@ -247,7 +249,7 @@ func TestZCodeLayersAndLinks(t *testing.T) {
 			}
 			outside := t.TempDir()
 			makeIntegrationJunction(t, link, outside)
-			if _, err := PlanZCode(s, Commands{Executable: `C:\tools\obit.exe`}, false); err == nil {
+			if _, err := PlanZCode(s, Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}, false); err == nil {
 				t.Fatal("external directory link accepted")
 			}
 			entries, err := os.ReadDir(outside)
@@ -262,7 +264,7 @@ func TestZCodeMCPConflictsAndHookOwnership(t *testing.T) {
 	s, path, _ := zcodeScope(t, false)
 	writeIntegrationFile(t, path, `{"mcp":{"servers":{"obituary":{"type":"http","url":"https://example.invalid"}}}}`)
 	original := read(t, path)
-	if _, err := PlanZCodeMCP(s, `C:\tools\obit.exe`, false); err == nil {
+	if _, err := PlanZCodeMCP(s, testenv.NativeFixture(`C:\tools\obit.exe`), false); err == nil {
 		t.Fatal("unowned MCP overwritten")
 	}
 	plan, err := PlanZCodeMCP(s, "", true)
@@ -272,8 +274,8 @@ func TestZCodeMCPConflictsAndHookOwnership(t *testing.T) {
 	if err := Apply(plan); err == nil || read(t, path) != original {
 		t.Fatal("unowned MCP was not preserved", err)
 	}
-	writeIntegrationFile(t, path, `{"hooks":{"enabled":false,"events":{"SessionStart":[{"hooks":[{"type":"process","command":"C:/old/obit.exe","args":["hook","zcode","--help"]},{"type":"command","command":"obit hook zcode && user-task"}]}]}}}`)
-	plan, err = PlanZCode(s, Commands{Executable: `C:\tools\obit.exe`}, false)
+	writeIntegrationFile(t, path, testenv.NativeFixture(`{"hooks":{"enabled":false,"events":{"SessionStart":[{"hooks":[{"type":"process","command":"C:/old/obit.exe","args":["hook","zcode","--help"]},{"type":"command","command":"obit hook zcode && user-task"}]}]}}}`))
+	plan, err = PlanZCode(s, Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}, false)
 	applyIntegration(t, plan, err)
 	plan, err = PlanZCode(s, Commands{}, true)
 	applyIntegration(t, plan, err)
@@ -286,10 +288,10 @@ func TestZCodeProjectTrustInstructionsOnRefresh(t *testing.T) {
 	s, _, _ := zcodeScope(t, false)
 	s.Project = filepath.Join(s.Project, "project '$name`")
 	path := filepath.Join(s.Project, "zcode.json")
-	plan, err := PlanZCode(s, Commands{Executable: `C:\old\obit.exe`}, false)
+	plan, err := PlanZCode(s, Commands{Executable: testenv.NativeFixture(`C:\old\obit.exe`)}, false)
 	applyIntegration(t, plan, err)
 	declarations := zcodeReadMember(t, path, "hooks", "events")
-	plan, err = PlanZCode(s, Commands{Executable: `C:\new\obit.exe`}, false)
+	plan, err = PlanZCode(s, Commands{Executable: testenv.NativeFixture(`C:\new\obit.exe`)}, false)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"os"
 	"path/filepath"
@@ -63,7 +65,7 @@ func TestSharedAgentRulesLegacyOwnersRemainProtected(t *testing.T) {
 	path := filepath.Join(s.Project, "AGENTS.md")
 	legacy := blockBegin + "\nold shared instructions\n" + blockEnd + "\n"
 	writeIntegrationFile(t, path, legacy)
-	writeIntegrationFile(t, filepath.Join(s.Project, ".codex", "hooks.json"), "\xef\xbb\xbf"+`{"hooks":{"Stop":[{"hooks":[{"type":"command","commandWindows":"C:/tools/obit.exe hook codex"}]}]}}`)
+	writeIntegrationFile(t, filepath.Join(s.Project, ".codex", "hooks.json"), "\xef\xbb\xbf"+testenv.NativeFixture(`{"hooks":{"Stop":[{"hooks":[{"type":"command","commandWindows":"C:/tools/obit.exe hook codex"}]}]}}`))
 	plan, err := PlanAgent("hermes", s, ownershipCommands("hermes"), true)
 	if err != nil {
 		t.Fatal(err)

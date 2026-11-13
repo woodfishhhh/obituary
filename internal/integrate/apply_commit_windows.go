@@ -88,6 +88,10 @@ func deleteIntegrationHandle(f *os.File) error {
 	return winfs.DeleteCommitFile(f)
 }
 
+func (p *integrationTarget) removeTemporary(f *os.File, _ string) error {
+	return deleteIntegrationHandle(f)
+}
+
 func (p *integrationTarget) removeOriginal(c Change) error {
 	old, err := p.commitOriginal(c)
 	if err != nil {

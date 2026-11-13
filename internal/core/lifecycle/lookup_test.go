@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -15,6 +16,9 @@ func TestDirectoryReferenceSkipsNewerFileBurial(t *testing.T) {
 	for _, extended := range []bool{false, true} {
 		for _, operation := range []string{"purge", "resurrect"} {
 			t.Run(fmt.Sprintf("%v/%s", extended, operation), func(t *testing.T) {
+				if extended && runtime.GOOS != "windows" {
+					t.Skip("extended path syntax is Windows-only")
+				}
 				f := newFixture(t)
 				f.file("build/payload")
 				path := filepath.Join(f.dir, "build")
@@ -25,7 +29,7 @@ func TestDirectoryReferenceSkipsNewerFileBurial(t *testing.T) {
 				directory := *rows[0].Burial
 				f.clock = f.clock.Add(time.Minute)
 				file := buryOne(t, f, "build")
-				ref := path + `\`
+				ref := path + string(os.PathSeparator)
 				if extended {
 					ref = `\\?\` + ref
 				}
@@ -88,6 +92,9 @@ func TestGraveNumericShapeNeverFallsBackToFilename(t *testing.T) {
 }
 
 func TestGraveExtendedSpellingMatchesOrdinaryPath(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("extended path syntax is Windows-only")
+	}
 	for _, command := range []string{"purge", "resurrect"} {
 		for _, storedExtended := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%s/%v", command, storedExtended), func(t *testing.T) {

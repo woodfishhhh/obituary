@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"encoding/json"
 	"path/filepath"
@@ -17,7 +19,7 @@ func TestMCPConfigRootPathsAndEnv(t *testing.T) {
 				path := filepath.Join(s.Project, "mcp.json")
 				spec := MCPConfig{ServersPath: root, Codec: codec}
 				writeIntegrationFile(t, path, "\xef\xbb\xbf"+`{"first":"<&>","last":9007199254740993}`)
-				ch, err := PlanMCPConfig(s, path, spec, "C:/old/obit.exe", false)
+				ch, err := PlanMCPConfig(s, path, spec, testenv.NativeFixture("C:/old/obit.exe"), false)
 				applyIntegration(t, []Change{ch}, err)
 				data, _ := configJSON([]byte(read(t, path)), ConfigJSON)
 				entryPath := append(append([]string{}, root...), "obituary")
@@ -28,12 +30,12 @@ func TestMCPConfigRootPathsAndEnv(t *testing.T) {
 				raw, _ = obj.MarshalJSON()
 				ch, err = PlanConfigEdits(s, path, ConfigJSON, []ConfigEdit{{Path: entryPath, Value: raw}})
 				applyIntegration(t, []Change{ch}, err)
-				ch, err = PlanMCPConfig(s, path, spec, "C:/new/obit.exe", false)
+				ch, err = PlanMCPConfig(s, path, spec, testenv.NativeFixture("C:/new/obit.exe"), false)
 				applyIntegration(t, []Change{ch}, err)
-				if !strings.Contains(read(t, path), "keep&secret") || !strings.Contains(read(t, path), `"disabled": true`) || !strings.Contains(read(t, path), "C:/new/obit.exe") {
+				if !strings.Contains(read(t, path), "keep&secret") || !strings.Contains(read(t, path), `"disabled": true`) || !strings.Contains(read(t, path), testenv.NativeFixture("C:/new/obit.exe")) {
 					t.Fatal("refresh lost fields", read(t, path))
 				}
-				ch, err = PlanMCPConfig(s, path, spec, "C:/new/obit.exe", false)
+				ch, err = PlanMCPConfig(s, path, spec, testenv.NativeFixture("C:/new/obit.exe"), false)
 				if err != nil || ch.Action != "unchanged" {
 					t.Fatalf("not idempotent: %+v %v", ch, err)
 				}
@@ -51,7 +53,7 @@ func TestMCPEntryCodecsStrictOwnership(t *testing.T) {
 	t.Parallel()
 	codec := CommandArgsMCP{}
 	for _, raw := range []string{
-		`{"command":"obit","args":["mcp"]}`, `{"command":"C:/bin/obit.exe","args":["mcp"],"env":{"A":"B"}}`,
+		`{"command":"obit","args":["mcp"]}`, testenv.NativeFixture(`{"command":"C:/bin/obit.exe","args":["mcp"],"env":{"A":"B"}}`),
 	} {
 		if !codec.Owned([]byte(raw)) {
 			t.Fatal("owned entry rejected", raw)
@@ -87,7 +89,7 @@ func TestMCPConfigUnownedConflictAndJSON5Manual(t *testing.T) {
 		t.Fatalf("unowned uninstall: %+v %v", ch, err)
 	}
 	spec.Format, spec.ServersPath = ConfigJSON5, []string{"mcp", "servers"}
-	if _, err := PlanMCPConfig(s, path, spec, "C:/bin/obit.exe", false); err == nil || !strings.Contains(err.Error(), `["mcp","servers","obituary"]`) || !strings.Contains(err.Error(), "C:/bin/obit.exe") {
+	if _, err := PlanMCPConfig(s, path, spec, testenv.NativeFixture("C:/bin/obit.exe"), false); err == nil || !strings.Contains(err.Error(), `["mcp","servers","obituary"]`) || !strings.Contains(err.Error(), testenv.NativeFixture("C:/bin/obit.exe")) {
 		t.Fatalf("missing exact manual instruction: %v", err)
 	}
 }

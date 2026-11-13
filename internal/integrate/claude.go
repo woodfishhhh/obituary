@@ -109,7 +109,7 @@ func claudeHookConfig(spec hookSpec) (HookConfig, error) {
 // Claude Code >=2.1.139 executes command+args without choosing a shell (#12).
 func PlanClaudeExec(s Scope, executable string, uninstall bool) ([]Change, error) {
 	if !uninstall && !OwnedHookExec(executable, []string{"hook", "claude"}, "claude", nil) {
-		return nil, fmt.Errorf("hooks for Claude require an absolute obit.exe path")
+		return nil, fmt.Errorf("hooks for Claude require an absolute Obituary executable path")
 	}
 	return PlanClaude(s, fmt.Sprintf("\"%s\" hook claude", filepath.ToSlash(executable)), uninstall)
 }

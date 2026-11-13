@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -78,6 +79,12 @@ func TestWatchDirectoryRequiresBurialApproval(t *testing.T) {
 		t.Fatal("unchanged directory proposal lost its review")
 	}
 	rows, err := (&auto.Engine{Svc: f.svc}).Approve([]string{fmt.Sprint(p.ID)})
+	if runtime.GOOS != "windows" {
+		if err != nil || len(rows) != 1 || rows[0].Error == "" || !exists(path) || len(f.items()) != 1 || len(f.burials()) != 0 {
+			t.Fatalf("approval cannot supply unsupported writer exclusion: %+v %v", rows, err)
+		}
+		return
+	}
 	if err != nil || len(rows) != 1 || rows[0].Error != "" || exists(path) || len(f.burials()) != 1 {
 		t.Fatalf("approved directory was not buried: %+v %v", rows, err)
 	}

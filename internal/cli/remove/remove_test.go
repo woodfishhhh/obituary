@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -438,11 +439,32 @@ func TestDeleteGuardMutations(t *testing.T) {
 		{"disabled-switch", "internal/hook/delete_guard.go",
 			`os.Getenv("OBIT_GUARD_RM") == "0"`, `os.Getenv("OBIT_GUARD_RM") == "disabled-mutation"`,
 			"./internal/hook", "TestPreToolUseDisabled"},
+		{"native-posix-shell", "internal/hook/delete_guard.go",
+			`runtime.GOOS == "windows" && (strings.HasPrefix(ev.Cwd, "/")`, `runtime.GOOS != "plan9" && (strings.HasPrefix(ev.Cwd, "/")`,
+			"./internal/hook", "TestPOSIXNativeShellDeletionGuard"},
+		{"native-posix-registration", "internal/core/lifecycle/register.go",
+			`current, err := s.LocateKnown(it.Path, *it.Identity)`, `current, err := s.FS.Locate(*it.Identity)`,
+			"./internal/core/lifecycle", "TestPOSIXRegistrationChecksKnownTrackedPaths"},
+		{"native-posix-observation", "internal/auto/auto.go",
+			`got.path, got.err = svc.LocateKnown(it.Path, id)`, `got.path, got.err = svc.FS.Locate(id)`,
+			"./internal/auto", "TestPOSIXObservationChecksKnownTrackedPaths"},
+		{"native-posix-uri", "internal/hook/codex.go",
+			`runtime.GOOS != "windows" && strings.Contains(p, "://")`, `runtime.GOOS == "plan9" && strings.Contains(p, "://")`,
+			"./internal/hook", "TestPOSIXNativePathRejectsRemoteURIs"},
+		{"native-posix-deepseek", "internal/hook/deepseek.go",
+			`if runtime.GOOS != "windows" {`, `if runtime.GOOS == "plan9" {`,
+			"./internal/hook", "TestPOSIXDeepSeekLocalWrite"},
+		{"native-posix-restore-name", "internal/core/lifecycle/restore_intent.go",
+			`if runtime.GOOS != "windows" {`, `if runtime.GOOS == "plan9" {`,
+			"./internal/core/lifecycle", "TestPOSIXColonNameDoesNotSelectNeighbor"},
 	} {
 		if !testenv.InMutationShard(t, i) {
 			continue
 		}
 		t.Run(mutation.name, func(t *testing.T) {
+			if strings.HasPrefix(mutation.name, "native-posix-") && runtime.GOOS == "windows" {
+				t.Skip("native POSIX executable namespace")
+			}
 			original := filepath.Join(root, mutation.file)
 			source, err := os.ReadFile(original)
 			if err != nil || !strings.Contains(string(source), mutation.from) {

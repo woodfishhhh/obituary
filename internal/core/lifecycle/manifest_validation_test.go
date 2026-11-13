@@ -41,12 +41,15 @@ func TestWatchManifestRetainsUnverifiedFilesAndDirectories(t *testing.T) {
 }
 
 func TestManifestRejectsInvalidFields(t *testing.T) {
-	for _, field := range []string{"version", "zero-id", "identity", "graveId", "buriedAt", "purgeAt", "size", "reason", "watch-error", "child-parent-id", "child-identity", "duplicate-child", "contains-parent", "duplicate-contains", "identity-hex", "identity-length", "identity-volume"} {
+	for _, field := range []string{"version", "zero-id", "identity", "graveId", "buriedAt", "purgeAt", "size", "reason", "watch-error", "child-parent-id", "child-identity", "duplicate-child", "contains-parent", "duplicate-contains", "identity-hex", "identity-length", "identity-volume", "identity-relative-volume"} {
 		t.Run(field, func(t *testing.T) {
 			f := newFixture(t)
 			path := f.file("output/payload.txt")
 			_, grave := interruptBurial(t, f, filepath.Dir(path), "bury")
 			manifest := filepath.Dir(grave) + ".json"
+			if field == "identity-volume" || field == "identity-relative-volume" {
+				t.Chdir(filepath.Dir(grave))
+			}
 			rewriteManifest(t, manifest, func(m map[string]any) {
 				switch field {
 				case "version":
@@ -83,6 +86,17 @@ func TestManifestRejectsInvalidFields(t *testing.T) {
 					m["identity"].(map[string]any)["fileId"] = "aabb"
 				case "identity-volume":
 					m["identity"].(map[string]any)["volume"] = "?:invalid"
+				case "identity-relative-volume":
+					id := m["identity"].(map[string]any)
+					cwd, err := os.Getwd()
+					if err != nil {
+						t.Fatal(err)
+					}
+					relative, err := filepath.Rel(cwd, id["volume"].(string))
+					if err != nil {
+						t.Fatal(err)
+					}
+					id["volume"] = relative
 				}
 			})
 			pending, err := f.svc.PendingGraves()

@@ -22,7 +22,7 @@ func (s *Service) purgeRestoreIntent(b Burial, p PendingGrave, dryRun bool) (Gra
 	if err := s.verifyAbandonedGrave(b, p); err != nil {
 		return refuse(err)
 	}
-	path, err := s.FS.FindRestored(p.restore.Parent, *b.Identity)
+	path, err := s.findRestored(b, p.restore)
 	if err == nil {
 		r.Action, r.Path = ActionResurrected, path
 		if dryRun {

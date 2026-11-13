@@ -1,9 +1,12 @@
 package doctor
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -12,7 +15,24 @@ import (
 	"github.com/woodfishhhh/obituary/internal/shortcut"
 )
 
+func TestPOSIXDesktopDiagnostics(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("native POSIX desktop diagnostics")
+	}
+	target := func(string) (string, error) {
+		t.Fatal("POSIX diagnosis tried to inspect a Windows shortcut")
+		return "", nil
+	}
+	checks := append(diagnoseIcons(), diagnoseShortcut("/tmp/obit", target), diagnoseDesktop("/tmp/obit", target))
+	for _, check := range checks {
+		if check.Status != "INFO" {
+			t.Fatalf("Windows-only feature reported as an installation failure: %+v", check)
+		}
+	}
+}
+
 func TestStartMenuShortcutDiagnosis(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	menu := t.TempDir()
 	t.Setenv("OBIT_START_MENU_DIR", menu)
 	exe := filepath.Join(t.TempDir(), "obit.exe")
@@ -39,6 +59,7 @@ func TestStartMenuShortcutDiagnosis(t *testing.T) {
 }
 
 func TestShortcutDiagnosisUsesRelocatedAndLegacyReceipts(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	for _, place := range []shortcut.Location{shortcut.StartMenu, shortcut.Desktop} {
 		t.Run(string(place), func(t *testing.T) {
 			root := t.TempDir()
@@ -80,6 +101,7 @@ func TestShortcutDiagnosisUsesRelocatedAndLegacyReceipts(t *testing.T) {
 }
 
 func TestDesktopShortcutDiagnosis(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	home := t.TempDir()
 	t.Setenv("OBIT_USER_HOME", home)
 	exe := filepath.Join(home, "obit.exe")

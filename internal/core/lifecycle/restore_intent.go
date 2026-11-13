@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"unicode/utf16"
 	"unicode/utf8"
@@ -32,6 +33,9 @@ func validRestoreParent(intent *restoreIntent, identity *Identity) bool {
 }
 
 func validRestoreName(name string) bool {
+	if runtime.GOOS != "windows" {
+		return name != "" && name != "." && name != ".." && len(name) <= 255 && utf8.ValidString(name) && !strings.ContainsAny(name, "/\x00")
+	}
 	// IsLocal reuses Go's Windows device-name rules. It does not enforce a
 	// single component, forbidden Win32 characters, or the NTFS UTF-16 limit.
 	if !filepath.IsLocal(name) || name == "." || !utf8.ValidString(name) ||
@@ -180,7 +184,7 @@ func (s *Service) inspectUncommittedRestore(p *PendingGrave) error {
 		p.Status = "restore-ready" // interrupted before the move; safe to retry normally
 		return nil
 	}
-	path, err := s.FS.FindRestored(intent.Parent, *b.Identity)
+	path, err := s.findRestored(b, intent)
 	if err != nil {
 		return err
 	}
@@ -280,7 +284,7 @@ func (s *Service) recoverRestoreIntent(p PendingGrave) (restoreResult, error) {
 	case "restore-committed":
 		path, locateErr := p.Path, error(nil)
 		if p.restore != nil {
-			path, locateErr = s.FS.FindRestored(p.restore.Parent, *p.Burial.Identity)
+			path, locateErr = s.findRestored(*p.Burial, p.restore)
 		} else {
 			locateErr = errors.New("cleanup receipt lacks destination identity")
 		}

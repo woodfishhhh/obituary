@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -94,8 +96,24 @@ func TestPathCommandsSelectCurrentObject(t *testing.T) {
 				t.Fatal(err)
 			}
 			clitest.WriteFixture(t, path, "new")
-			if out, _, err := clitest.Execute(t, addcmd.NewCmd(), path, "3d"); err != nil {
-				t.Fatalf("add new: %s, %v", out, err)
+			out, stderr, addErr := clitest.Execute(t, addcmd.NewCmd(), path, "3d")
+			if runtime.GOOS != "windows" {
+				if addErr == nil || !strings.Contains(out+stderr, "not supported") {
+					t.Fatalf("unlocated prior object needs an explicit diagnostic: %s %s %v", out, stderr, addErr)
+				}
+				st, err := store.ReadSnapshot()
+				if err != nil || !reflect.DeepEqual(st.Items, before.Items) || len(st.Burials) != 0 {
+					t.Fatalf("failed rebinding changed the old lifespan: %+v %v", st, err)
+				}
+				for file, want := range map[string]string{path: "new", keep: "old"} {
+					if data, err := os.ReadFile(file); err != nil || string(data) != want {
+						t.Fatalf("failed rebinding changed %s: %q %v", file, data, err)
+					}
+				}
+				return
+			}
+			if addErr != nil {
+				t.Fatalf("add new: %s, %v", out, addErr)
 			}
 			st, err := store.Read()
 			if err != nil || len(st.Items) != 2 {
@@ -174,17 +192,24 @@ func TestPathReferenceDoesNotFallBackFromExistingObject(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			_, _, err := clitest.Execute(t, NewCmd(), path)
-			if (err == nil) != (kind == "missing") {
+			out, stderr, err := clitest.Execute(t, NewCmd(), path)
+			resolved := kind == "missing" && runtime.GOOS == "windows"
+			if (err == nil) != resolved {
 				t.Fatalf("path lookup: %v", err)
+			}
+			if runtime.GOOS != "windows" && kind == "missing" && !strings.Contains(out+stderr, "not supported") {
+				t.Fatalf("missing path silently discarded its unknown object: %s %s", out, stderr)
 			}
 			st, err := store.Read()
 			want := 1
-			if kind == "missing" {
+			if resolved {
 				want = 0
 			}
 			if err != nil || len(st.Items) != want {
 				t.Fatalf("incorrect ledger fallback: %+v, %v", st.Items, err)
+			}
+			if data, err := os.ReadFile(keep); err != nil || string(data) != "keep" {
+				t.Fatalf("path lookup changed the unlocated object: %q %v", data, err)
 			}
 		})
 	}

@@ -6,11 +6,11 @@ Something you are not sure about cannot come back once deleted. Obituary buries 
 
 ## macOS and Linux?
 
-Windows only for now; macOS and Linux compile but cannot bury yet.
+Yes. Both provide x64 / ARM64 command-line and background programs with a graveyard, resurrection and automatic burial. macOS uses launchd and Linux uses a systemd user timer to check expiries; agent hooks also start checks when needed. See [Quick start](./index). Recycle Bin mode, the small window, tray and context menus are provided by the Windows edition.
 
 ## Windows says "Windows protected your PC"?
 
-1.0.0 is not code-signed yet. If you download the archive with a browser, choose "More info → Run anyway". Scoop, winget and the install script usually do not trigger this, and all three check the archive's SHA-256 first.
+Obituary is not code-signed yet. If you download the archive with a browser, choose "More info → Run anyway". Scoop, winget and the install script usually do not trigger this, and all three check the archive's SHA-256 first.
 
 ## Is there a small window on ARM64?
 

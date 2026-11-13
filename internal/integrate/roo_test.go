@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"path/filepath"
 	"testing"
@@ -10,7 +12,7 @@ func TestRooMCP(t *testing.T) {
 	s := Scope{Project: t.TempDir()}
 	path := filepath.Join(s.Project, ".roo", "mcp.json")
 	checkMCPPlanCycle(t, PlanRooMCP, s, path, ConfigJSON, []string{"mcpServers"}, "")
-	if _, err := PlanRooMCP(Scope{Global: true}, `C:\tools\obit.exe`, false); err == nil {
+	if _, err := PlanRooMCP(Scope{Global: true}, testenv.NativeFixture(`C:\tools\obit.exe`), false); err == nil {
 		t.Fatal("global MCP claimed installed")
 	}
 }

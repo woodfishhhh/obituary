@@ -41,10 +41,12 @@ type FS interface {
 	// Recycle moves path to the Recycle Bin after confirming it is still the
 	// object want. It must fail rather than delete permanently.
 	Recycle(path string, want Identity) error
-	// MovePinned opens path once, confirms on that handle that it is still
-	// the object want, and renames it to to through the same handle, so the
-	// object checked is the object moved. It never replaces anything at to;
-	// to's parent must exist and be on the same volume.
+	// MovePinned never replaces anything at to; its parent must exist on the
+	// same volume. Windows verifies and renames through the source handle.
+	// POSIX pins both parents, renames without replacement, then verifies the
+	// moved identity, type and link count. A mismatch is renamed back without
+	// replacement; failed rollback returns MoveMismatchError with Retained set,
+	// requiring permanent quarantine rather than purge or successful burial.
 	MovePinned(path string, want Identity, to string) error
 	// OpenRestoreParent pins a non-reparse directory. Its identity is queried
 	// on that handle, for comparison with the checked lexical parent path.
@@ -54,10 +56,13 @@ type FS interface {
 	MkdirRestoreParent(parent RestoreParent, name string) (RestoreParent, error)
 	// FindRestored verifies the source identity and its direct parent's identity
 	// together, returning the actual location for interrupted-restore recovery.
+	// POSIX callers supply the recorded parent spelling through FindRestoredIn;
+	// a parent moved away from that spelling cannot be located by inode alone.
 	FindRestored(parent, source Identity) (string, error)
 	// MovePinnedInto renames through that parent handle and returns the source
 	// handle's verified final path. An empty path with nil error means the move
 	// succeeded but its final spelling is unavailable; callers audit a fallback.
+	// POSIX uses MovePinned's move-then-verify policy with this pinned parent.
 	MovePinnedInto(path string, want Identity, parent RestoreParent, name string) (string, error)
 	// MakeGrave creates dir and fails if it already exists, creating its
 	// parents and hiding a per-volume `.obituary` folder.
@@ -70,8 +75,10 @@ type FS interface {
 // RestoreParent owns a destination directory handle until Close.
 type RestoreParent interface {
 	Close() error
-	// Rollback removes only this attempt's newly created empty directory, by
-	// its creation handle. Existing and nonempty directories are preserved.
+	// On Windows, Rollback removes only this attempt's newly created empty
+	// directory by its creation handle. POSIX cannot delete by creation fd:
+	// it preserves new directories and reports their paths for manual cleanup.
+	// Existing and nonempty directories are always preserved.
 	Rollback() error
 	// Path is the verified resolved spelling at the time the handle was opened.
 	Path() string

@@ -24,8 +24,8 @@ func TestClaudeMCPRecoveryConfirmsConcurrentTarget(t *testing.T) {
 			t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
 			t.Setenv("OBIT_FAKE_CLAUDE_MODE", "remove-committed-error")
 			path := filepath.Join(os.Getenv("CLAUDE_CONFIG_DIR"), ".claude.json")
-			writeIntegrationFile(t, path, `{"mcpServers":{"obituary":{"command":"C:/old/obit.exe","args":["mcp"]}}}`)
-			plan, err := PlanMCP(Scope{Global: true}, "claude", "C:/new/obit.exe", false)
+			writeIntegrationFile(t, path, testenv.NativeFixture(`{"mcpServers":{"obituary":{"command":"C:/old/obit.exe","args":["mcp"]}}}`))
+			plan, err := PlanMCP(Scope{Global: true}, "claude", testenv.NativeFixture("C:/new/obit.exe"), false)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -62,7 +62,7 @@ func TestClaudeManualCommandNativeArgumentFidelity(t *testing.T) {
 		modern      bool
 	}{{"quote", `a"b=c d`, true}, {"space", "a b=c d", false}, {"ordinary", "value", false}} {
 		t.Run(tc.name, func(t *testing.T) {
-			entry, err := json.Marshal(map[string]any{"command": "C:/tools/obit.exe", "args": []string{"mcp"}, "env": map[string]string{"DATA": tc.value}})
+			entry, err := json.Marshal(map[string]any{"command": testenv.NativeFixture("C:/tools/obit.exe"), "args": []string{"mcp"}, "env": map[string]string{"DATA": tc.value}})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -77,7 +77,7 @@ func TestClaudeManualCommandNativeArgumentFidelity(t *testing.T) {
 		})
 	}
 	for _, arg := range []string{"", `a"b`} {
-		entry, _ := json.Marshal(map[string]any{"command": "C:/tools/obit.exe", "args": []string{arg}})
+		entry, _ := json.Marshal(map[string]any{"command": testenv.NativeFixture("C:/tools/obit.exe"), "args": []string{arg}})
 		if _, ok := claudeManualAdd(entry); ok {
 			t.Fatalf("legacy PowerShell cannot preserve argument %q", arg)
 		}
@@ -94,8 +94,8 @@ func TestClaudeMCPRemoveObservesConcurrentTarget(t *testing.T) {
 			t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
 			t.Setenv("OBIT_FAKE_CLAUDE_MODE", mode)
 			path := filepath.Join(os.Getenv("CLAUDE_CONFIG_DIR"), ".claude.json")
-			writeIntegrationFile(t, path, `{"mcpServers":{"obituary":{"command":"C:/old/obit.exe","args":["mcp"]}}}`)
-			plan, err := PlanMCP(Scope{Global: true}, "claude", "C:/new/obit.exe", false)
+			writeIntegrationFile(t, path, testenv.NativeFixture(`{"mcpServers":{"obituary":{"command":"C:/old/obit.exe","args":["mcp"]}}}`))
+			plan, err := PlanMCP(Scope{Global: true}, "claude", testenv.NativeFixture("C:/new/obit.exe"), false)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -125,13 +125,13 @@ func TestClaudeMCPEntryConcurrency(t *testing.T) {
 		t.Run(strconv.FormatBool(changeEntry), func(t *testing.T) {
 			_, log := testenv.FakeClaude(t)
 			t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
-			plan, err := PlanMCP(Scope{Global: true}, "claude", "C:/new/obit.exe", false)
+			plan, err := PlanMCP(Scope{Global: true}, "claude", testenv.NativeFixture("C:/new/obit.exe"), false)
 			if err != nil {
 				t.Fatal(err)
 			}
 			current := `{"runtime":42,"mcpServers":{"other":{"command":"keep"}}}`
 			if changeEntry {
-				current = `{"mcpServers":{"obituary":{"command":"C:/user/obit.exe","args":["mcp"]}}}`
+				current = testenv.NativeFixture(`{"mcpServers":{"obituary":{"command":"C:/user/obit.exe","args":["mcp"]}}}`)
 			}
 			writeIntegrationFile(t, plan[0].Path, current)
 			err = Apply(plan)
@@ -158,15 +158,15 @@ func TestClaudeMCPRefreshPreservesFullEntry(t *testing.T) {
 	testenv.FakeClaude(t)
 	t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
 	path := filepath.Join(os.Getenv("CLAUDE_CONFIG_DIR"), ".claude.json")
-	old := `{"type":"stdio","command":"C:/old/obit.exe","args":["mcp"],"env":{"OBIT_HOME":"D:/another ledger","CACHE":"$cache %USER% ' &"},"custom":{"n":42}}`
+	old := testenv.NativeFixture(`{"type":"stdio","command":"C:/old/obit.exe","args":["mcp"],"env":{"OBIT_HOME":"D:/another ledger","CACHE":"$cache %USER% ' &"},"custom":{"n":42}}`)
 	writeIntegrationFile(t, path, `{"mcpServers":{"obituary":`+old+`}}`)
-	plan, err := PlanMCP(Scope{Global: true}, "claude", "C:/new/obit.exe", false)
+	plan, err := PlanMCP(Scope{Global: true}, "claude", testenv.NativeFixture("C:/new/obit.exe"), false)
 	if err != nil {
 		t.Fatal(err)
 	}
 	err = Apply(plan)
 	entry, parseErr := claudeEntry([]byte(read(t, path)))
-	if parseErr != nil || !sameJSON(entry, []byte(strings.Replace(old, "C:/old/obit.exe", "C:/new/obit.exe", 1))) {
+	if parseErr != nil || !sameJSON(entry, []byte(strings.Replace(old, testenv.NativeFixture("C:/old/obit.exe"), testenv.NativeFixture("C:/new/obit.exe"), 1))) {
 		t.Fatalf("refresh lost user entry fields: %s %v %v", entry, err, parseErr)
 	}
 	if err != nil {
@@ -182,8 +182,8 @@ func TestClaudeMCPVerifiesFullEntry(t *testing.T) {
 	t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
 	t.Setenv("OBIT_FAKE_CLAUDE_MODE", "drop-env")
 	path := filepath.Join(os.Getenv("CLAUDE_CONFIG_DIR"), ".claude.json")
-	writeIntegrationFile(t, path, `{"mcpServers":{"obituary":{"type":"stdio","command":"C:/old/obit.exe","args":["mcp"],"env":{"OBIT_HOME":"D:/ledger"}}}}`)
-	plan, err := PlanMCP(Scope{Global: true}, "claude", "C:/new/obit.exe", false)
+	writeIntegrationFile(t, path, testenv.NativeFixture(`{"mcpServers":{"obituary":{"type":"stdio","command":"C:/old/obit.exe","args":["mcp"],"env":{"OBIT_HOME":"D:/ledger"}}}}`))
+	plan, err := PlanMCP(Scope{Global: true}, "claude", testenv.NativeFixture("C:/new/obit.exe"), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -201,11 +201,11 @@ func TestClaudeMCPRestoresFailedRefresh(t *testing.T) {
 			_, log := testenv.FakeClaude(t)
 			t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
 			t.Setenv("OBIT_FAKE_CLAUDE_MODE", mode)
-			t.Setenv("OBIT_FAKE_CLAUDE_OLD_COMMAND", "C:/old/obit.exe")
+			t.Setenv("OBIT_FAKE_CLAUDE_OLD_COMMAND", testenv.NativeFixture("C:/old/obit.exe"))
 			path := filepath.Join(os.Getenv("CLAUDE_CONFIG_DIR"), ".claude.json")
-			old := `{"command":"C:/old/obit.exe","args":["mcp"],"env":{"OBIT_HOME":"D:/ledger"}}`
+			old := testenv.NativeFixture(`{"command":"C:/old/obit.exe","args":["mcp"],"env":{"OBIT_HOME":"D:/ledger"}}`)
 			writeIntegrationFile(t, path, `{"runtime":42,"mcpServers":{"obituary":`+old+`}}`)
-			plan, err := PlanMCP(Scope{Global: true}, "claude", "C:/new/obit.exe", false)
+			plan, err := PlanMCP(Scope{Global: true}, "claude", testenv.NativeFixture("C:/new/obit.exe"), false)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -240,7 +240,7 @@ func TestClaudeMCPRecoveryUsesObservedState(t *testing.T) {
 			_, log := testenv.FakeClaude(t)
 			t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
 			t.Setenv("OBIT_FAKE_CLAUDE_MODE", mode)
-			t.Setenv("OBIT_FAKE_CLAUDE_OLD_COMMAND", "C:/old/obit.exe")
+			t.Setenv("OBIT_FAKE_CLAUDE_OLD_COMMAND", testenv.NativeFixture("C:/old/obit.exe"))
 			var started <-chan time.Time
 			if mode == "remove-committed-timeout" {
 				ready := filepath.Join(t.TempDir(), "removed.ready")
@@ -248,9 +248,9 @@ func TestClaudeMCPRecoveryUsesObservedState(t *testing.T) {
 				started = claudeDeadlineWhenReady(t, ready, 700*time.Millisecond, 2)
 			}
 			path := filepath.Join(os.Getenv("CLAUDE_CONFIG_DIR"), ".claude.json")
-			before := `{"command":"C:/old/obit.exe","args":["mcp"],"env":{"OBIT_HOME":"D:/ledger"},"custom":42}`
+			before := testenv.NativeFixture(`{"command":"C:/old/obit.exe","args":["mcp"],"env":{"OBIT_HOME":"D:/ledger"},"custom":42}`)
 			writeIntegrationFile(t, path, `{"runtime":42,"mcpServers":{"obituary":`+before+`}}`)
-			plan, err := PlanMCP(Scope{Global: true}, "claude", "C:/new/obit.exe", false)
+			plan, err := PlanMCP(Scope{Global: true}, "claude", testenv.NativeFixture("C:/new/obit.exe"), false)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -299,9 +299,9 @@ func TestClaudeMCPManualGuidanceIsEnglish(t *testing.T) {
 				t.Setenv("OBIT_FAKE_CLAUDE_VERSION", "2.1.317 (Claude Code)")
 			case "failed-restore":
 				t.Setenv("OBIT_FAKE_CLAUDE_MODE", "fail-add")
-				writeIntegrationFile(t, filepath.Join(os.Getenv("CLAUDE_CONFIG_DIR"), ".claude.json"), `{"mcpServers":{"obituary":{"command":"C:/old/obit.exe","args":["mcp"]}}}`)
+				writeIntegrationFile(t, filepath.Join(os.Getenv("CLAUDE_CONFIG_DIR"), ".claude.json"), testenv.NativeFixture(`{"mcpServers":{"obituary":{"command":"C:/old/obit.exe","args":["mcp"]}}}`))
 			}
-			plan, err := PlanMCP(Scope{Global: true}, "claude", "C:/new/obit.exe", false)
+			plan, err := PlanMCP(Scope{Global: true}, "claude", testenv.NativeFixture("C:/new/obit.exe"), false)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -325,7 +325,7 @@ func TestClaudeStableMCPUpgradeGuidance(t *testing.T) {
 	_, log := testenv.FakeClaude(t)
 	t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
 	t.Setenv("OBIT_FAKE_CLAUDE_VERSION", "2.1.311 (Claude Code)")
-	plan, err := PlanMCP(Scope{Global: true}, "claude", "C:/tools/obit.exe", false)
+	plan, err := PlanMCP(Scope{Global: true}, "claude", testenv.NativeFixture("C:/tools/obit.exe"), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -355,8 +355,8 @@ func TestClaudeMCPRecoveryPreservesConcurrentEntry(t *testing.T) {
 	t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
 	t.Setenv("OBIT_FAKE_CLAUDE_MODE", "concurrent-add")
 	path := filepath.Join(os.Getenv("CLAUDE_CONFIG_DIR"), ".claude.json")
-	writeIntegrationFile(t, path, `{"mcpServers":{"obituary":{"command":"C:/old/obit.exe","args":["mcp"]}}}`)
-	plan, err := PlanMCP(Scope{Global: true}, "claude", "C:/new/obit.exe", false)
+	writeIntegrationFile(t, path, testenv.NativeFixture(`{"mcpServers":{"obituary":{"command":"C:/old/obit.exe","args":["mcp"]}}}`))
+	plan, err := PlanMCP(Scope{Global: true}, "claude", testenv.NativeFixture("C:/new/obit.exe"), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -369,8 +369,8 @@ func TestClaudeMCPRecoveryPreservesConcurrentEntry(t *testing.T) {
 
 func TestCommandTextPowerShellLiterals(t *testing.T) {
 	t.Parallel()
-	args := []string{"claude", "mcp", "add-json", "--scope", "user", "obituary", `{"command":"C:/space %USERNAME% $cache ' &/obit.exe","args":["mcp"]}`}
-	want := `& 'claude' 'mcp' 'add' '--scope' 'user' '--transport' 'stdio' 'obituary' '--' 'C:/space %USERNAME% $cache '' &/obit.exe' 'mcp'`
+	args := []string{"claude", "mcp", "add-json", "--scope", "user", "obituary", testenv.NativeFixture(`{"command":"C:/space %USERNAME% $cache ' &/obit.exe","args":["mcp"]}`)}
+	want := testenv.NativeFixture(`& 'claude' 'mcp' 'add' '--scope' 'user' '--transport' 'stdio' 'obituary' '--' 'C:/space %USERNAME% $cache '' &/obit.exe' 'mcp'`)
 	if got := CommandText(args); got != want {
 		t.Fatalf("PowerShell literals changed arguments: %s", got)
 	}
@@ -378,8 +378,8 @@ func TestCommandTextPowerShellLiterals(t *testing.T) {
 
 func TestClaudeManualCommandsPreserveEnvironmentAndExtraFields(t *testing.T) {
 	t.Parallel()
-	entry := `{"type":"stdio","command":"C:/space 中文/obit.exe","args":["mcp"],"env":{"Z":"a=b & %PATH% $x '","A":"first"}}`
-	want := `& 'claude' 'mcp' 'add' '--scope' 'user' '-e' 'A=first' '-e' 'Z=a=b & %PATH% $x ''' '--transport' 'stdio' 'obituary' '--' 'C:/space 中文/obit.exe' 'mcp'`
+	entry := testenv.NativeFixture(`{"type":"stdio","command":"C:/space 中文/obit.exe","args":["mcp"],"env":{"Z":"a=b & %PATH% $x '","A":"first"}}`)
+	want := testenv.NativeFixture(`& 'claude' 'mcp' 'add' '--scope' 'user' '-e' 'A=first' '-e' 'Z=a=b & %PATH% $x ''' '--transport' 'stdio' 'obituary' '--' 'C:/space 中文/obit.exe' 'mcp'`)
 	if got := CommandText(claudeAddJSON([]byte(entry))); got != want {
 		t.Fatalf("manual env syntax/quoting: %s", got)
 	}
@@ -428,7 +428,7 @@ func TestClaudeMCPTimeout(t *testing.T) {
 	old := claudeMCPTimeout
 	claudeMCPTimeout = 100 * time.Millisecond
 	t.Cleanup(func() { claudeMCPTimeout = old })
-	plan, err := PlanMCP(Scope{Global: true}, "claude", "C:/tools/obit.exe", false)
+	plan, err := PlanMCP(Scope{Global: true}, "claude", testenv.NativeFixture("C:/tools/obit.exe"), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -452,7 +452,7 @@ func TestClaudeMCPUsesOfficialCLI(t *testing.T) {
 	scope := Scope{Global: true}
 	path := filepath.Join(root, ".claude.json")
 	writeIntegrationFile(t, path, `{"theme":"old","mcpServers":{"other":{"command":"user"}}}`)
-	for i, exe := range []string{"C:/old/obit.exe", "C:/new path/obit.exe"} {
+	for i, exe := range []string{testenv.NativeFixture("C:/old/obit.exe"), testenv.NativeFixture("C:/new path/obit.exe")} {
 		plan, err := PlanMCP(scope, "claude", exe, false)
 		if err != nil {
 			t.Fatal(err)
@@ -476,7 +476,7 @@ func TestClaudeMCPUsesOfficialCLI(t *testing.T) {
 			t.Fatalf("CLI install not idempotent: %v %v", plan, err)
 		}
 	}
-	plan, err := PlanMCP(scope, "claude", "C:/new path/obit.exe", true)
+	plan, err := PlanMCP(scope, "claude", testenv.NativeFixture("C:/new path/obit.exe"), true)
 	applyIntegration(t, plan, err)
 	data, err := os.ReadFile(log)
 	if err != nil {
@@ -495,7 +495,7 @@ func TestClaudeMCPUsesOfficialCLI(t *testing.T) {
 	}
 	remove := []string{"mcp", "remove", "--scope", "user", "obituary"}
 	version := []string{"--version"}
-	want := [][]string{version, add("C:/old/obit.exe"), version, remove, add("C:/new path/obit.exe"), version, remove}
+	want := [][]string{version, add(testenv.NativeFixture("C:/old/obit.exe")), version, remove, add(testenv.NativeFixture("C:/new path/obit.exe")), version, remove}
 	if len(calls) != len(want) {
 		t.Fatalf("official CLI arguments: %v != %v", calls, want)
 	}
@@ -522,10 +522,10 @@ func TestClaudeMCPPreservesUnownedEntries(t *testing.T) {
 	path := filepath.Join(root, ".claude.json")
 	original := `{"mcpServers":{"obituary":{"command":"user-tool","args":["mcp"]}}}`
 	writeIntegrationFile(t, path, original)
-	if _, err := PlanMCP(Scope{Global: true}, "claude", "C:/tools/obit.exe", false); err == nil {
+	if _, err := PlanMCP(Scope{Global: true}, "claude", testenv.NativeFixture("C:/tools/obit.exe"), false); err == nil {
 		t.Fatal("unowned registration claimed")
 	}
-	plan, err := PlanMCP(Scope{Global: true}, "claude", "C:/tools/obit.exe", true)
+	plan, err := PlanMCP(Scope{Global: true}, "claude", testenv.NativeFixture("C:/tools/obit.exe"), true)
 	applyIntegration(t, plan, err)
 	if read(t, path) != original {
 		t.Fatal("unowned registration changed")
@@ -544,7 +544,7 @@ func TestClaudeMCPVerifiesCLIResult(t *testing.T) {
 			testenv.FakeClaude(t)
 			t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
 			t.Setenv("OBIT_FAKE_CLAUDE_MODE", mode)
-			plan, err := PlanMCP(Scope{Global: true}, "claude", "C:/tools/obit.exe", false)
+			plan, err := PlanMCP(Scope{Global: true}, "claude", testenv.NativeFixture("C:/tools/obit.exe"), false)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -562,7 +562,7 @@ func TestClaudeMCPVerifiesCLIResult(t *testing.T) {
 func TestClaudeMCPMissingCLI(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())
 	t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
-	plan, err := PlanMCP(Scope{Global: true}, "claude", "C:/tools/obit.exe", false)
+	plan, err := PlanMCP(Scope{Global: true}, "claude", testenv.NativeFixture("C:/tools/obit.exe"), false)
 	if err != nil {
 		t.Fatal(err)
 	}

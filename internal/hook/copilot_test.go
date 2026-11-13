@@ -1,11 +1,14 @@
 package hook
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"unicode/utf8"
@@ -24,14 +27,17 @@ func TestCopilotGuardRequiresNativeShellEvidence(t *testing.T) {
 		name, event, input string
 		shell              guardrm.Shell
 	}{
-		{"native-powershell", "preToolUse", `{"cwd":"C:/repo","toolName":"powershell","toolArgs":{"command":"Remove-Item a.log"}}`, guardrm.PowerShell},
-		{"native-bash", "preToolUse", `{"cwd":"C:/repo","toolName":"bash","toolArgs":"{\"command\":\"rm a.log\"}"}`, guardrm.Bash},
-		{"compat-bash-is-ambiguous", "", `{"hook_event_name":"PreToolUse","cwd":"C:/repo","tool_name":"Bash","tool_input":{"command":"rm a.log","shell":"bash"}}`, ""},
-		{"vscode-terminal-is-ambiguous", "", `{"hook_event_name":"PreToolUse","cwd":"C:/repo","tool_name":"run_in_terminal","tool_input":{"command":"rm a.log"}}`, ""},
+		{"native-powershell", "preToolUse", testenv.NativeFixture(`{"cwd":"C:/repo","toolName":"powershell","toolArgs":{"command":"Remove-Item a.log"}}`), guardrm.PowerShell},
+		{"native-bash", "preToolUse", testenv.NativeFixture(`{"cwd":"C:/repo","toolName":"bash","toolArgs":"{\"command\":\"rm a.log\"}"}`), guardrm.Bash},
+		{"compat-bash-is-ambiguous", "", testenv.NativeFixture(`{"hook_event_name":"PreToolUse","cwd":"C:/repo","tool_name":"Bash","tool_input":{"command":"rm a.log","shell":"bash"}}`), ""},
+		{"vscode-terminal-is-ambiguous", "", testenv.NativeFixture(`{"hook_event_name":"PreToolUse","cwd":"C:/repo","tool_name":"run_in_terminal","tool_input":{"command":"rm a.log"}}`), ""},
 		{"remote-filesystem", "preToolUse", `{"cwd":"/workspace/repo","toolName":"bash","toolArgs":{"command":"rm a.log"}}`, ""},
-		{"code-mode", "preToolUse", `{"cwd":"C:/repo","toolName":"code","toolArgs":{"command":"rm a.log"}}`, ""},
+		{"code-mode", "preToolUse", testenv.NativeFixture(`{"cwd":"C:/repo","toolName":"code","toolArgs":{"command":"rm a.log"}}`), ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			if runtime.GOOS != "windows" && tc.name == "remote-filesystem" {
+				tc.shell = guardrm.Bash // This is a native absolute directory on POSIX.
+			}
 			ev, err := Decode(agent.Adapter, []byte(tc.input), Invocation{Agent: "copilot", Event: tc.event})
 			if err != nil {
 				t.Fatal(err)
@@ -54,7 +60,7 @@ func copilotFixture(t *testing.T, name string) map[string]any {
 		t.Fatal(err)
 	}
 	var in map[string]any
-	if err := json.Unmarshal(raw, &in); err != nil {
+	if err := json.Unmarshal([]byte(testenv.NativeFixture(string(raw))), &in); err != nil {
 		t.Fatal(err)
 	}
 	return in
@@ -109,12 +115,14 @@ func TestCopilotFailedAndUnverifiedWritesDoNotObserve(t *testing.T) {
 		{"failed", func(m map[string]any) { m["toolResult"] = map[string]any{"resultType": "failure"} }},
 		{"missing-result", func(m map[string]any) { delete(m, "toolResult") }},
 		{"missing-session", func(m map[string]any) { delete(m, "sessionId") }},
-		{"remote", func(m map[string]any) { m["cwd"] = "/workspace/repo" }},
-		{"remote-file", func(m map[string]any) { m["toolArgs"] = map[string]any{"path": "/remote/file.log"} }},
+		{"remote", func(m map[string]any) { m["cwd"] = testenv.ForeignFixture("/workspace/repo") }},
+		{"remote-file", func(m map[string]any) {
+			m["toolArgs"] = map[string]any{"path": testenv.ForeignFixture("/remote/file.log")}
+		}},
 		{"code-mode", func(m map[string]any) { m["toolName"] = "code" }},
 		{"terminal-path", func(m map[string]any) {
 			m["toolName"] = "powershell"
-			m["toolArgs"] = map[string]any{"path": "C:/repo/debug.log", "command": "echo file_path"}
+			m["toolArgs"] = map[string]any{"path": testenv.NativeFixture("C:/repo/debug.log"), "command": "echo file_path"}
 		}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -180,7 +188,7 @@ func TestCopilotSessionIdentityAndLifecycle(t *testing.T) {
 	t.Parallel()
 	id := strings.Repeat("会话", 3000)
 	for _, host := range []string{"sessionStart", "agentStop", "sessionEnd"} {
-		in := map[string]any{"sessionId": id, "cwd": "C:/repo", "source": "startup"}
+		in := map[string]any{"sessionId": id, "cwd": testenv.NativeFixture("C:/repo"), "source": "startup"}
 		raw, _ := json.Marshal(in)
 		ev, err := Decode(copilotAdapter{}, raw, Invocation{Agent: "copilot", Event: host})
 		if err != nil || ev.Session != core.NormalizeSession("copilot:"+id) {
@@ -242,6 +250,9 @@ func TestCopilotNativeDeleteGuardDeniesWithoutTouchingFiles(t *testing.T) {
 	for _, tool := range []string{"bash", "powershell"} {
 		t.Run(tool, func(t *testing.T) {
 			t.Parallel()
+			if tool == "powershell" {
+				testenv.WindowsOnly(t, "PowerShell Remove-Item integration is Windows-only")
+			}
 			e := newEnv(t)
 			path := e.write("scratch.log")
 			command := "rm scratch.log"

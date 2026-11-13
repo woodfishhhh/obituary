@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"path/filepath"
@@ -20,7 +22,7 @@ func FuzzMCPTOML(f *testing.F) {
 		}
 		for _, uninstall := range []bool{false, true} {
 			input := bytes.Clone(original)
-			ch, err := planMCPTOML(Change{Path: "config.toml", orig: input, existed: true, Action: "unchanged"}, "C:/fuzz/obit.exe", uninstall)
+			ch, err := planMCPTOML(Change{Path: "config.toml", orig: input, existed: true, Action: "unchanged"}, testenv.NativeFixture("C:/fuzz/obit.exe"), uninstall)
 			if !bytes.Equal(input, original) {
 				t.Fatal("planning mutated the original bytes")
 			}
@@ -76,7 +78,7 @@ func TestMCPTOMLPreservesFormattingAndServerOptions(t *testing.T) {
 		scope := Scope{Project: t.TempDir()}
 		path := filepath.Join(scope.Project, ".codex", "config.toml")
 		writeIntegrationFile(t, path, original)
-		plan, err := PlanMCP(scope, "codex", "C:/old/obit.exe", false)
+		plan, err := PlanMCP(scope, "codex", testenv.NativeFixture("C:/old/obit.exe"), false)
 		applyIntegration(t, plan, err)
 		// User options inside our table and unrelated tables after our block
 		// remain byte-for-byte intact when only the executable path changes.
@@ -84,9 +86,9 @@ func TestMCPTOMLPreservesFormattingAndServerOptions(t *testing.T) {
 		tail := "\r\n[mcp_servers.after]\r\ncommand = 'after' # keep\r\n"
 		withOptions := strings.Replace(read(t, path), mcpBlockEnd, extra+mcpBlockEnd, 1) + tail
 		writeIntegrationFile(t, path, withOptions)
-		plan, err = PlanMCP(scope, "codex", "C:/new/obit.exe", false)
+		plan, err = PlanMCP(scope, "codex", testenv.NativeFixture("C:/new/obit.exe"), false)
 		applyIntegration(t, plan, err)
-		if got := read(t, path); got != strings.Replace(withOptions, "C:/old/obit.exe", "C:/new/obit.exe", 1) {
+		if got := read(t, path); got != strings.Replace(withOptions, testenv.NativeFixture("C:/old/obit.exe"), testenv.NativeFixture("C:/new/obit.exe"), 1) {
 			t.Fatal("refresh changed bytes outside command value", got)
 		}
 		plan, err = PlanMCP(scope, "codex", "obit", true)
@@ -113,7 +115,7 @@ func TestMCPTOMLParentForms(t *testing.T) {
 			scope := Scope{Project: t.TempDir()}
 			path := filepath.Join(scope.Project, ".codex", "config.toml")
 			writeIntegrationFile(t, path, original)
-			plan, err := PlanMCP(scope, "codex", "C:/tools/obit.exe", false)
+			plan, err := PlanMCP(scope, "codex", testenv.NativeFixture("C:/tools/obit.exe"), false)
 			if err != nil {
 				t.Fatalf("valid parent form rejected: %v", err)
 			}
@@ -158,10 +160,10 @@ func TestMCPTOMLConvertedCRLF(t *testing.T) {
 	path := filepath.Join(scope.Project, ".codex", "config.toml")
 	original := "model = 'test'\n[mcp_servers.other]\ncommand = 'x'\n"
 	writeIntegrationFile(t, path, original)
-	plan, err := PlanMCP(scope, "codex", "C:/old/obit.exe", false)
+	plan, err := PlanMCP(scope, "codex", testenv.NativeFixture("C:/old/obit.exe"), false)
 	applyIntegration(t, plan, err)
 	writeIntegrationFile(t, path, strings.ReplaceAll(read(t, path), "\n", "\r\n"))
-	for _, exe := range []string{"C:/old/obit.exe", "C:/new/obit.exe"} {
+	for _, exe := range []string{testenv.NativeFixture("C:/old/obit.exe"), testenv.NativeFixture("C:/new/obit.exe")} {
 		plan, err = PlanMCP(scope, "codex", exe, false)
 		if err != nil {
 			t.Fatalf("CRLF refresh failed: %v", err)

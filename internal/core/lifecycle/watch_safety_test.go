@@ -1,8 +1,11 @@
 package lifecycle_test
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -83,6 +86,7 @@ func TestWatchExistingParentLifespanCannotBuryPolicy(t *testing.T) {
 }
 
 func TestWatchMovedChildUnicodeSiblingIsOutsidePolicy(t *testing.T) {
+	testenv.RequireDistinctUnicodeNames(t)
 	f, path, _ := watchFixture(t, "file.txt", core.WatchFirstSeen)
 	k := filepath.Join(f.dir, "K")
 	kelvin := filepath.Join(f.dir, "K")
@@ -106,6 +110,13 @@ func TestWatchMovedChildUnicodeSiblingIsOutsidePolicy(t *testing.T) {
 		t.Fatal(err)
 	}
 	out := f.sweepAt(2 * time.Hour)
+	if runtime.GOOS != "windows" {
+		requireRetainedRetry(t, f, out)
+		if !exists(moved) {
+			t.Fatal("unlocated child outside the policy was moved")
+		}
+		return
+	}
 	if !exists(moved) || len(f.burials()) != 0 || len(out) != 1 || out[0].Action != core.ActionRefused {
 		t.Fatalf("Unicode sibling outside policy buried: %+v", out)
 	}

@@ -29,15 +29,21 @@ for (const [from, to] of parts) await cp(from, to, { recursive: true });
 // mirror: Scoop (and winget, once listed) download from GitHub, so their lines go.
 function mirrorGuide(text, host) {
   const swaps = [
+    ["https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh", `${host}install.sh`],
+    [/bash install\.sh --version ([\w.-]+)(?![\w.-]| --mirror)/g, "bash install.sh --version $1 --mirror cn"],
     ["https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1", `${host}install.ps1`],
-    [".\\install.ps1 -Version 1.0.0", ".\\install.ps1 -Version 1.0.0 -Mirror cn"],
+    [/\.\\install\.ps1 -Version ([\w.-]+)(?![\w.-]| -Mirror)/g, ".\\install.ps1 -Version $1 -Mirror cn"],
+    // Homebrew taps download from GitHub.
+    ["（macOS 上有 Homebrew 时也可以改用 brew install --cask woodfishhhh/tap/obituary）", ""],
+    [" (on macOS with Homebrew, brew install --cask woodfishhhh/tap/obituary works too)", ""],
     ["，按这个顺序选第一个可用的：", "，用国内镜像上的安装脚本："],
     [", using the first option that is available:", ", with the install script from the mainland China mirror:"],
     ["   - 没有 scoop：", "   - "],
     ["   - no scoop: ", "   - "],
   ];
   for (const [from, to] of swaps) {
-    if (!text.includes(from)) throw new Error(`docs/agent-install.md changed; update the mirror copy in assemble.mjs (${from})`);
+    const found = typeof from === "string" ? text.includes(from) : text.search(from) >= 0;
+    if (!found) throw new Error(`docs/agent-install.md changed; update the mirror copy in assemble.mjs (${from})`);
     text = text.replaceAll(from, to);
   }
   const lines = text.split("\n").filter((line) => !/^\s+- (有 scoop|有 winget|scoop:|winget:)/.test(line));
@@ -55,4 +61,5 @@ if (mirror) {
   // GitHub Pages serves this build at the custom domain.
   await writeFile(new URL("CNAME", out), "obituary.woodfish.site\n");
 }
+await cp(new URL("install.sh", repo), new URL("install.sh", out));
 console.log(`assembled ${out.pathname}`);

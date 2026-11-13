@@ -1,5 +1,7 @@
 package hook
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"errors"
 	"fmt"
@@ -33,12 +35,12 @@ func TestIsErrorLogLineConservativelyFiltersDiscoveryDenials(t *testing.T) {
 		name, line string
 		wantError  bool
 	}{
-		{"skip", `2026-11-11T00:00:00Z skip: project discovery unavailable; cwd="C:\\fixture" reason="permission denied"`, false},
+		{"skip", testenv.NativeFixture(`2026-11-11T00:00:00Z skip: project discovery unavailable; cwd="C:\\fixture" reason="permission denied"`), false},
 		{"legacy", line(message, metadata), false},
 		{"outside-protected", deniedLine(filepath.Dir(path)), true},
 		{"protected-prefix", deniedLine(path + "X"), true},
-		{"diagnostic-path-mismatch", line(message, `{"operation":"resolve project directory","path":"C:\\other"}`), true},
-		{"missing-operation", line(message, `{"path":"C:\\fixture"}`), true},
+		{"diagnostic-path-mismatch", line(message, testenv.NativeFixture(`{"operation":"resolve project directory","path":"C:\\other"}`)), true},
+		{"missing-operation", line(message, testenv.NativeFixture(`{"path":"C:\\fixture"}`)), true},
 		{"missing-diagnostic", fmt.Sprintf("2026-11-11T00:00:00Z codex SessionEnd: %q", message), true},
 		{"permission-in-cwd-only", line(fmt.Sprintf("discover project from %q: resolve project directory %s: path changed", cwd+`\permission denied`, path), metadata), true},
 		{"joined-error", line(message+"\ncontext canceled", metadata), true},

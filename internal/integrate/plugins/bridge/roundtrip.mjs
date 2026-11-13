@@ -4,6 +4,7 @@ import { createInterface } from "node:readline";
 import { pathToFileURL } from "node:url";
 import path from "node:path";
 import vm from "node:vm";
+import { nativePath } from "./native-fixture.mjs";
 const [modulePath, configPath] = process.argv.slice(2);
 const input = JSON.parse(readFileSync(configPath, "utf8"));
 const lines = createInterface({ input: process.stdin })[Symbol.asyncIterator]();
@@ -12,7 +13,7 @@ const invoke = (_exe, _args, _options, callback) => ({ stdin: { on() {}, async e
   callback(null, (await lines.next()).value);
 } } });
 const env = { [`OBIT_${input.agent.toUpperCase()}_LOCAL`]: "1", OBIT_KILOCODE_LOCAL_SHELL: "bash" };
-const options = { env, settings: { executable: "C:\\test\\obit.exe" }, execFile: invoke };
+const options = { env, settings: { executable: nativePath("C:\\test\\obit.exe") }, execFile: invoke };
 const handlers = {};
 const api = { on(name, handler) { handlers[name] = handler; }, config: { plugins: { entries: { obituary: {
   hooks: { allowConversationAccess: input.granted !== false, allowPromptModification: input.granted !== false },

@@ -1,5 +1,7 @@
 package hook
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"encoding/json"
@@ -27,7 +29,7 @@ func TestZCodeProtocol(t *testing.T) {
 			if name == "post" && (ev.Tool != "Write" || len(ev.Paths) != 1 || ev.DeferContext) {
 				t.Fatalf("write: %+v", ev)
 			}
-			if name == "patch" && (!slices.Equal(ev.Paths, []string{`C:\work\repo\patch.log`, `C:\work\repo\old.log`, `C:\work\repo\moved.log`}) || ev.Tool != "ApplyPatch") {
+			if name == "patch" && (!slices.Equal(ev.Paths, []string{testenv.NativeFixture(`C:\work\repo\patch.log`), testenv.NativeFixture(`C:\work\repo\old.log`), testenv.NativeFixture(`C:\work\repo\moved.log`)}) || ev.Tool != "ApplyPatch") {
 				t.Fatalf("patch paths: %+v", ev)
 			}
 			if name == "pre" && (ev.Command != "rm -rf scratch" || ev.SkipReason == "") {
@@ -89,7 +91,7 @@ func TestZCodeRejectsUnprovenWrites(t *testing.T) {
 		func(in map[string]any) { delete(in, "toolResponse"); delete(in, "tool_response") },
 		func(in map[string]any) { in["toolResponse"], in["tool_response"] = nil, nil },
 		func(in map[string]any) { in["error"] = "failed" },
-		func(in map[string]any) { in["cwd"] = "/home/remote/project" },
+		func(in map[string]any) { in["cwd"] = testenv.ForeignFixture("/home/remote/project") },
 		func(in map[string]any) { in["cwd"] = "ssh://server/project" },
 		func(in map[string]any) {
 			in["toolInput"], in["tool_input"] = map[string]any{"file_path": "relative.log"}, map[string]any{"file_path": "relative.log"}

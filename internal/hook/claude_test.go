@@ -1,5 +1,7 @@
 package hook
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"encoding/json"
@@ -33,6 +35,7 @@ func TestPOSIXClaudeWriteCreatesProposalAndStopIsSilent(t *testing.T) {
 }
 
 func TestClaudePowerShellPayload(t *testing.T) {
+	testenv.WindowsOnly(t, "Remove-Item CLI integration is Windows-only")
 	t.Parallel()
 	for _, tc := range []struct{ name, command, want string }{
 		{"literal", `Remove-Item -LiteralPath 'build dir' -Recurse -Force`, `remove-item -LiteralPath 'build dir' -Recurse -Force`},
@@ -44,7 +47,7 @@ func TestClaudePowerShellPayload(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			got := guardSuggestion(t, "claude", `C:\repo`, "PowerShell", map[string]any{"command": tc.command})
+			got := guardSuggestion(t, "claude", testenv.NativeFixture(`C:\repo`), "PowerShell", map[string]any{"command": tc.command})
 			want := tc.want
 			if want != "" {
 				want = expectedGuardExecutable(t, guardrm.PowerShell) + " " + want

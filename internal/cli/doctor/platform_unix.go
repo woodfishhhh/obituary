@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"golang.org/x/sys/unix"
@@ -17,6 +18,9 @@ func diagnoseStartup(string, string) DoctorCheck {
 
 func diagnoseRunner(home string) DoctorCheck {
 	c := DoctorCheck{Name: "runner", Status: "WARN", Detail: "no user timer serves this data directory; obit daemon enable installs one; without systemd run obitd --once from cron"}
+	if runtime.GOOS == "darwin" {
+		c.Detail = "no launchd user agent serves this data directory; obit daemon enable installs one for the signed-in user"
+	}
 	if cmdutil.RunnerInstalled() {
 		target, err := cmdutil.RunnerTarget()
 		if err != nil {

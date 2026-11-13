@@ -160,6 +160,9 @@ func (s *Service) commitPurgeBatch(batch []GraveResult) (auditCount int, err err
 // A blank action means a verified, nonempty grave ready for a durable intent.
 func (s *Service) inspectExpiredPurge(b Burial, state State, blocked string) GraveResult {
 	r := GraveResult{Ref: fmt.Sprintf("#%d", b.ID), Burial: &b}
+	if b.IdentityMismatch != "" {
+		blocked = b.IdentityMismatch
+	}
 	if blocked != "" {
 		r.Action, r.Error = ActionBlocked, blocked
 		return r

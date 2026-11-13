@@ -4,8 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 
 	core "github.com/woodfishhhh/obituary/internal/core/lifecycle"
@@ -25,9 +26,7 @@ func TestResurrectPreflightCreatesNothingOnRefusal(t *testing.T) {
 				}
 			}
 			junction := func(target string) {
-				if out, err := exec.Command("cmd", "/c", "mklink", "/J", link, target).CombinedOutput(); err != nil {
-					t.Fatalf("junction: %v %s", err, out)
-				}
+				directoryLink(t, link, target)
 			}
 			if mode != "new-junction" {
 				junction(real)
@@ -125,11 +124,15 @@ func TestResurrectReportsRecreatedParentIdentityFailure(t *testing.T) {
 		}
 	}()
 	got, err := f.svc.Resurrect([]string{b.Path})
-	if err != nil || len(got) != 1 || got[0].Ref != b.Path || got[0].Error != injected.Error() || got[0].Action != "" {
+	if err != nil || len(got) != 1 || got[0].Ref != b.Path || !strings.HasPrefix(got[0].Error, injected.Error()) || got[0].Action != "" {
 		t.Fatalf("parent identity failure did not reach its ref result: %+v %v", got, err)
 	}
-	if exists(nearest) || exists(parent) {
-		t.Fatal("failed parent recheck left recreated directories")
+	if runtime.GOOS == "windows" {
+		if got[0].Error != injected.Error() || exists(nearest) || exists(parent) {
+			t.Fatal("failed parent recheck left recreated directories or changed the error")
+		}
+	} else if !exists(nearest) || !exists(parent) || !strings.Contains(got[0].Error, parent) || !strings.Contains(got[0].Error, nearest) {
+		t.Fatal("POSIX rollback must retain created directories and report both paths")
 	}
 	if !exists(b.Grave) || exists(b.Path) || len(f.burials()) != 1 {
 		t.Fatal("parent identity failure changed the buried object or its record")
@@ -206,9 +209,7 @@ func TestResurrectRollsBackDirectoriesAfterAncestorMove(t *testing.T) {
 				if err := os.Rename(parent, protected); err != nil {
 					t.Fatal(err)
 				}
-				if out, err := exec.Command("cmd", "/c", "mklink", "/J", parent, elsewhere).CombinedOutput(); err != nil {
-					t.Fatalf("junction: %v %s", err, out)
-				}
+				directoryLink(t, parent, elsewhere)
 				if existing {
 					if err := os.Mkdir(filepath.Join(protected, "deep"), 0700); err != nil {
 						t.Fatal(err)
@@ -219,8 +220,12 @@ func TestResurrectRollsBackDirectoriesAfterAncestorMove(t *testing.T) {
 			if !moved || err != nil || !core.GraveFailed(got) || !exists(b.Grave) || len(f.burials()) != 1 {
 				t.Fatalf("ancestor race not refused: %+v %v", got, err)
 			}
-			if exists(filepath.Join(protected, "deep", "nested")) || exists(filepath.Join(elsewhere, "deep")) || !existing && exists(filepath.Join(protected, "deep")) {
-				t.Fatal("refused resurrection left created directories")
+			if runtime.GOOS == "windows" {
+				if exists(filepath.Join(protected, "deep", "nested")) || exists(filepath.Join(elsewhere, "deep")) || !existing && exists(filepath.Join(protected, "deep")) {
+					t.Fatal("refused resurrection left created directories")
+				}
+			} else if !exists(filepath.Join(protected, "deep", "nested")) || exists(filepath.Join(elsewhere, "deep")) || !strings.Contains(got[0].Error, filepath.Join(parent, "deep", "nested")) || !strings.Contains(got[0].Error, "retained") {
+				t.Fatalf("POSIX rollback must retain created directories and report the recorded path: %+v", got)
 			}
 			if existing && !exists(filepath.Join(protected, "deep")) {
 				t.Fatal("rollback deleted concurrently created directory")

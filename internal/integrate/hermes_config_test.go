@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"path/filepath"
 	"strings"
@@ -18,7 +20,7 @@ func TestHermesConfigKeepsUserAddedContainerMembers(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		ext, err := PlanHermesMCP(s, "C:/tools/obit.exe", uninstall)
+		ext, err := PlanHermesMCP(s, testenv.NativeFixture("C:/tools/obit.exe"), uninstall)
 		if err != nil {
 			t.Fatal(err)
 		}

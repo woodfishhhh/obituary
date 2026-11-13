@@ -126,7 +126,13 @@ func init() {
 		t.Run(action, func(t *testing.T) {
 			clitest.IsolateRunner(t)
 			repo, store := clitest.CommandDir(t)
-			t.Setenv("OBIT_HOME", filepath.Join(store.Home, strings.Repeat("长目录", 55)))
+			// Keep each component below the POSIX byte limit while exceeding
+			// the response budget with the complete data-directory path.
+			longHome := store.Home
+			for range 3 {
+				longHome = filepath.Join(longHome, strings.Repeat("长目录", 20))
+			}
+			t.Setenv("OBIT_HOME", longHome)
 			svc, err := cmdutil.Open()
 			if err != nil {
 				t.Fatal(err)

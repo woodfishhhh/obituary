@@ -1,5 +1,7 @@
 package hook
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"encoding/json"
@@ -15,7 +17,7 @@ func TestAntigravityProtocol(t *testing.T) {
 	agent, _ := Lookup("antigravity")
 	in := cGroupFixture(t, "antigravity-start")
 	ev := cGroupDecode(t, agent, in, "SessionStart")
-	if ev.Session != "antigravity:agy-session" || ev.Cwd != "C:/repo" {
+	if ev.Session != "antigravity:agy-session" || ev.Cwd != testenv.NativeFixture("C:/repo") {
 		t.Fatalf("start: %+v", ev)
 	}
 	cGroupInputErrors(t, agent, in, "SessionStart", "", "conversationId")
@@ -51,13 +53,13 @@ func TestAntigravityRoutesWriteToMatchingWorkspace(t *testing.T) {
 		in := cGroupFixture(t, "antigravity-post")
 		in["toolCall"].(map[string]any)["name"] = tool
 		ev := cGroupDecode(t, agent, in, "PostToolUse")
-		if ev.Cwd != "C:/second" || len(ev.Paths) != 1 || ev.Paths[0] != "C:/second/debug.log" || !ev.DeferContext {
+		if ev.Cwd != testenv.NativeFixture("C:/second") || len(ev.Paths) != 1 || ev.Paths[0] != testenv.NativeFixture("C:/second/debug.log") || !ev.DeferContext {
 			t.Fatalf("routing: %+v", ev)
 		}
 	}
 	for _, change := range []func(map[string]any){
 		func(in map[string]any) { in["error"] = "write failed" },
-		func(in map[string]any) { in["workspacePaths"] = []string{"C:/elsewhere"} },
+		func(in map[string]any) { in["workspacePaths"] = []string{testenv.NativeFixture("C:/elsewhere")} },
 		func(in map[string]any) { in["toolCall"].(map[string]any)["name"] = "code_execution" },
 		func(in map[string]any) { in["toolCall"].(map[string]any)["name"] = "mcp_remote.write_to_file" },
 		func(in map[string]any) {
@@ -89,7 +91,7 @@ func TestAntigravityDeferredWritePreservesLedger(t *testing.T) {
 	e := newEnv(t)
 	path := e.write("debug.log")
 	in := cGroupFixture(t, "antigravity-post")
-	in["workspacePaths"] = []string{"C:/unrelated", e.root}
+	in["workspacePaths"] = []string{testenv.NativeFixture("C:/unrelated"), e.root}
 	in["toolCall"].(map[string]any)["args"].(map[string]any)["TargetFile"] = path
 	agent, _ := Lookup("antigravity")
 	ev := cGroupDecode(t, agent, in, "PostToolUse")

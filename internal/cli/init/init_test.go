@@ -1,10 +1,13 @@
 package init_test
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -123,7 +126,11 @@ func TestInitGlobalSkillDirectoriesStayClean(t *testing.T) {
 			for _, entry := range entries {
 				names = append(names, entry.Name())
 			}
-			if !reflect.DeepEqual(names, []string{".obituary-skill", "SKILL.md"}) {
+			want := []string{".obituary-skill", "SKILL.md"}
+			if runtime.GOOS != "windows" && dir == filepath.Join(root, "claude", "skills", "obituary") {
+				want = []string{".obituary-skill", ".obituary-skill.bak", "SKILL.md"}
+			}
+			if !reflect.DeepEqual(names, want) {
 				t.Errorf("skill contains auxiliary files: %s %v", dir, names)
 			}
 		}
@@ -142,6 +149,7 @@ func BenchmarkInitShow(b *testing.B) {
 }
 
 func TestInitDryRunRejectsChangedWorkingDirectory(t *testing.T) {
+	testenv.WindowsOnly(t, "Win32 extended paths and Windows namespace normalization")
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}
@@ -244,7 +252,7 @@ func TestGuardShowAndDoctorIneffectiveMatcher(t *testing.T) {
 			if agent == "codex" {
 				settings = filepath.Join(root, "codex", "hooks.json")
 			}
-			data := `{"hooks":{"PreToolUse":[{"matcher":"Write","hooks":[{"type":"command","command":"C:/tools/obit.exe hook ` + agent + `"}]}]}}`
+			data := testenv.NativeFixture(`{"hooks":{"PreToolUse":[{"matcher":"Write","hooks":[{"type":"command","command":"C:/tools/obit.exe hook `) + agent + `"}]}]}}`
 			clitest.WriteFixture(t, settings, data)
 			out, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "-g", "--agent", agent, "--show", "--guard-rm")
 			if err != nil || !strings.Contains(out, "registered: yes; matcher coverage: incomplete") {

@@ -3,6 +3,7 @@ package userdirs
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -15,6 +16,9 @@ func TestDeepSeekDirectories(t *testing.T) {
 		{filepath.Join(home, "override"), filepath.Join(home, "override")},
 		{`\\?\` + filepath.Join(home, "override"), filepath.Join(home, "override")},
 	} {
+		if len(nativeDirectorySpellings([]string{tc.value})) == 0 {
+			continue
+		}
 		t.Setenv("DSH_HOME", tc.value)
 		if got, err := AgentDir("deepseek-harness"); err != nil || got != tc.want {
 			t.Fatalf("%q: %q %v", tc.value, got, err)
@@ -27,12 +31,21 @@ func TestDeepSeekDirectories(t *testing.T) {
 		t.Fatal("resolver wrote")
 	}
 	for _, bad := range []string{"", ".", "..", "../web", `a\b`, "C:repo", "web.", "web "} {
+		if runtime.GOOS != "windows" && (bad == "web." || bad == "web ") {
+			if got, err := DeepSeekProfileDir(bad); err != nil || got != filepath.Join(home, "override", "profiles", bad) {
+				t.Fatalf("POSIX profile name was normalized: %q %v", got, err)
+			}
+			continue
+		}
 		if got, err := DeepSeekProfileDir(bad); err == nil {
 			t.Fatalf("invalid profile accepted: %q -> %q", bad, got)
 		}
 	}
-	t.Setenv("DSH_HOME", `\\?\`+home+`.\child`)
-	if got, err := DeepSeekDir(); err == nil {
-		t.Fatalf("unstable root accepted: %q", got)
-	}
+	t.Run("windows-path-spelling", func(t *testing.T) {
+		windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+		t.Setenv("DSH_HOME", `\\?\`+home+`.\child`)
+		if got, err := DeepSeekDir(); err == nil {
+			t.Fatalf("unstable root accepted: %q", got)
+		}
+	})
 }

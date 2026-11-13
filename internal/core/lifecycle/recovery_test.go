@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -195,6 +194,13 @@ func TestRecoverBurialAfterCommitFailure(t *testing.T) {
 				} else {
 					_, err = f.svc.Bury([]string{path}, false, "")
 				}
+				if operation == "sweep-renamed" && runtime.GOOS != "windows" {
+					items := f.items()
+					if err != nil || grave != "" || read(t, path) != "debug.log" || len(items) != 1 || items[0].Attempts != 1 || items[0].LastError == "" || len(f.burials()) != 0 {
+						t.Fatalf("unlocated source must retry before moving: %+v %v", items, err)
+					}
+					return
+				}
 				if err == nil || grave == "" || exists(path) || read(t, grave) != "debug.log" {
 					t.Fatalf("need a failed commit after a successful move: grave=%s, %v", grave, err)
 				}
@@ -234,9 +240,7 @@ func TestRecoveryWithJunctionHome(t *testing.T) {
 	if err := os.Mkdir(real, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if out, err := exec.Command("cmd", "/c", "mklink", "/J", alias, real).CombinedOutput(); err != nil {
-		t.Fatalf("junction: %s, %v", out, err)
-	}
+	directoryLink(t, alias, real)
 	f.svc.Store.Home = filepath.Join(alias, "home")
 	t.Setenv("OBIT_HOME", f.svc.Store.Home)
 	f.svc.Guard = (core.Guard{System: []string{filepath.Join(real, "home")}}).WithCanonical(f.fs.RealPath)
@@ -322,6 +326,12 @@ func TestGraveWithoutManifestKeepsTrackedItem(t *testing.T) {
 	out := f.sweepAt(time.Hour)
 	if len(out) != 1 || out[0].Action != core.ActionRetry || len(f.items()) != 1 || f.items()[0].ID != item.ID || read(t, grave) != "keep.txt" {
 		t.Fatalf("unindexed grave lost its tracked entry: %+v, items=%+v", out, f.items())
+	}
+	if runtime.GOOS != "windows" {
+		if rows, err := f.svc.PendingGraves(); err != nil || len(rows) != 0 || !strings.Contains(out[0].Detail, "not supported") {
+			t.Fatalf("unknown location must not invent a grave: %+v %v", rows, err)
+		}
+		return
 	}
 	if rows, err := f.svc.PendingGraves(); err != nil || len(rows) != 1 || rows[0].Status != "unverifiable" {
 		t.Fatalf("missing manifest not diagnosable: %+v, %v", rows, err)
@@ -440,6 +450,13 @@ func TestRecoveryReconcilesDepartedChildren(t *testing.T) {
 				}
 				// Recovery must retire the old lifespan even when the child left.
 				_, err = f.svc.Bury([]string{parent.Path}, false, "")
+				if runtime.GOOS != "windows" {
+					st, readErr := f.svc.Store.Read()
+					if err != nil || readErr != nil || len(st.Burials) != 0 || st.Index(parent.ID) < 0 || (st.Index(child.ID) < 0) != removed || !exists(pending[0].Manifest) || !deleted && read(t, outside) != "output/child.txt" {
+						t.Fatalf("unknown child location lost recovery evidence: %+v %v %v", st, err, readErr)
+					}
+					return
+				}
 				if err != nil || len(f.burials()) != 1 || len(f.burials()[0].Contains) != 0 {
 					t.Fatalf("departed child blocks recovery: burials=%+v err=%v", f.burials(), err)
 				}
@@ -528,6 +545,12 @@ func TestRecordedChildRecoveryLeavesEscapedChildUntracked(t *testing.T) {
 	}
 	if _, err := f.svc.Sweep(false); err != nil || len(f.burials()) != 1 || !exists(outside) {
 		t.Fatalf("escaped child buried again: %v", err)
+	}
+	if runtime.GOOS != "windows" {
+		if len(f.burials()[0].Contains) != 1 || !exists(filepath.Dir(b.Grave)+".json") {
+			t.Fatal("unlocated committed child lost its recovery evidence")
+		}
+		return
 	}
 	if len(f.burials()[0].Contains) != 0 || exists(filepath.Dir(b.Grave)+".json") {
 		t.Fatal("recorded recovery did not reconcile and retire manifest")
@@ -645,6 +668,13 @@ func TestRecoveryBlocksDepartedChildrenUntilManifestVerified(t *testing.T) {
 					t.Fatal(err)
 				}
 				if !byIdentity {
+					if runtime.GOOS != "windows" {
+						out, err := f.svc.Sweep(false)
+						if err != nil || len(f.items()) != 2 || len(f.burials()) != 0 || !exists(path) || !exists(p.Manifest) {
+							t.Fatalf("verified manifest cannot prove departed inode disappeared: %+v %v", out, err)
+						}
+						return
+					}
 					if out, err := f.svc.Sweep(false); err != nil || len(f.items()) != 0 || len(f.burials()) != 1 || !exists(path) || exists(p.Manifest) {
 						t.Fatalf("verified recovery did not retire child: %+v %v", out, err)
 					}
@@ -675,6 +705,9 @@ func TestOfflineRootDoesNotBlockOtherRoots(t *testing.T) {
 			if volume == "" {
 				t.Skip("no absent drive available")
 			}
+			if runtime.GOOS != "windows" {
+				volume = filepath.Join(f.dir, "offline") + string(os.PathSeparator)
+			}
 			offline := core.Item{ID: 99, Rev: 1, Path: volume + "offline.txt", ExpiresAt: f.clock,
 				Identity: &core.Identity{Volume: volume, Serial: 123, FileID: strings.Repeat("a", 32)}}
 			if err := f.svc.Store.Update(func(st *core.State) error { st.Items = append(st.Items, offline); return nil }); err != nil {
@@ -693,6 +726,14 @@ func TestOfflineRootDoesNotBlockOtherRoots(t *testing.T) {
 				t.Fatalf("offline root stopped online work: burials=%+v items=%+v err=%v", f.burials(), f.items(), err)
 			}
 			got := f.items()[0]
+			if runtime.GOOS != "windows" && operation == "bury" {
+				// All POSIX paths use one logical root; bury does not scan an
+				// unrelated missing item to discover a separate drive root.
+				if !reflect.DeepEqual(got, offline) {
+					t.Fatalf("unlocated unrelated item changed: %+v", got)
+				}
+				return
+			}
 			if got.Attempts != 1 || got.LastError == "" || !got.NextAttempt.Equal(f.clock.Add(time.Minute)) {
 				t.Fatalf("offline record lacks retry backoff: %+v", got)
 			}

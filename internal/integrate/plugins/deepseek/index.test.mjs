@@ -1,3 +1,4 @@
+import { nativePath } from "../bridge/native-fixture.mjs";
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { pathToFileURL } from 'node:url';
@@ -12,7 +13,7 @@ function setup(options = {}) {
     workingDirectory: { get: () => options.cwd ?? 'C:\\repo' },
   };
   const execFile = (executable, argv, settings, callback) => {
-    assert.equal(executable, 'C:\\tools\\obit.exe');
+    assert.equal(executable, nativePath('C:\\tools\\obit.exe'));
     assert.deepEqual(argv, ['hook', 'deepseek-harness']);
     assert.equal(settings.shell, false);
     assert.equal(settings.windowsHide, true);
@@ -22,7 +23,7 @@ function setup(options = {}) {
       callback(options.failure ? new Error('timeout') : null, options.reply ?? '{"version":1}');
     } } };
   };
-  observeDeepSeek(ctx, { executable: 'C:\\tools\\obit.exe' }, {
+  observeDeepSeek(ctx, { executable: nativePath('C:\\tools\\obit.exe') }, {
     env: { OBIT_DEEPSEEK_LOCAL: options.local ?? '1' }, platform: options.platform ?? 'win32', execFile,
   });
   const run = (exec = {}, result = {}) => handler({
@@ -31,6 +32,16 @@ function setup(options = {}) {
   }, { isError: false, value: { path: 'C:\\repo\\written.log' }, ...result });
   return { run, calls };
 }
+
+test('native POSIX canonical writes require the same-file mapping', { skip: process.platform === 'win32' }, async () => {
+  const s = setup({ platform: process.platform, cwd: '/repo' });
+  await s.run({}, { value: { path: '/repo/written.log' } });
+  assert.equal(s.calls.length, 1);
+  assert.deepEqual(s.calls[0].paths, ['/repo/written.log']);
+  const remote = setup({ platform: process.platform, cwd: '/repo', mapping: () => undefined });
+  await remote.run({}, { value: { path: '/repo/written.log' } });
+  assert.equal(remote.calls.length, 0);
+});
 
 test('successful canonical write/edit paths defer context through fixed argv', async () => {
   for (const name of ['write', 'edit']) {

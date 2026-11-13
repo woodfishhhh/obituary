@@ -12,7 +12,34 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/testenv"
 )
+
+func TestPOSIXObservationChecksKnownTrackedPaths(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX volume-wide lookup is unavailable")
+	}
+	if testing.Short() {
+		t.Skip("automatic observations query a real Git repository")
+	}
+	r := newRepo(t)
+	approveAutomatic(t, r)
+	first, second := r.write("first.log", "first"), r.write("second.log", "second")
+	rows, _, err := r.engine.Observe([]string{first, second}, "native")
+	st, readErr := r.engine.Svc.Store.ReadSnapshot()
+	if err != nil || readErr != nil || len(rows) != 2 || rows[0].Action != Registered || rows[1].Action != Registered || len(st.Items) != 2 {
+		t.Fatalf("known tracked file blocked another observation: %+v %v %v", rows, err, readErr)
+	}
+	if err := os.Rename(first, first+".moved"); err != nil {
+		t.Fatal(err)
+	}
+	third := r.write("third.log", "third")
+	rows, _, _ = r.engine.Observe([]string{third}, "native")
+	after, err := r.engine.Svc.Store.ReadSnapshot()
+	if err != nil || len(rows) != 1 || rows[0].Action != Retry || rows[0].Err == nil || len(after.Items) != 2 {
+		t.Fatalf("unknown location was treated as disappearance: %+v %v", rows, err)
+	}
+}
 
 func TestObserveUnreadableLedgerReturnsEveryPath(t *testing.T) {
 	dir := t.TempDir()
@@ -248,6 +275,7 @@ func TestKeptUnmatchedObjectDoesNotBecomeLeftoverProposal(t *testing.T) {
 }
 
 func TestObserveRejectsNamedStreams(t *testing.T) {
+	testenv.WindowsOnly(t, "NTFS named streams share the host file identity")
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}

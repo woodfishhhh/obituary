@@ -2,6 +2,7 @@ package guardrm
 
 import (
 	"os"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -128,13 +129,24 @@ func TestDeleteReview6PathParsing(t *testing.T) {
 		for _, path := range []string{"/tmp/keep", "/c/keep", "//server/share/keep"} {
 			t.Run(name+"/"+path, func(t *testing.T) {
 				var err error
+				var paths []string
 				switch name {
 				case "rm", "rmdir":
-					_, err = ParseRemove([]string{path}, name == "rmdir")
+					var parsed RemoveOptions
+					parsed, err = ParseRemove([]string{path}, name == "rmdir")
+					paths = parsed.Paths
 				case "remove-item":
 					_, err = ParseRemoveItem([]string{"-LiteralPath", path})
 				case "git-clean":
-					_, err = ParseClean([]string{"-fdx", "--", path})
+					var parsed CleanOptions
+					parsed, err = ParseClean([]string{"-fdx", "--", path})
+					paths = parsed.Paths
+				}
+				if runtime.GOOS != "windows" && name != "remove-item" {
+					if err != nil || !slices.Equal(paths, []string{path}) {
+						t.Fatalf("native absolute operand changed: %v %v", paths, err)
+					}
+					return
 				}
 				if err == nil || !strings.Contains(err.Error(), "POSIX absolute") {
 					t.Fatalf("must reject ambiguous path before filesystem/Git lookup: %v", err)

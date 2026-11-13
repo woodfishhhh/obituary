@@ -16,7 +16,7 @@ func TestGeminiDirectory(t *testing.T) {
 	}
 	custom := filepath.Join(t.TempDir(), "custom")
 	want := filepath.Join(custom, ".gemini")
-	for _, value := range []string{custom, `\\?\` + custom} {
+	for _, value := range nativeDirectorySpellings([]string{custom, `\\?\` + custom}) {
 		t.Setenv("GEMINI_CLI_HOME", value)
 		got, err := GeminiDir()
 		if err != nil || got != want {
@@ -26,14 +26,20 @@ func TestGeminiDirectory(t *testing.T) {
 	if _, err := os.Stat(custom); !os.IsNotExist(err) {
 		t.Fatal("resolver created directory", err)
 	}
-	t.Setenv("GEMINI_CLI_HOME", `\\?\`+custom+`.\child`)
-	if path, err := GeminiDir(); err == nil {
-		t.Fatal("unstable home accepted", path)
-	}
-	t.Setenv("GEMINI_CLI_HOME", custom+":stream")
-	if path, err := GeminiDir(); err == nil {
-		t.Fatal("ADS accepted", path)
-	}
+	t.Run("windows-path-spelling", func(t *testing.T) {
+		windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+		t.Setenv("GEMINI_CLI_HOME", `\\?\`+custom+`.\child`)
+		if path, err := GeminiDir(); err == nil {
+			t.Fatal("unstable home accepted", path)
+		}
+	})
+	t.Run("windows-path-spelling", func(t *testing.T) {
+		windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+		t.Setenv("GEMINI_CLI_HOME", custom+":stream")
+		if path, err := GeminiDir(); err == nil {
+			t.Fatal("ADS accepted", path)
+		}
+	})
 }
 
 func TestGeminiSharedSkillsDirectory(t *testing.T) {
@@ -50,8 +56,11 @@ func TestGeminiSharedSkillsDirectory(t *testing.T) {
 			t.Fatalf("shared home: %q %v", got, err)
 		}
 	}
-	t.Setenv("GEMINI_CLI_HOME", custom+":stream")
-	if _, err := GeminiSkillsDir(); err == nil {
-		t.Fatal("accepted unstable home")
-	}
+	t.Run("windows-path-spelling", func(t *testing.T) {
+		windowsDirectoryTest(t, "Win32 extended names and alternate streams have no POSIX equivalent")
+		t.Setenv("GEMINI_CLI_HOME", custom+":stream")
+		if _, err := GeminiSkillsDir(); err == nil {
+			t.Fatal("accepted unstable home")
+		}
+	})
 }

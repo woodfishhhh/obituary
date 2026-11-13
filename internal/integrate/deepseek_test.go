@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"encoding/json"
@@ -48,7 +50,7 @@ func TestDeepSeekBundleLifecycle(t *testing.T) {
 				rules = filepath.Join(root, "AGENTS.md")
 			}
 			writeIntegrationFile(t, rules, "\xef\xbb\xbf# User\r\n<!-- user comment -->\r\n")
-			commands := deepseekCommands(`C:\Program Files\讣告\obit.exe`)
+			commands := deepseekCommands(testenv.NativeFixture(`C:\Program Files\讣告\obit.exe`))
 			plan, err := PlanDeepSeek(s, commands, false)
 			if err != nil {
 				t.Fatal(err)
@@ -91,7 +93,7 @@ func TestDeepSeekBundleLifecycle(t *testing.T) {
 				t.Fatalf("not idempotent: %v", err)
 			}
 			s.GuardRM = false
-			commands = deepseekCommands(`C:\New Tools\obit.exe`)
+			commands = deepseekCommands(testenv.NativeFixture(`C:\New Tools\obit.exe`))
 			plan, err = PlanDeepSeek(s, commands, false)
 			applyIntegration(t, plan, err)
 			if got := read(t, filepath.Join(dir, "hooks.json")); !strings.Contains(got, "New Tools") || !strings.Contains(got, "PreToolUse") {
@@ -121,7 +123,7 @@ func TestDeepSeekProfilesAndHomeLayersRemainIndependent(t *testing.T) {
 	}
 
 	s, root := deepseekScope(t, true)
-	commands := deepseekCommands(`C:\tools\obit.exe`)
+	commands := deepseekCommands(testenv.NativeFixture(`C:\tools\obit.exe`))
 	paths := []string{filepath.Join(root, "cordis.patch.yml"), filepath.Join(root, "profiles", "web", "cordis.patch.yml"), filepath.Join(root, "profiles", "headless", "cordis.patch.yml")}
 	originals := []string{"# home\n- id: provider\n  config:\n    token: !!js process.env.TOKEN\n", "# web\n- id: provider\n  config: {model: web}\n", "[malformed user YAML"}
 	for i, p := range paths {
@@ -172,7 +174,7 @@ func TestDeepSeekMCPLifecycle(t *testing.T) {
 		t.Run(map[bool]string{true: "home", false: "project"}[global], func(t *testing.T) {
 			s, root := deepseekScope(t, global)
 			path := filepath.Join(root, "obituary-mcp", "cordis.patch.yml")
-			plan, err := PlanDeepSeekMCP(s, `C:\Program Files\obit.exe`, false)
+			plan, err := PlanDeepSeekMCP(s, testenv.NativeFixture(`C:\Program Files\obit.exe`), false)
 			applyIntegration(t, plan, err)
 			var patch []struct {
 				Insert []struct {
@@ -193,14 +195,14 @@ func TestDeepSeekMCPLifecycle(t *testing.T) {
 			}
 			row := raw[0]["insert"][0]
 			cfg := row["config"].(map[string]any)
-			if row["name"] != "@deepseek-ai/dsh-mcp-client" || cfg["serverName"] != "obituary" || cfg["transport"] != "stdio" || cfg["command"] != `C:\Program Files\obit.exe` {
+			if row["name"] != "@deepseek-ai/dsh-mcp-client" || cfg["serverName"] != "obituary" || cfg["transport"] != "stdio" || cfg["command"] != testenv.NativeFixture(`C:\Program Files\obit.exe`) {
 				t.Fatalf("%+v", row)
 			}
-			plan, err = PlanDeepSeekMCP(s, `C:\Program Files\obit.exe`, false)
+			plan, err = PlanDeepSeekMCP(s, testenv.NativeFixture(`C:\Program Files\obit.exe`), false)
 			if err != nil || Pending(plan) {
 				t.Fatalf("%v", err)
 			}
-			plan, err = PlanDeepSeekMCP(s, `C:\new\obit.exe`, false)
+			plan, err = PlanDeepSeekMCP(s, testenv.NativeFixture(`C:\new\obit.exe`), false)
 			applyIntegration(t, plan, err)
 			if !strings.Contains(read(t, path), "new") {
 				t.Fatal("stale executable")
@@ -230,7 +232,7 @@ func TestDeepSeekPreservesUnownedAndEditedAssets(t *testing.T) {
 				s, root := deepseekScope(t, false)
 				path := filepath.Join(root, "obituary-hooks", file)
 				writeIntegrationFile(t, path, content)
-				if _, err := PlanDeepSeek(s, deepseekCommands(`C:\tools\obit.exe`), false); err == nil {
+				if _, err := PlanDeepSeek(s, deepseekCommands(testenv.NativeFixture(`C:\tools\obit.exe`)), false); err == nil {
 					t.Fatal("claimed unowned asset")
 				}
 				plan, err := PlanDeepSeek(s, Commands{}, true)
@@ -244,7 +246,7 @@ func TestDeepSeekPreservesUnownedAndEditedAssets(t *testing.T) {
 		}
 	}
 	s, root := deepseekScope(t, false)
-	cmd := deepseekCommands(`C:\tools\obit.exe`)
+	cmd := deepseekCommands(testenv.NativeFixture(`C:\tools\obit.exe`))
 	plan, err := PlanDeepSeek(s, cmd, false)
 	applyIntegration(t, plan, err)
 	path := filepath.Join(root, "obituary-hooks", "hooks.json")
@@ -269,7 +271,7 @@ func TestDeepSeekPlansRejectRacesAndLinks(t *testing.T) {
 	for _, global := range []bool{false, true} {
 		t.Run(map[bool]string{true: "home", false: "project"}[global], func(t *testing.T) {
 			s, root := deepseekScope(t, global)
-			cmd := deepseekCommands(`C:\tools\obit.exe`)
+			cmd := deepseekCommands(testenv.NativeFixture(`C:\tools\obit.exe`))
 			plan, err := PlanDeepSeek(s, cmd, false)
 			if err != nil {
 				t.Fatal(err)
@@ -292,7 +294,7 @@ func TestDeepSeekPlansRejectRacesAndLinks(t *testing.T) {
 				t.Fatal(err)
 			}
 			makeIntegrationJunction(t, filepath.Join(root, "obituary-hooks"), outside)
-			if _, err := PlanDeepSeek(s, deepseekCommands(`C:\tools\obit.exe`), false); err == nil {
+			if _, err := PlanDeepSeek(s, deepseekCommands(testenv.NativeFixture(`C:\tools\obit.exe`)), false); err == nil {
 				t.Fatal("followed link")
 			}
 			entries, err := os.ReadDir(outside)

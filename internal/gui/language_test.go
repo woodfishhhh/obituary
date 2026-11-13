@@ -1,5 +1,7 @@
 package gui
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"encoding/json"
 	"path/filepath"
@@ -11,6 +13,7 @@ import (
 )
 
 func TestLanguageSettingsAndPlan(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	a, _ := fixture(t)
 	a.deps.SystemLanguage = func() string { return "zh-TW" }
 	settings, err := a.Settings()
@@ -58,6 +61,7 @@ func TestLanguageSettingsAndPlan(t *testing.T) {
 }
 
 func TestLanguagePlanIncludesInstalledMenu(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	a, _ := fixture(t)
 	a.deps.SystemLanguage = func() string { return "zh-CN" }
 	menu, err := a.PlanContextMenu(true)
@@ -101,6 +105,7 @@ func TestLanguagePlanIncludesInstalledMenu(t *testing.T) {
 }
 
 func TestLanguagePlanRetainsPartialReceipt(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	a, _ := fixture(t)
 	a.deps.SystemLanguage = func() string { return "zh-CN" }
 	menu, err := a.PlanContextMenu(true)
@@ -140,6 +145,7 @@ func TestLanguagePlanRetainsPartialReceipt(t *testing.T) {
 }
 
 func TestLanguagePlanPreservesConcurrentEdits(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	for _, changed := range []string{"config", "registry"} {
 		t.Run(changed, func(t *testing.T) {
 			a, _ := fixture(t)

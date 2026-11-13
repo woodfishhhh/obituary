@@ -138,6 +138,9 @@ func (s *Service) watchDirectory(path string) (string, Identity, error) {
 		return "", Identity{}, &RefusedError{Path: path, Reason: reason}
 	}
 	id, err := s.FS.Identify(path)
+	if err == nil {
+		err = id.RequirePersistent()
+	}
 	return filepath.Clean(path), id, err
 }
 

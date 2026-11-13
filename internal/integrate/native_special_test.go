@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"os"
 	"path/filepath"
@@ -22,7 +24,7 @@ func TestNativeSpecialInstallationBoundaries(t *testing.T) {
 			if agent == "kimi" {
 				s.Global = true
 			}
-			commands := Commands{Native: "C:/tools/obit.exe hook " + agent}
+			commands := Commands{Native: testenv.NativeFixture("C:/tools/obit.exe hook ") + agent}
 			plan, err := registered.Plan(s, commands, false)
 			if err != nil || len(plan) == 0 {
 				t.Fatal(err)
@@ -62,7 +64,7 @@ func TestNativeSpecialEmptyAndBOMConfigs(t *testing.T) {
 					path = filepath.Join(root, "config.toml")
 				}
 				writeIntegrationFile(t, path, input)
-				commands := Commands{Native: "C:/tools/obit.exe hook " + agent}
+				commands := Commands{Native: testenv.NativeFixture("C:/tools/obit.exe hook ") + agent}
 				plan, err := PlanAgent(agent, s, commands, false)
 				if err != nil || read(t, path) != input {
 					t.Fatal("empty dry-run", err)
@@ -97,7 +99,7 @@ func TestNativeSpecialGlobalLinksAndProjectBackups(t *testing.T) {
 			t.Setenv("VIBE_HOME", root)
 			t.Setenv("KIMI_SHARE_DIR", root)
 			makeIntegrationJunction(t, root, t.TempDir())
-			if _, err := PlanAgent(agent, Scope{Global: true}, Commands{Native: "C:/tools/obit.exe hook " + agent}, false); err == nil {
+			if _, err := PlanAgent(agent, Scope{Global: true}, Commands{Native: testenv.NativeFixture("C:/tools/obit.exe hook ") + agent}, false); err == nil {
 				t.Fatal("global junction accepted")
 			}
 		})

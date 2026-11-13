@@ -32,7 +32,11 @@ func TestShowRegisteredCapabilitiesWithoutInstalling(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	clitest.WriteFixture(t, oldHooks, strings.ReplaceAll(string(data), filepath.ToSlash(filepath.Join(root, "bin", "obit.exe")), "C:/old/obit.exe"))
+	currentExe, err := executable.Path()
+	if err != nil {
+		t.Fatal(err)
+	}
+	clitest.WriteFixture(t, oldHooks, strings.ReplaceAll(string(data), filepath.ToSlash(currentExe), testenv.NativeFixture("C:/old/obit.exe")))
 	before := clitest.TreeSnapshot(t, root)
 	out, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "-g", "--show")
 	if err != nil {
@@ -207,7 +211,11 @@ func TestAgentInstallationStates(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		clitest.WriteFixture(t, path, strings.ReplaceAll(string(data), filepath.ToSlash(filepath.Join(root, "bin", "obit.exe")), "C:/old/obit.exe"))
+		currentExe, err := executable.Path()
+		if err != nil {
+			t.Fatal(err)
+		}
+		clitest.WriteFixture(t, path, strings.ReplaceAll(string(data), filepath.ToSlash(currentExe), testenv.NativeFixture("C:/old/obit.exe")))
 		status, err = (initcmd.Planner{Executable: executable}).InspectAgent(agent, scope)
 		if err != nil || status.Installation != "outdated" {
 			t.Fatalf("stale: %+v %v", status, err)

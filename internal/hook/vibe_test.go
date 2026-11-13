@@ -1,5 +1,7 @@
 package hook
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"encoding/json"
@@ -68,7 +70,7 @@ func TestVibeObservesOnlySuccessfulFileTools(t *testing.T) {
 		{"code-mode", "tool_name", "code_execution"}, {"unknown-tool", "tool_name", "WriteFile"},
 		{"missing-path", "tool_input", map[string]any{}},
 		{"relative-path", "tool_input", map[string]any{"file_path": "debug.log"}},
-		{"remote-path", "tool_input", map[string]any{"file_path": "/home/remote/debug.log"}},
+		{"remote-path", "tool_input", map[string]any{"file_path": testenv.ForeignFixture("/home/remote/debug.log")}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			in := cGroupFixture(t, "vibe-post")
@@ -76,7 +78,7 @@ func TestVibeObservesOnlySuccessfulFileTools(t *testing.T) {
 			cGroupNoObservation(t, agent, in, "")
 		})
 	}
-	for _, cwd := range []string{"relative", "/home/remote", "ssh://host/repo"} {
+	for _, cwd := range []string{"relative", testenv.ForeignFixture("/home/remote"), "ssh://host/repo"} {
 		in := cGroupFixture(t, "vibe-post")
 		in["cwd"] = cwd
 		if ev, err := Decode(agent.Adapter, cGroupRaw(t, in), Invocation{Agent: "vibe"}); err == nil || len(ev.Paths) != 0 {

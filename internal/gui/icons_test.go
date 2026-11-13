@@ -1,5 +1,7 @@
 package gui
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"encoding/json"
 	"errors"
@@ -11,6 +13,7 @@ import (
 )
 
 func TestSettingsReportsDesktopSwitches(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	a, _ := fixture(t)
 	settings, err := a.Settings()
 	if err != nil {
@@ -27,6 +30,7 @@ func TestSettingsReportsDesktopSwitches(t *testing.T) {
 }
 
 func TestIconPlansApplyAndPreserveStaleConfig(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	a, _ := fixture(t)
 	calls := []bool{}
 	SetTaskbarSetter(a, func(enabled bool) error { calls = append(calls, enabled); return nil })
@@ -56,6 +60,7 @@ func TestIconPlansApplyAndPreserveStaleConfig(t *testing.T) {
 }
 
 func TestShortcutPlansAndSettings(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	a, _ := fixture(t)
 	for _, plan := range []func(bool) (Plan, error){a.PlanStartMenu, a.PlanDesktopShortcut} {
 		p, err := plan(true)

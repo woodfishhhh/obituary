@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"os"
@@ -78,13 +80,13 @@ func TestPluginPayloadKeepsGuardAndQuotesExecutable(t *testing.T) {
 	for _, ext := range []string{".ts", ".py"} {
 		s := Scope{Project: t.TempDir(), GuardRM: true}
 		path := filepath.Join(s.Project, "plugin"+ext)
-		first, err := pluginPayload(s, path, []byte("__OBIT_SETTINGS__"), `C:\Program Files\obit.exe`)
+		first, err := pluginPayload(s, path, []byte("__OBIT_SETTINGS__"), testenv.NativeFixture(`C:\Program Files\obit.exe`))
 		if err != nil {
 			t.Fatal(err)
 		}
 		writeIntegrationFile(t, path, string(first))
 		s.GuardRM = false
-		next, err := pluginPayload(s, path, []byte("__OBIT_SETTINGS__"), `D:\new\obit.exe`)
+		next, err := pluginPayload(s, path, []byte("__OBIT_SETTINGS__"), testenv.NativeFixture(`D:\new\obit.exe`))
 		if err != nil || !bytes.Contains(next, []byte("true")) || bytes.Contains(next, []byte("Program Files")) {
 			t.Fatalf("refresh: %s %v", next, err)
 		}
@@ -96,7 +98,7 @@ func TestPluginPayloadKeepsGuardAndQuotesExecutable(t *testing.T) {
 
 func checkAgentPlanCycle(t *testing.T, agent string, s Scope, plugin, rule string) {
 	t.Helper()
-	commands := Commands{Executable: `C:\Program Files\Obituary\obit.exe`}
+	commands := Commands{Executable: testenv.NativeFixture(`C:\Program Files\Obituary\obit.exe`)}
 	s.GuardRM = agent != "roo" && agent != "windsurf" && (agent != "hermes" || s.Global)
 	before := "\xef\xbb\xbf# My rules\r\nKeep this order.  \r\n"
 	if rule != "" {
@@ -122,7 +124,7 @@ func checkAgentPlanCycle(t *testing.T, agent string, s Scope, plugin, rule strin
 		t.Fatalf("not idempotent: %+v %v", plan, err)
 	}
 	s.GuardRM = false
-	commands.Executable = `D:\New Path\obit.exe`
+	commands.Executable = testenv.NativeFixture(`D:\New Path\obit.exe`)
 	plan, err = PlanAgent(agent, s, commands, false)
 	if err != nil {
 		t.Fatal(err)
@@ -159,7 +161,7 @@ func checkAgentPlanCycle(t *testing.T, agent string, s Scope, plugin, rule strin
 
 func checkEditedPlugin(t *testing.T, agent string, s Scope, plugin string) {
 	t.Helper()
-	commands := Commands{Executable: `C:\tools\obit.exe`}
+	commands := Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}
 	plan, err := PlanAgent(agent, s, commands, false)
 	applyIntegration(t, plan, err)
 	user := read(t, plugin) + "\n# user edit\n"
@@ -181,8 +183,8 @@ func checkEditedPlugin(t *testing.T, agent string, s Scope, plugin string) {
 
 func checkMCPPlanCycle(t *testing.T, planner func(Scope, string, bool) ([]Change, error), s Scope, path string, format ConfigFormat, container []string, initial string) {
 	t.Helper()
-	first := `C:\Program Files\obit.exe`
-	second := `D:\new\obit.exe`
+	first := testenv.NativeFixture(`C:\Program Files\obit.exe`)
+	second := testenv.NativeFixture(`D:\new\obit.exe`)
 	plan, err := planner(s, first, false)
 	if err != nil {
 		t.Fatal(err)
@@ -239,7 +241,7 @@ func TestAgentPlansRejectExternalLinks(t *testing.T) {
 			outside := t.TempDir()
 			sub := map[string]string{"cline": ".cline", "kilocode": ".kilo", "roo": ".roo"}[agent]
 			makeIntegrationJunction(t, filepath.Join(root, sub), outside)
-			if _, err := PlanAgent(agent, Scope{Project: root}, Commands{Executable: `C:\tools\obit.exe`}, false); err == nil {
+			if _, err := PlanAgent(agent, Scope{Project: root}, Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}, false); err == nil {
 				t.Fatal("outside junction accepted")
 			}
 		})
@@ -264,7 +266,7 @@ func TestAgentPlansRejectExternalLinks(t *testing.T) {
 				t.Fatal(err)
 			}
 			makeIntegrationJunction(t, filepath.Join(root, sub), outside)
-			if _, err := PlanAgent(agent, Scope{Global: true}, Commands{Executable: `C:\tools\obit.exe`}, false); err == nil {
+			if _, err := PlanAgent(agent, Scope{Global: true}, Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}, false); err == nil {
 				t.Fatal("global outside junction accepted")
 			}
 		})
@@ -280,17 +282,17 @@ func TestAgentPlansRejectLinkedScopeRoots(t *testing.T) {
 			root := t.TempDir()
 			link := filepath.Join(root, "scope")
 			makeIntegrationJunction(t, link, t.TempDir())
-			if _, err := PlanAgent(agent, Scope{Project: link}, Commands{Executable: `C:\tools\obit.exe`}, false); err == nil {
+			if _, err := PlanAgent(agent, Scope{Project: link}, Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}, false); err == nil {
 				t.Fatal("linked project root accepted")
 			}
-			if _, err := PlanAgent(agent, Scope{Project: "relative"}, Commands{Executable: `C:\tools\obit.exe`}, false); err == nil {
+			if _, err := PlanAgent(agent, Scope{Project: "relative"}, Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}, false); err == nil {
 				t.Fatal("relative project root accepted")
 			}
 			if agent == "hermes" || agent == "cline" || agent == "kilocode" {
 				t.Setenv("HERMES_HOME", link)
 				t.Setenv("CLINE_DIR", link)
 				t.Setenv("KILO_CONFIG_DIR", link)
-				if _, err := PlanAgent(agent, Scope{Global: true}, Commands{Executable: `C:\tools\obit.exe`}, false); err == nil {
+				if _, err := PlanAgent(agent, Scope{Global: true}, Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}, false); err == nil {
 					t.Fatal("linked global root accepted")
 				}
 			}
@@ -312,7 +314,7 @@ func TestAgentApplyRejectsScopeRootReplacedByJunction(t *testing.T) {
 			if err := os.Mkdir(root, 0700); err != nil {
 				t.Fatal(err)
 			}
-			plan, err := PlanAgent(agent, Scope{Project: root}, Commands{Executable: `C:\tools\obit.exe`}, false)
+			plan, err := PlanAgent(agent, Scope{Project: root}, Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}, false)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -344,20 +346,20 @@ func TestAgentMCPSafety(t *testing.T) {
 			t.Setenv("KILO_CONFIG_DIR", dir)
 			a, _ := LookupAgent(agent)
 			s := Scope{Global: agent != "roo", Project: dir}
-			plan, err := a.PlanMCP(s, `C:\tools\obit.exe`, false)
+			plan, err := a.PlanMCP(s, testenv.NativeFixture(`C:\tools\obit.exe`), false)
 			if err != nil {
 				t.Fatal(err)
 			}
 			path := plan[0].Path
 			writeIntegrationFile(t, path, "[")
-			if _, err := a.PlanMCP(s, `C:\tools\obit.exe`, false); err == nil {
+			if _, err := a.PlanMCP(s, testenv.NativeFixture(`C:\tools\obit.exe`), false); err == nil {
 				t.Fatal("bad config accepted")
 			}
 			if read(t, path) != "[" {
 				t.Fatal("bad config changed")
 			}
 			writeIntegrationFile(t, path, "")
-			plan, err = a.PlanMCP(s, `C:\tools\obit.exe`, false)
+			plan, err = a.PlanMCP(s, testenv.NativeFixture(`C:\tools\obit.exe`), false)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -374,7 +376,7 @@ func TestAgentMCPSafety(t *testing.T) {
 
 func checkAgentPreflight(t *testing.T, agent string, s Scope) {
 	t.Helper()
-	plan, err := PlanAgent(agent, s, Commands{Executable: `C:\tools\obit.exe`}, false)
+	plan, err := PlanAgent(agent, s, Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}, false)
 	if err != nil {
 		t.Fatal(err)
 	}

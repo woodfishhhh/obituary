@@ -1,5 +1,7 @@
 package gui
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"errors"
 	"path/filepath"
@@ -18,6 +20,7 @@ func (failedRun) Read(string) (runkey.Value, error) {
 }
 
 func TestContextMenuPlanApplyAndFailure(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	a, _ := fixture(t)
 	reg := a.deps.ContextMenu.(*fakeMenu)
 	plan, err := a.PlanContextMenu(true)
@@ -62,6 +65,7 @@ func TestContextMenuPlanApplyAndFailure(t *testing.T) {
 }
 
 func TestContextMenuPlanReturnsPartialReceipt(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	a, _ := fixture(t)
 	reg := a.deps.ContextMenu.(*fakeMenu)
 	plan, err := a.PlanContextMenu(true)
@@ -84,6 +88,7 @@ func TestContextMenuPlanReturnsPartialReceipt(t *testing.T) {
 }
 
 func TestAutostartAndPausePlanApplyAndFailures(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	a, _ := fixture(t)
 	for _, enabled := range []bool{true, false} {
 		plan, err := a.PlanAutostart(enabled)
@@ -134,6 +139,7 @@ func TestAutostartAndPausePlanApplyAndFailures(t *testing.T) {
 }
 
 func TestOnlyCurrentPlanCanBeApplied(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	a, _ := fixture(t)
 	first, err := a.PlanAutostart(true)
 	if err != nil {
@@ -154,6 +160,7 @@ func TestOnlyCurrentPlanCanBeApplied(t *testing.T) {
 // The confirmation shows where each entry appears and what it is called, not
 // registry paths or raw trees.
 func TestContextMenuPreviewIsReadable(t *testing.T) {
+	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	a, _ := fixture(t)
 	a.deps.SystemLanguage = func() string { return "zh-CN" }
 	plan, err := a.PlanContextMenu(true)

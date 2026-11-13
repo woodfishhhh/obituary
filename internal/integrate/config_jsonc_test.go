@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"encoding/json"
 	"path/filepath"
@@ -22,7 +24,7 @@ func TestJSONCCommentsAndTrailingCommas(t *testing.T) {
 	path := filepath.Join(s.Project, "opencode.jsonc")
 	writeIntegrationFile(t, path, input)
 	spec := MCPConfig{Format: ConfigJSONC, ServersPath: []string{"mcp"}, Codec: CommandArrayMCP{}}
-	for _, exe := range []string{"C:/old/obit.exe", "C:/new/obit.exe"} {
+	for _, exe := range []string{testenv.NativeFixture("C:/old/obit.exe"), testenv.NativeFixture("C:/new/obit.exe")} {
 		ch, err := PlanMCPConfig(s, path, spec, exe, false)
 		applyIntegration(t, []Change{ch}, err)
 		got := read(t, path)
@@ -50,7 +52,7 @@ func TestJSONCHookCommentsWithinUserEntries(t *testing.T) {
 	s := Scope{Project: t.TempDir()}
 	path := filepath.Join(s.Project, "hooks.jsonc")
 	writeIntegrationFile(t, path, read(t, filepath.Join("testdata", "hooks-comments.jsonc"))+"// end")
-	spec := HookConfig{Agent: "cursor", Shape: FlatHooks, Format: ConfigJSONC, Events: []HookRegistration{{Event: "pre", Handler: json.RawMessage(`{"command":"C:/tools/obit.exe hook cursor"}`)}}}
+	spec := HookConfig{Agent: "cursor", Shape: FlatHooks, Format: ConfigJSONC, Events: []HookRegistration{{Event: "pre", Handler: json.RawMessage(testenv.NativeFixture(`{"command":"C:/tools/obit.exe hook cursor"}`))}}}
 	ch, err := PlanHookConfig(s, path, spec, true)
 	applyIntegration(t, []Change{ch}, err)
 	for _, text := range []string{"/* user block */", "/* env */", "// end", "echo hello"} {

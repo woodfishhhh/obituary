@@ -2,7 +2,6 @@ package lifecycle_test
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -22,9 +21,7 @@ func TestLinkedParentCannotReachAProtectedFolder(t *testing.T) {
 		t.Fatal(err)
 	}
 	alias := filepath.Join(f.dir, "alias")
-	if out, err := exec.Command("cmd", "/c", "mklink", "/J", alias, root).CombinedOutput(); err != nil {
-		t.Fatalf("mklink: %v %s", err, out)
-	}
+	directoryLink(t, alias, root)
 	f.svc.Guard = f.svc.Guard.WithCanonical(winfs.Canonical)
 
 	results, err := f.svc.Add([]string{filepath.Join(alias, "keep")}, core.AddOptions{ExpiresAt: f.clock.Add(time.Hour)})

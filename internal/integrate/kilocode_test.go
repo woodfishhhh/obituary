@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"path/filepath"
 	"testing"
@@ -57,7 +59,7 @@ func TestKiloCodeMCP(t *testing.T) {
 		writeIntegrationFile(t, path, initial)
 		checkMCPPlanCycle(t, PlanKiloCodeMCP, Scope{Global: global, Project: root}, path, ConfigJSONC, []string{"mcp"}, initial)
 		writeIntegrationFile(t, filepath.Join(dir, "kilo.json"), "{}")
-		if _, err := PlanKiloCodeMCP(Scope{Global: global, Project: root}, `C:\tools\obit.exe`, false); err == nil {
+		if _, err := PlanKiloCodeMCP(Scope{Global: global, Project: root}, testenv.NativeFixture(`C:\tools\obit.exe`), false); err == nil {
 			t.Fatal("ambiguous config accepted")
 		}
 	}
@@ -69,11 +71,11 @@ func TestKiloCodeCombinedMCPInstallation(t *testing.T) {
 	path := filepath.Join(dir, "kilo.jsonc")
 	writeIntegrationFile(t, path, "{\n// user\n\"instructions\":[\"user.md\"]\n}")
 	for _, remove := range []bool{false, false, true, true} {
-		base, err := PlanKiloCode(Scope{Global: true}, Commands{Executable: `C:\tools\obit.exe`}, remove)
+		base, err := PlanKiloCode(Scope{Global: true}, Commands{Executable: testenv.NativeFixture(`C:\tools\obit.exe`)}, remove)
 		if err != nil {
 			t.Fatal(err)
 		}
-		ext, err := PlanKiloCodeMCP(Scope{Global: true}, `C:\tools\obit.exe`, remove)
+		ext, err := PlanKiloCodeMCP(Scope{Global: true}, testenv.NativeFixture(`C:\tools\obit.exe`), remove)
 		if err != nil {
 			t.Fatal(err)
 		}

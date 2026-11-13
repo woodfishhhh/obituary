@@ -4,11 +4,26 @@
 
 最省事的办法是让 agent 帮你装：把 README 里那句话发给它就行。这一页写给想自己动手的人。
 
-讣告支持 Windows 10 和 11（x64、ARM64）。小窗口 `obit-gui.exe` 用 WebView2 运行时，Windows 11 自带，Windows 10 多数已经装好。
+讣告支持 Windows 10 / 11、macOS 和 Linux（x64、ARM64）。macOS / Linux 提供命令行、墓地、复活和自动下葬；回收站模式、小窗口、托盘和右键菜单由 Windows 版提供。Windows 的小窗口使用 WebView2 运行时。
 
 ## 1. 装程序
 
-三种方式任选一种：
+macOS 可以用 Homebrew：`brew install --cask woodfishhhh/tap/obituary`。
+
+macOS / Linux 也可以下载并阅读安装脚本后运行：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh -o install.sh
+bash install.sh --version 1.1.0
+```
+
+脚本核对 SHA-256 后，把 `obit` 和 `obitd` 安装到 `~/.local/bin`，并提示如何加入 PATH。可用 `--install-dir` 指定目录、`--dry-run` 预览；国内使用 `https://cn.obituary.woodfish.site/install.sh` 并加 `--mirror cn`。
+
+macOS 首次使用先运行 `obit --version` 和 `obitd --help`。若系统要求确认开发者，在「系统设置 → 隐私与安全性」为已核对来源的两个程序分别点「仍要打开」，再重试命令。
+
+WSL 中将项目和 agent 配置放在 Linux 文件系统（例如 `~/项目`）。`/mnt/c` 等 Windows 挂载盘可能不支持安装所需的安全改名；遇到此错误会保留原配置，也可直接使用 Windows 版讣告。
+
+Windows 三种方式任选一种：
 
 ```powershell
 # Scoop
@@ -21,14 +36,14 @@ winget install woodfishhhh.Obituary
 # 安装脚本：先下载、看一眼，再运行
 # 装到 %LOCALAPPDATA%\Programs\obituary，加进用户 PATH，建开始菜单快捷方式
 irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1
-.\install.ps1 -Version 1.0.0          # -WhatIf 只预览，-NoPath 不改 PATH
+.\install.ps1 -Version 1.1.0          # -WhatIf 只预览，-NoPath 不改 PATH
 ```
 
 在中国大陆，安装脚本从国内镜像下载：
 
 ```powershell
 irm https://cn.obituary.woodfish.site/install.ps1 -OutFile install.ps1
-.\install.ps1 -Version 1.0.0 -Mirror cn
+.\install.ps1 -Version 1.1.0 -Mirror cn
 ```
 
 - 三种方式装的是同一个压缩包，安装前都会核对 SHA-256，对上了才解压。
@@ -46,6 +61,10 @@ obit init -g --agent claude --guard-rm --yes   # 同时打开删除护栏：rm -
 ```
 
 `-g` 对所有项目生效；去掉 `-g` 只接当前项目。接好后重启 agent。Codex 要在里面运行一次 `/hooks`，信任讣告的 hook。
+
+macOS / Linux 上使用相同的 `obit init` 命令。Claude Code 的目录是 `~/.claude`，Codex 是 `~/.codex`，共享 Skill 是 `~/.agents/skills`；`CLAUDE_CONFIG_DIR` / `CODEX_HOME` 可覆盖配置位置。
+
+运行 `obit daemon enable --dry-run` 查看后台计划，再用 `obit daemon enable` 启用每 5 分钟检查：macOS 用用户级 launchd，Linux 用 `systemd --user`。没有 systemd 时，可在用户 crontab 中每 5 分钟运行一次绝对路径的 `obitd --once --home <数据目录> --config-dir <配置目录>`。agent hook 也会按需触发后台检查。
 
 ## 3. 体检
 

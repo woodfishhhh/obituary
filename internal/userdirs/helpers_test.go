@@ -5,9 +5,32 @@ import (
 	"go/ast"
 	"go/token"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
+	"testing"
 )
+
+func windowsDirectoryTest(t *testing.T, reason string) {
+	t.Helper()
+	if runtime.GOOS != "windows" {
+		t.Skip(reason)
+	}
+}
+
+func nativeDirectorySpellings(paths []string) []string {
+	if runtime.GOOS == "windows" {
+		return paths
+	}
+	var native []string
+	for _, path := range paths {
+		// Extended prefixes and backslash tilde spellings belong to Win32.
+		if !strings.HasPrefix(path, `\\?\`) && !strings.HasPrefix(path, `~\`) && !strings.HasSuffix(path, ":stream") {
+			native = append(native, path)
+		}
+	}
+	return native
+}
 
 type directoryRead struct{ file, variable string }
 

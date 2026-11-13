@@ -1,11 +1,14 @@
 package hook
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"unicode/utf8"
@@ -14,6 +17,31 @@ import (
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 )
 
+func TestPOSIXDeepSeekLocalWrite(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("native POSIX host filesystem")
+	}
+	t.Setenv("OBIT_DEEPSEEK_LOCAL", "1")
+	root := t.TempDir()
+	path := filepath.Join(root, "output.log")
+	success := true
+	input := BridgeRequest{Version: 1, Agent: "deepseek-harness", Event: "PostToolUse", HostEvent: "tools/result", Tool: "write", Session: "native", Cwd: root, Local: true, Success: &success, Paths: []string{path}}
+	ev, err := decodeDeepSeek(t, input)
+	if err != nil || ev.Cwd != root || len(ev.Paths) != 1 || ev.Paths[0] != path || !ev.DeferContext {
+		t.Fatalf("confirmed native write was lost: %+v %v", ev, err)
+	}
+	input.Local = false
+	if _, err := decodeDeepSeek(t, input); err == nil {
+		t.Fatal("unconfirmed remote write was accepted")
+	}
+	t.Setenv("OBIT_DEEPSEEK_SHELL", "bash")
+	workdir := filepath.Join(root, "nested")
+	ev, err = decodeDeepSeek(t, map[string]any{"hook_event_name": "PreToolUse", "cwd": root, "tool_name": "bash", "tool_input": map[string]string{"command": "rm output.log", "workdir": workdir}})
+	if err != nil || ev.SkipReason != "" || ev.Cwd != workdir {
+		t.Fatalf("native absolute working directory was refused: %+v %v", ev, err)
+	}
+}
+
 func deepseekFixture(t *testing.T, name string) map[string]any {
 	t.Helper()
 	data, err := os.ReadFile(filepath.Join("testdata", "deepseek-"+name+".json"))
@@ -21,7 +49,7 @@ func deepseekFixture(t *testing.T, name string) map[string]any {
 		t.Fatal(err)
 	}
 	var in map[string]any
-	if err := json.Unmarshal(data, &in); err != nil {
+	if err := json.Unmarshal([]byte(testenv.NativeFixture(string(data))), &in); err != nil {
 		t.Fatal(err)
 	}
 	return in
@@ -46,6 +74,9 @@ func TestDeepSeekNativeShellGuard(t *testing.T) {
 		shell   guardrm.Shell
 	}{{"bash-pre", guardrm.Bash}, {"pwsh-pre", guardrm.PowerShell}} {
 		t.Run(tc.fixture, func(t *testing.T) {
+			if tc.shell == guardrm.PowerShell {
+				testenv.WindowsOnly(t, "PowerShell Remove-Item execution is Windows-only")
+			}
 			t.Setenv("OBIT_DEEPSEEK_SHELL", string(tc.shell))
 			e := newEnv(t)
 			path := e.write("scratch.log")
@@ -91,15 +122,15 @@ func TestDeepSeekNativeShellGuard(t *testing.T) {
 
 func TestDeepSeekRemoteAndUnconfirmedShellsPassThrough(t *testing.T) {
 	for _, tc := range []struct{ name, local, shell, cwd, tool, workdir string }{
-		{"unattested", "", "powershell", "C:/repo", "pwsh", ""},
-		{"wrong-shell", "1", "bash", "C:/repo", "pwsh", ""},
-		{"unknown-tool", "1", "powershell", "C:/repo", "Shell", ""},
-		{"ssh-posix", "1", "bash", "/workspace/repo", "bash", ""},
-		{"ssh-mounted-name", "1", "bash", "/mnt/c/repo", "bash", ""},
+		{"unattested", "", "powershell", testenv.NativeFixture("C:/repo"), "pwsh", ""},
+		{"wrong-shell", "1", "bash", testenv.NativeFixture("C:/repo"), "pwsh", ""},
+		{"unknown-tool", "1", "powershell", testenv.NativeFixture("C:/repo"), "Shell", ""},
+		{"ssh-posix", "1", "bash", testenv.ForeignFixture("/workspace/repo"), "bash", ""},
+		{"ssh-mounted-name", "1", "bash", testenv.ForeignFixture("/mnt/c/repo"), "bash", ""},
 		{"ssh-uri", "1", "powershell", "ssh://host/C:/repo", "pwsh", ""},
 		{"unc", "1", "powershell", `\\server\share`, "pwsh", ""},
-		{"remote-workdir", "1", "powershell", "C:/repo", "pwsh", "/mnt/c/repo"},
-		{"drive-relative", "1", "powershell", "C:/repo", "pwsh", "C:repo"},
+		{"remote-workdir", "1", "powershell", testenv.NativeFixture("C:/repo"), "pwsh", testenv.ForeignFixture("/mnt/c/repo")},
+		{"drive-relative", "1", "powershell", testenv.NativeFixture("C:/repo"), "pwsh", "C:repo"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Setenv("OBIT_DEEPSEEK_LOCAL", tc.local)
@@ -121,8 +152,8 @@ func TestDeepSeekWorkingDirectoryOverrides(t *testing.T) {
 	t.Setenv("OBIT_DEEPSEEK_LOCAL", "1")
 	t.Setenv("OBIT_DEEPSEEK_SHELL", "powershell")
 	for _, tc := range []struct{ workdir, want string }{
-		{"sub", filepath.Join(`C:\repo`, "sub")},
-		{`C:\other`, `C:\other`},
+		{"sub", filepath.Join(testenv.NativeFixture(`C:\repo`), "sub")},
+		{testenv.NativeFixture(`C:\other`), testenv.NativeFixture(`C:\other`)},
 	} {
 		in := deepseekFixture(t, "pwsh-pre")
 		in["tool_input"].(map[string]any)["workdir"] = tc.workdir
@@ -193,19 +224,20 @@ func TestDeepSeekObserverRejectsFailureAndRemotePaths(t *testing.T) {
 		func(in *BridgeRequest) { in.Success = nil },
 		func(in *BridgeRequest) { in.Tool = "bash" },
 		func(in *BridgeRequest) { in.HostEvent = "tools/post-execute" },
-		func(in *BridgeRequest) { in.Cwd = "/mnt/c/repo" },
-		func(in *BridgeRequest) { in.Paths = []string{"/mnt/c/repo/debug.log"} },
+		func(in *BridgeRequest) { in.Cwd = testenv.ForeignFixture("/mnt/c/repo") },
+		func(in *BridgeRequest) { in.Paths = []string{testenv.ForeignFixture("/mnt/c/repo/debug.log")} },
 		func(in *BridgeRequest) { in.Paths = []string{"ssh://host/C:/repo/debug.log"} },
 		func(in *BridgeRequest) { in.Paths = []string{"debug.log"} },
 		func(in *BridgeRequest) { in.Agent = "claude" },
 	} {
-		in := BridgeRequest{Version: 1, Agent: "deepseek-harness", Event: "PostToolUse", HostEvent: "tools/result", Tool: "edit", Session: "s", Cwd: "C:/repo", Local: true, Success: new(true), Paths: []string{"C:/repo/debug.log"}}
+		in := BridgeRequest{Version: 1, Agent: "deepseek-harness", Event: "PostToolUse", HostEvent: "tools/result", Tool: "edit", Session: "s", Cwd: testenv.NativeFixture("C:/repo"), Local: true, Success: new(true), Paths: []string{testenv.NativeFixture("C:/repo/debug.log")}}
 		change(&in)
 		if ev, err := decodeDeepSeek(t, in); err == nil || len(ev.Paths) != 0 {
 			t.Fatalf("accepted: %+v %v", ev, err)
 		}
 	}
 	in := deepseekFixture(t, "ssh")
+	in["cwd"] = testenv.ForeignFixture("/mnt/c/repo")
 	if ev, err := decodeDeepSeek(t, in); !errors.Is(err, ErrSkip) || len(ev.Paths) != 0 {
 		t.Fatalf("SSH mapped locally: %+v %v", ev, err)
 	}

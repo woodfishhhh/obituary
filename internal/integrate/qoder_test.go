@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"encoding/json"
 	"os"
@@ -31,7 +33,7 @@ func qoderTestScope(t *testing.T, agent string, global bool) (Scope, string) {
 }
 
 func qoderTestCommands(agent, folder string) Commands {
-	exe := "C:/" + folder + "/obit.exe"
+	exe := testenv.NativeFixture("C:/") + folder + "/obit.exe"
 	return Commands{Native: `"` + exe + `" hook ` + agent, Executable: exe}
 }
 
@@ -116,7 +118,7 @@ func TestQoderSharedProjectOwners(t *testing.T) {
 			for _, name := range []string{first, second} {
 				p, err := PlanAgent(name, s, qoderTestCommands(name, "tools"), false)
 				applyIntegration(t, p, err)
-				p, err = planQoderMCP(s, "C:/tools/obit.exe", name, false)
+				p, err = planQoderMCP(s, testenv.NativeFixture("C:/tools/obit.exe"), name, false)
 				applyIntegration(t, p, err)
 			}
 			path := filepath.Join(dir, "settings.json")
@@ -158,28 +160,28 @@ func TestQoderConfigurationLayers(t *testing.T) {
 		t.Fatal("wrong hook priority")
 	}
 	hooksOnly := read(t, local)
-	withMCP := strings.TrimSuffix(hooksOnly, "}\n") + `,"mcpServers":{"obituary":{"command":"C:/old/obit.exe","args":["mcp"],"env":{"KEEP":"yes"}}}}`
+	withMCP := strings.TrimSuffix(hooksOnly, "}\n") + testenv.NativeFixture(`,"mcpServers":{"obituary":{"command":"C:/old/obit.exe","args":["mcp"],"env":{"KEEP":"yes"}}}}`)
 	writeIntegrationFile(t, local, withMCP)
-	if _, err := PlanQoderMCP(s, "C:/new/obit.exe", false); err == nil || !strings.Contains(err.Error(), "ownership") {
+	if _, err := PlanQoderMCP(s, testenv.NativeFixture("C:/new/obit.exe"), false); err == nil || !strings.Contains(err.Error(), "ownership") {
 		t.Fatal("unowned shared MCP adopted", err)
 	}
 	// An existing installation from the shared plugin installer records the
 	// owner set; Qoder must cooperate with that receipt instead of replacing it.
 	writeIntegrationFile(t, local, hooksOnly)
-	p, err = planPluginMCP(s, local, "qoder", "C:/old/obit.exe", false)
+	p, err = planPluginMCP(s, local, "qoder", testenv.NativeFixture("C:/old/obit.exe"), false)
 	applyIntegration(t, p, err)
 	writeIntegrationFile(t, local, withMCP)
-	p, err = PlanQoderMCP(s, "C:/new/obit.exe", false)
+	p, err = PlanQoderMCP(s, testenv.NativeFixture("C:/new/obit.exe"), false)
 	applyIntegration(t, p, err)
-	if !strings.Contains(read(t, local), "C:/new/obit.exe") || !strings.Contains(read(t, local), "KEEP") {
+	if !strings.Contains(read(t, local), testenv.NativeFixture("C:/new/obit.exe")) || !strings.Contains(read(t, local), "KEEP") {
 		t.Fatal("local MCP lost fields")
 	}
 	if _, err := os.Stat(filepath.Join(s.Project, ".mcp.json")); !os.IsNotExist(err) {
 		t.Fatal("created shadowed MCP", err)
 	}
-	writeIntegrationFile(t, filepath.Join(s.Project, ".mcp.json"), `{"mcpServers":{"obituary":{"command":"C:/other/obit.exe","args":["mcp"]}}}`)
+	writeIntegrationFile(t, filepath.Join(s.Project, ".mcp.json"), testenv.NativeFixture(`{"mcpServers":{"obituary":{"command":"C:/other/obit.exe","args":["mcp"]}}}`))
 	for _, uninstall := range []bool{false, true} {
-		if _, err := PlanQoderMCP(s, "C:/tools/obit.exe", uninstall); err == nil || !strings.Contains(err.Error(), "multiple layers") {
+		if _, err := PlanQoderMCP(s, testenv.NativeFixture("C:/tools/obit.exe"), uninstall); err == nil || !strings.Contains(err.Error(), "multiple layers") {
 			t.Fatal("ambiguous MCP silently changed", err)
 		}
 	}
@@ -260,12 +262,12 @@ func TestQoderMCPConflictAndConcurrency(t *testing.T) {
 	path := filepath.Join(s.Project, ".mcp.json")
 	for _, bad := range []string{"", "\xef\xbb\xbf", "{", "[]", `{"mcpServers":{"obituary":{"command":"user.exe","args":[]}}}`} {
 		writeIntegrationFile(t, path, bad)
-		if _, err := PlanQoderMCP(s, "C:/tools/obit.exe", false); err == nil || read(t, path) != bad {
+		if _, err := PlanQoderMCP(s, testenv.NativeFixture("C:/tools/obit.exe"), false); err == nil || read(t, path) != bad {
 			t.Fatal("bad MCP accepted/changed", bad, err)
 		}
 	}
 	writeIntegrationFile(t, path, `{"mcpServers":{}}`)
-	p, err := PlanQoderMCP(s, "C:/tools/obit.exe", false)
+	p, err := PlanQoderMCP(s, testenv.NativeFixture("C:/tools/obit.exe"), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -305,9 +307,9 @@ func TestQoderHookHandlerTimeout(t *testing.T) {
 func TestQoderSharesPluginMCPOwnership(t *testing.T) {
 	s, _ := qoderTestScope(t, "qoder", false)
 	path := filepath.Join(s.Project, ".mcp.json")
-	p, err := planPluginMCP(s, path, "pi", "C:/tools/obit.exe", false)
+	p, err := planPluginMCP(s, path, "pi", testenv.NativeFixture("C:/tools/obit.exe"), false)
 	applyIntegration(t, p, err)
-	p, err = PlanQoderMCP(s, "C:/tools/obit.exe", false)
+	p, err = PlanQoderMCP(s, testenv.NativeFixture("C:/tools/obit.exe"), false)
 	applyIntegration(t, p, err)
 	p, err = PlanQoderMCP(s, "", true)
 	applyIntegration(t, p, err)
@@ -324,7 +326,7 @@ func TestQoderSharesPluginMCPOwnership(t *testing.T) {
 func TestQoderRejectsIndependentCNProjectHooks(t *testing.T) {
 	s, dir := qoderTestScope(t, "qoder", false)
 	path := filepath.Join(dir, "settings.json")
-	input := `{"hooks":{"PostToolUse":[{"hooks":[{"type":"command","command":"C:/tools/obit.exe hook qoder-cn"}]}]}}`
+	input := testenv.NativeFixture(`{"hooks":{"PostToolUse":[{"hooks":[{"type":"command","command":"C:/tools/obit.exe hook qoder-cn"}]}]}}`)
 	writeIntegrationFile(t, path, input)
 	if _, err := PlanQoder(s, qoderTestCommands("qoder", "tools"), false); err == nil || !strings.Contains(err.Error(), "independent qoder-cn") {
 		t.Fatal("duplicate variant installed", err)
@@ -342,7 +344,7 @@ func TestQoderRepeatedUninstall(t *testing.T) {
 	s, _ := qoderTestScope(t, "qoder", false)
 	p, err := PlanQoder(s, qoderTestCommands("qoder", "tools"), false)
 	applyIntegration(t, p, err)
-	p, err = PlanQoderMCP(s, "C:/tools/obit.exe", false)
+	p, err = PlanQoderMCP(s, testenv.NativeFixture("C:/tools/obit.exe"), false)
 	applyIntegration(t, p, err)
 	for range 2 {
 		p, err = PlanQoder(s, Commands{}, true)

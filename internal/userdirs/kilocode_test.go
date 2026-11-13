@@ -30,6 +30,8 @@ func TestKiloCodeDir(t *testing.T) {
 }
 
 func TestKiloCodeDirRejectsUnstablePrefixes(t *testing.T) {
+	windowsDirectoryTest(t, "Win32 extended names, alternate streams, and trailing-dot normalization")
+
 	for _, variable := range []string{"KILO_CONFIG_DIR", "XDG_CONFIG_HOME", "OBIT_USER_HOME"} {
 		t.Run(variable, func(t *testing.T) {
 			t.Setenv("KILO_CONFIG_DIR", "")

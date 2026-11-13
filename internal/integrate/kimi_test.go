@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"os"
 	"path/filepath"
@@ -13,7 +15,7 @@ func TestKimiGlobalHookLifecycle(t *testing.T) {
 	path := filepath.Join(root, "config.toml")
 	input := "\xef\xbb\xbf# user settings\nmodel='keep'\n[[hooks]]\nevent='Notification'\ncommand='echo user' # user comment\n"
 	writeIntegrationFile(t, path, input)
-	s, commands := Scope{Global: true}, Commands{Native: `"C:/space & tools/obit.exe" hook kimi`}
+	s, commands := Scope{Global: true}, Commands{Native: testenv.NativeFixture(`"C:/space & tools/obit.exe" hook kimi`)}
 	plan, err := PlanKimi(s, commands, false)
 	if err != nil || read(t, path) != input {
 		t.Fatalf("dry-run: %v", err)
@@ -29,7 +31,7 @@ func TestKimiGlobalHookLifecycle(t *testing.T) {
 		t.Fatal("missing silent end events")
 	}
 	writeIntegrationFile(t, path, strings.Replace(got, "# obit:kimi-hooks:begin", "# obit:kimi-hooks:begin\n# owned comment", 1))
-	commands.Native = `"D:/new location/obit.exe" hook kimi`
+	commands.Native = testenv.NativeFixture(`"D:/new location/obit.exe" hook kimi`)
 	plan, err = PlanKimi(s, commands, false)
 	applyIntegration(t, plan, err)
 	got = read(t, path)
@@ -81,13 +83,13 @@ func TestKimiProjectRulesLifecycle(t *testing.T) {
 }
 
 func TestKimiRejectsUnsafeConfig(t *testing.T) {
-	for _, input := range []string{"[", "hooks={}", "[[hooks]]\nevent='Stop'\ncommand='C:/tools/obit.exe hook kimi'\n", "# obit:kimi-hooks:begin\n[[hooks]]\nevent='Stop'\ncommand='user'\n# obit:kimi-hooks:end\n"} {
+	for _, input := range []string{"[", "hooks={}", testenv.NativeFixture("[[hooks]]\nevent='Stop'\ncommand='C:/tools/obit.exe hook kimi'\n"), "# obit:kimi-hooks:begin\n[[hooks]]\nevent='Stop'\ncommand='user'\n# obit:kimi-hooks:end\n"} {
 		root := t.TempDir()
 		t.Setenv("KIMI_SHARE_DIR", root)
 		path := filepath.Join(root, "config.toml")
 		writeIntegrationFile(t, path, input)
 		for _, uninstall := range []bool{false, true} {
-			if _, err := PlanKimi(Scope{Global: true}, Commands{Native: "C:/tools/obit.exe hook kimi"}, uninstall); err == nil {
+			if _, err := PlanKimi(Scope{Global: true}, Commands{Native: testenv.NativeFixture("C:/tools/obit.exe hook kimi")}, uninstall); err == nil {
 				t.Fatal("invalid config accepted", input)
 			}
 		}

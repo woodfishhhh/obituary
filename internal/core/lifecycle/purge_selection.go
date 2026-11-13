@@ -84,7 +84,7 @@ func (s *Service) purgeLocked(run *purgeRun) error {
 func (s *Service) blockedPurges(state State, pending []PendingGrave) map[int64]string {
 	blocked := map[int64]string{}
 	for _, p := range pending {
-		if p.Status != "unverifiable" {
+		if p.Status != "unverifiable" && p.Status != "identity-mismatch" {
 			continue
 		}
 		for _, id := range s.manifestIDs(state, p) {

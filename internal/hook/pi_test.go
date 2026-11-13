@@ -1,11 +1,14 @@
 package hook
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -45,7 +48,7 @@ func testPluginBridge(t *testing.T, name string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := json.Unmarshal(data, &fixture); err != nil || len(fixture.Sources) == 0 || fixture.Note == "" || len(fixture.Cases) == 0 {
+	if err := json.Unmarshal([]byte(testenv.NativeFixture(string(data))), &fixture); err != nil || len(fixture.Sources) == 0 || fixture.Note == "" || len(fixture.Cases) == 0 {
 		t.Fatalf("invalid sourced fixture: %v", err)
 	}
 	for _, tc := range fixture.Cases {
@@ -78,7 +81,7 @@ func testPluginBridge(t *testing.T, name string) {
 	}
 	success := true
 	base := BridgeRequest{Version: 1, Agent: name, Event: "PostToolUse", HostEvent: fixture.Cases[len(fixture.Cases)-1].Bridge.HostEvent,
-		Tool: "write", Session: "session-1", Cwd: `C:\repo`, Local: true, Success: &success, Paths: []string{"debug.log"}, ContextDelivery: true}
+		Tool: "write", Session: "session-1", Cwd: testenv.NativeFixture(`C:\repo`), Local: true, Success: &success, Paths: []string{"debug.log"}, ContextDelivery: true}
 	t.Run("reject-unconfirmed-input", func(t *testing.T) {
 		for _, tc := range []struct {
 			name string
@@ -91,7 +94,12 @@ func testPluginBridge(t *testing.T, name string) {
 			{"failed-write", func(r *BridgeRequest) { failed := false; r.Success = &failed }},
 			{"missing-success", func(r *BridgeRequest) { r.Success = nil }},
 			{"remote", func(r *BridgeRequest) { r.Local = false }},
-			{"remote-cwd", func(r *BridgeRequest) { r.Cwd = "/home/remote" }},
+			{"remote-cwd", func(r *BridgeRequest) {
+				r.Cwd = "/home/remote"
+				if runtime.GOOS != "windows" {
+					r.Local = false
+				}
+			}},
 			{"relative-cwd", func(r *BridgeRequest) { r.Cwd = "repo" }},
 			{"code-mode", func(r *BridgeRequest) { r.SkipReason = "code-mode" }},
 		} {
@@ -118,7 +126,7 @@ func testPluginBridge(t *testing.T, name string) {
 	})
 	t.Run("shell-output-is-not-path-evidence", func(t *testing.T) {
 		raw := bytes.TrimSuffix(pluginJSON(t, func() BridgeRequest { r := base; r.Paths = nil; return r }()), []byte("}"))
-		raw = append(raw, []byte(`,"output":"Wrote C:/repo/forged.log","result":{"path":"C:/repo/forged.log"}}`)...)
+		raw = append(raw, []byte(testenv.NativeFixture(`,"output":"Wrote C:/repo/forged.log","result":{"path":"C:/repo/forged.log"}}`))...)
 		ev, err := Decode(agent.Adapter, raw, Invocation{Agent: name})
 		if err != nil || len(ev.Paths) != 0 {
 			t.Fatalf("output became paths: %+v %v", ev, err)
@@ -129,7 +137,11 @@ func testPluginBridge(t *testing.T, name string) {
 		input.Session, input.Cwd = strings.Repeat("s", 4097), "/mnt/c/repo"
 		input.Paths = []string{"/mnt/c/repo/debug.log", "/home/remote/debug.log"}
 		ev, err := Decode(agent.Adapter, pluginJSON(t, input), Invocation{Agent: name})
-		if err != nil || ev.Cwd != `C:\repo` || !reflect.DeepEqual(ev.Paths, []string{`C:\repo\debug.log`}) || ev.Session != core.NormalizeSession(name+":"+input.Session) {
+		wantCwd, wantPaths := `C:\repo`, []string{`C:\repo\debug.log`}
+		if runtime.GOOS != "windows" {
+			wantCwd, wantPaths = input.Cwd, input.Paths
+		}
+		if err != nil || ev.Cwd != wantCwd || !reflect.DeepEqual(ev.Paths, wantPaths) || ev.Session != core.NormalizeSession(name+":"+input.Session) {
 			t.Fatalf("normalization: %+v %v", ev, err)
 		}
 		again, _ := Decode(agent.Adapter, pluginJSON(t, input), Invocation{Agent: name})
@@ -220,13 +232,16 @@ func testPluginGuard(t *testing.T, agent Agent, base BridgeRequest) {
 		{"unknown-shell", func(r *BridgeRequest) { r.Shell = "" }, false},
 		{"ambiguous-shell", func(r *BridgeRequest) { r.Shell = guardrm.Uncertain }, false},
 		{"remote", func(r *BridgeRequest) { r.Local = false }, false},
-		{"remote-posix", func(r *BridgeRequest) { r.Cwd = "/workspace/repo" }, false},
+		{"remote-posix", func(r *BridgeRequest) { r.Cwd = testenv.ForeignFixture("/workspace/repo") }, false},
 		{"code-mode", func(r *BridgeRequest) { r.SkipReason = "code-mode runtime" }, false},
 		{"long-command", func(r *BridgeRequest) { r.Command = "rm " + strings.Repeat("x", 5000) }, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			input := base
 			input.Cwd = t.TempDir()
+			if tc.name == "local-powershell" {
+				testenv.WindowsOnly(t, "PowerShell Remove-Item integration is Windows-only")
+			}
 			tc.edit(&input)
 			raw := pluginJSON(t, input)
 			home := t.TempDir()

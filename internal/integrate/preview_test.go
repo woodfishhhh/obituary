@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"encoding/json"
 	"os"
@@ -11,7 +13,7 @@ import (
 func TestReadOnlyPlanCannotApply(t *testing.T) {
 	root := t.TempDir()
 	s := (Scope{Project: root}).ForInspection()
-	plan, err := PlanMCP(s, "codex", "C:/tools/obit.exe", false)
+	plan, err := PlanMCP(s, "codex", testenv.NativeFixture("C:/tools/obit.exe"), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -23,7 +25,7 @@ func TestReadOnlyPlanCannotApply(t *testing.T) {
 		t.Fatalf("preview changed directory: %v %v", entries, err)
 	}
 	s = Scope{Project: root}
-	install, err := PlanMCP(s, "codex", "C:/tools/obit.exe", false)
+	install, err := PlanMCP(s, "codex", testenv.NativeFixture("C:/tools/obit.exe"), false)
 	if err != nil {
 		t.Fatal(err)
 	}

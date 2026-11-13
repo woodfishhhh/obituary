@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/woodfishhhh/obituary/internal/core"
@@ -95,7 +96,7 @@ func deepseekPreToolEvent(ev Event, in claudeInput, local bool) Event {
 	}
 	if workdir, exists := in.ToolInput["workdir"]; exists {
 		path, ok := workdir.(string)
-		if !ok || path == "" || strings.HasPrefix(path, "/") || strings.HasPrefix(path, `\`) || strings.Contains(path, ":") && !deepseekWindowsPath(path) {
+		if !ok || path == "" || runtime.GOOS == "windows" && strings.HasPrefix(path, "/") || strings.HasPrefix(path, `\`) || strings.Contains(path, ":") && !deepseekWindowsPath(path) {
 			ev.SkipReason = "deepseek-harness: unsupported workdir"
 		} else if filepath.IsAbs(path) {
 			ev.Cwd = path
@@ -109,6 +110,9 @@ func deepseekPreToolEvent(ev Event, in claudeInput, local bool) Event {
 func deepseekLocal() bool { return os.Getenv("OBIT_DEEPSEEK_LOCAL") == "1" }
 
 func deepseekWindowsPath(path string) bool {
+	if runtime.GOOS != "windows" {
+		return filepath.IsAbs(path) && !strings.ContainsAny(path, "\x00\r\n") && pathutil.Unchanged(path) == nil
+	}
 	return windowsCwd(path) && !strings.ContainsAny(path, "\x00\r\n") && pathutil.Unchanged(filepath.FromSlash(path)) == nil
 }
 

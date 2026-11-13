@@ -1,5 +1,7 @@
 package lifecycle_test
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"context"
@@ -9,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -181,6 +184,7 @@ func TestConfirmedBurialAuditBeforeDirectTerminalAction(t *testing.T) {
 }
 
 func TestForeignManifestCannotConfirmUnicodeRoot(t *testing.T) {
+	testenv.RequireDistinctUnicodeNames(t)
 	f := newFixture(t)
 	f.svc.Store.Home = filepath.Join(filepath.Dir(f.dir), "K")
 	stop := core.SetBurialStep(f.svc, func(stage string) error {
@@ -278,6 +282,9 @@ func TestBurialAuditFailureRetainsRecoveryEvidence(t *testing.T) {
 }
 
 func TestExtendedHomeInterruptedBurial(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("extended drive and UNC home spellings are Windows-only")
+	}
 	for _, unc := range []bool{false, true} {
 		t.Run(fmt.Sprintf("unc=%v", unc), func(t *testing.T) {
 			f := newFixture(t)
@@ -654,7 +661,14 @@ func TestManifestRenameBeforeMoveCanRetry(t *testing.T) {
 			if !exists(renamed) || len(f.burials()) != 0 {
 				t.Fatal("renamed object must stay put until retried")
 			}
-			f.sweepAt(time.Minute)
+			out := f.sweepAt(time.Minute)
+			if runtime.GOOS != "windows" {
+				requireRetainedRetry(t, f, out)
+				if read(t, renamed) != "keep.txt" {
+					t.Fatal("unlocated source changed")
+				}
+				return
+			}
 			if len(f.burials()) != 1 || f.burials()[0].Path != renamed || len(f.items()) != 0 {
 				t.Fatal("rename after manifest permanently stranded the item")
 			}
@@ -900,6 +914,12 @@ func TestChildManifestKeepsOnlyIdentityAndReadsLegacySnapshot(t *testing.T) {
 	}
 	if _, err := f.svc.Sweep(false); err != nil {
 		t.Fatal(err)
+	}
+	if runtime.GOOS != "windows" {
+		if len(f.items()) != 1 || f.items()[0].ID != parent.ID || len(f.burials()) != 0 || !exists(manifest) || read(t, outside) != "output/child.txt" {
+			t.Fatal("unknown child location lost evidence or rebuilt its canceled lifespan")
+		}
+		return
 	}
 	if len(f.items()) != 0 || len(f.burials()) != 1 || read(t, outside) != "output/child.txt" {
 		t.Fatal("legacy snapshot rebuilt canceled lifespan")

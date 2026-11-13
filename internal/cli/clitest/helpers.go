@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -151,9 +152,18 @@ func DoctorFixture(t testing.TB) (string, cmdutil.Executable) {
 	for key, sub := range map[string]string{"OBIT_HOME": "data", "OBIT_CONFIG_DIR": "config", "OBIT_USER_HOME": "home", "CLAUDE_CONFIG_DIR": "claude", "CODEX_HOME": "codex"} {
 		t.Setenv(key, filepath.Join(root, sub))
 	}
-	exe := filepath.Join(root, "bin", "obit.exe")
+	suffix := ".exe"
+	if runtime.GOOS != "windows" {
+		suffix = ""
+	}
+	exe := filepath.Join(root, "bin", "obit"+suffix)
 	WriteFixture(t, exe, "test executable")
-	WriteFixture(t, filepath.Join(root, "bin", "obitd.exe"), "test companion")
+	WriteFixture(t, filepath.Join(root, "bin", "obitd"+suffix), "test companion")
+	if runtime.GOOS != "windows" {
+		if err := os.Chmod(exe, 0700); err != nil {
+			t.Fatal(err)
+		}
+	}
 	WriteFixture(t, filepath.Join(root, "data", "store.json"), `{"version":2,"nextId":1,"items":[]}`)
 	t.Setenv("PATH", filepath.Dir(exe))
 	return root, func() (string, error) { return exe, nil }

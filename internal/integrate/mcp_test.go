@@ -1,5 +1,7 @@
 package integrate
 
+import "github.com/woodfishhhh/obituary/internal/testenv"
+
 import (
 	"bytes"
 	"os"
@@ -87,7 +89,7 @@ func TestMCPInstallLifecycle(t *testing.T) {
 				t.Setenv("CLAUDE_CONFIG_DIR", "")
 				t.Setenv("CODEX_HOME", filepath.Join(root, ".codex"))
 				scope := Scope{Global: global, Project: root}
-				plan, err := PlanMCP(scope, agent, "C:/old/obit.exe", false)
+				plan, err := PlanMCP(scope, agent, testenv.NativeFixture("C:/old/obit.exe"), false)
 				if err != nil || !Pending(plan) {
 					t.Fatalf("plan: %v %v", plan, err)
 				}
@@ -101,7 +103,7 @@ func TestMCPInstallLifecycle(t *testing.T) {
 					original = "\xef\xbb\xbf" + `{"theme":"dark","mcpServers":{"other":{"command":"user && helper","args":["x"]}},"projects":{"private":{}}}`
 				}
 				writeIntegrationFile(t, path, original)
-				plan, err = PlanMCP(scope, agent, "C:/old/obit.exe", false)
+				plan, err = PlanMCP(scope, agent, testenv.NativeFixture("C:/old/obit.exe"), false)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -112,19 +114,19 @@ func TestMCPInstallLifecycle(t *testing.T) {
 				if read(t, backup) != original || !strings.HasPrefix(read(t, path), "\xef\xbb\xbf") {
 					t.Fatal("original backup or BOM lost")
 				}
-				plan, err = PlanMCP(scope, agent, "C:/old/obit.exe", false)
+				plan, err = PlanMCP(scope, agent, testenv.NativeFixture("C:/old/obit.exe"), false)
 				if err != nil || Pending(plan) {
 					t.Fatalf("not idempotent: %+v %v", plan, err)
 				}
-				plan, err = PlanMCP(scope, agent, "C:/new path/obit.exe", false)
+				plan, err = PlanMCP(scope, agent, testenv.NativeFixture("C:/new path/obit.exe"), false)
 				applyIntegration(t, plan, err)
-				if !strings.Contains(read(t, path), "C:/new path/obit.exe") {
+				if !strings.Contains(read(t, path), testenv.NativeFixture("C:/new path/obit.exe")) {
 					t.Fatal("binary path not refreshed")
 				}
 				if _, err := os.Stat(backup + ".1"); err != nil {
 					t.Fatal("numbered backup missing", err)
 				}
-				plan, err = PlanMCP(scope, agent, "C:/new path/obit.exe", true)
+				plan, err = PlanMCP(scope, agent, testenv.NativeFixture("C:/new path/obit.exe"), true)
 				applyIntegration(t, plan, err)
 				got := read(t, path)
 				if agent == "codex" && got != original {
