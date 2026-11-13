@@ -75,7 +75,8 @@ function Entry({ line }: { line: LogLine }) {
       {line.id ? <span className="ref">#{line.id}</span> : null}
       {name ? <span className="what">{name}</span> : null}
       {folder ? <span className="where">{folder}</span> : null}
-      {line.detail ? <span className="why">{detailText(line.detail)}</span> : null}
+      {/* A burial's detail is the grave's own folder: bookkeeping, still in the tooltip. */}
+      {line.detail && line.action !== "buried" ? <span className="why">{detailText(line.detail)}</span> : null}
     </span>
   );
 }

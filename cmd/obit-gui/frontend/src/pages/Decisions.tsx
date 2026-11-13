@@ -2,7 +2,7 @@ import { Check, CheckCheck, FileCode2, Inbox, ShieldCheck, ShieldOff, X } from "
 import { useState } from "react";
 import { errorText, useApi } from "../api";
 import { t } from "../i18n";
-import { bytes, extendedTo, lifespanText, underProject, when } from "../format";
+import { bytes, extendedTo, lifespanText, ruleOrigin, rulePattern, underProject, when } from "../format";
 import { useLoad, useRefresh } from "../hooks";
 import { askDecisions, setAskDecisions } from "../prefs";
 import type { Proposal, ProposalResult, RuleFile } from "../types";
@@ -109,7 +109,7 @@ function ProposalCard({ p, onOutcome }: { p: Proposal; onOutcome: (note: Outcome
       title: policy ? (approve ? t("dec.askPolicy", p.project) : t("dec.askNoPolicy", p.project))
         : burial ? (approve ? t("dec.askApprove", p.id) : t("dec.askReject", p.id))
         : approve ? t("dec.askStart", n) : t("dec.askSkip", n),
-      body: <><p>{policy ? t(approve ? "dec.policyBody" : "dec.noPolicyBody") : burial ? t(approve ? "dec.buryBody" : "dec.spareBody") : approve ? t("dec.approveBody", n) : t("dec.rejectBody")}</p>{policy ? null : items}</>,
+      body: <><p>{policy ? t(approve ? "dec.policyBody" : "dec.noPolicyBody") : burial ? t(approve ? "dec.buryBody" : "dec.spareBody") : p.kind === "onboard" ? t(approve ? "dec.onboardBody" : "dec.onboardRejectBody") : approve ? t("dec.approveBody", n) : t("dec.rejectBody")}</p>{policy ? null : items}</>,
       ok: approve ? t("approve") : t("reject"),
       danger: burial ? approve : !approve,
       remember: { label: t("dec.noAsk"), onRemember: () => { setAskDecisions(false); toast(t("dec.noAskToast")); } },
@@ -159,7 +159,7 @@ function ProposalCard({ p, onOutcome }: { p: Proposal; onOutcome: (note: Outcome
           <div key={c.path} className="row cols-watch">
             <span className="name-sub" title={c.path}>{underProject(c.path, p.project)}</span>
             <span className="tag">{burial ? t("dec.expired") : lifespanText(c.lifespan)}</span>
-            <span className="hint">{c.rule}</span>
+            <span className="hint" title={c.rule}>{c.rule ? <><code>{rulePattern(c.rule)}</code> {ruleOrigin(c.rule)}</> : null}</span>
             <span className="num">{policy || isContainer(c.kind) ? t("container.size") : bytes(c.size)}</span>
             <span />
           </div>

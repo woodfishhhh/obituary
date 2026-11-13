@@ -4,7 +4,7 @@
 // names what Enter will do. Typing a page name or 刷新 offers it as a command.
 import { ArrowRight, CornerDownLeft, File, Folder, RefreshCw, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { bytes, graveSize } from "../../format";
+import { bytes, graveSize, noteText } from "../../format";
 import Decisions from "../../pages/Decisions";
 import Logs from "../../pages/Logs";
 import Settings from "../../pages/Settings";
@@ -157,7 +157,7 @@ function List({ rows, commands, at, setActive, has, toggle, onOpen, empty, loadi
               <input type="checkbox" className="pl-check" tabIndex={-1} aria-label={t("select", nameOf(r.path))} checked={has(r.id)} onChange={() => toggle(r.id)} onClick={(e) => e.stopPropagation()} />
               <span className="pl-icon">{r.isDir ? <Folder size={15} aria-hidden /> : <File size={15} aria-hidden />}</span>
               <span className="pl-name" title={r.path}>{nameOf(r.path)}</span>
-              <span className="pl-folder">{folderOf(r.path)}{r.note ? <em>{r.note}</em> : null}</span>
+              <span className="pl-folder">{folderOf(r.path)}{r.note ? <em>{noteText(r.note)}</em> : null}</span>
               <span className="pl-time" data-urgent={r.urgent}>{r.time}</span>
             </div>
           </div>

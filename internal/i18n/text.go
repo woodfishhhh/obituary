@@ -50,6 +50,9 @@ const (
 	IconLive
 	IconNextWindow
 	ShortcutPreserved
+	TodayAt
+	TomorrowAt
+	YesterdayAt
 	keyCount
 )
 

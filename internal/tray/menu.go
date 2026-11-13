@@ -13,6 +13,8 @@ type menuItem interface {
 	SetTitle(string)
 	SetTooltip(string)
 	Disable()
+	Hide()
+	Show()
 	Remove()
 	AddSubMenuItem(string, string) menuItem
 	clicks() <-chan struct{}
@@ -26,22 +28,31 @@ func (n nativeItem) AddSubMenuItem(title, tooltip string) menuItem {
 }
 
 type menuUI struct {
-	addItem func(string, string) menuItem
-	tooltip func(string)
+	addItem      func(string, string) menuItem
+	addSeparator func()
+	tooltip      func(string)
 }
 
 func makeMenu(r *app.Resident, gui guiAction, ui menuUI, language func() i18n.Language) *menu {
 	m := &menu{resident: r, openGUI: gui, ui: ui, loadLanguage: language, actions: make(chan func() error, 16)}
 	m.gui = ui.addItem("", "")
+	// Native menus only append, so the release item waits hidden under the
+	// window item instead of landing below Quit when a release appears.
+	m.update = ui.addItem("", "")
+	m.update.Hide()
 	if !gui.enabled {
 		m.gui.Disable()
+		m.update.Disable()
 	}
 	m.status = ui.addItem("", "")
 	m.status.Disable()
+	ui.addSeparator()
 	m.recent = ui.addItem("", "")
 	m.upcoming = ui.addItem("", "")
+	ui.addSeparator()
 	m.pause = ui.addItem("", "")
 	m.open = ui.addItem("", "")
+	ui.addSeparator()
 	m.quit = ui.addItem("", "")
 	m.localize()
 	return m

@@ -11,14 +11,23 @@ export function bytes(n: number): string {
 }
 
 // Notes written by Obituary itself are stored in a fixed English form; show them in the window's language.
+// Approval writes "approved #16 (rule *.log (builtin:10))"; once approved the
+// proposal is gone, so its number says less than the rule that matched.
 export function noteText(note?: string): string {
   if (!note) return "";
-  const approved = /^approved #(\d+)$/.exec(note);
-  if (approved) return t("note.approved", approved[1]);
+  const approved = /^approved #(\d+)(?: \(rule (.+)\))?$/.exec(note);
+  if (approved) return approved[2] ? t("note.rule", rulePattern(approved[2])) : t("note.approved", approved[1]);
   const rule = /^rule (.+)$/.exec(note);
-  if (rule) return t("note.rule", rule[1]);
+  if (rule) return t("note.rule", rulePattern(rule[1]));
   return note;
 }
+
+// A matched rule is "pattern (file:line)"; people need the pattern and whether it is built in.
+export const rulePattern = (rule: string) => /^(.+) \([^()]+:\d+\)$/.exec(rule)?.[1] ?? rule;
+export const ruleOrigin = (rule: string) => {
+  const file = /\(([^()]+):\d+\)$/.exec(rule)?.[1];
+  return file === "builtin" ? t("rule.builtin") : file ?? "";
+};
 
 const pad = (n: number) => String(n).padStart(2, "0");
 

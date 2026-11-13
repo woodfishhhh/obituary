@@ -81,8 +81,9 @@ func newMenu(r *app.Resident) *menu {
 		gui.enabled, gui.detail = false, err.Error()
 	}
 	return makeMenu(r, gui, menuUI{
-		addItem: func(title, tooltip string) menuItem { return nativeItem{systray.AddMenuItem(title, tooltip)} },
-		tooltip: systray.SetTooltip,
+		addItem:      func(title, tooltip string) menuItem { return nativeItem{systray.AddMenuItem(title, tooltip)} },
+		addSeparator: systray.AddSeparator,
+		tooltip:      systray.SetTooltip,
 	}, config.UILanguage)
 }
 
@@ -101,7 +102,7 @@ func (m *menu) run(ctx context.Context, cancel context.CancelFunc, changed <-cha
 			err = openDirectory(m.resident.Service.Store.Home)
 		case <-m.gui.clicks():
 			err = m.openGUI.open()
-		case <-m.updateClicks():
+		case <-m.update.clicks():
 			err = m.openGUI.open()
 		case <-m.pause.clicks():
 			err = m.togglePause()
@@ -141,7 +142,7 @@ func (m *menu) refresh(ctx context.Context) {
 	if err := m.recentRows(ctx); err != nil {
 		m.status.SetTitle(label(fmt.Sprintf(m.language.Text(i18n.ReadGravesFailed), err)))
 	}
-	if err := m.upcomingRows(); err != nil {
+	if err := m.upcomingRows(ctx); err != nil {
 		m.status.SetTitle(label(fmt.Sprintf(m.language.Text(i18n.ReadUpcomingFailed), err)))
 	}
 	paused, err := app.Paused(m.resident.Service.Store.Home)
@@ -152,30 +153,15 @@ func (m *menu) refresh(ctx context.Context) {
 	m.showPaused(paused)
 }
 
-func (m *menu) updateClicks() <-chan struct{} {
-	if m.update == nil {
-		return nil
-	}
-	return m.update.clicks()
-}
-
 func (m *menu) refreshUpdate() {
 	state, err := update.Read(m.resident.Service.Store.Home)
 	if err != nil || !update.Newer(buildinfo.Version, state.Latest.Version) {
-		if m.update != nil {
-			m.update.Remove()
-			m.update = nil
-		}
+		m.update.Hide()
 		return
-	}
-	if m.update == nil {
-		m.update = m.ui.addItem("", "")
 	}
 	m.update.SetTitle(fmt.Sprintf(m.language.Text(i18n.UpdateAvailable), state.Latest.Version))
 	m.update.SetTooltip(m.openGUI.tooltip)
-	if !m.openGUI.enabled {
-		m.update.Disable()
-	}
+	m.update.Show()
 }
 
 func (m *menu) recentRows(ctx context.Context) error {
@@ -186,16 +172,24 @@ func (m *menu) recentRows(ctx context.Context) error {
 	if len(rows) == 0 {
 		m.addInfo(m.recent, m.language.Text(i18n.NoGraves))
 	}
+	now := time.Now()
 	for _, burial := range rows {
-		title := fmt.Sprintf("#%d %s | %s | %s | %s / %s", burial.ID, filepath.Base(burial.Path), filepath.Dir(burial.Path), burial.BuriedAt.Local().Format("01-02 15:04"), burial.Reason, burial.Source)
-		row := m.recent.AddSubMenuItem(label(title), burial.Path)
+		row := m.recent.AddSubMenuItem(label(rowTitle(m.language, burial.Path, burial.BuriedAt, now)), burial.Path)
 		m.rows = append(m.rows, row)
-		go m.listenRestore(ctx, row, burial.ID)
+		id := burial.ID
+		go m.listen(ctx, row, func() error {
+			result, err := m.resident.Restore(id)
+			if result.Action == core.ActionResurrected {
+				m.status.SetTitle(label(fmt.Sprintf(m.language.Text(i18n.Restored), result.Path, result.Warning)))
+			}
+			return err
+		})
 	}
 	return nil
 }
 
-func (m *menu) listenRestore(ctx context.Context, row menuItem, id int64) {
+// listen hands a row's clicks to the menu loop until the rows are rebuilt.
+func (m *menu) listen(ctx context.Context, row menuItem, action func() error) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -204,20 +198,15 @@ func (m *menu) listenRestore(ctx context.Context, row menuItem, id int64) {
 			select {
 			case <-ctx.Done():
 				return
-			case m.actions <- func() error {
-				result, err := m.resident.Restore(id)
-				if result.Action == core.ActionResurrected {
-					m.status.SetTitle(label(fmt.Sprintf(m.language.Text(i18n.Restored), id, result.Path, result.Warning)))
-				}
-				return err
-			}:
+			case m.actions <- action:
 			}
 		}
 	}
 }
 
-func (m *menu) upcomingRows() error {
-	rows, err := m.resident.Upcoming(time.Now())
+func (m *menu) upcomingRows(ctx context.Context) error {
+	now := time.Now()
+	rows, err := m.resident.Upcoming(now)
 	if err != nil {
 		return err
 	}
@@ -225,9 +214,40 @@ func (m *menu) upcomingRows() error {
 		m.addInfo(m.upcoming, m.language.Text(i18n.NoUpcoming))
 	}
 	for _, item := range rows {
-		m.addInfo(m.upcoming, fmt.Sprintf("%s | %s", item.ExpiresAt.Local().Format("01-02 15:04"), item.Path))
+		// A row opens the window, where it can be extended or spared.
+		row := m.upcoming.AddSubMenuItem(label(rowTitle(m.language, item.Path, item.ExpiresAt, now)), item.Path)
+		m.rows = append(m.rows, row)
+		if !m.openGUI.enabled {
+			row.Disable()
+			continue
+		}
+		go m.listen(ctx, row, m.openGUI.open)
 	}
 	return nil
+}
+
+// rowTitle reads as a day and time, the name, then the folder it is in.
+func rowTitle(language i18n.Language, path string, at, now time.Time) string {
+	title := dayTime(language, at.Local(), now.Local()) + "   " + filepath.Base(path)
+	if dir := filepath.Dir(path); dir != "." && dir != path {
+		title += "  ·  " + filepath.Base(dir)
+	}
+	return title
+}
+
+func dayTime(language i18n.Language, at, now time.Time) string {
+	clock := at.Format("15:04")
+	day := func(t time.Time) time.Time { y, m, d := t.Date(); return time.Date(y, m, d, 0, 0, 0, 0, t.Location()) }
+	// Rounding keeps a 23- or 25-hour daylight-saving day a whole day.
+	switch day(at).Sub(day(now)).Round(24*time.Hour) / (24 * time.Hour) {
+	case -1:
+		return fmt.Sprintf(language.Text(i18n.YesterdayAt), clock)
+	case 0:
+		return fmt.Sprintf(language.Text(i18n.TodayAt), clock)
+	case 1:
+		return fmt.Sprintf(language.Text(i18n.TomorrowAt), clock)
+	}
+	return at.Format("01-02 15:04")
 }
 
 func (m *menu) addInfo(parent menuItem, title string) {

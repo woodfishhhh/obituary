@@ -125,7 +125,9 @@
 [data-variant="palette"] .overlay { background: var(--scrim); backdrop-filter: blur(2px); }
 [data-variant="palette"] .dialog { border: 1px solid var(--glass-edge); border-radius: 10px; background: var(--panel); }
 [data-variant="palette"] .toast { border-radius: 8px; background: var(--text); color: var(--panel); }
-[data-variant="palette"] .toasts { bottom: 74px; right: 34px; }
+[data-variant="palette"] .toasts { bottom: calc(74px + var(--banner-space, 0px)); right: 34px; }
+/* The banner strip stays on the lit glass instead of a flat band under it. */
+.obit[data-variant="palette"] > .pl { margin-bottom: 0; padding-bottom: calc(18px + var(--banner-space, 0px)); }
 [data-variant="palette"] .toast.error { box-shadow: inset 4px 0 0 var(--gold), var(--shadow-pop); }
 
 .pl-shared .tag { justify-self: start; }

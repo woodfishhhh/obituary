@@ -14,7 +14,7 @@ obit watch --list                           # folder policies, their exemptions 
 obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans it registered
 ```
 
-- Tray menu: recent burials (click to resurrect), items due within 24 hours, pause / resume, Open Obituary (the small window), Quit (the scheduled task keeps working).
+- Tray menu: recent burials (click to resurrect), items due within 24 hours (click one to open the small window and extend or spare it there), pause / resume, Open Obituary (the small window), Quit (the scheduled task keeps working).
 - `obit-gui.exe` must sit next to `obitd.exe` for the tray to open it. Every switch shows exactly what it will change and writes only after you confirm; trusting a `.obitrules` file trusts exactly the version shown in the window.
 - Explorer dates come from a hidden `desktop.ini` in the folder and appear by default only in Downloads, on the Desktop and in folders under a policy. `[explorer]` in `config.toml` turns them off (`enabled = false`) or on everywhere (`everywhere = true`). Explorer caches folder views, so after extending a lifespan the same window may show the old date for up to a minute.
 - The window, tray and context menu follow `[ui] language` in `config.toml` (`auto`, `zh-CN` or `en`; `auto` follows Windows). You can switch it in Settings.

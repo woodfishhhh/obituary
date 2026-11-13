@@ -62,7 +62,7 @@
 
 /* ── The board of days ────────────────────────────────── */
 .cal-board { position: relative; flex: 1; min-height: 0; display: grid; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-.cal-day { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-left: 1px solid var(--line); transition: background-color 120ms; }
+.cal-day { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-left: 1px solid var(--line); transition: background-color 120ms; container-type: inline-size; }
 .cal-day:first-child { border-left: 0; }
 .cal-day[data-weekend="true"] { background: var(--weekend); }
 .cal-day[data-today="true"] { background: var(--today); }
@@ -72,6 +72,8 @@
 .cal-day-head b { font-size: 26px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 .cal-day-head b.later { font-size: 17px; }
 .cal-day-head span { color: var(--muted); font-size: 12px; white-space: nowrap; }
+/* An empty day is half as wide; its weekday would run into the next date. */
+@container (max-width: 84px) { .cal-day-head span { display: none; } }
 .cal-day[data-today="true"] .cal-day-head b, .cal-day[data-today="true"] .cal-day-head span { color: var(--cobalt); }
 .cal-day[data-today="true"] .cal-day-head span { font-weight: 700; }
 /* The band: one gradient across all heads, each column showing its slice. */

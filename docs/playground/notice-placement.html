@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>讣告小窗口：新版本和暂停提示放哪</title>
+<!-- 本地打开即可，不联网。三种放法画在同一个「日历」窗口上，右上角切换「暂停中」看两条提示同时出现的样子。 -->
+<style>
+  :root { --cobalt: #0048E8; --sky: #0078F8; --gold: #F8E000; --ink: #111522; --text-2: #3A4256; --muted: #6E768A; --line: #E6E9F0; --line-2: #D0D6E2; --panel-2: #F3F5FA; --today: #F6F9FF; --weekend: #FAFBFC; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 28px; background: #EEF1F7; color: var(--ink); font: 14px/1.5 Bahnschrift, DengXian, "Microsoft YaHei UI", sans-serif; }
+  header.pg { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+  header.pg h1 { margin: 0; font-size: 20px; }
+  header.pg p { margin: 0; color: var(--muted); }
+  .grow { flex: 1; }
+  .pick { display: flex; gap: 6px; padding: 4px; border-radius: 10px; background: #fff; box-shadow: 0 1px 2px rgba(17,21,34,.08); }
+  .pick button { white-space: nowrap; height: 32px; padding: 0 14px; border: 0; border-radius: 7px; background: none; color: var(--text-2); font: inherit; cursor: pointer; }
+  .pick button[aria-pressed="true"] { background: var(--cobalt); color: #fff; font-weight: 600; }
+  label.toggle { white-space: nowrap; display: flex; align-items: center; gap: 6px; color: var(--text-2); cursor: pointer; }
+  .notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+  .notes div { padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--text-2); font-size: 13px; }
+  .notes div[data-on="true"] { border-color: var(--cobalt); box-shadow: 0 0 0 1px var(--cobalt); }
+  .notes b { display: block; margin-bottom: 2px; color: var(--ink); }
+
+  /* The window: a static copy of the 日历 look at 1040 × 700. */
+  .win { position: relative; width: 1040px; height: 700px; margin: 0 auto; overflow: hidden; border-radius: 10px; background: #fff; box-shadow: 0 24px 60px rgba(17,21,34,.18), 0 0 0 1px rgba(17,21,34,.06); display: grid; grid-template-rows: 32px 52px minmax(0, 1fr) auto; }
+  .title { display: flex; align-items: center; gap: 8px; padding: 0 12px; background: var(--cobalt); color: #fff; font-size: 12px; }
+  .top { display: flex; align-items: center; gap: 20px; padding: 0 16px 0 20px; border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; }
+  .brand i { width: 20px; height: 22px; border-radius: 10px 10px 3px 3px; background: linear-gradient(160deg, var(--cobalt), var(--sky) 55%, var(--gold)); }
+  .tabs { display: flex; gap: 2px; padding: 3px; border-radius: 9px; background: var(--panel-2); }
+  .tabs > span { position: relative; display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 14px; border-radius: 7px; color: var(--text-2); font-size: 13px; }
+  .tabs > span.on { background: #fff; color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(17,21,34,.08), 0 0 0 1px rgba(17,21,34,.04); }
+  .count { min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--gold); font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
+  .dot { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 2px var(--panel-2); }
+  .today { display: flex; gap: 8px; color: var(--text-2); font-size: 13px; }
+  .chip { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 6px 0 12px; border-radius: 999px; background: #FFFBD6; color: #4A4000; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+  .chip.blue { background: #EAF0FF; color: var(--cobalt); }
+  .chip b { padding: 2px 10px; border-radius: 999px; background: var(--cobalt); color: #fff; font-weight: 600; }
+  .strip { display: flex; align-items: center; gap: 12px; margin: 0 0 14px; border-radius: 10px; padding: 8px 8px 8px 16px; background: #FFFBD6; color: #4A4000; font-size: 13px; border-bottom: 1px solid #F1E7A0; }
+  .strip b { margin-left: auto; padding: 4px 12px; border-radius: 7px; background: var(--cobalt); color: #fff; font-weight: 600; }
+
+  .page { display: flex; flex-direction: column; min-height: 0; padding: 18px 20px 16px; }
+  .head { display: flex; align-items: flex-end; margin-bottom: 14px; padding: 0 4px; }
+  .head h2 { margin: 0; font-size: 24px; font-weight: 600; line-height: 1.2; }
+  .head p { margin: 4px 0 0; color: var(--text-2); font-size: 13px; }
+  .board { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr .5fr 1fr 1fr .5fr 1fr; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .day { border-left: 1px solid var(--line); min-width: 0; }
+  .day:first-child { border-left: 0; background: var(--today); }
+  .day.we { background: var(--weekend); }
+  .dh { position: relative; display: flex; align-items: baseline; gap: 6px; padding: 10px 10px 12px; }
+  .dh b { font-size: 26px; font-weight: 600; line-height: 1; }
+  .dh span { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .narrow .dh span { display: none; }
+  .day:first-child .dh * { color: var(--cobalt); }
+  .dh::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--c); }
+  .cards { display: grid; gap: 6px; padding: 10px 6px; }
+  .card { padding: 7px 8px 8px 11px; border: 1px solid var(--line); border-radius: 8px; box-shadow: inset 3px 0 0 var(--c), 0 1px 2px rgba(17,21,34,.05); background: #fff; }
+  .card small { display: block; color: var(--text-2); font-size: 12px; font-weight: 600; }
+  .card strong { display: block; font-size: 12.5px; overflow-wrap: anywhere; }
+  .card em { display: block; color: var(--muted); font-size: 11px; font-style: normal; }
+
+  .banners { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0 0 16px; }
+  .pill { display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border: 1px solid var(--line); border-radius: 999px; background: #fff; box-shadow: 0 16px 44px rgba(17,21,34,.18), 0 0 0 1px rgba(17,21,34,.05); font-size: 13px; }
+  .pill .ghost { color: var(--muted); padding: 0 6px; }
+  .pill b { padding: 6px 14px; border-radius: 8px; background: var(--cobalt); color: #fff; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header class="pg">
+  <div>
+    <h1>新版本、暂停中：提示放哪</h1>
+    <p>以前浮在页面正中下方，会盖住日历底部的卡片和「一行」外观的快捷键栏。现在已改成 A；B、C 是另外两种做法。</p>
+  </div>
+  <span class="grow"></span>
+  <label class="toggle"><input type="checkbox" id="paused">暂停中</label>
+  <div class="pick" role="group" aria-label="放法">
+    <button type="button" data-v="a" aria-pressed="true">A 底部留白</button>
+    <button type="button" data-v="b" aria-pressed="false">B 顶栏胶囊</button>
+    <button type="button" data-v="c" aria-pressed="false">C 标签小点</button>
+  </div>
+</header>
+<div class="notes">
+  <div data-n="a" data-on="true"><b>A 底部留白（已实现）</b>有提示时窗口底部让出一条，胶囊放在里面，什么都不盖；没有提示时不占地方。8 种外观都能用同一份样式。</div>
+  <div data-n="b"><b>B 顶栏胶囊</b>提示收进顶栏日期左边，页面完全不动；但顶栏要每种外观各写一份，窗口窄时会挤。</div>
+  <div data-n="c"><b>C 标签小点</b>新版本只在「设置」上点一个金点，最安静；暂停改成顶栏下面整条金色横幅，最醒目。</div>
+</div>
+
+<div class="win">
+  <div class="title">▣ 讣告 Obituary</div>
+  <div class="top">
+    <div class="brand"><i></i>讣告</div>
+    <div class="tabs"><span class="on">即将下葬</span><span>即将火化</span><span>待你决定 <span class="count">2</span></span><span id="settings">设置<i class="dot" data-only="c"></i></span><span>日志</span></div>
+    <span class="grow"></span>
+    <span class="chip" data-only="b" data-paused>已暂停 <b>恢复</b></span>
+    <span class="chip blue" data-only="b">新版本 1.1.1 <b>查看</b></span>
+    <div class="today">📅 11 月 14 日 周六</div>
+  </div>
+  <div class="page">
+    <div class="strip" data-only="c" data-paused>自动清理已暂停：到期的东西先不下葬，墓地也先不火化。<b>恢复</b></div>
+    <div class="head"><div><h2>即将下葬</h2><p>13 项排在各自下葬的那天（今天 3 项）；拖到后面某天就延长到那天。</p></div></div>
+    <div class="board" id="board"></div>
+  </div>
+  <div class="banners" data-only="a">
+    <div class="pill">讣告 1.1.1 已发布 <span class="ghost">跳过这个版本</span><b>查看</b></div>
+    <div class="pill" data-paused>自动清理已暂停：到期的东西先不下葬，墓地也先不火化。<b>恢复</b></div>
+  </div>
+</div>
+
+<script>
+  const colors = ["#0048E8", "#0062F0", "#0078F8", "#5AA0FA", "#B9D9FF", "#D9E6C8", "#FCEF8A", "#FAE84A", "#F8E000"];
+  const days = [["14", "今天"], ["15", "明天"], ["16", "周一"], ["17", "周二"], ["18", "周三"], ["19", "周四"], ["20", "周五"], ["21", "周六"], ["更晚", "1 项"]];
+  const cards = { 0: [["9 分钟后", "debug-output.log", "手动，寿命 25 分钟"], ["03:14", "screenshot-0412.png", "手动，寿命 3 小时"], ["20:14", "probe_api.py", "手动，寿命 20 小时"]], 1: [["00:14", "trace-2026-11-14.json", "手动，寿命 24 小时"]], 2: [["00:14", "repro.sh", "手动，寿命 2 天"]], 3: [["00:14", "coverage.html", "手动，寿命 3 天"], ["00:20", "agent-run.log", "批准的提议 · 规则：*.log"], ["00:20", "npm-debug.log", "批准的提议 · 规则：*.log"], ["00:20", "session.log", "批准的提议 · 规则：*.log"]], 5: [["00:14", "build-cache", "手动，寿命 5 天"]], 6: [["00:14", "setup-v2.3.1.exe", "手动，寿命 6 天"]], 8: [["11 月 26 日", "dataset_sample.csv", "手动，寿命 12 天"]] };
+  document.getElementById("board").innerHTML = days.map(([d, w], i) => `<section class="day${i === 4 || i === 7 ? " narrow" : ""}${i === 7 ? " we" : ""}" style="--c:${colors[i]}"><div class="dh"><b>${d}</b><span>${w}</span></div><div class="cards">${(cards[i] || []).map(([a, b, c]) => `<div class="card"><small>${a}</small><strong>${b}</strong><em>${c}</em></div>`).join("")}</div></section>`).join("");
+  let v = "a";
+  const paused = document.getElementById("paused");
+  function render() {
+    document.querySelectorAll("[data-only]").forEach((el) => { el.hidden = el.dataset.only !== v; });
+    document.querySelectorAll("[data-paused]").forEach((el) => { if (el.dataset.only === v || el.closest(`[data-only="${v}"]`)) el.hidden = !paused.checked; });
+    document.querySelectorAll(".pick button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === v)));
+    document.querySelectorAll(".notes div").forEach((n) => { n.dataset.on = String(n.dataset.n === v); });
+  }
+  document.querySelectorAll(".pick button").forEach((b) => b.addEventListener("click", () => { v = b.dataset.v; render(); }));
+  paused.addEventListener("change", render);
+  render();
+</script>
+</body>
+</html>
