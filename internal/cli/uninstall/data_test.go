@@ -24,7 +24,7 @@ func TestUninstallRemovesOwnedUpdateMetadata(t *testing.T) {
 	if err := svc.Store.Update(func(*core.State) error { return nil }); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"update.json", "update.json.tmp", "update.lock", "proposal-log.json", "proposal-log.json.tmp", "proposal-log.lock"} {
+	for _, name := range []string{"update.json", "update.json.tmp", "update.lock", "proposal-log.json", "proposal-log.json.tmp", "proposal-log.lock", "explorer.log", "explorer.log.1"} {
 		write(t, filepath.Join(svc.Store.Home, name), "{}")
 	}
 	out, err := execute(t, d, "", "--yes", "--purge-data")

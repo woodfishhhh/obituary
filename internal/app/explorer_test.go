@@ -306,3 +306,20 @@ func TestExplorerDoesNotLabelUncommittedBurial(t *testing.T) {
 		t.Fatalf("payload: %q %v", data, err)
 	}
 }
+
+// A folder that keeps failing adds a line on every sync; the log stays bounded.
+func TestExplorerLogRotates(t *testing.T) {
+	home := t.TempDir()
+	path := filepath.Join(home, "explorer.log")
+	old := strings.Repeat("x", explorerLogLimit+1)
+	if err := os.WriteFile(path, []byte(old), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	logExplorerError(&core.Service{Store: core.Store{Home: home}}, os.ErrPermission)
+	if data, err := os.ReadFile(path + ".1"); err != nil || string(data) != old {
+		t.Fatalf("full log not rotated: %d bytes %v", len(data), err)
+	}
+	if data, err := os.ReadFile(path); err != nil || len(data) > 200 || !strings.Contains(string(data), "Explorer labels: "+os.ErrPermission.Error()) {
+		t.Fatalf("new log: %q %v", data, err)
+	}
+}

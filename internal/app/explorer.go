@@ -44,8 +44,15 @@ func syncExplorer(svc *core.Service, cfg config.Explorer) bool {
 	return true
 }
 
+// Same bound as hook.log: a folder that keeps failing adds a line per sync.
+const explorerLogLimit = 512 << 10
+
 func logExplorerError(svc *core.Service, err error) {
-	f, openErr := os.OpenFile(filepath.Join(svc.Store.Home, "explorer.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
+	path := filepath.Join(svc.Store.Home, "explorer.log")
+	if info, statErr := os.Stat(path); statErr == nil && info.Size() > explorerLogLimit {
+		_ = os.Rename(path, path+".1") // a concurrent writer keeps the old file; retried next time
+	}
+	f, openErr := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
 	if openErr != nil {
 		log.Printf("Explorer labels: %v; log: %v", err, openErr)
 		return
