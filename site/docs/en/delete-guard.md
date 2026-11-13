@@ -28,23 +28,23 @@ $ obit resurrect --last
 ## Principles
 
 - **Deny, never rewrite.** Obituary does not rewrite the agent's command: Claude Code checks permissions against the rewritten command, so rewriting would defeat your `deny` rules. Denying and letting the agent issue the equivalent command keeps all your permission rules in force.
-- **Miss rather than misfire.** Only deletes at the start of a command (or after `&&`, `;` or a newline) are recognised. After `||`, inside strings, in heredocs, `$(…)`, `sudo`, `xargs rm`, `find -delete` and interactive deletes all pass through (recorded in the audit log with `OBIT_HOOK_AUDIT=1`).
+- **A literal delete is always stopped.** When `rm`, `rmdir`, `git clean` or `Remove-Item` (including aliases such as `del`, `rd`, `ri`) appears at any command position, whether after `&&`, `||`, `;`, in a pipeline, `$(…)`, a subshell, a condition or a loop, that execution is stopped: for example `rm -rf build && npm run build`, `rm -rf build 2>/dev/null` or `git clean -fdx && npm ci`. Stopping runs nothing, so stopping more can never delete the wrong thing. `rm` inside strings, comments or `echo` arguments does not count; previews such as `rm --help`, `git clean -n` and `Remove-Item -WhatIf` do not either; deletes run by another program (`sudo rm`, `xargs rm`, `find -delete`) pass through (recorded in the audit log with `OBIT_HOOK_AUDIT=1`).
 - **Never falls back to a real delete.** Every path given to `obit rm` / `obit remove-item` / `obit git-clean` is buried; when one is refused (drive roots, system folders, the user profile itself and so on) the error follows `rm`'s format and the exit code is non-zero.
 - **Afraid the command changes on the way.** Between the command an agent means and the one that runs sit shell quoting, escaping and sometimes a proxy that rewrites commands. Lose one character and `rm -rf "$OUT"/` becomes `rm -rf /`. So before `obit rm` touches anything it checks the real path on disk.
 - Files tracked by Git are buried too, so uncommitted changes can be recovered (this is a deliberate delete by the agent, unlike automatic registration, which never touches tracked files).
 - `obit rm -rf` on a folder that contains `.git` buries the whole repository: a real `rm -rf` would destroy it, and burial can at least be undone. Protections that cannot be forced (system folders, user folders) still apply.
-- **Deliberately narrow.** The equivalent command must never select more than the original, so Obituary does not translate across shells and lets anything uncertain pass.
+- **The equivalent command is deliberately narrow.** It must never select more than the original, so Obituary does not translate across shells and only offers one for the forms in the table below. Otherwise the delete is still stopped; the reason says why no equivalent applies and that `obit bury <path>` (literal paths) and `obit git-clean` delete restorably, and the agent rewrites the command with them.
 
 ## What is stopped and what passes
 
-| Host | Stopped, with an equivalent command | Passes |
-|---|---|---|
-| Claude Code (Bash tool) | `rm`, `rmdir`, `git clean`, optionally preceded by a literal `cd x` (joined with `&&`, `;` or a newline); `rm -f *.log` (when no file in the folder starts with `-`), `rm -rf ../dist`, `rm -- "$target"` (variables after `--`) | Other leading statements (`trap`, `hash`, `npm …`), variables before `--`, POSIX absolute paths starting with `/`, complex constructs, interactive deletes, `/usr/bin/rm` with a path |
-| Codex, under WSL's `/mnt/<drive>` | A single `rm` / `rmdir` whose arguments are relative paths without `..`, `~`, wildcards or quotes | Everything else, including `git clean` and WSL's own file system |
-| Codex, declared Windows PowerShell | A single `Remove-Item` or alias with one literal path (`-Recurse`, `-Force` allowed) | Multiple statements, pipelines, provider paths, `~`, wildcards, backticks, curly quotes |
-| Codex on Windows with an unknown shell, pwsh on Linux, `git rm` | — | Everything |
+| Host | Stopped, with an equivalent command | Stopped, with the reason and general guidance | Passes |
+|---|---|---|---|
+| Claude Code (Bash tool) | `rm`, `rmdir`, `git clean`, optionally preceded by a literal `cd x` (joined with `&&`, `;` or a newline); `rm -f *.log` (when no file in the folder starts with `-`), `rm -rf ../dist`, `rm -- "$target"` (variables after `--`) | Every other literal delete: other statements before or after (`npm …`, `trap`, `hash`), variables before `--`, POSIX absolute paths starting with `/`, redirections, `\|\|`, pipelines, `$(…)`, interactive deletes, `/usr/bin/rm` with a path | Commands that do not delete |
+| Codex, under WSL's `/mnt/<drive>` | A single `rm` / `rmdir` whose arguments are relative paths without `..`, `~`, wildcards or quotes | Every other literal delete, including `git clean` and paths into WSL's own file system | A working directory inside WSL's own file system |
+| Codex, declared Windows PowerShell | A single `Remove-Item` or alias with one literal path (`-Recurse`, `-Force` allowed) | Every other literal delete: multiple statements, pipelines, other parameters such as `-ErrorAction`, provider paths, `~`, wildcards, backticks | Text inside curly-quoted strings |
+| Codex on Windows with an unknown shell, pwsh on Linux, `git rm` | — | — | Everything |
 
-The delete must be the **last segment** of the command, joined only with `&&`, `;` or newlines. File names ending in a dot or space always pass (Windows would normalise them into another name).
+For an equivalent command, the delete must be the **last segment** of the command, joined only with `&&`, `;` or newlines, and file names ending in a dot or space get none (Windows would normalise them into another name). A literal delete in any of these is still stopped.
 
 ## Use it yourself
 

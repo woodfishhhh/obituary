@@ -1,6 +1,7 @@
 package hook
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -14,7 +15,7 @@ import (
 
 func guardDelete(home string, ev Event) (string, error) {
 	equivalent, why := ev.Command, ev.SkipReason
-	var summary string
+	var summary, guidance string
 	if Disabled() || os.Getenv("OBIT_GUARD_RM") == "0" {
 		why = "delete guard is disabled"
 	}
@@ -23,12 +24,20 @@ func guardDelete(home string, ev Event) (string, error) {
 		context, why = deleteGuardContext(ev)
 		if why == "" {
 			equivalent, summary, why = guardrm.SuggestWithSummary(ev.Command, context)
+			guidance = deletionGuidance(ev, why, context.Executable)
 		}
 	}
-	if why == "" {
-		if err := guardrm.Record(home, guardrm.AuditEvent{Kind: "denied", Command: ev.Command, Equivalent: equivalent}); err != nil {
+	if why == "" || guidance != "" {
+		receipt := guardrm.AuditEvent{Kind: "denied", Command: ev.Command, Equivalent: equivalent}
+		if why != "" {
+			receipt.Equivalent, receipt.Reason = "", why
+		}
+		if err := guardrm.Record(home, receipt); err != nil {
 			// A failed receipt must never revoke an already decided denial.
 			Logf(home, "delete guard audit: %v", err)
+		}
+		if guidance != "" {
+			return guidance, nil
 		}
 		return deleteReason(equivalent, summary), nil
 	}
@@ -36,6 +45,28 @@ func guardDelete(home string, ev Event) (string, error) {
 		return "", guardrm.Record(home, guardrm.AuditEvent{Kind: "skipped", Command: ev.Command, Reason: why})
 	}
 	return "", nil
+}
+
+// deletionGuidance denies a literal deletion that has no exact equivalent:
+// denying runs nothing, so it cannot select more than the command would.
+func deletionGuidance(ev Event, why, executable string) string {
+	if why == "" {
+		return ""
+	}
+	deletion := guardrm.Deletion(ev.Command, ev.Shell)
+	if ev.ShellDeclared {
+		// A declaration may name the wrong shell: read the command as both.
+		deletion = cmp.Or(deletion, guardrm.Deletion(ev.Command, guardrm.Bash), guardrm.Deletion(ev.Command, guardrm.PowerShell))
+	}
+	if deletion == "" {
+		return ""
+	}
+	// Statements, not instructions: the agent reads this as tool context.
+	reason := fmt.Sprintf("Obituary's delete guard is on: `%s` deletes permanently and no exact obit equivalent applies to this command (%s). `%s bury <path>...` provides restorable deletion for literal paths, `%s git-clean` for git clean; `obit resurrect` restores graveyard entries.", deletion, why, executable, executable)
+	if len(reason) > maxContext {
+		reason = fmt.Sprintf("Obituary's delete guard is on: `%s` deletes permanently and no exact obit equivalent applies to this command. `obit bury <path>...` provides restorable deletion for literal paths, `obit git-clean` for git clean, through the installed obit executable.", deletion)
+	}
+	return reason
 }
 
 func deleteGuardContext(ev Event) (guardrm.Context, string) {

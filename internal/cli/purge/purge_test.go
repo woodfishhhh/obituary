@@ -41,6 +41,8 @@ func TestPurgeRecoveryReportsActualRestoredPath(t *testing.T) {
 			}
 			if format == "dry-run" {
 				args = append(args, "--dry-run")
+			} else {
+				args = append(args, "--yes")
 			}
 			before, err := svc.Store.ReadSnapshot()
 			if err != nil {
@@ -109,7 +111,7 @@ func TestPurgeHardFailureAfterAuditWarningReturnsFailure(t *testing.T) {
 	original := cmdutil.Open
 	cmdutil.Open = func() (*core.Service, error) { return svc, nil }
 	t.Cleanup(func() { cmdutil.Open = original })
-	out, _, err := clitest.Execute(t, NewCmd(), append(refs, "--json")...)
+	out, _, err := clitest.Execute(t, NewCmd(), append(refs, "--json", "--yes")...)
 	if err == nil || !strings.Contains(err.Error(), "write store") {
 		t.Fatalf("audit warning swallowed purge hard failure: %s %v", out, err)
 	}
@@ -140,7 +142,7 @@ func TestPurgeRestoreCommitFailureReportsJSONReceipt(t *testing.T) {
 	original := cmdutil.Open
 	cmdutil.Open = func() (*core.Service, error) { return svc, nil }
 	t.Cleanup(func() { cmdutil.Open = original })
-	out, _, err := clitest.Execute(t, NewCmd(), paths[1], paths[2], "--json")
+	out, _, err := clitest.Execute(t, NewCmd(), paths[1], paths[2], "--json", "--yes")
 	want := filepath.Join(filepath.Dir(paths[1]), "b (resurrected).txt")
 	var rows []core.GraveResult
 	if err == nil || json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 2 || rows[0].Path != want || rows[0].Error == "" || rows[1].Action != core.ActionNotExecuted {
@@ -177,7 +179,7 @@ func TestPurgeCommandExplicitlyAbandonsRestore(t *testing.T) {
 			if refKind == "path" {
 				ref = paths[1]
 			}
-			out, stderr, err := clitest.Execute(t, NewCmd(), ref, "--json")
+			out, stderr, err := clitest.Execute(t, NewCmd(), ref, "--json", "--yes")
 			var rows []core.GraveResult
 			if err != nil || json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 1 || rows[0].Action != core.ActionAbandoned {
 				t.Fatalf("explicit purge CLI failed: %s %s %v", out, stderr, err)
@@ -353,5 +355,58 @@ func TestPurgeDryRunVerifiesGrave(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+// --all and explicit references skip retention: outside a terminal they need
+// --yes, and in one the answer must be yes. Previews and plain purge do not ask.
+func TestPurgeRequiresConfirmation(t *testing.T) {
+	for _, tc := range []struct {
+		name, input, failure string
+		args                 func(core.Burial) []string
+		terminal, purged     bool
+	}{
+		{name: "all-not-terminal", failure: "not a terminal", args: func(core.Burial) []string { return []string{"--all"} }},
+		{name: "id-not-terminal", failure: "agents: ask the user first", args: func(b core.Burial) []string { return []string{fmt.Sprint(b.ID)} }},
+		{name: "path-not-terminal-json", failure: "--yes", args: func(b core.Burial) []string { return []string{b.Path, "--json"} }},
+		{name: "piped-yes", input: "y\n", failure: "not a terminal", args: func(core.Burial) []string { return []string{"--all"} }},
+		{name: "answer-no", input: "n\n", failure: "nothing purged", terminal: true, args: func(core.Burial) []string { return []string{"--all"} }},
+		{name: "no-answer", failure: "agents: ask the user first", terminal: true, args: func(core.Burial) []string { return []string{"--all"} }},
+		{name: "answer-yes", input: "y\n", terminal: true, purged: true, args: func(b core.Burial) []string { return []string{fmt.Sprint(b.ID)} }},
+		{name: "yes-flag", purged: true, args: func(core.Burial) []string { return []string{"--all", "--yes"} }},
+		{name: "dry-run", args: func(core.Burial) []string { return []string{"--all", "--dry-run"} }},
+		{name: "retention-only", args: func(core.Burial) []string { return nil }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			clitest.IsolateRunner(t)
+			root, store := clitest.CommandDir(t)
+			path := filepath.Join(root, "keep.txt")
+			clitest.WriteFixture(t, path, "keep")
+			svc, err := cmdutil.Open()
+			if err != nil {
+				t.Fatal(err)
+			}
+			rows, err := svc.Bury([]string{path}, false, "")
+			if err != nil || core.GraveFailed(rows) {
+				t.Fatalf("bury: %+v %v", rows, err)
+			}
+			b := *rows[0].Burial
+			original := isTerminal
+			isTerminal = func() bool { return tc.terminal }
+			t.Cleanup(func() { isTerminal = original })
+			cmd := NewCmd()
+			cmd.SetIn(strings.NewReader(tc.input))
+			out, stderr, err := clitest.Execute(t, cmd, tc.args(b)...)
+			if tc.failure == "" && err != nil || tc.failure != "" && (err == nil || !strings.Contains(err.Error(), tc.failure)) {
+				t.Fatalf("purge %v: %s %s %v, want failure %q", tc.args(b), out, stderr, err, tc.failure)
+			}
+			st, err := store.ReadSnapshot()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, statErr := os.Stat(b.Grave); (len(st.Burials) == 0) != tc.purged || os.IsNotExist(statErr) != tc.purged {
+				t.Fatalf("purged = %v, want %v: %+v %v", len(st.Burials) == 0, tc.purged, st.Burials, statErr)
+			}
+		})
 	}
 }

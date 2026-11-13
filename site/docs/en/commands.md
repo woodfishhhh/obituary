@@ -21,8 +21,8 @@ obit bury old-build                         # bury right away
 obit graveyard                              # what is in the graveyard and when it will be purged (--here: this folder only)
 obit resurrect <id>                         # put it back; if the name is taken, it comes back renamed, never overwriting
 obit resurrect --last                       # undo the last deletion: everything one obit bury / obit rm buried comes back
-obit purge                                  # purge what is past retention (--all for everything, --dry-run previews)
-obit purge <id>                             # purge this grave now (permanent)
+obit purge                                  # purge what is past retention (--all for everything, after confirming; --dry-run previews)
+obit purge <id>                             # purge this grave now (permanent; asks first, --yes outside a terminal)
 ```
 
 A bare number in `resurrect` and `purge` (`5`, `#5`) is always an ID; an unknown ID is an error and never falls back to a file name. For a file whose name is a number, write `./5` or an absolute path.

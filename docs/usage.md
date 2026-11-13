@@ -124,23 +124,23 @@ obit init -g --guard-rm                 # Claude Code；Codex 加 --agent codex�
 开启后，agent 执行 `rm -rf build`、`rmdir`、`git clean -fdx`、`Remove-Item -Recurse` 这类删除命令时，讣告会拦下这一次执行，并告诉 agent 一条等价命令，比如 `obit rm -rf build`。agent 改用它之后，东西进墓地而不是消失，`obit resurrect <id>` 一条命令放回原处。
 
 - **只拦不改。** 讣告不改写 agent 的命令：Claude Code 会按改写后的命令检查权限，改写会让你设的 `deny` 规则失效。拦下再让 agent 自己发出等价命令，你的所有权限规则照常生效。
-- **宁可漏拦，不可误拦。** 只认处在命令开头（或 `&&`、`;`、换行之后）的删除命令；`||` 之后的、字符串里的 `rm`、heredoc、`$(…)`、`sudo`、`xargs rm`、`find -delete`、交互式删除一律放行（设了 `OBIT_HOOK_AUDIT=1` 会记进审计日志）。
+- **出现字面的删除就拦。** 命令里任何一个命令位置上出现 `rm`、`rmdir`、`git clean`、`Remove-Item`（含 `del`、`rd`、`ri` 这些别名），不论在 `&&`、`||`、`;`、管道、`$(…)`、子 shell、条件还是循环里，都拦下这一次执行，例如 `rm -rf build && npm run build`、`rm -rf build 2>/dev/null`、`git clean -fdx && npm ci`。拦下本身什么都不执行，所以多拦不会删错东西。字符串、注释、`echo` 的参数里的 `rm` 不算；`rm --help`、`git clean -n`、`Remove-Item -WhatIf` 只是预览，也不算；`sudo rm`、`xargs rm`、`find -delete` 里的删除是别的程序在做，照常放行（设了 `OBIT_HOOK_AUDIT=1` 会记进审计日志）。
 - **不会退回成真删。** `obit rm` / `obit remove-item` / `obit git-clean` 的每个路径都走下葬；被 Guard 拒绝（盘符根、系统目录、用户目录本身等）时照 `rm` 的格式报错、返回非零。
 - 被 Git 跟踪的文件也照样下葬，这样未提交的修改也找得回来（这是 agent 主动删除，和「自动登记绝不碰被跟踪文件」不冲突）。
 - `obit rm -rf` 一个含 `.git` 的目录会把整个仓库下葬：真正的 `rm -rf` 会把它永久删掉，下葬至少还能复活；拒绝反而可能让 agent 改用 `/bin/rm`。系统目录、用户文件夹这些不能强制的保护照样生效。
-- **覆盖范围刻意收窄**：等价命令绝不能比原命令选中更多东西，所以讣告不做跨 shell 的翻译，拿不准就放行。
+- **等价命令刻意收窄**：等价命令绝不能比原命令选中更多东西，所以讣告不做跨 shell 的翻译，只在下表的写法里给。给不出时照样拦下，理由里写明为什么给不出，并说明 `obit bury <路径>`（字面路径）和 `obit git-clean` 可以做到可复活的删除，agent 据此改写命令。
 
   <details>
   <summary>各场景下拦下和放行的写法</summary>
 
-  | 场景 | 拦下并给等价命令 | 放行 |
-  |---|---|---|
-  | Claude Code（Bash 工具） | `rm`、`rmdir`、`git clean`，前面只能有字面的 `cd x`（用 `&&`、`;` 或换行连接）；`rm -f *.log`（当前目录里没有以 `-` 开头的文件时）、`rm -rf ../dist`、`rm -- "$target"`（变量在 `--` 之后） | 其他前置语句（`trap`、`hash`、`npm …` 等）、`--` 之前的变量（可能展开成选项）、以 `/` 开头的 POSIX 绝对路径、复杂结构、交互式、带路径的 `/usr/bin/rm` |
-  | Codex，WSL 的 `/mnt/<盘>` 下 | 单独一条 `rm` / `rmdir`，参数都是不含 `..`、`~`、通配、引号的相对路径（建议用 interop 的 `obit.exe`） | 其他一切，含 `git clean` 和 WSL 自己的文件系统 |
-  | Codex，明确是 Windows PowerShell | 单独一条 `Remove-Item` 或别名，只带一个字面路径（可加 `-Recurse`、`-Force`） | 多条语句、管道、provider 路径、`~`、通配、反引号、弯引号 |
-  | Codex 在 Windows 上但看不出是哪种 shell、Linux 上的 pwsh、`git rm` | — | 全部放行 |
+  | 场景 | 拦下并给等价命令 | 拦下，附原因和通用说明 | 放行 |
+  |---|---|---|---|
+  | Claude Code（Bash 工具） | `rm`、`rmdir`、`git clean`，前面只能有字面的 `cd x`（用 `&&`、`;` 或换行连接）；`rm -f *.log`（当前目录里没有以 `-` 开头的文件时）、`rm -rf ../dist`、`rm -- "$target"`（变量在 `--` 之后） | 其他字面删除：前后还有别的语句（`npm …`、`trap`、`hash` 等）、`--` 之前的变量（可能展开成选项）、以 `/` 开头的 POSIX 绝对路径、重定向、`\|\|`、管道、`$(…)`、交互式、带路径的 `/usr/bin/rm` | 不是删除的命令 |
+  | Codex，WSL 的 `/mnt/<盘>` 下 | 单独一条 `rm` / `rmdir`，参数都是不含 `..`、`~`、通配、引号的相对路径（建议用 interop 的 `obit.exe`） | 其他字面删除，含 `git clean` 和指向 WSL 自己文件系统的路径 | 工作目录在 WSL 自己的文件系统里 |
+  | Codex，明确是 Windows PowerShell | 单独一条 `Remove-Item` 或别名，只带一个字面路径（可加 `-Recurse`、`-Force`） | 其他字面删除：多条语句、管道、`-ErrorAction` 等其他参数、provider 路径、`~`、通配、反引号 | 弯引号字符串里的文字 |
+  | Codex 在 Windows 上但看不出是哪种 shell、Linux 上的 pwsh、`git rm` | — | — | 全部放行 |
 
-  另外几条通用规则：删除命令必须是整条命令的**最后一段**，前面只能用 `&&`、`;` 或换行连接（`obit rm` 和 `rm` 的成功与失败不完全一样，后面若还有依赖退出码的命令，结果可能分叉）；文件名以点或空格结尾的一律放行（Windows 会把它们归一化成另一个名字）；bash 命令里有回车、NUL 字节、反引号，或者反斜杠续行和 `#` 注释同时出现、续行不止一处的，也一律放行。建议命令里的 obit 与已安装的 hook 用同一个路径。
+  另外几条给等价命令的规则：删除命令必须是整条命令的**最后一段**，前面只能用 `&&`、`;` 或换行连接（`obit rm` 和 `rm` 的成功与失败不完全一样，后面若还有依赖退出码的命令，结果可能分叉）；文件名以点或空格结尾的不给（Windows 会把它们归一化成另一个名字）；bash 命令里有回车、NUL 字节、反引号，或者反斜杠续行和 `#` 注释同时出现、续行不止一处的，也不给。这些情况下命令里的字面删除照样拦下。建议命令里的 obit 与已安装的 hook 用同一个路径。
 
   </details>
 

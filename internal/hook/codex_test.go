@@ -63,14 +63,14 @@ func TestCodexWindowsShellDeclaration(t *testing.T) {
 		{"both", "codex_windows_shell = 'bash'\n[agent_shells]\ncodex = 'bash'", testenv.NativeFixture(`C:\repo`), `rm -rf build`, `rm -rf build`},
 		{"conflict", "codex_windows_shell = 'bash'\n[agent_shells]\ncodex = 'powershell'", testenv.NativeFixture(`C:\repo`), `rm -rf build`, ""},
 		{"invalid", `codex_windows_shell = "cmd"`, testenv.NativeFixture(`C:\repo`), `rm -rf build`, ""},
-		{"ps-declared-bash-source", `codex_windows_shell = "powershell"`, testenv.NativeFixture(`C:\repo`), `rm -rf build`, ""},
-		{"bash-declared-ps-source", `codex_windows_shell = "bash"`, testenv.NativeFixture(`C:\repo`), `rm -LiteralPath build`, ""},
-		{"ps-declared-bash-escape", `codex_windows_shell = "powershell"`, testenv.NativeFixture(`C:\repo`), `rm build\ dir`, ""},
-		{"ps-declared-bash-path", `codex_windows_shell = "powershell"`, testenv.NativeFixture(`C:\repo`), `rm .\build`, ""},
-		{"bash-declared-ps-path", `codex_windows_shell = "bash"`, testenv.NativeFixture(`C:\repo`), `rm .\build`, ""},
-		{"bash-declared-ps-array", `codex_windows_shell = "bash"`, testenv.NativeFixture(`C:\repo`), `rm a,b`, ""},
-		{"bash-declared-ps-quote", `codex_windows_shell = "bash"`, testenv.NativeFixture(`C:\repo`), `rm 'a''b'`, ""},
-		{"bash-declared-ps-git-quote", `codex_windows_shell = "bash"`, testenv.NativeFixture(`C:\repo`), `git clean -fd -- 'a''b'`, ""},
+		{"ps-declared-bash-source", `codex_windows_shell = "powershell"`, testenv.NativeFixture(`C:\repo`), `rm -rf build`, noEquivalent},
+		{"bash-declared-ps-source", `codex_windows_shell = "bash"`, testenv.NativeFixture(`C:\repo`), `rm -LiteralPath build`, noEquivalent},
+		{"ps-declared-bash-escape", `codex_windows_shell = "powershell"`, testenv.NativeFixture(`C:\repo`), `rm build\ dir`, noEquivalent},
+		{"ps-declared-bash-path", `codex_windows_shell = "powershell"`, testenv.NativeFixture(`C:\repo`), `rm .\build`, noEquivalent},
+		{"bash-declared-ps-path", `codex_windows_shell = "bash"`, testenv.NativeFixture(`C:\repo`), `rm .\build`, noEquivalent},
+		{"bash-declared-ps-array", `codex_windows_shell = "bash"`, testenv.NativeFixture(`C:\repo`), `rm a,b`, noEquivalent},
+		{"bash-declared-ps-quote", `codex_windows_shell = "bash"`, testenv.NativeFixture(`C:\repo`), `rm 'a''b'`, noEquivalent},
+		{"bash-declared-ps-git-quote", `codex_windows_shell = "bash"`, testenv.NativeFixture(`C:\repo`), `git clean -fd -- 'a''b'`, noEquivalent},
 		{"bash-git-clean", `codex_windows_shell = "bash"`, testenv.NativeFixture(`C:\repo`), `git clean -fdx`, `git-clean -fdx`},
 		{"wsl", `codex_windows_shell = "powershell"`, "/mnt/c/repo", `rm -rf build`, `rm -rf build`},
 	} {
@@ -82,7 +82,7 @@ func TestCodexWindowsShellDeclaration(t *testing.T) {
 			}
 			got := guardSuggestion(t, "codex", tc.cwd, "Bash", map[string]any{"command": tc.command})
 			want := tc.want
-			if want != "" {
+			if want != "" && want != noEquivalent {
 				shell := guardrm.Bash
 				if strings.HasPrefix(tc.name, "powershell") {
 					shell = guardrm.PowerShell

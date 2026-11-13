@@ -95,8 +95,8 @@ obit bury old-build                         # bury right away
 obit graveyard                              # what is in the graveyard and when it will be purged (--here: this folder only)
 obit resurrect <id>                         # put it back; if the name is taken, it comes back renamed, never overwriting
 obit resurrect --last                       # undo the last deletion: everything one obit bury / obit rm buried comes back
-obit purge                                  # purge what is past retention (--all for everything, --dry-run previews)
-obit purge <id>                             # purge this grave now (permanent); also abandons an unverifiable interrupted resurrect
+obit purge                                  # purge what is past retention (--all for everything, after confirming; --dry-run previews)
+obit purge <id>                             # purge this grave now (permanent; asks first, --yes outside a terminal); also abandons an unverifiable interrupted resurrect
 obit stats                                  # eulogy: how much was buried, space freed, resurrections (alias: eulogy)
 obit log                                    # the full record of everything done
 ```

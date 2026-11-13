@@ -258,6 +258,12 @@ func expectedGuardExecutable(t *testing.T, shell guardrm.Shell) string {
 	return "'" + strings.ReplaceAll(filepath.ToSlash(self), "'", `'\''`) + "'"
 }
 
+// noEquivalent is guardSuggestion's result for a denial that names a
+// literal deletion but no exact equivalent command.
+const noEquivalent = "<no exact equivalent>"
+
+// guardSuggestion returns "" when the command passes, otherwise the denial's
+// equivalent command or noEquivalent.
 func guardSuggestion(t *testing.T, agent, cwd, tool string, input map[string]any) string {
 	t.Helper()
 	data, _ := json.Marshal(map[string]any{"hook_event_name": "PreToolUse", "cwd": cwd, "tool_name": tool, "tool_input": input})
@@ -277,6 +283,9 @@ func guardSuggestion(t *testing.T, agent, cwd, tool string, input map[string]any
 	if response.HookSpecificOutput.PermissionDecision != "deny" {
 		t.Fatal(out.String())
 	}
+	if strings.Contains(response.HookSpecificOutput.PermissionDecisionReason, "no exact obit equivalent applies") {
+		return noEquivalent
+	}
 	parts := strings.Split(response.HookSpecificOutput.PermissionDecisionReason, "`")
 	if len(parts) < 3 {
 		t.Fatal(out.String())
@@ -292,9 +301,10 @@ func testAgentShellDeclaration(t *testing.T, agent, declarationAgent string, too
 				{"unset", "", "rm -rf 'build dir'", ""},
 				{"bash", "bash", "rm -rf 'build dir'", "rm -rf 'build dir'"},
 				{"powershell", "powershell", `Remove-Item -LiteralPath '.\build dir' -Recurse`, `remove-item -LiteralPath '.\build dir' -Recurse`},
-				{"powershell-bash-command", "powershell", "rm -rf build", ""},
-				{"bash-powershell-command", "bash", "Remove-Item -LiteralPath build", ""},
-				{"ambiguous-path", "bash", `rm .\build`, ""},
+				{"powershell-bash-command", "powershell", "rm -rf build", noEquivalent},
+				{"bash-powershell-command", "bash", "Remove-Item -LiteralPath build", noEquivalent},
+				{"ambiguous-path", "bash", `rm .\build`, noEquivalent},
+				{"string", "bash", "echo 'rm -rf build'", ""},
 			} {
 				t.Run(tc.name, func(t *testing.T) {
 					dir := t.TempDir()
@@ -308,7 +318,7 @@ func testAgentShellDeclaration(t *testing.T, agent, declarationAgent string, too
 					}
 					got := guardSuggestion(t, agent, testenv.NativeFixture(`C:\repo`), tool, map[string]any{"command": tc.command, "shell": "bash", "local": true})
 					want := tc.want
-					if want != "" {
+					if want != "" && want != noEquivalent {
 						want = expectedGuardExecutable(t, guardrm.Shell(tc.shell)) + " " + want
 					}
 					if got != want {

@@ -320,6 +320,7 @@ func TestCommandsResolveShortWorkingDirectory(t *testing.T) {
 				cmd = NewCmd()
 			case "purge":
 				cmd = purgecmd.NewCmd()
+				args = append(args, "--yes")
 			case "spare":
 				cmd = cancelcmd.NewCmd()
 			case "extend":

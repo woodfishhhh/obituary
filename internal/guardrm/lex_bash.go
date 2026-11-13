@@ -24,6 +24,9 @@ func lexBash(s string) ([][]word, string) {
 	if continuations := strings.Count(s, "\\\n"); continuations > 1 || continuations > 0 && strings.ContainsRune(s, '#') {
 		return nil, "complex bash line continuations are unsupported"
 	}
+	if bracketDepth(s) > maxNesting {
+		return nil, "nesting is too deep"
+	}
 	// Parsers are reusable but not concurrent; each call owns its parser.
 	f, err := syntax.NewParser(syntax.Variant(syntax.LangBash)).Parse(strings.NewReader(s), "")
 	if err != nil {
@@ -161,6 +164,22 @@ func bashLiteral(s string, p *syntax.Lit, quoted bool, w *word, value *strings.B
 		value.WriteByte(c)
 	}
 	return ""
+}
+
+// bracketDepth over-estimates nesting, ignoring quotes. The parser recurses
+// per level and a hook's input (up to 4 MiB) of brackets overflows the stack.
+func bracketDepth(s string) int {
+	depth, deepest := 0, 0
+	for i := 0; i < len(s); i++ {
+		switch s[i] {
+		case '(', '{', '[':
+			depth++
+			deepest = max(deepest, depth)
+		case ')', '}', ']':
+			depth = max(depth-1, 0)
+		}
+	}
+	return deepest
 }
 
 // Keep the previous refusal of dollar/quote and dollar/bracket boundaries,

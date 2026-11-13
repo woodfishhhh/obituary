@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -216,13 +217,13 @@ func TestDeletePowerShellStaticCommands(t *testing.T) {
 		for _, tc := range []struct{ name, command, want string }{
 			{"prefixes", `Remove-Item build -r -fo`, `remove-item build -r -fo`},
 			{"alias-prefixes", `rm -li 'build dir' -rec -for`, `remove-item -li 'build dir' -rec -for`},
-			{"ambiguous-prefix", `Remove-Item build -f`, ""},
+			{"ambiguous-prefix", `Remove-Item build -f`, noEquivalent},
 			{"preview-prefix", `Remove-Item build -what`, ""},
 			{"git-clean", `git clean -fdx`, `git-clean -fdx`},
 			{"git-exclude", `git clean -fd -e '*.log' -- 'build dir'`, `git-clean -fd -e '*.log' -- 'build dir'`},
 			{"git-preview", `git clean -ndx`, ""},
-			{"git-dynamic", `git clean -fd -- "$target"`, ""},
-			{"git-quotes", `git clean -fd -- 'a''b'`, ""},
+			{"git-dynamic", `git clean -fd -- "$target"`, noEquivalent},
+			{"git-quotes", `git clean -fd -- 'a''b'`, noEquivalent},
 		} {
 			t.Run(agent+"/"+tc.name, func(t *testing.T) {
 				// PreToolUse must still work without Git on PATH.
@@ -234,7 +235,7 @@ func TestDeletePowerShellStaticCommands(t *testing.T) {
 					input = map[string]any{"cmd": tc.command, "shell": "pwsh"}
 				}
 				want := tc.want
-				if want != "" {
+				if want != "" && want != noEquivalent {
 					want = expectedGuardExecutable(t, guardrm.PowerShell) + " " + want
 				}
 				if got := guardSuggestion(t, agent, `C:\repo`, tool, input); got != want {
@@ -251,18 +252,23 @@ func TestDeleteDeclaredShellCommands(t *testing.T) {
 		shell         guardrm.Shell
 		command, want string
 	}{
-		{guardrm.Bash, `rm -- “a b”`, ""},
-		{guardrm.Bash, `rm -- ‘a b’`, ""},
-		{guardrm.Bash, `git clean -fd -- “a b”`, ""},
+		{guardrm.Bash, `rm -- “a b”`, noEquivalent},
+		{guardrm.Bash, `rm -- ‘a b’`, noEquivalent},
+		{guardrm.Bash, `git clean -fd -- “a b”`, noEquivalent},
 		{guardrm.PowerShell, `git clean -fdx`, `git-clean -fdx`},
 		{guardrm.PowerShell, `git clean -ndx`, ""},
-		{guardrm.PowerShell, `git clean -fd -- .\build`, ""},
+		{guardrm.PowerShell, `git clean -fd -- .\build`, noEquivalent},
 		{guardrm.PowerShell, `rm build -r -fo`, `remove-item build -r -fo`},
+		// A declaration may name the wrong shell: both readings count.
+		{guardrm.Bash, `Remove-Item -LiteralPath build`, noEquivalent},
+		{guardrm.PowerShell, `echo 'rm -rf build'`, ""},
 	} {
 		t.Run(string(tc.shell)+"/"+tc.command, func(t *testing.T) {
 			got, err := guardDelete(t.TempDir(), Event{Shell: tc.shell, ShellDeclared: true, Cwd: `C:\repo`, Command: tc.command})
 			want := tc.want
-			if want != "" {
+			if want == noEquivalent && strings.Contains(got, "no exact obit equivalent applies") {
+				want = got
+			} else if want != "" && want != noEquivalent {
 				want = deleteReason(expectedGuardExecutable(t, tc.shell)+" "+want, "")
 			}
 			if err != nil || got != want {
@@ -301,29 +307,18 @@ func TestCodexShellInputs(t *testing.T) {
 		{"Bash", map[string]any{"command": "Remove-Item -Recurse -Force build", "shell": "bash"}, ""},
 		{"shell_command", map[string]any{"command": "rm -rf build"}, ""},
 		{"shell_command", map[string]any{"command": "rm -rf build", "shell": "bash"}, expectedGuardExecutable(t, guardrm.Bash) + " rm -rf build"},
-		{"local_shell", map[string]any{"command": []string{"pwsh.exe", "-NoProfile", "-Command", "ri -LiteralPath 'a[1]'"}}, ""},
+		{"local_shell", map[string]any{"command": []string{"pwsh.exe", "-NoProfile", "-Command", "ri -LiteralPath 'a[1]'"}}, noEquivalent},
 		{"local_shell", map[string]any{"command": []string{"rm", "-rf", "build"}}, ""},
 		{"local_shell", map[string]any{"command": []string{"bash", "-c", "rm x", "extra"}}, ""},
 		{"local_shell", map[string]any{"command": []string{"cmd.exe", "/c", "del /s /q build"}}, ""},
 		{"exec_command", map[string]any{"cmd": "echo 'rm -rf build'", "shell": "bash"}, ""},
 		{"exec_command", map[string]any{"cmd": "rm -rf build", "tty": true, "shell": "bash"}, ""},
-		{"exec_command", map[string]any{"cmd": "rm x; git -C somewhere clean -fd", "shell": "bash"}, ""},
-		{"exec_command", map[string]any{"cmd": "rm x; echo $(rm y)", "shell": "bash"}, ""},
+		{"exec_command", map[string]any{"cmd": "rm x; git -C somewhere clean -fd", "shell": "bash"}, noEquivalent},
+		{"exec_command", map[string]any{"cmd": "rm x; echo $(rm y)", "shell": "bash"}, noEquivalent},
 		{"apply_patch", map[string]any{"command": "rm -rf build", "shell": "bash"}, ""},
 	} {
-		data, _ := json.Marshal(map[string]any{"hook_event_name": "PreToolUse", "cwd": `C:\repo`, "tool_name": tc.tool, "tool_input": tc.input})
-		e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: t.TempDir()}}}
-		var out bytes.Buffer
-		Codex(e, bytes.NewReader(data), &out, nil)
-		var response claudeOutput
-		if tc.want == "" {
-			if out.Len() != 0 {
-				t.Errorf("must pass: %s -> %s", data, out.String())
-			}
-			continue
-		}
-		if json.Unmarshal(out.Bytes(), &response) != nil || response.HookSpecificOutput.PermissionDecision != "deny" || !strings.Contains(response.HookSpecificOutput.PermissionDecisionReason, "`"+tc.want+"`") {
-			t.Errorf("%s -> %s", data, out.String())
+		if got := guardSuggestion(t, "codex", `C:\repo`, tc.tool, tc.input); got != tc.want {
+			t.Errorf("%s %v: got %q, want %q", tc.tool, tc.input, got, tc.want)
 		}
 	}
 }
@@ -350,7 +345,8 @@ func BenchmarkPreToolUse(b *testing.B) {
 	}
 }
 
-func TestDeleteReview4PassThrough(t *testing.T) {
+// Commands outside the equivalent subset are still literal deletions.
+func TestDeleteUnsupportedBashDenied(t *testing.T) {
 	t.Parallel()
 	for _, agent := range []string{"claude", "codex"} {
 		tool, key := "Bash", "command"
@@ -365,8 +361,8 @@ func TestDeleteReview4PassThrough(t *testing.T) {
 			"git\rclean -fdx", `rmdir empty/.`, `rmdir empty/..`,
 		} {
 			t.Run(agent+"/"+command, func(t *testing.T) {
-				if got := guardSuggestion(t, agent, `C:\work`, tool, map[string]any{key: command, "shell": "bash"}); got != "" {
-					t.Fatalf("unsupported Bash command denied as %q", got)
+				if got := guardSuggestion(t, agent, `C:\work`, tool, map[string]any{key: command, "shell": "bash"}); got != noEquivalent {
+					t.Fatalf("unsupported Bash deletion: got %q, want a denial without equivalent", got)
 				}
 			})
 		}
@@ -457,8 +453,8 @@ func TestDeleteReview5MainScenarios(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			if got := guardSuggestion(t, "codex", `C:\repo`, "exec_command", map[string]any{"cmd": tc.command, "shell": "powershell.exe"}); got != "" {
-				t.Fatalf("unsupported main scenario must pass through: %s", got)
+			if got := guardSuggestion(t, "codex", `C:\repo`, "exec_command", map[string]any{"cmd": tc.command, "shell": "powershell.exe"}); got != noEquivalent {
+				t.Fatalf("unsupported main scenario must be denied without an equivalent: %s", got)
 			}
 		})
 	}
@@ -628,11 +624,9 @@ func TestDeleteSkippedScopeAudited(t *testing.T) {
 	for _, tc := range []struct{ cwd, command, shell string }{
 		{"/home/me/work", "rm build", "bash"},
 		{"/mnt/c/work", "rm a,b", "pwsh"},
-		{"/mnt/c/work", "rm ../keep", "bash"},
-		{"/mnt/c/work", "git clean -fd", "bash"},
 		{`C:\work`, "rm a,b", ""},
-		{`C:\work`, `Set-Location HKCU:\Software; Remove-Item Demo`, "pwsh"},
 		{`C:\work`, "rm build", "cmd.exe"},
+		{`C:\work`, "echo rm -rf build", "bash"},
 	} {
 		t.Run(tc.cwd+tc.command, func(t *testing.T) {
 			home := t.TempDir()
@@ -726,7 +720,7 @@ func TestPreToolUseGlobScanDeadline(t *testing.T) {
 				}
 				for _, command := range []string{"rm -rf *", "rmdir *", "git clean -fdx *"} {
 					got := guardSuggestion(t, agent, cwd, tool, map[string]any{key: command, "shell": "bash"})
-					if (got == "") != dash {
+					if got == "" || (got == noEquivalent) != dash {
 						t.Errorf("%s %s: dash=%v, suggestion=%q", agent, command, dash, got)
 					}
 				}
@@ -759,7 +753,7 @@ func TestDeleteReview6GlobScope(t *testing.T) {
 				}
 			}
 			for _, command := range []string{"rm -f *.log", "rm * ?n [-a]*", "rmdir *", "git clean -fdx *"} {
-				want := ""
+				want := noEquivalent
 				if state != "dash-file" && state != "dash-directory" {
 					want = expectedGuardExecutable(t, guardrm.Bash) + " " + strings.Replace(command, "git clean", "git-clean", 1)
 				}
@@ -774,7 +768,7 @@ func TestDeleteReview6GlobScope(t *testing.T) {
 				}
 			}
 			for _, command := range []string{`rm -rf */build`, `rm -rf ?/build`, `rm -rf [ab]/build`, `cd x && rm *`} {
-				if got := guardSuggestion(t, "claude", cwd, "Bash", map[string]any{"command": command}); got != "" {
+				if got := guardSuggestion(t, "claude", cwd, "Bash", map[string]any{"command": command}); got != noEquivalent {
 					t.Errorf("uninspected glob location: %s -> %s", command, got)
 				}
 			}
@@ -785,12 +779,12 @@ func TestDeleteReview6GlobScope(t *testing.T) {
 func TestDeleteReview6UnsafePaths(t *testing.T) {
 	t.Parallel()
 	for _, command := range []string{`rm -rf /tmp/build`, `rmdir /c/empty`, `git clean -fdx /c/build`, `rm -rf -- '/c/build'`, `rm -rf //server/share/build`} {
-		if got := guardSuggestion(t, "claude", t.TempDir(), "Bash", map[string]any{"command": command}); got != "" {
+		if got := guardSuggestion(t, "claude", t.TempDir(), "Bash", map[string]any{"command": command}); got != noEquivalent {
 			t.Errorf("ambiguous POSIX path: %s -> %s", command, got)
 		}
 	}
 	for _, command := range []string{`Remove-Item -LiteralPath 'keep"".txt'`, `Remove-Item 'keep".txt'`, `Remove-Item -Path 'keep"".txt'`} {
-		if got := guardSuggestion(t, "codex", t.TempDir(), "exec_command", map[string]any{"cmd": command, "shell": "powershell.exe"}); got != "" {
+		if got := guardSuggestion(t, "codex", t.TempDir(), "exec_command", map[string]any{"cmd": command, "shell": "powershell.exe"}); got != noEquivalent {
 			t.Errorf("PowerShell native quoting changes path: %s -> %s", command, got)
 		}
 	}
@@ -901,6 +895,87 @@ func TestDeleteReasonStaysWithinByteBudget(t *testing.T) {
 	if len(reason) > maxContext || !strings.Contains(reason, "delete guard is on") {
 		t.Fatalf("oversized executable revoked bounded reason: %q", reason)
 	}
+	ev := Event{Shell: guardrm.Bash, Command: "rm -rf /" + strings.Repeat("x", maxContext)}
+	for _, tc := range []struct{ why, executable string }{
+		{strings.Repeat("字", maxContext), "obit"},
+		{"short", "'" + strings.Repeat("字", maxContext) + "'"},
+	} {
+		reason := deletionGuidance(ev, tc.why, tc.executable)
+		if len(reason) > maxContext || !strings.Contains(reason, "`rm` deletes permanently") || !strings.Contains(reason, "bury") {
+			t.Errorf("oversized guidance: %q", reason)
+		}
+	}
+}
+
+func TestDeleteGuardDeniesDeletionWithoutEquivalent(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct{ agent, tool, shell, command, deletion string }{
+		{"claude", "Bash", "", "rm -rf build && npm run build", "rm"},
+		{"claude", "Bash", "", "rm -rf node_modules package-lock.json && npm install", "rm"},
+		{"claude", "Bash", "", `rm -rf "$OUT"/*`, "rm"},
+		{"claude", "Bash", "", "rm -rf ~/scratch", "rm"},
+		{"claude", "Bash", "", "rm -rf /c/Users/me/proj/build", "rm"},
+		{"claude", "Bash", "", "rm -rf /tmp/x", "rm"},
+		{"claude", "Bash", "", "rm -rf build 2>/dev/null", "rm"},
+		{"claude", "Bash", "", "rm -rf build || true", "rm"},
+		{"codex", "exec_command", "bash", "git clean -fdx && npm ci", "git clean"},
+		{"claude", "PowerShell", "", "Remove-Item -Recurse -Force build; npm run build", "Remove-Item"},
+		{"codex", "exec_command", "pwsh", "Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue", "Remove-Item"},
+	} {
+		t.Run(tc.agent+"/"+tc.command, func(t *testing.T) {
+			t.Parallel()
+			cwd, home := t.TempDir(), t.TempDir()
+			kept := filepath.Join(cwd, "build", "keep.txt")
+			if err := os.MkdirAll(filepath.Dir(kept), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(kept, []byte("keep"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			input := map[string]any{"command": tc.command}
+			if tc.agent == "codex" {
+				input = map[string]any{"cmd": tc.command, "shell": tc.shell}
+			}
+			data, _ := json.Marshal(map[string]any{"hook_event_name": "PreToolUse", "cwd": cwd, "tool_name": tc.tool, "tool_input": input})
+			var out bytes.Buffer
+			Run(tc.agent, &auto.Engine{Svc: &core.Service{Store: core.Store{Home: home}}}, bytes.NewReader(data), &out, nil)
+			var response claudeOutput
+			if err := json.Unmarshal(out.Bytes(), &response); err != nil {
+				t.Fatalf("no denial: %q %v", out.String(), err)
+			}
+			shell := guardrm.Bash
+			if tc.tool == "PowerShell" || tc.shell == "pwsh" {
+				shell = guardrm.PowerShell
+			}
+			executable := expectedGuardExecutable(t, shell)
+			reason := response.HookSpecificOutput.PermissionDecisionReason
+			if response.HookSpecificOutput.PermissionDecision != "deny" || len(reason) > maxContext ||
+				!strings.Contains(reason, "`"+tc.deletion+"` deletes permanently and no exact obit equivalent applies") ||
+				!strings.Contains(reason, "`"+executable+" bury <path>...`") || !strings.Contains(reason, "`"+executable+" git-clean`") {
+				t.Fatalf("denial without equivalent: %s", out.String())
+			}
+			receipt, err := os.ReadFile(filepath.Join(home, "delete-guard.jsonl"))
+			var event guardrm.AuditEvent
+			if err != nil || json.Unmarshal(receipt, &event) != nil || event.Kind != "denied" || event.Command != tc.command || event.Equivalent != "" || event.Reason == "" {
+				t.Fatalf("denial receipt: %s %v", receipt, err)
+			}
+			// Denying runs nothing: the operand is untouched.
+			if data, err := os.ReadFile(kept); err != nil || string(data) != "keep" {
+				t.Fatalf("operand changed: %q %v", data, err)
+			}
+		})
+	}
+	// Text, comments, arguments, previews and obit itself are not deletions.
+	for _, tc := range []struct{ tool, command string }{
+		{"Bash", `echo "rm -rf build"`}, {"Bash", "echo rm -rf build"}, {"Bash", "# rm -rf build"},
+		{"Bash", `grep -rn "rm -rf" . && git log --grep clean`}, {"Bash", "cat <<'EOF'\nrm -rf build\nEOF"},
+		{"Bash", "obit rm -rf build && npm run build"}, {"Bash", "git clean -n && npm ci"},
+		{"PowerShell", "Write-Output 'Remove-Item build'; npm run build"}, {"PowerShell", "# Remove-Item build"},
+	} {
+		if got := guardSuggestion(t, "claude", t.TempDir(), tc.tool, map[string]any{"command": tc.command}); got != "" {
+			t.Errorf("%s %q denied: %q", tc.tool, tc.command, got)
+		}
+	}
 }
 
 func TestDeleteWSLSafeRelativeOnly(t *testing.T) {
@@ -915,8 +990,8 @@ func TestDeleteWSLSafeRelativeOnly(t *testing.T) {
 		`cd /mnt/d/work; rm build`, `cd x && rm build`, `cd; rmdir empty`,
 	} {
 		t.Run(command, func(t *testing.T) {
-			if got := guardSuggestion(t, "codex", "/mnt/c/work", "exec_command", map[string]any{"cmd": command}); got != "" {
-				t.Fatalf("WSL unsafe operand denied as %q", got)
+			if got := guardSuggestion(t, "codex", "/mnt/c/work", "exec_command", map[string]any{"cmd": command}); got != noEquivalent {
+				t.Fatalf("WSL unsafe operand: got %q, want a denial without equivalent", got)
 			}
 		})
 	}
@@ -945,31 +1020,41 @@ func TestDeletePowerShellLiteralScope(t *testing.T) {
 	}
 
 	t.Parallel()
-	commands := []string{
+	// Without an equivalent these are still denied in PowerShell; an unknown
+	// shell passes everything.
+	denied := []string{
 		`Set-Location HKCU:\Software; Remove-Item -Recurse Demo`,
 		`Remove-Item -Recurse -Path 'prod?'`, `Remove-Item -LiteralPath 'a,b'`,
 		`Remove-Item a,b`, `Remove-Item a b`, `Remove-Item -Path a b`,
 		`Remove-Item -Path 'build/*'`, `Remove-Item -LiteralPath 'a[1]'`,
 		`Remove-Item -Path $path`, "Remove-Item -Path a`b", `Remove-Item -p a`,
-		`Remove-Item -Force:$true a`, `Remove-Item -WhatIf a`,
-		`Remove-Item -LiteralPath /mnt/c/keep.txt`,
-		`Write-Output “说明; rm x;结束”`, `Write-Output 'x' & Remove-Item a`,
+		`Remove-Item -Force:$true a`, `Remove-Item -LiteralPath /mnt/c/keep.txt`,
+		`Write-Output 'x' & Remove-Item a`,
 		`. script.ps1; Remove-Item a`, `& script.ps1; Remove-Item a`,
 	}
+	passed := []string{`Write-Output “说明; rm x;结束”`, `Remove-Item -WhatIf a`}
 	for _, provider := range []string{`HKCU:\Software\Demo`, `Env:Demo`, `function:Demo`, `Variable:Demo`, `Cert:Demo`, `X:Demo`, `FileSystem::C:\Demo`} {
-		commands = append(commands, "Remove-Item -Recurse "+provider)
+		denied = append(denied, "Remove-Item -Recurse "+provider)
 	}
 	for _, location := range []string{"Set-Location", "sl", "cd", "chdir", "Push-Location", "pushd", "Pop-Location", "popd", "New-PSDrive", "SET-LOCATION"} {
-		commands = append(commands, location+` HKCU:\Software; Remove-Item Demo`, `Remove-Item Demo; `+location+` HKCU:\Software`)
+		denied = append(denied, location+` HKCU:\Software; Remove-Item Demo`, `Remove-Item Demo; `+location+` HKCU:\Software`)
 	}
-	for _, quote := range []string{"“", "”", "‘", "’", "„", "‚", "«", "»", "＂"} {
-		commands = append(commands, "Write-Output "+quote+"说明; rm x;结束"+quote)
+	// PowerShell's own typographic quotes enclose a string; the rest do not.
+	for _, quote := range []string{"“", "”", "‘", "’", "„", "‚"} {
+		passed = append(passed, "Write-Output "+quote+"说明; rm x;结束"+quote)
+	}
+	for _, quote := range []string{"«", "»", "＂"} {
+		denied = append(denied, "Write-Output "+quote+"说明; rm x;结束"+quote)
 	}
 	for _, shell := range []string{"", "pwsh"} {
-		for _, command := range commands {
+		for _, command := range append(slices.Clone(denied), passed...) {
 			t.Run(shell+"/"+command, func(t *testing.T) {
-				if got := guardSuggestion(t, "codex", `C:\work`, "exec_command", map[string]any{"cmd": command, "shell": shell}); got != "" {
-					t.Fatalf("unsupported PowerShell command denied as %q", got)
+				want := ""
+				if shell == "pwsh" && slices.Contains(denied, command) {
+					want = noEquivalent
+				}
+				if got := guardSuggestion(t, "codex", `C:\work`, "exec_command", map[string]any{"cmd": command, "shell": shell}); got != want {
+					t.Fatalf("unsupported PowerShell command: got %q, want %q", got, want)
 				}
 			})
 		}
@@ -996,10 +1081,13 @@ func TestDeletePowerShellLiteralScope(t *testing.T) {
 
 func TestDeleteShellContext(t *testing.T) {
 	t.Parallel()
-	for _, command := range []string{"ri x", "Remove-Item x", "del x", "rd x", "erase x", "rm -Path x"} {
+	for _, command := range []string{"ri x", "Remove-Item x", "del x", "rd x", "erase x"} {
 		if got := guardSuggestion(t, "claude", `C:\repo`, "Bash", map[string]any{"command": command}); got != "" {
 			t.Errorf("Bash non-deletion %q denied as %q", command, got)
 		}
+	}
+	if got := guardSuggestion(t, "claude", `C:\repo`, "Bash", map[string]any{"command": "rm -Path x"}); got != noEquivalent {
+		t.Errorf("Bash rm with PowerShell parameters: %q", got)
 	}
 	for _, alias := range []string{"rm", "del", "ri", "rd", "rmdir", "erase", "Remove-Item", "RM"} {
 		if got := guardSuggestion(t, "codex", `C:\repo`, "exec_command", map[string]any{"cmd": alias + " x", "shell": "pwsh"}); got != expectedGuardExecutable(t, guardrm.PowerShell)+" remove-item x" {
@@ -1017,7 +1105,7 @@ func TestDeleteShellContext(t *testing.T) {
 	}{
 		{[]string{"bash", "-lc", "rm -rf x"}, expectedGuardExecutable(t, guardrm.Bash) + " rm -rf x"},
 		{[]string{"pwsh.exe", "-NoProfile", "-Command", "rm x"}, expectedGuardExecutable(t, guardrm.PowerShell) + " remove-item x"},
-		{[]string{"powershell", "-Command", "rm -rf x"}, ""},
+		{[]string{"powershell", "-Command", "rm -rf x"}, noEquivalent},
 	} {
 		if got := guardSuggestion(t, "codex", `C:\repo`, "local_shell", map[string]any{"command": tc.argv}); got != tc.want {
 			t.Errorf("explicit shell %v: %q, want %q", tc.argv, got, tc.want)
@@ -1047,8 +1135,8 @@ func TestDeleteWSLContext(t *testing.T) {
 		}
 	}
 	for _, command := range []string{"rm /home/me/x", "rm /tmp/x", "rm ~/x", "rm '~name'", "rm /mnt/c/x /home/me/y", "git clean -f -- /tmp/x", "rmdir /var/tmp/x", "rm /mnt/c/../../home/x"} {
-		if got := guardSuggestion(t, "codex", "/mnt/c/repo", "exec_command", map[string]any{"cmd": command}); got != "" {
-			t.Errorf("WSL filesystem operand denied: %s -> %s", command, got)
+		if got := guardSuggestion(t, "codex", "/mnt/c/repo", "exec_command", map[string]any{"cmd": command}); got != noEquivalent {
+			t.Errorf("WSL filesystem operand: %s -> %s, want a denial without equivalent", command, got)
 		}
 	}
 	got := guardSuggestion(t, "codex", "/mnt/c/repo", "local_shell", map[string]any{"command": []string{"pwsh", "-Command", "rm x"}})
@@ -1063,9 +1151,14 @@ func TestDeleteWSLContext(t *testing.T) {
 
 func TestRemoveItemBinding(t *testing.T) {
 	t.Parallel()
-	for _, command := range []string{"Remove-Item a b", "rm -Path a b", "ri -LiteralPath a b", "rm -f x", "rm -Unknown x", "rm -Filter '*.log' x", "rm -Include x y", "rm -Exclude x y", "rm -WhatIf x", "rm -Confirm x", "rm 'a,b'", "rm a,,b", "rm a,", "rm '-Recurse' x", "rm '-Force' x", "rm '-Path' x", "Remove-Item a,b", "Remove-Item a, b", "Remove-Item -Path a,b", "Remove-Item -LiteralPath 'a b', 'c' -Recurse", "Remove-Item -Rec -f x"} {
+	for _, command := range []string{"Remove-Item a b", "rm -Path a b", "ri -LiteralPath a b", "rm -f x", "rm -Unknown x", "rm -Filter '*.log' x", "rm -Include x y", "rm -Exclude x y", "rm -Confirm x", "rm 'a,b'", "rm a,,b", "rm a,", "rm '-Recurse' x", "rm '-Force' x", "rm '-Path' x", "Remove-Item a,b", "Remove-Item a, b", "Remove-Item -Path a,b", "Remove-Item -LiteralPath 'a b', 'c' -Recurse", "Remove-Item -Rec -f x"} {
+		if got := guardSuggestion(t, "codex", `C:\repo`, "exec_command", map[string]any{"cmd": command, "shell": "pwsh"}); got != noEquivalent {
+			t.Errorf("invalid/unsupported binding: %s -> %s, want a denial without equivalent", command, got)
+		}
+	}
+	for _, command := range []string{"rm -WhatIf x", "Remove-Item x -wi", "ri x -wh"} {
 		if got := guardSuggestion(t, "codex", `C:\repo`, "exec_command", map[string]any{"cmd": command, "shell": "pwsh"}); got != "" {
-			t.Errorf("invalid/unsupported binding denied: %s -> %s", command, got)
+			t.Errorf("preview denied: %s -> %s", command, got)
 		}
 	}
 	for _, command := range []string{"Remove-Item -Path build", "Remove-Item -LiteralPath 'a b' -Recurse", "Remove-Item -Recurse -Force x", "Remove-Item -Rec a", "Remove-Item -Rec -Force x"} {

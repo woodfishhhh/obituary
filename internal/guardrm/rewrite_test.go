@@ -451,11 +451,17 @@ func FuzzSuggest(f *testing.F) {
 			if (got == command) != (why != "") {
 				t.Fatalf("suggestion/reason mismatch (%+v): %q -> %q (%q)", context, command, got, why)
 			}
+			deletion := Deletion(command, context.Shell)
 			if got == command {
 				continue
 			}
 			if summary == "" {
 				t.Fatalf("suggestion lacks summary (%+v): %q -> %q", context, command, got)
+			}
+			// The hook denies without an equivalent only what Deletion finds;
+			// every command with an equivalent must be one of those.
+			if deletion == "" {
+				t.Fatalf("suggestion for a command Deletion does not recognize (%+v): %q -> %q", context, command, got)
 			}
 			assertSuggestCommandWords(t, command, got, context)
 		}

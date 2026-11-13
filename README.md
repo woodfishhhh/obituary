@@ -95,8 +95,8 @@ obit bury old-build                         # 立刻下葬
 obit graveyard                              # 墓地里有什么、还剩几天被火化（--here 只看当前目录下的）
 obit resurrect <编号>                       # 复活：放回原处；原处已有同名的，改名放回，绝不覆盖
 obit resurrect --last                       # 撤销上一次删除：一条 obit bury / obit rm 埋下的几项一起回来
-obit purge                                  # 火化保留期已过的（--all 全部，--dry-run 预览）
-obit purge <编号>                           # 立即火化这一座（永久删除）；也用来放弃一条无法核实的中断复活
+obit purge                                  # 火化保留期已过的（--all 全部，先确认；--dry-run 预览）
+obit purge <编号>                           # 立即火化这一座（永久删除，先确认；非终端要加 --yes）；也用来放弃一条无法核实的中断复活
 obit stats                                  # 悼词：埋了多少、腾出多少空间、复活过几次（同 eulogy）
 obit log                                    # 生平记录：做过的所有事
 ```
