@@ -1,7 +1,5 @@
 package hook
 
-import "github.com/woodfishhhh/obituary/internal/testenv"
-
 import (
 	"bytes"
 	"context"

@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 )
 
 // Keep child builds on the caller's effective caches before HOME and XDG
@@ -28,17 +29,21 @@ func preserveGoEnvironment() error {
 	return nil
 }
 
-// The go command counts into os.UserConfigDir()/go/telemetry and, in a fresh
+// The go command counts into <user config dir>/go/telemetry and, in a fresh
 // home, may start a detached uploader that keeps writing after a fixture build
-// returns, racing scratch cleanup. This is the file `go telemetry off` writes;
-// only an isolated config directory is touched, never the user's real one.
+// returns, racing scratch cleanup. This is the file `go telemetry off` writes,
+// in the config directory isolateDirectories gives HOME / XDG_CONFIG_HOME
+// (TestGoTelemetryOffInIsolatedConfig catches drift). Windows keeps the
+// user's own %AppData%, so it is left alone.
 func disableGoTelemetry(scratch string) error {
-	config, err := os.UserConfigDir()
-	if err != nil {
+	var config string
+	switch runtime.GOOS {
+	case "windows":
 		return nil
-	}
-	if rel, err := filepath.Rel(scratch, config); err != nil || !filepath.IsLocal(rel) {
-		return nil
+	case "darwin":
+		config = filepath.Join(scratch, "home", "Library", "Application Support")
+	default:
+		config = filepath.Join(scratch, "xdg-config")
 	}
 	dir := filepath.Join(config, "go", "telemetry")
 	if err := os.MkdirAll(dir, 0o700); err != nil {
