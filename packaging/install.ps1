@@ -51,7 +51,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
-    throw 'Obituary currently supports Windows only.'
+    throw 'install.ps1 installs the Windows edition. On macOS / Linux use install.sh: https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh'
 }
 if (-not $Architecture) {
     $nativeArchitecture = $env:PROCESSOR_ARCHITEW6432

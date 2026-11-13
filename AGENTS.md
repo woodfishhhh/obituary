@@ -1,6 +1,6 @@
 # 讣告 Obituary
 
-给文件和文件夹设定寿命，到期下葬进墓地，面向 AI agent 设计。命令行是 `obit`，后台进程是 `obitd`。Go 1.26，目前只支持 Windows。用法见 `README.md`，流程、关卡和 `core.FS` 契约见 `docs/architecture.md`（改动跨模块时先读它）。
+给文件和文件夹设定寿命，到期下葬进墓地，面向 AI agent 设计。命令行是 `obit`，后台进程是 `obitd`。Go 1.26，支持 Windows、macOS 和 Linux（macOS / Linux 有命令行和后台程序，小窗口、托盘、右键菜单和回收站模式只在 Windows 上）。用法见 `README.md`，流程、关卡和 `core.FS` 契约见 `docs/architecture.md`（改动跨模块时先读它）。
 
 ## 布局
 

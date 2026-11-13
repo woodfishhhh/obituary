@@ -62,7 +62,7 @@
 
 ## 安装
 
-支持 Windows 10 / 11（x64 和 ARM64）。把这句话发给你正在用的 agent，它会装好讣告、接到自己身上，要你拍板的地方会停下来问你：
+支持 Windows 10 / 11、macOS 和 Linux（x64 和 ARM64）。把这句话发给你正在用的 agent，它会装好讣告、接到自己身上，要你拍板的地方会停下来问你：
 
 ```text
 读 https://obituary.woodfish.site/agent-install.md ，照里面的步骤帮我安装讣告并接入你自己。

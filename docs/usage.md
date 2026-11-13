@@ -236,7 +236,7 @@ retention_days = 7      # 墓地保留天数
 
 ## 构建
 
-需要 Go 1.26+。目前只支持 Windows，macOS 和 Linux 在计划中。
+需要 Go 1.26+。Windows：
 
 ```bash
 go build -o bin/obit.exe ./cmd/obit
@@ -245,5 +245,12 @@ CGO_ENABLED=0 go build -tags desktop,production -ldflags "-H windowsgui" -o bin/
 go test -short ./...                                           # 快的一档；全量在 CI 上跑
 ```
 
-三个 exe 要放在同一个目录。小窗口的界面在 `cmd/obit-gui/frontend`（React，pnpm），构建结果 `dist/` 已经提交，只改 Go 代码时不需要 Node；改界面时 `pnpm install`、`pnpm dev` 打开预览，`pnpm build` 更新 `dist/`。真实回收站测试默认跳过，设置 `OBIT_TEST_RECYCLE=1` 才会跑，跑的时候测试文件会进你的回收站。
+macOS / Linux 只有命令行和后台程序两个：
+
+```bash
+go build -o bin/obit ./cmd/obit
+go build -o bin/obitd ./cmd/obitd
+```
+
+Windows 的三个 exe 要放在同一个目录，macOS / Linux 的两个程序也一样。小窗口的界面在 `cmd/obit-gui/frontend`（React，pnpm），构建结果 `dist/` 已经提交，只改 Go 代码时不需要 Node；改界面时 `pnpm install`、`pnpm dev` 打开预览，`pnpm build` 更新 `dist/`。真实回收站测试默认跳过，设置 `OBIT_TEST_RECYCLE=1` 才会跑，跑的时候测试文件会进你的回收站。
 

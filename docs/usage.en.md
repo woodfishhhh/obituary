@@ -239,7 +239,7 @@ A misspelled key makes the configuration invalid instead of being ignored: the e
 
 ## Build
 
-Go 1.26+. Windows only for now; macOS and Linux compile but cannot bury yet.
+Go 1.26+. On Windows:
 
 ```bash
 go build -o bin/obit.exe ./cmd/obit
@@ -248,5 +248,12 @@ CGO_ENABLED=0 go build -tags desktop,production -ldflags "-H windowsgui" -o bin/
 go test -short ./...                                           # the fast tier; the full suite runs in CI
 ```
 
-Keep the three executables in one folder. The small window's frontend is in `cmd/obit-gui/frontend` (React, pnpm); the built `dist/` is committed, so changing Go code needs no Node. When changing the UI: `pnpm install`, `pnpm dev` for a preview, `pnpm build` to update `dist/`. Real Recycle Bin tests are skipped unless `OBIT_TEST_RECYCLE=1`, in which case test files go to your Recycle Bin.
+On macOS / Linux there are two programs, the command line and the daemon:
+
+```bash
+go build -o bin/obit ./cmd/obit
+go build -o bin/obitd ./cmd/obitd
+```
+
+Keep the three Windows executables in one folder, and the two macOS / Linux programs likewise. The small window's frontend is in `cmd/obit-gui/frontend` (React, pnpm); the built `dist/` is committed, so changing Go code needs no Node. When changing the UI: `pnpm install`, `pnpm dev` for a preview, `pnpm build` to update `dist/`. Real Recycle Bin tests are skipped unless `OBIT_TEST_RECYCLE=1`, in which case test files go to your Recycle Bin.
 
