@@ -51,9 +51,10 @@ case "$architecture" in amd64|arm64) ;; *) fail 'Architecture must be amd64 or a
 case "$mirror" in ''|cn) ;; *) fail 'Mirror must be cn' ;; esac
 [ -z "$mirror" ] || [ -z "$base_url" ] || fail 'Use either --mirror or --base-url'
 mirror_url="https://cn.obituary.woodfish.site/download/v$version"
-fallback=''
+fallback='' download_source=custom
 if [ -z "$base_url" ]; then
-  if [ "$mirror" = cn ]; then base_url=$mirror_url
+  download_source=github
+  if [ "$mirror" = cn ]; then base_url=$mirror_url download_source=mirror
   else
     base_url="https://github.com/woodfishhhh/obituary/releases/download/v$version"
     fallback=$mirror_url
@@ -85,7 +86,7 @@ if [ -n "$fallback" ]; then
   else
     status=$?
     case "$status" in
-      5|6|7|28) base_url=$fallback; printf 'GitHub did not answer; using %s\n' "$base_url" ;;
+      5|6|7|28) base_url=$fallback download_source=mirror; printf 'GitHub did not answer; using %s\n' "$base_url" ;;
       *) fail "Checksum download failed (curl $status)" ;;
     esac
     fetch "$base_url/checksums.txt" -o "$work/checksums.txt"
@@ -114,7 +115,7 @@ for name in obit obitd; do
 done
 mkdir -p -- "$install_dir"
 install_dir=$(cd -- "$install_dir" && pwd -P)
-for name in obit obitd; do
+for name in obit obitd .obituary-install.json; do
   [ ! -L "$install_dir/$name" ] || fail "Refusing symlink: $install_dir/$name"
   [ ! -e "$install_dir/$name" ] || [ -f "$install_dir/$name" ] || fail "Not a file: $install_dir/$name"
 done
@@ -128,6 +129,9 @@ for name in obit obitd; do
     fail "Install failed; previous binaries are retained in $transaction; restore them before retrying"
   fi
 done
+# The receipt lets `obit update` name this script and its download source.
+printf '{"owner":"obituary-install-sh-v1","source":"%s"}\n' "$download_source" > "$transaction/receipt"
+mv -f -- "$transaction/receipt" "$install_dir/.obituary-install.json"
 rm -f -- "$transaction/obit.old" "$transaction/obitd.old"
 rmdir -- "$transaction"
 printf 'Installed obit and obitd in %s\n' "$install_dir"

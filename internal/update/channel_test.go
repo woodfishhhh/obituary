@@ -125,3 +125,36 @@ func TestDetectChannelFollowsHomebrewLink(t *testing.T) {
 		t.Fatalf("channel=%s", got)
 	}
 }
+
+// install.sh writes its own receipt; rerunning it is the upgrade.
+func TestShellScriptCommand(t *testing.T) {
+	for _, tc := range []struct{ source, script, suffix string }{
+		{"github", "https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh", ""},
+		{"mirror", "https://cn.obituary.woodfish.site/install.sh", " --mirror cn"},
+		{"custom", "https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh", ""},
+	} {
+		t.Run(tc.source, func(t *testing.T) {
+			dir := filepath.Join(t.TempDir(), "O'Brien")
+			if err := os.Mkdir(dir, 0o700); err != nil {
+				t.Fatal(err)
+			}
+			exe := filepath.Join(dir, "obit")
+			receipt := `{"owner":"obituary-install-sh-v1","source":"` + tc.source + `"}` + "\n"
+			if err := os.WriteFile(filepath.Join(dir, ".obituary-install.json"), []byte(receipt), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			channel := DetectChannel(exe)
+			if channel != "script" {
+				t.Fatalf("channel=%s", channel)
+			}
+			want := "curl -fsSL " + tc.script + " -o install.sh && bash install.sh --version 1.2.0 --install-dir '" +
+				strings.ReplaceAll(filepath.ToSlash(dir), "'", `'\''`) + "'" + tc.suffix
+			if got := Command(channel, "v1.2.0", exe); got != want {
+				t.Fatalf("command=%q want %q", got, want)
+			}
+			if got := Command(channel, "1.2.0;bad", exe); got != "" {
+				t.Fatalf("unsafe command=%q", got)
+			}
+		})
+	}
+}

@@ -425,7 +425,7 @@ POSIX 没有「在同一个源句柄上改名」，所以换一种做法：先�
 
 `[update] check` 默认开启；关闭后自动检查静默返回，显式 `CheckUpdate` / `obit update --check` 允许手动查询。测试环境通过 `OBIT_TEST_NO_UPDATE=1` 阻止默认端点请求，HTTP 测试显式注入本机服务器。缓存复用账本的共享删除读取和原子替换辅助函数，与账本使用不同的锁。
 
-安装方式按程序路径判断 Scoop、WinGet，脚本安装由同目录的 `.obituary-install.json` 标识；只生成对应更新命令，其他安装方式给出 release 链接。GUI 的 `Update` 和 doctor 只读缓存，托盘仅在有新版时显示入口。
+安装方式按程序路径判断 Scoop、WinGet、Homebrew，脚本安装由同目录的 `.obituary-install.json` 标识（`install.sh` 写的回执 `owner` 是 `obituary-install-sh-v1`，更新命令是带同一目录、同一来源重新运行 `install.sh`；其余是 `install.ps1`）；只生成对应更新命令，其他安装方式给出 release 链接。GUI 的 `Update` 和 doctor 只读缓存，托盘仅在有新版时显示入口。
 
 ## 测试
 

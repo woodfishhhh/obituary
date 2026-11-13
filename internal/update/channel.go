@@ -55,21 +55,27 @@ func DetectChannel(executable string) string {
 	return Channel(executable, packages, err == nil && info.Mode().IsRegular())
 }
 
-// DetectSource defaults legacy and unreadable receipts to the original source.
-func DetectSource(executable string) string {
+type receipt struct{ Owner, Source string }
+
+// readReceipt returns the zero receipt when it is missing or unreadable.
+func readReceipt(executable string) receipt {
+	var r receipt
 	file, err := os.Open(filepath.Join(filepath.Dir(executable), ".obituary-install.json"))
 	if err != nil {
-		return "github"
+		return r
 	}
 	defer file.Close()
-	var receipt struct {
-		Source string `json:"source"`
+	if json.NewDecoder(io.LimitReader(file, 1<<20)).Decode(&r) != nil {
+		return receipt{}
 	}
-	if json.NewDecoder(io.LimitReader(file, 1<<20)).Decode(&receipt) == nil {
-		switch receipt.Source {
-		case "mirror", "custom":
-			return receipt.Source
-		}
+	return r
+}
+
+// DetectSource defaults legacy and unreadable receipts to the original source.
+func DetectSource(executable string) string {
+	switch source := readReceipt(executable).Source; source {
+	case "mirror", "custom":
+		return source
 	}
 	return "github"
 }
@@ -88,12 +94,25 @@ func Command(channel, latest, executable string) string {
 		return "brew upgrade --cask obituary"
 	case "script":
 		dir := path.Dir(strings.ReplaceAll(executable, `\`, "/"))
+		r := readReceipt(executable)
+		if r.Owner == "obituary-install-sh-v1" {
+			return shellCommand(latest, dir, r.Source == "mirror")
+		}
 		script, flags := "https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1", ""
-		if DetectSource(executable) == "mirror" {
+		if r.Source == "mirror" {
 			script, flags = "https://cn.obituary.woodfish.site/install.ps1", " -Mirror cn"
 		}
 		return "irm " + script + " -OutFile install.ps1; .\\install.ps1 -Version " + strings.TrimPrefix(latest, "v") + " -InstallDir '" + strings.ReplaceAll(dir, "'", "''") + "'" + flags
 	default:
 		return ""
 	}
+}
+
+// shellCommand reruns install.sh, the documented upgrade for its installs.
+func shellCommand(latest, dir string, mirror bool) string {
+	script, flags := "https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh", ""
+	if mirror {
+		script, flags = "https://cn.obituary.woodfish.site/install.sh", " --mirror cn"
+	}
+	return "curl -fsSL " + script + " -o install.sh && bash install.sh --version " + strings.TrimPrefix(latest, "v") + " --install-dir '" + strings.ReplaceAll(dir, "'", `'\''`) + "'" + flags
 }

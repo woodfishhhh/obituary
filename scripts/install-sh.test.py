@@ -87,6 +87,8 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(subprocess.check_output([str(dest / "obit")], env=env, text=True), "obit fixture\n")
             self.assertTrue((dest / "obitd").stat().st_mode & 0o111)
             self.assertIn("SHA-256 verified", result.stdout)
+            receipt = json.loads((dest / ".obituary-install.json").read_text())
+            self.assertEqual(receipt, {"owner": "obituary-install-sh-v1", "source": "custom"})
         self.assertEqual(list(Path(env["HOME"]).iterdir()), [])
 
     def test_invalid_downloads_preserve_existing_binaries(self):
@@ -104,6 +106,7 @@ class InstallerTests(unittest.TestCase):
                 self.assertEqual((destination / "obit").read_text(), "existing obit")
                 self.assertEqual((destination / "obitd").read_text(), "existing daemon")
                 self.assertFalse((destination.parent / "escaped").exists())
+                self.assertFalse((destination / ".obituary-install.json").exists())
 
     def test_arguments_and_mirror_preview(self):
         args = ["bash", str(ROOT / "install.sh"), "--version", self.version]
