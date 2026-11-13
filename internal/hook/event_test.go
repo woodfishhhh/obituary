@@ -717,6 +717,16 @@ func TestHookReturnsQuietlyWhenStoreLocked(t *testing.T) {
 			if err := os.MkdirAll(e.engine.Svc.Store.Home, 0o700); err != nil {
 				t.Fatal(err)
 			}
+			// The session snapshot runs git outside the lock budget, so take it
+			// first: the timed window then covers only the store wait, not git
+			// latency on a loaded machine.
+			if err := e.engine.Snapshot(e.root, "locked"); err != nil {
+				t.Fatal(err)
+			}
+			sessions, err := os.ReadDir(filepath.Join(e.engine.Svc.Store.Home, "sessions"))
+			if err != nil || len(sessions) != 1 {
+				t.Fatalf("session snapshot not taken: %v %v", sessions, err)
+			}
 			release, err := ledger.LockFile(filepath.Join(e.engine.Svc.Store.Home, "store.lock"), true)
 			if err != nil {
 				t.Fatal(err)
@@ -739,6 +749,9 @@ func TestHookReturnsQuietlyWhenStoreLocked(t *testing.T) {
 			case <-done:
 			case <-time.After(3 * time.Second):
 				t.Fatal("hook did not finish after unlock")
+			}
+			if after, err := os.ReadDir(filepath.Join(e.engine.Svc.Store.Home, "sessions")); err != nil || len(after) != 1 || after[0].Name() != sessions[0].Name() {
+				t.Fatalf("hook took a new snapshot instead of reusing it: %v %v", after, err)
 			}
 			data, err := os.ReadFile(filepath.Join(e.engine.Svc.Store.Home, "hook.log"))
 			if out.Len() != 0 || err != nil || !strings.Contains(string(data), "deadline") {
