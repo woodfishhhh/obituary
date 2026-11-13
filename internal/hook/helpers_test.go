@@ -3,12 +3,15 @@ package hook
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"slices"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -19,6 +22,19 @@ import (
 	"github.com/woodfishhhh/obituary/internal/testenv"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
+
+// runFreshExecutable runs an executable the test has just written. On Linux a
+// child forked by a parallel test can briefly inherit the write descriptor
+// (golang/go#22315), so exec fails with ETXTBSY; retry until it is released.
+func runFreshExecutable(command func() *exec.Cmd) ([]byte, error) {
+	for attempt := 0; ; attempt++ {
+		out, err := command().CombinedOutput()
+		if !errors.Is(err, syscall.ETXTBSY) || attempt == 50 {
+			return out, err
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+}
 
 func setProtectedDiscoveryRoots(t *testing.T, roots ...string) {
 	t.Helper()
