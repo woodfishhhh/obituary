@@ -1,19 +1,21 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { BotIcon, CheckIcon, CopyIcon, DownloadIcon, SparkleIcon } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { BotIcon, CheckIcon, CopyIcon, DownloadIcon } from "lucide-react";
 import { BorderBeam } from "@/components/ui/border-beam";
-import { isMirror, mirrorFiles, version, waitlist } from "@/config";
-import { agentInstall, installCode, repo, type Copy, type Method } from "@/copy";
+import { isMirror, mirrorFiles, version } from "@/config";
+import { agentInstall, installCode, type Copy, type Method, type Os } from "@/copy";
 import { brand } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
-type Os = "windows" | "macos" | "linux";
 const osNames: Record<Os, string> = { windows: "Windows", macos: "macOS", linux: "Linux" };
 
 // The sentence is the same on both builds: each serves its own
 // agent-install.md. The mirror build points every download at the mirror, so
 // a visitor in mainland China never waits on GitHub.
 const sentenceFor = (lang: Copy["lang"]) => agentInstall[lang];
-const mirrorScript = [`irm ${mirrorFiles.installScript} -OutFile install.ps1`, `.\\install.ps1 -Version ${version} -Mirror cn`];
+const mirrorScript = (os: Os) =>
+  os === "windows"
+    ? [`irm ${mirrorFiles.installScript} -OutFile install.ps1`, `.\\install.ps1 -Version ${version} -Mirror cn`]
+    : [`curl -fsSL ${mirrorFiles.installShell} -o install.sh`, `bash install.sh --version ${version} --mirror cn`];
 
 // The visitor's system, when the browser says it; Windows otherwise.
 function detectOs(): Os {
@@ -91,18 +93,18 @@ function Row({ head, children }: { head: string; children: ReactNode }) {
   );
 }
 
-function ByHand({ c }: { c: Copy }) {
+function ByHand({ c, os }: { c: Copy; os: Os }) {
   const i = c.install;
   if (isMirror) {
     return (
       <>
         <Row head={i.methods.script}>
-          <CodeBox lines={mirrorScript} label={i.methods.script} c={i} />
-          <p className="text-sm text-muted">{i.scriptNote}</p>
+          <CodeBox lines={mirrorScript(os)} label={i.methods.script} c={i} />
+          <p className="text-sm text-muted">{i.scriptNote[os]}</p>
         </Row>
         <Row head={i.downloadHead}>
           <ul className="flex flex-wrap gap-2 pt-1.5">
-            {i.downloads.map((d) => (
+            {i.downloads[os].map((d) => (
               <li key={d.file}>
                 <a
                   href={mirrorFiles.download(d.file)}
@@ -118,17 +120,17 @@ function ByHand({ c }: { c: Copy }) {
       </>
     );
   }
-  return (Object.keys(installCode) as Method[]).map((m) => (
+  return (Object.entries(installCode[os]) as [Method, readonly string[]][]).map(([m, lines]) => (
     <Row key={m} head={i.methods[m]}>
-      <CodeBox lines={installCode[m]} label={i.methods[m]} c={i} />
-      {m === "script" ? <p className="text-sm text-muted">{i.scriptNote}</p> : null}
+      <CodeBox lines={lines} label={i.methods[m]} c={i} />
+      {m === "script" ? <p className="text-sm text-muted">{i.scriptNote[os]}</p> : null}
     </Row>
   ));
 }
 
 type Route = "ai" | "hand";
 
-function Windows({ c }: { c: Copy }) {
+function Platform({ c, os }: { c: Copy; os: Os }) {
   const i = c.install;
   const sentence = sentenceFor(c.lang);
   const [route, setRoute] = useState<Route>("ai");
@@ -180,9 +182,9 @@ function Windows({ c }: { c: Copy }) {
         </div>
       ) : (
         <div id="route-hand-panel" role="tabpanel" aria-labelledby="route-hand">
-          <p className="mb-2 text-ink-2">{isMirror ? i.mirrorHandLine : i.handLine}</p>
+          <p className="mb-2 text-ink-2">{isMirror ? i.mirrorHandLine : i.handLine[os]}</p>
           <div className="flex flex-col divide-y divide-line border-y border-line">
-            <ByHand c={c} />
+            <ByHand c={c} os={os} />
             <Row head={i.then}>
               <div className="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2">
                 {i.init.map((x) => (
@@ -193,154 +195,22 @@ function Windows({ c }: { c: Copy }) {
                 ))}
               </div>
             </Row>
+            {os === "windows" ? null : (
+              <Row head={i.daemonHead}>
+                <CodeBox lines={["obit daemon enable"]} label={i.daemonHead} c={i} />
+                <p className="text-sm text-muted">{i.daemonLine}</p>
+              </Row>
+            )}
             <Row head={i.updateHead}>
-              <p className="pt-2.5 text-ink-2">{i.update}</p>
+              <p className="pt-2.5 text-ink-2">{i.update[os]}</p>
               <p className="text-ink-2">{i.uninstall}</p>
             </Row>
           </div>
-          <p className="mt-4 text-sm text-muted">{isMirror ? i.mirrorFact : i.fact}</p>
+          <p className="mt-4 text-sm text-muted">{isMirror ? i.mirrorFact : i.fact[os]}</p>
         </div>
       )}
 
-      <p className="text-sm text-muted">{i.network}</p>
-    </div>
-  );
-}
-
-type Sending = "idle" | "sending" | "sent" | "invalid" | "busy" | "failed";
-
-// Without the server's CORS answer, `pnpm dev` cannot reach the list; it
-// answers locally instead: an address starting with 400@ or 429@ gets that
-// status, offline@ a network failure, anything else success.
-async function devPost(email: string): Promise<Response> {
-  await new Promise((r) => setTimeout(r, 600));
-  if (email.startsWith("offline@")) throw new TypeError("Failed to fetch");
-  const status = email.startsWith("400@") ? 400 : email.startsWith("429@") ? 429 : 200;
-  return new Response("{}", { status });
-}
-
-async function subscribe(email: string, list: string): Promise<Sending> {
-  try {
-    const res = import.meta.env.DEV
-      ? await devPost(email)
-      : await fetch(waitlist.endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, name: "", list_uuids: [list] }),
-          signal: AbortSignal.timeout(15000),
-        });
-    if (res.ok) return "sent";
-    if (res.status === 400) return "invalid";
-    if (res.status === 429) return "busy";
-    return "failed";
-  } catch {
-    return "failed";
-  }
-}
-
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function Waitlist({ c, os }: { c: Copy; os: Exclude<Os, "windows"> }) {
-  const i = c.install;
-  const [state, setState] = useState<Sending>("idle");
-  useEffect(() => setState("idle"), [os]);
-
-  async function submit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (state === "sending") return;
-    const form = new FormData(e.currentTarget);
-    // Bots fill every field; people never see this one.
-    if (String(form.get("website") ?? "") !== "") return setState("sent");
-    const email = String(form.get("email") ?? "").trim();
-    if (!emailPattern.test(email)) return setState("invalid");
-    setState("sending");
-    setState(await subscribe(email, waitlist.lists[os]));
-  }
-
-  if (state === "sent") {
-    return (
-      <p role="status" className="flex items-center gap-2.5 rounded-2xl border border-glint bg-soft px-4 py-3 text-ink">
-        <CheckIcon className="size-4 shrink-0 text-ok" aria-hidden="true" />
-        {i.sent}
-      </p>
-    );
-  }
-  const message = { invalid: i.invalid, busy: i.busy, failed: i.failed, sending: i.sending, idle: "" }[state];
-  const error = state === "invalid" || state === "busy" || state === "failed";
-  return (
-    <form onSubmit={submit} noValidate className="flex flex-col gap-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <label className="flex min-w-0 flex-1 flex-col gap-1.5 text-sm font-medium text-ink-2">
-          {i.emailLabel}
-          <input
-            type="email"
-            name="email"
-            required
-            autoComplete="email"
-            inputMode="email"
-            placeholder="you@example.com"
-            aria-invalid={state === "invalid" || undefined}
-            aria-describedby="waitlist-status"
-            className={cn(
-              "h-12 rounded-full border bg-paper px-5 text-base text-ink placeholder:text-muted focus-visible:border-cobalt",
-              focusRing,
-              state === "invalid" ? "border-bad" : "border-line-2",
-            )}
-          />
-        </label>
-        <div aria-hidden="true" className="absolute -left-[9999px] size-px overflow-hidden">
-          <label>
-            Website
-            <input type="text" name="website" tabIndex={-1} autoComplete="off" defaultValue="" />
-          </label>
-        </div>
-        <button
-          type="submit"
-          disabled={state === "sending"}
-          className={cn(
-            "h-12 rounded-full bg-cobalt px-6 text-base font-medium whitespace-nowrap text-white transition-colors hover:bg-cobalt-deep active:translate-y-px disabled:opacity-60",
-            focusRing,
-          )}
-        >
-          {state === "sending" ? i.sending : i.submit}
-        </button>
-      </div>
-      <p id="waitlist-status" role="status" className={cn("min-h-6 text-sm", error ? "text-bad" : "text-muted")}>
-        {state === "sending" ? "" : message}
-      </p>
-      <p className="text-sm text-muted">{i.privacy}</p>
-    </form>
-  );
-}
-
-function ComingSoon({ c, os }: { c: Copy; os: Exclude<Os, "windows"> }) {
-  const i = c.install;
-  const name = osNames[os];
-  const open = Boolean(waitlist.endpoint && waitlist.lists[os]);
-  return (
-    <div className="relative overflow-hidden rounded-3xl border border-line bg-paper p-6 md:p-10">
-      <div aria-hidden="true" className="dot-field fade-edges absolute inset-0 opacity-70" />
-      <div className="relative flex max-w-[44rem] flex-col gap-5">
-        <span className="inline-flex items-center gap-2 self-start rounded-full bg-cream/70 px-3 py-1 text-sm font-medium text-on-gold">
-          <SparkleIcon className="size-3.5 fill-gold text-gold-deep" aria-hidden="true" />
-          {name}
-        </span>
-        <h3 className="text-2xl font-semibold tracking-[-0.01em] md:text-3xl">{i.soonHead}</h3>
-        <p className="text-ink-2">{i.soonLine(name)}</p>
-        {open ? (
-          <Waitlist c={c} os={os} />
-        ) : (
-          <p role="status" className="rounded-2xl border border-glint bg-soft px-4 py-3 text-ink">
-            {i.closed}
-          </p>
-        )}
-        <p className="text-sm text-ink-2">
-          {i.watch}{" "}
-          <a href={repo} className="font-medium text-cobalt underline-offset-4 hover:underline">
-            {i.watchLink}
-          </a>
-        </p>
-      </div>
+      <p className="text-sm text-muted">{i.network[os]}</p>
     </div>
   );
 }
@@ -374,7 +244,7 @@ export function Install({ c }: { c: Copy }) {
             </button>
           ))}
         </div>
-        {os === "windows" ? <Windows c={c} /> : <ComingSoon c={c} os={os} />}
+        <Platform c={c} os={os} />
       </div>
     </section>
   );

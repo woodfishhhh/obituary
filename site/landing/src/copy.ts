@@ -2,22 +2,55 @@
 // repository's README.md / README.en.md only; keep them in step. The Chinese
 // strings here also decide which glyphs scripts/subset-fonts.mjs keeps.
 
+import { version } from "@/config";
+
 export type Lang = "zh" | "en";
+export type Os = "windows" | "macos" | "linux";
 
 export const repo = "https://github.com/woodfishhhh/obituary";
 export const qqGroup = "1135603207";
 
 // Commands are product text and stay identical in both languages; the install
-// lines mirror the README.
-export const installCode = {
-  scoop: ["scoop bucket add obituary https://github.com/woodfishhhh/scoop-bucket", "scoop install obituary"],
-  winget: ["winget install woodfishhhh.Obituary"],
-  script: [
-    "irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1",
-    ".\\install.ps1 -Version 1.1.1",
+// lines mirror docs/install.md.
+export type Method = "scoop" | "winget" | "brew" | "script";
+const shellScript = [
+  "curl -fsSL https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh -o install.sh",
+  `bash install.sh --version ${version}`,
+];
+export const installCode: Record<Os, Partial<Record<Method, readonly string[]>>> = {
+  windows: {
+    scoop: ["scoop bucket add obituary https://github.com/woodfishhhh/scoop-bucket", "scoop install obituary"],
+    winget: ["winget install woodfishhhh.Obituary"],
+    script: [
+      "irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1",
+      `.\\install.ps1 -Version ${version}`,
+    ],
+  },
+  macos: { brew: ["brew install --cask woodfishhhh/tap/obituary"], script: shellScript },
+  linux: { script: shellScript },
+};
+
+// Release archives per platform, each with the checksums; the macOS labels
+// are set per language.
+const archive = (platform: string, ext: string) => `obituary_${version}_${platform}.${ext}`;
+const checksums = { label: "checksums.txt", file: "checksums.txt" };
+const archives = (macLabels: [string, string]): Record<Os, { label: string; file: string }[]> => ({
+  windows: [
+    { label: "x64", file: archive("windows_amd64", "zip") },
+    { label: "ARM64", file: archive("windows_arm64", "zip") },
+    checksums,
   ],
-} as const;
-export type Method = keyof typeof installCode;
+  macos: [
+    { label: macLabels[0], file: archive("darwin_arm64", "tar.gz") },
+    { label: macLabels[1], file: archive("darwin_amd64", "tar.gz") },
+    checksums,
+  ],
+  linux: [
+    { label: "x64", file: archive("linux_amd64", "tar.gz") },
+    { label: "ARM64", file: archive("linux_arm64", "tar.gz") },
+    checksums,
+  ],
+});
 
 // The sentence a user sends to their agent; it matches README.md and
 // README.en.md word for word.
@@ -190,44 +223,49 @@ const zh = {
   },
   install: {
     head: "安装",
-    lead: "支持 Windows 10 / 11（x64 和 ARM64）。",
+    lead: "支持 Windows 10 / 11、macOS 和 Linux（x64 和 ARM64）。",
     mirrorFact: "镜像上的压缩包和 GitHub Release 里的是同一份，安装脚本同样先核对 SHA-256。",
     payoff: "装好后重启 agent。它生成的日志、截图按规则带上寿命（每个项目第一次先问你）；打开删除护栏的话，它的 rm -rf 会换成能复活的 obit rm -rf。",
     updateHead: "更新和卸载",
-    update: "更新：Scoop 用 scoop update obituary，winget 用 winget upgrade woodfishhhh.Obituary，安装脚本换上新版本号再运行一次。obit update 会告诉你当前版本和该用的升级命令。",
+    update: {
+      windows: "更新：Scoop 用 scoop update obituary，winget 用 winget upgrade woodfishhhh.Obituary，安装脚本换上新版本号再运行一次。obit update 会告诉你当前版本和该用的升级命令。",
+      macos: "更新：Homebrew 用 brew upgrade --cask obituary，安装脚本换上新版本号再运行一次。obit update 会告诉你当前版本和最新版本。",
+      linux: "更新：安装脚本换上新版本号再运行一次。obit update 会告诉你当前版本和最新版本。",
+    } as Record<Os, string>,
     uninstall: "卸载：obit uninstall，先 --dry-run 看看会撤掉什么；墓地默认保留。",
-    network: "讣告唯一的联网是每天最多一次检查新版本，只读公开的发布信息（GitHub 或国内镜像），可以在设置里关掉。",
+    network: {
+      windows: "讣告唯一的联网是每天最多一次检查新版本，只读公开的发布信息（GitHub 或国内镜像），可以在设置里关掉。",
+      macos: "讣告唯一的联网是每天最多一次检查新版本，只读公开的发布信息（GitHub 或国内镜像），在 config.toml 的 [update] 里写 check = false 就能关掉。",
+      linux: "讣告唯一的联网是每天最多一次检查新版本，只读公开的发布信息（GitHub 或国内镜像），在 config.toml 的 [update] 里写 check = false 就能关掉。",
+    } as Record<Os, string>,
     mirrorScript: "安装脚本和安装包都从国内镜像下载",
     downloadHead: "直接下载",
-    downloads: [
-      { label: "x64", file: "obituary_1.0.0_windows_amd64.zip" },
-      { label: "ARM64", file: "obituary_1.0.0_windows_arm64.zip" },
-      { label: "checksums.txt", file: "checksums.txt" },
-    ],
+    downloads: archives(["Apple 芯片", "Intel"]),
     routeLabel: "安装方式",
     agentHead: "让 AI 装",
     agentLine: "把这句话发给你正在用的 agent（Claude Code、Codex、Cursor……都行），要你拍板的地方它会停下来问你。",
     agentLabel: "发给 agent 的一句话",
     handHead: "自己装",
-    handLine: "下面三种方式任选其一，装好后执行 obit doctor 体检。",
+    handLine: {
+      windows: "下面三种方式任选其一，装好后执行 obit doctor 体检。",
+      macos: "下面两种方式任选其一，装好后执行 obit doctor 体检。",
+      linux: "用安装脚本安装，装好后执行 obit doctor 体检。",
+    } as Record<Os, string>,
     mirrorHandLine: "用安装脚本，或者直接下载压缩包；装好后执行 obit doctor 体检。",
     platformLabel: "系统",
-    soonHead: "正在开发，即将推出",
-    soonLine: (os: string) => `留下邮箱，${os} 版发布时我们发邮件告诉你。`,
-    emailLabel: "邮箱",
-    submit: "发布时提醒我",
-    privacy: "只用来通知 macOS / Linux 版发布，每封邮件都能退订。",
-    closed: "邮件提醒暂未开放，先在 GitHub 上关注发布。",
-    sending: "正在提交……",
-    sent: "收到了。发布时会发邮件给你。",
-    failed: "没提交成功，可以稍后再试，或者先在 GitHub 上关注发布。",
-    invalid: "这个邮箱地址看起来不对。",
-    busy: "太频繁了，稍后再试。",
-    watch: "或者不用留邮箱：在 GitHub 上点 Watch → Custom → Releases。",
-    watchLink: "打开 GitHub 仓库",
-    methods: { scoop: "Scoop", winget: "winget（审核中）", script: "安装脚本" } as Record<Method, string>,
-    scriptNote: "先下载、看一眼，再运行；-WhatIf 只预览。",
-    fact: "三种方式下载的都是 GitHub Release 里的同一个压缩包，安装前都核对 SHA-256。",
+    methods: { scoop: "Scoop", winget: "winget（审核中）", brew: "Homebrew", script: "安装脚本" } as Record<Method, string>,
+    scriptNote: {
+      windows: "先下载、看一眼，再运行；-WhatIf 只预览。",
+      macos: "先下载、看一眼，再运行；--dry-run 只预览。",
+      linux: "先下载、看一眼，再运行；--dry-run 只预览。",
+    } as Record<Os, string>,
+    fact: {
+      windows: "三种方式下载的都是 GitHub Release 里的同一个压缩包，安装前都核对 SHA-256。",
+      macos: "两种方式下载的都是 GitHub Release 里的同一个压缩包，安装前都核对 SHA-256。",
+      linux: "安装脚本下载的是 GitHub Release 里的压缩包，安装前核对 SHA-256。",
+    } as Record<Os, string>,
+    daemonHead: "打开后台检查",
+    daemonLine: "每 5 分钟检查一次到期的文件：macOS 用 launchd，Linux 用 systemd --user。先加 --dry-run 看看会装什么。",
     then: "再接到 agent 身上",
     init: [
       { label: "Claude Code", code: "obit init -g" },
@@ -388,44 +426,49 @@ const en: Copy = {
   },
   install: {
     head: "Install",
-    lead: "Windows 10 / 11 (x64 and ARM64).",
+    lead: "Windows 10 / 11, macOS and Linux (x64 and ARM64).",
     mirrorFact: "The mirror serves the same archives as the GitHub release, and the install script checks their SHA-256 the same way.",
     payoff: "Then restart the agent. Its logs and screenshots get a lifespan by rule (each project asks you first); with the delete guard on, its rm -rf becomes a restorable obit rm -rf.",
     updateHead: "Update and uninstall",
-    update: "Update: scoop update obituary, winget upgrade woodfishhhh.Obituary, or the install script again with the new version number. obit update shows your version and the command to use.",
+    update: {
+      windows: "Update: scoop update obituary, winget upgrade woodfishhhh.Obituary, or the install script again with the new version number. obit update shows your version and the command to use.",
+      macos: "Update: brew upgrade --cask obituary, or the install script again with the new version number. obit update shows your version and the latest one.",
+      linux: "Update: run the install script again with the new version number. obit update shows your version and the latest one.",
+    },
     uninstall: "Uninstall: obit uninstall, with --dry-run first to see what it removes; the graveyard stays by default.",
-    network: "Obituary's only network use is a check for a new version, at most once a day. It reads only public release information (GitHub or the mirror in mainland China), and you can turn it off in Settings.",
+    network: {
+      windows: "Obituary's only network use is a check for a new version, at most once a day. It reads only public release information (GitHub or the mirror in mainland China), and you can turn it off in Settings.",
+      macos: "Obituary's only network use is a check for a new version, at most once a day. It reads only public release information (GitHub or the mirror in mainland China); check = false under [update] in config.toml turns it off.",
+      linux: "Obituary's only network use is a check for a new version, at most once a day. It reads only public release information (GitHub or the mirror in mainland China); check = false under [update] in config.toml turns it off.",
+    },
     mirrorScript: "The install script and the archives come from the mainland China mirror",
     downloadHead: "Direct download",
-    downloads: [
-      { label: "x64", file: "obituary_1.0.0_windows_amd64.zip" },
-      { label: "ARM64", file: "obituary_1.0.0_windows_arm64.zip" },
-      { label: "checksums.txt", file: "checksums.txt" },
-    ],
+    downloads: archives(["Apple silicon", "Intel"]),
     routeLabel: "How to install",
     agentHead: "Let your AI do it",
     agentLine: "Send this sentence to the agent you use (Claude Code, Codex, Cursor…). It stops wherever a decision is yours.",
     agentLabel: "The sentence for your agent",
     handHead: "By hand",
-    handLine: "Pick one of the three, then run obit doctor to check the installation.",
+    handLine: {
+      windows: "Pick one of the three, then run obit doctor to check the installation.",
+      macos: "Pick one of the two, then run obit doctor to check the installation.",
+      linux: "Use the install script, then run obit doctor to check the installation.",
+    },
     mirrorHandLine: "Use the install script or download the archive, then run obit doctor to check the installation.",
     platformLabel: "Platform",
-    soonHead: "In development, coming soon",
-    soonLine: (os: string) => `Leave your email and we'll tell you when the ${os} version ships.`,
-    emailLabel: "Email",
-    submit: "Notify me",
-    privacy: "Only used to announce the macOS / Linux release; every email has an unsubscribe link.",
-    closed: "Email notices aren't open yet; follow the releases on GitHub for now.",
-    sending: "Sending…",
-    sent: "Got it. We'll email you when it ships.",
-    failed: "That didn't go through. Try again later, or follow the releases on GitHub.",
-    invalid: "That email address doesn't look right.",
-    busy: "Too many tries; try again in a while.",
-    watch: "Or skip the email: on GitHub, choose Watch → Custom → Releases.",
-    watchLink: "Open the GitHub repository",
-    methods: { scoop: "Scoop", winget: "winget (in review)", script: "Install script" },
-    scriptNote: "Download it, read it, then run it; -WhatIf previews.",
-    fact: "All three download the same archive from the GitHub release and check its SHA-256 before unpacking.",
+    methods: { scoop: "Scoop", winget: "winget (in review)", brew: "Homebrew", script: "Install script" },
+    scriptNote: {
+      windows: "Download it, read it, then run it; -WhatIf previews.",
+      macos: "Download it, read it, then run it; --dry-run previews.",
+      linux: "Download it, read it, then run it; --dry-run previews.",
+    },
+    fact: {
+      windows: "All three download the same archive from the GitHub release and check its SHA-256 before unpacking.",
+      macos: "Both download the same archive from the GitHub release and check its SHA-256 before unpacking.",
+      linux: "The install script downloads the archive from the GitHub release and checks its SHA-256 before unpacking.",
+    },
+    daemonHead: "Turn on background checks",
+    daemonLine: "Checks for expired files every 5 minutes: launchd on macOS, systemd --user on Linux. Add --dry-run first to see what it installs.",
     then: "Then connect your agents",
     init: [
       { label: "Claude Code", code: "obit init -g" },
