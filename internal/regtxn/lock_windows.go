@@ -2,7 +2,6 @@ package regtxn
 
 import (
 	"context"
-	"crypto/sha256"
 	"errors"
 	"fmt"
 	"os"
@@ -60,8 +59,7 @@ func lockPath(resource string) (string, error) {
 	if err := protectLockDirectory(dir, user.User.Sid.String()); err != nil {
 		return "", err
 	}
-	sum := sha256.Sum256([]byte(resource))
-	return filepath.Join(dir, fmt.Sprintf("%x.lock", sum)), nil
+	return filepath.Join(dir, LockName(resource)), nil
 }
 
 func protectLockDirectory(dir, sid string) error {

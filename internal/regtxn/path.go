@@ -1,10 +1,23 @@
 package regtxn
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"strings"
 )
+
+// LockName is the file Lock holds for resource in userdirs.RegistryLocks().
+func LockName(resource string) string {
+	return fmt.Sprintf("%x.lock", sha256.Sum256([]byte(resource)))
+}
+
+// IsLockName recognises LockName files, so uninstall can tell the per-user
+// lock directory from user data.
+func IsLockName(name string) bool {
+	sum, ok := strings.CutSuffix(name, ".lock")
+	return ok && len(sum) == 2*sha256.Size && strings.Trim(sum, "0123456789abcdef") == ""
+}
 
 // UserPath confines subprocess test writes to disposable HKCU keys. An invalid
 // override must fail before opening a registry key, including read-only plans.

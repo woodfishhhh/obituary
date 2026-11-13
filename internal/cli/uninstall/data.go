@@ -11,7 +11,9 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/regtxn"
 	"github.com/woodfishhhh/obituary/internal/textutil"
+	"github.com/woodfishhhh/obituary/internal/userdirs"
 )
 
 func (p *plan) printData(out io.Writer, purge bool) {
@@ -95,8 +97,8 @@ var metadataNames = []string{
 	"explorer.json", "explorer.json.tmp", "explorer.lock", "explorer.log", "explorer.stamp",
 	"update.json", "update.json.tmp", "update.lock",
 	"proposal-log.json", "proposal-log.json.tmp", "proposal-log.lock",
-	"obitd.log", "obitd.stop", "obitd.paused", "obitd.process.json", "hook.log", "hook.log.1",
-	"hook-audit.log", "hook-audit.log.1", "guard-rm.json", "guard-rm.lock",
+	"obitd.log", "obitd.stop", "obitd.paused", "obitd.process.json", "hook.log", "hook.log.1", "hook.log.lock",
+	"hook-audit.log", "hook-audit.log.1", "hook-audit.log.lock", "guard-rm.json", "guard-rm.lock",
 	"observations.jsonl", "observations.lock", "trusted_rules.json", "trusted_rules.json.lock",
 	"manifest-recovery.json", "manifest-recovery.lock", "proposals.lock", "delete-guard.jsonl",
 }
@@ -165,6 +167,11 @@ func removeMetadataEntries(root *os.Root) error {
 				return err
 			}
 		}
+		if entry.Name() == registryLocks {
+			if err := removeRegistryLocks(root); err != nil {
+				return err
+			}
+		}
 		if err := root.Remove(entry.Name()); err != nil {
 			return err
 		}
@@ -179,6 +186,10 @@ func checkMetadata(root *os.Root, name string) error {
 	}
 	if info.IsDir() && name == "sessions" {
 		_, err := sessionFiles(root)
+		return err
+	}
+	if info.IsDir() && name == registryLocks {
+		_, err := registryLockFiles(root)
 		return err
 	}
 	if info.IsDir() && name == "graveyard" {
@@ -196,4 +207,59 @@ func checkMetadata(root *os.Root, name string) error {
 		return nil
 	}
 	return fmt.Errorf("data retained: unknown file, link or nonempty directory %s", filepath.Join(root.Name(), name))
+}
+
+const registryLocks = "registry-locks"
+
+// Installers keep per-user locks in the default data directory
+// (userdirs.RegistryLocks). It is owned only there, and only while it holds
+// nothing but their empty lock files.
+func registryLockFiles(root *os.Root) ([]string, error) {
+	retained := fmt.Errorf("data retained: unrecognized registry lock directory %s", filepath.Join(root.Name(), registryLocks))
+	path, err := userdirs.RegistryLocks()
+	if err != nil {
+		return nil, errors.Join(retained, err)
+	}
+	want, err := os.Lstat(path)
+	if err != nil {
+		return nil, errors.Join(retained, err)
+	}
+	if got, err := root.Lstat(registryLocks); err != nil || !os.SameFile(got, want) {
+		return nil, errors.Join(retained, err)
+	}
+	dir, err := root.Open(registryLocks)
+	if err != nil {
+		return nil, err
+	}
+	entries, err := dir.ReadDir(-1)
+	dir.Close()
+	if err != nil {
+		return nil, err
+	}
+	var names []string
+	for _, entry := range entries {
+		name := registryLocks + "/" + entry.Name()
+		info, err := root.Lstat(name)
+		if err != nil {
+			return nil, err
+		}
+		if !info.Mode().IsRegular() || info.Size() != 0 || !regtxn.IsLockName(entry.Name()) {
+			return nil, fmt.Errorf("data retained: unrecognized registry lock %s", filepath.Join(root.Name(), name))
+		}
+		names = append(names, name)
+	}
+	return names, nil
+}
+
+func removeRegistryLocks(root *os.Root) error {
+	names, err := registryLockFiles(root)
+	if err != nil {
+		return err
+	}
+	for _, name := range names {
+		if err := root.Remove(name); err != nil {
+			return err
+		}
+	}
+	return nil
 }
