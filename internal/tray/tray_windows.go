@@ -117,7 +117,7 @@ func (m *menu) run(ctx context.Context, cancel context.CancelFunc, changed <-cha
 			text := fmt.Sprintf(m.language.Text(i18n.Incomplete), err)
 			m.status.SetTitle(label(text))
 			logger.Printf("tray: %v", err)
-			m.tell(text)
+			m.tell(i18n.NotCompleted, err.Error())
 		}
 	}
 }
@@ -142,18 +142,30 @@ func (m *menu) refresh(ctx context.Context) {
 	}
 	m.rows = nil
 	ctx, m.rowCancel = context.WithCancel(ctx)
+	m.status.SetTitle(label(m.summary()))
 	if err := m.recentRows(ctx); err != nil {
 		m.status.SetTitle(label(fmt.Sprintf(m.language.Text(i18n.ReadGravesFailed), err)))
 	}
 	if err := m.upcomingRows(ctx); err != nil {
 		m.status.SetTitle(label(fmt.Sprintf(m.language.Text(i18n.ReadUpcomingFailed), err)))
 	}
+}
+
+// summary is the status row: what happens next and what can be resurrected.
+func (m *menu) summary() string {
 	paused, err := app.Paused(m.resident.Service.Store.Home)
 	if err != nil {
-		m.status.SetTitle(label(err.Error()))
-		return
+		return err.Error()
 	}
 	m.showPaused(paused)
+	due, graves, err := m.resident.Counts(time.Now())
+	if err != nil {
+		return fmt.Sprintf(m.language.Text(i18n.ReadGravesFailed), err)
+	}
+	if paused {
+		return fmt.Sprintf(m.language.Text(i18n.SummaryPaused), graves)
+	}
+	return fmt.Sprintf(m.language.Text(i18n.Summary), due, graves)
 }
 
 func (m *menu) refreshUpdate() {
@@ -183,9 +195,7 @@ func (m *menu) recentRows(ctx context.Context) error {
 		go m.listen(ctx, row, func() error {
 			result, err := m.resident.Restore(id)
 			if result.Action == core.ActionResurrected {
-				text := fmt.Sprintf(m.language.Text(i18n.Restored), result.Path, result.Warning)
-				m.status.SetTitle(label(text))
-				m.tell(text)
+				m.tell(i18n.Resurrected, strings.TrimSpace(result.Path+" "+result.Warning))
 			}
 			return err
 		})
@@ -194,9 +204,10 @@ func (m *menu) recentRows(ctx context.Context) error {
 }
 
 // tell shows a click's outcome after the menu has closed. It is best effort:
-// the status row keeps the text for the next time the menu opens.
-func (m *menu) tell(text string) {
-	_ = m.ui.notify(m.language.Text(i18n.AppName), text)
+// a failure also stays in the status row until the next refresh. The
+// notification's header already names Obituary, so the title is the outcome.
+func (m *menu) tell(outcome i18n.Key, detail string) {
+	_ = m.ui.notify(m.language.Text(outcome), detail)
 }
 
 // listen hands a row's clicks to the menu loop until the rows are rebuilt.

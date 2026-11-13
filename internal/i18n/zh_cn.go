@@ -28,7 +28,6 @@ var chinese = map[Key]string{
 	ReadGravesFailed:    "读取墓地失败：%s",
 	ReadUpcomingFailed:  "读取即将下葬的列表失败：%s",
 	NoGraves:            "暂无墓地记录",
-	Restored:            "已复活：%s %s",
 	NoUpcoming:          "24 小时内没有要下葬的",
 	Mark:                "写讣告",
 	ResurrectLatest:     "复活最近下葬的",
@@ -49,4 +48,8 @@ var chinese = map[Key]string{
 	TodayAt:             "今天 %s",
 	TomorrowAt:          "明天 %s",
 	YesterdayAt:         "昨天 %s",
+	Resurrected:         "已复活",
+	NotCompleted:        "没有完成",
+	Summary:             "24 小时内下葬 %d 项 · 墓地 %d 座",
+	SummaryPaused:       "已暂停，不会自动下葬 · 墓地 %d 座",
 }

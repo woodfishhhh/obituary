@@ -1,6 +1,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { Container, File, Folder, TriangleAlert, X, type LucideIcon } from "lucide-react";
 import { Component, createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
+import { errorText, useApi } from "./api";
 import { duration, lifeLeft, noteText, splitPath, when } from "./format";
 import { t } from "./i18n";
 
@@ -144,23 +145,30 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 
 // ── Toasts ─────────────────────────────────────────────────────────────
 
-type Toast = { id: number; text: string; kind: "" | "error" };
-const ToastContext = createContext<(text: string, kind?: "" | "error") => void>(() => {});
+// An action keeps the toast up longer, so there is time to reach it.
+export interface ToastAction { label: string; run: () => void }
+type Toast = { id: number; text: string; kind: "" | "error"; action?: ToastAction };
+const ToastContext = createContext<(text: string, kind?: "" | "error", action?: ToastAction) => void>(() => {});
 export const useToast = () => useContext(ToastContext);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const seq = useRef(0);
-  const push = useCallback((text: string, kind: "" | "error" = "") => {
+  const push = useCallback((text: string, kind: "" | "error" = "", action?: ToastAction) => {
     const id = ++seq.current;
-    setToasts((t) => [...t, { id, text, kind }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), kind === "error" ? 8000 : 3200);
+    setToasts((t) => [...t, { id, text, kind, action }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), action ? 12000 : kind === "error" ? 8000 : 3200);
   }, []);
   return (
     <ToastContext.Provider value={push}>
       {children}
       <div className="toasts" aria-live="polite">
-        {toasts.map((t) => <div key={t.id} className={`toast ${t.kind}`} role={t.kind ? "alert" : "status"}>{t.text}</div>)}
+        {toasts.map((t) => (
+          <div key={t.id} className={`toast ${t.kind}`} role={t.kind ? "alert" : "status"}>
+            <span>{t.text}</span>
+            {t.action ? <button type="button" className="toast-act" onClick={t.action.run}>{t.action.label}</button> : null}
+          </div>
+        ))}
       </div>
     </ToastContext.Provider>
   );
@@ -175,6 +183,20 @@ export function useBatch() {
     const done = results.length - failed.length;
     if (reply.error || failed.length) toast(t("batch.partial", verb, done, failed.length, reply.error ?? t("pair", failed[0].ref, failed[0].error ?? "")), "error");
     else toast(t("batch.done", verb, done));
+  };
+}
+
+// One resurrected item: say where it went, with a way to open its folder.
+// Several are reported like any batch.
+export function useResurrectReport() {
+  const api = useApi();
+  const toast = useToast();
+  const report = useBatch();
+  return (reply: { results: { ref: string; path?: string; error?: string }[]; error?: string }) => {
+    const one = !reply.error && reply.results?.length === 1 && !reply.results[0].error ? reply.results[0].path : undefined;
+    if (!one) return report(reply, t("resurrect"));
+    const show = api.ShowInFolder;
+    toast(t("grave.backAt", one), "", show ? { label: t("showInFolder"), run: () => show(one).catch((e) => toast(errorText(e), "error")) } : undefined);
   };
 }
 

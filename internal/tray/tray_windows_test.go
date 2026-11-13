@@ -102,7 +102,7 @@ func TestFailedClickIsToldAfterTheMenuCloses(t *testing.T) {
 	m.actions <- func() error { return errors.New("磁盘已满") }
 	select {
 	case got := <-told:
-		if got != "讣告 Obituary | 未完成：磁盘已满" {
+		if got != "没有完成 | 磁盘已满" {
 			t.Fatal(got)
 		}
 	case <-time.After(5 * time.Second):

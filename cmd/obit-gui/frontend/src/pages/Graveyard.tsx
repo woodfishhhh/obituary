@@ -4,7 +4,7 @@ import { useApi } from "../api";
 import { bytes, when } from "../format";
 import { useLoad, useRefresh } from "../hooks";
 import { t } from "../i18n";
-import { Button, Empty, Head, LifeLine, NameCell, SelectionBar, Skeleton, isContainer, useBatch, useConfirm } from "../ui";
+import { Button, Empty, Head, LifeLine, NameCell, SelectionBar, Skeleton, isContainer, useBatch, useConfirm, useResurrectReport } from "../ui";
 
 const pendingTone: Record<string, string> = { pending: "warn", interrupted: "warn", purging: "warn", empty: "warn", unverifiable: "danger" };
 const pendingText = (status: string): [string, string] | undefined =>
@@ -15,6 +15,7 @@ export default function Graveyard({ embedded = false }: { embedded?: boolean }) 
   const { version, bump } = useRefresh();
   const confirm = useConfirm();
   const report = useBatch();
+  const resurrected = useResurrectReport();
   const [filter, setFilter] = useState("");
   const [chosen, setChosen] = useState<Set<number>>(new Set());
   const { data, error, loading } = useLoad(() => api.Graveyard({ filter, limit: 200, after: "" }), [api, filter, version]);
@@ -36,7 +37,9 @@ export default function Graveyard({ embedded = false }: { embedded?: boolean }) 
       danger: purging,
     });
     if (!ok) return;
-    report(await api[method](refs), purging ? t("purge") : t("resurrect"));
+    const reply = await api[method](refs);
+    if (purging) report(reply, t("purge"));
+    else resurrected(reply);
     setChosen(new Set());
     bump();
   }

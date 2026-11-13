@@ -40,7 +40,7 @@ type application struct {
 
 var applications = []application{
 	{"obit", "命令行", []winres.Arch{winres.ArchAMD64, winres.ArchARM64}, pe.IMAGE_SUBSYSTEM_WINDOWS_CUI},
-	{"obitd", "后台与托盘", []winres.Arch{winres.ArchAMD64, winres.ArchARM64}, pe.IMAGE_SUBSYSTEM_WINDOWS_GUI},
+	{"obitd", "讣告 Obituary", []winres.Arch{winres.ArchAMD64, winres.ArchARM64}, pe.IMAGE_SUBSYSTEM_WINDOWS_GUI},
 	{"obit-gui", "小窗口", []winres.Arch{winres.ArchAMD64}, pe.IMAGE_SUBSYSTEM_WINDOWS_GUI},
 }
 

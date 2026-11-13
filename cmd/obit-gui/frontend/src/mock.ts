@@ -175,6 +175,7 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
       return wait({ policy });
     },
     PickFolder: () => wait(DL.replace("Downloads", "Videos\\Captures")),
+    ShowInFolder: () => wait(undefined),
     RemoveWatch: (path) => { const i = watches.findIndex((w) => w.path === path); if (i >= 0) watches.splice(i, 1); return wait({ action: "removed", changed: i >= 0 }); },
     Settings: () => wait({ ...settings }),
     PlanSettings: (mode, days) => plan("settings", [

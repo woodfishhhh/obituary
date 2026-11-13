@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 
+	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
 )
 
@@ -24,6 +25,19 @@ func (a *API) PickFolder() (string, error) {
 		return "", errors.New("no folder dialog in this window")
 	}
 	return pick()
+}
+
+// ShowInFolder opens the folder holding path, with it selected, so a
+// resurrected item can be found. It shows the item; it never opens or runs it.
+func (a *API) ShowInFolder(path string) error {
+	abs, err := pathutil.Abs(path)
+	if err != nil {
+		return err
+	}
+	if _, err := os.Lstat(abs); err != nil {
+		return err
+	}
+	return revealPath(abs)
 }
 
 // downloadsFolder is offered for folder policies when it exists.

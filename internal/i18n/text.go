@@ -23,7 +23,6 @@ const (
 	ReadGravesFailed
 	ReadUpcomingFailed
 	NoGraves
-	Restored
 	NoUpcoming
 	Mark
 	ResurrectLatest
@@ -53,6 +52,10 @@ const (
 	TodayAt
 	TomorrowAt
 	YesterdayAt
+	Resurrected
+	NotCompleted
+	Summary
+	SummaryPaused
 	keyCount
 )
 

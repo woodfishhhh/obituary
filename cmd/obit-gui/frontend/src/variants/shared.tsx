@@ -7,7 +7,7 @@ import { extendedTo, splitPath, when } from "../format";
 import { useLoad, useRefresh } from "../hooks";
 import { t } from "../i18n";
 import type { Burial, Item } from "../types";
-import { useBatch, useConfirm, useToast } from "../ui";
+import { useBatch, useConfirm, useResurrectReport } from "../ui";
 
 // ── Time ────────────────────────────────────────────────────────────────
 
@@ -73,7 +73,7 @@ export function useGraves(filter: string) {
   const { version, bump } = useRefresh();
   const confirm = useConfirm();
   const report = useBatch();
-  const toast = useToast();
+  const resurrected = useResurrectReport();
   const q = useLoad(() => api.Graveyard({ filter, limit: 200, after: "" }), [api, filter, version]);
   const rows = q.data?.rows ?? [];
   const graves = useMemo(() => rows.filter((r) => r.status === "buried" && r.burial).map((r) => r.burial!), [rows]);
@@ -94,10 +94,8 @@ export function useGraves(filter: string) {
     if (!ok) return false;
     const reply = await api[method](ids.map((id) => `#${id}`));
     await before?.();
-    // One resurrected item: say where it is now, so it can be found.
-    const one = !purging && !reply.error && reply.results?.length === 1 && !reply.results[0].error ? reply.results[0].path : undefined;
-    if (one) toast(t("grave.backAt", one));
-    else report(reply, purging ? t("purge") : t("resurrect"));
+    if (purging) report(reply, t("purge"));
+    else resurrected(reply);
     sel.clear();
     bump();
     return true;

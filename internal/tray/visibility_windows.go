@@ -39,9 +39,11 @@ func setVisible(enabled bool) error {
 }
 
 // showBalloon reports a menu action's result from the icon. Windows 10 and 11
-// show it as a toast, which needs no registered AppUserModelID this way.
+// show it as a toast, which needs no registered AppUserModelID this way: the
+// header carries obitd.exe's FileDescription and icon (scripts/winres), and
+// NIIF_USER with no balloon icon puts the tray's own icon in the body.
 func showBalloon(title, text string) error {
-	data := iconState{Flags: 0x10, InfoFlags: 0x11} // NIF_INFO; NIIF_INFO | NIIF_NOSOUND
+	data := iconState{Flags: 0x10, InfoFlags: 0x34} // NIF_INFO; NIIF_USER | NIIF_NOSOUND | NIIF_LARGE_ICON
 	copy(data.InfoTitle[:len(data.InfoTitle)-1], utf16.Encode([]rune(title)))
 	copy(data.Info[:len(data.Info)-1], utf16.Encode([]rune(text)))
 	return modifyIcon(data)

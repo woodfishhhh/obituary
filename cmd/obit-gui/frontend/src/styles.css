@@ -239,9 +239,14 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 16px 22px 20px; }
 .diff { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 14px; margin-top: 10px; font-size: 0.9em; }
 .diff s { color: var(--muted); }
-.toasts { position: absolute; right: 18px; bottom: 18px; z-index: 50; display: grid; gap: 8px; }
+.toasts { position: absolute; right: 18px; bottom: calc(18px + var(--banner-space, 0px)); z-index: 50; display: grid; gap: 8px; }
 .toast { max-width: 380px; padding: 10px 14px; border-radius: var(--radius-sm); background: var(--text); color: var(--bg); font-size: 0.9em; box-shadow: var(--shadow-pop); animation: pop 180ms ease-out; }
 .toast.error { background: var(--danger); color: #fff; }
+.toast { display: flex; align-items: center; gap: 12px; }
+.toast > span { min-width: 0; overflow-wrap: anywhere; }
+.toast-act { flex: none; padding: 3px 11px; border: 1px solid color-mix(in srgb, currentColor 45%, transparent); border-radius: 999px; background: none; color: inherit; font: inherit; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.toast-act:hover { background: color-mix(in srgb, currentColor 14%, transparent); }
+.toast-act:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 @keyframes fade { from { opacity: 0; } }
 @keyframes pop { from { opacity: 0; transform: translate(-50%, calc(-50% + 6px)); } }
 .toast { animation-name: rise; }

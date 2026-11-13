@@ -17,6 +17,7 @@ import "./calendar.css";
 const startOfDay = (t: number) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return +d; };
 const dayIndex = (iso: string) => Math.max(0, Math.round((startOfDay(+new Date(iso)) - startOfDay(Date.now())) / DAY));
 const DAYS = 8;
+const PER_COLUMN = 5; // cards a day shows in one column before it widens
 
 export default function CalendarShell({ page, nav, setPage, summary: s, refresh }: ShellProps) {
   const today = new Date();
@@ -64,9 +65,12 @@ function Board({ entries, has, toggle, onMove, empty }: {
     onDrop: (e: DragEvent) => { e.preventDefault(); setOver(null); if (drag && i > drag.from) onMove(drag.id, drag.from, i); setDrag(null); },
   } : {});
 
-  // Empty days stay as narrow drop targets; days with files get the room.
-  const filled = (i: number) => i === 0 || i === DAYS || entries.some((e) => Math.min(DAYS, dayIndex(e.at)) === i);
-  const widths = entries.length ? Array.from({ length: cols }, (_, i) => (filled(i) ? "minmax(0, 1fr)" : "minmax(0, 0.5fr)")).join(" ") : `repeat(${cols}, minmax(0, 1fr))`;
+  // Empty days stay as narrow drop targets; days with files get the room,
+  // and a crowded day (a whole cleanup buried at once) widens so its cards
+  // sit side by side instead of in one long scrolling strip.
+  const count = (i: number) => entries.filter((e) => Math.min(DAYS, dayIndex(e.at)) === i).length;
+  const share = (i: number) => (count(i) ? Math.min(4, Math.ceil(count(i) / PER_COLUMN)) : i === 0 || i === DAYS ? 1 : 0.5);
+  const widths = entries.length ? Array.from({ length: cols }, (_, i) => `minmax(0, ${share(i)}fr)`).join(" ") : `repeat(${cols}, minmax(0, 1fr))`;
   return (
     <div className="cal-board" style={{ gridTemplateColumns: widths }}>
       {Array.from({ length: cols }, (_, i) => {
@@ -90,8 +94,8 @@ function Board({ entries, has, toggle, onMove, empty }: {
                   onDragStart={(ev) => { ev.dataTransfer.effectAllowed = "move"; ev.dataTransfer.setData("text/plain", String(e.id)); setDrag({ id: e.id, from: Math.min(DAYS - 1, dayIndex(e.at)) }); }}
                   onDragEnd={() => { setDrag(null); setOver(null); }}>
                   <span className="cal-time">{isLater ? md(e.at) : e.soon ? t("cal.in", span(+new Date(e.at) - now)) : hm(e.at)}</span>
-                  <span className="cal-name">{e.name}</span>
-                  <span className="cal-meta">{e.meta}</span>
+                  <Name name={e.name} />
+                  <span className="cal-meta">{e.meta.split(/(?<=[，,] ?)/).map((part, n) => <span key={n}>{part}</span>)}</span>
                   {e.note ? <span className="cal-note">{e.note}</span> : null}
                 </button>
               ))}
@@ -103,6 +107,15 @@ function Board({ entries, has, toggle, onMove, empty }: {
       {entries.length === 0 ? <div className="cal-empty">{empty}</div> : null}
     </div>
   );
+}
+
+// Cut so the last few characters and the extension survive the ellipsis:
+// "screenshot-che…kout.png". The card's tooltip has the full path.
+function Name({ name }: { name: string }) {
+  const dot = name.lastIndexOf(".");
+  const keep = Math.max(8, dot > 0 ? name.length - dot + 4 : 0);
+  const cut = name.length > keep + 4 ? name.length - keep : name.length;
+  return <span className="cal-name"><span>{name.slice(0, cut)}</span><span>{name.slice(cut)}</span></span>;
 }
 
 function Head({ title, deck, children }: { title: string; deck: ReactNode; children?: ReactNode }) {

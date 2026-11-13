@@ -28,7 +28,6 @@ var english = map[Key]string{
 	ReadGravesFailed:    "Could not read graveyard: %s",
 	ReadUpcomingFailed:  "Could not read upcoming items: %s",
 	NoGraves:            "No graveyard records",
-	Restored:            "Resurrected: %s %s",
 	NoUpcoming:          "No items expire within 24 hours",
 	Mark:                "Give a lifespan",
 	ResurrectLatest:     "Resurrect the most recent burial",
@@ -49,4 +48,8 @@ var english = map[Key]string{
 	TodayAt:             "Today %s",
 	TomorrowAt:          "Tomorrow %s",
 	YesterdayAt:         "Yesterday %s",
+	Resurrected:         "Resurrected",
+	NotCompleted:        "Not completed",
+	Summary:             "Next 24 hours: %d to bury · %d in the graveyard",
+	SummaryPaused:       "Paused, nothing is buried · %d in the graveyard",
 }

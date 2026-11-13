@@ -61,9 +61,6 @@ func makeMenu(r *app.Resident, gui guiAction, ui menuUI, language func() i18n.La
 
 func (m *menu) localize() {
 	language := m.loadLanguage()
-	if language != m.language {
-		m.status.SetTitle(language.Text(i18n.AppName))
-	}
 	m.language = language
 	m.openGUI.localize(language)
 	m.gui.SetTitle(m.openGUI.title)

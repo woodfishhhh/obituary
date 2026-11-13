@@ -36,6 +36,9 @@ func TestTrayRecentIsBoundedAndUpcomingIsOrdered(t *testing.T) {
 	if err != nil || len(items) != 2 || items[0].ID != 22 || items[1].ID != 21 {
 		t.Fatalf("upcoming: %v %v", items, err)
 	}
+	if due, graves, err := r.Counts(now); err != nil || due != 2 || graves != 12 {
+		t.Fatalf("counts: %d %d %v", due, graves, err)
+	}
 }
 
 func TestTrayRestoreOnlySelectedIDAndPreservesConflict(t *testing.T) {

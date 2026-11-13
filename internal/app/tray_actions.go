@@ -43,6 +43,22 @@ func (r *Resident) Restore(id int64) (core.GraveResult, error) {
 	return result, nil
 }
 
+// Counts feeds the tray's summary row: items due within a day, and graves.
+func (r *Resident) Counts(now time.Time) (due, graves int, err error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	state, err := r.Service.Store.Inspect()
+	if err != nil {
+		return 0, 0, err
+	}
+	for _, item := range state.Items {
+		if !item.ExpiresAt.After(now.Add(24 * time.Hour)) {
+			due++
+		}
+	}
+	return due, len(state.Burials), nil
+}
+
 func (r *Resident) Upcoming(now time.Time) ([]core.Item, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

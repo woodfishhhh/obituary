@@ -5,7 +5,7 @@ import { bytes, duration, noteText, splitPath, when } from "../format";
 import { useLoad, useRefresh } from "../hooks";
 import type { Burial, Item } from "../types";
 import { t } from "../i18n";
-import { Button, Seg, useBatch, useConfirm } from "../ui";
+import { Button, Seg, useBatch, useConfirm, useResurrectReport } from "../ui";
 import { extendSpans } from "../variants/shared";
 import Graveyard from "./Graveyard";
 import Upcoming from "./Upcoming";
@@ -137,6 +137,7 @@ function FateCard({ focus, w, h, onClose }: { focus: Focus; w: number; h: number
   const { bump } = useRefresh();
   const confirm = useConfirm();
   const report = useBatch();
+  const resurrected = useResurrectReport();
   const [span, setSpan] = useState("1d");
   const path = focus.kind === "soul" ? focus.it.path : focus.b.path;
   const { name, folder } = splitPath(path);
@@ -167,7 +168,7 @@ function FateCard({ focus, w, h, onClose }: { focus: Focus; w: number; h: number
         <>
           <p>{t("hz.graveText", when(focus.b.buriedAt), focus.b.isDir, bytes(focus.b.size), duration(+new Date(focus.b.purgeAt) - Date.now()), when(focus.b.purgeAt))}</p>
           <div className="fate-actions">
-            <Button kind="gold" icon={Sparkles} onClick={async () => { report(await api.Resurrect([`#${focus.b.id}`]), t("resurrect")); finish(); }}>{t("resurrect")}</Button>
+            <Button kind="gold" icon={Sparkles} onClick={async () => { resurrected(await api.Resurrect([`#${focus.b.id}`])); finish(); }}>{t("resurrect")}</Button>
             <Button kind="danger" icon={Flame} onClick={async () => {
               if (!await confirm({ title: t("ask.purge", 1), body: <><p>{t("ask.purgeBody")}</p><ul><li>{path}</li></ul></>, ok: t("purge"), danger: true })) return;
               report(await api.Purge([`#${focus.b.id}`]), t("purge")); finish();

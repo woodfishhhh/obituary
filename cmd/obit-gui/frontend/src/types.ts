@@ -229,6 +229,8 @@ export interface Api {
   SetWatch(path: string, lifespan: string, age: string): Promise<{ policy: WatchPolicy; error?: string }>;
   // The native folder dialog; "" when cancelled. Missing on older backends.
   PickFolder?(): Promise<string>;
+  // Opens Explorer at the item's folder with it selected. Missing on older backends.
+  ShowInFolder?(path: string): Promise<void>;
   RemoveWatch(path: string): Promise<{ action: string; changed: boolean }>;
   Settings(): Promise<Settings>;
   PlanSettings(mode: string, retentionDays: number): Promise<Plan>;

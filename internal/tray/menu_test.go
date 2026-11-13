@@ -49,12 +49,13 @@ func TestMenuRefreshUsesCurrentLanguage(t *testing.T) {
 		}
 	}()
 	for _, tc := range []struct {
-		language                        string
-		titles                          []string
-		empty, upcoming, paused, resume string
+		language                              string
+		titles                                []string
+		empty, upcoming, paused, resume, name string
+		pausedSummary                         string
 	}{
-		{"zh-CN", []string{"打开讣告", "讣告 Obituary", "最近下葬的（点一条复活）", "即将下葬的（24 小时内）", "暂停", "打开数据目录", "退出"}, "暂无墓地记录", "24 小时内没有要下葬的", "讣告 Obituary（已暂停）", "继续"},
-		{"en", []string{"Open Obituary", "Obituary", "Recently buried (click one to resurrect)", "Expiring soon (within 24 hours)", "Pause", "Open data directory", "Quit"}, "No graveyard records", "No items expire within 24 hours", "Obituary (paused)", "Resume"},
+		{"zh-CN", []string{"打开讣告", "24 小时内下葬 0 项 · 墓地 0 座", "最近下葬的（点一条复活）", "即将下葬的（24 小时内）", "暂停", "打开数据目录", "退出"}, "暂无墓地记录", "24 小时内没有要下葬的", "讣告 Obituary（已暂停）", "继续", "讣告 Obituary", "已暂停，不会自动下葬 · 墓地 0 座"},
+		{"en", []string{"Open Obituary", "Next 24 hours: 0 to bury · 0 in the graveyard", "Recently buried (click one to resurrect)", "Expiring soon (within 24 hours)", "Pause", "Open data directory", "Quit"}, "No graveyard records", "No items expire within 24 hours", "Obituary (paused)", "Resume", "Obituary", "Paused, nothing is buried · 0 in the graveyard"},
 	} {
 		if err := os.WriteFile(filepath.Join(root, "config.toml"), []byte("[ui]\nlanguage='"+tc.language+"'\n"), 0o600); err != nil {
 			t.Fatal(err)
@@ -67,7 +68,7 @@ func TestMenuRefreshUsesCurrentLanguage(t *testing.T) {
 				got = append(got, item.title)
 			}
 		}
-		if !reflect.DeepEqual(got, tc.titles) || tooltip != tc.titles[1] {
+		if !reflect.DeepEqual(got, tc.titles) || tooltip != tc.name {
 			t.Fatalf("%s menu: %q tooltip=%s", tc.language, got, tooltip)
 		}
 		if m.rows[0].(*fakeItem).title != tc.empty || m.rows[1].(*fakeItem).title != tc.upcoming {
@@ -89,7 +90,7 @@ func TestMenuRefreshUsesCurrentLanguage(t *testing.T) {
 			t.Fatal(err)
 		}
 		m.refresh(context.Background())
-		if tooltip != tc.paused || m.pause.(*fakeItem).title != tc.resume {
+		if tooltip != tc.paused || m.pause.(*fakeItem).title != tc.resume || m.status.(*fakeItem).title != tc.pausedSummary {
 			t.Fatal("paused text did not refresh")
 		}
 		if err := app.SetPaused(r.Service.Store.Home, false); err != nil {
