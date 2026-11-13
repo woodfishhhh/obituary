@@ -33,7 +33,7 @@ func NewCmd() *cobra.Command {
 				return nil
 			}
 			for _, p := range state.Proposals {
-				fmt.Printf("#%d %s  %s  %s, %s\n", p.ID, p.Kind, p.Project, textutil.Count(len(p.Candidates), "item"), cmdutil.HumanBytes(p.Size()))
+				fmt.Printf("#%d %s  %s  %s, %s\n", p.ID, p.Kind, p.Project, textutil.Count(len(p.Candidates), "item"), textutil.Bytes(p.Size()))
 				for _, c := range p.Candidates {
 					rule := ""
 					if c.Reason != "" {
@@ -42,7 +42,7 @@ func NewCmd() *cobra.Command {
 					if c.Rule != "" {
 						rule = "  by " + c.Rule
 					}
-					fmt.Printf("    %-5s %9s  %s%s\n", c.Lifespan, cmdutil.HumanBytes(c.Size), c.Path, rule)
+					fmt.Printf("    %-5s %9s  %s%s\n", c.Lifespan, textutil.Bytes(c.Size), c.Path, rule)
 				}
 			}
 			fmt.Println("\nobit approve <id> approves the displayed action (expired folders are buried); obit reject <id> declines it (expired folders are spared).")

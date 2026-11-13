@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/textutil"
 )
 
 // isTerminal is replaced in tests; piped input can never confirm a purge.
@@ -101,7 +102,7 @@ func report(results []core.GraveResult, err error, dryRun, asJSON bool) error {
 			}
 			return fmt.Sprintf("#%d resurrected  %s (confirmed)", r.Burial.ID, r.Path)
 		}
-		return fmt.Sprintf("#%d %s%s  %s  (%s)", r.Burial.ID, verb, r.Action, r.Burial.Path, cmdutil.HumanBytes(r.Burial.Size))
+		return fmt.Sprintf("#%d %s%s  %s  (%s)", r.Burial.ID, verb, r.Action, r.Burial.Path, textutil.Bytes(r.Burial.Size))
 	})
 	if err := cmdutil.Committed(err); err != nil {
 		return err

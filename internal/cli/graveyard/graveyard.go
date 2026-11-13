@@ -12,6 +12,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/core/lifespan"
+	"github.com/woodfishhhh/obituary/internal/textutil"
 )
 
 type GraveyardListing struct {
@@ -105,7 +106,7 @@ func printBurial(w io.Writer, b ledger.Burial) {
 		purge = "never (identity mismatch)"
 	}
 	fmt.Fprintf(w, "#%d\t%s\t%s\t%s\t%s", b.ID, b.BuriedAt.Local().Format(cmdutil.TimeLayout),
-		purge, cmdutil.HumanBytes(b.Size), b.Path)
+		purge, textutil.Bytes(b.Size), b.Path)
 	if len(b.Contains) > 0 {
 		fmt.Fprint(w, "  contains")
 		for _, id := range b.Contains {
