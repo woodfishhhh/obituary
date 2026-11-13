@@ -7,7 +7,7 @@
     </picture>
   </h1>
   <p>
-    <strong>Every file has a deadline.</strong><br>
+    <strong>讣告 · AI 的回收站</strong><br>
     AI 写下的垃圾到期自己走，AI 删掉的东西七天内都能找回。
   </p>
     <p>
@@ -35,7 +35,7 @@
   </picture>
 </p>
 
-为 AI agent 设计：agent 生成的调试脚本、日志、截图、测试产物，从生成那一刻起就带着寿命，用不着它「记得清理」，也不会被 `rm -rf` 误删。内部怎么运作见 [docs/architecture.md](docs/architecture.md)。
+讣告是 AI 的回收站，为 AI agent 设计：agent 生成的调试脚本、日志、截图、测试产物，从生成那一刻起就带着寿命，用不着它「记得清理」，也不会被 `rm -rf` 误删。内部怎么运作见 [docs/architecture.md](docs/architecture.md)。
 
 ## 为什么有讣告
 

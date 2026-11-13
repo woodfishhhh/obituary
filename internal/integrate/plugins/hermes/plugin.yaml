@@ -1,6 +1,6 @@
 name: obituary
 version: "1.0.0"
-description: Restorable deletion and file lifespans through the local Obituary CLI.
+description: "Obituary, the trash bin for AI agents: restorable deletion and file lifespans through the local CLI."
 hooks:
   - pre_llm_call
   - pre_tool_call

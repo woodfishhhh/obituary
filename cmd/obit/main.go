@@ -46,7 +46,7 @@ import (
 func main() {
 	root := &cobra.Command{
 		Use:           "obit",
-		Short:         "Obituary (讣告): give files a lifespan; when it runs out they are buried in a graveyard you can resurrect from",
+		Short:         "Obituary (讣告), the trash bin for AI agents: give files a lifespan; when it runs out they are buried in a graveyard you can resurrect from",
 		Version:       buildinfo.Version,
 		SilenceUsage:  true,
 		SilenceErrors: true,

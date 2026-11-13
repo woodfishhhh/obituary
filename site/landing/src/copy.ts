@@ -14,7 +14,7 @@ export const installCode = {
   winget: ["winget install woodfishhhh.Obituary"],
   script: [
     "irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1",
-    ".\\install.ps1 -Version 1.0.0",
+    ".\\install.ps1 -Version 1.1.1",
   ],
 } as const;
 export type Method = keyof typeof installCode;

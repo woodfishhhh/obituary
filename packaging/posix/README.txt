@@ -1,4 +1,4 @@
-Obituary
+Obituary — the trash bin for AI agents
 
 This archive contains obit and its companion obitd for the operating system
 and architecture in the archive name. Keep both executables together.

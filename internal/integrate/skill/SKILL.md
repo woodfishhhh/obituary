@@ -3,7 +3,7 @@ name: obituary
 description: Delete restorably and give scratch files a lifespan with Obituary (obit). Use before deleting any file or directory; when creating scratch space, debug scripts, logs, screenshots or test output that should not outlive the task; when a deletion command was denied by Obituary's delete guard; and when a file you expected is missing.
 ---
 
-# Obituary (讣告)
+# Obituary (讣告) — the trash bin for AI agents
 
 Obituary gives files and directories a lifespan. When it runs out they are buried in a graveyard, where they stay restorable for 7 days by default before they are purged. Anything you bury or delete through `obit` can be put back exactly where it was. The CLI is `obit`; it is on PATH.
 

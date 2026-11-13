@@ -100,7 +100,7 @@ export default defineConfig({
       lang: "zh-CN",
       title: "讣告 Obituary 文档",
       titleTemplate: ":title · 讣告",
-      description: "讣告 Obituary 的文档：给文件和文件夹设寿命，到期下葬进墓地，保留期内随时复活。",
+      description: "讣告 · AI 的回收站。讣告 Obituary 的文档：给文件和文件夹设寿命，到期下葬进墓地，保留期内随时复活。",
       themeConfig: {
         siteTitle: "讣告",
         logoLink: home.zh,
@@ -130,7 +130,7 @@ export default defineConfig({
       link: "/en/",
       title: "Obituary docs",
       titleTemplate: ":title · Obituary",
-      description: "Obituary's documentation: give files and folders a lifespan; when it runs out they are buried in a graveyard and can be resurrected during retention.",
+      description: "Obituary — the trash bin for AI agents. Obituary's documentation: give files and folders a lifespan; when it runs out they are buried in a graveyard and can be resurrected during retention.",
       themeConfig: {
         siteTitle: "Obituary",
         logoLink: home.en,

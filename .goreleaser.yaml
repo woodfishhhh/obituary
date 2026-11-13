@@ -147,7 +147,7 @@ winget:
     publisher_url: https://github.com/woodfishhhh
     publisher_support_url: https://github.com/woodfishhhh/obituary/issues
     homepage: https://github.com/woodfishhhh/obituary
-    short_description: Give files a lifespan and restore them from a graveyard.
+    short_description: The trash bin for AI agents. Give files a lifespan and restore them from a graveyard.
     license: MIT
     license_url: https://github.com/woodfishhhh/obituary/blob/main/LICENSE
     installation_notes: >-
@@ -173,7 +173,7 @@ homebrew_casks:
     directory: Casks
     skip_upload: true
     homepage: https://obituary.woodfish.site
-    description: Give files a lifespan and restore them from a graveyard
+    description: Trash bin for AI agents: files get a lifespan and stay restorable
     license: MIT
     url:
       template: "https://github.com/woodfishhhh/obituary/releases/download/v{{ .Version }}/{{ .ArtifactName }}"

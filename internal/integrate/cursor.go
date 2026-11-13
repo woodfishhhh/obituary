@@ -45,7 +45,7 @@ func planCursorRules(s Scope, dir string, hooks Change, uninstall bool) ([]Chang
 		return []Change{hooks, {Path: "Cursor User Rules (UI)", Action: "preserve", Manual: true, Detail: detail}}, nil
 	}
 	rules, err := PlanManagedAssets(s, []ManagedAsset{{Path: filepath.Join(dir, "rules", "obituary.mdc"), ID: "cursor-obituary-rule", Owner: "cursor", Version: "1",
-		Content: []byte("---\ndescription: Restorable deletion and file lifespans with Obituary\nalwaysApply: true\n---\n\n" + Awareness)}}, uninstall)
+		Content: []byte("---\ndescription: Obituary, the trash bin for AI agents — restorable deletion and file lifespans\nalwaysApply: true\n---\n\n" + Awareness)}}, uninstall)
 	if err != nil {
 		return nil, err
 	}

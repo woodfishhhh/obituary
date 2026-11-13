@@ -3,7 +3,7 @@
   "name": "obituary",
   "displayName": "Obituary",
   "version": "1.0.0",
-  "description": "Restorable deletion and file lifespans for local Windows workspaces.",
+  "description": "Obituary, the trash bin for AI agents: restorable deletion and file lifespans for local Windows workspaces.",
   "author": "Obituary contributors",
   "icon": "icon.png",
   "category": "Code",

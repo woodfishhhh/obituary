@@ -8,7 +8,7 @@ const ownedMarker = "<!-- obit:owned — written by obit init; obit init --unins
 // It is factual and short; hooks add live details.
 const Awareness = ownedMarker + `
 
-# Obituary (讣告)
+# Obituary (讣告) — the trash bin for AI agents
 
 Obituary gives files a lifespan. When it runs out they are buried in a
 graveyard, restorable with ` + "`obit resurrect <id>`" + ` until they are purged

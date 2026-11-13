@@ -1,6 +1,6 @@
 {
     "version": "GENERATED_BY_GORELEASER",
-    "description": "Give files a lifespan and restore them from a graveyard.",
+    "description": "The trash bin for AI agents. Give files a lifespan and restore them from a graveyard.",
     "homepage": "https://github.com/woodfishhhh/obituary",
     "license": "MIT",
     "architecture": {

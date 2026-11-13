@@ -7,7 +7,7 @@
     </picture>
   </h1>
   <p>
-    <strong>Every file has a deadline.</strong><br>
+    <strong>Obituary — the trash bin for AI agents</strong><br>
     What your AI leaves behind leaves on its own when it expires; what your AI deletes comes back for seven days.
   </p>
     <p>
@@ -35,7 +35,7 @@
   </picture>
 </p>
 
-Built for AI agents: the debug scripts, logs, screenshots and test output an agent produces carry a lifespan from the moment they are created. Nobody has to remember to clean up, and an agent's `rm -rf` no longer destroys anything for good. How it works inside: [docs/architecture.md](docs/architecture.md) (Chinese).
+Obituary is the trash bin for AI agents: the debug scripts, logs, screenshots and test output an agent produces carry a lifespan from the moment they are created. Nobody has to remember to clean up, and an agent's `rm -rf` no longer destroys anything for good. How it works inside: [docs/architecture.md](docs/architecture.md) (Chinese).
 
 ## Why Obituary
 
