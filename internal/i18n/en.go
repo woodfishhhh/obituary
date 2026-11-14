@@ -13,7 +13,7 @@ var english = map[Key]string{
 	AppName:             "Obituary",
 	OpenGUI:             "Open Obituary",
 	UpdateAvailable:     "New version available: %s",
-	MissingGUI:          "No usable obit-gui.exe; place it beside obitd.exe: %s",
+	MissingGUI:          "No usable obit-gui.exe; place it beside obitd.exe: %s. Run obit doctor to check.",
 	Recent:              "Recently buried (click one to resurrect)",
 	RecentHint:          "Select a record to resurrect it",
 	Upcoming:            "Expiring soon (within 24 hours)",

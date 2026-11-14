@@ -42,7 +42,6 @@ func makeMenu(r *app.Resident, gui guiAction, ui menuUI, language func() i18n.La
 	m.update = ui.addItem("", "")
 	m.update.Hide()
 	if !gui.enabled {
-		m.gui.Disable()
 		m.update.Disable()
 	}
 	m.status = ui.addItem("", "")

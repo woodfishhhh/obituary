@@ -34,11 +34,11 @@ func TestGUIMenuUsesSiblingExecutableAndInjectedLauncher(t *testing.T) {
 	}
 }
 
-func TestGUIMenuDisabledWhenExecutableMissing(t *testing.T) {
+func TestGUIActionReportsMissingExecutable(t *testing.T) {
 	called := false
 	action := newGUIAction(filepath.Join(t.TempDir(), "obitd.exe"), func(string) error { called = true; return nil })
 	action.localize(i18n.English)
-	if action.enabled || !strings.Contains(action.tooltip, "obit-gui.exe") {
+	if action.enabled || !strings.Contains(action.tooltip, "obit-gui.exe") || !strings.Contains(action.tooltip, "obit doctor") {
 		t.Fatalf("missing binary menu: %+v", action)
 	}
 	if err := action.open(); err == nil || called {

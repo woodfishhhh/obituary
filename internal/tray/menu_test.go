@@ -83,7 +83,7 @@ func TestMenuRefreshUsesCurrentLanguage(t *testing.T) {
 		if !items.children[1].hidden || !items.children[1].disabled {
 			t.Fatal("release item shown without a release, or enabled without a window")
 		}
-		if !items.children[0].disabled || !strings.Contains(items.children[0].tooltip, "obit-gui.exe") || items.children[3].tooltip == "" || items.children[5].tooltip == "" || items.children[7].tooltip == "" {
+		if items.children[0].disabled || !strings.Contains(items.children[0].tooltip, "obit-gui.exe") || items.children[3].tooltip == "" || items.children[5].tooltip == "" || items.children[7].tooltip == "" {
 			t.Fatal("missing action state or hints")
 		}
 		if err := app.SetPaused(r.Service.Store.Home, true); err != nil {

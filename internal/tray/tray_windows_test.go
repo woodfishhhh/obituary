@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -110,4 +111,40 @@ func TestFailedClickIsToldAfterTheMenuCloses(t *testing.T) {
 	}
 	cancel()
 	<-done
+}
+
+func TestMissingGUIClickNotifiesWithoutLaunching(t *testing.T) {
+	for _, language := range []i18n.Language{i18n.Chinese, i18n.English} {
+		t.Run(string(language), func(t *testing.T) {
+			root := t.TempDir()
+			items, told := &fakeItem{}, make(chan string, 1)
+			r := &app.Resident{Service: &core.Service{Store: core.Store{Home: root}}}
+			gui := newGUIAction(filepath.Join(root, "obitd.exe"), func(string) error {
+				t.Error("missing executable launched")
+				return nil
+			})
+			m := makeMenu(r, gui, menuUI{addItem: items.AddSubMenuItem, addSeparator: func() {}, tooltip: func(string) {},
+				notify: func(title, text string) error { told <- title + " | " + text; return nil }}, func() i18n.Language { return language })
+			if m.gui.(*fakeItem).disabled {
+				t.Fatal("Open must stay clickable when the GUI is missing")
+			}
+			ctx, cancel := context.WithCancel(context.Background())
+			done := make(chan struct{})
+			go func() { defer close(done); m.run(ctx, cancel, make(chan struct{}), log.New(io.Discard, "", 0)) }()
+			defer func() { cancel(); <-done }()
+			select {
+			case m.gui.(*fakeItem).clicked <- struct{}{}:
+			case <-time.After(time.Second):
+				t.Fatal("menu did not accept click")
+			}
+			select {
+			case got := <-told:
+				if !strings.Contains(got, gui.path) || !strings.Contains(got, "obit doctor") || !strings.HasPrefix(got, language.Text(i18n.NotCompleted)) {
+					t.Fatal(got)
+				}
+			case <-time.After(time.Second):
+				t.Fatal("missing GUI was not reported")
+			}
+		})
+	}
 }

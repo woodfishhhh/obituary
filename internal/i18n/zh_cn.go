@@ -13,7 +13,7 @@ var chinese = map[Key]string{
 	AppName:             "讣告 Obituary",
 	OpenGUI:             "打开讣告",
 	UpdateAvailable:     "发现新版本 %s",
-	MissingGUI:          "缺少可用的 obit-gui.exe；请放在 obitd.exe 同目录：%s",
+	MissingGUI:          "缺少可用的 obit-gui.exe；请放在 obitd.exe 同目录：%s。运行 obit doctor 检查。",
 	Recent:              "最近下葬的（点一条复活）",
 	RecentHint:          "点选一条记录复活",
 	Upcoming:            "即将下葬的（24 小时内）",
