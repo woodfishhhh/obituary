@@ -1,7 +1,10 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-Installs a specific Obituary release after mandatory SHA-256 verification.
+Installs an Obituary release (the latest unless -Version names one) after
+mandatory SHA-256 verification.
+.EXAMPLE
+./install.ps1
 .EXAMPLE
 ./install.ps1 -Version 1.2.3 -WhatIf
 .EXAMPLE
@@ -21,7 +24,7 @@ place as the archive.
 #>
 [CmdletBinding(SupportsShouldProcess = $true, DefaultParameterSetName = 'Install')]
 param(
-    [Parameter(Mandatory = $true, ParameterSetName = 'Install')]
+    [Parameter(ParameterSetName = 'Install')]
     [ValidatePattern('^v?[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.+-]+)?$')]
     [string]$Version,
 
@@ -63,6 +66,19 @@ if (-not $Architecture) {
     }
 }
 $Architecture = $Architecture.ToLowerInvariant()
+if (-not $Uninstall -and -not $Version) {
+    if ($BaseUrl) { throw '-BaseUrl needs -Version.' }
+    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+    # GitHub's API and the mirror's latest.json carry the same release record.
+    $latest = @('https://cn.obituary.woodfish.site/download/latest.json')
+    if (-not $Mirror) { $latest = @('https://api.github.com/repos/woodfishhhh/obituary/releases/latest') + $latest }
+    foreach ($source in $latest) {
+        try { $Version = [string](Invoke-RestMethod -UseBasicParsing -Uri $source -TimeoutSec 10).tag_name } catch { $Version = '' }
+        if ($Version) { break }
+    }
+    if ($Version -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.+-]+)?$') { throw 'Could not look up the latest release; pass -Version.' }
+    Write-Output "Latest release: $($Version -replace '^v', '')"
+}
 if (-not $Uninstall) { $Version = $Version -replace '^v', '' }
 # A mirror only replaces the default source; an explicit BaseUrl is final.
 $fallbackUrl = $null
@@ -372,6 +388,46 @@ function Uninstall-ReleaseFiles {
 
 if ($Uninstall) { Uninstall-ReleaseFiles; return }
 
+# Some routes cap each connection (about 4 Mbit/s into mainland China), so the
+# archive comes as four byte ranges at once. A server that ignores ranges, a
+# failed part or a wrong total size falls back to one stream; the SHA-256 check
+# below covers either way.
+function Get-Archive([string]$Uri, [string]$OutFile) {
+    try {
+        Add-Type -AssemblyName System.Net.Http
+        $client = New-Object System.Net.Http.HttpClient
+        $client.Timeout = [TimeSpan]::FromMinutes(10)
+        try {
+            $head = $client.SendAsync((New-Object System.Net.Http.HttpRequestMessage ([System.Net.Http.HttpMethod]::Head), $Uri)).GetAwaiter().GetResult()
+            $size = $head.Content.Headers.ContentLength
+            if (-not $head.IsSuccessStatusCode -or -not $size -or $size -lt 4MB) { throw 'the server reported no size' }
+            $tasks = foreach ($i in 0..3) {
+                $request = New-Object System.Net.Http.HttpRequestMessage ([System.Net.Http.HttpMethod]::Get), $Uri
+                $from = [long][math]::Floor($size * $i / 4)
+                $to = [long][math]::Floor($size * ($i + 1) / 4) - 1
+                $request.Headers.Range = New-Object System.Net.Http.Headers.RangeHeaderValue $from, $to
+                $client.SendAsync($request)
+            }
+            [System.Threading.Tasks.Task]::WaitAll([System.Threading.Tasks.Task[]]$tasks)
+            $parts = foreach ($task in $tasks) {
+                $response = $task.Result
+                if ([int]$response.StatusCode -ne 206) { throw "a range request returned $([int]$response.StatusCode)" }
+                , $response.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult()
+            }
+            if (($parts | Measure-Object -Property Length -Sum).Sum -ne $size) { throw 'the parts do not add up' }
+            $stream = [IO.File]::Open($OutFile, [IO.FileMode]::CreateNew)
+            try { foreach ($part in $parts) { $stream.Write($part, 0, $part.Length) } } finally { $stream.Dispose() }
+            return
+        }
+        finally { $client.Dispose() }
+    }
+    catch {
+        if (Test-Path -LiteralPath $OutFile) { Remove-Item -LiteralPath $OutFile }
+        Write-Output "Parallel download did not work ($($_.Exception.Message)); using one connection."
+    }
+    Invoke-WebRequest -UseBasicParsing -Uri $Uri -OutFile $OutFile
+}
+
 function Install-ReleaseFiles($Expanded, $Names) {
     $pins = [ObituaryInstall]::PinDirectories($InstallDir)
     $transaction = $null
@@ -458,7 +514,7 @@ try {
     } else {
         Invoke-WebRequest -UseBasicParsing -Uri "$source/checksums.txt" -OutFile $checksums
     }
-    Invoke-WebRequest -UseBasicParsing -Uri "$source/$archiveName" -OutFile $archive
+    Get-Archive "$source/$archiveName" $archive
 
     $pattern = '^(?<Hash>[0-9a-fA-F]{64})\s+\*?' + [regex]::Escape($archiveName) + '$'
     $expected = @(Get-Content -LiteralPath $checksums | ForEach-Object {

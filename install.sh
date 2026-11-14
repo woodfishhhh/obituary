@@ -4,7 +4,8 @@ set -euo pipefail
 
 usage() {
   cat <<'USAGE'
-Usage: bash install.sh --version VERSION [options]
+Usage: bash install.sh [options]
+  --version VERSION   Release to install (default: the latest release)
   --install-dir DIR   Install obit and obitd (default: ~/.local/bin)
   --architecture ARCH  amd64 or arm64 (default: native architecture)
   --mirror cn        Download directly from the mainland China mirror
@@ -34,6 +35,21 @@ while [ "$#" -gt 0 ]; do
     *) fail "Unknown option: $1" ;;
   esac
 done
+case "$mirror" in ''|cn) ;; *) fail 'Mirror must be cn' ;; esac
+[ -z "$mirror" ] || [ -z "$base_url" ] || fail 'Use either --mirror or --base-url'
+# GitHub's API and the mirror's latest.json carry the same release record.
+latest_version() {
+  curl -fsSL --max-time 10 "$1" | grep -o '"tag_name": *"v[^"]*"' | head -n 1 | sed 's/.*"v//; s/"$//'
+}
+if [ -z "$version" ]; then
+  [ -z "$base_url" ] || fail '--base-url needs --version'
+  mirror_latest=https://cn.obituary.woodfish.site/download/latest.json
+  if [ "$mirror" = cn ]; then version=$(latest_version "$mirror_latest") || version=''
+  else version=$(latest_version https://api.github.com/repos/woodfishhhh/obituary/releases/latest) || version=$(latest_version "$mirror_latest") || version=''
+  fi
+  [ -n "$version" ] || fail 'Could not look up the latest release; pass --version'
+  printf 'Latest release: %s\n' "$version"
+fi
 [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.+-]+)?$ ]] || fail 'A valid --version is required'
 case "$(uname -s)" in
   Darwin) platform=darwin ;;
@@ -48,8 +64,6 @@ if [ -z "$architecture" ]; then
   esac
 fi
 case "$architecture" in amd64|arm64) ;; *) fail 'Architecture must be amd64 or arm64' ;; esac
-case "$mirror" in ''|cn) ;; *) fail 'Mirror must be cn' ;; esac
-[ -z "$mirror" ] || [ -z "$base_url" ] || fail 'Use either --mirror or --base-url'
 mirror_url="https://cn.obituary.woodfish.site/download/v$version"
 fallback='' download_source=custom
 if [ -z "$base_url" ]; then
@@ -76,11 +90,33 @@ work=$(mktemp -d "${TMPDIR:-/tmp}/obituary-install.XXXXXX")
 transaction=''
 cleanup() {
   # Only our exclusive scratch files are removed; failed transactions stay recoverable.
-  rm -f -- "$work/checksums.txt" "$work/archive.tar.gz" "$work/entries" "$work/obit" "$work/obitd"
+  rm -f -- "$work/checksums.txt" "$work/archive.tar.gz" "$work"/archive.tar.gz.part[0-3] "$work/entries" "$work/obit" "$work/obitd"
   rmdir -- "$work"
 }
 trap cleanup EXIT
 fetch() { curl --fail --silent --show-error --location --proto '=https,http' --proto-redir '=https,http' "$@"; }
+# Some routes cap each connection (about 4 Mbit/s into mainland China), so a
+# large archive comes as four byte ranges at once. A server that ignores
+# ranges, a failed part or a wrong total size falls back to one stream; the
+# SHA-256 check below covers either way.
+fetch_parallel() { # url destination
+  local url=$1 dest=$2 size i ok=true pids=()
+  size=$(fetch --head --max-time 15 "$url" | tr -d '\r' | awk 'tolower($1) == "content-length:" { n = $2 } END { print n }') || size=''
+  if [[ "$size" =~ ^[0-9]+$ ]] && [ "$size" -ge 4194304 ]; then
+    for i in 0 1 2 3; do
+      fetch --range "$(( size * i / 4 ))-$(( size * (i + 1) / 4 - 1 ))" "$url" -o "$dest.part$i" &
+      pids+=("$!")
+    done
+    for i in "${pids[@]}"; do wait "$i" || ok=false; done
+    if "$ok" && cat "$dest.part0" "$dest.part1" "$dest.part2" "$dest.part3" > "$dest" && [ "$(wc -c < "$dest" | tr -d ' ')" = "$size" ]; then
+      rm -f -- "$dest".part[0-3]
+      return 0
+    fi
+    rm -f -- "$dest" "$dest".part[0-3]
+    printf 'Parallel download did not work; using one connection\n'
+  fi
+  fetch "$url" -o "$dest"
+}
 if [ -n "$fallback" ]; then
   if fetch --max-time 10 "$base_url/checksums.txt" -o "$work/checksums.txt"; then :
   else
@@ -92,7 +128,7 @@ if [ -n "$fallback" ]; then
     fetch "$base_url/checksums.txt" -o "$work/checksums.txt"
   fi
 else fetch "$base_url/checksums.txt" -o "$work/checksums.txt"; fi
-fetch "$base_url/$archive" -o "$work/archive.tar.gz"
+fetch_parallel "$base_url/$archive" "$work/archive.tar.gz"
 expected=$(awk -v file="$archive" '
   { sub(/\r$/, ""); name=$2; sub(/^\*/, "", name) }
   name == file { count++; if (length($1) != 64 || $1 ~ /[^0-9a-fA-F]/ || NF != 2) bad=1; value=tolower($1) }

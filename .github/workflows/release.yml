@@ -95,8 +95,9 @@ jobs:
   mirror:
     needs: publish
     runs-on: ubuntu-latest
-    # Uploading the archives to the mainland server from a US runner is slow.
-    timeout-minutes: 40
+    # A fallback: scripts/mirror-release.sh uploads through a computer in China
+    # in minutes, while this crosses the border at about 25 KB/s in the evening.
+    timeout-minutes: 90
     permissions: {}
     steps:
       - id: key
