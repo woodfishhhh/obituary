@@ -38,6 +38,12 @@ type Options struct {
 	Session  string
 	DryRun   bool
 	Observed *core.Observation // hook's original object, checked at ledger commit
+	// Written marks paths a hook reported the agent writing in Session.
+	Written bool
+	// AutoClass records a receipt: registered without asking (see directClass).
+	AutoClass string
+	// regenerable holds the session's fresh, Git-ignored regenerable paths.
+	regenerable map[string]bool
 }
 
 // Decision is what happened to one path.
@@ -156,7 +162,7 @@ func (e *Engine) registerDecision(d Decision, source string, opts Options, state
 	results, err := e.Svc.Add([]string{d.Unit}, core.AddOptions{
 		ExpiresAt: e.now().Add(lifespan), Source: source, Project: proj.Root,
 		Session: opts.Session, Note: "rule " + d.Rule, OnlyNew: true,
-		Observed: opts.Observed,
+		Observed: opts.Observed, AutoClass: opts.AutoClass,
 	})
 	if err != nil && results == nil {
 		return d, err

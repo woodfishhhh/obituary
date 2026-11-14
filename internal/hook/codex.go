@@ -22,6 +22,7 @@ type codexInput struct {
 	Cwd       string         `json:"cwd"`
 	Event     string         `json:"hook_event_name"`
 	Source    string         `json:"source"`
+	StopHook  bool           `json:"stop_hook_active"`
 	ToolName  string         `json:"tool_name"`
 	ToolInput map[string]any `json:"tool_input"`
 }
@@ -63,6 +64,8 @@ func (codexAdapter) Decode(raw []byte, _ Invocation) (Event, error) {
 		}
 	}
 	ev := Event{Name: input.Event, Tool: input.ToolName, Session: core.NormalizeSession(input.SessionID), Cwd: cwd, Source: input.Source}
+	// Codex Stop has no additionalContext; block + reason continues the turn.
+	ev.CanContinue, ev.StopActive = input.Event == "Stop", input.StopHook
 	ev.References, ev.Writing = fileReferences(input.ToolName, input.ToolInput)
 	if input.Event == "PreToolUse" {
 		ev.Cwd = codexWorkdir(input.Cwd, firstString(input.ToolInput, "workdir", "cwd"))
@@ -100,7 +103,7 @@ func init() {
 		DeleteGuard:      Support{Level: Supported, Detail: "Bash/PowerShell envelopes or an owner-declared Windows shell; opt-in with --guard-rm"},
 		WriteObservation: Support{Level: Supported}, SessionStart: Support{Level: Supported},
 		Stop: Support{Level: Supported}, SessionEnd: Support{Level: Supported},
-		Context: Support{Level: Supported, Detail: "SessionStart and PostToolUse; ending events stay silent"},
+		Context: Support{Level: Supported, Detail: "SessionStart and PostToolUse; Stop asks once per session about files the agent created and left unsorted; SessionEnd stays silent"},
 		MCP:     Support{Level: Supported}, Skill: Support{Level: Supported},
 	}})
 }

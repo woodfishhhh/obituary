@@ -18,7 +18,7 @@ Existing installations get grave notices by running `obit init` again.
 
 ## Session summary (optional)
 
-To save the agent's tokens, a session starts with only the proposals that need your decision. Turn on "Session summary" in the small window's Settings, or set:
+To save the agent's tokens, a session starts with only the proposals that need your decision and what was just registered automatically. Turn on "Session summary" in the small window's Settings, or set:
 
 ```toml
 [hooks]

@@ -1,6 +1,6 @@
 // An in-memory stand-in for the Go backend, used by `pnpm dev` and the
 // playground. Actions change its state, so a preview behaves like the app.
-import type { Api, Burial, Candidate, Item, Plan, PlanReceipt, Proposal, ProposalResult, RuleFile, Settings, UpdateInfo, WatchPolicy } from "./types";
+import type { Api, AutoHandled, Burial, Candidate, Item, Plan, PlanReceipt, Proposal, ProposalMode, ProposalResult, RuleFile, Settings, UpdateInfo, WatchPolicy } from "./types";
 
 export type Scenario = "normal" | "busy" | "empty";
 
@@ -26,7 +26,7 @@ function fingerprint(p: MockProposal) {
 const view = ({ fail: _fail, drift: _drift, ...p }: MockProposal): Proposal => ({ ...p, fingerprint: fingerprint(p) });
 
 function seed(scenario: Scenario) {
-  if (scenario === "empty") return { burials: [] as Burial[], items: [] as Item[], proposals: [] as MockProposal[], rules: [] as RuleFile[] };
+  if (scenario === "empty") return { burials: [] as Burial[], items: [] as Item[], proposals: [] as MockProposal[], rules: [] as RuleFile[], receipts: [] as Receipt[] };
   const burials: Burial[] = [
     { id: 12, path: `${DL}\\setup-node-22.11.0-x64.msi`, isDir: false, size: 31457280, buriedAt: at(-30), purgeAt: at(138) },
     { id: 11, path: `${SHOP}\\.venv`, isDir: true, size: 412090368, buriedAt: at(-96), purgeAt: at(72), note: "agent 会话留下的虚拟环境" },
@@ -41,7 +41,15 @@ function seed(scenario: Scenario) {
     { id: 24, path: `${SHOP}\\coverage`, isDir: true, createdAt: at(-2), expiresAt: at(70), source: "rule", note: "rule coverage" },
     { id: 25, path: `${DL}\\obs-recording-1102.mkv`, isDir: false, createdAt: at(-10), expiresAt: at(3), source: "watch" },
     { id: 26, path: "docker:shop-db-test (3f9c2a1b7e04)", isDir: false, kind: "container", createdAt: at(-20), expiresAt: at(12), source: "cli" },
-    { id: 27, path: `${SHOP}\\dist`, isDir: true, createdAt: at(-30), expiresAt: at(42), source: "proposal", note: "approved #29" },
+    { id: 27, path: `${SHOP}\\dist`, isDir: true, createdAt: at(-30), expiresAt: at(42), source: "proposal", note: "auto-approved #29 (regenerable)" },
+    { id: 28, path: `${SHOP}\\scratch-repro.py`, isDir: false, createdAt: at(-1), expiresAt: at(47), source: "rule", note: "rule *.py (.obitrules:3)" },
+    { id: 29, path: "docker:shop-redis-1 (a81d93c0f2b6)", isDir: false, kind: "container", createdAt: at(-0.5), expiresAt: at(71.5), source: "proposal", note: "auto-approved #30 (container)" },
+  ];
+  // Registrations made without asking (tiered mode), shown under "Handled automatically".
+  const receipts: Receipt[] = [
+    { id: 28, class: "created", at: at(-1) },
+    { id: 29, class: "container", at: at(-0.5) },
+    { id: 27, class: "regenerable", at: at(-30) },
   ];
   if (scenario === "busy") {
     for (let i = 0; i < 26; i++) {
@@ -57,9 +65,6 @@ function seed(scenario: Scenario) {
     { id: 33, kind: "large", project: SHOP, createdAt: at(-0.3), candidates: [
       { path: `${SHOP}\\data\\dump-2026-11.sql`, lifespan: "1w", rule: "大于 1 GB", size: 1288490188 },
     ], drift: { path: `${SHOP}\\data\\dump-2026-11-b.sql`, lifespan: "1w", rule: "大于 1 GB", size: 1395864371 } },
-    { id: 34, kind: "container", project: SHOP, createdAt: at(-0.5), candidates: [
-      { path: "docker:shop-redis-1 (a81d93c0f2b6)", kind: "container", lifespan: "3d", rule: "compose 工作目录在项目里", size: 0 },
-    ] },
     { id: 32, kind: "watch-policy", project: DL, createdAt: at(-3), candidates: [
       { path: DL, lifespan: "2w", rule: "文件夹策略：放进来的东西两周后进墓地", size: 0 },
     ] },
@@ -67,15 +72,17 @@ function seed(scenario: Scenario) {
   const rules: RuleFile[] = [
     { path: `${SHOP}\\.obitrules`, status: "untrusted", sha256: "9f2c4e1a7b3d5f60a1c2d3e4", content: "# 构建产物一周后清理\ndist/ 1w\n*.log 3d\ncoverage/ 1w\n" },
   ];
-  return { burials, items, proposals, rules };
+  return { burials, items, proposals, rules, receipts };
 }
+
+type Receipt = { id: number; class: AutoHandled["class"]; at: string };
 
 export function createMockApi(scenario: Scenario = "normal"): Api {
   const s = seed(scenario);
   // "auto" resolves the way the backend does from the Windows display
   // language; the browser's language stands in for it here.
   const windowsLanguage = () => (navigator.language.toLowerCase().startsWith("zh") ? "zh-CN" : "en");
-  const settings: Settings = { mode: "graveyard", retentionDays: 7, configPath: "C:\\Users\\me\\AppData\\Roaming\\obituary\\config.toml", contextMenuInstalled: true, contextMenuCurrent: true, contextMenuDetail: "", autostart: true, paused: false, language: "auto", effectiveLanguage: windowsLanguage(), sessionSummary: false, downloads: DL, trayIcon: true, taskbar: true, startMenu: true, desktopShortcut: true,
+  const settings: Settings = { mode: "graveyard", retentionDays: 7, configPath: "C:\\Users\\me\\AppData\\Roaming\\obituary\\config.toml", contextMenuInstalled: true, contextMenuCurrent: true, contextMenuDetail: "", autostart: true, paused: false, language: "auto", effectiveLanguage: windowsLanguage(), sessionSummary: false, sessionCleanup: true, downloads: DL, trayIcon: true, taskbar: true, startMenu: true, desktopShortcut: true,
     lifetime: scenario === "empty" ? { buried: 0, buriedBytes: 0, purgedBytes: 0, resurrected: 0 } : { buried: 216, buriedBytes: 1_395_864_371, purgedBytes: 29_884_416, resurrected: 2 } };
   const watches: WatchPolicy[] = scenario === "empty" ? [] : [{ id: 3, path: DL, lifespan: "2w", age: "first-seen", createdAt: at(-500), consent: "approved", rev: 1, approvedRev: 1 }];
   const plans = new Map<string, () => PlanReceipt>();
@@ -84,6 +91,12 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
     : { current: "1.0.0", latest: "1.0.1", newer: true, name: "1.0.1", published: at(-20), checkedAt: at(-2), enabled: true, channel: "scoop", command: "scoop update obituary",
         url: "https://github.com/woodfishhhh/obituary/releases/tag/v1.0.1",
         notes: ["## 修复", "", "- 托盘菜单在高 DPI 屏幕上不再模糊", "- 文件夹策略遇到只读文件时会跳过并记日志，不再整轮停下", "", "## 改进", "", "- 墓地页搜索支持按扩展名过滤"].join("\n") };
+  let proposalMode: ProposalMode = "tiered";
+  // Receipts follow their items, as core.State.AutoHandled does.
+  const handled = (): AutoHandled[] => s.receipts.flatMap((r) => {
+    const item = s.items.find((it) => it.id === r.id);
+    return item ? [{ item, class: r.class, at: r.at }] : [];
+  });
   // The first context-menu change stops part way, as a locked key would.
   let menuStalls = scenario !== "empty";
   let nextItem = 900;
@@ -160,7 +173,8 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
       refs.forEach((ref) => { const i = s.items.findIndex((x) => x.id === idOf(ref)); if (i >= 0) s.items.splice(i, 1); });
       return wait({ results: refs.map((ref) => ({ ref, action: "canceled" })) });
     },
-    Proposals: () => wait({ proposals: s.proposals.map(view) }),
+    Proposals: () => wait({ proposals: s.proposals.map(view), handled: handled(), mode: proposalMode }),
+    PlanProposalMode: (mode) => plan("proposalMode", mode === proposalMode ? [] : [{ target: "[proposals] mode", before: proposalMode, after: mode }], () => { proposalMode = mode; }),
     Approve: (refs, fingerprints) => wait({ results: refs.map((ref, i) => decide(ref, fingerprints[i], true)) }),
     Reject: (refs, fingerprints) => wait({ results: refs.map((ref, i) => decide(ref, fingerprints[i], false)) }),
     Rules: () => wait({ rules: s.rules.map((r) => ({ ...r })) }),
@@ -217,6 +231,7 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
           : []),
       ], () => { settings.language = next; settings.effectiveLanguage = effective; });
     },
+    PlanSessionCleanup: (on) => plan("sessionCleanup", on === settings.sessionCleanup ? [] : [{ target: "[hooks] session_cleanup", before: String(settings.sessionCleanup), after: String(on) }], () => { settings.sessionCleanup = on; }),
     PlanSessionSummary: (on) => plan("sessionSummary", on === settings.sessionSummary ? [] : [{ target: "[hooks] session_summary", before: String(settings.sessionSummary), after: String(on) }], () => { settings.sessionSummary = on; }),
     Update: () => wait({ ...update }),
     CheckUpdate: () => new Promise((r) => setTimeout(() => { update.checkedAt = new Date().toISOString(); r({ ...update }); }, 900)),

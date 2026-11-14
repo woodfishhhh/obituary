@@ -52,6 +52,9 @@ type Result struct {
 	Deny    bool   `json:"deny,omitempty"`
 	Reason  string `json:"reason,omitempty"`
 	Context string `json:"context,omitempty"`
+	// Continue asks a Stop event's agent to keep going with Context as the
+	// reason; set only for events whose adapter declared CanContinue.
+	Continue bool `json:"continue,omitempty"`
 }
 
 // Adapter translates one host protocol. Decode does no I/O. Fallback must work
@@ -184,7 +187,7 @@ func RunEvent(agent Agent, e *auto.Engine, ev Event, out io.Writer, runner *Runn
 		return
 	}
 	text := context.text()
-	result := Result{Context: text}
+	result := Result{Context: text, Continue: context.cont && ev.CanContinue}
 	if context.deny {
 		result = Result{Deny: true, Reason: text}
 	}

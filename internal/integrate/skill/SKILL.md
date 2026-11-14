@@ -16,6 +16,7 @@ Obituary gives files and directories a lifespan. When it runs out they are burie
 | leave a debug script, log, screenshot or test output | `obit mark <path> 2d` (any lifespan: `30m`, `2h`, `3d`, `1w`, `1d12h`) |
 | recreate something that is missing | first `obit graveyard --here`; if it is there, `obit resurrect <id>` |
 | undo the deletion you just made | `obit resurrect --last` |
+| are asked, when you stop, to sort files you created this session | `obit mark <path> 2d` for scratch, `obit bury <path>` for what is done with; deliverables stay |
 | act on a proposal, a `.obitrules` file or a purge | describe it to the user; approving, trusting and purging are theirs |
 
 If tools named `obit_*` are available (Obituary's MCP server), they do the same with absolute paths: `obit_mark`, `obit_mktemp`, `obit_bury`, `obit_resurrect`, `obit_extend`, `obit_spare`, `obit_list`, `obit_graveyard`, `obit_proposals`, `obit_stats`.
@@ -26,6 +27,7 @@ If tools named `obit_*` are available (Obituary's MCP server), they do the same 
 - `obit mark <path> <lifespan>` gives an existing file or directory a lifespan; it stays where it is until then.
 - `obit list` shows what has a lifespan and how long is left. `obit extend <id> <lifespan>` gives more time; `obit spare <id>` stops tracking and keeps the file.
 - State and result commands (`list`, `graveyard`, `proposals`, `stats`, `mark`, `bury`, `resurrect` and similar) accept `--json`.
+- Once per session, when you are about to stop, Obituary may list the files you created in this session that still have no lifespan and that Git does not track. Scratch among them (debug scripts, logs, screenshots, temporary output) gets `obit mark <path> <lifespan>` or `obit bury <path>`; deliverables stay. Only the listed files are in question.
 - If a command reports `commit unconfirmed`, its change may already have taken effect: check `obit list` or `obit graveyard` before running it again, since each `obit extend` adds more time.
 
 ## Deleting
@@ -45,7 +47,9 @@ If tools named `obit_*` are available (Obituary's MCP server), they do the same 
 
 ## Decisions that belong to the user
 
-- Proposals: the first time Obituary would register artefacts automatically in a project, when a batch is large, or when a session leaves Git-ignored dependencies, build output, caches or project containers behind, it creates a proposal instead. A proposal lists only what is safe to approve (uncommitted work never appears), and approved items stay restorable after burial. `obit proposals` lists them. The user answers with `obit approve <id>` or `obit reject <id>`; describe the proposal, recommend approving it, and let them decide. An explicit `obit mark` or `obit mktemp` takes effect at once and is not a proposal.
+- Automatic registration without asking: what an agent created in its session (the hook saw the write, and nothing was there when the session started), the Git-ignored dependencies, build output and caches a session leaves, and the containers it starts for the project get a lifespan at once. Obituary reports them afterwards; `obit spare <id>` undoes one and `obit extend <id> <lifespan>` keeps it longer.
+- Proposals: anything else Obituary would register automatically, such as a rule-matched file that existed before the session, becomes a proposal instead. A proposal lists only what is safe to approve (uncommitted work never appears), and approved items stay restorable after burial. `obit proposals` lists pending proposals and what went in without asking. The user answers with `obit approve <id>` or `obit reject <id>`; describe the proposal, recommend approving it, and let them decide. An explicit `obit mark` or `obit mktemp` takes effect at once and is not a proposal.
+- The proposal mode is the user's setting (`[proposals] mode` in `config.toml`, or the window's Decisions page): `tiered` (the default, as above), `auto` (everything automatic goes in and is reported afterwards) or `ask` (everything is proposed first).
 - Project rules: a repository's `.obitrules` takes effect after the user reviews it and runs `obit trust`.
 - Purging: `obit purge` deletes graveyard items permanently and is the user's call. `obit purge <id>` also lets the user abandon an interrupted resurrection that can no longer be verified.
 

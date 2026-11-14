@@ -275,6 +275,9 @@ func parseProposalRef(ref string) (int64, error) {
 	return id, nil
 }
 
+// ErrProposalBusy means another approval or rejection holds proposals.lock.
+var ErrProposalBusy = errors.New("another proposal decision is in progress")
+
 // lockProposals serializes approvals and rejections while leaving candidates
 // durable until their outcomes are saved. The store lock still guards writes.
 func (s *Service) lockProposals() (func(), error) {
@@ -286,7 +289,7 @@ func (s *Service) lockProposals() (func(), error) {
 		return nil, err
 	}
 	if !ok {
-		return nil, fmt.Errorf("another proposal decision is in progress")
+		return nil, ErrProposalBusy
 	}
 	return release, nil
 }
@@ -296,10 +299,16 @@ func (s *Service) lockProposals() (func(), error) {
 // process leaves the candidates pending under their original ID. Claiming an
 // onboard proposal permits automatic registration in its project from now on.
 func (s *Service) ClaimProposal(ref string) (Proposal, func(), error) {
-	return s.claimProposal(ref, nil)
+	return s.claimProposal(ref, nil, true)
 }
 
-func (s *Service) claimProposal(ref string, review func(Proposal) error) (Proposal, func(), error) {
+// ClaimProposalAuto claims a proposal Obituary settles itself under the
+// proposal mode. It never records consent: the user has not approved anything.
+func (s *Service) ClaimProposalAuto(ref string) (Proposal, func(), error) {
+	return s.claimProposal(ref, nil, false)
+}
+
+func (s *Service) claimProposal(ref string, review func(Proposal) error, consent bool) (Proposal, func(), error) {
 	id, err := parseProposalRef(ref)
 	if err != nil {
 		return Proposal{}, nil, err
@@ -320,7 +329,7 @@ func (s *Service) claimProposal(ref string, review func(Proposal) error) (Propos
 				return err
 			}
 		}
-		if p.Kind == ProposalOnboard {
+		if p.Kind == ProposalOnboard && consent {
 			if st.Projects == nil {
 				st.Projects = map[string]ProjectState{}
 			}

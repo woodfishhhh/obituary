@@ -114,6 +114,8 @@ type Observation = lifecycle.Observation
 
 var ErrProposalChanged = lifecycle.ErrProposalChanged
 
+var ErrProposalBusy = lifecycle.ErrProposalBusy
+
 type WatchReview = lifecycle.WatchReview
 
 func ProposalFingerprint(p Proposal) string {
@@ -173,6 +175,23 @@ type RestoreParent = lifecycle.RestoreParent
 const ModeGraveyard = lifecycle.ModeGraveyard
 
 const ModeRecycle = lifecycle.ModeRecycle
+
+const (
+	ProposalsTiered = lifecycle.ProposalsTiered
+	ProposalsAuto   = lifecycle.ProposalsAuto
+	ProposalsAsk    = lifecycle.ProposalsAsk
+)
+
+type AutoReceipt = lifecycle.AutoReceipt
+
+type AutoHandled = lifecycle.AutoHandled
+
+const (
+	AutoCreated     = lifecycle.AutoCreated
+	AutoRegenerable = lifecycle.AutoRegenerable
+	AutoContainer   = lifecycle.AutoContainer
+	AutoAll         = lifecycle.AutoAll
+)
 
 const DefaultRetention = lifecycle.DefaultRetention
 

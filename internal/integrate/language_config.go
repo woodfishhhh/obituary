@@ -22,6 +22,21 @@ func PlanSessionSummaryConfig(path string, enabled bool) (Change, error) {
 	return planConfigValue(path, "hooks", "session_summary", strconv.FormatBool(enabled))
 }
 
+// PlanSessionCleanupConfig sets [hooks] session_cleanup the same way.
+func PlanSessionCleanupConfig(path string, enabled bool) (Change, error) {
+	return planConfigValue(path, "hooks", "session_cleanup", strconv.FormatBool(enabled))
+}
+
+// PlanProposalModeConfig sets [proposals] mode the same way.
+func PlanProposalModeConfig(path, mode string) (Change, error) {
+	switch mode {
+	case config.ProposalsTiered, config.ProposalsAuto, config.ProposalsAsk:
+	default:
+		return Change{}, fmt.Errorf("proposals.mode must be %q, %q or %q", config.ProposalsTiered, config.ProposalsAuto, config.ProposalsAsk)
+	}
+	return planConfigValue(path, "proposals", "mode", strconv.Quote(mode))
+}
+
 // planConfigValue edits one key of the global config and checks that the file
 // still parses before and after the edit.
 func planConfigValue(path, table, key, literal string) (Change, error) {

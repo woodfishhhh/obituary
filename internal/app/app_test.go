@@ -223,7 +223,12 @@ func TestTickPrunesAndWithdrawsStaleProposals(t *testing.T) {
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}
-	t.Parallel()
+	// Tick rereads config.toml; "ask" keeps the leftovers a proposal to prune.
+	configDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(configDir, "config.toml"), []byte("[proposals]\nmode = \"ask\"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("OBIT_CONFIG_DIR", configDir)
 	root := t.TempDir()
 	git := func(args ...string) {
 		t.Helper()
@@ -232,7 +237,7 @@ func TestTickPrunesAndWithdrawsStaleProposals(t *testing.T) {
 		}
 	}
 	git("init", "-q")
-	svc := &core.Service{Store: core.Store{Home: t.TempDir()}, FS: winfs.FS{}}
+	svc := &core.Service{Store: core.Store{Home: t.TempDir()}, FS: winfs.FS{}, ProposalMode: core.ProposalsAsk}
 	engine := Engine(svc)
 	if err := engine.Snapshot(root, "s"); err != nil {
 		t.Fatal(err)

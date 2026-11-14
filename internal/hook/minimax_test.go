@@ -133,6 +133,7 @@ func TestMiniMaxWriteObservedAndFinishSilent(t *testing.T) {
 	}
 	t.Parallel()
 	e := newEnv(t)
+	e.ask() // exercises the proposal itself, as "ask" mode keeps it
 	input := minimaxFixture(t, "start")
 	input["cwd"] = e.root
 	run := func(input map[string]any, runner *Runner) string {

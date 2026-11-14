@@ -61,6 +61,9 @@ func (e *Engine) ContainerLeftovers(root, session string) ([]Notice, error) {
 		return nil, nil
 	}
 	notice, err := e.propose(core.ProposalContainer, root, session, candidates, nil)
+	if notice != nil {
+		notice, err = e.settleNotice(*notice, err)
+	}
 	if err != nil || notice == nil {
 		return nil, err
 	}

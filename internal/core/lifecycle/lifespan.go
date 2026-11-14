@@ -34,6 +34,7 @@ func (s *Service) Cancel(refs []string) ([]Result, error) {
 	return s.mutate(refs, ActionCanceled, func(st *State, idx int) {
 		s.spareWatchObject(st, st.Items[idx].WatchID, st.Items[idx].Identity, st.Items[idx].Path, "spared")
 		s.spareAutomaticObject(st, st.Items[idx].Identity, st.Items[idx].Path)
+		s.forgetAutoReceipt(st, st.Items[idx])
 		st.Items = append(st.Items[:idx], st.Items[idx+1:]...)
 	})
 }

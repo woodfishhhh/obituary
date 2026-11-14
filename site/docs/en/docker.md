@@ -26,8 +26,8 @@ Obituary manages containers only. Volumes hold data and removing one is permanen
 - A container you removed outside Obituary is recorded as removed externally and its record is cleared.
 - A container started with `--rm` (AutoRemove) would be deleted by Docker when stopped, so Obituary refuses to register it.
 
-## Containers from an agent session are only proposed
+## Containers from an agent session are registered directly
 
-When a session ends, Obituary lists in the background the containers created during it: only those whose compose working directory or bind mounts are inside the project; others may be ones you started elsewhere and are not listed. Nothing is tracked until you `obit approve`.
+When a session ends, Obituary looks in the background for the containers created during it: only those whose compose working directory or bind mounts are inside the project; others may be ones you started elsewhere and are left alone. Those found get a 3-day lifespan and you are told afterwards; after `obit spare <id>` the session does not register that container again. With `[proposals] mode = "ask"` they are proposed instead and tracked only after `obit approve`.
 
 Hooks never call Docker; if Docker is not installed or not running, this is skipped quietly and `obit doctor` explains why.

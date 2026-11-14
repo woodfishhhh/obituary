@@ -220,6 +220,7 @@ type State struct {
 	ObservationReceipts map[string]time.Time    `json:"observationReceipts,omitempty"`
 	Projects            map[string]ProjectState `json:"projects,omitempty"`
 	LeftoverRejections  []LeftoverRejection     `json:"leftoverRejections,omitempty"`
+	AutoReceipts        []AutoReceipt           `json:"autoReceipts,omitempty"`
 	Stats               Stats                   `json:"stats"`
 }
 

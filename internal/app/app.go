@@ -29,6 +29,7 @@ func Open() (*core.Service, error) {
 		Docker: docker.CLI{},
 		Store:  core.Store{Home: home}, Guard: Guard(home), FS: winfs.FS{},
 		Mode: cfg.Graveyard.Mode, Retention: cfg.Graveyard.Retention(), WatchStableWindow: cfg.Watch.Stability(), SessionSummary: cfg.Hooks.SessionSummary,
+		SessionCleanup: cfg.Hooks.SessionCleanup, ProposalMode: cfg.Proposals.Mode,
 		Owner: auto.Owner, OwnerBatch: auto.OwnerBatch, PrepareOwners: auto.PrepareOwners,
 	}
 	svc.Recheck = Engine(svc).RecheckRules
@@ -58,6 +59,7 @@ func Tick(svc *core.Service) ([]core.Outcome, []core.GraveResult, error) {
 	svc = svc.WithContext(svc.Store.Context())
 	svc.Mode, svc.Retention = cfg.Graveyard.Mode, cfg.Graveyard.Retention()
 	svc.WatchStableWindow = cfg.Watch.Stability()
+	svc.ProposalMode = cfg.Proposals.Mode
 	// Hooks and other processes commit ledger changes and defer the Explorer
 	// refresh to this tick, whose own sweep may change nothing. Notify once
 	// when the ledger differs from the one Explorer labels were last synced

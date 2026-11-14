@@ -30,6 +30,21 @@ const (
 	ModeRecycle   = "recycle"
 )
 
+// Proposal modes ([proposals] mode in config.toml).
+const (
+	ProposalsTiered = "tiered"
+	ProposalsAuto   = "auto"
+	ProposalsAsk    = "ask"
+)
+
+// Proposals returns the effective proposal mode.
+func (s *Service) Proposals() string {
+	if s.ProposalMode == "" {
+		return ProposalsTiered
+	}
+	return s.ProposalMode
+}
+
 // DefaultRetention is how long burials stay restorable by default.
 const DefaultRetention = 7 * 24 * time.Hour
 
@@ -62,6 +77,12 @@ type Service struct {
 	// SessionSummary lists expiring items and recent burials at session start
 	// ([hooks] session_summary); off by default to save agents' tokens.
 	SessionSummary bool
+	// SessionCleanup asks the agent, once per session, to sort the files it
+	// created that still have no lifespan ([hooks] session_cleanup).
+	SessionCleanup bool
+	// ProposalMode is [proposals] mode: what automatic registration may do
+	// without asking. Empty means ProposalsTiered.
+	ProposalMode string
 	// Owner reports which Git work tree a real path lies in ("" for none)
 	// and whether Git tracks it or anything inside it. Items registered
 	// automatically are re-checked before burial: one that left its project

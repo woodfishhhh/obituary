@@ -1,16 +1,20 @@
-import { Check, CheckCheck, FileCode2, Inbox, ShieldCheck, ShieldOff, X } from "lucide-react";
+import { Check, CheckCheck, EyeOff, FileCode2, Inbox, ShieldCheck, ShieldOff, TimerReset, X } from "lucide-react";
 import { useState } from "react";
 import { errorText, useApi } from "../api";
 import { t } from "../i18n";
 import { bytes, extendedTo, lifespanText, ruleOrigin, rulePattern, underProject, when } from "../format";
 import { useLoad, useRefresh } from "../hooks";
 import { askDecisions, setAskDecisions } from "../prefs";
-import type { Proposal, ProposalResult, RuleFile } from "../types";
-import { Button, Empty, Head, Outcome, Skeleton, isContainer, useConfirm, useToast, type OutcomeNote } from "../ui";
+import type { AutoHandled, Proposal, ProposalMode, ProposalResult, RuleFile } from "../types";
+import { Button, Empty, Head, LifeLine, NameCell, Outcome, Seg, Skeleton, isContainer, useConfirm, useToast, type OutcomeNote } from "../ui";
+import { extendSpans, spanLabel } from "../variants/shared";
 
 const kinds = ["onboard", "large", "leftovers", "watch-policy", "watch-burial", "container"] as const;
 const kindText = (kind: string) => ((kinds as readonly string[]).includes(kind) ? t(`kind.${kind as (typeof kinds)[number]}`) : kind);
 const ruleTone: Record<string, string> = { untrusted: "warn", changed: "danger", trusted: "ok" };
+const modes: ProposalMode[] = ["tiered", "auto", "ask"];
+const classes = ["created", "regenerable", "container", "auto"] as const;
+const classText = (c: string) => ((classes as readonly string[]).includes(c) ? t(`dec.class.${c as (typeof classes)[number]}`) : c);
 const ruleText = (status: string): [string, string] => (ruleTone[status] ? [t(`rule.${status as "untrusted" | "changed" | "trusted"}`), ruleTone[status]] : [status, ""]);
 
 export default function Decisions() {
@@ -22,6 +26,8 @@ export default function Decisions() {
   const [note, setNote] = useState<OutcomeNote | null>(null);
   if (loading && !data) return <><Head title={t("page.decisions")} /><div className="card"><Skeleton /></div></>;
   const proposals = data?.[0].proposals ?? [];
+  const handled = data?.[0].handled ?? [];
+  const mode = data?.[0].mode;
   const rules = data?.[1].rules ?? [];
   const pending = rules.filter((r) => r.status !== "trusted");
   const trusted = rules.filter((r) => r.status === "trusted");
@@ -67,6 +73,7 @@ export default function Decisions() {
       </Head>
       {error ? <div className="notice error">{t("dec.readError", error)}</div> : null}
       {note ? <Outcome note={note} onClose={() => setNote(null)} /> : null}
+      {mode && api.PlanProposalMode ? <ModeCard mode={mode} /> : null}
       {!waiting ? <div className="card"><Empty icon={Inbox} title={t("dec.none")} text={t("dec.noneText")} /></div> : null}
       {proposals.length ? (
         <div className="section-title section-row">
@@ -78,6 +85,87 @@ export default function Decisions() {
       {pending.length ? <div className="section-title">{t("dec.rules")}</div> : null}
       {pending.map((r) => <RuleCard key={r.path} r={r} />)}
       {trusted.length ? <details><summary className="hint">{t("dec.trusted", trusted.length)}</summary>{trusted.map((r) => <RuleCard key={r.path} r={r} />)}</details> : null}
+      {handled.length ? <HandledList handled={handled} /> : null}
+    </>
+  );
+}
+
+// The proposal mode, switched where proposals are decided. Going fully
+// automatic widens what agents may do, so it asks first; the rest apply at once.
+function ModeCard({ mode }: { mode: string }) {
+  const api = useApi();
+  const { bump } = useRefresh();
+  const confirm = useConfirm();
+  const toast = useToast();
+  const current = (modes as string[]).includes(mode) ? (mode as ProposalMode) : "tiered";
+  async function choose(next: ProposalMode) {
+    if (next === current || !api.PlanProposalMode) return;
+    if (next === "auto" && !await confirm({ title: t("dec.askAuto"), body: <p>{t("dec.askAutoBody")}</p>, ok: t("dec.askAutoOk") })) return;
+    try {
+      const plan = await api.PlanProposalMode(next);
+      await api.ApplyPlan(plan.id);
+      toast(t("dec.modeDone", t(`dec.mode.${next}`)));
+    } catch (error) {
+      toast(errorText(error), "error");
+    }
+    bump();
+  }
+  return (
+    <section className="card panel mode-card">
+      <div className="panel-head">
+        <span className="panel-title grow">{t("dec.mode")}</span>
+        <Seg<ProposalMode> label={t("dec.mode")} value={current} onChange={choose} options={modes.map((m): [ProposalMode, string] => [m, t(`dec.mode.${m}`)])} />
+      </div>
+      <p className="hint">{t(`dec.modeDesc.${current}`)}</p>
+    </section>
+  );
+}
+
+// What went in without asking, while it is still tracked: each can be undone
+// (spared; the file stays) or kept longer, like any tracked item.
+function HandledList({ handled }: { handled: AutoHandled[] }) {
+  const api = useApi();
+  const { bump } = useRefresh();
+  const confirm = useConfirm();
+  const toast = useToast();
+  const [span, setSpan] = useState("1d");
+  async function undo(h: AutoHandled) {
+    if (askDecisions() && !await confirm({ title: t("dec.askUndo", h.item.path), body: <p>{t("dec.undoBody")}</p>, ok: t("dec.undo"), danger: true })) return;
+    const reply = await api.Cancel([`#${h.item.id}`]);
+    const failure = reply.error || reply.results.find((r) => r.error)?.error;
+    if (failure) toast(failure, "error");
+    else toast(t("dec.undone", h.item.path));
+    bump();
+  }
+  async function keep(h: AutoHandled) {
+    const reply = await api.Extend([`#${h.item.id}`], span);
+    const failure = reply.error || reply.results.find((r) => r.error)?.error;
+    if (failure) toast(failure, "error");
+    else toast(t("dec.kept", spanLabel(span)));
+    bump();
+  }
+  return (
+    <>
+      <div className="section-title section-row">
+        <span>{t("dec.handled")}</span>
+        <select className="select" aria-label={t("howLong")} value={span} onChange={(e) => setSpan(e.target.value)}>
+          {extendSpans().map(([v, label]) => <option key={v} value={v}>{t("extendBy", label)}</option>)}
+        </select>
+      </div>
+      <p className="hint">{t("dec.handledHint")}</p>
+      <div className="card list">
+        {handled.map((h) => (
+          <div key={h.item.id} className="row cols-handled">
+            <NameCell path={h.item.path} isDir={h.item.isDir} kind={h.item.kind} />
+            <span><span className="tag">{classText(h.class)}</span></span>
+            <LifeLine start={h.item.createdAt} end={h.item.expiresAt} left={(s) => t("life.left", s)} over={t("life.expired")} />
+            <span className="acts">
+              <Button icon={TimerReset} onClick={() => keep(h)}>{t("dec.keep")}</Button>
+              <Button kind="danger" icon={EyeOff} onClick={() => undo(h)}>{t("dec.undo")}</Button>
+            </span>
+          </div>
+        ))}
+      </div>
     </>
   );
 }

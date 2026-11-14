@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/core"
@@ -52,5 +53,32 @@ func TestProposalsOmitsMissingCandidates(t *testing.T) {
 	out, _, err := clitest.Execute(t, NewCmd())
 	if err != nil || !strings.Contains(out, "no pending proposals") {
 		t.Fatalf("CLI displayed empty proposal: %s %v", out, err)
+	}
+}
+
+func TestProposalsListsWhatWentInWithoutAsking(t *testing.T) {
+	root, store := clitest.CommandDir(t)
+	path := filepath.Join(root, "debug.log")
+	clitest.WriteFixture(t, path, "x")
+	if err := store.Update(func(st *core.State) error {
+		st.Items = append(st.Items, core.Item{ID: 7, Rev: 1, Path: path, Source: "rule", Project: root, ExpiresAt: time.Now().Add(48 * time.Hour)})
+		st.AddAutoReceipts(core.AutoReceipt{ID: 7, Class: core.AutoCreated, Project: root, At: time.Now()})
+		st.NextID = 8
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	out, _, err := clitest.Execute(t, NewCmd())
+	for _, want := range []string{"no pending proposals", "registered without asking", "#7", "created", "debug.log", "obit spare <id>", "proposal mode tiered", `[proposals] mode = "auto"`} {
+		if err != nil || !strings.Contains(out, want) {
+			t.Fatalf("output lacks %q: %s %v", want, out, err)
+		}
+	}
+	clitest.WriteFixture(t, filepath.Join(os.Getenv("OBIT_CONFIG_DIR"), "config.toml"), "[proposals]\nmode = \"auto\"\n")
+	if out, _, err := clitest.Execute(t, NewCmd()); err != nil || !strings.Contains(out, "proposal mode auto") || !strings.Contains(out, `mode = "tiered"`) {
+		t.Fatalf("auto mode hint: %s %v", out, err)
+	}
+	if out, _, err := clitest.Execute(t, NewCmd(), "--json"); err != nil || strings.TrimSpace(out) != "[]" {
+		t.Fatalf("--json keeps listing only proposals: %s %v", out, err)
 	}
 }

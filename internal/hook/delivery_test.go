@@ -29,6 +29,7 @@ func TestDeferredObservationAndSnapshot(t *testing.T) {
 		t.Run(next, func(t *testing.T) {
 			t.Parallel()
 			e := newEnv(t)
+			e.ask() // exercises the proposal itself, as "ask" mode keeps it
 			t.Cleanup(func() {
 				if t.Failed() {
 					data, err := os.ReadFile(filepath.Join(e.engine.Svc.Store.Home, "hook.log"))

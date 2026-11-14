@@ -193,7 +193,7 @@ func describeProposalCandidates(p core.Proposal, consent, candidates string) str
 				p.ID, candidates, p.ID)
 		}
 		return fmt.Sprintf("Obituary (讣告) proposal #%d, recommended for approval: %s in this project could get lifespans by rule, %s in total: %s. "+
-			"Obituary registers and deletes nothing here until the user approves; approval also lets it handle such artefacts here automatically from then on, and each is buried at expiry and stays restorable until it is purged. "+
+			"Obituary registers these only once the user approves; approval also lets it handle such artefacts here automatically from then on, and each is buried at expiry and stays restorable until it is purged. "+
 			"The user can approve with `obit approve %d` or decline with `obit reject %d`.",
 			p.ID, textutil.Count(len(p.Candidates), "agent artefact"), textutil.Bytes(p.Size()), candidates, p.ID, p.ID)
 	case core.ProposalLarge:
@@ -274,6 +274,10 @@ func sessionContext(e *auto.Engine, root, session string) (delivery, error) {
 			p = visible[0]
 			context.append(p, state.Projects[core.ProjectKey(p.Project)].Consent)
 		}
+	}
+	context.appendReceipts(untoldReceipts(state, root, session, true), root, serviceNow(e.Svc))
+	if e.Svc.SessionCleanup {
+		earlierCleanups(e, root, &context)
 	}
 	return context, nil
 }

@@ -62,7 +62,7 @@ func ProposalFingerprint(p Proposal) string {
 func (s *Service) ClaimProposalReviewed(ref, fingerprint string) (Proposal, func(), error) {
 	return s.claimProposal(ref, func(p Proposal) error {
 		return checkProposalReview(p, fingerprint)
-	})
+	}, true)
 }
 
 func checkProposalReview(p Proposal, fingerprint string) error {

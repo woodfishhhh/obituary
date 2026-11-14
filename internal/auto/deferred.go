@@ -75,7 +75,7 @@ func (e *Engine) observationDecision(row core.Observation) (string, error) {
 	}
 	// Preserve delayed-write semantics: an old event must not release a keep
 	// decision. Add/vetUnit still enforce exemptions at replay and commit.
-	decisions, _, err := e.observe([]string{row.Path}, row.Session, locations{}, &row)
+	decisions, _, err := e.observe([]string{row.Path}, Options{Session: row.Session, Observed: &row, Written: true}, locations{})
 	if len(decisions) == 0 {
 		return "", errors.Join(err, errors.New("observation has no completed decision"))
 	}

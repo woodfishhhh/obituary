@@ -8,6 +8,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/auto"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/integrate"
 	"github.com/woodfishhhh/obituary/internal/rules"
 	"github.com/woodfishhhh/obituary/internal/watch"
 )
@@ -19,6 +20,10 @@ type ReviewedProposal struct {
 
 type ProposalList struct {
 	Proposals []ReviewedProposal `json:"proposals"`
+	// Handled is what the proposal mode let in without asking, while tracked.
+	Handled []core.AutoHandled `json:"handled"`
+	// Mode is [proposals] mode: tiered, auto or ask.
+	Mode string `json:"mode"`
 }
 type ProposalReply struct {
 	Results []core.ProposalResult `json:"results"`
@@ -35,7 +40,43 @@ func (a *API) Proposals() (ProposalList, error) {
 	for _, p := range core.ExistingProposals(state.Proposals) {
 		rows.Proposals = append(rows.Proposals, ReviewedProposal{Proposal: p, Fingerprint: core.ProposalFingerprint(p)})
 	}
+	rows.Handled = state.AutoHandled()
+	cfg, cfgErr := a.readConfig()
+	rows.Mode = cfg.Proposals.Mode
+	if cfgErr != nil {
+		rows.Mode = a.deps.Service.Proposals()
+	}
 	return rows, err
+}
+
+// PlanProposalMode previews [proposals] mode from the Decisions page. Hooks
+// read the config on every event; the service here follows at once.
+func (a *API) PlanProposalMode(mode string) (Plan, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	path := filepath.Join(a.deps.ConfigDir, "config.toml")
+	old, err := a.readConfig()
+	if err != nil {
+		return Plan{}, err
+	}
+	if old.Proposals.Mode == mode {
+		return a.savePlan("proposalMode", []ChangePreview{}, func() error { return nil }), nil
+	}
+	change, err := integrate.PlanProposalModeConfig(path, mode)
+	if err != nil {
+		return Plan{}, err
+	}
+	preview := []ChangePreview{{Target: path, Before: "[proposals] mode=" + old.Proposals.Mode, After: "[proposals] mode=" + mode}}
+	return a.savePlan("proposalMode", preview, func() error {
+		if err := integrate.Apply([]integrate.Change{change}); err != nil {
+			return err
+		}
+		cfg, err := a.readConfig()
+		if err == nil {
+			a.deps.Service.ProposalMode = cfg.Proposals.Mode
+		}
+		return err
+	}), nil
 }
 
 func (a *API) Approve(refs, fingerprints []string) (ProposalReply, error) {

@@ -27,11 +27,19 @@ When the delete guard is enabled, deletion commands are denied with an equivalen
   ` + "`obit graveyard --here`" + `, and ` + "`obit resurrect <id>`" + ` puts it back.
 - ` + "`obit list`" + `, ` + "`obit graveyard`" + `, ` + "`obit extend <id> <lifespan>`" + `, ` + "`obit spare <id>`" + `.
 
-Files tracked by Git are never registered automatically. Before automatic
-registration starts in a project for the first time, Obituary makes a proposal
-instead of acting (explicit ` + "`obit mark`" + `, ` + "`obit mktemp`" + ` and ` + "`obit bury`" + ` act directly): a
-pending proposal is described at the start of a session or after a write, and
-only the user decides on it
-(` + "`obit approve <id>`" + ` / ` + "`obit reject <id>`" + `). The same applies to ` + "`obit trust`" + `,
-which enables a project's .obitrules after the user has reviewed it.
+Files tracked by Git are never registered automatically. What you create in a
+session (the hook sees the write), the Git-ignored dependencies, build output and
+caches a session leaves, and the containers it starts for the project get a
+lifespan automatically; Obituary says so afterwards, and ` + "`obit spare <id>`" + ` undoes one
+(` + "`obit extend <id> <lifespan>`" + ` keeps it longer). Other automatic registrations,
+such as a file that existed before the session, become a proposal; the user's
+config can also have everything proposed, or everything let in. A pending
+proposal is described at the start of a session or after a write, and only the
+user decides on it (` + "`obit approve <id>`" + ` / ` + "`obit reject <id>`" + `). The same applies to
+` + "`obit trust`" + `, which enables a project's .obitrules after the user has reviewed it.
+Explicit ` + "`obit mark`" + `, ` + "`obit mktemp`" + ` and ` + "`obit bury`" + ` act directly.
+
+Once per session, when you stop, Obituary may list the files you created that
+still have no lifespan and that Git does not track: scratch among them gets
+` + "`obit mark <path> <lifespan>`" + ` or ` + "`obit bury <path>`" + `; deliverables stay.
 `

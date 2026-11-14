@@ -116,3 +116,20 @@ func TestClaudeNormalizesLongSession(t *testing.T) {
 		t.Fatalf("unstable or oversized Claude session: %v", sessions)
 	}
 }
+
+// A Stop that asks the agent to continue uses the documented block decision;
+// any other Stop output keeps the context shape and silence stays silence.
+func TestClaudeStopContinuesOnlyWhenAsked(t *testing.T) {
+	ev := Event{Name: "Stop", CanContinue: true}
+	data, err := claudeAdapter{}.Encode(ev, Result{Context: "sort these", Continue: true})
+	if err != nil || strings.TrimSpace(string(data)) != `{"decision":"block","reason":"sort these"}` {
+		t.Fatalf("block decision: %s %v", data, err)
+	}
+	if data, err := (claudeAdapter{}).Encode(ev, Result{Continue: true}); err != nil || data != nil {
+		t.Fatalf("nothing to say must stay silent: %s %v", data, err)
+	}
+	ev, err = claudeAdapter{}.Decode([]byte(`{"hook_event_name":"Stop","session_id":"s","cwd":"C:\r","stop_hook_active":true}`), Invocation{})
+	if err != nil || !ev.CanContinue || !ev.StopActive {
+		t.Fatalf("Stop decode: %+v %v", ev, err)
+	}
+}

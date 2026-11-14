@@ -212,3 +212,34 @@ taskbar = false
 		t.Fatalf("template with its examples enabled: %v", err)
 	}
 }
+
+func TestProposalsModeConfig(t *testing.T) {
+	for _, tc := range []struct{ text, want string }{
+		{"", ProposalsTiered}, {Template, ProposalsTiered}, {"[proposals]\n", ProposalsTiered},
+		{"[proposals]\nmode='auto'", ProposalsAuto}, {"[proposals]\nmode='ask'", ProposalsAsk},
+		{"[proposals]\nmode='tiered'", ProposalsTiered},
+	} {
+		cfg, err := Parse([]byte(tc.text), "fixture.toml")
+		if err != nil || cfg.Proposals.Mode != tc.want {
+			t.Fatalf("%q: %+v %v, want %s", tc.text, cfg.Proposals, err, tc.want)
+		}
+	}
+	for _, text := range []string{"[proposals]\nmode='Auto'", "[proposals]\nmode=''", "[proposals]\nmode=1", "[proposals]\nmodes='auto'", "[proposal]\nmode='auto'"} {
+		if _, err := Parse([]byte(text), "fixture.toml"); err == nil {
+			t.Fatalf("invalid proposals config accepted: %q", text)
+		}
+	}
+}
+
+func TestSessionCleanupConfig(t *testing.T) {
+	for _, text := range []string{"", Template, "[hooks]\nsession_summary=true\n"} {
+		cfg, err := Parse([]byte(text), "fixture.toml")
+		if err != nil || !cfg.Hooks.SessionCleanup {
+			t.Fatalf("default: %+v %v", cfg.Hooks, err)
+		}
+	}
+	cfg, err := Parse([]byte("[hooks]\nsession_cleanup=false\n"), "fixture.toml")
+	if err != nil || cfg.Hooks.SessionCleanup {
+		t.Fatalf("disabled: %+v %v", cfg.Hooks, err)
+	}
+}

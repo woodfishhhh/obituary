@@ -111,7 +111,7 @@ const zh = {
     lead: "打开删除护栏后，rm -rf、git clean、Remove-Item 换成等价的 obit 命令。",
     values: [
       { title: "默认就有", line: "agent 的调试脚本、日志、截图按规则带上寿命，到期进墓地，七天内能复活。" },
-      { title: "想多管一点", line: "写 .obitrules 自定规则，给下载文件夹设策略，会话遗留物列成提议等你批准。" },
+      { title: "想多管一点", line: "写 .obitrules 自定规则，给下载文件夹设策略；想全交给 AI，一键切到全自动。" },
     ],
     agents: ["Claude Code", "Codex", "其他 agent"],
     obit: "讣告",
@@ -132,10 +132,10 @@ const zh = {
     cards: {
       mess: {
         title: "agent 产垃圾，比人清理快",
-        line: "规则认得的一生成就带上寿命；认不得的，等你点头才登记。",
+        line: "agent 自己写出来的一生成就带上寿命，事后告诉你；你原来就有的，等你点头才登记。",
         tracked: "Git 跟踪，不碰",
-        rule: "按规则登记",
-        proposal: "会话结束后提议",
+        rule: "agent 新建，直接登记",
+        proposal: "会话前就在，等你点头",
       },
       notice: {
         title: "拿不准有没有用？先下葬",
@@ -177,7 +177,7 @@ const zh = {
     pageNotes: {
       upcoming: "还在原处、带着寿命的东西；到期前随时续命，或者饶它一命。",
       graveyard: "已经下葬、还能复活的东西；复活放回原处，绝不覆盖，火化才是真删。",
-      decisions: "第一次按规则登记、会话里新起的 Docker 容器，都只列成提议；MCP 里也没有替你批准的工具。",
+      decisions: "agent 自己的东西直接进讣告，列在这里随时撤回；你原来就有的才等你拍板，也能一键切到全自动。",
     } as Record<PageId, string>,
     alt: (look: string, page: string) => `讣告小窗口的「${look}」外观，${page}页，示例数据`,
   },
@@ -187,7 +187,7 @@ const zh = {
     obitCol: "讣告做的事",
     rows: [
       { agent: "rm -rf build", obit: "打开删除护栏时拦下，给出 obit rm -rf build；东西进墓地，能复活。" },
-      { agent: "写了一个 debug.log", obit: "项目同意过之后，按规则带上寿命，到期下葬。" },
+      { agent: "写了一个 debug.log", obit: "这次会话新建的，按规则直接带上寿命，事后告诉你，到期下葬。" },
       { agent: "obit mktemp 1d", obit: "一天后整个临时目录自己下葬。" },
       { agent: "又用到一个已经下葬的文件", obit: "当场告诉它编号，obit resurrect 放回原处。" },
     ],
@@ -195,7 +195,7 @@ const zh = {
     promises: [
       { title: "不碰 Git 跟踪的文件", line: "自动登记只登记 Git 工作区里没被跟踪的东西；目录里有一个被跟踪的文件，整个目录都不碰。" },
       { title: "七天内都能复活", line: "下葬的东西默认保留 7 天，期间 obit resurrect 原样放回（配置成回收站模式时除外）。" },
-      { title: "不经你同意不登记", line: "在一个新项目里，讣告第一次想自动登记时只生成提议，你批准之后才开始。" },
+      { title: "你的东西先问你", line: "会话开始前就在的文件只生成提议，你批准之后才登记；agent 新建的直接登记，事后告诉你，一条命令撤回。" },
     ],
   },
   agents: {
@@ -314,7 +314,7 @@ const en: Copy = {
     lead: "With the delete guard on, rm -rf, git clean and Remove-Item become the equivalent obit command.",
     values: [
       { title: "Out of the box", line: "Your agent's debug scripts, logs and screenshots get a lifespan by rule, then go to the graveyard, restorable for seven days." },
-      { title: "When you want more", line: "Write .obitrules, give your Downloads folder a policy, and review what sessions leave behind as proposals." },
+      { title: "When you want more", line: "Write .obitrules, give your Downloads folder a policy, or switch to fully automatic and let the agent handle it all." },
     ],
     agents: ["Claude Code", "Codex", "Other agents"],
     obit: "Obituary",
@@ -335,10 +335,10 @@ const en: Copy = {
     cards: {
       mess: {
         title: "Agents make mess faster than people clean up",
-        line: "Recognised output gets a lifespan; the rest waits for your approval.",
+        line: "What the agent writes gets a lifespan at once and you hear about it; what was already yours waits for your approval.",
         tracked: "tracked by Git, left alone",
-        rule: "registered by rule",
-        proposal: "proposed at session end",
+        rule: "agent-made, registered",
+        proposal: "already there, proposed",
       },
       notice: {
         title: "Not sure it's still needed? Bury it",
@@ -380,7 +380,7 @@ const en: Copy = {
     pageNotes: {
       upcoming: "Things still in place with a lifespan; extend or spare them any time before they expire.",
       graveyard: "Buried and still restorable; resurrect puts things back without overwriting, and only purging really deletes.",
-      decisions: "A project's first registration by rule and the containers a session started are only proposed; no MCP tool approves for you.",
+      decisions: "The agent's own output goes straight in and is listed here to undo any time; only what was already yours waits for you, or switch to fully automatic.",
     },
     alt: (look: string, page: string) => `Obituary's small window in the ${look} look, ${page} page, with sample data`,
   },
@@ -390,7 +390,7 @@ const en: Copy = {
     obitCol: "Obituary",
     rows: [
       { agent: "rm -rf build", obit: "With the delete guard on, denied with obit rm -rf build offered instead; it goes to the graveyard and can come back." },
-      { agent: "writes a debug.log", obit: "Once the project has agreed, it gets a lifespan by rule and is buried when it expires." },
+      { agent: "writes a debug.log", obit: "Created in this session, so it gets a lifespan by rule at once, you are told, and it is buried when it expires." },
       { agent: "obit mktemp 1d", obit: "A day later the whole scratch folder buries itself." },
       { agent: "reads a file that was already buried", obit: "Is told the grave number on the spot; obit resurrect puts it back." },
     ],
@@ -398,7 +398,7 @@ const en: Copy = {
     promises: [
       { title: "Git-tracked files are left alone", line: "Automatic registration only takes what Git does not track; a folder holding one tracked file is skipped whole." },
       { title: "Restorable for seven days", line: "Buried things are kept 7 days by default and obit resurrect puts them back as they were (unless you chose recycle mode)." },
-      { title: "Nothing without your yes", line: "In a new project, the first automatic registration is only a proposal; it starts once you approve it." },
+      { title: "Your files wait for your yes", line: "Files that were there before the session are only proposed; what the agent created goes in directly, is reported, and one command undoes it." },
     ],
   },
   agents: {

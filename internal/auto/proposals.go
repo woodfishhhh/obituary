@@ -31,7 +31,9 @@ func (e *Engine) RefreshProposals() error {
 	for _, proposals := range groups {
 		errs = append(errs, e.refreshProjectProposals(proposals)...)
 	}
-	return errors.Join(errs...)
+	// Sort what is still pending under the current proposal mode: proposals
+	// made before tiering, before a mode change, or left by a retryable failure.
+	return errors.Join(append(errs, e.AutoApprovePending())...)
 }
 
 func (e *Engine) refreshProjectProposals(proposals []core.Proposal) []error {
@@ -161,7 +163,7 @@ func (e *Engine) approve(refs []string, claim func(int, string) (core.Proposal, 
 			continue
 		}
 		var pending []core.Candidate
-		r.Results, pending, err = e.approveCandidates(p, located)
+		r.Results, pending, err = e.approveCandidates(p, located, "")
 		var audit *core.AuditError
 		if errors.As(err, &audit) && core.OnlyAuditErrors(err) {
 			auditErr = err
@@ -207,12 +209,12 @@ func (e *Engine) approveWatchProposal(p core.Proposal, r *core.ProposalResult) b
 	return false
 }
 
-func (e *Engine) approveCandidates(p core.Proposal, located locations) ([]core.Result, []core.Candidate, error) {
+func (e *Engine) approveCandidates(p core.Proposal, located locations, class string) ([]core.Result, []core.Candidate, error) {
 	var out []core.Result
 	var pending []core.Candidate
 	var auditErr, retryErr error
 	for _, c := range p.Candidates {
-		results, retry, err := e.approveCandidate(p, c, located)
+		results, retry, err := e.approveCandidate(p, c, located, class)
 		out = append(out, results...)
 		if retry {
 			pending = append(pending, c)
@@ -230,9 +232,9 @@ func (e *Engine) approveCandidates(p core.Proposal, located locations) ([]core.R
 	return out, pending, auditErr
 }
 
-func (e *Engine) approveCandidate(p core.Proposal, c core.Candidate, located locations) ([]core.Result, bool, error) {
+func (e *Engine) approveCandidate(p core.Proposal, c core.Candidate, located locations, class string) ([]core.Result, bool, error) {
 	if c.Kind == core.KindContainer {
-		return e.Svc.ApproveContainer(p, c)
+		return e.Svc.ApproveContainer(p, c, class)
 	}
 	res := core.Result{Ref: c.Path}
 	reason, vetErr := e.vetCandidate(p, c, located)
@@ -253,11 +255,15 @@ func (e *Engine) approveCandidate(p core.Proposal, c core.Candidate, located loc
 		return []core.Result{res}, false, nil
 	}
 	note := fmt.Sprintf("approved #%d", p.ID)
+	if class != "" {
+		note = fmt.Sprintf("auto-approved #%d (%s)", p.ID, class)
+	}
 	if c.Rule != "" {
 		note += " (rule " + c.Rule + ")"
 	}
 	results, err := e.Svc.Add([]string{c.Path}, core.AddOptions{
 		ExpiresAt: e.now().Add(lifespan), Source: "proposal", Project: p.Project, Session: core.NormalizeSession(p.Session), Note: note, OnlyNew: true,
+		AutoClass:    class,
 		BeforeCommit: func() error { return e.checkApprovalRules(p.Project) },
 	})
 	var audit *core.AuditError

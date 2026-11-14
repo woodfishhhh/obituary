@@ -496,3 +496,45 @@ func TestProposalValidationAndRejectionWithoutGit(t *testing.T) {
 		t.Fatal("proposal list hid store failure")
 	}
 }
+
+// The Decisions page shows the proposal mode next to the proposals, switches
+// it in place, and lists what went in without asking until it is spared.
+func TestDecisionsShowModeAndWhatWentInWithoutAsking(t *testing.T) {
+	a, root := fixture(t)
+	path := filepath.Join(root, "debug.log")
+	write(t, path, "x")
+	if err := a.deps.Service.Store.Update(func(st *core.State) error {
+		st.Items = append(st.Items, core.Item{ID: st.NextID, Rev: 1, Path: path, Source: "rule", Project: root, ExpiresAt: time.Now().Add(time.Hour)})
+		st.AddAutoReceipts(core.AutoReceipt{ID: st.NextID, Class: core.AutoCreated, Project: root, At: time.Now()})
+		st.NextID++
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := a.Proposals()
+	if err != nil || rows.Mode != core.ProposalsTiered || len(rows.Handled) != 1 || rows.Handled[0].Class != core.AutoCreated || rows.Handled[0].Item.Path != path {
+		t.Fatalf("decisions view: %+v %v", rows, err)
+	}
+	plan, err := a.PlanProposalMode(core.ProposalsAuto)
+	if err != nil || len(plan.Changes) != 1 {
+		t.Fatalf("preview: %+v %v", plan, err)
+	}
+	if _, err := a.ApplyPlan(plan.ID); err != nil {
+		t.Fatal(err)
+	}
+	if rows, err = a.Proposals(); err != nil || rows.Mode != core.ProposalsAuto || a.deps.Service.Proposals() != core.ProposalsAuto {
+		t.Fatalf("mode not switched: %+v %v", rows, err)
+	}
+	if _, err := a.PlanProposalMode("everything"); err == nil {
+		t.Fatal("unknown mode accepted")
+	}
+	if reply, err := a.Cancel([]string{ref(rows.Handled[0].Item.ID)}); err != nil || reply.Error != "" {
+		t.Fatalf("undo: %+v %v", reply, err)
+	}
+	if rows, err = a.Proposals(); err != nil || len(rows.Handled) != 0 {
+		t.Fatalf("spared item still listed: %+v %v", rows, err)
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("undo must keep the file: %v", err)
+	}
+}

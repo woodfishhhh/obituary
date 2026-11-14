@@ -43,7 +43,7 @@ obit rules                       # 当前项目生效的规则
 obit rules check debug.log out/  # 预览：会登记什么、按哪条规则
 obit rules apply debug.log       # 按规则登记
 obit trust                       # 信任这个项目的 .obitrules（非交互环境加 --yes）
-obit proposals                   # 等你点头的提议
+obit proposals                   # 等你点头的提议，和没问你就登记了的东西
 obit approve 3                   # 同意
 obit reject 3                    # 拒绝
 $dir = obit mktemp 1d            # 会自动下葬的临时目录

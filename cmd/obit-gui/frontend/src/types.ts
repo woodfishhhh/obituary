@@ -88,6 +88,17 @@ export interface Proposal {
   fingerprint: string;
 }
 
+// Something the proposal mode let in without asking (core.AutoHandled),
+// listed while it is still tracked so it can be undone or kept longer.
+export interface AutoHandled {
+  item: Item;
+  class: "created" | "regenerable" | "container" | "auto" | string;
+  at: string;
+}
+
+// [proposals] mode in config.toml.
+export type ProposalMode = "tiered" | "auto" | "ask";
+
 // One proposal's outcome (core.ProposalResult). On approval, results holds
 // one entry per candidate, ref being the candidate's path; any of them can
 // fail while the proposal itself succeeds.
@@ -137,6 +148,8 @@ export interface Settings {
   downloads?: string;
   // [hooks] session_summary; missing on an older backend.
   sessionSummary?: boolean;
+  // [hooks] session_cleanup; missing on an older backend.
+  sessionCleanup?: boolean;
   // What Obituary has buried so far; missing on an older backend.
   lifetime?: Lifetime;
   // Where Obituary shows up: the tray icon, the window on the taskbar, and
@@ -219,7 +232,8 @@ export interface Api {
   Upcoming(within: "" | "24h" | "7d"): Promise<{ items: Item[] }>;
   Extend(refs: string[], lifespan: string): Promise<BatchReply<Result>>;
   Cancel(refs: string[]): Promise<BatchReply<Result>>;
-  Proposals(): Promise<{ proposals: Proposal[] }>;
+  // handled and mode are missing on an older backend.
+  Proposals(): Promise<{ proposals: Proposal[]; handled?: AutoHandled[]; mode?: ProposalMode | string }>;
   Approve(refs: string[], fingerprints: string[]): Promise<BatchReply<ProposalResult>>;
   Reject(refs: string[], fingerprints: string[]): Promise<BatchReply<ProposalResult>>;
   Rules(): Promise<{ rules: RuleFile[] }>;
@@ -240,6 +254,8 @@ export interface Api {
   // Missing on an older backend.
   PlanLanguage?(language: string): Promise<Plan>;
   PlanSessionSummary?(enabled: boolean): Promise<Plan>;
+  PlanSessionCleanup?(enabled: boolean): Promise<Plan>;
+  PlanProposalMode?(mode: ProposalMode): Promise<Plan>;
   PlanTrayIcon?(enabled: boolean): Promise<Plan>;
   PlanTaskbar?(enabled: boolean): Promise<Plan>;
   PlanStartMenu?(enabled: boolean): Promise<Plan>;

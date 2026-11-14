@@ -31,6 +31,7 @@ type Settings struct {
 	Language             string        `json:"language"`
 	EffectiveLanguage    i18n.Language `json:"effectiveLanguage"`
 	SessionSummary       bool          `json:"sessionSummary"`
+	SessionCleanup       bool          `json:"sessionCleanup"`
 	// Lifetime counts from the ledger; nil when it cannot be read.
 	Lifetime *Lifetime `json:"lifetime,omitempty"`
 	// Downloads is the user's Downloads folder, offered for folder policies.
@@ -90,7 +91,7 @@ func (a *API) Settings() (Settings, error) {
 	return Settings{TrayIcon: cfg.UI.Tray, Taskbar: cfg.UI.Taskbar, StartMenu: start != "", DesktopShortcut: desktop != "", Lifetime: lifetime, Downloads: downloadsFolder(), Mode: cfg.Graveyard.Mode, RetentionDays: cfg.Graveyard.RetentionDays, Language: cfg.UI.Language, EffectiveLanguage: language,
 		ConfigPath: filepath.Join(a.deps.ConfigDir, "config.toml"), ContextMenuInstalled: menu.Installed,
 		ContextMenuCurrent: menu.Current, ContextMenuDetail: menu.Detail, Autostart: startup.Before != "", Paused: paused,
-		SessionSummary: cfg.Hooks.SessionSummary}, err
+		SessionSummary: cfg.Hooks.SessionSummary, SessionCleanup: cfg.Hooks.SessionCleanup}, err
 }
 
 type ChangePreview struct {
@@ -176,6 +177,35 @@ func (a *API) PlanSessionSummary(enabled bool) (Plan, error) {
 		cfg, err := a.readConfig()
 		if err == nil {
 			a.deps.Service.SessionSummary = cfg.Hooks.SessionSummary
+		}
+		return err
+	}), nil
+}
+
+// PlanSessionCleanup previews [hooks] session_cleanup; hooks read it per event.
+func (a *API) PlanSessionCleanup(enabled bool) (Plan, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	path := filepath.Join(a.deps.ConfigDir, "config.toml")
+	old, err := a.readConfig()
+	if err != nil {
+		return Plan{}, err
+	}
+	if old.Hooks.SessionCleanup == enabled {
+		return a.savePlan("sessionCleanup", []ChangePreview{}, func() error { return nil }), nil
+	}
+	change, err := integrate.PlanSessionCleanupConfig(path, enabled)
+	if err != nil {
+		return Plan{}, err
+	}
+	preview := []ChangePreview{{Target: path, Before: fmt.Sprintf("session_cleanup=%t", old.Hooks.SessionCleanup), After: fmt.Sprintf("session_cleanup=%t", enabled)}}
+	return a.savePlan("sessionCleanup", preview, func() error {
+		if err := integrate.Apply([]integrate.Change{change}); err != nil {
+			return err
+		}
+		cfg, err := a.readConfig()
+		if err == nil {
+			a.deps.Service.SessionCleanup = cfg.Hooks.SessionCleanup
 		}
 		return err
 	}), nil

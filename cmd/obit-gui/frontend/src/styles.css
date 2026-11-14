@@ -135,6 +135,10 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
 .cols-grave { grid-template-columns: 18px minmax(0, 1fr) 176px 92px 104px; }
 .cols-item { grid-template-columns: 18px minmax(0, 1fr) 176px 104px 84px; }
 .cols-watch { grid-template-columns: minmax(0, 1fr) 70px 160px 100px auto; }
+.cols-handled { grid-template-columns: minmax(0, 1fr) 104px 176px auto; }
+.cols-handled .acts { display: flex; gap: 6px; justify-content: flex-end; }
+.mode-card .panel-head { flex-wrap: wrap; }
+.mode-card p { margin: 0; }
 .num { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-2); white-space: nowrap; }
 .when { font-variant-numeric: tabular-nums; color: var(--text-2); white-space: nowrap; font-size: 0.93em; }
 

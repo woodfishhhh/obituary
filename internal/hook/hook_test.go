@@ -315,7 +315,7 @@ func TestSessionContextDescribesApprovedPendingCandidates(t *testing.T) {
 	e.wrote(bad)
 	p := e.state().Proposals[0]
 	ctx := e.event(map[string]any{"hook_event_name": "SessionStart"})
-	if !strings.Contains(ctx, "until the user approves") {
+	if !strings.Contains(ctx, "only once the user approves") {
 		t.Fatalf("unapproved context: %q", ctx)
 	}
 	e.engine.Svc.Guard.Canonical = func(path string) (string, error) {

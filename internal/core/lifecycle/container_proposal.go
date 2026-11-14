@@ -21,7 +21,8 @@ func sameCandidate(a, b Candidate) bool {
 }
 
 // ApproveContainer re-inspects the immutable identity saved in the proposal.
-func (s *Service) ApproveContainer(p Proposal, c Candidate) ([]Result, bool, error) {
+// A non-empty class marks a registration Obituary made without asking.
+func (s *Service) ApproveContainer(p Proposal, c Candidate, class string) ([]Result, bool, error) {
 	result := Result{Ref: c.Path}
 	client, err := s.containerClient()
 	if err == nil {
@@ -47,7 +48,11 @@ func (s *Service) ApproveContainer(p Proposal, c Candidate) ([]Result, bool, err
 		result.Error = err.Error()
 		return []Result{result}, true, err
 	}
-	item, err := s.registerContainer(got.Identity, AddOptions{ExpiresAt: s.now().Add(lifespan), Source: "proposal", Project: p.Project, Session: NormalizeSession(p.Session), Note: fmt.Sprintf("approved #%d", p.ID), OnlyNew: true})
+	note := fmt.Sprintf("approved #%d", p.ID)
+	if class != "" {
+		note = fmt.Sprintf("auto-approved #%d (%s)", p.ID, class)
+	}
+	item, err := s.registerContainer(got.Identity, AddOptions{ExpiresAt: s.now().Add(lifespan), Source: "proposal", Project: p.Project, Session: NormalizeSession(p.Session), Note: note, OnlyNew: true, AutoClass: class})
 	if err != nil {
 		result.Error = err.Error()
 		return []Result{result}, true, err

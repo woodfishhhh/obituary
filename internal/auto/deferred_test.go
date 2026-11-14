@@ -417,6 +417,7 @@ func TestReplayFailureDoesNotBlockOtherObservationsOrLeftovers(t *testing.T) {
 	}
 	t.Parallel()
 	r := newRepo(t)
+	r.ask() // exercises the proposal itself, as "ask" mode keeps it
 	bad := r.write("bad.log", "retry")
 	if err := r.engine.Snapshot(r.root, "s"); err != nil {
 		t.Fatal(err)
@@ -454,6 +455,7 @@ func TestFinishStillComputesLeftoversWhenQueueUnreadable(t *testing.T) {
 	}
 	t.Parallel()
 	r := newRepo(t)
+	r.ask() // exercises the proposal itself, as "ask" mode keeps it
 	if err := r.engine.Snapshot(r.root, "s"); err != nil {
 		t.Fatal(err)
 	}

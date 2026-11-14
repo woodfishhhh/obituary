@@ -65,6 +65,8 @@ type Event struct {
 	Shell         guardrm.Shell // PreToolUse: syntax supplied by the tool context
 	ShellDeclared bool          // shell came from owner config, not per-call evidence
 	SkipReason    string        // unsupported tool envelope
+	CanContinue   bool          // Stop: the host continues on a block decision with a reason
+	StopActive    bool          // Stop: the agent is already continuing because of a Stop hook
 }
 
 // Handle carries out one event and returns the context the agent should see,
@@ -196,6 +198,9 @@ func captureEventObservations(e *auto.Engine, ev Event, proj project.Project, pa
 func postToolContext(e *auto.Engine, ev Event, runner *Runner, pendingNotices bool, proj project.Project, inProject bool) (delivery, error) {
 	paths := eventWritePaths(ev)
 	observations, captureErr := captureEventObservations(e, ev, proj, paths)
+	if err := e.RecordWrites(observations); err != nil {
+		Logf(e.Svc.Store.Home, "record session writes: %v", err)
+	}
 	replayPending(e)
 	if len(paths) == 0 && !pendingNotices && ev.Name != "Context" {
 		return delivery{}, nil
@@ -228,9 +233,10 @@ func observationContext(e *auto.Engine, ev Event, proj project.Project, inProjec
 	// A callback need not write another matching file to deliver earlier
 	// observations. The ledger is the queue, scoped to the current project
 	// or proposals created by this session (which may span projects).
+	var state core.State
 	if pendingNotices || ev.Name == "Context" {
-		state, err := e.Svc.Store.ReadHot()
-		if err != nil {
+		var err error
+		if state, err = e.Svc.Store.ReadHot(); err != nil {
 			return delivery{}, err
 		}
 		for _, p := range core.ExistingProposals(state.Proposals) {
@@ -251,14 +257,21 @@ func observationContext(e *auto.Engine, ev Event, proj project.Project, inProjec
 		}
 		context.append(n.Proposal, consent)
 	}
+	if pendingNotices || ev.Name == "Context" {
+		root := proj.Root
+		if !inProject {
+			root = ev.Cwd
+		}
+		context.appendReceipts(untoldReceipts(state, root, ev.Session, inProject), root, serviceNow(e.Svc))
+	}
 	return context, nil
 }
 
 func finishSession(e *auto.Engine, ev Event, runner *Runner, proj project.Project, inProject bool) (delivery, error) {
 	// Claude Stop additionalContext continues the turn. Codex Stop has
 	// no additionalContext field; JSON continuation uses block + reason.
-	// Both ending events stay silent; a runner computes the diff outside
-	// the hook's time budget.
+	// Ending events stay silent apart from the session cleanup below; a
+	// runner computes the diff outside the hook's time budget.
 	if !inProject && runner.Finish != nil {
 		runner.Finish(ev.Cwd, ev.Session, ev.Name == "SessionEnd")
 	}
@@ -271,6 +284,20 @@ func finishSession(e *auto.Engine, ev Event, runner *Runner, proj project.Projec
 	}
 	if ev.Name == "SessionEnd" && runner.Tick != nil {
 		runner.Tick()
+	}
+	if !inProject || !e.Svc.SessionCleanup || ev.StopActive {
+		return delivery{}, nil
+	}
+	// The one non-silent ending: a Stop whose host can continue asks the
+	// agent, once per session, to sort the files it created. Other hosts
+	// leave the request to the next session start in the project.
+	if ev.Name == "Stop" && ev.CanContinue {
+		return stopCleanup(e, proj.Root, ev.Session)
+	}
+	if !ev.CanContinue && e.CleanupState(proj.Root, ev.Session) == "" {
+		if _, err := e.MarkCleanup(proj.Root, ev.Session, auto.CleanupPending); err != nil {
+			Logf(e.Svc.Store.Home, "session cleanup: %v", err)
+		}
 	}
 	return delivery{}, nil
 }

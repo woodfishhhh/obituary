@@ -22,6 +22,7 @@ type AddOptions struct {
 	Project      string
 	Session      string
 	Observed     *Observation // original hook write, checked inside the transaction
+	AutoClass    string       // registered without asking: record an AutoReceipt of this class
 	BeforeCommit func() error // external approval snapshot check under the write lock; must not access Store
 }
 
@@ -97,6 +98,7 @@ func (s *Service) Add(paths []string, opts AddOptions) ([]Result, error) {
 				break
 			}
 		}
+		recordAutoReceipts(st, results, opts, now)
 		return nil
 	})
 	if commitFailed(err) {
@@ -360,4 +362,15 @@ func (s *Service) inspect(ref string, force bool) (*candidate, error) {
 		return nil, fmt.Errorf("refusing %s: %w", abs, err)
 	}
 	return &candidate{path: filepath.Clean(abs), isDir: info.IsDir(), identity: identity}, nil
+}
+
+func recordAutoReceipts(st *State, results []Result, opts AddOptions, now time.Time) {
+	if opts.AutoClass == "" {
+		return
+	}
+	for _, r := range results {
+		if r.Item != nil {
+			st.AddAutoReceipts(AutoReceipt{ID: r.Item.ID, Class: opts.AutoClass, Project: opts.Project, Session: opts.Session, At: now})
+		}
+	}
 }

@@ -419,8 +419,10 @@ func TestFinalHookBypassesFinishDebounce(t *testing.T) {
 			path := testenv.Leftover(t, root, "dist") // built after the last Stop
 			run("SessionEnd")
 			st, err := store.Read()
-			if calls != 2 || err != nil || len(st.Proposals) != 1 || len(st.Proposals[0].Candidates) != 1 || st.Proposals[0].Candidates[0].Path != path {
-				t.Fatalf("final event must finish and propose last-minute leftovers: spawns=%d proposals=%+v err=%v", calls, st.Proposals, err)
+			// Tiered mode registers regenerable leftovers directly, with a receipt.
+			handled := st.AutoHandled()
+			if calls != 2 || err != nil || len(st.Proposals) != 0 || len(handled) != 1 || handled[0].Item.Path != path || handled[0].Class != core.AutoRegenerable {
+				t.Fatalf("final event must finish and register last-minute leftovers: spawns=%d handled=%+v proposals=%+v err=%v", calls, handled, st.Proposals, err)
 			}
 		})
 	}

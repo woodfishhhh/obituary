@@ -117,3 +117,36 @@ func TestSessionSummaryConfigToggles(t *testing.T) {
 		}
 	}
 }
+
+func TestProposalModeAndCleanupConfig(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	for _, original := range []string{"", "# keep\n[graveyard]\nmode = 'recycle'\n"} {
+		if original != "" {
+			writeIntegrationFile(t, path, original)
+		}
+		for _, mode := range []string{config.ProposalsAuto, config.ProposalsAsk, config.ProposalsTiered} {
+			change, err := PlanProposalModeConfig(path, mode)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := Apply([]Change{change}); err != nil {
+				t.Fatal(err)
+			}
+			cleanup, err := PlanSessionCleanupConfig(path, mode != config.ProposalsAsk)
+			if err != nil || Apply([]Change{cleanup}) != nil {
+				t.Fatal(err)
+			}
+			data := read(t, path)
+			cfg, err := config.Parse([]byte(data), path)
+			if err != nil || cfg.Proposals.Mode != mode || cfg.Hooks.SessionCleanup != (mode != config.ProposalsAsk) {
+				t.Fatalf("mode=%s not applied: %q %v", mode, data, err)
+			}
+			if original != "" && (!strings.Contains(data, "# keep") || cfg.Graveyard.Mode != "recycle") {
+				t.Fatalf("unrelated settings lost: %q", data)
+			}
+		}
+	}
+	if _, err := PlanProposalModeConfig(path, "everything"); err == nil {
+		t.Fatal("unknown proposal mode accepted")
+	}
+}

@@ -43,7 +43,7 @@ obit rules                       # the rules in effect here
 obit rules check debug.log out/  # preview what would be registered and by which rule
 obit rules apply debug.log       # register by rule
 obit trust                       # trust this project's .obitrules (--yes when non-interactive)
-obit proposals                   # proposals waiting for you
+obit proposals                   # proposals waiting for you, and what was registered without asking
 obit approve 3                   # approve
 obit reject 3                    # reject
 $dir = obit mktemp 1d            # a temporary folder that buries itself

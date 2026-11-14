@@ -1,4 +1,4 @@
-import { AppWindow, Archive, CalendarClock, ClipboardList, FolderInput, FolderOpen, LayoutGrid, ListChecks, Monitor, MousePointerClick, PanelBottom, PauseCircle, Plus, Power, Trash2 } from "lucide-react";
+import { AppWindow, Archive, CalendarClock, ClipboardList, FolderInput, FolderOpen, LayoutGrid, ListChecks, Monitor, MousePointerClick, PanelBottom, PauseCircle, Plus, Power, Sparkles, Trash2 } from "lucide-react";
 import { Fragment, useState, type ReactNode } from "react";
 import { errorText, useApi } from "../api";
 import { bytes, lifespanText, when } from "../format";
@@ -12,7 +12,7 @@ import Appearance from "./Appearance";
 
 const watchActive = (p: WatchPolicy) => p.consent === undefined || (p.consent === "approved" && (p.approvedRev ?? 0) === (p.rev ?? 0));
 const ages = (): [string, string][] => [["first-seen", t("set.age.firstSeen")], ["modified", t("set.age.modified")]];
-const actions = ["settings", "contextMenu", "autostart", "pause", "language", "sessionSummary", "updateCheck", "trayIcon", "taskbar", "startMenu", "desktopShortcut"] as const;
+const actions = ["settings", "contextMenu", "autostart", "pause", "language", "sessionSummary", "sessionCleanup", "proposalMode", "updateCheck", "trayIcon", "taskbar", "startMenu", "desktopShortcut"] as const;
 const actionText = (action: string) => ((actions as readonly string[]).includes(action) ? t(`set.action.${action as (typeof actions)[number]}`) : action);
 
 export default function Settings() {
@@ -98,6 +98,11 @@ export default function Settings() {
         {s.sessionSummary !== undefined && api.PlanSessionSummary ? (
           <Setting icon={ClipboardList} label={t("set.summary")} desc={t("set.summaryDesc")}>
             <Switch on={s.sessionSummary} label={t("set.summary")} onToggle={async () => apply(await api.PlanSessionSummary!(!s.sessionSummary), s.sessionSummary ? t("set.summaryOff") : t("set.summaryOn"))} />
+          </Setting>
+        ) : null}
+        {s.sessionCleanup !== undefined && api.PlanSessionCleanup ? (
+          <Setting icon={Sparkles} label={t("set.cleanup")} desc={t("set.cleanupDesc")}>
+            <Switch on={s.sessionCleanup} label={t("set.cleanup")} onToggle={async () => apply(await api.PlanSessionCleanup!(!s.sessionCleanup), s.sessionCleanup ? t("set.cleanupOff") : t("set.cleanupOn"))} />
           </Setting>
         ) : null}
         <Setting icon={ListChecks} label={t("set.askDecisions")} desc={ask ? t("set.askDecisionsOn") : t("set.askDecisionsOff")}>

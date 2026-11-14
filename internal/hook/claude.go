@@ -15,6 +15,7 @@ type claudeInput struct {
 	Cwd       string         `json:"cwd"`
 	Event     string         `json:"hook_event_name"`
 	Source    string         `json:"source"` // SessionStart: startup, resume, clear, compact, fork
+	StopHook  bool           `json:"stop_hook_active"`
 	ToolName  string         `json:"tool_name"`
 	ToolInput map[string]any `json:"tool_input"`
 }
@@ -52,6 +53,8 @@ func (claudeAdapter) Decode(raw []byte, _ Invocation) (Event, error) {
 		return Event{}, err
 	}
 	ev := Event{Name: in.Event, Tool: in.ToolName, Session: core.NormalizeSession(in.SessionID), Cwd: in.Cwd, Source: in.Source}
+	// code.claude.com/docs/en/hooks#stop-decision-control: block + reason continues.
+	ev.CanContinue, ev.StopActive = in.Event == "Stop", in.StopHook
 	ev.References, ev.Writing = fileReferences(in.ToolName, in.ToolInput)
 	if in.Event == "PreToolUse" {
 		switch in.ToolName {
@@ -75,6 +78,12 @@ func (claudeAdapter) Encode(ev Event, result Result) ([]byte, error) {
 	if !result.Deny && result.Context == "" {
 		return nil, nil
 	}
+	if ev.Name == "Stop" && result.Continue {
+		return EncodeJSON(struct {
+			Decision string `json:"decision"`
+			Reason   string `json:"reason"`
+		}{"block", result.Context})
+	}
 	var o claudeOutput
 	o.HookSpecificOutput.HookEventName = ev.Name
 	// code.claude.com/docs/en/hooks#pretooluse-decision-control permits
@@ -96,7 +105,7 @@ func init() {
 		DeleteGuard:      Support{Level: Supported, Detail: "Bash and PowerShell tools; opt-in with --guard-rm"},
 		WriteObservation: Support{Level: Supported}, SessionStart: Support{Level: Supported},
 		Stop: Support{Level: Supported}, SessionEnd: Support{Level: Supported},
-		Context: Support{Level: Supported, Detail: "SessionStart and PostToolUse; ending events stay silent"},
+		Context: Support{Level: Supported, Detail: "SessionStart and PostToolUse; Stop asks once per session about files the agent created and left unsorted; SessionEnd stays silent"},
 		MCP:     Support{Level: Supported}, Skill: Support{Level: Supported},
 	}})
 }

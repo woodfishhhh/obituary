@@ -31,6 +31,7 @@ type Config struct {
 	Watch             Watch             `toml:"watch"`
 	UI                UI                `toml:"ui"`
 	Hooks             Hooks             `toml:"hooks"`
+	Proposals         Proposals         `toml:"proposals"`
 	Update            Update            `toml:"update"`
 	CodexWindowsShell string            `toml:"codex_windows_shell,omitempty"`
 	AgentShells       map[string]string `toml:"agent_shells,omitempty"`
@@ -67,9 +68,22 @@ func (w Watch) Stability() time.Duration {
 	return d
 }
 
-// Hooks controls what agents are told at session start.
+// Hooks controls what agents are told at session start and end.
 type Hooks struct {
 	SessionSummary bool `toml:"session_summary"`
+	SessionCleanup bool `toml:"session_cleanup"`
+}
+
+// Proposal modes: what automatic registration may do without asking.
+const (
+	ProposalsTiered = "tiered" // the agent's own files, regenerable leftovers and session containers go in; the rest waits
+	ProposalsAuto   = "auto"   // everything automatic registration finds goes in
+	ProposalsAsk    = "ask"    // everything waits for approval
+)
+
+// Proposals controls which automatic registrations wait for the user.
+type Proposals struct {
+	Mode string `toml:"mode"`
 }
 
 // Update controls automatic public release checks.
@@ -97,7 +111,7 @@ func (g Graveyard) Retention() time.Duration {
 
 // Default returns the built-in configuration.
 func Default() Config {
-	return Config{Graveyard: Graveyard{Mode: ModeGraveyard, RetentionDays: 7}, Explorer: Explorer{Enabled: true}, Watch: Watch{StableWindow: "10m"}, UI: UI{Language: i18n.Auto, Tray: true, Taskbar: true}, Update: Update{Check: true}}
+	return Config{Graveyard: Graveyard{Mode: ModeGraveyard, RetentionDays: 7}, Explorer: Explorer{Enabled: true}, Watch: Watch{StableWindow: "10m"}, UI: UI{Language: i18n.Auto, Tray: true, Taskbar: true}, Update: Update{Check: true}, Hooks: Hooks{SessionCleanup: true}, Proposals: Proposals{Mode: ProposalsTiered}}
 }
 
 // Template is what `obit config --create` writes.
@@ -131,6 +145,24 @@ retention_days = 7
 # within 24 hours and what was buried recently. Off by default to save tokens:
 # the agent is told anyway when a tool call touches a buried path.
 session_summary = false
+# Once per session, when the agent is about to stop, list the files it created
+# in this session that still have no lifespan and Git does not track, and ask it
+# to give its scratch files a lifespan (obit mark) or bury them; deliverables
+# stay. Agents that cannot be asked to continue hear it at the next session start.
+session_cleanup = true
+
+[proposals]
+# What automatic registration may do without asking you first:
+#   "tiered"  files the agent created in this session (seen by the hook),
+#             Git-ignored dependencies, build output and caches the session left,
+#             and containers the session started go in directly; you are told
+#             afterwards and can undo it (obit spare / extend / resurrect).
+#             Anything else waits in obit proposals for your approval.
+#   "auto"    everything automatic registration finds goes in directly;
+#             you are told afterwards.
+#   "ask"     everything waits for your approval first.
+# Git-tracked files are never registered automatically in any mode.
+mode = "tiered"
 
 [update]
 # Read public GitHub release metadata at most once per day; no usage data is sent.
@@ -288,6 +320,11 @@ func (c Config) validate(path string) error {
 	}
 	if d, err := time.ParseDuration(c.Watch.StableWindow); err != nil || d <= 0 {
 		return fmt.Errorf("%s: watch.stable_window must be a positive duration (for example 10m)", path)
+	}
+	switch c.Proposals.Mode {
+	case ProposalsTiered, ProposalsAuto, ProposalsAsk:
+	default:
+		return fmt.Errorf("%s: proposals.mode must be %q, %q or %q, not %q", path, ProposalsTiered, ProposalsAuto, ProposalsAsk, c.Proposals.Mode)
 	}
 	switch c.Graveyard.Mode {
 	case ModeGraveyard, ModeRecycle:

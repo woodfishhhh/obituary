@@ -27,6 +27,7 @@ func TestContainerSessionProposals(t *testing.T) {
 		t.Skip("real Git repository and fake Docker executable")
 	}
 	r := newRepo(t)
+	r.ask() // exercises the proposal itself, as "ask" mode keeps it
 	executable, state, _ := testenv.FakeDocker(t)
 	now := time.Date(2026, 11, 11, 12, 0, 0, 0, time.UTC)
 	r.engine.Svc.Now = func() time.Time { return now }

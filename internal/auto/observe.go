@@ -72,7 +72,7 @@ func (e *Engine) Observe(paths []string, session string) ([]Decision, []Notice, 
 			return nil, nil, err
 		}
 	}
-	return e.observe(paths, session, locations{}, nil)
+	return e.observe(paths, Options{Session: session, Written: true}, locations{})
 }
 
 // ObserveCaptured preserves each hook event's identity across lock waits.
@@ -89,7 +89,7 @@ func (e *Engine) ObserveCaptured(rows []core.Observation) ([]Decision, []Notice,
 			failures = errors.Join(failures, err)
 			continue
 		}
-		ds, ns, err := e.observe([]string{row.Path}, row.Session, located, &row)
+		ds, ns, err := e.observe([]string{row.Path}, Options{Session: row.Session, Observed: &row, Written: true}, located)
 		decisions = append(decisions, ds...)
 		failures = errors.Join(failures, err)
 		for _, n := range ns {
@@ -107,8 +107,8 @@ func (e *Engine) ObserveCaptured(rows []core.Observation) ([]Decision, []Notice,
 // observe aborts only when the initial ledger read fails. Individual inspection,
 // registration and proposal failures stay in their decisions and are joined
 // after every input has been processed.
-func (e *Engine) observe(paths []string, session string, located locations, observed *core.Observation) ([]Decision, []Notice, error) {
-	opts := Options{Session: core.NormalizeSession(session), Observed: observed}
+func (e *Engine) observe(paths []string, opts Options, located locations) ([]Decision, []Notice, error) {
+	opts.Session = core.NormalizeSession(opts.Session)
 	state, err := e.Svc.Store.ReadHot()
 	if err != nil {
 		var decisions []Decision
@@ -140,7 +140,13 @@ func (e *Engine) observePath(ref string, opts Options, state *core.State, locate
 	// too used to launch two identical ls-files processes per hook. Keep
 	// fresh queries instead of caching index answers across either writes
 	// or hook calls (worktrees and index replacement must stay Git's job).
-	if state.Projects[core.ProjectKey(matchedProject.Root)].Consent != core.ConsentApproved {
+	// Units the proposal mode lets in without asking go through Apply too;
+	// their class is decided once (approved projects decide after sizing).
+	approved := state.Projects[core.ProjectKey(matchedProject.Root)].Consent == core.ConsentApproved
+	if d.Action == WouldRegister && !approved {
+		opts.AutoClass = e.directClass(matchedProject.Root, d.Unit, opts)
+	}
+	if opts.AutoClass == "" && !approved {
 		d = e.vetDecision(d, matchedProject, state, located)
 	}
 	var n *Notice
@@ -173,15 +179,23 @@ func (e *Engine) observeRegistration(ref string, d Decision, matchedProject proj
 	bytes, files := size(d.Unit)
 	approved := state.Projects[core.ProjectKey(proj.Root)].Consent == core.ConsentApproved
 	if approved && bytes <= LargeBytes && files <= LargeFiles {
+		opts.AutoClass = "" // the user approved this project: no receipt, as before
 		return e.applyObservedUnit(ref, d, opts, state, located), nil
 	}
 	// Approved large units bypass Apply, so they need its vetting
 	// gate before becoming proposals as well.
 	if state.Projects[core.ProjectKey(matchedProject.Root)].Consent == core.ConsentApproved {
-		d = e.vetDecision(d, proj, state, located)
+		if d = e.vetDecision(d, proj, state, located); d.Action == WouldRegister {
+			opts.AutoClass = e.directClass(proj.Root, d.Unit, opts)
+		}
 	}
 	if d.Action != WouldRegister {
 		return d, nil
+	}
+	// What the proposal mode lets in without asking is registered at once,
+	// through Apply's gates, with a receipt in place of the proposal.
+	if opts.AutoClass != "" {
+		return e.applyObservedUnit(ref, d, opts, state, located), nil
 	}
 	return e.proposeObservedUnit(d, proj.Root, opts, bytes, approved)
 }
@@ -241,6 +255,7 @@ type snapshot struct {
 	Session string    `json:"session"`
 	At      time.Time `json:"at"`
 	Paths   []string  `json:"paths"`
+	Git     bool      `json:"git,omitempty"` // Paths is Git's complete untracked list
 }
 
 var unsafeSession = regexp.MustCompile(`[^A-Za-z0-9_-]+`)
@@ -267,7 +282,7 @@ func (e *Engine) Snapshot(root, session string) error {
 	if err != nil {
 		return err
 	}
-	return e.saveSnapshot(path, snapshot{Project: root, Session: session, At: e.now(), Paths: paths})
+	return e.saveSnapshot(path, snapshot{Project: root, Session: session, At: e.now(), Paths: paths, Git: true})
 }
 
 func (e *Engine) saveSnapshot(path string, snap snapshot) error {
@@ -354,13 +369,20 @@ func (e *Engine) Leftovers(root, session string) ([]Notice, error) {
 		}
 	}
 	located := locations{}
-	_, notices, observeErr := e.observe(fresh, session, located, nil)
+	regenerated := map[string]bool{}
+	for _, p := range disposable {
+		regenerated[strings.ToLower(filepath.Clean(p))] = true
+	}
+	_, notices, observeErr := e.observe(fresh, Options{Session: session, regenerable: regenerated}, located)
 	state, err := e.Svc.Store.ReadHot()
 	if err != nil {
 		return notices, err
 	}
 	cands := e.leftoverCandidates(disposable, &state, located)
 	n, err := e.propose(core.ProposalLeftovers, root, session, cands, nil)
+	if n != nil {
+		n, err = e.settleNotice(*n, err)
+	}
 	if n != nil {
 		notices = append(notices, *n)
 	}

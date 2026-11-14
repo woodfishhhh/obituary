@@ -33,7 +33,7 @@
 - **安全第一。** 把东西挪走只能走 `FS.MovePinned`（下葬：在同一个句柄上核对身份并改名）、`FS.MovePinnedInto`（复活：同样按句柄核对，移进已固定的父目录）或 `FS.Recycle`。用户内容的永久删除只有 `Purge` 一处，而且只能删除 `graveDir` 认可的坟墓目录。讣告清理自己的东西不算在内，但只能删自己能证明的：墓地清单和临时文件、核实过身份且为空的坟墓（下葬中止、复活提交之后）、本次自己新建且仍为空的目录（复活被拒绝时按创建句柄撤销、`mktemp` 登记失败时撤销）。用户的东西禁止直接 `os.Remove` / `RemoveAll`。回收失败必须保留原文件并重试，不能退化成永久删除。只有确定的 `ErrNotFound` 才能放弃一条记录；`ErrUnsafe` 算拒绝；其他错误一律重试。
 - 改 Guard、`locate`、`settle`、`commit` 或回收逻辑时，先写一个能证明不会误删的失败测试；改完后把修复临时改回去，确认测试真的能抓到。改回去的版本必须能编译，编译失败不算验证。
 - 自动登记相关的改动，测试要跑在真的临时 Git 仓库里（参考 `internal/auto` 的 `newRepo`），不要假装 Git 的回答。
-- Claude Code 的 Stop hook 每个回合都会触发，只要返回 additionalContext，Claude 就会接着跑下去，所以 Stop / SessionEnd 必须静默。SessionEnd 默认只有 1.5 秒，重活交给 `obitd --once`。给 agent 的文字写成陈述，不写成命令（官方文档的建议，祈使句可能触发提示注入防护）。
+- Claude Code 的 Stop hook 每个回合都会触发，只要返回 additionalContext 或 block，Claude 就会接着跑下去，所以 Stop / SessionEnd 默认静默。唯一的例外是收工整理（`[hooks] session_cleanup`）：只对能接着干的宿主（Claude Code、Codex 的 Stop，由适配器设 `CanContinue`）、每个会话最多一次（先独占写下 `sessions/*.cleanup` 再输出，宁可丢一次也不循环）、只列 agent 自己这次新建且没归类的文件，`stop_hook_active` 时不出声。SessionEnd 默认只有 1.5 秒，重活交给 `obitd --once`。给 agent 的文字写成陈述，不写成命令（官方文档的建议，祈使句可能触发提示注入防护）。
 - hook 的真机验收：在临时 Git 仓库里执行 `obit init --yes`（只写项目里的 `.claude/`，不碰全局），设好 `OBIT_HOME`，再跑 `claude -p "…" --model haiku --allowedTools Write`，检查 `obit proposals` 和 `hook.log`。
 - **进度不放在本仓库。** 路线、里程碑、任务拆分和决策记录在维护者的私有仓库里（维护者本机检出在被忽略的 `docs-internal/`），由维护者更新。GitHub 上只保留里程碑和少量 issue：不要把任务拆成一串 issue，一次最多新开一个（所有者 2026-11-09 定）；做完已有 issue 对应的事项时在提交说明里写 `Closes #<编号>`。
 - **测试按功能命名，不按审查轮次或阶段命名。** 新测试放进它所测功能的文件（`graveyard_test.go`、`manifest_test.go`、`delete_guard_test.go`……），不要新建 `review5_test.go`、`m2a_test.go` 这类文件；每轮修了什么、为什么修，写进 commit message。跨模块的端到端测试（真实 shell 执行 → 下葬 → 复活、协议抓取）放在 `internal/e2e/`，以外部包的方式写。

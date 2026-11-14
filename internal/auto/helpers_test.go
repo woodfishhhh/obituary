@@ -49,6 +49,9 @@ func newEngineFixture(t *testing.T) *repo {
 	return r
 }
 
+// ask restores the pre-tiering behaviour: every automatic registration is proposed.
+func (r *repo) ask() { r.engine.Svc.ProposalMode = core.ProposalsAsk }
+
 func (r *repo) git(args ...string) string {
 	r.t.Helper()
 	cmd := exec.Command("git", append([]string{"-C", r.root, "-c", "user.name=t", "-c", "user.email=t@t", "-c", "core.autocrlf=false"}, args...)...)

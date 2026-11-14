@@ -150,6 +150,9 @@ func benchmarkHook(b *testing.B, agent string, run func(*auto.Engine, io.Reader,
 	}
 }
 
+// ask restores the pre-tiering behaviour: every automatic registration is proposed.
+func (e *env) ask() { e.engine.Svc.ProposalMode = core.ProposalsAsk }
+
 func (e *env) write(rel string) string {
 	e.t.Helper()
 	path := filepath.Join(e.root, filepath.FromSlash(rel))

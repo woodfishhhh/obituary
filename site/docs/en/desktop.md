@@ -16,6 +16,7 @@ Resurrect files, approve proposals and change settings without the command line.
 
 `obit-gui.exe` has five pages: Upcoming, Graveyard, Decisions, Settings and Logs. "Obituary" in Start, the desktop shortcut and "Open Obituary" in the tray menu all open it.
 
+- The top of Decisions switches the proposal mode: Tiered (the default), Fully automatic (whatever an agent wants in Obituary goes in directly and you are told afterwards) and Ask about everything. What went in without asking is listed further down under Handled automatically, each with one-click Undo (the countdown stops, it stays where it is) and Keep longer.
 - Trusting a `.obitrules` file trusts exactly the version shown in the window.
 - The window, tray and context menu follow `[ui] language` in `config.toml` (`auto`, `zh-CN` or `en`; `auto` follows Windows). You can switch it in Settings.
 - It needs the WebView2 runtime (built into Windows 11 and present on most Windows 10 machines) and is x64 only.

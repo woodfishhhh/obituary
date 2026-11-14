@@ -64,7 +64,7 @@ flowchart TD
 ## 原则
 
 - **每个决定只在一处做出。** 下面「关卡」一节列出了每类决定的唯一位置。新入口必须调用这些关卡，不准另写一份判断。
-- **hook 永远放行。** 出错就退出 0、不输出东西，错误写进 `hook.log`。Stop / SessionEnd 必须静默，因为 Claude Code 收到 additionalContext 会接着跑。
+- **hook 永远放行。** 出错就退出 0、不输出东西，错误写进 `hook.log`。Stop / SessionEnd 默认静默，因为 Claude Code 收到 additionalContext 或 block 会接着跑；唯一的例外是收工整理，每个会话最多一次（见下面「hook」）。
 - **权限只降不升。** 拿不准就按更严的处理：问不出 Git 就当作已被跟踪，核对不了身份就不动，规则加载失败就不登记。
 - **安装可重复、可撤销。** 先算出计划，再落盘；只碰自己写的东西。
 - **用户目录只有一个入口。** `internal/userdirs` 是唯一解析数据目录、配置目录、主目录、`~/.claude`、`~/.codex` 的地方，源码扫描测试强制这一点。
@@ -79,6 +79,7 @@ flowchart TD
 | 要防住 | 例子 |
 |---|---|
 | agent 和人的失误 | 给错路径、对源码目录设寿命、`rm -rf` 删错东西 |
+| 被诱导的 agent 借分级绕过提议 | 把用户的旧文件夹改名成规则认得的 `test-results/` 再往里写一个文件，想让它不经提议就登记：快照之外还要看创建时间，改名和挪动不改创建时间，所以只生成提议；Git 跟踪的、拒绝过的项目、文件夹策略和规则信任在任何模式下都不放行 |
 | 不可信的仓库内容 | 别人仓库里的 `.obitrules` 想收走你的文件（所以要先信任）、指向项目外的 `.claude` / `.codex` 链接 |
 | 过时或被改坏的账本 | 记录里的路径已经换成了别的对象、坟墓编号被改过 |
 | 普通程序的并发 | 编辑器在保存、另一个 `obit` 在跑、agent 在登记的同时文件被改名或移动 |
@@ -101,6 +102,9 @@ flowchart TD
 |---|---|---|
 | 路径能不能碰 | `core.Guard.Check` | 盘符根、系统目录、用户文件夹本身及其上级（含重定向的已知文件夹）；先还原 8.3 短名和 junction |
 | 能不能自动登记 | `auto.Engine.vetUnit` | 规则、会话遗留物、批准的提议三条路都过它：在项目里、未被跟踪（里面也没有被跟踪的）、不会缩短已有寿命 |
+| 要不要先问用户 | `auto.Engine.directClass`（写入当场）、`auto.Engine.autoCandidates`（已有提议） | 提议模式 `[proposals] mode`：`ask` 全提议；`tiered` 只放行「agent 新建」「能重新生成」「会话容器」；`auto` 全放行。拒绝过的项目一律不放行。放行的照样过 `vetUnit` 和批准的全部关卡，并留一张 `AutoReceipt` |
+| 是不是 agent 这次新建的 | `auto.Engine.createdThisSession` | 三样都要：hook 看到 agent 写（`Options.Written`）；本会话本项目的 Git 快照（带 `git` 标记）里没有这个单元、它的上级和它里面的东西；单元及其中每一项的文件系统创建时间都晚于快照时间（容差 2 秒，最多看 5000 项）。缺一样就当作不是，改为提议 |
+| 收工整理列哪些文件 | `auto.Engine.CleanupCandidates` | hook 记下的本会话写入里，过 `createdThisSession` 同样的证明、没有寿命（自己或上级不是条目）、不在待处理提议里、不在 `.obit/` 里、Git 不跟踪的文件 |
 | 到期了还能不能下葬 | `core.Service.recheckAutomatic` | 自动登记的条目在下葬前重新问一遍：还在原项目、仍未被跟踪、规则没有改为保护它 |
 | 坟墓是不是真的 | `core.Service.verifyGrave` | 火化和复活之前：是登记过的那个坟墓目录、里面只有一项、身份对得上 |
 | 这条 shell 命令是不是删除 | `guardrm.Deletion` | 删除护栏：任何命令位置上出现字面的 `rm` / `rmdir` / `git clean` / `Remove-Item`（含别名）就是删除，一律拒绝；bash 用 shfmt 的解析器（`mvdan.cc/sh/v3/syntax`）走遍语法树，PowerShell 用手写的扫描器 |
@@ -118,7 +122,9 @@ flowchart TD
 
 1. **显式**：`obit add` / `mark`、`obit mktemp`。只过 Guard 和身份校验，用户点名的路径就是用户的意思。`mktemp` 的 cwd 必须是存在的目录。
 2. **规则**：写文件之后的 hook，或 `obit rules apply`。`auto.decide` 在真实路径上找项目、加载已信任的规则、匹配出登记单元（目录可以整体折叠成一个单元，除非里面有被否定规则保护的东西），再过 `vetUnit`。
-3. **提议**：项目第一次要自动登记、单次太大、会话遗留物，都先生成提议。`obit approve` 原子地认领提议，对每个候选重新 `vetCandidate`（还在、还在同一个项目、规则没保护、过 `vetUnit`），通过的以来源 `proposal` 登记。
+3. **提议**：项目第一次要自动登记、单次太大、会话遗留物、会话容器，按提议模式不能直接登记的，都先生成提议。`obit approve` 原子地认领提议，对每个候选重新 `vetCandidate`（还在、还在同一个项目、规则没保护、过 `vetUnit`），通过的以来源 `proposal` 登记。
+   - **分级（提议模式）**：`[proposals] mode` 默认 `tiered`。写文件的 hook 里，规则匹配的单元若能证明是 agent 本会话新建的（见「关卡」），不论项目有没有同意过、单元多大，都直接走 Apply 登记（来源仍是 `rule`）；会话差分里被 Git 忽略、名字可重新生成的单元同样直接登记；遗留物和容器先照常生成提议，紧接着用 `ClaimProposalAuto` 认领、按 `autoCandidates` 挑出可放行的候选走批准的同一条路，只是不记项目同意。每个这样登记的条目在同一次账本提交里留一张 `AutoReceipt`（类别 `created` / `regenerable` / `container` / `auto`），hook 把还没告诉过任何会话的回执汇总告诉一个会话（写文件之后或下次会话开始），`obit proposals` 和小窗口「待你决定」在条目还被跟踪时列出它们；`obit spare` 撤回时删掉回执，容器还记成这个会话拒绝过，不会被再登记。`auto` 模式下项目第一次和太大的单元也直接登记，`ask` 模式下行为和以前一样。拒绝过的项目在任何模式下都只提议。
+   - **迁移与重试**：后台每次刷新提议后跑 `AutoApprovePending`，按当前模式把还在等的提议重新分一次。1.1.1 之前的遗留物提议可能列着没被 Git 忽略的新文件（还没提交的工作），所以遗留物候选必须名字可重新生成、并且此刻 `git ls-files --ignored` 认它被忽略才放行；容器候选必须带着归属项目的理由（compose 工作目录或绑定挂载）；`onboard` / `large` 无法事后证明是 agent 新建的，只在 `auto` 模式下放行。proposals.lock 被用户的决定占着时跳过，下一轮再试。
    - 提议会过期：展示时（hook、`obit proposals`、MCP）只用 Lstat 去掉已不存在的候选，hook 里不起 git；后台运行器（每次 tick 和 `obit reap`）按项目用 `git ls-files` 批量复核（按 Windows 原生命令行 32767 字符上限分批，匹配规则和 git 的 `:(icase)` 一样只折叠 ASCII 大小写），已被跟踪或已不存在的候选按原始路径加修订号精确移除，清空的提议自动撤回（审计记为 `proposal-withdrawn`，不算用户拒绝）。
    - 会话遗留物（D-0045）只收 Git 忽略、名字属于依赖 / 构建输出 / 缓存（`auto.regenerableNames`）的条目，所以每条提议都是 agent 可以建议批准的：没被忽略的新文件是还没提交的工作，被忽略的也不一定能重新生成（`.env`、`settings.local.json`、`*.tfstate`）。会话差分用 `Untracked`（不带 `--exclude-standard`）找新路径交给规则，用 `Ignored`（`--ignored --exclude-standard`）找候选；Git 会把「只装着被忽略文件、本身没被忽略」的目录也列进忽略结果，`Ignored` 用一次不带 `--ignored` 的列表把它去掉，只留里面的文件，因为之后写进这个目录的东西不会被忽略。快照仍记全部未跟踪路径，候选或它的上级在快照里就算会话前已有。容器提议同理只收 compose 工作目录或绑定挂载在会话项目里的。
    - 会话遗留物仍按会话分组；在账本写锁内跳过同项目其他会话已提议的路径，保留原提议的编号、会话、候选修订和通知记录。同会话刷新照常更新修订，已登记且文件身份仍相同的路径也不重复提议。
@@ -240,7 +246,8 @@ agent 的 JSON ──► hook.Claude / hook.Codex（解析、路径换算）─�
 ```
 
 - `Handle` 包住真正的处理：记审计（`OBIT_HOOK_AUDIT=1` 时写 `hook-audit.log`）、把返回给 agent 的文字截到 2000 字符以内、出错只写 `hook.log`。
-- 会话开始：记快照、注入到期预告和待处理的提议。写文件之后：`Observe`（项目没同意过就生成提议，同意过就按规则登记，太大的改为提议）。
+- 会话开始：记快照（带 `git` 标记，分级用它证明「新建」）、注入到期预告、待处理的提议、还没告诉过谁的自动登记回执，以及别的会话留下的收工整理（见下）。写文件之后：先把写入路径按项目和会话追加进 `sessions/<项目摘要>-<会话>.writes`，再 `Observe`（按提议模式直接登记或生成提议；项目同意过就按规则登记，太大的改为提议），并转告新的回执。
+- **收工整理**：`[hooks] session_cleanup` 默认开。Stop 事件来自能接着干的宿主（Claude Code、Codex 的适配器设 `CanContinue`，它们都认 `{"decision":"block","reason":…}`）且不是 `stop_hook_active` 时，hook 用 `CleanupCandidates` 算出 agent 本会话新建、还没归类的文件，有就先独占创建 `sessions/<…>.cleanup`（`asked`）再返回 block，理由里列出文件、建议 `obit mark <path> 2d` 或 `obit bury`、说明正式成果留下；没有就静默，留到下一个 Stop 再看。不能接着干的宿主在 Stop / SessionEnd 只记 `pending`，项目里下一次会话开始时算一遍、列出来，送达后记 `told`。每个会话最多一次。
 - cwd 或祖先的项目发现被拒绝访问时，只在错误指向的路径位于 Windows 已知文件夹 API 返回的 Program Files、Program Files (x86)、Windows 目录本身或其子目录时安静跳过；路径先规范化，忽略大小写，按目录分隔符限定边界。该次事件跳过自动工作、快照和后台派发，`hook.log` 写一行带 cwd 和原因的 `skip:` 说明；项目归属仍属未知，禁止进入非项目会话快照分支。用户项目等其他位置的发现权限错误继续返回错误并记录权限诊断，让用户知道自动登记不可用；无法取得受保护位置时也保留错误。`PostToolUse` 保持逐个写入路径重新发现项目、核对 Git 跟踪的流程。其他发现错误和数据目录、账本、墓地的权限错误继续报错。doctor 不统计 `skip:` 行；旧日志只有同时具有 `discover project from` 来源、`resolve project directory` 操作、拒绝访问原因，且结构化诊断的 path 位于上述受保护位置时才免于告警。
 - 慢活交给 `hook.Runner`：`Tick` 在有东西到期（或墓地里有待恢复的清单）且没有常驻进程时启动一次 `obitd --once`；`Finish` 在后台跑 `obit hook finish` 算会话遗留物，Stop 一分钟最多一次，SessionEnd 总是跑。hook 自己不做慢活，因为 SessionEnd 只有 1.5 秒（Claude Code）或 3 秒（Codex）。
 - 一次 hook 调用里所有账本锁的等待加起来不超过 1 秒（`Store.WithDeadline`），读用共享锁；拿不到就放弃这次处理、只记日志。后台下葬正持锁时，其他项目的 hook 不会被卡住。
@@ -364,13 +371,13 @@ POSIX 没有「在同一个源句柄上改名」，所以换一种做法：先�
 
 | 文件 | 内容 |
 |---|---|
-| `store.json` | v17 热账本：条目、提议、项目状态、策略、统计、待投递审计、容器意图、数据归属，以及墓地引用和完整安全索引；通过 `store.lock` 串行提交，经 `os.Root` 按目录句柄替换 |
+| `store.json` | v17 热账本：条目、提议、自动登记回执（`autoReceipts`，可选字段，旧版本读写时丢掉不影响别的）、项目状态、策略、统计、待投递审计、容器意图、数据归属，以及墓地引用和完整安全索引；通过 `store.lock` 串行提交，经 `os.Root` 按目录句柄替换 |
 | `graveyard.<generation>.json` | 不可变墓地快照：`burials`、`restoreCleanups` 和 `parentChains` / `operations` / `origins` / `volumes` 去重表；由热账本的 `{generation,file,hash}` 引用，校验版本、DataID、generation 和 SHA-256 后才能使用 |
 | `store.v<版本>-<SHA-256>.json.bak` | 升级前的完整原字节；保留为回退证据，不覆盖不同内容 |
 | `audit.jsonl` | 审计日志（`obit log`） |
 | `trusted_rules.json` | 已信任的 `.obitrules` 及其 SHA-256（版本 2，键是真实长名；版本 1 的旧键丢掉了大小写，无法证明对应哪个文件，所以一律当作未信任，提示 `trust store format was upgraded; review the rules and run obit trust again`；下一次 trust / untrust 写成版本 2） |
 | `graveyard\` | 这块盘的墓地：坟墓目录，以及正在下葬或复活的那几个的清单 `*.json` |
-| `sessions\` | 会话快照和遗留物计算的去抖标记 |
+| `sessions\` | 会话快照（`*.json`）、本会话 hook 看到的写入（`*.writes`）、收工整理的状态（`*.cleanup`）和遗留物计算的去抖标记；30 天后清掉 |
 | `shortcut-receipts\` | 开始菜单与桌面快捷方式的归属回执及事务锁 |
 | `integration-receipts\` | agent 集成的归属回执、owners、reference 旁注及事务锁 |
 | `integration-backups\` | 项目集成修改用户配置时保留的编号备份 |

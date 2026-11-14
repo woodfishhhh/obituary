@@ -37,4 +37,15 @@ type LeftoverRejection = ledger.LeftoverRejection
 
 type State = ledger.State
 
+type AutoReceipt = ledger.AutoReceipt
+
+type AutoHandled = ledger.AutoHandled
+
+const (
+	AutoCreated     = ledger.AutoCreated
+	AutoRegenerable = ledger.AutoRegenerable
+	AutoContainer   = ledger.AutoContainer
+	AutoAll         = ledger.AutoAll
+)
+
 func ProjectKey(root string) string { return ledger.ProjectKey(root) }

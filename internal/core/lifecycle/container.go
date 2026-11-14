@@ -77,6 +77,7 @@ func (s *Service) registerContainer(id docker.Identity, opt AddOptions) (item It
 		} else {
 			st.NextID++
 			st.Items = append(st.Items, item)
+			recordAutoReceipts(st, []Result{{Item: &item}}, opt, s.now())
 		}
 		queueAudit(st, Event{Time: s.now(), Action: "added", ID: item.ID, Path: item.Path, Detail: "container expires " + item.ExpiresAt.Format(time.RFC3339)})
 		return nil

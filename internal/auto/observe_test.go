@@ -47,7 +47,7 @@ func TestObserveUnreadableLedgerReturnsEveryPath(t *testing.T) {
 		t.Fatal(err)
 	}
 	e := &Engine{Svc: &core.Service{Store: core.Store{Home: dir}}}
-	ds, notices, err := e.observe([]string{"first", "second"}, "s", locations{}, nil)
+	ds, notices, err := e.observe([]string{"first", "second"}, Options{Session: "s"}, locations{})
 	if err == nil || len(ds) != 2 || ds[0].Path != "first" || ds[1].Path != "second" || ds[0].Err == nil || ds[1].Err == nil || len(notices) != 0 {
 		t.Fatalf("unreadable ledger lost per-path failures: %+v %+v %v", ds, notices, err)
 	}
@@ -329,6 +329,7 @@ func TestLeftoversProposeOnlyIgnoredRegenerableItems(t *testing.T) {
 	}
 	t.Parallel()
 	r := newRepo(t)
+	r.ask() // exercises the proposal itself, as "ask" mode keeps it
 	r.write(".gitignore", "node_modules/\ndist/\n.env\n*.o\n")
 	r.write("src/main.go", "package main")
 	r.commit(".gitignore", "src/main.go")
@@ -368,6 +369,7 @@ func TestLeftoversDeduplicateSessions(t *testing.T) {
 	for _, decision := range []string{"approve", "reject"} {
 		t.Run(decision, func(t *testing.T) {
 			r := newRepo(t)
+			r.ask() // exercises the proposal itself, as "ask" mode keeps it
 			for _, session := range []string{"first", "second"} {
 				if err := r.engine.Snapshot(r.root, session); err != nil {
 					t.Fatal(err)
@@ -441,6 +443,7 @@ func TestShortPathSessionSharesSnapshotAndProposals(t *testing.T) {
 		t.Skip("requires a real Git repository or child process")
 	}
 	r := newRepo(t)
+	r.ask() // exercises the proposal itself, as "ask" mode keeps it
 	root, err := filepath.EvalSymlinks(r.root)
 	if err != nil {
 		t.Fatal(err)

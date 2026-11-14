@@ -300,6 +300,7 @@ func TestFirstWriteProposesInsteadOfRegistering(t *testing.T) {
 	}
 	t.Parallel()
 	e := newEnv(t)
+	e.ask() // exercises the proposal itself, as "ask" mode keeps it
 	if ctx := e.event(map[string]any{"hook_event_name": "SessionStart", "source": "startup"}); ctx != "" {
 		t.Fatalf("nothing to say yet, got %q", ctx)
 	}
@@ -352,6 +353,7 @@ func TestLeftoversAreProposedNotRegistered(t *testing.T) {
 	}
 	t.Parallel()
 	e := newEnv(t)
+	e.ask()               // exercises the proposal itself, as "ask" mode keeps it
 	e.write("before.txt") // untracked before the session: not its doing
 	e.event(map[string]any{"hook_event_name": "SessionStart", "source": "startup"})
 	e.write("new_feature.go")    // fresh work, not yet committed: never proposed
@@ -384,6 +386,7 @@ func TestLeftoversSurviveInlineFinishDeadline(t *testing.T) {
 	for _, next := range []string{"Stop", "SessionEnd"} {
 		t.Run(next, func(t *testing.T) {
 			e := newEnv(t)
+			e.ask() // exercises the proposal itself, as "ask" mode keeps it
 			e.write("before.txt")
 			if err := e.engine.Snapshot(e.root, "s1"); err != nil {
 				t.Fatal(err)
@@ -750,7 +753,8 @@ func TestHookReturnsQuietlyWhenStoreLocked(t *testing.T) {
 			case <-time.After(3 * time.Second):
 				t.Fatal("hook did not finish after unlock")
 			}
-			if after, err := os.ReadDir(filepath.Join(e.engine.Svc.Store.Home, "sessions")); err != nil || len(after) != 1 || after[0].Name() != sessions[0].Name() {
+			after, err := filepath.Glob(filepath.Join(e.engine.Svc.Store.Home, "sessions", "*.json"))
+			if err != nil || len(after) != 1 || filepath.Base(after[0]) != sessions[0].Name() {
 				t.Fatalf("hook took a new snapshot instead of reusing it: %v %v", after, err)
 			}
 			data, err := os.ReadFile(filepath.Join(e.engine.Svc.Store.Home, "hook.log"))
@@ -853,6 +857,7 @@ func TestRejectedLeftoversStayRejectedAcrossSessions(t *testing.T) {
 		t.Skip("requires a real Git repository or child process")
 	}
 	e := newEnv(t)
+	e.ask() // exercises the proposal itself, as "ask" mode keeps it
 	e.event(map[string]any{"hook_event_name": "SessionStart"})
 	e.event(map[string]any{"hook_event_name": "SessionStart", "session_id": "s2"})
 	testenv.Leftover(t, e.root, "node_modules")
@@ -961,5 +966,43 @@ func TestNotificationWriteTimeoutDoesNotAcknowledgePreparedContext(t *testing.T)
 	st := e.state()
 	if len(st.Proposals) != 1 || len(st.Proposals[0].Notified) != 0 {
 		t.Fatalf("timed-out context acknowledged: %+v", st.Proposals)
+	}
+}
+
+// Tiered mode registers the agent's own new files and the session's
+// regenerable leftovers without a proposal; each is announced once, with how
+// to undo it, and a pre-existing file still becomes a proposal.
+func TestTieredRegistersAgentFilesAndAnnouncesThemOnce(t *testing.T) {
+	if testing.Short() {
+		t.Skip("requires a real Git repository or child process")
+	}
+	t.Parallel()
+	e := newEnv(t)
+	old := e.write("old.log") // untracked before the session: the user's
+	e.event(map[string]any{"hook_event_name": "SessionStart", "source": "startup"})
+	ctx := e.wrote(e.write("debug.log"))
+	st := e.state()
+	if len(st.Items) != 1 || len(st.Proposals) != 0 {
+		t.Fatalf("the agent's new file must be registered directly: %+v", st)
+	}
+	for _, want := range []string{"registered 1 item automatically", "debug.log", "created in its session", "obit spare <id>", "obit extend <id> <lifespan>", "obit resurrect <id>"} {
+		if !strings.Contains(ctx, want) {
+			t.Fatalf("after-the-fact notice lacks %q: %q", want, ctx)
+		}
+	}
+	if again := e.wrote(e.write("debug.log")); again != "" {
+		t.Fatalf("a receipt is announced once, got %q", again)
+	}
+	if ctx := e.wrote(old); !strings.Contains(ctx, "obit approve") || len(e.state().Items) != 1 {
+		t.Fatalf("a pre-existing file must still be proposed: %q %+v", ctx, e.state())
+	}
+	testenv.Leftover(t, e.root, "node_modules")
+	e.finishEvent("Stop", "s1")
+	next := e.event(map[string]any{"hook_event_name": "SessionStart", "source": "startup", "session_id": "s2"})
+	if !strings.Contains(next, "node_modules") || !strings.Contains(next, "regenerable") || strings.Contains(next, "debug.log (created") {
+		t.Fatalf("the next session hears only the new receipts, got %q", next)
+	}
+	if again := e.event(map[string]any{"hook_event_name": "SessionStart", "source": "startup", "session_id": "s3"}); strings.Contains(again, "registered") {
+		t.Fatalf("receipts are told to one session only, got %q", again)
 	}
 }
