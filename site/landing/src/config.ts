@@ -14,7 +14,7 @@ export const urls = {
 };
 
 // The version the download links and install lines name.
-export const version = "1.2.1";
+export const version = "1.3.0";
 
 // The mirror serves the release archives and the install script, so the
 // mirror build makes no request to GitHub. Each build serves its own
