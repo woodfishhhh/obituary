@@ -72,14 +72,6 @@ func NewResident(svc *core.Service, logger *log.Logger) (*Resident, error) {
 	if err == nil {
 		err = w.Add(svc.Store.Home)
 	}
-	if err == nil {
-		// A hook that cannot take store.lock queues its write here and leaves
-		// the replay to this resident, so a new file must wake it.
-		dir := svc.Store.ObservationDir()
-		if err = os.MkdirAll(dir, 0o700); err == nil {
-			err = w.Add(dir)
-		}
-	}
 	if err != nil {
 		if w != nil {
 			w.Close()
@@ -93,6 +85,15 @@ func NewResident(svc *core.Service, logger *log.Logger) (*Resident, error) {
 		return nil, err
 	}
 	logger.Printf("obitd started (pid %d, home %s)", os.Getpid(), svc.Store.Home)
+	// A hook that cannot take store.lock queues its write here and leaves the
+	// replay to this resident, so a new file must wake it. Without the watch
+	// the queue still drains at each tick.
+	dir := svc.Store.ObservationDir()
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		logger.Printf("queued writes wait for the next check: %v", err)
+	} else if err := w.Add(dir); err != nil {
+		logger.Printf("queued writes wait for the next check: %v", err)
+	}
 	r := resident(svc, logger)
 	r.watcher, r.mutex = w, mutex
 	r.stopFolderWatch = startFolderWatch(svc, logger)

@@ -17,6 +17,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/testenv"
+	"golang.org/x/sys/windows"
 )
 
 func queueHookInput(t *testing.T, root, path string, i int) []byte {
@@ -136,7 +137,8 @@ func TestHookQueueUnwritableFailsOpen(t *testing.T) {
 	root, store := commandRepo(t)
 	path := filepath.Join(root, "debug.log")
 	writeFixture(t, path, "artifact")
-	writeFixture(t, filepath.Join(store.Home, "observations"), "queue directory unavailable")
+	// The resident created the queue directory; deny adding files to it.
+	clitest.DenyAccess(t, filepath.Join(store.Home, "observations"), windows.FILE_WRITE_DATA) // add file, on a directory
 	release, err := core.LockFile(filepath.Join(store.Home, "store.lock"), true)
 	if err != nil {
 		t.Fatal(err)

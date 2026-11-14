@@ -71,7 +71,9 @@ func (s Store) DeferObservations(rows []Observation) error {
 		}
 		row.Path = filepath.Clean(row.Path)
 		if err := writeObservation(name, row); err != nil {
-			failures = errors.Join(failures, err)
+			// The write goes through a handle on the queue directory, so its
+			// error names only the file; say where the queue is.
+			failures = errors.Join(failures, fmt.Errorf("queue the write in %s: %w", s.observationDir(), err))
 		}
 	}
 	return failures
