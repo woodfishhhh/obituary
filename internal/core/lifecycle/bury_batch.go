@@ -173,6 +173,12 @@ func (s *Service) buryRequestBatch(batch []burialRequest, paths []string, result
 			continue
 		}
 		out := s.prepareSettlement(r.item, false, ReasonBury, recovery.locations, &state)
+		if r.candidate.searched && samePath(out.Path, r.candidate.path) {
+			// inspect searched this folder before the lock, as an expired
+			// burial does; the quick search under the lock cannot fit one
+			// of tens of thousands of entries (node_modules, say).
+			out.searched = true
+		}
 		p := &preparedBurial{out: out}
 		if out.Action == "" && out.err == nil {
 			p = s.prepareBurial(out, ReasonBury)

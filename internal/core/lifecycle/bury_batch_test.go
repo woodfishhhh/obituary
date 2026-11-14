@@ -14,6 +14,29 @@ import (
 	core "github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
+// rm -rf node_modules becomes obit bury: a folder far too large for the
+// quick search under store.lock is buried on the first try, because the full
+// search ran before the lock.
+func TestBuryingALargeFolderUsesTheSearchBeforeTheLock(t *testing.T) {
+	f := newFixture(t)
+	dir := filepath.Join(f.dir, "node_modules")
+	if err := os.MkdirAll(filepath.Join(dir, "pkg"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	// However fast the machine, every search runs out of the 100 ms it has
+	// under the lock; the one before the lock has no such limit.
+	f.svc.Guard.Canonical = func(path string) (string, error) {
+		if strings.EqualFold(filepath.Clean(path), filepath.Clean(dir)) {
+			time.Sleep(250 * time.Millisecond)
+		}
+		return path, nil
+	}
+	rows, err := f.svc.Bury([]string{dir}, false, "")
+	if err != nil || len(rows) != 1 || rows[0].Action != core.ActionBuried {
+		t.Fatalf("large folder was not buried on the first try: %+v %v", rows, err)
+	}
+}
+
 func TestBuryBatchReservationUsesHotTransaction(t *testing.T) {
 	f := newFixture(t)
 	tracked := f.add(f.file("tracked"), time.Hour)

@@ -48,6 +48,7 @@ func ValidateMetadata(field, value string) error {
 type candidate struct {
 	path        string
 	isDir       bool
+	searched    bool // the folder's full repository search passed, without store.lock
 	identity    Identity
 	immediateFS FS
 	release     func()
@@ -361,7 +362,7 @@ func (s *Service) inspect(ref string, force bool) (*candidate, error) {
 	if err != nil {
 		return nil, fmt.Errorf("refusing %s: %w", abs, err)
 	}
-	return &candidate{path: filepath.Clean(abs), isDir: info.IsDir(), identity: identity}, nil
+	return &candidate{path: filepath.Clean(abs), isDir: info.IsDir(), searched: info.IsDir() && !force, identity: identity}, nil
 }
 
 func recordAutoReceipts(st *State, results []Result, opts AddOptions, now time.Time) {
