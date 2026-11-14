@@ -14,7 +14,7 @@ On macOS / Linux you can also download and read the install script, then run it:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh -o install.sh
-bash install.sh --version 1.2.0
+bash install.sh --version 1.2.1
 ```
 
 The script verifies SHA-256, installs `obit` and `obitd` into `~/.local/bin`, and prints PATH instructions. Use `--install-dir` for another directory and `--dry-run` for a preview. In mainland China, use `https://cn.obituary.woodfish.site/install.sh` and add `--mirror cn`.
@@ -36,14 +36,14 @@ winget install woodfishhhh.Obituary
 # Install script: download it, read it, then run it
 # (installs to %LOCALAPPDATA%\Programs\obituary, adds it to your user PATH, creates a Start menu shortcut)
 irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1
-.\install.ps1 -Version 1.2.0          # -WhatIf previews, -NoPath leaves PATH alone
+.\install.ps1 -Version 1.2.1          # -WhatIf previews, -NoPath leaves PATH alone
 ```
 
 In mainland China, the install script downloads from the mainland mirror:
 
 ```powershell
 irm https://cn.obituary.woodfish.site/install.ps1 -OutFile install.ps1
-.\install.ps1 -Version 1.2.0 -Mirror cn
+.\install.ps1 -Version 1.2.1 -Mirror cn
 ```
 
 - All three install the same archive and check its SHA-256 before unpacking it.

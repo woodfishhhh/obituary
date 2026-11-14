@@ -26,7 +26,7 @@ Or download and read the install script, then run it (macOS and Linux):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh -o install.sh
-bash install.sh --version 1.2.0
+bash install.sh --version 1.2.1
 # Custom directory: --install-dir "$HOME/bin"; preview only: --dry-run
 ```
 
@@ -54,7 +54,7 @@ winget install woodfishhhh.Obituary
 # Install script: download it, read it, then run it
 # (installs to %LOCALAPPDATA%\Programs\obituary, adds it to your user PATH, creates a Start menu shortcut)
 irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1
-.\install.ps1 -Version 1.2.0          # -WhatIf previews, -NoPath leaves PATH alone
+.\install.ps1 -Version 1.2.1          # -WhatIf previews, -NoPath leaves PATH alone
 ```
 
 :::
