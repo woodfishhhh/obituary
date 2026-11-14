@@ -62,7 +62,7 @@ func PlanClaude(s Scope, command string, uninstall bool) ([]Change, error) {
 		return nil, err
 	}
 	changes = append(changes, c)
-	c, err = planFile(s, awarenessPath, []byte(Awareness), uninstall)
+	c, err = planFile(s, awarenessPath, []byte(Awareness), shippedAwareness, uninstall)
 	if err != nil {
 		return nil, err
 	}

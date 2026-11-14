@@ -2,6 +2,8 @@ package integrate
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"strings"
 )
@@ -9,7 +11,7 @@ import (
 // planFile writes or removes a file Obituary owns outright (OBIT.md). It is
 // only ever overwritten or deleted while it still carries ownedMarker: a file
 // of the same name that someone else wrote is reported, never replaced.
-func planFile(s Scope, path string, content []byte, uninstall bool) (Change, error) {
+func planFile(s Scope, path string, content []byte, previous map[string]bool, uninstall bool) (Change, error) {
 	ch, err := readIntegrationChange(s, path)
 	if err != nil {
 		return ch, err
@@ -17,8 +19,11 @@ func planFile(s Scope, path string, content []byte, uninstall bool) (Change, err
 	ch.generated = true
 	data, exists := ch.orig, ch.existed
 	// A quoted marker is not whole-file ownership. Legacy files have no
-	// receipt, so only the complete shipped document proves its contents.
-	ours := bytes.Equal(bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n")), bytes.ReplaceAll(content, []byte("\r\n"), []byte("\n")))
+	// receipt, so only a complete shipped document (this one or an earlier
+	// release's) proves its contents.
+	normalized := bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
+	sum := sha256.Sum256(normalized)
+	ours := bytes.Equal(normalized, bytes.ReplaceAll(content, []byte("\r\n"), []byte("\n"))) || previous[hex.EncodeToString(sum[:])]
 	switch {
 	case uninstall && exists && ours:
 		ch.Action, ch.delete = "remove", true

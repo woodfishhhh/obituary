@@ -367,3 +367,43 @@ func TestClaudeFailureKeepsAwarenessDependencies(t *testing.T) {
 		})
 	}
 }
+
+// An OBIT.md an earlier release wrote is still Obituary's: an upgrade
+// refreshes it, and uninstalling removes it. Only an exact earlier document
+// counts; the same text with one word changed is someone else's.
+func TestAnOBITmdFromAnEarlierReleaseIsRefreshed(t *testing.T) {
+	old, err := os.ReadFile(filepath.Join("testdata", "awareness", "1.1.1.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name    string
+		content string
+		ours    bool
+	}{
+		{"1.1.1", string(old), true},
+		{"1.1.1 with CRLF", strings.ReplaceAll(string(old), "\n", "\r\n"), true},
+		{"edited", strings.Replace(string(old), "lifespan", "life", 1), false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir, scope := setup(t)
+			path := filepath.Join(dir, "OBIT.md")
+			if err := os.WriteFile(path, []byte(tc.content), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			changes, err := PlanClaude(scope, testenv.NativeFixture("C:/tools/obit.exe hook claude"), false)
+			if !tc.ours {
+				if err == nil {
+					t.Fatal("an edited OBIT.md must not be replaced")
+				}
+				return
+			}
+			if err != nil || Apply(changes) != nil {
+				t.Fatalf("refresh refused: %v", err)
+			}
+			if read(t, path) != Awareness {
+				t.Fatal("OBIT.md was not refreshed to the current instructions")
+			}
+		})
+	}
+}
