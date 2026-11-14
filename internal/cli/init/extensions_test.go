@@ -348,4 +348,10 @@ func TestInitBackupsGetALifespan(t *testing.T) {
 	if left := time.Until(st.Items[0].ExpiresAt); left < ledger.BackupLifespan-time.Hour || left > ledger.BackupLifespan {
 		t.Fatalf("backup lifespan %v", left)
 	}
+	if out, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "-g", "--agent", "claude", "--uninstall", "--yes"); err != nil {
+		t.Fatal(out, err)
+	}
+	if after, err := svc.Store.Read(); err != nil || len(after.Items) != 1 {
+		t.Fatalf("uninstall changed the ledger: %+v %v", after.Items, err)
+	}
 }

@@ -70,6 +70,41 @@ func TestPendingFolderDecisionHasZeroCommitsAndWakeups(t *testing.T) {
 	t.Logf("250ms idle: commits=%d wakeups=%d AfterChange=%d", commits, wakeups, notifications.Load())
 }
 
+// A hook that cannot take store.lock queues its write and leaves the replay to
+// the resident, which must wake for it without any ledger commit.
+func TestQueuedObservationWakesTheResident(t *testing.T) {
+	home := t.TempDir()
+	upgraded(t, home)
+	svc := &core.Service{Store: core.Store{Home: home}, FS: winfs.FS{}}
+	r, err := NewResident(svc, log.New(io.Discard, "", 0))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+	if _, _, err := r.step(Interval); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "debug.log")
+	if err := os.WriteFile(path, []byte("queued"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	id, err := (winfs.FS{}).Identify(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan error, 1)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+	go func() { done <- r.wait(ctx, time.Hour) }()
+	time.Sleep(100 * time.Millisecond) // the wait is listening
+	if err := svc.Store.DeferObservations([]core.Observation{{Token: "queued", Session: "s1", ObservedAt: time.Now(), Path: path, Identity: &id}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := <-done; err != nil {
+		t.Fatalf("a queued write did not wake the resident: %v", err)
+	}
+}
+
 func TestIdleResidentSleepsUntilMaintenance(t *testing.T) {
 	svc := &core.Service{Store: core.Store{Home: t.TempDir()}, FS: winfs.FS{}}
 	r := resident(svc, log.New(io.Discard, "", 0))

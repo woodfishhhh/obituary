@@ -66,6 +66,21 @@ func TestRejectedLeftoverStaysHandledAcrossSessions(t *testing.T) {
 	}
 }
 
+func TestPendingLeftoverIsProposedOnceAcrossSessions(t *testing.T) {
+	f := newFixture(t)
+	c := core.Candidate{Path: f.file("research.md"), Lifespan: "3d"}
+	if _, _, _, err := f.svc.Propose(core.ProposalLeftovers, f.dir, "first", []core.Candidate{c}); err != nil {
+		t.Fatal(err)
+	}
+	p, created, added, err := f.svc.Propose(core.ProposalLeftovers, f.dir, "second", []core.Candidate{c})
+	if err != nil || p.ID != 0 || created || added != 0 {
+		t.Fatalf("same leftover has multiple pending proposals: %+v %v %d %v", p, created, added, err)
+	}
+	if st, err := f.svc.Store.Read(); err != nil || len(st.Proposals) != 1 {
+		t.Fatalf("same leftover has multiple pending proposals: %+v %v", st.Proposals, err)
+	}
+}
+
 func TestLeftoverDecisionClearsLegacyTwins(t *testing.T) {
 	for _, decision := range []string{"resolve", "reject", "retry", "refreshed"} {
 		t.Run(decision, func(t *testing.T) {

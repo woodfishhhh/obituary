@@ -399,6 +399,17 @@ func TestLargeFolderWithDeepRepositoryIsRefused(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
+	// However fast the machine, the quick search under store.lock runs out of
+	// time: only the full search before the lock may find the repository.
+	calls := 0
+	f.svc.Guard.Canonical = func(path string) (string, error) {
+		if samePath(path, dir) {
+			if calls++; calls == 2 {
+				time.Sleep(250 * time.Millisecond) // past the 100 ms under the lock
+			}
+		}
+		return path, nil
+	}
 	out := f.sweepAt(time.Hour)
 	if len(out) != 1 || out[0].Action == core.ActionBuried || !exists(filepath.Join(dir, "zz", "project", ".git")) || len(f.burials()) != 0 {
 		t.Fatalf("folder holding a repository was buried: %+v", out)

@@ -3,6 +3,7 @@ package lifecycle_test
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -33,6 +34,14 @@ func TestSettleVanishedClosesOnlyDeletedObjects(t *testing.T) {
 	f.file("replaced.txt")
 	f.clock = f.clock.Add(2 * time.Hour)
 	outcomes, err := f.svc.SettleVanished()
+	if runtime.GOOS != "windows" {
+		// Without lookup by file ID a missing object is only "not found
+		// here", never proven gone, so nothing is closed early.
+		if err != nil || len(outcomes) != 0 {
+			t.Fatalf("closed an object it cannot prove gone: %+v %v", outcomes, err)
+		}
+		return
+	}
 	if err != nil || len(outcomes) != 1 || outcomes[0].Path != gone || outcomes[0].Action != core.ActionVanished {
 		t.Fatalf("outcomes %+v %v", outcomes, err)
 	}

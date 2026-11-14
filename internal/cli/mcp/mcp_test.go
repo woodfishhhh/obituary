@@ -148,8 +148,8 @@ func TestMCPMutations(t *testing.T) {
 		{"approval-rules-batch", "internal/auto/proposals.go", "_, current, err := rules.Load(root, e.Trust)", "_, current, err := e.RuleSet(root); _ = rules.FileName", "./internal/auto", "TestApproveRefreshesRulesWithinBatch", "batch used stale rules or settled changed candidates"},
 		{"approval-rules-commit", "internal/core/lifecycle/register.go", "if opts.BeforeCommit != nil {", "if false && opts.BeforeCommit != nil {", "./internal/auto", "TestApproveRechecksRulesAtCommit", "commit used stale approval rules"},
 		{"registry-lock-squatting", "internal/regtxn/lock_windows.go", "return lockBefore(ctx, path)", `user, _ := windows.GetCurrentProcessToken().GetTokenUser()
-			sum := sha256.Sum256([]byte(user.User.Sid.String() + "\x00" + resource))
-			h, err := windows.CreateMutex(nil, false, windows.StringToUTF16Ptr(fmt.Sprintf("Global\\Obituary.Registry.%x", sum)))
+			sum := strings.TrimSuffix(LockName(user.User.Sid.String()+"\x00"+resource), ".lock")
+			h, err := windows.CreateMutex(nil, false, windows.StringToUTF16Ptr(fmt.Sprintf("Global\\Obituary.Registry.%s", sum)))
 			if err != nil && !errors.Is(err, windows.ERROR_ALREADY_EXISTS) { return nil, err }
 			windows.CloseHandle(h)
 			return lockBefore(ctx, path)`, "./internal/regtxn", "TestRegistryLockIgnoresLowIntegritySquat/event", "low integrity squat blocked registry lock"},
@@ -657,7 +657,7 @@ func TestMCPMutations(t *testing.T) {
 		{"stale-proposals-displayed", "internal/core/lifecycle/proposals.go", "!errors.Is(err, os.ErrNotExist)", "true || !errors.Is(err, os.ErrNotExist)",
 			"./internal/cli/mcp", "TestMCPProposalsOmitsMissingCandidates", "MCP displayed missing candidates"},
 		{"leftovers-cross-session-pending", "internal/core/lifecycle/proposals.go", " || s.leftoverUnavailable(st, project, session, c)", "",
-			"./internal/auto", "TestLeftoversDeduplicateSessions", "same leftover has multiple pending proposals"},
+			"./internal/core/lifecycle", "TestPendingLeftoverIsProposedOnceAcrossSessions", "same leftover has multiple pending proposals"},
 		{"leftovers-cross-session-rejection", "internal/core/lifecycle/proposals.go", "st.LeftoverPathRejected(project, c.Path) || ", "",
 			"./internal/core/lifecycle", "TestRejectedLeftoverStaysHandledAcrossSessions", "decided leftover was proposed again"},
 		{"leftovers-resolved-twins", "internal/core/lifecycle/proposals.go", "removeLeftoverTwins(st, p, settled)", "_ = settled", "./internal/core/lifecycle", "TestLeftoverDecisionClearsLegacyTwins", "decided leftover retained legacy twin"},

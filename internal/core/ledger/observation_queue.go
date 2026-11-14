@@ -18,6 +18,9 @@ import (
 
 func (s Store) observationDir() string { return filepath.Join(s.Home, "observations") }
 
+// ObservationDir is where hooks queue the writes they could not record.
+func (s Store) ObservationDir() string { return s.observationDir() }
+
 func observationName(token string) string {
 	return fmt.Sprintf("%x.json", sha256.Sum256([]byte(token)))
 }

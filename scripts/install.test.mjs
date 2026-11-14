@@ -49,6 +49,14 @@ test('install verified snapshot releases without changing the user PATH', {
   const downloadsBefore = new Set(await readdir(downloads));
   let requests = 0;
   const seen = [];
+  // Release hosts answer byte ranges, so the four-part download is the usual
+  // path; the no-ranges scenario answers in full and exercises the fallback.
+  const send = (req, res, scenario, body) => {
+    const range = /^bytes=(\d+)-(\d+)$/.exec(req.headers.range ?? '');
+    if (!range || scenario === 'no-ranges') return res.writeHead(200, { 'Content-Length': body.length }).end(req.method === 'HEAD' ? undefined : body);
+    const from = Number(range[1]), to = Math.min(Number(range[2]), body.length - 1);
+    res.writeHead(206, { 'Content-Range': `bytes ${from}-${to}/${body.length}` }).end(body.subarray(from, to + 1));
+  };
   const server = createServer((req, res) => {
     requests++;
     seen.push(req.url);
@@ -65,9 +73,11 @@ test('install verified snapshot releases without changing the user PATH', {
       res.end(variants[scenario] ?? checksums);
     } else if (file === archiveName) {
       const variants = { corrupt: Buffer.concat([zip, Buffer.from('corrupt')]), incomplete: armZip };
-      res.end(variants[scenario] ?? zip);
+      send(req, res, scenario, variants[scenario] ?? zip);
     } else if (file === armArchiveName) {
-      res.end(armZip);
+      send(req, res, scenario, armZip);
+    } else if (file === 'latest' || file === 'latest.json') {
+      res.end(JSON.stringify({ tag_name: `v${version}` }));
     } else {
       res.writeHead(404).end();
     }
@@ -107,10 +117,12 @@ test('install verified snapshot releases without changing the user PATH', {
     const pathFixture = extra.includes('-FixturePath');
     // -DefaultSource leaves out -BaseUrl, so the script picks its own source.
     const defaultSource = extra.includes('-DefaultSource');
-    extra = extra.filter(arg => arg !== '-FixturePath' && arg !== '-DefaultSource');
+    // -Latest also leaves out -Version, so the script looks the release up.
+    const latest = extra.includes('-Latest');
+    extra = extra.filter(arg => arg !== '-FixturePath' && arg !== '-DefaultSource' && arg !== '-Latest');
     const args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File',
       pathFixture ? pathScript : script,
-      ...(extra.includes('-Uninstall') ? [] : defaultSource ? ['-Version', version] : ['-Version', version, '-BaseUrl', `${base}/${scenario}`]),
+      ...(extra.includes('-Uninstall') || latest ? [] : defaultSource ? ['-Version', version] : ['-Version', version, '-BaseUrl', `${base}/${scenario}`]),
       '-Architecture', architecture, '-InstallDir', destination,
       '-StartMenuDir', `${destination}-menu`, ...(pathFixture ? [] : ['-NoPath']), ...extra];
     let result;
@@ -223,12 +235,16 @@ test('install verified snapshot releases without changing the user PATH', {
     const file = join(root, `install-${name}.ps1`);
     const text = source
       .replace('https://github.com/woodfishhhh/obituary/releases/download/v$Version/', `${github}/`)
-      .replace('https://cn.obituary.woodfish.site/download/v$Version/', `${base}/mirror/`);
+      .replace('https://cn.obituary.woodfish.site/download/v$Version/', `${base}/mirror/`)
+      .replace('https://api.github.com/repos/woodfishhhh/obituary/releases/latest', `${github}/latest`)
+      .replace('https://cn.obituary.woodfish.site/download/latest.json', `${base}/mirror/latest.json`);
     assert.ok(!text.includes('https://github.com/') && !text.includes('https://cn.obituary.woodfish.site/'));
     await writeFile(file, text);
     return file;
   }
-  const mirrorRequests = from => seen.slice(from).filter(url => url.startsWith('/mirror/'));
+  // Each source in the order it was first asked; the download takes several requests.
+  const distinct = urls => [...new Set(urls)];
+  const mirrorRequests = from => distinct(seen.slice(from).filter(url => url.startsWith('/mirror/')));
   const installedNames = ['.obituary-install.json', 'LICENSE', 'README.txt', 'obit-gui.exe', 'obit.exe', 'obitd.exe'];
   for (const [engine, shell] of engines) {
     await t.test(`${engine} falls back to the mirror when GitHub does not answer`, async () => {
@@ -247,7 +263,8 @@ test('install verified snapshot releases without changing the user PATH', {
       const from = seen.length;
       const result = await run('github', ['-DefaultSource'], shell, destination, 'amd64', await sourcesScript('github', `${base}/github`));
       assert.equal(result.code, 0, result.stderr);
-      assert.deepEqual(seen.slice(from), ['/github/checksums.txt', `/github/${archiveName}`]);
+      assert.deepEqual(distinct(seen.slice(from)), ['/github/checksums.txt', `/github/${archiveName}`]);
+      assert.doesNotMatch(result.stdout, /Parallel download did not work/);
       await assertReceiptSource(destination, 'github');
     });
   }
@@ -271,6 +288,23 @@ test('install verified snapshot releases without changing the user PATH', {
     const upgrade = await run('good', [], ps7, destination);
     assert.equal(upgrade.code, 0, upgrade.stderr);
     await assertReceiptSource(destination, 'custom');
+  });
+  await t.test('without -Version the latest release is looked up, on the mirror when GitHub does not answer', async () => {
+    const destination = join(root, 'latest-fallback');
+    const from = seen.length;
+    const result = await run('latest', ['-Latest'], ps7, destination, 'amd64', await sourcesScript('latest', closedUrl));
+    assert.equal(result.code, 0, result.stderr);
+    assert.match(result.stdout, new RegExp(`Latest release: ${version.replaceAll('.', '\\.')}`));
+    assert.deepEqual(mirrorRequests(from), ['/mirror/latest.json', '/mirror/checksums.txt', `/mirror/${archiveName}`]);
+    await assertReceiptSource(destination, 'mirror');
+  });
+  await t.test('a server without byte ranges still delivers the verified archive in one download', async () => {
+    const destination = join(root, 'no-ranges');
+    const result = await run('no-ranges', [], ps7, destination);
+    assert.equal(result.code, 0, result.stderr);
+    assert.match(result.stdout, /Parallel download did not work/);
+    assert.match(result.stdout, /SHA-256 verified:/);
+    assert.equal(sha256(await readFile(join(destination, 'obit.exe'))), installedHash);
   });
   await t.test('-Mirror and -BaseUrl together are refused before any download', async () => {
     const from = seen.length;

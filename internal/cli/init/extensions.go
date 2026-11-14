@@ -114,7 +114,10 @@ func extensionInstalled(remove []integrate.Change, kind, agent string) bool {
 
 func applyIntegrationPlan(changes []integrate.Change, uninstall bool) error {
 	var backups []string
-	defer func() { expireBackups(backups) }()
+	if !uninstall {
+		// Removing Obituary leaves its ledger as it was; nothing would bury them.
+		defer func() { expireBackups(backups) }()
+	}
 	apply := func(batch []integrate.Change) error {
 		written, err := integrate.ApplyWithBackups(batch)
 		backups = append(backups, written...)

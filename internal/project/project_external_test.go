@@ -23,7 +23,8 @@ func TestReplayRegistersAfterGitTimeout(t *testing.T) {
 	if err := os.WriteFile(path, []byte("keep"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	svc := &core.Service{Store: core.Store{Home: home}, FS: winfs.FS{}}
+	// Replay registers only with automatic registration on.
+	svc := &core.Service{Store: core.Store{Home: home}, FS: winfs.FS{}, ProposalMode: core.ProposalsTiered}
 	if err := svc.Store.Update(func(st *core.State) error {
 		st.Projects = map[string]core.ProjectState{core.ProjectKey(root): {Consent: core.ConsentApproved}}
 		return nil

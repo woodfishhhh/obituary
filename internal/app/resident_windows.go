@@ -72,6 +72,14 @@ func NewResident(svc *core.Service, logger *log.Logger) (*Resident, error) {
 	if err == nil {
 		err = w.Add(svc.Store.Home)
 	}
+	if err == nil {
+		// A hook that cannot take store.lock queues its write here and leaves
+		// the replay to this resident, so a new file must wake it.
+		dir := svc.Store.ObservationDir()
+		if err = os.MkdirAll(dir, 0o700); err == nil {
+			err = w.Add(dir)
+		}
+	}
 	if err != nil {
 		if w != nil {
 			w.Close()
@@ -174,7 +182,7 @@ func (r *Resident) wait(ctx context.Context, delay time.Duration) error {
 			if !ok {
 				return errors.New("data directory watcher closed")
 			}
-			if r.wakes(filepath.Base(event.Name)) {
+			if r.wakes(event) {
 				settle()
 			}
 		}
@@ -182,9 +190,12 @@ func (r *Resident) wait(ctx context.Context, delay time.Duration) error {
 }
 
 // wakes ignores events for a ledger this resident has already read, such as
-// its own commits during a tick.
-func (r *Resident) wakes(name string) bool {
-	switch name {
+// its own commits during a tick, and its own removal of replayed writes.
+func (r *Resident) wakes(event fsnotify.Event) bool {
+	if filepath.Dir(event.Name) == r.Service.Store.ObservationDir() {
+		return event.Has(fsnotify.Create)
+	}
+	switch filepath.Base(event.Name) {
 	case "store.json":
 		return !r.Service.Store.ModTime().Equal(r.read)
 	case "obitd.stop", "obitd.paused", "update.json":

@@ -72,11 +72,16 @@ if (-not $Uninstall -and -not $Version) {
     # GitHub's API and the mirror's latest.json carry the same release record.
     $latest = @('https://cn.obituary.woodfish.site/download/latest.json')
     if (-not $Mirror) { $latest = @('https://api.github.com/repos/woodfishhhh/obituary/releases/latest') + $latest }
+    # $Version keeps its ValidatePattern on every assignment, so a failed
+    # lookup must not write an empty value to it.
+    $found = ''
     foreach ($source in $latest) {
-        try { $Version = [string](Invoke-RestMethod -UseBasicParsing -Uri $source -TimeoutSec 10).tag_name } catch { $Version = '' }
-        if ($Version) { break }
+        try { $found = [string](Invoke-RestMethod -UseBasicParsing -Uri $source -TimeoutSec 10).tag_name } catch { $found = '' }
+        if ($found -match '^v[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.+-]+)?$') { break }
+        $found = ''
     }
-    if ($Version -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.+-]+)?$') { throw 'Could not look up the latest release; pass -Version.' }
+    if (-not $found) { throw 'Could not look up the latest release; pass -Version.' }
+    $Version = $found
     Write-Output "Latest release: $($Version -replace '^v', '')"
 }
 if (-not $Uninstall) { $Version = $Version -replace '^v', '' }
