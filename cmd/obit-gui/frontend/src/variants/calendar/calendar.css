@@ -138,6 +138,9 @@
 [data-variant="calendar"] .toast.error { box-shadow: inset 4px 0 0 var(--gold), var(--shadow-pop); }
 
 .cal-shared .tag { justify-self: start; }
+/* The notices take the date's place in a narrower window. */
+@media (max-width: 1000px) { .cal-top:has(.notice-chip) .cal-today { display: none; } }
+
 @media (prefers-reduced-motion: reduce) {
   .cal-chip, .cal-day { transition: none; }
 }

@@ -30,7 +30,6 @@ export const en: Messages = {
   clearSelection: "Clear selection",
   filterByPath: "Filter by path",
   select: (name) => `Select ${name}`,
-  paused: "Automatic clean-up paused",
 
   "unit.minute": (n) => plural(n, "minute", "minutes"),
   "unit.hour": (n) => plural(n, "hour", "hours"),
@@ -294,6 +293,7 @@ export const en: Messages = {
   "set.paused": "Automatic clean-up paused",
   "pause.banner": "Automatic clean-up is paused: nothing is buried or cremated until you resume.",
   "pause.resume": "Resume",
+  "pause.chip": "Paused",
   "set.resumed": "Automatic clean-up resumed",
   "life.cleared": "Obituary has cleared",
   "life.text": (buried, purged, resurrected) => `${plural(buried, "1 item has", `${buried} items have`)} gone to the graveyard. ${purged} of it is cremated and the space freed${resurrected ? `; you resurrected ${resurrected}` : ""}. The rest can be resurrected until it is cremated.`,
@@ -365,6 +365,7 @@ export const en: Messages = {
   "upd.banner": (v: string) => `Obituary ${v} is out`,
   "upd.bannerView": "View",
   "upd.bannerSkip": "Skip this version",
+  "upd.chip": (v) => `New version ${v}`,
   "set.toRecycle": "Send expired items straight to the Recycle Bin?",
   "set.toRecycleBody": "From now on expired items go to the Windows Recycle Bin. Obituary can no longer resurrect them; restore them from the Recycle Bin instead.",
   "set.toGraveyard": "Bury expired items in the graveyard again?",
@@ -582,7 +583,7 @@ export const en: Messages = {
 
 
   // ── K Tunnel ───────────────────────────────────────────
-  "tn.sum": (tracked, graves, paused) => `${tracked} tracked, ${plural(graves, "1 grave", `${graves} graves`)}${paused ? ", clean-up paused" : ""}`,
+  "tn.sum": (tracked, graves) => `${tracked} tracked, ${plural(graves, "1 grave", `${graves} graves`)}`,
   "tn.stone": (name, left) => `${name}, ${left ? `${left} left` : "expired"}`,
   "tn.dueBig": "Due",
   "tn.dueSmall": "",

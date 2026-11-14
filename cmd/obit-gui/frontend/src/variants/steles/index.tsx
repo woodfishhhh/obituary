@@ -10,6 +10,7 @@ import Logs from "../../pages/Logs";
 import Settings from "../../pages/Settings";
 import { pageTitle, type PageId, type ShellProps } from "../../shell";
 import { extendSpans, folderOf, hm, md, nameOf, parts, pause, remaining, sourceLabel, Star, STAR, useGraves, useItems } from "../shared";
+import Notices from "../../notices";
 import "./steles.css";
 
 // The stele, 160 x 212: chamfered top corners, the fold at the top right.
@@ -62,6 +63,7 @@ export default function StelesShell({ page, nav, setPage, summary: s, refresh }:
             );
           })}
           <span className="st-grow" />
+          <Notices page={page} setPage={setPage} summary={s} refresh={refresh} />
           <button type="button" className="st-nav small" onClick={refresh} title="刷新"><RefreshCw size={17} aria-hidden /><span className="st-nav-label">刷新</span></button>
         </nav>
         <div className="st-stage">

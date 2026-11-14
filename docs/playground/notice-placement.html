@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>讣告小窗口：新版本和暂停提示放哪</title>
-<!-- 本地打开即可，不联网。三种放法画在同一个「日历」窗口上，右上角切换「暂停中」看两条提示同时出现的样子。 -->
+<!-- 本地打开即可，不联网。三种放法画在同一个「日历」窗口上，右上角切换「暂停中」看两条提示同时出现的样子。负责人 2026-11-14 选定 B，小窗口所有外观已按 B 实现；A、C 留作对照。 -->
 <style>
   :root { --cobalt: #0048E8; --sky: #0078F8; --gold: #F8E000; --ink: #111522; --text-2: #3A4256; --muted: #6E768A; --line: #E6E9F0; --line-2: #D0D6E2; --panel-2: #F3F5FA; --today: #F6F9FF; --weekend: #FAFBFC; }
   * { box-sizing: border-box; }
@@ -71,19 +71,19 @@
 <header class="pg">
   <div>
     <h1>新版本、暂停中：提示放哪</h1>
-    <p>以前浮在页面正中下方，会盖住日历底部的卡片和「一行」外观的快捷键栏。现在已改成 A；B、C 是另外两种做法。</p>
+    <p><b>负责人 2026-11-14 选定 B</b>，小窗口所有外观已按 B 实现。A 是之前的做法，C 是另一种备选，留作对照。</p>
   </div>
   <span class="grow"></span>
   <label class="toggle"><input type="checkbox" id="paused">暂停中</label>
   <div class="pick" role="group" aria-label="放法">
-    <button type="button" data-v="a" aria-pressed="true">A 底部留白</button>
-    <button type="button" data-v="b" aria-pressed="false">B 顶栏胶囊</button>
+    <button type="button" data-v="a" aria-pressed="false">A 底部留白</button>
+    <button type="button" data-v="b" aria-pressed="true">B 顶栏胶囊（选定）</button>
     <button type="button" data-v="c" aria-pressed="false">C 标签小点</button>
   </div>
 </header>
 <div class="notes">
-  <div data-n="a" data-on="true"><b>A 底部留白（已实现）</b>有提示时窗口底部让出一条，胶囊放在里面，什么都不盖；没有提示时不占地方。8 种外观都能用同一份样式。</div>
-  <div data-n="b"><b>B 顶栏胶囊</b>提示收进顶栏日期左边，页面完全不动；但顶栏要每种外观各写一份，窗口窄时会挤。</div>
+  <div data-n="a"><b>A 底部留白（之前的做法）</b>有提示时窗口底部让出一条，胶囊放在里面，什么都不盖；没有提示时不占地方。8 种外观都能用同一份样式。</div>
+  <div data-n="b" data-on="true"><b>B 顶栏胶囊（负责人 2026-11-14 选定，已实现）</b>提示收进顶栏日期左边，页面完全不动；侧栏外观放在侧栏底部。窗口变窄时先让出日期或统计数字，再把胶囊的字换成图标（悬停仍有完整说明），按钮始终留着。</div>
   <div data-n="c"><b>C 标签小点</b>新版本只在「设置」上点一个金点，最安静；暂停改成顶栏下面整条金色横幅，最醒目。</div>
 </div>
 
@@ -113,7 +113,7 @@
   const days = [["14", "今天"], ["15", "明天"], ["16", "周一"], ["17", "周二"], ["18", "周三"], ["19", "周四"], ["20", "周五"], ["21", "周六"], ["更晚", "1 项"]];
   const cards = { 0: [["9 分钟后", "debug-output.log", "手动，寿命 25 分钟"], ["03:14", "screenshot-0412.png", "手动，寿命 3 小时"], ["20:14", "probe_api.py", "手动，寿命 20 小时"]], 1: [["00:14", "trace-2026-11-14.json", "手动，寿命 24 小时"]], 2: [["00:14", "repro.sh", "手动，寿命 2 天"]], 3: [["00:14", "coverage.html", "手动，寿命 3 天"], ["00:20", "agent-run.log", "批准的提议 · 规则：*.log"], ["00:20", "npm-debug.log", "批准的提议 · 规则：*.log"], ["00:20", "session.log", "批准的提议 · 规则：*.log"]], 5: [["00:14", "build-cache", "手动，寿命 5 天"]], 6: [["00:14", "setup-v2.3.1.exe", "手动，寿命 6 天"]], 8: [["11 月 26 日", "dataset_sample.csv", "手动，寿命 12 天"]] };
   document.getElementById("board").innerHTML = days.map(([d, w], i) => `<section class="day${i === 4 || i === 7 ? " narrow" : ""}${i === 7 ? " we" : ""}" style="--c:${colors[i]}"><div class="dh"><b>${d}</b><span>${w}</span></div><div class="cards">${(cards[i] || []).map(([a, b, c]) => `<div class="card"><small>${a}</small><strong>${b}</strong><em>${c}</em></div>`).join("")}</div></section>`).join("");
-  let v = "a";
+  let v = "b";
   const paused = document.getElementById("paused");
   function render() {
     document.querySelectorAll("[data-only]").forEach((el) => { el.hidden = el.dataset.only !== v; });

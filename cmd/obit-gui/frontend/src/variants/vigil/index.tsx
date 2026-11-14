@@ -9,6 +9,7 @@ import Decisions from "../../pages/Decisions";
 import Logs from "../../pages/Logs";
 import Settings from "../../pages/Settings";
 import { t } from "../../i18n";
+import Notices from "../../notices";
 import { pageTitle, type ShellProps } from "../../shell";
 import { extendSpans, folderOf, hm, md, nameOf, parts, pause, remaining, sourceLabel, span, Star, useGraves, useItems, type Burial, type Item } from "../shared";
 import "./vigil.css";
@@ -26,7 +27,8 @@ export default function VigilShell({ page, nav, setPage, summary: s, refresh }: 
           ))}
         </nav>
         <span className="vg-grow" />
-        {s ? <div className="vg-sum"><span>{t("vg.lit", s.trackedCount)}</span><span>{t("vg.graves", s.graveCount, bytes(s.graveBytes))}</span>{s.paused ? <span>{t("paused")}</span> : null}</div> : null}
+        <Notices page={page} setPage={setPage} summary={s} refresh={refresh} />
+        {s ? <div className="vg-sum"><span>{t("vg.lit", s.trackedCount)}</span><span>{t("vg.graves", s.graveCount, bytes(s.graveBytes))}</span></div> : null}
         <button type="button" className="vg-icon" aria-label={t("refresh")} title={t("refresh")} onClick={refresh}><RefreshCw size={15} aria-hidden /></button>
       </header>
       <main className="vg-main" key={page}>

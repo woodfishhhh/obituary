@@ -148,6 +148,9 @@
 [data-variant="tunnel"] .toast { border-radius: 10px; background: var(--panel); color: var(--ink); }
 [data-variant="tunnel"] .toast.error { box-shadow: inset 4px 0 0 var(--gold), var(--shadow-pop); }
 
+/* The notices take the counts' place in a narrower window. */
+@media (max-width: 1000px) { .tn-top:has(.notice-chip) .tn-sum { display: none; } }
+
 @media (prefers-reduced-motion: reduce) {
   .tn-world, .tn-stone, .tn-stone-body, .tn-gate, .tn-dock, .tn-tick, .tn-star { transition: none; }
   .tn-stone-body { animation: none; }

@@ -35,7 +35,6 @@ export const zh = {
   clearSelection: "取消选择",
   filterByPath: "按路径筛选",
   select: (name: string) => `选择 ${name}`,
-  paused: "自动清理已暂停",
 
   // 时间
   "unit.minute": (_n: number) => "分钟",
@@ -300,6 +299,7 @@ export const zh = {
   "set.paused": "已暂停自动清理",
   "pause.banner": "自动清理已暂停：到期的东西先不下葬，墓地也先不火化。",
   "pause.resume": "恢复",
+  "pause.chip": "已暂停",
   "set.resumed": "已恢复自动清理",
   "life.cleared": "讣告已为你清理",
   "life.text": (buried: number, purged: string, resurrected: number) => `${buried} 件东西进过墓地。其中 ${purged} 已火化、空间已腾出${resurrected ? `，${resurrected} 件被你复活` : ""}；其余火化前都能复活。`,
@@ -371,6 +371,7 @@ export const zh = {
   "upd.banner": (v: string) => `讣告 ${v} 已发布`,
   "upd.bannerView": "查看",
   "upd.bannerSkip": "跳过这个版本",
+  "upd.chip": (v: string) => `新版本 ${v}`,
   "set.toRecycle": "改成直接进回收站？",
   "set.toRecycleBody": "之后到期的东西直接进回收站，讣告不能再复活。",
   "set.toGraveyard": "改回先进墓地？",
@@ -582,7 +583,7 @@ export const zh = {
   run: "执行",
 
   // ── K 隧道 ─────────────────────────────────────────────
-  "tn.sum": (tracked: number, graves: number, paused: boolean) => `${tracked} 项在跟踪，${graves} 座墓${paused ? "，自动清理已暂停" : ""}`,
+  "tn.sum": (tracked: number, graves: number) => `${tracked} 项在跟踪，${graves} 座墓`,
   "tn.stone": (name: string, left: string | null) => `${name}，${left ? `还有 ${left}` : "已到期"}`,
   "tn.dueBig": "到",
   "tn.dueSmall": "期",

@@ -10,6 +10,7 @@ import Decisions from "../../pages/Decisions";
 import Logs from "../../pages/Logs";
 import Settings from "../../pages/Settings";
 import { t } from "../../i18n";
+import Notices from "../../notices";
 import { pageTitle, type ShellProps } from "../../shell";
 import { calm, DAY, extendSpans, folderOf, HOUR, nameOf, parts, pause, remaining, span, Star, STAR, useGraves, useItems } from "../shared";
 import "./tunnel.css";
@@ -45,7 +46,8 @@ export default function TunnelShell({ page, nav, setPage, summary: s, refresh }:
           ))}
         </nav>
         <span className="tn-grow" />
-        {s ? <span className="tn-sum">{t("tn.sum", s.trackedCount, s.graveCount, s.paused)}</span> : null}
+        <Notices page={page} setPage={setPage} summary={s} refresh={refresh} />
+        {s ? <span className="tn-sum">{t("tn.sum", s.trackedCount, s.graveCount)}</span> : null}
         <button type="button" className="tn-icon" aria-label={t("refresh")} title={t("refresh")} onClick={refresh}><RefreshCw size={15} aria-hidden /></button>
       </header>
       {page === "graveyard" ? <Graves key="g" /> : page === "upcoming" ? <Upcoming key="u" /> : (

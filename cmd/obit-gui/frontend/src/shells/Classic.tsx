@@ -10,6 +10,7 @@ import Logs from "../pages/Logs";
 import Settings from "../pages/Settings";
 import Upcoming from "../pages/Upcoming";
 import { t } from "../i18n";
+import Notices from "../notices";
 import { pageTitle, type PageId, type ShellProps } from "../shell";
 
 const pages: Record<PageId, { icon: LucideIcon; view: () => ReactNode }> = {
@@ -39,11 +40,11 @@ export default function ClassicShell({ page, nav, setPage, summary: s, refresh }
           );
         })}
         <span className="nav-spacer" />
+        <Notices page={page} setPage={setPage} summary={s} refresh={refresh} />
         {s ? (
           <div className="nav-summary">
             <span>{t("sum.tracked", s.trackedCount)}</span>
             <span>{t("sum.graves", s.graveCount, bytes(s.graveBytes))}</span>
-            {s.paused ? <span>{t("paused")}</span> : null}
           </div>
         ) : null}
         <button type="button" className="nav-item" aria-label={t("refresh")} title={t("refresh")} onClick={refresh}><RefreshCw size={16} aria-hidden /></button>

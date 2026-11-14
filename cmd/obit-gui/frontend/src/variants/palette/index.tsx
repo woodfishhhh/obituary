@@ -10,6 +10,7 @@ import Logs from "../../pages/Logs";
 import Settings from "../../pages/Settings";
 import { useAppearance } from "../../appearance";
 import { t } from "../../i18n";
+import Notices from "../../notices";
 import { pageTitle, type PageId, type ShellProps } from "../../shell";
 import { extendSpans, folderOf, nameOf, remaining, span, Star, useGraves, useItems, HOUR, DAY } from "../shared";
 import "./palette.css";
@@ -70,7 +71,7 @@ export default function PaletteShell({ page, nav, setPage, summary: s, refresh }
             </button>
           ))}
           <span className="pl-grow" />
-          {s?.paused ? <span className="pl-paused">{t("paused")}</span> : null}
+          <Notices page={page} setPage={setPage} summary={s} refresh={refresh} />
           <button type="button" className="pl-refresh" onClick={refresh} aria-label={t("refresh")} title={t("refresh")}><RefreshCw size={14} aria-hidden /></button>
         </nav>
         {page === "graveyard" ? <GraveList key="g" query={q} commands={commands} input={input} />

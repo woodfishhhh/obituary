@@ -72,7 +72,7 @@
 .nt-sections button[aria-current="page"]::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 3px; background: var(--cobalt); }
 .nt-count { min-width: 18px; padding: 0 5px; background: var(--gold); color: var(--on-gold); font-size: 11.5px; font-weight: 700; line-height: 18px; text-align: center; font-variant-numeric: tabular-nums; }
 .nt-grow { flex: 1; min-width: 0; }
-.nt-paused { align-self: center; margin-right: 8px; color: var(--text-2); font-size: 12.5px; }
+.nt-sections .notice-chip { height: 26px; } /* clear of the rules above and below */
 .nt-sections .nt-refresh { gap: 6px; color: var(--muted); font-size: 13px; }
 .nt-refresh svg { width: 14px; height: 14px; }
 

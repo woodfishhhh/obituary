@@ -191,6 +191,13 @@
 [data-variant="steles"] .toast.error { box-shadow: inset 4px 0 0 var(--gold), var(--shadow-pop); }
 
 .st-shared .tag { justify-self: start; }
+/* The rail is narrow: the notices stack, icon and action only. */
+.st-rail .notices { flex-direction: column; margin: 0 0 6px; }
+.st-rail .notice-chip { flex-direction: column; height: auto; gap: 4px; padding: 8px 6px; border-radius: 14px; }
+.st-rail .notice-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.st-rail .notice-icon { display: block; }
+.st-rail .notices .notice-x { margin: 0; }
+
 @media (prefers-reduced-motion: reduce) {
   .st-lift, .st-ground, .st-tick, .st-star, .st-grass, .st-dock { transition: none; }
   .st-plot.plan[data-soon="true"] .st-life { animation: none; }

@@ -10,6 +10,7 @@ import Decisions from "../../pages/Decisions";
 import Logs from "../../pages/Logs";
 import Settings from "../../pages/Settings";
 import { t } from "../../i18n";
+import Notices from "../../notices";
 import { pageTitle, type ShellProps } from "../../shell";
 import { DAY, extendSpans, hm, md, nameOf, remaining, sourceLabel, span, Star, useGraves, useItems, weekday } from "../shared";
 import "./calendar.css";
@@ -33,6 +34,7 @@ export default function CalendarShell({ page, nav, setPage, summary: s, refresh 
           ))}
         </nav>
         <span className="cal-grow" />
+        <Notices page={page} setPage={setPage} summary={s} refresh={refresh} />
         <div className="cal-today"><CalendarDays size={15} aria-hidden /><span>{t("date.md", today.getMonth() + 1, today.getDate())}</span><span>{weekday(today)}</span></div>
         <button type="button" className="cal-icon" aria-label={t("refresh")} title={t("refresh")} onClick={refresh}><RefreshCw size={15} aria-hidden /></button>
       </header>

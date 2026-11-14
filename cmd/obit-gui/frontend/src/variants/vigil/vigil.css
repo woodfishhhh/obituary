@@ -175,6 +175,9 @@
 [data-variant="vigil"] .toast.error { border-color: var(--gold); }
 
 .vg-shared .tag { justify-self: start; }
+/* The notices take the counts' place in a narrower window. */
+@media (max-width: 1180px) { .vg-top:has(.notice-chip) .vg-sum { display: none; } }
+
 @media (prefers-reduced-motion: reduce) {
   .vg-lamp::before, .vg-halo { transition: none; }
   .vg-lamp[data-soon="true"]::before { animation: none; }

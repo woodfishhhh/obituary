@@ -9,6 +9,7 @@ import Decisions from "../../pages/Decisions";
 import Logs from "../../pages/Logs";
 import Settings from "../../pages/Settings";
 import { t } from "../../i18n";
+import Notices from "../../notices";
 import { pageTitle, type ShellProps } from "../../shell";
 import { extendSpans, folderOf, hm, md, nameOf, parts, remaining, sourceLabel, span, Star, pause, useGraves, useItems } from "../shared";
 import "./notice.css";
@@ -43,7 +44,7 @@ export default function NoticeShell({ page, nav, setPage, summary: s, refresh }:
           </button>
         ))}
         <span className="nt-grow" />
-        {s?.paused ? <span className="nt-paused">{t("paused")}</span> : null}
+        <Notices page={page} setPage={setPage} summary={s} refresh={refresh} />
         <button type="button" className="nt-refresh" onClick={refresh}><RefreshCw aria-hidden />{t("refresh")}</button>
       </nav>
       <div className="nt-stage">

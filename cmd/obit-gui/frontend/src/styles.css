@@ -239,7 +239,7 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 16px 22px 20px; }
 .diff { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 14px; margin-top: 10px; font-size: 0.9em; }
 .diff s { color: var(--muted); }
-.toasts { position: absolute; right: 18px; bottom: calc(18px + var(--banner-space, 0px)); z-index: 50; display: grid; gap: 8px; }
+.toasts { position: absolute; right: 18px; bottom: 18px; z-index: 50; display: grid; gap: 8px; }
 .toast { max-width: 380px; padding: 10px 14px; border-radius: var(--radius-sm); background: var(--text); color: var(--bg); font-size: 0.9em; box-shadow: var(--shadow-pop); animation: pop 180ms ease-out; }
 .toast.error { background: var(--danger); color: #fff; }
 .toast { display: flex; align-items: center; gap: 12px; }
@@ -322,18 +322,32 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
 .watch-rule > span:not(.grow) { color: var(--text-2); }
 .watch-preview { margin: 10px 0 0; }
 
-/* Shown on every page while automatic clean-up is paused or a release is out.
-   The window keeps a strip free under the page for them, so they never cover
-   a card, a row or a shortcut. */
-.obit:has(> .banners:not(:empty)) { --banner-space: 72px; }
-.obit:has(> .banners > :nth-child(2)) { --banner-space: 130px; }
-.obit > :not(.banners, .toasts, .overlay, .dialog) { margin-bottom: var(--banner-space, 0px); }
-.obit[data-nav="topbar"] > .nav { margin-bottom: 0; }
-.banners { position: absolute; left: 50%; bottom: 16px; z-index: 20; display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: calc(100% - 32px); transform: translateX(-50%); }
-.banners:empty { display: none; }
-.paused-banner, .update-banner { display: flex; align-items: center; gap: 12px; max-width: 100%; padding: 8px 8px 8px 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--text); box-shadow: var(--shadow-pop); font-family: var(--font); font-size: 13px; }
-.update-banner .btn.ghost { color: var(--muted); }
-body:has(.overlay) .banners { visibility: hidden; }
+/* Shown on every page while automatic clean-up is paused or a release is out:
+   chips each shell puts in its top bar (a sidebar stacks them), so they never
+   cover the page. */
+.notices { display: flex; flex-shrink: 0; align-items: center; align-self: center; gap: 8px; margin: 0 6px; }
+.notices:empty { display: none; }
+.obit[data-nav="sidebar"] .notices { flex-direction: column; align-items: stretch; align-self: stretch; margin: 0 0 10px; }
+.notice-chip { position: relative; display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 4px 0 12px; border-radius: 999px; font-size: 12.5px; font-weight: 600; line-height: 1; white-space: nowrap; }
+.notice-chip.paused { background: var(--warn-soft); color: var(--text); }
+.notice-chip.update { background: var(--accent-soft); color: var(--accent); }
+.notice-text { flex: 1; }
+.notice-icon { display: none; width: 15px; height: 15px; flex-shrink: 0; }
+.notices .notice-act { height: 22px; padding: 0 10px; border: 0; border-radius: 999px; background: var(--accent); color: var(--on-accent); font: inherit; cursor: pointer; }
+.notices .notice-act:hover { filter: brightness(1.08); }
+.notices .notice-x { display: grid; place-items: center; width: 22px; height: 22px; margin-left: -4px; padding: 0; border: 0; border-radius: 50%; background: none; color: inherit; opacity: 0.6; cursor: pointer; }
+.notices .notice-x:hover { opacity: 1; background: var(--hover); }
+.notice-x svg { width: 13px; height: 13px; }
+/* A narrower window drops the top bar's counts first, then the chips' words
+   (an icon and the title keep the meaning); the actions always stay. */
+@media (max-width: 1180px) { .obit[data-nav="topbar"] .nav:has(.notice-chip) .nav-summary { display: none; } }
+@media (max-width: 960px) {
+  .obit:not([data-nav="sidebar"]) .notice-chip { padding-left: 8px; }
+  /* Out of sight, still read out. */
+  .obit:not([data-nav="sidebar"]) .notice-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .obit:not([data-nav="sidebar"]) .notice-icon { display: block; }
+}
+@media (max-width: 700px) { .obit:not([data-nav="sidebar"]) .notices .notice-x { display: none; } }
 
 /* About and updates (Settings). */
 .about { margin-bottom: 18px; }
