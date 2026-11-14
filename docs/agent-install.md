@@ -10,8 +10,8 @@
 1. 先运行 obit --version。已经装了就跳到第 3 步。
 2. 先确认操作系统。Windows 安装，按这个顺序选第一个可用的：
    - 有 scoop：scoop bucket add obituary https://github.com/woodfishhhh/scoop-bucket，再 scoop install obituary
-   - 没有 scoop：在 PowerShell 里 irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1，把脚本内容给我过目，我同意后再运行 .\install.ps1 -Version 1.2.1
-   - macOS / Linux：curl -fsSL https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh -o install.sh，把脚本内容给我过目。我同意后运行 bash install.sh --version 1.2.1（macOS 上有 Homebrew 时也可以改用 brew install --cask woodfishhhh/tap/obituary）。默认装到 ~/.local/bin，可用 --install-dir 指定目录；按输出提示配置 PATH。
+   - 没有 scoop：在 PowerShell 里 irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1，把脚本内容给我过目，我同意后再运行 .\install.ps1（默认装最新正式版）
+   - macOS / Linux：curl -fsSL https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh -o install.sh，把脚本内容给我过目。我同意后运行 bash install.sh，默认装最新正式版（macOS 上有 Homebrew 时也可以改用 brew install --cask woodfishhhh/tap/obituary）。默认装到 ~/.local/bin，可用 --install-dir 指定目录；按输出提示配置 PATH。
    装完新开一个终端，确认 obit --version 能运行。
 3. 运行 obit init --show，找到你自己对应的 agent 名字。
 4. 运行 obit init -g --agent <你的名字> --dry-run，把计划给我看。默认会装所选 agent 的 Agent Skill；Windows 还会装右键菜单、开始菜单和桌面快捷方式，可用 --no-skill / --no-context-menu / --no-shortcuts 跳过。问我要不要同时打开删除护栏（--guard-rm：拦下 rm -rf 这类删除，改用可以复活的 obit 命令）。我同意后，去掉 --dry-run、加上 --yes 再执行一次。macOS / Linux 再运行 obit daemon enable --dry-run，确认后用 obit daemon enable 启用用户级 launchd / systemd 定时检查；Linux 没有 systemd 时给我用户 crontab 的 obitd --once 配置步骤。
@@ -24,7 +24,7 @@
 - 任何一步报错就停下来，把完整输出给我，不要自己换别的办法绕过去。
 ```
 
-装好以后，讣告会这样陪着 agent 干活：它这次会话新建的调试脚本、日志、截图和能重新生成的依赖、缓存直接带上寿命，事后告诉你；会话前就在的文件列成提议，等你批准；会话快结束时，它会把自己新建、还没归类的文件过一遍；它用到一个已经下葬的文件时，会被当场提醒去复活；打开删除护栏后，它的 `rm -rf` 会改成可以复活的 `obit rm -rf`。各家 agent 能做到哪一步，见 [agent 覆盖表](agents.md)。
+装好以后，讣告会这样陪着 agent 干活：什么进讣告由它和你决定，它写调试脚本、日志、截图时自己 `obit mark` 给寿命，你在资源管理器里右键也能放进来，进来的东西到期自动下葬、7 天内能复活；会话快结束时，它会把自己新建、还没归类的文件过一遍；它用到一个已经下葬的文件时，会被当场提醒去复活；打开删除护栏后，它的 `rm -rf` 会改成可以复活的 `obit rm -rf`。各家 agent 能做到哪一步，见 [agent 覆盖表](agents.md)。
 
 ## In English
 
@@ -36,8 +36,8 @@ Please install Obituary (the command is obit) and integrate it with yourself. Go
 1. Run obit --version. If it is already installed, skip to step 3.
 2. Identify the operating system first. On Windows install it, using the first option that is available:
    - scoop: scoop bucket add obituary https://github.com/woodfishhhh/scoop-bucket, then scoop install obituary
-   - no scoop: in PowerShell, irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1, show me the script, and only after I agree run .\install.ps1 -Version 1.2.1
-   - macOS / Linux: curl -fsSL https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh -o install.sh, show me the script, and only after I agree run bash install.sh --version 1.2.1 (on macOS with Homebrew, brew install --cask woodfishhhh/tap/obituary works too). The default directory is ~/.local/bin; --install-dir overrides it. Follow the printed PATH instructions.
+   - no scoop: in PowerShell, irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1, show me the script, and only after I agree run .\install.ps1 (it installs the latest release)
+   - macOS / Linux: curl -fsSL https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh -o install.sh, show me the script, and only after I agree run bash install.sh, which installs the latest release (on macOS with Homebrew, brew install --cask woodfishhhh/tap/obituary works too). The default directory is ~/.local/bin; --install-dir overrides it. Follow the printed PATH instructions.
    Then open a new terminal and confirm that obit --version runs.
 3. Run obit init --show and find your own agent name.
 4. Run obit init -g --agent <your name> --dry-run and show me the plan. The selected agent's Agent Skill is installed by default; Windows also gets context menus and Start menu / desktop shortcuts. Skip them with --no-skill / --no-context-menu / --no-shortcuts. Ask me whether to turn on the delete guard as well (--guard-rm: deletions such as rm -rf are stopped and replaced by restorable obit commands). After I agree, run it again without --dry-run and with --yes. On macOS / Linux also preview obit daemon enable --dry-run, then run obit daemon enable after confirmation for the user launchd / systemd scheduler; on Linux without systemd, show me user crontab steps for obitd --once.

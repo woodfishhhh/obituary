@@ -15,9 +15,9 @@ const mirrorHost = "https://cn.obituary.woodfish.site/";
 function toMirror(src: string): string {
   return src
     .replaceAll("https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh", `${mirrorHost}install.sh`)
-    .replace(/bash install\.sh --version ([\w.-]+)(?![\w.-]| --mirror)/g, "bash install.sh --version $1 --mirror cn")
+    .replace(/bash install\.sh(?= *(#|$))/gm, "bash install.sh --mirror cn")
     .replaceAll("https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1", `${mirrorHost}install.ps1`)
-    .replace(/\.\\install\.ps1 -Version ([\w.-]+)(?![\w.-]| -Mirror)/g, ".\\install.ps1 -Version $1 -Mirror cn");
+    .replace(/\.\\install\.ps1(?= *(#|$))/gm, ".\\install.ps1 -Mirror cn");
 }
 const home = { zh: `${siteUrl}${siteBase}`, en: `${siteUrl}${siteBase}en/` };
 const repo = "https://github.com/woodfishhhh/obituary";
@@ -63,14 +63,14 @@ function sidebar(prefix: string, t: Record<string, string>): DefaultTheme.Sideba
 
 const zhSidebar = sidebar("", {
   start: "开始", quick: "快速开始", how: "讣告怎么运作",
-  agentsGroup: "和 agent 一起用", agents: "接入 agent", auto: "自动登记与提议", guard: "删除护栏", notices: "墓地提醒",
+  agentsGroup: "和 agent 一起用", agents: "接入 agent", auto: "什么进讣告", guard: "删除护栏", notices: "墓地提醒",
   more: "更多", folders: "文件夹策略", docker: "Docker 容器", desktop: "小窗口、托盘和右键菜单",
   reference: "参考", commands: "命令参考", uninstall: "卸载", faq: "常见问题", signing: "代码签名政策", privacy: "隐私政策",
 });
 
 const enSidebar = sidebar("/en", {
   start: "Start", quick: "Quick start", how: "How it works",
-  agentsGroup: "With your agents", agents: "Connect agents", auto: "Automatic lifespans", guard: "Delete guard", notices: "Grave notices",
+  agentsGroup: "With your agents", agents: "Connect agents", auto: "What goes in", guard: "Delete guard", notices: "Grave notices",
   more: "More", folders: "Folder policies", docker: "Docker containers", desktop: "Window, tray and context menu",
   reference: "Reference", commands: "Commands", uninstall: "Uninstall", faq: "FAQ", signing: "Code signing policy", privacy: "Privacy policy",
 });

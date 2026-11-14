@@ -4,7 +4,15 @@ Obituary gives files and folders a lifespan. When it runs out they are buried in
 
 ## 1. Install
 
-Windows 10 / 11, macOS and Linux (x64 and ARM64). macOS and Linux provide the CLI, graveyard, resurrection and automatic burial. Recycle Bin mode, the small window, tray and context menus are provided by the Windows edition.
+Windows 10 / 11, macOS and Linux (x64 and ARM64):
+
+| | Windows | macOS | Linux |
+|---|---|---|---|
+| Install with | Scoop, the `install.ps1` script (winget in review) | Homebrew, the `install.sh` script | the `install.sh` script |
+| Checks for expiry every 5 minutes | resident tray process, Task Scheduler as a fallback | user launchd agent | `systemd --user` timer; a user crontab without systemd |
+| CLI, graveyard and resurrection, automatic registration (optional), delete guard, agent integration (hooks, Skill, MCP), Docker containers, folder policies | yes | yes | yes |
+| Tray, small window, context menus, burial dates in Explorer, Start menu and desktop shortcuts | yes | the CLI instead: `obit list`, `obit graveyard`, `obit resurrect` | as on macOS |
+| Recycle Bin mode | yes | graveyard only | graveyard only |
 
 **Easiest: let your agent do it.** Send this sentence to the agent you use (Claude Code, Codex, Cursor…). It installs Obituary, connects it to itself and stops wherever a decision is yours:
 
@@ -26,11 +34,11 @@ Or download and read the install script, then run it (macOS and Linux):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh -o install.sh
-bash install.sh --version 1.2.1
+bash install.sh
 # Custom directory: --install-dir "$HOME/bin"; preview only: --dry-run
 ```
 
-The script detects the OS and architecture, verifies SHA-256 from the same download source, and installs `obit` and `obitd` into `~/.local/bin`. Follow its PATH instructions, then run `obit --version`. Use `--mirror cn` for the mainland China mirror; its script is at `https://cn.obituary.woodfish.site/install.sh`.
+The script installs the latest release by default (`--version <version>` picks another). The archive downloads in four parts at once (some routes cap the speed of each connection) and falls back to one connection when that does not work. It detects the OS and architecture, verifies SHA-256 from the same download source, and installs `obit` and `obitd` into `~/.local/bin`. Follow its PATH instructions, then run `obit --version`. Use `--mirror cn` for the mainland China mirror; its script is at `https://cn.obituary.woodfish.site/install.sh`.
 
 On first use in macOS, run `obit --version` and `obitd --help`. If Gatekeeper asks for approval, open System Settings → Privacy & Security, choose Open Anyway for each executable whose source you verified, then retry the command.
 
@@ -54,7 +62,7 @@ winget install woodfishhhh.Obituary
 # Install script: download it, read it, then run it
 # (installs to %LOCALAPPDATA%\Programs\obituary, adds it to your user PATH, creates a Start menu shortcut)
 irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1
-.\install.ps1 -Version 1.2.1          # -WhatIf previews, -NoPath leaves PATH alone
+.\install.ps1          # installs the latest release; -WhatIf previews, -NoPath leaves PATH alone
 ```
 
 :::
@@ -112,7 +120,7 @@ Everything else: [Commands](./commands).
 |---|---|
 | How registering, burying, resurrecting and purging work, and where the graveyard is | [How it works](./how-it-works) |
 | Connecting Claude Code, Codex and other agents | [Connect agents](./agents) |
-| How agent output gets a lifespan on its own, and what needs your approval | [Automatic lifespans](./auto-register) |
+| What goes in: agent registrations, the context menu, optional automatic registration | [What goes in](./auto-register) |
 | Turning an agent's `rm -rf` into a burial you can undo | [Delete guard](./delete-guard) |
 | What happens when an agent reaches for a buried file | [Grave notices](./grave-notices) |
 | Lifespans for folders such as Downloads and Desktop | [Folder policies](./folder-policies) |

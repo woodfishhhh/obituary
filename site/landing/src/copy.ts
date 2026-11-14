@@ -15,7 +15,7 @@ export const qqGroup = "1135603207";
 export type Method = "scoop" | "winget" | "brew" | "script";
 const shellScript = [
   "curl -fsSL https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh -o install.sh",
-  `bash install.sh --version ${version}`,
+  "bash install.sh",
 ];
 export const installCode: Record<Os, Partial<Record<Method, readonly string[]>>> = {
   windows: {
@@ -23,7 +23,7 @@ export const installCode: Record<Os, Partial<Record<Method, readonly string[]>>>
     winget: ["winget install woodfishhhh.Obituary"],
     script: [
       "irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1",
-      `.\\install.ps1 -Version ${version}`,
+      ".\\install.ps1",
     ],
   },
   macos: { brew: ["brew install --cask woodfishhhh/tap/obituary"], script: shellScript },
@@ -110,8 +110,8 @@ const zh = {
     head: "agent 删掉的，先进墓地",
     lead: "打开删除护栏后，rm -rf、git clean、Remove-Item 换成等价的 obit 命令。",
     values: [
-      { title: "默认就有", line: "agent 的调试脚本、日志、截图按规则带上寿命，到期进墓地，七天内能复活。" },
-      { title: "想多管一点", line: "写 .obitrules 自定规则，给下载文件夹设策略；想全交给 AI，一键切到全自动。" },
+      { title: "默认就有", line: "agent 写调试脚本、日志、截图时自己给它寿命，到期进墓地，七天内能复活。" },
+      { title: "想多管一点", line: "右键把文件放进讣告，给下载文件夹设策略；想让讣告自己登记，在设置里打开自动登记。" },
     ],
     agents: ["Claude Code", "Codex", "其他 agent"],
     obit: "讣告",
@@ -132,10 +132,10 @@ const zh = {
     cards: {
       mess: {
         title: "agent 产垃圾，比人清理快",
-        line: "agent 自己写出来的一生成就带上寿命，事后告诉你；你原来就有的，等你点头才登记。",
-        tracked: "Git 跟踪，不碰",
-        rule: "agent 新建，直接登记",
-        proposal: "会话前就在，等你点头",
+        line: "agent 知道哪些是自己写的，写下时就给它寿命；你的东西，右键放进讣告。进来的到期自动埋。",
+        tracked: "正式代码，留着",
+        rule: "agent 给了寿命",
+        proposal: "你右键放进来",
       },
       notice: {
         title: "拿不准有没有用？先下葬",
@@ -157,7 +157,7 @@ const zh = {
     head: "一个文件的一生",
     lead: "日历外观里，每个文件排在它下葬或火化的那天。",
     steps: [
-      { name: "登记", line: "手动给它寿命，或按规则自动登记；到期前随时续命。", code: "obit add debug.log 2h" },
+      { name: "登记", line: "agent 自己登记，你右键放进来；到期前随时续命。", code: "obit add debug.log 2h" },
       { name: "下葬", line: "挪进同一块盘上的墓地，原样保留；复活绝不覆盖。", code: "obit resurrect 3" },
       { name: "火化", line: "保留期（默认 7 天）过后才真正删除。", code: "obit purge" },
     ],
@@ -165,7 +165,7 @@ const zh = {
   },
   window: {
     head: "不会用命令行，也能复活",
-    lead: "开始菜单、桌面、托盘都能打开；右键文件就能设寿命。",
+    lead: "开始菜单、桌面、托盘都能打开；右键文件就能放进讣告。",
     looks: { calendar: "日历", palette: "一行" } as Record<LookId, string>,
     pages: { upcoming: "即将下葬", graveyard: "即将火化", decisions: "待你决定" } as Record<PageId, string>,
     lookLabel: "外观",
@@ -177,7 +177,7 @@ const zh = {
     pageNotes: {
       upcoming: "还在原处、带着寿命的东西；到期前随时续命，或者饶它一命。",
       graveyard: "已经下葬、还能复活的东西；复活放回原处，绝不覆盖，火化才是真删。",
-      decisions: "agent 自己的东西直接进讣告，列在这里随时撤回；你原来就有的才等你拍板，也能一键切到全自动。",
+      decisions: "没埋成的写明原因，一键重试；打开自动登记后，提议也在这里等你拍板。",
     } as Record<PageId, string>,
     alt: (look: string, page: string) => `讣告小窗口的「${look}」外观，${page}页，示例数据`,
   },
@@ -187,15 +187,15 @@ const zh = {
     obitCol: "讣告做的事",
     rows: [
       { agent: "rm -rf build", obit: "打开删除护栏时拦下，给出 obit rm -rf build；东西进墓地，能复活。" },
-      { agent: "写了一个 debug.log", obit: "这次会话新建的，按规则直接带上寿命，事后告诉你，到期下葬。" },
+      { agent: "obit mark debug.log 2d", obit: "两天后下葬，七天内都能原样复活。" },
       { agent: "obit mktemp 1d", obit: "一天后整个临时目录自己下葬。" },
       { agent: "又用到一个已经下葬的文件", obit: "当场告诉它编号，obit resurrect 放回原处。" },
     ],
     promisesHead: "三个承诺",
     promises: [
-      { title: "不碰 Git 跟踪的文件", line: "自动登记只登记 Git 工作区里没被跟踪的东西；目录里有一个被跟踪的文件，整个目录都不碰。" },
+      { title: "不碰 Git 跟踪的文件", line: "讣告自己从不登记 Git 跟踪的文件；目录里有一个被跟踪的文件，整个目录都不碰。" },
       { title: "七天内都能复活", line: "下葬的东西默认保留 7 天，期间 obit resurrect 原样放回（配置成回收站模式时除外）。" },
-      { title: "你的东西先问你", line: "会话开始前就在的文件只生成提议，你批准之后才登记；agent 新建的直接登记，事后告诉你，一条命令撤回。" },
+      { title: "什么进来，你和 agent 定", line: "默认什么都不会自己进讣告：只有 agent 登记的和你右键放进来的；自动登记要你自己打开。" },
     ],
   },
   agents: {
@@ -225,12 +225,12 @@ const zh = {
     head: "安装",
     lead: "支持 Windows 10 / 11、macOS 和 Linux（x64 和 ARM64）。",
     mirrorFact: "镜像上的压缩包和 GitHub Release 里的是同一份，安装脚本同样先核对 SHA-256。",
-    payoff: "装好后重启 agent。它生成的日志、截图按规则带上寿命（每个项目第一次先问你）；打开删除护栏的话，它的 rm -rf 会换成能复活的 obit rm -rf。",
+    payoff: "装好后重启 agent。它写下的日志、截图会自己带上寿命，到期自动下葬、七天内能复活；打开删除护栏的话，它的 rm -rf 会换成能复活的 obit rm -rf。",
     updateHead: "更新和卸载",
     update: {
-      windows: "更新：Scoop 用 scoop update obituary，winget 用 winget upgrade woodfishhhh.Obituary，安装脚本换上新版本号再运行一次。obit update 会告诉你当前版本和该用的升级命令。",
-      macos: "更新：Homebrew 用 brew upgrade --cask obituary，安装脚本换上新版本号再运行一次。obit update 会告诉你当前版本和最新版本。",
-      linux: "更新：安装脚本换上新版本号再运行一次。obit update 会告诉你当前版本和最新版本。",
+      windows: "更新：Scoop 用 scoop update obituary，winget 用 winget upgrade woodfishhhh.Obituary，再运行一次安装脚本。obit update 会告诉你当前版本和该用的升级命令。",
+      macos: "更新：Homebrew 用 brew upgrade --cask obituary，再运行一次安装脚本。obit update 会告诉你当前版本和最新版本。",
+      linux: "更新：再运行一次安装脚本。obit update 会告诉你当前版本和最新版本。",
     } as Record<Os, string>,
     uninstall: "卸载：obit uninstall，先 --dry-run 看看会撤掉什么；墓地默认保留。",
     network: {
@@ -248,16 +248,16 @@ const zh = {
     handHead: "自己装",
     handLine: {
       windows: "下面三种方式任选其一，装好后执行 obit doctor 体检。",
-      macos: "下面两种方式任选其一，装好后执行 obit doctor 体检。",
-      linux: "用安装脚本安装，装好后执行 obit doctor 体检。",
+      macos: "下面两种方式任选其一，装好后执行 obit doctor 体检。托盘、小窗口和右键菜单只在 Windows 上有，这里用 obit list、obit graveyard、obit resurrect。",
+      linux: "用安装脚本安装，装好后执行 obit doctor 体检。托盘、小窗口和右键菜单只在 Windows 上有，这里用 obit list、obit graveyard、obit resurrect。",
     } as Record<Os, string>,
     mirrorHandLine: "用安装脚本，或者直接下载压缩包；装好后执行 obit doctor 体检。",
     platformLabel: "系统",
     methods: { scoop: "Scoop", winget: "winget（审核中）", brew: "Homebrew", script: "安装脚本" } as Record<Method, string>,
     scriptNote: {
-      windows: "先下载、看一眼，再运行；-WhatIf 只预览。",
-      macos: "先下载、看一眼，再运行；--dry-run 只预览。",
-      linux: "先下载、看一眼，再运行；--dry-run 只预览。",
+      windows: "先下载、看一眼，再运行；默认装最新正式版，-WhatIf 只预览。",
+      macos: "先下载、看一眼，再运行；默认装最新正式版，--dry-run 只预览。",
+      linux: "先下载、看一眼，再运行；默认装最新正式版，--dry-run 只预览。",
     } as Record<Os, string>,
     fact: {
       windows: "三种方式下载的都是 GitHub Release 里的同一个压缩包，安装前都核对 SHA-256。",
@@ -265,7 +265,7 @@ const zh = {
       linux: "安装脚本下载的是 GitHub Release 里的压缩包，安装前核对 SHA-256。",
     } as Record<Os, string>,
     daemonHead: "打开后台检查",
-    daemonLine: "每 5 分钟检查一次到期的文件：macOS 用 launchd，Linux 用 systemd --user。先加 --dry-run 看看会装什么。",
+    daemonLine: "每 5 分钟检查一次到期的文件：macOS 用 launchd，Linux 用 systemd --user（没有 systemd 时用用户 crontab 每 5 分钟运行 obitd --once）。先加 --dry-run 看看会装什么。",
     then: "再接到 agent 身上",
     init: [
       { label: "Claude Code", code: "obit init -g" },
@@ -313,8 +313,8 @@ const en: Copy = {
     head: "What an agent deletes goes to the graveyard first",
     lead: "With the delete guard on, rm -rf, git clean and Remove-Item become the equivalent obit command.",
     values: [
-      { title: "Out of the box", line: "Your agent's debug scripts, logs and screenshots get a lifespan by rule, then go to the graveyard, restorable for seven days." },
-      { title: "When you want more", line: "Write .obitrules, give your Downloads folder a policy, or switch to fully automatic and let the agent handle it all." },
+      { title: "Out of the box", line: "Your agent gives the debug scripts, logs and screenshots it writes a lifespan; they go to the graveyard when due, restorable for seven days." },
+      { title: "When you want more", line: "Right-click files to add them, give your Downloads folder a policy, or turn on automatic registration in Settings." },
     ],
     agents: ["Claude Code", "Codex", "Other agents"],
     obit: "Obituary",
@@ -335,10 +335,10 @@ const en: Copy = {
     cards: {
       mess: {
         title: "Agents make mess faster than people clean up",
-        line: "What the agent writes gets a lifespan at once and you hear about it; what was already yours waits for your approval.",
-        tracked: "tracked by Git, left alone",
-        rule: "agent-made, registered",
-        proposal: "already there, proposed",
+        line: "The agent knows what it wrote and gives it a lifespan as it writes; you add your own with a right-click. Whatever is in leaves on time.",
+        tracked: "your code, kept",
+        rule: "lifespan from the agent",
+        proposal: "added by you",
       },
       notice: {
         title: "Not sure it's still needed? Bury it",
@@ -360,7 +360,7 @@ const en: Copy = {
     head: "The life of a file",
     lead: "In the Calendar look, every file sits on the day it is buried or purged.",
     steps: [
-      { name: "Register", line: "Give it a lifespan by hand, or automatically by rule; extend it any time.", code: "obit add debug.log 2h" },
+      { name: "Register", line: "The agent registers it, or you add it with a right-click; extend it any time.", code: "obit add debug.log 2h" },
       { name: "Bury", line: "It moves to a graveyard on the same drive and comes back without overwriting.", code: "obit resurrect 3" },
       { name: "Purge", line: "Only after retention (7 days by default) is it really deleted.", code: "obit purge" },
     ],
@@ -368,7 +368,7 @@ const en: Copy = {
   },
   window: {
     head: "Resurrect without the command line",
-    lead: "Open it from Start, the desktop or the tray; right-click a file to give it a lifespan.",
+    lead: "Open it from Start, the desktop or the tray; right-click a file to add it to Obituary.",
     looks: { calendar: "Calendar", palette: "One line" },
     pages: { upcoming: "Expiring", graveyard: "Graveyard", decisions: "For you" },
     lookLabel: "Look",
@@ -380,7 +380,7 @@ const en: Copy = {
     pageNotes: {
       upcoming: "Things still in place with a lifespan; extend or spare them any time before they expire.",
       graveyard: "Buried and still restorable; resurrect puts things back without overwriting, and only purging really deletes.",
-      decisions: "The agent's own output goes straight in and is listed here to undo any time; only what was already yours waits for you, or switch to fully automatic.",
+      decisions: "Burials that failed show the reason, with one-click Retry; with automatic registration on, proposals wait here for you too.",
     },
     alt: (look: string, page: string) => `Obituary's small window in the ${look} look, ${page} page, with sample data`,
   },
@@ -390,15 +390,15 @@ const en: Copy = {
     obitCol: "Obituary",
     rows: [
       { agent: "rm -rf build", obit: "With the delete guard on, denied with obit rm -rf build offered instead; it goes to the graveyard and can come back." },
-      { agent: "writes a debug.log", obit: "Created in this session, so it gets a lifespan by rule at once, you are told, and it is buried when it expires." },
+      { agent: "obit mark debug.log 2d", obit: "Buried in two days, restorable as it was for seven more." },
       { agent: "obit mktemp 1d", obit: "A day later the whole scratch folder buries itself." },
       { agent: "reads a file that was already buried", obit: "Is told the grave number on the spot; obit resurrect puts it back." },
     ],
     promisesHead: "Three promises",
     promises: [
-      { title: "Git-tracked files are left alone", line: "Automatic registration only takes what Git does not track; a folder holding one tracked file is skipped whole." },
+      { title: "Git-tracked files are left alone", line: "Obituary never registers a file Git tracks on its own; a folder holding one tracked file is skipped whole." },
       { title: "Restorable for seven days", line: "Buried things are kept 7 days by default and obit resurrect puts them back as they were (unless you chose recycle mode)." },
-      { title: "Your files wait for your yes", line: "Files that were there before the session are only proposed; what the agent created goes in directly, is reported, and one command undoes it." },
+      { title: "You and the agent decide what goes in", line: "Nothing goes in by itself: only what the agent registers and what you add; automatic registration is yours to turn on." },
     ],
   },
   agents: {
@@ -428,12 +428,12 @@ const en: Copy = {
     head: "Install",
     lead: "Windows 10 / 11, macOS and Linux (x64 and ARM64).",
     mirrorFact: "The mirror serves the same archives as the GitHub release, and the install script checks their SHA-256 the same way.",
-    payoff: "Then restart the agent. Its logs and screenshots get a lifespan by rule (each project asks you first); with the delete guard on, its rm -rf becomes a restorable obit rm -rf.",
+    payoff: "Then restart the agent. The logs and screenshots it writes get a lifespan from it, are buried when due and stay restorable for seven days; with the delete guard on, its rm -rf becomes a restorable obit rm -rf.",
     updateHead: "Update and uninstall",
     update: {
-      windows: "Update: scoop update obituary, winget upgrade woodfishhhh.Obituary, or the install script again with the new version number. obit update shows your version and the command to use.",
-      macos: "Update: brew upgrade --cask obituary, or the install script again with the new version number. obit update shows your version and the latest one.",
-      linux: "Update: run the install script again with the new version number. obit update shows your version and the latest one.",
+      windows: "Update: scoop update obituary, winget upgrade woodfishhhh.Obituary, or run the install script again. obit update shows your version and the command to use.",
+      macos: "Update: brew upgrade --cask obituary, or run the install script again. obit update shows your version and the latest one.",
+      linux: "Update: run the install script again. obit update shows your version and the latest one.",
     },
     uninstall: "Uninstall: obit uninstall, with --dry-run first to see what it removes; the graveyard stays by default.",
     network: {
@@ -451,16 +451,16 @@ const en: Copy = {
     handHead: "By hand",
     handLine: {
       windows: "Pick one of the three, then run obit doctor to check the installation.",
-      macos: "Pick one of the two, then run obit doctor to check the installation.",
-      linux: "Use the install script, then run obit doctor to check the installation.",
+      macos: "Pick one of the two, then run obit doctor to check the installation. The tray, small window and context menus are Windows-only; here obit list, obit graveyard and obit resurrect do their work.",
+      linux: "Use the install script, then run obit doctor to check the installation. The tray, small window and context menus are Windows-only; here obit list, obit graveyard and obit resurrect do their work.",
     },
     mirrorHandLine: "Use the install script or download the archive, then run obit doctor to check the installation.",
     platformLabel: "Platform",
     methods: { scoop: "Scoop", winget: "winget (in review)", brew: "Homebrew", script: "Install script" },
     scriptNote: {
-      windows: "Download it, read it, then run it; -WhatIf previews.",
-      macos: "Download it, read it, then run it; --dry-run previews.",
-      linux: "Download it, read it, then run it; --dry-run previews.",
+      windows: "Download it, read it, then run it; it installs the latest release, and -WhatIf previews.",
+      macos: "Download it, read it, then run it; it installs the latest release, and --dry-run previews.",
+      linux: "Download it, read it, then run it; it installs the latest release, and --dry-run previews.",
     },
     fact: {
       windows: "All three download the same archive from the GitHub release and check its SHA-256 before unpacking.",
@@ -468,7 +468,7 @@ const en: Copy = {
       linux: "The install script downloads the archive from the GitHub release and checks its SHA-256 before unpacking.",
     },
     daemonHead: "Turn on background checks",
-    daemonLine: "Checks for expired files every 5 minutes: launchd on macOS, systemd --user on Linux. Add --dry-run first to see what it installs.",
+    daemonLine: "Checks for expired files every 5 minutes: launchd on macOS, systemd --user on Linux (without systemd, a user crontab runs obitd --once every 5 minutes). Add --dry-run first to see what it installs.",
     then: "Then connect your agents",
     init: [
       { label: "Claude Code", code: "obit init -g" },

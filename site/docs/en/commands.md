@@ -36,7 +36,7 @@ obit git-clean -fdx
 obit remove-item .\build     # one literal path only
 ```
 
-## Automatic lifespans and proposals
+## Rules and proposals
 
 ```powershell
 obit rules                       # the rules in effect here

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { BotIcon, CheckIcon, CopyIcon, DownloadIcon } from "lucide-react";
 import { BorderBeam } from "@/components/ui/border-beam";
-import { isMirror, mirrorFiles, version } from "@/config";
+import { isMirror, mirrorFiles } from "@/config";
 import { agentInstall, installCode, type Copy, type Method, type Os } from "@/copy";
 import { brand } from "@/lib/brand";
 import { cn } from "@/lib/utils";
@@ -14,8 +14,8 @@ const osNames: Record<Os, string> = { windows: "Windows", macos: "macOS", linux:
 const sentenceFor = (lang: Copy["lang"]) => agentInstall[lang];
 const mirrorScript = (os: Os) =>
   os === "windows"
-    ? [`irm ${mirrorFiles.installScript} -OutFile install.ps1`, `.\\install.ps1 -Version ${version} -Mirror cn`]
-    : [`curl -fsSL ${mirrorFiles.installShell} -o install.sh`, `bash install.sh --version ${version} --mirror cn`];
+    ? [`irm ${mirrorFiles.installScript} -OutFile install.ps1`, ".\\install.ps1 -Mirror cn"]
+    : [`curl -fsSL ${mirrorFiles.installShell} -o install.sh`, "bash install.sh --mirror cn"];
 
 // The visitor's system, when the browser says it; Windows otherwise.
 function detectOs(): Os {

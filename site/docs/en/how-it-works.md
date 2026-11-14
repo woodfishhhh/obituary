@@ -2,7 +2,7 @@
 
 ## The life of a file
 
-1. **Register**: give a file or folder a lifespan, by hand with `obit add debug.log 2h` or [automatically by rule](./auto-register).
+1. **Register**: give a file or folder a lifespan, an agent with `obit add debug.log 2h`, you with "Add to Obituary" in Explorer's context menu; see [What goes in](./auto-register).
 2. **Expire**: `obit list` shows what is left. Before then, `obit extend` adds time and `obit spare` stops tracking it while keeping the file.
 3. **Bury**: when time is up it is reaped into the graveyard (`obit graveyard`), kept 7 days by default.
 4. **Resurrect or purge**: during retention, `obit resurrect <id>` puts it back where it was and never overwrites; after retention it is purged (`obit purge`), the real delete.
@@ -30,7 +30,7 @@ Configuration is `%APPDATA%\obituary\config.toml`; `obit config` shows it and `o
 - **Files, not file names.** Every record keeps the volume serial number and 128-bit file ID: renamed or moved files are still found, and a different file now at the old path is left alone. Identity is checked again right before deleting. Files with more than one hard link are refused.
 - **Protected paths.** Drive roots, `C:\Windows`, Program Files, ProgramData, and the user profile, Desktop, Documents, Downloads and similar folders themselves (and their parents) are refused, including redirected ones. Their contents can be given lifespans.
 - **Git repositories.** `obit add` and `obit bury` on a folder containing `.git` at any depth need `--force`, and the check is repeated at expiry; if it cannot finish, the burial is refused.
-- **When unsure, don't delete.** A record is given up only when the file is known to be gone. Access denied, a removed volume and similar cases are retried later.
+- **When unsure, don't delete.** A record is given up only when the file is known to be gone. Access denied, a removed volume and similar cases are retried later. Retries start a minute apart and wait longer each time, up to a day; after 12 failures in a row Obituary stops and waits for you, with the reason in `obit list` and under "Burials that failed" on the window's Decisions page: `obit extend <id> 1m` (Retry in the window) tries again, `obit spare <id>` (Stop tracking) leaves it where it is. Before a large folder is buried, Obituary searches it for Git repositories for up to 30 seconds and buries it only once the search is done, trying again later if it is not; a folder holding a repository is not buried.
 - **Everything is recorded.** Every add, extension, cancellation and deletion goes into the audit log (`obit log`).
 
 ## Background

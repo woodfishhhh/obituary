@@ -4,7 +4,15 @@
 
 The easiest way is to let your agent install it: send it the sentence from the README. This page is for installing by hand.
 
-Obituary runs on Windows 10 / 11, macOS and Linux (x64 and ARM64). macOS / Linux provide the CLI, graveyard, resurrection and automatic burial. Recycle Bin mode, the small window, tray and context menus are provided by the Windows edition. The Windows small window uses WebView2.
+Obituary runs on Windows 10 / 11, macOS and Linux (x64 and ARM64). The Windows small window uses WebView2.
+
+| | Windows | macOS | Linux |
+|---|---|---|---|
+| Install with | Scoop, the `install.ps1` script (winget in review) | Homebrew, the `install.sh` script | the `install.sh` script |
+| Checks for expiry every 5 minutes | resident tray process, Task Scheduler as a fallback | user launchd agent | `systemd --user` timer; a user crontab without systemd |
+| CLI, graveyard and resurrection, automatic registration (optional), delete guard, agent integration (hooks, Skill, MCP), Docker containers, folder policies | yes | yes | yes |
+| Tray, small window, context menus, burial dates in Explorer, Start menu and desktop shortcuts | yes | the CLI instead: `obit list`, `obit graveyard`, `obit resurrect` | as on macOS |
+| Recycle Bin mode | yes | graveyard only | graveyard only |
 
 ## 1. Install the programs
 
@@ -14,10 +22,10 @@ On macOS / Linux you can also download and read the install script, then run it:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh -o install.sh
-bash install.sh --version 1.2.1
+bash install.sh
 ```
 
-The script verifies SHA-256, installs `obit` and `obitd` into `~/.local/bin`, and prints PATH instructions. Use `--install-dir` for another directory and `--dry-run` for a preview. In mainland China, use `https://cn.obituary.woodfish.site/install.sh` and add `--mirror cn`.
+The script installs the latest release by default (`--version <version>` picks another). The archive downloads in four parts at once (some routes cap the speed of each connection) and falls back to one connection when that does not work. It verifies SHA-256, installs `obit` and `obitd` into `~/.local/bin`, and prints PATH instructions. Use `--install-dir` for another directory and `--dry-run` for a preview. In mainland China, use `https://cn.obituary.woodfish.site/install.sh` and add `--mirror cn`.
 
 On first use in macOS, run `obit --version` and `obitd --help`. If Gatekeeper asks for approval, open System Settings → Privacy & Security, choose Open Anyway for each executable whose source you verified, then retry the command.
 
@@ -36,17 +44,17 @@ winget install woodfishhhh.Obituary
 # Install script: download it, read it, then run it
 # (installs to %LOCALAPPDATA%\Programs\obituary, adds it to your user PATH, creates a Start menu shortcut)
 irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1
-.\install.ps1 -Version 1.2.1          # -WhatIf previews, -NoPath leaves PATH alone
+.\install.ps1          # installs the latest release; -WhatIf previews, -NoPath leaves PATH alone
 ```
 
 In mainland China, the install script downloads from the mainland mirror:
 
 ```powershell
 irm https://cn.obituary.woodfish.site/install.ps1 -OutFile install.ps1
-.\install.ps1 -Version 1.2.1 -Mirror cn
+.\install.ps1 -Mirror cn
 ```
 
-- All three install the same archive and check its SHA-256 before unpacking it.
+- All three install the same archive and check its SHA-256 before unpacking it. The install script downloads the archive in four parts at once and falls back to one connection when that does not work.
 - If you download the archive with a browser, Windows may show "Windows protected your PC"; choose "More info → Run anyway". Scoop, winget and the install script go straight through.
 
 Open a new terminal afterwards and check that `obit --version` runs.
@@ -81,7 +89,7 @@ Once a day at most, Obituary checks whether a new stable release is out. It read
 - Scoop: `scoop update obituary`
 - winget: `winget upgrade woodfishhhh.Obituary`
 - Homebrew (macOS): `brew upgrade --cask obituary`
-- Install script: run it again with the new version number
+- Install script: run it again (it installs the latest release by default)
 
 Obituary checks and tells you; you run the update. In a terminal, `obit update` shows your version and the update command, and `obit update --check` checks right away.
 

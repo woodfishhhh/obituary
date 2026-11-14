@@ -18,15 +18,15 @@ No. `obit-gui.exe` is x64 only; the ARM64 build has the command line and the tra
 
 ## Could it register code I have not committed yet?
 
-Automatic registration only touches untracked items inside a Git work tree, and of the leftovers no rule covers, only ignored, regenerable dependencies, build output and caches are registered; new files Git does not ignore (code you have not committed yet) are never listed. Anything registered by rule or proposal is not buried if it has been committed by the time it expires. See [Automatic lifespans](./auto-register).
+No. Automatic registration is off by default: what goes in is what an agent registers with `obit mark` and what you add from the context menu. Turned on, it still only touches untracked items inside a Git work tree; new files no rule covers (such as code you have not committed yet) are never listed, and dependencies, build output and caches are left alone. Anything registered by rule or proposal is not buried if it has been committed by the time it expires. See [What goes in](./auto-register).
 
 ## What if Git fails, or my `.gitignore` is very broad?
 
-Nothing is put at risk. Before registering anything, Obituary asks Git whether it is tracked; if Git cannot answer (not installed, timed out, a damaged repository), nothing is registered. Folders outside a Git repository are never registered automatically; only you or an agent can give them a lifespan with `obit mark`. A broad `.gitignore` only makes more things untracked: automatic registration still covers just the built-in rules and the `.obitrules` you trusted, plus ignored, regenerable dependencies, build output and caches.
+Nothing is put at risk. Before registering anything, Obituary asks Git whether it is tracked; if Git cannot answer (not installed, timed out, a damaged repository), nothing is registered. Folders outside a Git repository are never registered automatically; only you or an agent can give them a lifespan with `obit mark`. A broad `.gitignore` only makes more things untracked: automatic registration still covers just the built-in rules and the `.obitrules` you trusted.
 
 ## Could an agent pass my files off as its own and skip the proposal?
 
-No. Only files provably created by the agent in its session go in without your approval: the hook watched it write them, the session's start snapshot does not list them, and the file system created them after the session started. Files that existed before the session, or that another program made, are still proposed. Even if an agent were talked into renaming one of your old folders to a name a rule recognises, its creation time stays old, so it only becomes a proposal. Git-tracked files are never registered automatically in any mode; whatever goes in directly is reported to you afterwards, `obit spare` undoes it in one command, and burials stay restorable for seven days.
+No. Automatic registration is off by default, so nothing goes in without your approval. With the tiered mode on, only files provably created by the agent in its session go in without your approval: the hook watched it write them, the session's start snapshot does not list them, and the file system created them after the session started. Files that existed before the session, or that another program made, are still proposed. Even if an agent were talked into renaming one of your old folders to a name a rule recognises, its creation time stays old, so it only becomes a proposal. Git-tracked files are never registered automatically in any mode; whatever goes in directly is reported to you afterwards, `obit spare` undoes it in one command, and burials stay restorable for seven days.
 
 ## Can an agent approve proposals for me?
 

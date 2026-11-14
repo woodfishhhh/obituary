@@ -4,7 +4,15 @@
 
 ## 1. 安装
 
-支持 Windows 10 / 11、macOS 和 Linux（x64 和 ARM64）。macOS / Linux 使用命令行、墓地、复活和自动下葬；回收站模式、小窗口、托盘和右键菜单由 Windows 版提供。
+支持 Windows 10 / 11、macOS 和 Linux（x64 和 ARM64）：
+
+| | Windows | macOS | Linux |
+|---|---|---|---|
+| 怎么装 | Scoop、安装脚本 `install.ps1`（winget 审核中） | Homebrew、安装脚本 `install.sh` | 安装脚本 `install.sh` |
+| 每 5 分钟检查到期 | 托盘常驻进程，任务计划程序兜底 | launchd 用户代理 | `systemd --user` 定时器；没有 systemd 时用用户 crontab |
+| 命令行、墓地与复活、自动登记（可选）、删除护栏、agent 集成（hook、Skill、MCP）、Docker 容器、文件夹策略 | 有 | 有 | 有 |
+| 托盘、小窗口、右键菜单、资源管理器里的下葬日期、开始菜单和桌面快捷方式 | 有 | 用命令行代替：`obit list`、`obit graveyard`、`obit resurrect` | 同 macOS |
+| 回收站模式 | 有 | 只用墓地 | 只用墓地 |
 
 **最省事：让 agent 帮你装。** 把这句话发给你正在用的 agent（Claude Code、Codex、Cursor……都行），它会装好讣告、接到自己身上，要你拍板的地方会停下来问你：
 
@@ -26,11 +34,11 @@ brew install --cask woodfishhhh/tap/obituary
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh -o install.sh
-bash install.sh --version 1.2.1
+bash install.sh
 # 自定义目录：加 --install-dir "$HOME/bin"；只预览：加 --dry-run
 ```
 
-脚本识别系统和架构，核对同一来源的 SHA-256 后，把 `obit` 和 `obitd` 装到 `~/.local/bin`。按输出提示把目录加入 PATH，运行 `obit --version`。国内镜像使用 `--mirror cn`，对应脚本地址是 `https://cn.obituary.woodfish.site/install.sh`。
+脚本默认安装最新正式版（指定版本用 `--version <版本号>`），压缩包分 4 段同时下载（有的线路限制单个连接的速度），不行就自动改用一个连接；识别系统和架构，核对同一来源的 SHA-256 后，把 `obit` 和 `obitd` 装到 `~/.local/bin`。按输出提示把目录加入 PATH，运行 `obit --version`。国内镜像使用 `--mirror cn`，对应脚本地址是 `https://cn.obituary.woodfish.site/install.sh`。
 
 macOS 首次使用先运行 `obit --version` 和 `obitd --help`。若系统要求确认开发者，在「系统设置 → 隐私与安全性」为已核对来源的两个程序分别点「仍要打开」，再重试命令。
 
@@ -53,7 +61,7 @@ winget install woodfishhhh.Obituary
 ```powershell [安装脚本]
 # 先下载、看一眼，再运行（装到 %LOCALAPPDATA%\Programs\obituary，加进用户 PATH，建开始菜单快捷方式）
 irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1
-.\install.ps1 -Version 1.2.1          # -WhatIf 只预览，-NoPath 不改 PATH
+.\install.ps1          # 默认装最新正式版；-WhatIf 只预览，-NoPath 不改 PATH
 ```
 
 :::
@@ -111,7 +119,7 @@ obit resurrect --last        # 撤销上一次删除
 |---|---|
 | 登记、下葬、复活、火化怎么运作，墓地放在哪里 | [讣告怎么运作](./how-it-works) |
 | 接到 Claude Code、Codex 和其他 agent 上 | [接入 agent](./agents) |
-| agent 的产物怎么自动带上寿命，哪些要你点头 | [自动登记与提议](./auto-register) |
+| 什么进讣告：agent 登记、右键放进来，以及可选的自动登记 | [什么进讣告](./auto-register) |
 | 把 agent 的 `rm -rf` 变成可以复活的下葬 | [删除护栏](./delete-guard) |
 | agent 又用到已经下葬的文件时会发生什么 | [墓地提醒](./grave-notices) |
 | 给下载、桌面这类文件夹设寿命 | [文件夹策略](./folder-policies) |

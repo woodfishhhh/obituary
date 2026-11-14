@@ -4,7 +4,15 @@
 
 最省事的办法是让 agent 帮你装：把 README 里那句话发给它就行。这一页写给想自己动手的人。
 
-讣告支持 Windows 10 / 11、macOS 和 Linux（x64、ARM64）。macOS / Linux 提供命令行、墓地、复活和自动下葬；回收站模式、小窗口、托盘和右键菜单由 Windows 版提供。Windows 的小窗口使用 WebView2 运行时。
+讣告支持 Windows 10 / 11、macOS 和 Linux（x64、ARM64）。Windows 的小窗口使用 WebView2 运行时。
+
+| | Windows | macOS | Linux |
+|---|---|---|---|
+| 怎么装 | Scoop、安装脚本 `install.ps1`（winget 审核中） | Homebrew、安装脚本 `install.sh` | 安装脚本 `install.sh` |
+| 每 5 分钟检查到期 | 托盘常驻进程，任务计划程序兜底 | launchd 用户代理 | `systemd --user` 定时器；没有 systemd 时用用户 crontab |
+| 命令行、墓地与复活、自动登记（可选）、删除护栏、agent 集成（hook、Skill、MCP）、Docker 容器、文件夹策略 | 有 | 有 | 有 |
+| 托盘、小窗口、右键菜单、资源管理器里的下葬日期、开始菜单和桌面快捷方式 | 有 | 用命令行代替：`obit list`、`obit graveyard`、`obit resurrect` | 同 macOS |
+| 回收站模式 | 有 | 只用墓地 | 只用墓地 |
 
 ## 1. 装程序
 
@@ -14,10 +22,10 @@ macOS / Linux 也可以下载并阅读安装脚本后运行：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh -o install.sh
-bash install.sh --version 1.2.1
+bash install.sh
 ```
 
-脚本核对 SHA-256 后，把 `obit` 和 `obitd` 安装到 `~/.local/bin`，并提示如何加入 PATH。可用 `--install-dir` 指定目录、`--dry-run` 预览；国内使用 `https://cn.obituary.woodfish.site/install.sh` 并加 `--mirror cn`。
+脚本默认安装最新正式版（指定版本用 `--version <版本号>`），压缩包分 4 段同时下载（有的线路限制单个连接的速度），不行就自动改用一个连接；核对 SHA-256 后把 `obit` 和 `obitd` 安装到 `~/.local/bin`，并提示如何加入 PATH。可用 `--install-dir` 指定目录、`--dry-run` 预览；国内使用 `https://cn.obituary.woodfish.site/install.sh` 并加 `--mirror cn`。
 
 macOS 首次使用先运行 `obit --version` 和 `obitd --help`。若系统要求确认开发者，在「系统设置 → 隐私与安全性」为已核对来源的两个程序分别点「仍要打开」，再重试命令。
 
@@ -36,17 +44,17 @@ winget install woodfishhhh.Obituary
 # 安装脚本：先下载、看一眼，再运行
 # 装到 %LOCALAPPDATA%\Programs\obituary，加进用户 PATH，建开始菜单快捷方式
 irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1
-.\install.ps1 -Version 1.2.1          # -WhatIf 只预览，-NoPath 不改 PATH
+.\install.ps1          # 默认装最新正式版；-WhatIf 只预览，-NoPath 不改 PATH
 ```
 
 在中国大陆，安装脚本从国内镜像下载：
 
 ```powershell
 irm https://cn.obituary.woodfish.site/install.ps1 -OutFile install.ps1
-.\install.ps1 -Version 1.2.1 -Mirror cn
+.\install.ps1 -Mirror cn
 ```
 
-- 三种方式装的是同一个压缩包，安装前都会核对 SHA-256，对上了才解压。
+- 三种方式装的是同一个压缩包，安装前都会核对 SHA-256，对上了才解压。安装脚本把压缩包分 4 段同时下载，不行就自动改用一个连接。
 - 用浏览器手动下载压缩包时，Windows 可能弹出「Windows 已保护你的电脑」，点「更多信息 → 仍要运行」。用 Scoop、winget 或安装脚本装不会弹出。
 
 装完新开一个终端，确认 `obit --version` 能运行。
@@ -81,7 +89,7 @@ obit doctor
 - Scoop：`scoop update obituary`
 - winget：`winget upgrade woodfishhhh.Obituary`
 - Homebrew（macOS）：`brew upgrade --cask obituary`
-- 安装脚本：用新的版本号再运行一次安装脚本
+- 安装脚本：再运行一次（默认装最新正式版）
 
 讣告只负责检查和提醒，升级由你来运行。终端里用 `obit update` 看当前版本和升级命令，用 `obit update --check` 马上检查一次。
 

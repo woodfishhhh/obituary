@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img" aria-labelledby="title desc">
 <title id="title">讣告 Obituary 的生命周期</title>
-<desc id="desc">登记（obit add，或按规则自动登记）→ 到期（obit list 看谁还剩多久）→ 收割，下葬进墓地（obit graveyard，默认保留 7 天）→ 复活（obit resurrect，放回原处，绝不覆盖已有文件），或保留期过后火化（obit purge，真正删除）。</desc>
+<desc id="desc">登记（obit add，或右键放进讣告）→ 到期（obit list 看谁还剩多久）→ 收割，下葬进墓地（obit graveyard，默认保留 7 天）→ 复活（obit resurrect，放回原处，绝不覆盖已有文件），或保留期过后火化（obit purge，真正删除）。</desc>
 <defs>
 <linearGradient id="spark" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#0876FF"/><stop offset=".55" stop-color="#16B8FA"/><stop offset=".62" stop-color="#FFE052"/><stop offset="1" stop-color="#FFB329"/></linearGradient>
 </defs>
@@ -12,7 +12,7 @@
 <text x="72" y="178" font-size="28" font-weight="700" fill="#E8EEF9">登记</text>
 <rect x="68" y="196" width="253" height="34" rx="8" fill="#1B2B4E"/>
 <text x="81" y="219" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="18" fill="#8DBDFF">obit add debug.log 2h</text>
-<text x="72" y="256" font-size="18" fill="#A1B1CC">或按规则自动登记</text>
+<text x="72" y="256" font-size="18" fill="#A1B1CC">或右键放进讣告</text>
 </g>
 <path d="M334 200H363" stroke="#4C9BFF" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M374 200l-13 -7.5v15Z" fill="#4C9BFF"/>
 <g>

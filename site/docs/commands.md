@@ -36,7 +36,7 @@ obit git-clean -fdx
 obit remove-item .\build     # 只接受一个字面路径
 ```
 
-## 自动登记与提议
+## 规则与提议
 
 ```powershell
 obit rules                       # 当前项目生效的规则

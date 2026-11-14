@@ -30,9 +30,11 @@ for (const [from, to] of parts) await cp(from, to, { recursive: true });
 function mirrorGuide(text, host) {
   const swaps = [
     ["https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh", `${host}install.sh`],
-    [/bash install\.sh --version ([\w.-]+)(?![\w.-]| --mirror)/g, "bash install.sh --version $1 --mirror cn"],
+    ["运行 bash install.sh，", "运行 bash install.sh --mirror cn，"],
+    ["run bash install.sh, which", "run bash install.sh --mirror cn, which"],
     ["https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1", `${host}install.ps1`],
-    [/\.\\install\.ps1 -Version ([\w.-]+)(?![\w.-]| -Mirror)/g, ".\\install.ps1 -Version $1 -Mirror cn"],
+    ["运行 .\\install.ps1（", "运行 .\\install.ps1 -Mirror cn（"],
+    ["run .\\install.ps1 (", "run .\\install.ps1 -Mirror cn ("],
     // Homebrew taps download from GitHub.
     ["（macOS 上有 Homebrew 时也可以改用 brew install --cask woodfishhhh/tap/obituary）", ""],
     [" (on macOS with Homebrew, brew install --cask woodfishhhh/tap/obituary works too)", ""],
