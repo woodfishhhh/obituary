@@ -57,6 +57,11 @@ const (
 	Summary
 	SummaryPaused
 	StartDocker
+	BuryNow
+	MenuMarked
+	MenuBuried
+	MenuResultDetails
+	MenuSelectionHandler
 	keyCount
 )
 

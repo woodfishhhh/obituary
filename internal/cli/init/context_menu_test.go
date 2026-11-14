@@ -48,13 +48,13 @@ func TestContextMenuPreviewDescribesChanges(t *testing.T) {
 		if err != nil {
 			t.Fatal(out, err)
 		}
-		for _, want := range []string{action, "1 小时", "1 天", "7 天", "30 天", "--context-menu", "obitd.exe", "\"%1\""} {
+		for _, want := range []string{action, "--context-menu-server", "obitd.exe", "\"%1\""} {
 			if !strings.Contains(out, want) {
 				t.Errorf("missing %q: %s", want, out)
 			}
 		}
 		if action != "update" {
-			for _, want := range []string{"写讣告", "复活最近下葬的", "设置文件夹策略", "讣告 Obituary", `"%V\."`} {
+			for _, want := range []string{"1 天", "7 天", "30 天", "放进讣告", "现在埋掉（可恢复）", "复活最近下葬的", "设置文件夹策略", "讣告 Obituary", `"%V\."`} {
 				if !strings.Contains(out, want) {
 					t.Errorf("missing %q: %s", want, out)
 				}

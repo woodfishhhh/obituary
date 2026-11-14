@@ -13,12 +13,14 @@ import (
 )
 
 // Run is called only by obitd --context-menu, never by a daemon tick or hook.
-// Explorer uses Document selection: one process per selected item (up to its
-// 15-item legacy-verb limit). This entry also accepts multiple literal paths.
+// The DropTarget server delivers the complete selection as literal paths.
 func Run(args []string, execute func(string, []string) ([]byte, error), notify func(string, string) error) error {
 	command, err := menuCommand(args)
 	if err != nil {
 		return err
+	}
+	if args[1] != "resurrect" && args[1] != "policy" {
+		return runSelection(args, execute, notify)
 	}
 	output, runErr := execute(args[0], command)
 	language := config.UILanguage()
@@ -49,6 +51,8 @@ func menuCommand(args []string) ([]string, error) {
 		return append(command, args[1]), nil
 	case "resurrect", "policy":
 		return append([]string{"context-menu", args[1], "--"}, args[2:]...), nil
+	case "bury":
+		return append([]string{"bury", "--"}, args[2:]...), nil
 	default:
 		return nil, fmt.Errorf("unknown context menu action %q", args[1])
 	}

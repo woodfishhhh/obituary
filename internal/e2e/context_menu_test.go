@@ -57,8 +57,8 @@ func TestExplorerMenuCommandFlow(t *testing.T) {
 			}
 		}
 	}
-	if out, stderr, err := execute(t, "bury", paths[1]); err != nil {
-		t.Fatal(out, stderr, err)
+	if err := contextmenu.Run([]string{binaryPath(t, "obit"), "bury", paths[1]}, contextmenu.Execute, notify); err != nil {
+		t.Fatal(err)
 	}
 	if err := contextmenu.Run([]string{binaryPath(t, "obit"), "resurrect", paths[0]}, contextmenu.Execute, notify); err != nil {
 		t.Fatal(err)
@@ -69,7 +69,7 @@ func TestExplorerMenuCommandFlow(t *testing.T) {
 	if err := contextmenu.Run([]string{binaryPath(t, "obit"), "policy", repo}, contextmenu.Execute, notify); err != nil {
 		t.Fatal(err)
 	}
-	if notices != 6 {
+	if notices != 7 {
 		t.Fatal("notification count", notices)
 	}
 	st, err := store.ReadSnapshot()
@@ -103,10 +103,12 @@ func TestExplorerCompanionIsGUIAndInvalidActionDoesNotStartDaemon(t *testing.T) 
 	}
 	home := filepath.Join(t.TempDir(), "data")
 	t.Setenv("OBIT_HOME", home)
-	cmd := exec.Command(path, "--context-menu", binaryPath(t, "obit"), "invalid", "file")
-	out, err := cmd.CombinedOutput()
-	if err == nil || !strings.Contains(string(out), "unknown context menu action") {
-		t.Fatal(string(out), err)
+	for _, mode := range []string{"--context-menu", "--context-menu-server"} {
+		cmd := exec.Command(path, mode, binaryPath(t, "obit"), "invalid", "file")
+		out, err := cmd.CombinedOutput()
+		if err == nil || !strings.Contains(string(out), "context menu") {
+			t.Fatal(mode, string(out), err)
+		}
 	}
 	if _, err := os.Stat(home); !os.IsNotExist(err) {
 		t.Fatal("menu entered daemon path", err)

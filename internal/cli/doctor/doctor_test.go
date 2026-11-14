@@ -99,7 +99,8 @@ func TestDoctorNewChecksJSONAndTextReadOnly(t *testing.T) {
 	}
 	out, _, err := clitest.Execute(t, NewCmdWithExecutable(executable, "claude", "codex"))
 	lines := strings.Split(strings.TrimSpace(out), "\n")
-	if err != nil || len(lines) != 32 || calls != 2 {
+	// The context-menu check includes 15 individual registration statuses.
+	if err != nil || len(lines) != 47 || calls != 2 {
 		t.Fatalf("doctor text/probe count: %d lines, %d probes, %v: %s", len(lines), calls, err, out)
 	}
 	for _, name := range []string{"watch", "explorer", "gui", "registry-transactions", "tray-startup", "context-menu", "start-menu", "desktop", "tray-icon", "taskbar", "registration-identities"} {

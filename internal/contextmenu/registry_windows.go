@@ -149,8 +149,43 @@ func (r WindowsRegistry) CompareAndSwap(c Change) error {
 		if c.After == nil {
 			return deleteTree(tx, key, c.Before)
 		}
+		if err := removeObsolete(tx, key, c.Before, c.After); err != nil {
+			return err
+		}
 		return writeTree(tx, key, c.After)
 	})
+}
+
+// Replacing a verb must retire its old command and submenu keys in the same
+// checked transaction; otherwise Explorer can keep invoking the legacy action.
+func removeObsolete(tx *regtxn.Transaction, root registry.Key, before, after Tree) error {
+	keys := sortedKeys(before)
+	slices.Reverse(keys)
+	for _, rel := range keys {
+		values, keep := after[rel]
+		if !keep {
+			if err := deleteCheckedKey(tx, root, rel, before[rel]); err != nil {
+				return err
+			}
+			continue
+		}
+		key, err := tx.OpenPinned(root, rel, registry.READ|registry.WRITE)
+		if err != nil {
+			return err
+		}
+		for name := range before[rel] {
+			if _, exists := values[name]; !exists {
+				if err = key.DeleteValue(name); err != nil {
+					break
+				}
+			}
+		}
+		key.Close()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func writeTree(tx *regtxn.Transaction, root registry.Key, tree Tree) error {

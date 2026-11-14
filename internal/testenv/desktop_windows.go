@@ -45,6 +45,12 @@ func snapshotDesktop(locations desktopLocations) (desktopFootprint, error) {
 			return nil, err
 		}
 	}
+	for _, suffix := range []string{"1001", "1007", "1030", "1000"} {
+		path := locations.classes + `\CLSID\{BF07A7ED-0FE1-468B-A4D7-0E2A145C` + suffix + `}`
+		if err := snapshotRegistryTree(state, path); err != nil {
+			return nil, err
+		}
+	}
 	if err := snapshotRun(state, locations.run); err != nil {
 		return nil, err
 	}

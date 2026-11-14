@@ -174,7 +174,7 @@ func TestContextMenuPreviewIsReadable(t *testing.T) {
 		}
 		seen[c.Target+"="+c.After] = true
 	}
-	for _, want := range []string{"文件的右键菜单=写讣告", "文件夹空白处的右键菜单=设置文件夹策略", "「写讣告」的子菜单=1 小时、1 天、7 天、30 天"} {
+	for _, want := range []string{"文件的右键菜单=放进讣告", "文件的右键菜单=现在埋掉（可恢复）", "文件夹空白处的右键菜单=设置文件夹策略", "「放进讣告」的子菜单=1 天、7 天、30 天"} {
 		if !seen[want] {
 			t.Fatalf("preview lacks %q: %+v", want, plan.Changes)
 		}

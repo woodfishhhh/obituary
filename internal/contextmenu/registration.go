@@ -91,12 +91,14 @@ func InspectLanguage(reg Registry, executable string, language i18n.Language) (S
 		return Status{}, err
 	}
 	st := Status{Current: true}
+	var entries []string
 	for _, path := range sortedKeys(wanted) {
 		tree, err := reg.ReadTree(path)
 		if err != nil {
 			return st, err
 		}
 		st.Installed = st.Installed || tree != nil
+		entries = append(entries, registrationDetails(path, tree, wanted[path])...)
 		if !reflect.DeepEqual(tree, wanted[path]) {
 			st.Current = false
 			st.Detail += path + "; "
@@ -109,7 +111,32 @@ func InspectLanguage(reg Registry, executable string, language i18n.Language) (S
 	} else {
 		st.Detail = "incomplete, modified or commands do not use current executable (" + executable + "): " + st.Detail
 	}
+	st.Detail += "\n" + strings.Join(entries, "\n")
 	return st, nil
+}
+
+func registrationDetails(path string, actual, wanted Tree) []string {
+	var details []string
+	for _, key := range sortedKeys(wanted) {
+		label := wanted[key]["MUIVerb"]
+		if label == "" {
+			label = wanted[key]["DisplayName"]
+		}
+		if label == "" {
+			continue
+		}
+		status := "PASS"
+		for child, values := range wanted {
+			if (key == "" || child == key || strings.HasPrefix(child, key+`\`)) && !reflect.DeepEqual(actual[child], values) {
+				status = "WARN"
+			}
+		}
+		if actual == nil {
+			status = "INFO (missing)"
+		}
+		details = append(details, fmt.Sprintf("%s %s [%s] %s", status, path, key, label))
+	}
+	return details
 }
 
 func owned(tree Tree) bool {
@@ -142,11 +169,21 @@ func registration(executable string, language i18n.Language) (map[string]Tree, e
 		// placeholder arguments with no spaces; Explorer substitutes them later.
 		return windows.ComposeCommandLine([]string{daemon, "--context-menu", abs, action}) + " \"" + operand + "\""
 	}
-	wanted := map[string]Tree{AppID: markTree(command, language)}
+	wanted := map[string]Tree{AppID: markTree(language)}
+	for action, clsid := range dropClasses {
+		wanted[`CLSID\`+clsid] = Tree{
+			"":              {"DisplayName": language.Text(i18n.AppName)},
+			"LocalServer32": {"": windows.ComposeCommandLine([]string{daemon, "--context-menu-server", abs, action})},
+		}
+	}
 	for _, association := range []string{"*", "Directory"} {
 		wanted[association+`\shell\Obituary.Mark`] = Tree{"": {
-			"MUIVerb": language.Text(i18n.Mark), "ExtendedSubCommandsKey": AppID, "MultiSelectModel": "Document",
+			"MUIVerb": language.Text(i18n.Mark), "ExtendedSubCommandsKey": AppID, "MultiSelectModel": "Player",
 		}}
+		wanted[association+`\shell\Obituary.Bury`] = Tree{
+			"":           {"MUIVerb": language.Text(i18n.BuryNow), "MultiSelectModel": "Player"},
+			"DropTarget": {"CLSID": dropClasses["bury"]},
+		}
 		wanted[association+`\shell\Obituary.Resurrect`] = Tree{
 			"":        {"MUIVerb": language.Text(i18n.ResurrectLatest), "MultiSelectModel": "Single"},
 			"command": {"": command("resurrect", "%1")},
@@ -168,17 +205,17 @@ func registration(executable string, language i18n.Language) (map[string]Tree, e
 	return wanted, nil
 }
 
-func markTree(command func(string, string) string, language i18n.Language) Tree {
+func markTree(language i18n.Language) Tree {
 	// Microsoft Learn: "Creating Cascading Menus with ExtendedSubCommandsKey".
 	// A shared verb set under HKCU\Software\Classes avoids HKLM CommandStore.
 	tree := Tree{"": {}, "shell": {}}
 	for i, p := range []struct {
 		key      i18n.Key
 		duration string
-	}{{i18n.OneHour, "1h"}, {i18n.OneDay, "1d"}, {i18n.SevenDays, "7d"}, {i18n.ThirtyDays, "30d"}} {
+	}{{i18n.OneDay, "1d"}, {i18n.SevenDays, "7d"}, {i18n.ThirtyDays, "30d"}} {
 		key := fmt.Sprintf(`shell\%02d`, i+1)
-		tree[key] = map[string]string{"MUIVerb": language.Text(p.key), "MultiSelectModel": "Document"}
-		tree[key+`\command`] = map[string]string{"": command(p.duration, "%1")}
+		tree[key] = map[string]string{"MUIVerb": language.Text(p.key), "MultiSelectModel": "Player"}
+		tree[key+`\DropTarget`] = map[string]string{"CLSID": dropClasses[p.duration]}
 	}
 	return tree
 }

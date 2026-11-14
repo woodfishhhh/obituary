@@ -74,24 +74,24 @@ func TestLanguagePlanIncludesInstalledMenu(t *testing.T) {
 	reg := a.deps.ContextMenu.(*fakeMenu)
 	const markPath = `*\shell\Obituary.Mark`
 	plan, err := a.PlanLanguage("en")
-	if err != nil || len(plan.Changes) != 8 || reg.trees[markPath][""]["MUIVerb"] != "写讣告" {
+	if err != nil || len(plan.Changes) != 14 || reg.trees[markPath][""]["MUIVerb"] != "放进讣告" {
 		t.Fatalf("combined preview: %+v %v", plan, err)
 	}
 	found := false
 	for _, change := range plan.Changes {
 		if change.Key == markPath {
-			found = strings.Contains(change.Before, "写讣告") && strings.Contains(change.After, "Give a lifespan")
+			found = strings.Contains(change.Before, "放进讣告") && strings.Contains(change.After, "Add to Obituary")
 		}
 	}
 	if !found {
 		t.Fatal("menu translation absent from preview")
 	}
 	receipt, err := a.ApplyPlan(plan.ID)
-	if err != nil || receipt.Error != "" || len(receipt.Applied) != 8 || len(receipt.Remaining) != 0 {
+	if err != nil || receipt.Error != "" || len(receipt.Applied) != 14 || len(receipt.Remaining) != 0 {
 		t.Fatalf("combined apply: %+v %v", receipt, err)
 	}
 	settings, err := a.Settings()
-	if err != nil || settings.Language != "en" || !settings.ContextMenuCurrent || reg.trees[markPath][""]["MUIVerb"] != "Give a lifespan" {
+	if err != nil || settings.Language != "en" || !settings.ContextMenuCurrent || reg.trees[markPath][""]["MUIVerb"] != "Add to Obituary" {
 		t.Fatalf("settings/menu differ: %+v %v", settings, err)
 	}
 	plan, err = a.PlanLanguage("en")
@@ -122,7 +122,7 @@ func TestLanguagePlanRetainsPartialReceipt(t *testing.T) {
 	reg := a.deps.ContextMenu.(*fakeMenu)
 	reg.failAt = reg.writes + 3
 	receipt, err := a.ApplyPlan(plan.ID)
-	if err != nil || receipt.Error == "" || !receipt.Changed || len(receipt.Applied) != 3 || len(receipt.Remaining) != 5 || receipt.Applied[0] != plan.Changes[0].Key {
+	if err != nil || receipt.Error == "" || !receipt.Changed || len(receipt.Applied) != 3 || len(receipt.Remaining) != 11 || receipt.Applied[0] != plan.Changes[0].Key {
 		t.Fatalf("partial receipt: %+v %v", receipt, err)
 	}
 	settings, err := a.Settings()
@@ -131,11 +131,11 @@ func TestLanguagePlanRetainsPartialReceipt(t *testing.T) {
 	}
 	reg.failAt = 0
 	plan, err = a.PlanLanguage("en")
-	if err != nil || len(plan.Changes) != 6 {
+	if err != nil || len(plan.Changes) != 12 {
 		t.Fatalf("repair preview: %+v %v", plan, err)
 	}
 	receipt, err = a.ApplyPlan(plan.ID)
-	if err != nil || receipt.Error != "" || len(receipt.Applied) != 5 || len(receipt.Remaining) != 0 {
+	if err != nil || receipt.Error != "" || len(receipt.Applied) != 11 || len(receipt.Remaining) != 0 {
 		t.Fatalf("repair: %+v %v", receipt, err)
 	}
 	settings, err = a.Settings()

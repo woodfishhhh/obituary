@@ -38,8 +38,16 @@ func printContextMenuChange(out io.Writer, change contextmenu.Change) {
 			commandKey = key + `\command`
 		}
 		command := tree[commandKey][""]
+		dropKey := "DropTarget"
+		if key != "" {
+			dropKey = key + `\DropTarget`
+		}
 		if submenu := values["ExtendedSubCommandsKey"]; submenu != "" {
 			command = "shared submenu: " + submenu
+		} else if clsid := tree[dropKey]["CLSID"]; clsid != "" {
+			command = "COM selection handler: " + clsid
+		} else if server := tree["LocalServer32"][""]; server != "" {
+			command = server
 		} else if command == "" {
 			command = "application identity (no command)"
 		}

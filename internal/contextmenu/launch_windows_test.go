@@ -16,7 +16,7 @@ import (
 
 func TestContextMenuActionsAndNotifications(t *testing.T) {
 	paths := []string{`C:\one & two %PATH% $(echo)!.txt`, `C:\中文 😀\two.txt`}
-	for _, action := range []string{"1h", "1d", "7d", "30d", "resurrect", "policy"} {
+	for _, action := range []string{"resurrect", "policy"} {
 		for _, failed := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%s/%v", action, failed), func(t *testing.T) {
 				calls, notices := 0, 0
@@ -65,7 +65,7 @@ func TestContextMenuNotificationLanguages(t *testing.T) {
 		for _, failed := range []bool{false, true} {
 			failure := errors.New("permission denied")
 			notices := 0
-			err := Run([]string{`C:\obit.exe`, "1d", `C:\file.txt`}, func(string, []string) ([]byte, error) {
+			err := Run([]string{`C:\obit.exe`, "policy", `C:\file.txt`}, func(string, []string) ([]byte, error) {
 				if failed {
 					return nil, failure
 				}

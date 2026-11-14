@@ -30,13 +30,18 @@ func main() {
 	configDir := flag.String("config-dir", "", "configuration directory (default: OBIT_CONFIG_DIR or %APPDATA%\\obituary)")
 	once := flag.Bool("once", false, "do one round of work (reap and purge) and exit")
 	menu := flag.Bool("context-menu", false, "run an explicit Explorer action and show its result")
+	menuServer := flag.Bool("context-menu-server", false, "receive an Explorer selection through COM")
 	withTray := flag.Bool("tray", defaultTray == "true", "show the resident tray icon")
 	flag.Parse()
 	if err := setDirectoryOverrides(map[*string]string{home: "OBIT_HOME", configDir: "OBIT_CONFIG_DIR"}); err != nil {
 		os.Exit(2)
 	}
-	if *menu {
-		if err := contextmenu.Run(flag.Args(), contextmenu.Execute, contextmenu.Notify); err != nil {
+	if *menu || *menuServer {
+		run := contextmenu.Run
+		if *menuServer {
+			run = contextmenu.RunDropServer
+		}
+		if err := run(flag.Args(), contextmenu.Execute, contextmenu.Notify); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}

@@ -31,6 +31,17 @@ func TestDoctorContextMenuCurrentAndStaleCommands(t *testing.T) {
 	if c := diagnoseContextMenu(executable); c.Status != "PASS" || !strings.Contains(c.Detail, exe) {
 		t.Fatal(c)
 	}
+	for _, path := range []string{`*\shell\Obituary.Mark`, `*\shell\Obituary.Bury`, `Directory\shell\Obituary.Mark`, `Directory\shell\Obituary.Bury`, `Obituary.ContextMenu [shell\01]`, `Obituary.ContextMenu [shell\02]`, `Obituary.ContextMenu [shell\03]`} {
+		if c := diagnoseContextMenu(executable); !strings.Contains(c.Detail, "PASS "+path) {
+			t.Fatal("missing individual menu status", path, c.Detail)
+		}
+	}
+	if err := reg.WriteTree(`Obituary.ContextMenu\shell\02\DropTarget`, contextmenu.Tree{"": {"CLSID": "wrong handler"}}); err != nil {
+		t.Fatal(err)
+	}
+	if c := diagnoseContextMenu(executable); c.Status != "WARN" || !strings.Contains(c.Detail, `WARN Obituary.ContextMenu [shell\02]`) || !strings.Contains(c.Detail, `PASS Obituary.ContextMenu [shell\01]`) {
+		t.Fatal("doctor did not distinguish broken submenu", c)
+	}
 	exe = `D:\New Path\obit.exe`
 	if c := diagnoseContextMenu(executable); c.Status != "WARN" || !strings.Contains(c.Detail, "current executable") {
 		t.Fatal(c)

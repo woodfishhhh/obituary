@@ -1,6 +1,7 @@
 package contextmenu
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/woodfishhhh/obituary/internal/regtxn"
@@ -97,6 +98,22 @@ func TestRegistryWritePreservesChangedTree(t *testing.T) {
 	got, readErr := reg.ReadTree("owned")
 	if err == nil || readErr != nil || got[""]["owned"] != "foreign" {
 		t.Fatalf("registry write overwrote changed tree: %+v %v %v", got, err, readErr)
+	}
+}
+
+func TestRegistryUpgradeRemovesObsoleteCommandsAndValues(t *testing.T) {
+	reg := WindowsRegistry{Root: testenv.ClassesKey(t)}
+	before := Tree{"": {"owned": "old", "obsolete": "value"}, "shell": {}, `shell\01`: {"MUIVerb": "1 day"}, `shell\01\command`: {"": "old command"}, `shell\04`: {"MUIVerb": "old item"}}
+	after := Tree{"": {"owned": "new"}, "shell": {}, `shell\01`: {"MUIVerb": "1 day"}, `shell\01\DropTarget`: {"CLSID": "new handler"}}
+	if err := reg.WriteTree("owned", before); err != nil {
+		t.Fatal(err)
+	}
+	if err := reg.CompareAndSwap(Change{Path: "owned", Before: before, After: after}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := reg.ReadTree("owned")
+	if err != nil || !reflect.DeepEqual(got, after) {
+		t.Fatalf("upgrade retained legacy menu content: %+v %v", got, err)
 	}
 }
 

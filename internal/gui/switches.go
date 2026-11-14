@@ -68,6 +68,8 @@ func menuPreview(change contextmenu.Change, ui i18n.Language) ChangePreview {
 		place = ui.Text(i18n.MenuFolders)
 	case strings.HasPrefix(change.Path, `AppUserModelId\`):
 		place = ui.Text(i18n.MenuNotifyName)
+	case strings.HasPrefix(change.Path, `CLSID\`):
+		place = ui.Text(i18n.MenuSelectionHandler)
 	case change.Path == contextmenu.AppID:
 		place = fmt.Sprintf(ui.Text(i18n.MenuSubmenu), ui.Text(i18n.Mark))
 	}

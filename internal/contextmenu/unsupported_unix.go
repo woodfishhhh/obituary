@@ -52,3 +52,6 @@ func Run([]string, func(string, []string) ([]byte, error), func(string, string) 
 }
 func Execute(string, []string) ([]byte, error) { return nil, unsupported() }
 func Notify(string, string) error              { return unsupported() }
+func RunDropServer([]string, func(string, []string) ([]byte, error), func(string, string) error) error {
+	return unsupported()
+}

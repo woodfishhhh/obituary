@@ -21,7 +21,7 @@ func TestContextMenuInstallUpdateUninstall(t *testing.T) {
 		t.Fatal(err)
 	}
 	plan, err := Plan(reg, exe, false)
-	if err != nil || len(plan) != 7 {
+	if err != nil || len(plan) != 13 {
 		t.Fatalf("plan: %d %v", len(plan), err)
 	}
 	if st, err := Inspect(reg, exe); err != nil || st.Installed {
@@ -41,15 +41,19 @@ func TestContextMenuInstallUpdateUninstall(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for i, duration := range []string{"1h", "1d", "7d", "30d"} {
-		key := []string{`shell\01`, `shell\02`, `shell\03`, `shell\04`}[i]
-		if tree[key]["MultiSelectModel"] != "Document" {
+	for i, duration := range []string{"1d", "7d", "30d"} {
+		key := []string{`shell\01`, `shell\02`, `shell\03`}[i]
+		if tree[key]["MultiSelectModel"] != "Player" {
 			t.Fatal("multi-select missing")
 		}
-		path := `C:\工作\a & b %PATH% ! ' $(hello) 😀.txt`
-		command := strings.ReplaceAll(tree[key+`\command`][""], "%1", path)
+		clsid := tree[key+`\DropTarget`]["CLSID"]
+		server, err := reg.ReadTree(`CLSID\` + clsid)
+		if err != nil || clsid != dropClasses[duration] {
+			t.Fatal(clsid, err)
+		}
+		command := server["LocalServer32"][""]
 		args, err := windows.DecomposeCommandLine(command)
-		want := []string{`C:\Program Files\讣告 & 资料\obitd.exe`, "--context-menu", exe, duration, path}
+		want := []string{`C:\Program Files\讣告 & 资料\obitd.exe`, "--context-menu-server", exe, duration}
 		if err != nil || !reflect.DeepEqual(args, want) {
 			t.Fatalf("quoted command: %q %v", args, err)
 		}
@@ -58,6 +62,10 @@ func TestContextMenuInstallUpdateUninstall(t *testing.T) {
 		tree, _ := reg.ReadTree(assoc + `\shell\Obituary.Mark`)
 		if tree[""]["ExtendedSubCommandsKey"] != AppID || tree[""]["MUIVerb"] != config.UILanguage().Text(i18n.Mark) {
 			t.Fatal(tree)
+		}
+		bury, err := reg.ReadTree(assoc + `\shell\Obituary.Bury`)
+		if err != nil || bury[""]["MultiSelectModel"] != "Player" || bury["DropTarget"]["CLSID"] != dropClasses["bury"] || bury[""]["MUIVerb"] != config.UILanguage().Text(i18n.BuryNow) {
+			t.Fatal(bury, err)
 		}
 	}
 	background, err := reg.ReadTree(`Directory\Background\shell\Obituary.Policy`)
@@ -106,12 +114,12 @@ func TestContextMenuLanguageLabels(t *testing.T) {
 		mark, restore, policy, name string
 		durations                   []string
 	}{
-		{i18n.Chinese, "写讣告", "复活最近下葬的", "设置文件夹策略", "讣告 Obituary", []string{"1 小时", "1 天", "7 天", "30 天"}},
-		{i18n.English, "Give a lifespan", "Resurrect the most recent burial", "Set folder policy", "Obituary", []string{"1 hour", "1 day", "7 days", "30 days"}},
+		{i18n.Chinese, "放进讣告", "复活最近下葬的", "设置文件夹策略", "讣告 Obituary", []string{"1 天", "7 天", "30 天"}},
+		{i18n.English, "Add to Obituary", "Resurrect the most recent burial", "Set folder policy", "Obituary", []string{"1 day", "7 days", "30 days"}},
 	} {
 		before := reg.calls
 		plan, err := PlanLanguage(reg, exe, false, tc.language)
-		if err != nil || len(plan) != 7 || reg.calls != before {
+		if err != nil || len(plan) != 13 || reg.calls != before {
 			t.Fatalf("preview: %+v %v", plan, err)
 		}
 		if err := Apply(reg, plan); err != nil {
@@ -125,12 +133,12 @@ func TestContextMenuLanguageLabels(t *testing.T) {
 		if reg.trees[`Directory\Background\shell\Obituary.Policy`][""]["MUIVerb"] != tc.policy || reg.trees[`AppUserModelId\`+AppID][""]["DisplayName"] != tc.name {
 			t.Fatal("policy or app name differs")
 		}
-		for i, key := range []string{`shell\01`, `shell\02`, `shell\03`, `shell\04`} {
+		for i, key := range []string{`shell\01`, `shell\02`, `shell\03`} {
 			if reg.trees[AppID][key]["MUIVerb"] != tc.durations[i] {
 				t.Fatalf("duration %s differs", key)
 			}
 		}
-		command := reg.trees[AppID][`shell\01\command`][""]
+		command := reg.trees[`CLSID\`+dropClasses["1d"]][`LocalServer32`][""]
 		if originalCommand != "" && command != originalCommand {
 			t.Fatal("translation changed the command")
 		}
