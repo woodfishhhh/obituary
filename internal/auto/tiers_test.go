@@ -381,3 +381,42 @@ func TestDirectClassFollowsTheMode(t *testing.T) {
 		t.Fatal("within must match the entry and what lies below it only")
 	}
 }
+
+// A container proposal from a session outside a Git work tree (its "project"
+// is just the folder it ran in, such as the home folder), or a container that
+// two pending proposals claim, cannot prove whose it is: it stays a proposal
+// even when the container exists and the mode is fully automatic.
+func TestUnprovenSessionContainersStayProposals(t *testing.T) {
+	if testing.Short() {
+		t.Skip("real Git repository and fake Docker executable")
+	}
+	for _, tc := range []string{"outside a Git work tree", "claimed by two sessions"} {
+		t.Run(tc, func(t *testing.T) {
+			r := newRepo(t)
+			r.engine.Svc.ProposalMode = core.ProposalsAuto
+			executable, state, _ := testenv.FakeDocker(t)
+			r.engine.Svc.Docker = docker.CLI{Executable: executable}
+			now := time.Date(2026, 11, 11, 12, 0, 0, 0, time.UTC)
+			r.engine.Svc.Now = func() time.Time { return now }
+			row := docker.Container{Identity: docker.Identity{ID: strings.Repeat("7", 64), Name: "bold", Created: now.Add(-time.Minute)}, Running: true}
+			testenv.WriteDocker(t, state, row)
+			id := row.Identity
+			candidate := []core.Candidate{{Kind: core.KindContainer, Container: &id, Path: id.Display(), Lifespan: LeftoverLifespan, Reason: "bind mount in project"}}
+			proposals := []struct{ root, session string }{{t.TempDir(), "home"}} // its folder is not a Git work tree
+			if tc == "claimed by two sessions" {
+				proposals = []struct{ root, session string }{{r.root, "a"}, {r.root, "b"}}
+			}
+			for _, p := range proposals {
+				if _, _, _, err := r.engine.Svc.Propose(core.ProposalContainer, p.root, p.session, candidate); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := r.engine.RefreshProposals(); err != nil {
+				t.Fatal(err)
+			}
+			if st := r.state(); len(st.Items) != 0 || len(st.Proposals) != len(proposals) {
+				t.Fatalf("an unproven container was registered: items %+v proposals %v", st.Items, candidateNames(st))
+			}
+		})
+	}
+}

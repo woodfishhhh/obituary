@@ -161,11 +161,11 @@ func (e *Engine) AutoApprovePending() error {
 // without recording project consent. It returns the proposal as it remains
 // pending, or nil once nothing is left.
 func (e *Engine) autoApprove(id int64) (*core.Proposal, error) {
-	p, ok, err := e.pendingProposal(id)
+	p, st, ok, err := e.pendingProposal(id)
 	if err != nil || !ok {
 		return nil, err
 	}
-	allowed, class := e.autoCandidates(p)
+	allowed, class := e.autoCandidates(p, st)
 	if len(allowed) == 0 {
 		return &p, nil
 	}
@@ -187,51 +187,66 @@ func (e *Engine) autoApprove(id int64) (*core.Proposal, error) {
 		_, pending, approveErr := e.approveCandidates(claimed, locations{}, class)
 		err = errors.Join(approveErr, e.Svc.ResolveProposal(claimed, pending))
 	}
-	rest, ok, readErr := e.pendingProposal(id)
+	rest, _, ok, readErr := e.pendingProposal(id)
 	if !ok {
 		return nil, errors.Join(err, readErr)
 	}
 	return &rest, errors.Join(err, readErr)
 }
 
-func (e *Engine) pendingProposal(id int64) (core.Proposal, bool, error) {
+func (e *Engine) pendingProposal(id int64) (core.Proposal, core.State, bool, error) {
 	st, err := e.Svc.Store.ReadHot()
 	if err != nil {
-		return core.Proposal{}, false, err
+		return core.Proposal{}, st, false, err
 	}
 	idx := st.ProposalIndex(id)
 	if idx < 0 {
-		return core.Proposal{}, false, nil
+		return core.Proposal{}, st, false, nil
 	}
-	return st.Proposals[idx], true, nil
+	return st.Proposals[idx], st, true, nil
 }
 
 // autoCandidates sorts a pending proposal's candidates under the mode. What
 // it returns still passes every approval gate; the rest stays a proposal.
-func (e *Engine) autoCandidates(p core.Proposal) ([]core.Candidate, string) {
+func (e *Engine) autoCandidates(p core.Proposal, st core.State) ([]core.Candidate, string) {
 	mode := e.Svc.Proposals()
-	if mode == core.ProposalsAsk {
-		return nil, ""
-	}
-	if consent, err := e.Svc.Consent(p.Project); err != nil || consent == core.ConsentDeclined {
-		return nil, "" // the user declined automatic registration in this project
+	if mode == core.ProposalsAsk || st.Projects[core.ProjectKey(p.Project)].Consent == core.ConsentDeclined {
+		return nil, "" // asked for everything, or declined automatic registration here
 	}
 	switch p.Kind {
 	case core.ProposalLeftovers:
 		return e.regenerableCandidates(p), core.AutoRegenerable
 	case core.ProposalContainer:
-		// A recorded reason ties the container to the project (compose working
-		// directory or bind mount); older proposals also listed containers only
-		// started during the session, which may be the user's own.
-		return slices.DeleteFunc(slices.Clone(p.Candidates), func(c core.Candidate) bool {
-			return c.Kind != core.KindContainer || c.Reason == ""
-		}), core.AutoContainer
+		return sessionContainers(p, st), core.AutoContainer
 	case core.ProposalOnboard, core.ProposalLarge:
 		if mode == core.ProposalsAuto {
 			return slices.Clone(p.Candidates), core.AutoAll
 		}
 	}
 	return nil, ""
+}
+
+// sessionContainers keeps the containers a proposal can prove are its
+// session's own. A recorded reason ties one to the project (compose working
+// directory or bind mount); older proposals also listed containers only
+// started during the session, which may be the user's own. The session must
+// have run in a Git work tree: a session elsewhere takes its folder (the home
+// folder, say) as the project, and a bind mount anywhere below that proves
+// nothing. A container that another pending proposal also claims was started
+// while several sessions ran, so which one started it is unknown. All of
+// these wait for the user.
+func sessionContainers(p core.Proposal, st core.State) []core.Candidate {
+	if root, ok, err := project.Find(p.Project); err != nil || !ok || !strings.EqualFold(filepath.Clean(root.Root), filepath.Clean(p.Project)) {
+		return nil
+	}
+	return slices.DeleteFunc(slices.Clone(p.Candidates), func(c core.Candidate) bool {
+		if c.Kind != core.KindContainer || c.Reason == "" {
+			return true
+		}
+		return slices.ContainsFunc(st.Proposals, func(other core.Proposal) bool {
+			return other.ID != p.ID && slices.ContainsFunc(other.Candidates, func(o core.Candidate) bool { return sameCandidate(o, c) })
+		})
+	})
 }
 
 // regenerableCandidates keeps the leftovers Git ignores now and a tool

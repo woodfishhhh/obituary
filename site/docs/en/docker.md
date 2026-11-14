@@ -28,6 +28,6 @@ Obituary manages containers only. Volumes hold data and removing one is permanen
 
 ## Containers from an agent session are registered directly
 
-When a session ends, Obituary looks in the background for the containers created during it: only those whose compose working directory or bind mounts are inside the project; others may be ones you started elsewhere and are left alone. Those found get a 3-day lifespan and you are told afterwards; after `obit spare <id>` the session does not register that container again. With `[proposals] mode = "ask"` they are proposed instead and tracked only after `obit approve`.
+When a session ends, Obituary looks in the background for the containers created during it: only those whose compose working directory or bind mounts are inside the project; others may be ones you started elsewhere and are left alone. Those found get a 3-day lifespan and you are told afterwards; after `obit spare <id>` the session does not register that container again. When the session did not run in a Git project (one opened in your home folder, say), or several sessions claim the same container, it is unclear who started it, so it waits as a proposal for your approval. With `[proposals] mode = "ask"` they are proposed instead and tracked only after `obit approve`.
 
 Hooks never call Docker; if Docker is not installed or not running, this is skipped quietly and `obit doctor` explains why.
