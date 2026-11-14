@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/config"
 	"github.com/woodfishhhh/obituary/internal/core"
@@ -27,7 +28,7 @@ func NewCmd() *cobra.Command {
 				return err
 			}
 			if asJSON {
-				return cmdutil.PrintJSON(core.ExistingProposals(state.Proposals))
+				return cmdutil.PrintJSON(app.ProposalViews(svc, state.Proposals))
 			}
 			printProposals(core.ExistingProposals(state.Proposals))
 			printHandled(state.AutoHandled(), time.Now())

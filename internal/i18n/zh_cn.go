@@ -1,6 +1,7 @@
 package i18n
 
 var chinese = map[Key]string{
+	StartDocker:         "需要先启动 Docker 才能处理这条提议。",
 	TrayIcon:            "托盘图标",
 	TaskbarIcon:         "小窗口在任务栏里的图标",
 	StartMenuShortcut:   "开始菜单：讣告 Obituary",

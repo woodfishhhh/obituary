@@ -234,7 +234,7 @@ func (e *Engine) approveCandidates(p core.Proposal, located locations, class str
 
 func (e *Engine) approveCandidate(p core.Proposal, c core.Candidate, located locations, class string) ([]core.Result, bool, error) {
 	if c.Kind == core.KindContainer {
-		return e.Svc.ApproveContainer(p, c, class)
+		return e.approveContainer(p, c, class)
 	}
 	res := core.Result{Ref: c.Path}
 	reason, vetErr := e.vetCandidate(p, c, located)

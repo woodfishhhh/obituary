@@ -1,12 +1,15 @@
 package auto
 
 import (
+	"errors"
 	"path/filepath"
-	"strings"
 
+	"github.com/woodfishhhh/obituary/internal/config"
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/docker"
+	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
+	"github.com/woodfishhhh/obituary/internal/project"
 )
 
 // SnapshotSession records only time for sessions outside a Git project.
@@ -45,29 +48,35 @@ func (e *Engine) ContainerLeftovers(root, session string) ([]Notice, error) {
 	if err != nil {
 		return nil, err
 	}
-	var candidates []core.Candidate
+	groups := map[string][]core.Candidate{}
 	for _, row := range rows {
 		if row.Created.Before(snap.At) || row.Created.After(end) || knownContainer(state, row.Identity) {
 			continue
 		}
-		reason, ok := projectContainer(row, root)
-		if !ok {
+		owner, reason, err := projectContainer(row)
+		if err != nil {
+			return nil, err
+		}
+		if owner == "" {
 			continue
 		}
 		id := row.Identity
-		candidates = append(candidates, core.Candidate{Kind: core.KindContainer, Container: &id, Path: id.Display(), Lifespan: LeftoverLifespan, Reason: reason})
+		groups[owner] = append(groups[owner], core.Candidate{Kind: core.KindContainer, Container: &id, Path: id.Display(), Lifespan: LeftoverLifespan, Reason: reason})
 	}
-	if len(candidates) == 0 {
-		return nil, nil
+	var notices []Notice
+	for owner, candidates := range groups {
+		notice, err := e.propose(core.ProposalContainer, owner, session, candidates, nil)
+		if notice != nil {
+			notice, err = e.settleNotice(*notice, err)
+		}
+		if err != nil {
+			return notices, err
+		}
+		if notice != nil {
+			notices = append(notices, *notice)
+		}
 	}
-	notice, err := e.propose(core.ProposalContainer, root, session, candidates, nil)
-	if notice != nil {
-		notice, err = e.settleNotice(*notice, err)
-	}
-	if err != nil || notice == nil {
-		return nil, err
-	}
-	return []Notice{*notice}, nil
+	return notices, nil
 }
 
 func knownContainer(state core.State, id docker.Identity) bool {
@@ -81,30 +90,52 @@ func knownContainer(state core.State, id docker.Identity) bool {
 			return true
 		}
 	}
+	for _, p := range state.Proposals {
+		for _, c := range p.Candidates {
+			if c.Container != nil && c.Container.ID == id.ID {
+				return true
+			}
+		}
+	}
 	return false
 }
 
-// projectContainer ties a container to the session's project through its
-// compose working directory or a bind mount inside the project. Only those are
-// proposed: a container merely created during the session may be the user's
-// own, started elsewhere, and is not one the agent can recommend stopping.
-func projectContainer(row docker.Container, root string) (string, bool) {
-	if dir := row.Labels["com.docker.compose.project.working_dir"]; dir != "" && inProject(root, dir) {
-		return "compose working_dir", true
-	}
-	for _, bind := range row.Binds {
-		if inProject(root, bind) {
-			return "bind mount in project", true
+// Container metadata establishes ownership independently of the session cwd.
+func projectContainer(row docker.Container) (string, string, error) {
+	if dir := row.Labels["com.docker.compose.project.working_dir"]; dir != "" {
+		if !filepath.IsAbs(dir) {
+			return "", "", nil
 		}
+		root, err := pathutil.LongAbs(dir)
+		return root, "compose working_dir", err
 	}
-	return "", false
+	var root string
+	for _, bind := range row.Binds {
+		if !filepath.IsAbs(bind) {
+			continue
+		}
+		p, found, err := project.Find(bind)
+		if err != nil {
+			return "", "", err
+		}
+		if !found {
+			continue
+		}
+		if root != "" && core.ProjectKey(root) != core.ProjectKey(p.Root) {
+			return "", "", nil
+		}
+		root = p.Root
+	}
+	return root, "bind mount in project", nil
 }
 
-func inProject(root, path string) bool {
-	path, err := pathutil.LongAbs(path)
-	if err != nil {
-		return false
+func (e *Engine) approveContainer(p core.Proposal, c core.Candidate, class string) ([]core.Result, bool, error) {
+	results, retry, err := e.Svc.ApproveContainer(p, c, class)
+	if errors.Is(err, docker.ErrUnavailable) {
+		err = errors.New(config.UILanguage().Text(i18n.StartDocker))
+		for i := range results {
+			results[i].Error = err.Error()
+		}
 	}
-	rel, err := filepath.Rel(root, path)
-	return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
+	return results, retry, err
 }

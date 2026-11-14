@@ -1,6 +1,7 @@
 package i18n
 
 var english = map[Key]string{
+	StartDocker:         "Start Docker before handling this proposal.",
 	TrayIcon:            "Tray icon",
 	TaskbarIcon:         "Management window in the taskbar",
 	StartMenuShortcut:   "Start menu: Obituary",

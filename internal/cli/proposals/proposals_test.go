@@ -10,6 +10,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/docker"
 )
 
 func TestProposalItemCounts(t *testing.T) {
@@ -32,6 +33,17 @@ func TestProposalItemCounts(t *testing.T) {
 				t.Fatalf("proposal = %s, %v", out, err)
 			}
 		})
+	}
+}
+
+func TestProposalsJSONReportsUnavailableDocker(t *testing.T) {
+	root, store := clitest.CommandDir(t)
+	id := &docker.Identity{ID: strings.Repeat("c", 64), Name: "cache", Created: time.Now()}
+	clitest.AddProposal(t, store, root, core.Candidate{Kind: core.KindContainer, Container: id, Path: id.Display(), Lifespan: "1d"})
+	t.Setenv("PATH", t.TempDir())
+	out, _, err := clitest.Execute(t, NewCmd(), "--json")
+	if err != nil || !strings.Contains(out, `"blocked": "docker-unavailable"`) {
+		t.Fatal(out, err)
 	}
 }
 

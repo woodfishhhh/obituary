@@ -339,7 +339,7 @@ func TestDockerUnavailableIncludesDiagnostic(t *testing.T) {
 	cli, _, _, _ := dockerFixture(t)
 	t.Setenv("OBIT_FAKE_DOCKER_MODE", "fail")
 	err := cli.Available(t.Context())
-	if err == nil || !strings.Contains(err.Error(), "daemon unavailable") {
+	if !errors.Is(err, docker.ErrUnavailable) || !strings.Contains(err.Error(), "daemon unavailable") {
 		t.Fatal("daemon stderr missing", err)
 	}
 }
@@ -354,7 +354,7 @@ func TestDockerUnavailable(t *testing.T) {
 			t.Setenv("OBIT_FAKE_DOCKER_MODE", mode)
 			cli.Timeout = 50 * time.Millisecond
 			_, err := cli.List(t.Context())
-			if err == nil {
+			if !errors.Is(err, docker.ErrUnavailable) {
 				t.Fatal("unavailable daemon accepted")
 			}
 			if mode == "sleep" && !errors.Is(err, context.DeadlineExceeded) {
@@ -363,7 +363,7 @@ func TestDockerUnavailable(t *testing.T) {
 		})
 	}
 	t.Setenv("PATH", t.TempDir())
-	if _, err := (docker.CLI{}).List(t.Context()); err == nil {
+	if _, err := (docker.CLI{}).List(t.Context()); !errors.Is(err, docker.ErrUnavailable) {
 		t.Fatal("missing Docker accepted")
 	}
 }

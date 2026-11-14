@@ -59,6 +59,7 @@ type Client interface {
 var ErrIdentity = errors.New("container identity changed or is invalid")
 var ErrNotFound = errors.New("container not found")
 var ErrAutoRemove = errors.New("container has AutoRemove enabled; stopping it would delete its writable layer")
+var ErrUnavailable = errors.New("docker unavailable")
 
 // CLI uses os/exec for context deadlines and argument boundaries, preserving
 // the user's Docker transport configuration without invoking a shell.
@@ -102,7 +103,7 @@ func (c CLI) runBefore(ctx context.Context, beforeSend func() error, args ...str
 		return nil, errors.Join(ErrNotSent, err)
 	}
 	if ctx.Err() != nil {
-		return nil, fmt.Errorf("docker %s: %w", args[0], ctx.Err())
+		return nil, fmt.Errorf("docker %s: %w: %w", args[0], ErrUnavailable, ctx.Err())
 	}
 	if err != nil {
 		var exit *exec.ExitError
@@ -112,7 +113,7 @@ func (c CLI) runBefore(ctx context.Context, beforeSend func() error, args ...str
 				return nil, ErrNotFound
 			}
 		}
-		return nil, fmt.Errorf("docker %s unavailable: %w%s", args[0], err, errorSummary(err))
+		return nil, fmt.Errorf("docker %s: %w: %w%s", args[0], ErrUnavailable, err, errorSummary(err))
 	}
 	return out, nil
 }

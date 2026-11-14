@@ -20,6 +20,21 @@ func sameCandidate(a, b Candidate) bool {
 	return samePath(a.Path, b.Path)
 }
 
+// Called under the ledger lock so overlapping sessions cannot both propose an ID.
+func pendingContainer(st *State, c Candidate) bool {
+	if c.Kind != KindContainer || c.Container == nil {
+		return false
+	}
+	for _, p := range st.Proposals {
+		for _, have := range p.Candidates {
+			if have.Container != nil && have.Container.ID == c.Container.ID {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // ApproveContainer re-inspects the immutable identity saved in the proposal.
 // A non-empty class marks a registration Obituary made without asking.
 func (s *Service) ApproveContainer(p Proposal, c Candidate, class string) ([]Result, bool, error) {

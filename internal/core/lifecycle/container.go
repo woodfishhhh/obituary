@@ -13,7 +13,7 @@ const KindContainer = ledger.KindContainer
 
 func (s *Service) containerClient() (docker.Client, error) {
 	if s.Docker == nil {
-		return nil, errors.New("docker is unavailable")
+		return nil, docker.ErrUnavailable
 	}
 	return s.Docker, nil
 }

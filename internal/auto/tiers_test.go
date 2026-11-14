@@ -406,10 +406,15 @@ func TestUnprovenSessionContainersStayProposals(t *testing.T) {
 			if tc == "claimed by two sessions" {
 				proposals = []struct{ root, session string }{{r.root, "a"}, {r.root, "b"}}
 			}
-			for _, p := range proposals {
-				if _, _, _, err := r.engine.Svc.Propose(core.ProposalContainer, p.root, p.session, candidate); err != nil {
-					t.Fatal(err)
+			// Legacy ledgers may contain duplicates; new proposals deduplicate IDs.
+			if err := r.engine.Svc.Store.UpdateHot(func(st *core.State) error {
+				for _, p := range proposals {
+					st.Proposals = append(st.Proposals, core.Proposal{ID: st.NextID, Kind: core.ProposalContainer, Project: p.root, Session: p.session, Candidates: candidate})
+					st.NextID++
 				}
+				return nil
+			}); err != nil {
+				t.Fatal(err)
 			}
 			if err := r.engine.RefreshProposals(); err != nil {
 				t.Fatal(err)

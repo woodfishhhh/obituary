@@ -208,6 +208,9 @@ func mergeProposalCandidates(st *State, p *Proposal, kind, project, session stri
 		p.CandidateSeq = max(p.CandidateSeq, c.Rev)
 	}
 	for _, c := range candidates {
+		if pendingContainer(st, c) {
+			continue
+		}
 		if (kind == ProposalLeftovers || kind == ProposalContainer) && st.LeftoverRejected(project, session, candidateKey(c)) {
 			continue
 		}

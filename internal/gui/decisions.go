@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"slices"
 
+	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/auto"
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/integrate"
@@ -16,6 +17,7 @@ import (
 type ReviewedProposal struct {
 	core.Proposal
 	Fingerprint string `json:"fingerprint"`
+	Blocked     string `json:"blocked,omitempty"`
 }
 
 type ProposalList struct {
@@ -37,8 +39,8 @@ func (a *API) Proposals() (ProposalList, error) {
 	rows := ProposalList{Proposals: []ReviewedProposal{}}
 	// The fingerprint covers exactly the displayed candidates. A partial view
 	// cannot authorize the full ledger snapshot; background pruning refreshes it.
-	for _, p := range core.ExistingProposals(state.Proposals) {
-		rows.Proposals = append(rows.Proposals, ReviewedProposal{Proposal: p, Fingerprint: core.ProposalFingerprint(p)})
+	for _, p := range app.ProposalViews(a.deps.Service, state.Proposals) {
+		rows.Proposals = append(rows.Proposals, ReviewedProposal{Proposal: p.Proposal, Fingerprint: core.ProposalFingerprint(p.Proposal), Blocked: p.Blocked})
 	}
 	rows.Handled = state.AutoHandled()
 	cfg, cfgErr := a.readConfig()

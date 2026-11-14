@@ -56,6 +56,7 @@ const (
 	NotCompleted
 	Summary
 	SummaryPaused
+	StartDocker
 	keyCount
 )
 
