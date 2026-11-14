@@ -26,7 +26,7 @@ brew install --cask woodfishhhh/tap/obituary
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh -o install.sh
-bash install.sh --version 1.1.1
+bash install.sh --version 1.2.0
 # 自定义目录：加 --install-dir "$HOME/bin"；只预览：加 --dry-run
 ```
 
@@ -53,7 +53,7 @@ winget install woodfishhhh.Obituary
 ```powershell [安装脚本]
 # 先下载、看一眼，再运行（装到 %LOCALAPPDATA%\Programs\obituary，加进用户 PATH，建开始菜单快捷方式）
 irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1
-.\install.ps1 -Version 1.1.1          # -WhatIf 只预览，-NoPath 不改 PATH
+.\install.ps1 -Version 1.2.0          # -WhatIf 只预览，-NoPath 不改 PATH
 ```
 
 :::

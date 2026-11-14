@@ -14,7 +14,7 @@ macOS / Linux 也可以下载并阅读安装脚本后运行：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh -o install.sh
-bash install.sh --version 1.1.1
+bash install.sh --version 1.2.0
 ```
 
 脚本核对 SHA-256 后，把 `obit` 和 `obitd` 安装到 `~/.local/bin`，并提示如何加入 PATH。可用 `--install-dir` 指定目录、`--dry-run` 预览；国内使用 `https://cn.obituary.woodfish.site/install.sh` 并加 `--mirror cn`。
@@ -36,14 +36,14 @@ winget install woodfishhhh.Obituary
 # 安装脚本：先下载、看一眼，再运行
 # 装到 %LOCALAPPDATA%\Programs\obituary，加进用户 PATH，建开始菜单快捷方式
 irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/install.ps1 -OutFile install.ps1
-.\install.ps1 -Version 1.1.1          # -WhatIf 只预览，-NoPath 不改 PATH
+.\install.ps1 -Version 1.2.0          # -WhatIf 只预览，-NoPath 不改 PATH
 ```
 
 在中国大陆，安装脚本从国内镜像下载：
 
 ```powershell
 irm https://cn.obituary.woodfish.site/install.ps1 -OutFile install.ps1
-.\install.ps1 -Version 1.1.1 -Mirror cn
+.\install.ps1 -Version 1.2.0 -Mirror cn
 ```
 
 - 三种方式装的是同一个压缩包，安装前都会核对 SHA-256，对上了才解压。
