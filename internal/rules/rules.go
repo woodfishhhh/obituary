@@ -35,12 +35,20 @@ const Builtin = `# Built-in rules: artefacts AI agents commonly leave behind.
 .playwright-cli/      1d
 test-results/         3d
 playwright-report/    3d
-__pycache__/          7d
-.pytest_cache/        7d
-.mypy_cache/          7d
-.ruff_cache/          7d
 *.log                 3d
 *.tmp                 1d
+# Backups left when editing a file: kept a week as a way back.
+*.bak                 7d
+*.bak.*               7d
+*.bak-*               7d
+*.bak_*               7d
+*.orig                7d
+*.rej                 7d
+*.old                 7d
+*.backup              7d
+*~                    7d
+# LevelDB keeps its previous log as LOG.old; it is a database's, not an edit's.
+!LOG.old
 `
 
 // Rule is one parsed line.

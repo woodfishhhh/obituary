@@ -32,6 +32,7 @@ type Settings struct {
 	EffectiveLanguage    i18n.Language `json:"effectiveLanguage"`
 	SessionSummary       bool          `json:"sessionSummary"`
 	SessionCleanup       bool          `json:"sessionCleanup"`
+	ProposalMode         string        `json:"proposalMode"` // [proposals] mode: automatic registration
 	// Lifetime counts from the ledger; nil when it cannot be read.
 	Lifetime *Lifetime `json:"lifetime,omitempty"`
 	// Downloads is the user's Downloads folder, offered for folder policies.
@@ -91,7 +92,7 @@ func (a *API) Settings() (Settings, error) {
 	return Settings{TrayIcon: cfg.UI.Tray, Taskbar: cfg.UI.Taskbar, StartMenu: start != "", DesktopShortcut: desktop != "", Lifetime: lifetime, Downloads: downloadsFolder(), Mode: cfg.Graveyard.Mode, RetentionDays: cfg.Graveyard.RetentionDays, Language: cfg.UI.Language, EffectiveLanguage: language,
 		ConfigPath: filepath.Join(a.deps.ConfigDir, "config.toml"), ContextMenuInstalled: menu.Installed,
 		ContextMenuCurrent: menu.Current, ContextMenuDetail: menu.Detail, Autostart: startup.Before != "", Paused: paused,
-		SessionSummary: cfg.Hooks.SessionSummary, SessionCleanup: cfg.Hooks.SessionCleanup}, err
+		SessionSummary: cfg.Hooks.SessionSummary, SessionCleanup: cfg.Hooks.SessionCleanup, ProposalMode: cfg.Proposals.Mode}, err
 }
 
 type ChangePreview struct {

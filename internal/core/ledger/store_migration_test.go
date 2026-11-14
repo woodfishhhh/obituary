@@ -2,6 +2,7 @@ package ledger
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -243,5 +244,47 @@ func TestSnapshotMigrationFailureRetries(t *testing.T) {
 			}
 			assertMigratedLedger(t, store, original, want)
 		})
+	}
+}
+
+// Obituary keeps its newest ledger migration backup; older ones go once they
+// are a month old, and only while they still hold the bytes it wrote.
+func TestMigrationBackupsKeepTheNewest(t *testing.T) {
+	store := Store{Home: t.TempDir()}
+	now := time.Now()
+	write := func(version int, content string, age time.Duration) string {
+		t.Helper()
+		name := fmt.Sprintf("store.v%d-%x.json.bak", version, sha256.Sum256([]byte(content)))
+		path := filepath.Join(store.Home, name)
+		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chtimes(path, now.Add(-age), now.Add(-age)); err != nil {
+			t.Fatal(err)
+		}
+		return name
+	}
+	month := BackupLifespan + time.Hour
+	oldest := write(14, "v14 ledger", 2*month)
+	recent := write(15, "v15 ledger", BackupLifespan/2)
+	newest := write(16, "v16 ledger", 2*month) // the newest stays, however old
+	edited := write(13, "v13 ledger", month)
+	if err := os.WriteFile(filepath.Join(store.Home, edited), []byte("changed by someone"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chtimes(filepath.Join(store.Home, edited), now.Add(-month), now.Add(-month)); err != nil {
+		t.Fatal(err)
+	}
+	other := write(12, "unrelated", month)
+	if err := os.Rename(filepath.Join(store.Home, other), filepath.Join(store.Home, "store.v12.json.bak")); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.PruneMigrationBackups(now); err != nil {
+		t.Fatal(err)
+	}
+	for name, want := range map[string]bool{oldest: false, recent: true, newest: true, edited: true, "store.v12.json.bak": true} {
+		if _, err := os.Stat(filepath.Join(store.Home, name)); (err == nil) != want {
+			t.Errorf("%s kept=%v, want %v", name, err == nil, want)
+		}
 	}
 }

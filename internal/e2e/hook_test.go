@@ -91,6 +91,7 @@ func TestCodexDeniedPathsFailOpenWithDiagnostics(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			root, store := clitest.CommandRepo(t)
+			autoOn(t, "")
 			path := filepath.Join(root, "debug.log")
 			writeFixture(t, path, "user content")
 			if err := store.Update(func(*core.State) error { return nil }); err != nil {

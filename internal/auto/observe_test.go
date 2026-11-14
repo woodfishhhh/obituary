@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -46,7 +45,7 @@ func TestObserveUnreadableLedgerReturnsEveryPath(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "store.json"), []byte("{broken"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	e := &Engine{Svc: &core.Service{Store: core.Store{Home: dir}}}
+	e := &Engine{Svc: &core.Service{Store: core.Store{Home: dir}, ProposalMode: core.ProposalsTiered}}
 	ds, notices, err := e.observe([]string{"first", "second"}, Options{Session: "s"}, locations{})
 	if err == nil || len(ds) != 2 || ds[0].Path != "first" || ds[1].Path != "second" || ds[0].Err == nil || ds[1].Err == nil || len(notices) != 0 {
 		t.Fatalf("unreadable ledger lost per-path failures: %+v %+v %v", ds, notices, err)
@@ -323,7 +322,9 @@ func TestLeftoversDoNotMistakeExpandedDirectoriesForNewFiles(t *testing.T) {
 	}
 }
 
-func TestLeftoversProposeOnlyIgnoredRegenerableItems(t *testing.T) {
+// Dependencies, build output and caches are in use however Git treats them,
+// and uncommitted files are work: a session's leftovers are never proposed.
+func TestLeftoversProposeNothing(t *testing.T) {
 	if testing.Short() {
 		t.Skip("session leftovers use a real Git repository")
 	}
@@ -343,22 +344,13 @@ func TestLeftoversProposeOnlyIgnoredRegenerableItems(t *testing.T) {
 	r.write("node_modules/left-pad/index.js", "x")
 	r.write("dist/app.js", "x")
 	r.write("newpkg/node_modules/m/index.js", "x")
-	want := []string{filepath.Join(r.root, "node_modules"), filepath.Join(r.root, "dist"), filepath.Join(r.root, "newpkg", "node_modules")}
+	r.write("node_modules/.cache/build.log", "a rule would match this log")
 	if _, err := r.engine.Leftovers(r.root, "s"); err != nil {
 		t.Fatal(err)
 	}
 	st, err := r.engine.Svc.Store.Read()
-	if err != nil || len(st.Proposals) != 1 || len(st.Items) != 0 {
-		t.Fatalf("want one leftovers proposal: %+v %v", st, err)
-	}
-	var got []string
-	for _, c := range st.Proposals[0].Candidates {
-		got = append(got, c.Path)
-	}
-	slices.Sort(got)
-	slices.Sort(want)
-	if !slices.Equal(got, want) {
-		t.Fatalf("leftover candidates = %q, want only ignored regenerable items %q", got, want)
+	if err != nil || len(st.Proposals) != 0 || len(st.Items) != 0 {
+		t.Fatalf("leftovers were handled: %+v %v", st, err)
 	}
 }
 
@@ -375,7 +367,8 @@ func TestLeftoversDeduplicateSessions(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			path := r.leftover("node_modules")
+			r.write("test-results/index.js", "generated")
+			path := filepath.Join(r.root, "test-results")
 			for _, session := range []string{"first", "second"} {
 				if _, err := r.engine.Leftovers(r.root, session); err != nil {
 					t.Fatal(err)
@@ -455,7 +448,8 @@ func TestShortPathSessionSharesSnapshotAndProposals(t *testing.T) {
 		if err := r.engine.Snapshot(roots[0], session); err != nil {
 			t.Fatal(err)
 		}
-		path := r.leftover("dist")
+		r.write("test-results/report.html", "x")
+		path := filepath.Join(r.root, "test-results")
 		notices, err := r.engine.Leftovers(roots[1], session)
 		if err != nil || len(notices) != 1 || notices[0].Proposal.Project != root || len(notices[0].Proposal.Candidates) != 1 || notices[0].Proposal.Candidates[0].Path != path {
 			t.Fatalf("aliases split snapshot or proposal: %+v %v", notices, err)

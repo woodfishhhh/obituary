@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 	"unsafe"
@@ -37,12 +38,13 @@ func TestHiddenTrayKeepsResidentRunning(t *testing.T) {
 	defer cancel()
 	done := make(chan error, 1)
 	go func() { done <- r.Run(ctx) }()
-	ticks := make(chan time.Time)
 	applied := make(chan bool, 1)
+	var loads atomic.Int32
+	load := func() (bool, error) { loads.Add(1); cfg, err := config.Load(); return cfg.UI.Tray, err }
 	visibleDone := make(chan struct{})
 	go func() {
 		defer close(visibleDone)
-		watchVisibility(ctx, ticks, func() (bool, error) { cfg, err := config.Load(); return cfg.UI.Tray, err }, func(enabled bool) error { applied <- enabled; return nil }, logger)
+		watchVisibility(ctx, filepath.Join(cfg, "config.toml"), load, func(enabled bool) error { applied <- enabled; return nil }, logger)
 	}()
 	select {
 	case enabled := <-applied:
@@ -55,10 +57,14 @@ func TestHiddenTrayKeepsResidentRunning(t *testing.T) {
 	if !app.Running(home) {
 		t.Fatal("hiding tray stopped resident")
 	}
+	// Idle: nothing changed, so nothing is read again.
+	time.Sleep(1500 * time.Millisecond)
+	if n := loads.Load(); n != 1 {
+		t.Fatalf("idle tray read its configuration %d times", n)
+	}
 	if err := os.WriteFile(filepath.Join(cfg, "config.toml"), []byte("[ui]\ntray=true\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	ticks <- time.Now()
 	select {
 	case enabled := <-applied:
 		if !enabled {

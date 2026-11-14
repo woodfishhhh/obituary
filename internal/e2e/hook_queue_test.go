@@ -206,6 +206,7 @@ func TestHookQueueReplaySurvivesKilledProcess(t *testing.T) {
 	home := filepath.Join(root, "data")
 	t.Setenv("OBIT_HOME", home)
 	t.Setenv("OBIT_CONFIG_DIR", filepath.Join(root, "config"))
+	autoOn(t, "")
 	svc, err := app.Open()
 	if err != nil {
 		t.Fatal(err)

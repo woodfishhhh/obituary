@@ -76,6 +76,12 @@ export const en: Messages = {
   "ask.extend": (n, label) => plural(n, `Extend this item by ${label}?`, `Extend each of these ${n} items by ${label}?`),
   "ask.extendBody": "Added to the current expiry; anything already expired counts from now.",
   "ask.cancel": (n) => plural(n, "Stop tracking this item?", `Stop tracking these ${n} items?`),
+  "auto.chipOff": "Auto registration: off",
+  "auto.chipOn": "Auto registration: on",
+  "auto.off": "Automatic registration is off: only what agents and you register goes into Obituary. Settings can turn it on.",
+  "auto.on": (mode) => `Automatic registration is on (${mode}); Settings can turn it off.`,
+  "up.retry": "Retry",
+  "up.stuck": (reason) => `Stopped retrying after repeated failures: ${reason}`,
   "ask.cancelBody": "Obituary stops looking after them. The files stay exactly where they are.",
   "batch.done": (verb, n) => `${verb}: ${plural(n, "1 item", `${n} items`)} done`,
   "batch.partial": (verb, done, failed, detail) => `${verb}: ${done} done, ${failed} failed. ${detail}`,
@@ -118,7 +124,7 @@ export const en: Messages = {
   "up.readError": (e) => `Could not read the list: ${e}`,
   "up.quiet": "Quiet for now",
   "up.quietRange": "Switch to All to see everything that is tracked",
-  "up.quietAll": "Right-click a file in Explorer and choose Give a lifespan, or add a folder policy (Downloads, say) in Settings; it then appears here.",
+  "up.quietAll": "Right-click a file in Explorer and choose Add to Obituary, or add a folder policy (Downloads, say) in Settings; it then appears here.",
 
 
   // ── For you (decisions) ────────────────────────────────
@@ -196,17 +202,20 @@ export const en: Messages = {
   untrust: "Stop trusting",
   "dec.emptyFile": "(empty file)",
   "dec.sha": (sha) => `Content fingerprint ${sha}`,
-  "dec.mode": "What waits for you",
+  "dec.mode": "Automatic registration",
+  "dec.mode.off": "Off",
   "dec.mode.tiered": "Tiered",
   "dec.mode.auto": "Fully automatic",
   "dec.mode.ask": "Ask about everything",
-  "dec.modeDesc.tiered": "Files an agent created in its session, dependencies and caches that tools rebuild, and containers the session started go in directly and you are told afterwards; only what the agent did not create waits here.",
+  "dec.modeDesc.off": "Nothing goes in by itself: only what an agent registers with obit mark / mktemp / bury and what you add from the context menu.",
+  "dec.modeDesc.tiered": "Files an agent created in its session and containers the session started go in directly and you are told afterwards; only what the agent did not create waits here. Dependencies, build output and caches are never registered automatically.",
   "dec.modeDesc.auto": "Whatever an agent wants in Obituary goes in directly; you are told afterwards and can undo it below, under Handled automatically. Git-tracked files stay untouched.",
   "dec.modeDesc.ask": "Every automatic registration waits here for your approval.",
   "dec.askAuto": "Let agents handle this directly from now on?",
   "dec.askAutoBody": "In fully automatic mode, what agents leave behind goes into Obituary without asking you first. It is listed below under Handled automatically, where you can undo it or keep it longer. Git-tracked files are still never registered automatically, and buried items can still be resurrected. You can switch back at any time.",
   "dec.askAutoOk": "Switch to fully automatic",
   "dec.modeDone": (mode) => `Switched to ${mode}`,
+  "dec.dockerDown": "Docker is not running: start Docker to decide on this proposal.",
   "dec.handled": "Handled automatically",
   "dec.handledHint": "These went into Obituary without asking you. They are buried when due and can be resurrected. Undo stops the countdown and leaves them where they are.",
   "dec.class.created": "Agent created",
@@ -218,6 +227,11 @@ export const en: Messages = {
   "dec.askUndo": (path) => `Undo the automatic registration of ${path}?`,
   "dec.undoBody": "The countdown stops and it stays where it is; it is not registered again until an agent writes it again.",
   "dec.undone": (path) => `Undone: ${path} stays where it is`,
+  "dec.burials": "Burials that failed",
+  "dec.burialsHint": "These are due but could not be buried; the reason is beside each. Obituary tries again after a while, waiting longer each time, and after repeated failures it stops and waits for you: Retry buries it again now, Stop tracking leaves it where it is.",
+  "dec.stuck": "Stopped retrying",
+  "dec.retrying": (at) => `Next try ${at}`,
+  "dec.retried": (path) => `Retrying now: ${path}`,
   "dec.kept": (span) => `Kept ${span} longer`,
 
   // ── Logs ───────────────────────────────────────────────
@@ -309,7 +323,7 @@ export const en: Messages = {
   "set.autostartOn": "Start at sign-in turned on",
   "set.menu": "Right-click menu",
   "set.menuStale": "The program the menu points to has moved; turn it on again to fix it",
-  "set.menuDesc": "Give files a lifespan from the right-click menu in Explorer",
+  "set.menuDesc": "Right-click in Explorer to add files to Obituary (1, 7 or 30 days) or bury them now (recoverable)",
   "set.menuOff": "Remove the right-click menu",
   "set.menuOn": "Add the right-click menu",
   "set.summary": "Session summary",
@@ -501,7 +515,7 @@ export const en: Messages = {
   "nt.upDeckEmpty": (range) => (range === "24h" ? "Nothing falls due within twenty-four hours." : range === "7d" ? "Nothing falls due within seven days." : "Nothing on the books right now."),
   "nt.quiet": "A quiet spell",
   "nt.quietRange": "Switch to All to see everything still tracked.",
-  "nt.quietAll": "Right-click a file in Explorer and choose Give a lifespan, or add a folder policy (Downloads, say) in Settings; it is then listed here.",
+  "nt.quietAll": "Right-click a file in Explorer and choose Add to Obituary, or add a folder policy (Downloads, say) in Settings; it is then listed here.",
   "nt.col.item": "Item",
   "nt.col.age": "Lifespan",
   "nt.col.due": "Due",
@@ -539,7 +553,7 @@ export const en: Messages = {
   "vg.expired": "Expired",
   "vg.itemBatch": "Extending adds to each one's expiry; stopping tracking leaves the files where they are.",
   "vg.noLit": "No lamps lit",
-  "vg.noLitAll": "Right-click a file in Explorer and choose Give a lifespan, or add a folder policy (Downloads, say) in Settings; its lamp then lights up here.",
+  "vg.noLitAll": "Right-click a file in Explorer and choose Add to Obituary, or add a folder policy (Downloads, say) in Settings; its lamp then lights up here.",
   "vg.itemSub": (at) => `until burial, ${at}.`,
 
 
@@ -571,7 +585,7 @@ export const en: Messages = {
   "cal.upDeck": (n, today) => `${plural(n, "1 item is", `${n} items are`)} still in place, each on the day ${plural(n, "it is", "they are")} buried${today ? ` (${today} today)` : ""}. Drag one to a later day to extend it.`,
   "cal.upDeckEmpty": "Once a file has a lifespan, it sits on the day it will be buried.",
   "cal.upQuiet": "A quiet week",
-  "cal.upQuietText": "Right-click a file in Explorer and choose Give a lifespan, or add a folder policy (Downloads, say) in Settings; it then sits on the day it will be buried.",
+  "cal.upQuietText": "Right-click a file in Explorer and choose Add to Obituary, or add a folder policy (Downloads, say) in Settings; it then sits on the day it will be buried.",
 
 
   // ── J One line ─────────────────────────────────────────

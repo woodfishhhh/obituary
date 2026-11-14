@@ -28,6 +28,12 @@ type Resident struct {
 	logger   *log.Logger
 	errs     *errorLog
 	lastTick time.Time
+	// read is the ledger's modification time when the last step read it;
+	// hot and graves are what it read, which the tray shows instead of
+	// reading again.
+	read   time.Time
+	hot    *core.State
+	graves *graves
 	// stopFolderWatch stops the live obit watch policies.
 	stopFolderWatch func()
 	runErr          error
@@ -132,29 +138,59 @@ func (r *Resident) Run(ctx context.Context) (runErr error) {
 	}
 }
 
+// A burst of commits (an agent writing many files) becomes one step: wait for
+// a quiet gap, but never hold a change back longer than settleMax.
+var settleQuiet, settleMax = 300 * time.Millisecond, 2 * time.Second
+
 // Watch the directory so ledger replacement commits remain observable.
 // The OS blocks while there are no events.
 func (r *Resident) wait(ctx context.Context, delay time.Duration) error {
 	timer := time.NewTimer(delay)
 	defer timer.Stop()
+	var quiet, latest <-chan time.Time
+	settle := func() {
+		quiet = time.After(settleQuiet)
+		if latest == nil {
+			latest = time.After(settleMax)
+		}
+	}
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-timer.C:
 			return nil
+		case <-quiet:
+			return nil
+		case <-latest:
+			return nil
 		case err := <-r.watcher.Errors:
-			return fmt.Errorf("watch data directory: %w", err)
+			// Lost events are no reason to stop: the step reads the ledger anyway.
+			if !errors.Is(err, fsnotify.ErrEventOverflow) {
+				return fmt.Errorf("watch data directory: %w", err)
+			}
+			settle()
 		case event, ok := <-r.watcher.Events:
 			if !ok {
 				return errors.New("data directory watcher closed")
 			}
-			switch filepath.Base(event.Name) {
-			case "store.json", "obitd.stop", "obitd.paused", "observations.jsonl", "update.json":
-				return nil
+			if r.wakes(filepath.Base(event.Name)) {
+				settle()
 			}
 		}
 	}
+}
+
+// wakes ignores events for a ledger this resident has already read, such as
+// its own commits during a tick.
+func (r *Resident) wakes(name string) bool {
+	switch name {
+	case "store.json":
+		return !r.Service.Store.ModTime().Equal(r.read)
+	case "obitd.stop", "obitd.paused", "update.json":
+		return true
+	}
+	return false
 }
 
 func (r *Resident) step(interval time.Duration) (time.Duration, bool, error) {
@@ -173,22 +209,32 @@ func (r *Resident) step(interval time.Duration) (time.Duration, bool, error) {
 	if paused {
 		return interval, false, nil
 	}
-	state, err := r.Service.Store.Read()
-	if err != nil {
-		r.errs.report("read store", err)
+	state, ok := r.readState()
+	if !ok {
 		return interval, false, nil
 	}
-	next, has := state.NextDue()
+	next, has := r.nextDue(state)
 	now := time.Now()
-	if r.lastTick.IsZero() || now.Sub(r.lastTick) >= interval || has && !next.After(now) || r.Service.Store.HasDeferredObservations() {
+	worked := true
+	switch {
+	case r.lastTick.IsZero() || now.Sub(r.lastTick) >= interval || has && !next.After(now):
 		r.tick()
 		r.lastTick = now
-		state, err = r.Service.Store.Read()
-		if err != nil {
-			r.errs.report("read store", err)
+	case r.Service.Store.HasDeferredObservations():
+		// Hooks queue what they could not commit; absorb only that.
+		if err := ReplayObservations(r.Service); err != nil {
+			r.errs.report("replay", err)
+		} else {
+			r.errs.clear("replay")
+		}
+	default:
+		worked = false
+	}
+	if worked {
+		if state, ok = r.readState(); !ok {
 			return interval, false, nil
 		}
-		next, has = state.NextDue()
+		next, has = r.nextDue(state)
 	}
 	delay := time.Until(r.lastTick.Add(interval))
 	if has {
@@ -203,6 +249,36 @@ func (r *Resident) step(interval time.Duration) (time.Duration, bool, error) {
 		}
 	}
 	return delay, false, nil
+}
+
+// readState reads the hot ledger, and the graveyard snapshot only when the
+// hot ledger names a new one: most commits never change the graveyard. It
+// notes the modification time first, so a commit that lands during the read
+// still wakes the next wait.
+func (r *Resident) readState() (core.State, bool) {
+	r.read = r.Service.Store.ModTime()
+	state, err := r.Service.Store.ReadHot()
+	if err == nil && (state.Graveyard == nil || r.graves == nil || *state.Graveyard != r.graves.ref) {
+		if state, err = r.Service.Store.Read(); err == nil {
+			r.graves = summarize(state)
+		}
+	}
+	if err != nil {
+		r.hot, r.graves = nil, nil
+		r.errs.report("read store", err)
+		return state, false
+	}
+	r.hot = &state
+	return state, true
+}
+
+// nextDue adds the graveyard's next purge to what the hot ledger has due.
+func (r *Resident) nextDue(hot core.State) (time.Time, bool) {
+	next, has := hot.NextDue()
+	if g := r.graves; g != nil && g.has && (!has || g.next.Before(next)) {
+		return g.next, true
+	}
+	return next, has
 }
 
 func (r *Resident) tick() {

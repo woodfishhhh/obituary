@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 	"golang.org/x/sys/windows"
@@ -164,5 +165,164 @@ func TestResidentAcceptsStopRequestBeforeWriterCloses(t *testing.T) {
 	r := resident(&core.Service{Store: core.Store{Home: home}}, log.New(io.Discard, "", 0))
 	if _, stop, err := r.step(Interval); !stop || err != nil {
 		t.Fatalf("stop request rejected while writer closes: stop=%v err=%v", stop, err)
+	}
+}
+
+// runResident runs r until the test ends and counts its steps.
+func runResident(t *testing.T, r *Resident) *atomic.Int32 {
+	t.Helper()
+	var steps atomic.Int32
+	r.Changed = func() { steps.Add(1) }
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- r.Run(ctx) }()
+	t.Cleanup(func() {
+		cancel()
+		if err := <-done; err != nil {
+			t.Error(err)
+		}
+		r.Close()
+	})
+	if err := waitFor(func() bool { return steps.Load() == 1 }, 5*time.Second, "no first step"); err != nil {
+		t.Fatal(err)
+	}
+	return &steps
+}
+
+// An idle resident wakes for nothing: not for the commits of its own tick,
+// and not for the other files Obituary writes in the data directory.
+func TestIdleResidentHasZeroWakeups(t *testing.T) {
+	if testing.Short() {
+		t.Skip("waits out several settle windows")
+	}
+	root := t.TempDir()
+	svc := &core.Service{Store: core.Store{Home: filepath.Join(root, "data")}, FS: winfs.FS{}}
+	due := filepath.Join(root, "due.txt")
+	if err := os.WriteFile(due, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if rows, err := svc.Add([]string{due}, core.AddOptions{ExpiresAt: time.Now().Add(50 * time.Millisecond)}); err != nil || core.Failed(rows) {
+		t.Fatalf("add %v %v", rows, err)
+	}
+	time.Sleep(100 * time.Millisecond)
+	r, err := NewResident(svc, log.New(io.Discard, "", 0))
+	if err != nil {
+		t.Fatal(err)
+	}
+	steps := runResident(t, r) // its first tick buries due.txt: its own commits
+	if st, err := svc.Store.Read(); err != nil || len(st.Burials) != 1 {
+		t.Fatalf("first tick did not bury: %v %+v", err, st)
+	}
+	for _, name := range []string{"hook.log", "audit.jsonl", "explorer.json"} {
+		if err := os.WriteFile(filepath.Join(svc.Store.Home, name), []byte("x"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	time.Sleep(2 * settleMax)
+	if n := steps.Load(); n != 1 {
+		t.Fatalf("idle resident stepped %d times", n)
+	}
+}
+
+// A burst of ledger commits, as from an agent writing many files, costs a
+// step or two, not one per commit.
+func TestResidentCoalescesACommitBurst(t *testing.T) {
+	if testing.Short() {
+		t.Skip("writes a thousand ledger commits")
+	}
+	// A busy machine can stall one commit; widen the windows so the count
+	// depends on coalescing, not on scheduling.
+	quiet, latest := settleQuiet, settleMax
+	settleQuiet, settleMax = 2*time.Second, time.Minute
+	t.Cleanup(func() { settleQuiet, settleMax = quiet, latest })
+	svc := &core.Service{Store: core.Store{Home: t.TempDir()}, FS: winfs.FS{}}
+	r, err := NewResident(svc, log.New(io.Discard, "", 0))
+	if err != nil {
+		t.Fatal(err)
+	}
+	steps := runResident(t, r)
+	writer := core.Store{Home: svc.Store.Home} // another process's commits
+	for i := range 1000 {
+		if err := writer.Update(func(st *core.State) error { st.NextID = int64(100 + i); return nil }); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := waitFor(func() bool { return steps.Load() > 1 }, 5*time.Second, "burst never woke the resident"); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(2 * settleQuiet)
+	if n := steps.Load(); n > 3 {
+		t.Fatalf("1000 commits cost %d steps", n)
+	}
+	t.Logf("1000 commits: %d steps", steps.Load())
+	if r.hot == nil || r.hot.NextID != 1099 {
+		t.Fatal("the last step did not read the final ledger")
+	}
+}
+
+// Windows drops events when a burst overflows its buffer; the resident steps
+// instead of exiting.
+func TestResidentSurvivesLostEvents(t *testing.T) {
+	r, err := NewResident(&core.Service{Store: core.Store{Home: t.TempDir()}, FS: winfs.FS{}}, log.New(io.Discard, "", 0))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+	go func() { r.watcher.Errors <- fsnotify.ErrEventOverflow }()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	if err := r.wait(ctx, time.Hour); err != nil {
+		t.Fatalf("lost events ended the wait: %v", err)
+	}
+}
+
+// A step decodes the graveyard snapshot only when the hot ledger names a new
+// one, and then sees the new graves and their purge times at once.
+func TestResidentRereadsTheGraveyardOnlyWhenItChanges(t *testing.T) {
+	root := t.TempDir()
+	svc := &core.Service{Store: core.Store{Home: filepath.Join(root, "data")}, FS: winfs.FS{}}
+	bury := func(name string) {
+		t.Helper()
+		path := filepath.Join(root, name)
+		if err := os.WriteFile(path, []byte("x"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if rows, err := svc.Add([]string{path}, core.AddOptions{ExpiresAt: time.Now().Add(50 * time.Millisecond)}); err != nil || core.Failed(rows) {
+			t.Fatalf("add %v %v", rows, err)
+		}
+		time.Sleep(100 * time.Millisecond)
+		if _, _, err := svc.Tick(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	bury("first.txt")
+	r := resident(svc, log.New(io.Discard, "", 0))
+	if _, _, err := r.step(Interval); err != nil {
+		t.Fatal(err)
+	}
+	first := r.graves
+	if first == nil || first.count != 1 || !first.has {
+		t.Fatalf("first step missed the grave: %+v", first)
+	}
+	if err := svc.Store.Update(func(st *core.State) error { st.NextID += 10; return nil }); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := r.step(Interval); err != nil {
+		t.Fatal(err)
+	}
+	if r.graves != first {
+		t.Fatal("a commit that left the graveyard alone decoded it again")
+	}
+	bury("second.txt")
+	if _, _, err := r.step(Interval); err != nil {
+		t.Fatal(err)
+	}
+	st, err := svc.Store.Read()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, _ := st.NextDue()
+	if got, has := r.nextDue(*r.hot); r.graves == first || r.graves.count != 2 || !has || !got.Equal(want) {
+		t.Fatalf("new grave missed: %+v next %v, want %v", r.graves, got, want)
 	}
 }

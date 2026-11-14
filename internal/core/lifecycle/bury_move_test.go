@@ -143,9 +143,13 @@ func TestSweepBoundsDirectoryGuardTraversal(t *testing.T) {
 		t.Fatal(err)
 	}
 	readDone := make(chan error, 1)
-	started := false
+	started, calls := false, 0
 	f.svc.Guard.Canonical = func(path string) (string, error) {
+		// The second check of the folder is the one under store.lock.
 		if samePath(path, dir) && !started {
+			if calls++; calls < 2 {
+				return path, nil
+			}
 			started = true
 			go func() {
 				_, err := f.svc.Store.WithDeadline(time.Now().Add(time.Second)).ReadSnapshot()
@@ -162,8 +166,9 @@ func TestSweepBoundsDirectoryGuardTraversal(t *testing.T) {
 	if readErr != nil {
 		t.Fatalf("directory Guard starved shared reader: %v", readErr)
 	}
-	if len(out) != 1 || out[0].Action != core.ActionRetry || !exists(dir) || len(f.burials()) != 0 || len(f.items()) != 1 {
-		t.Fatalf("directory Guard ignored traversal budget: %+v", out)
+	// The full search ran before the lock, so the folder is buried.
+	if len(out) != 1 || out[0].Action != core.ActionBuried || exists(dir) || len(f.burials()) != 1 || len(f.items()) != 0 {
+		t.Fatalf("large folder after a full search: %+v", out)
 	}
 }
 
@@ -336,5 +341,66 @@ func TestManifestChildLifespanRechecked(t *testing.T) {
 				t.Fatalf("later child lifespan must prevent moving parent: %+v, %v", st, err)
 			}
 		})
+	}
+}
+
+// A folder of ten thousand entries takes up to a second to search for a .git
+// repository; the search gets the time it needs instead of failing forever.
+func TestLargeFolderIsSearchedAndBuried(t *testing.T) {
+	if testing.Short() {
+		t.Skip("writes ten thousand files")
+	}
+	f := newFixture(t)
+	dir := filepath.Join(f.dir, "reap-fixture")
+	// Like the folder that failed in the field: thousands of small folders.
+	for i := range 2000 {
+		sub := filepath.Join(dir, fmt.Sprintf("d%02d", i/40), fmt.Sprintf("e%02d", i%40))
+		if err := os.MkdirAll(sub, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		for j := range 4 {
+			if err := os.WriteFile(filepath.Join(sub, fmt.Sprintf("f%d", j)), nil, 0o600); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	f.add(dir, time.Hour)
+	if out := f.sweepAt(time.Hour); len(out) != 1 || out[0].Action != core.ActionBuried {
+		t.Fatalf("large folder: %+v", out)
+	}
+}
+
+// The search before the lock is the full one: a repository too deep for the
+// quick search under the lock still keeps the folder out of the graveyard.
+func TestLargeFolderWithDeepRepositoryIsRefused(t *testing.T) {
+	if testing.Short() {
+		t.Skip("writes thousands of folders")
+	}
+	f := newFixture(t)
+	dir := filepath.Join(f.dir, "reap-fixture")
+	for i := range 3000 {
+		if err := os.MkdirAll(filepath.Join(dir, fmt.Sprintf("d%02d", i/60), fmt.Sprintf("e%02d", i%60)), 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Lexical walk order reaches this last.
+	if err := os.MkdirAll(filepath.Join(dir, "zz", "project", ".git"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	// The repository appeared after registration, which refuses it outright.
+	id, err := f.fs.Identify(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := f.svc.Store.Update(func(st *core.State) error {
+		st.Items = []core.Item{{ID: 1, Rev: 1, Path: dir, IsDir: true, Identity: &id, ExpiresAt: f.clock.Add(time.Hour)}}
+		st.NextID = 2
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	out := f.sweepAt(time.Hour)
+	if len(out) != 1 || out[0].Action == core.ActionBuried || !exists(filepath.Join(dir, "zz", "project", ".git")) || len(f.burials()) != 0 {
+		t.Fatalf("folder holding a repository was buried: %+v", out)
 	}
 }

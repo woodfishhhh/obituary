@@ -47,7 +47,7 @@ func NewCmd() *cobra.Command {
 			fmt.Printf("\n[update]\ncheck = %t\n", cfg.Update.Check)
 			fmt.Printf("\n[watch]\nstable_window = %q\n", cfg.Watch.StableWindow)
 			fmt.Printf("\n[hooks]\n# List expiring items and recent burials at session start.\nsession_summary = %t\n# Ask the agent once per session to sort the files it created without a lifespan.\nsession_cleanup = %t\n", cfg.Hooks.SessionSummary, cfg.Hooks.SessionCleanup)
-			fmt.Printf("\n[proposals]\n# tiered: the agent's own new files, regenerable leftovers and session containers go in\n# without asking; the rest waits. auto: everything goes in. ask: everything waits.\nmode = %q\n", cfg.Proposals.Mode)
+			fmt.Printf("\n[proposals]\n# off: nothing goes in by itself. tiered: the agent's own new files and session containers\n# go in without asking; the rest waits. auto: everything goes in. ask: everything waits.\nmode = %q\n", cfg.Proposals.Mode)
 			if len(cfg.AgentShells) > 0 {
 				fmt.Println("\n[agent_shells]")
 				for _, agent := range slices.Sorted(maps.Keys(cfg.AgentShells)) {

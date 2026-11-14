@@ -45,6 +45,23 @@ func TestListShowsConfiguredQuietWindow(t *testing.T) {
 	}
 }
 
+func TestListSaysHowToRetryAStuckBurial(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("OBIT_HOME", filepath.Join(root, "data"))
+	t.Setenv("OBIT_CONFIG_DIR", filepath.Join(root, "config"))
+	store := ledger.Store{Home: os.Getenv("OBIT_HOME")}
+	if err := store.Update(func(st *ledger.State) error {
+		st.Items = []ledger.Item{{ID: 7, Path: filepath.Join(root, "locked"), ExpiresAt: time.Now().Add(-time.Hour), Attempts: 12, NextAttempt: ledger.RetryStopped, LastError: "in use"}}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	out, _, err := clitest.Execute(t, NewCmd())
+	if err != nil || !strings.Contains(out, "stopped retrying after 12 attempts: in use") || !strings.Contains(out, "obit extend #7 1m") {
+		t.Fatalf("stuck burial note: %s %v", out, err)
+	}
+}
+
 // Measure the real CLI, including process startup and text formatting, with
 // both collections populated. list only reads the ledger, not the files.
 func BenchmarkList(b *testing.B) {

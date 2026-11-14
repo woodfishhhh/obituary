@@ -223,7 +223,7 @@ func TestTickPrunesAndWithdrawsStaleProposals(t *testing.T) {
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}
-	// Tick rereads config.toml; "ask" keeps the leftovers a proposal to prune.
+	// Tick rereads config.toml; "ask" keeps the candidates a proposal to prune.
 	configDir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(configDir, "config.toml"), []byte("[proposals]\nmode = \"ask\"\n"), 0o600); err != nil {
 		t.Fatal(err)
@@ -238,34 +238,36 @@ func TestTickPrunesAndWithdrawsStaleProposals(t *testing.T) {
 	}
 	git("init", "-q")
 	svc := &core.Service{Store: core.Store{Home: t.TempDir()}, FS: winfs.FS{}, ProposalMode: core.ProposalsAsk}
+	upgraded(t, svc.Store.Home)
 	engine := Engine(svc)
 	if err := engine.Snapshot(root, "s"); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"dist", "coverage", "node_modules"} {
-		testenv.Leftover(t, root, name)
+	var written []string
+	for _, name := range []string{"test-results", "playwright-report", ".playwright-mcp"} {
+		written = append(written, testenv.Leftover(t, root, name))
 	}
-	if _, err := engine.Leftovers(root, "s"); err != nil {
+	if _, _, err := engine.Observe(written, "s"); err != nil {
 		t.Fatal(err)
 	}
 	st, err := svc.Store.Read()
 	if err != nil || len(st.Proposals) != 1 || len(st.Proposals[0].Candidates) != 3 {
-		t.Fatalf("leftovers fixture: %+v %v", st.Proposals, err)
+		t.Fatalf("proposal fixture: %+v %v", st.Proposals, err)
 	}
 	id := st.Proposals[0].ID
-	git("add", "-f", "--", "dist/index.js")
+	git("add", "-f", "--", "test-results/index.js")
 	git("commit", "-qm", "track proposal candidate")
-	if err := os.RemoveAll(filepath.Join(root, "coverage")); err != nil {
+	if err := os.RemoveAll(filepath.Join(root, "playwright-report")); err != nil {
 		t.Fatal(err)
 	}
 	if _, _, err := Tick(svc); err != nil {
 		t.Fatal(err)
 	}
 	st, err = svc.Store.Read()
-	if err != nil || len(st.Proposals) != 1 || st.Proposals[0].ID != id || len(st.Proposals[0].Candidates) != 1 || filepath.Base(st.Proposals[0].Candidates[0].Path) != "node_modules" {
+	if err != nil || len(st.Proposals) != 1 || st.Proposals[0].ID != id || len(st.Proposals[0].Candidates) != 1 || filepath.Base(st.Proposals[0].Candidates[0].Path) != ".playwright-mcp" {
 		t.Fatalf("background tick retained stale proposal candidates: %+v %v", st.Proposals, err)
 	}
-	git("add", "-f", "--", "node_modules/index.js")
+	git("add", "-f", "--", ".playwright-mcp/index.js")
 	git("commit", "-qm", "track last candidate")
 	if _, _, err := Tick(svc); err != nil {
 		t.Fatal(err)

@@ -41,7 +41,8 @@ func newEnv(t testing.TB) *env {
 		t.Fatal(err)
 	}
 	testenv.InitRepo(t, root)
-	svc := &core.Service{Store: core.Store{Home: home}, Guard: core.Guard{System: []string{home}}, FS: winfs.FS{}}
+	// Most tests exercise automatic registration, so they turn it on.
+	svc := &core.Service{Store: core.Store{Home: home}, Guard: core.Guard{System: []string{home}}, FS: winfs.FS{}, ProposalMode: core.ProposalsTiered}
 	return &env{t: t, root: root, engine: &auto.Engine{Svc: svc, Trust: rules.TrustStore{Path: filepath.Join(home, "trusted_rules.json")}}}
 }
 

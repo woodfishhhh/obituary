@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 // An injected interruption leaves recovery entirely to persisted evidence.
@@ -115,6 +116,11 @@ func (s *Service) validatePrepared(st *State, p *preparedBurial, reason string) 
 	guardCtx, cancelGuard := context.WithTimeout(s.Store.Context(), sweepBatchWork)
 	guardErr := s.Guard.CheckContext(guardCtx, out.Path, out.Item.Force)
 	cancelGuard()
+	if out.searched && errors.Is(guardErr, context.DeadlineExceeded) {
+		// The full search finished before the lock; repeat only the checks
+		// that need no walk. A repository found in time still refuses.
+		guardErr = s.Guard.CheckContext(s.Store.Context(), out.Path, true)
+	}
 	if err := guardErr; err != nil {
 		*out = failedMove(*out, err)
 		return "", nil
@@ -128,6 +134,12 @@ func (s *Service) validatePrepared(st *State, p *preparedBurial, reason string) 
 	}
 	return "", nil
 }
+
+// guardWalkBudget bounds the search for a .git repository inside an expired
+// folder before its burial takes store.lock. Under the lock the search gets
+// only sweepBatchWork, which a folder of thousands of entries never fits; an
+// unfinished search is a refusal, never a pass.
+const guardWalkBudget = 30 * time.Second
 
 func setBurialChildren(b *Burial, children []Item) {
 	b.Children, b.Contains = nil, nil

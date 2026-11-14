@@ -39,10 +39,13 @@ func newEngineFixture(t *testing.T) *repo {
 		t.Fatal(err)
 	}
 	r := &repo{t: t, root: root}
+	// Most tests exercise automatic registration, so they turn it on;
+	// TestOffModeRegistersNothing covers the default.
 	svc := &core.Service{
-		Store: core.Store{Home: home},
-		Guard: core.Guard{System: []string{home}},
-		FS:    winfs.FS{},
+		Store:        core.Store{Home: home},
+		Guard:        core.Guard{System: []string{home}},
+		FS:           winfs.FS{},
+		ProposalMode: core.ProposalsTiered,
 	}
 	r.engine = &Engine{Svc: svc, Trust: rules.TrustStore{Path: filepath.Join(home, "trusted_rules.json")}}
 	svc.Owner, svc.Recheck = Owner, r.engine.RecheckRules

@@ -191,3 +191,10 @@ func injectDeliveryDeadline(t *testing.T, store core.Store, stage string) func()
 		}
 	}
 }
+
+// autoOn turns automatic registration on, which most hook tests exercise;
+// extra adds other configuration tables.
+func autoOn(t *testing.T, extra string) {
+	t.Helper()
+	clitest.WriteFixture(t, filepath.Join(os.Getenv("OBIT_CONFIG_DIR"), "config.toml"), "[proposals]\nmode = \"tiered\"\n"+extra)
+}

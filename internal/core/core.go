@@ -17,6 +17,10 @@ const ActionUpdated = lifecycle.ActionUpdated
 const ActionExtended = lifecycle.ActionExtended
 
 const ActionCanceled = lifecycle.ActionCanceled
+const ActionRetried = lifecycle.ActionRetried
+
+// RetryStopped marks an item whose burial stopped retrying (see Item.Stuck).
+var RetryStopped = lifecycle.RetryStopped
 
 const ActionRecycled = lifecycle.ActionRecycled
 
@@ -177,6 +181,7 @@ const ModeGraveyard = lifecycle.ModeGraveyard
 const ModeRecycle = lifecycle.ModeRecycle
 
 const (
+	ProposalsOff    = lifecycle.ProposalsOff
 	ProposalsTiered = lifecycle.ProposalsTiered
 	ProposalsAuto   = lifecycle.ProposalsAuto
 	ProposalsAsk    = lifecycle.ProposalsAsk

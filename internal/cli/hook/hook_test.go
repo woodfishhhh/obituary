@@ -122,7 +122,7 @@ func TestHookDefersExplorerRefresh(t *testing.T) {
 		t.Skip("uses a real Git repository and Explorer projection")
 	}
 	root, store := clitest.CommandRepo(t)
-	clitest.WriteFixture(t, filepath.Join(os.Getenv("OBIT_CONFIG_DIR"), "config.toml"), "[explorer]\neverywhere=true\nin_git=true\n")
+	autoOn(t, "[explorer]\neverywhere=true\nin_git=true\n")
 	if err := store.Update(func(st *core.State) error {
 		st.Projects = map[string]core.ProjectState{core.ProjectKey(root): {Consent: core.ConsentApproved}}
 		return nil
@@ -180,6 +180,7 @@ func TestPostToolUseDeliversQueuedProposal(t *testing.T) {
 	for _, agent := range []string{"claude", "codex"} {
 		t.Run(agent, func(t *testing.T) {
 			root, store := clitest.CommandRepo(t)
+			autoOn(t, "")
 			path := filepath.Join(root, "debug.log")
 			clitest.WriteFixture(t, path, "fixture")
 			svc, err := app.Open()
@@ -223,6 +224,7 @@ func TestPostToolUseDeliveryDeadline(t *testing.T) {
 		for _, stage := range []string{"immediate", "locked", "committed"} {
 			t.Run(agent+"/"+stage, func(t *testing.T) {
 				root, store := clitest.CommandRepo(t)
+				autoOn(t, "")
 				input := latencyPayload(t, root, "PostToolUse/pending")
 				resetLatencyFixture(t, root, store, "PostToolUse/pending")
 				release := injectDeliveryDeadline(t, store, stage)
@@ -249,6 +251,7 @@ func TestHookLatencyReport(t *testing.T) {
 	for _, name := range []string{"PreToolUse/delete", "PreToolUse/ordinary", "PostToolUse/approved", "PostToolUse/pending", "SessionStart/startup", "SessionStart/resume", "Stop/dispatch"} {
 		t.Run(name, func(t *testing.T) {
 			root, store := clitest.CommandRepo(t)
+			autoOn(t, "")
 			input := latencyPayload(t, root, name)
 			var samples []time.Duration
 			deferred := map[string]int{}
@@ -380,6 +383,7 @@ func TestFinalHookBypassesFinishDebounce(t *testing.T) {
 	for _, agent := range []string{"claude", "codex"} {
 		t.Run(agent, func(t *testing.T) {
 			root, store := clitest.CommandRepo(t)
+			autoOn(t, "")
 			svc, err := app.Open()
 			if err != nil {
 				t.Fatal(err)
@@ -416,13 +420,13 @@ func TestFinalHookBypassesFinishDebounce(t *testing.T) {
 			if calls != 1 {
 				t.Fatalf("Stop must debounce: %d spawns", calls)
 			}
-			path := testenv.Leftover(t, root, "dist") // built after the last Stop
+			clitest.WriteFixture(t, filepath.Join(root, "test-results", "report.html"), "x") // after the last Stop
+			path := filepath.Join(root, "test-results")
 			run("SessionEnd")
 			st, err := store.Read()
-			// Tiered mode registers regenerable leftovers directly, with a receipt.
-			handled := st.AutoHandled()
-			if calls != 2 || err != nil || len(st.Proposals) != 0 || len(handled) != 1 || handled[0].Item.Path != path || handled[0].Class != core.AutoRegenerable {
-				t.Fatalf("final event must finish and register last-minute leftovers: spawns=%d handled=%+v proposals=%+v err=%v", calls, handled, st.Proposals, err)
+			// A rule covers it but the hook never saw it written: a proposal.
+			if calls != 2 || err != nil || len(st.Items) != 0 || len(st.Proposals) != 1 || st.Proposals[0].Candidates[0].Path != path {
+				t.Fatalf("final event must finish and handle last-minute leftovers: spawns=%d items=%+v proposals=%+v err=%v", calls, st.Items, st.Proposals, err)
 			}
 		})
 	}
@@ -470,6 +474,7 @@ func TestFinishReplaysTimedOutObservationOfPreexistingFile(t *testing.T) {
 	}
 	clitest.IsolateRunner(t)
 	root, store := clitest.CommandRepo(t)
+	autoOn(t, "")
 	path := filepath.Join(root, "debug.log")
 	clitest.WriteFixture(t, path, "before session")
 	svc, err := cmdutil.Open()

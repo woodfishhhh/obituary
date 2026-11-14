@@ -347,7 +347,10 @@ func TestRejectedProjectIsLeftAlone(t *testing.T) {
 	}
 }
 
-func TestLeftoversAreProposedNotRegistered(t *testing.T) {
+// What a session leaves without a rule covering it is never proposed: new
+// work is uncommitted, and dependencies and build output are in use however
+// Git treats them.
+func TestSessionLeftoversAreNeverProposed(t *testing.T) {
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}
@@ -361,20 +364,12 @@ func TestLeftoversAreProposedNotRegistered(t *testing.T) {
 	testenv.Leftover(t, e.root, "node_modules")
 	testenv.Leftover(t, e.root, "dist")
 	e.finishEvent("Stop", "s1")
-	st := e.state()
-	if len(st.Items) != 0 || len(st.Proposals) != 1 || st.Proposals[0].Kind != core.ProposalLeftovers {
-		t.Fatalf("want a leftovers proposal and nothing registered, got %+v", st)
-	}
-	var paths []string
-	for _, c := range st.Proposals[0].Candidates {
-		paths = append(paths, filepath.Base(c.Path))
-	}
-	if strings.Join(paths, ",") != "dist,node_modules" {
-		t.Fatalf("leftovers %v; only ignored regenerable items are proposed", paths)
+	if st := e.state(); len(st.Items) != 0 || len(st.Proposals) != 0 {
+		t.Fatalf("leftovers were handled: %+v", st)
 	}
 	next := e.event(map[string]any{"hook_event_name": "SessionStart", "source": "startup", "session_id": "s2"})
-	if !strings.Contains(next, "node_modules") || !strings.Contains(next, "recommended for approval") || !strings.Contains(next, "obit approve") || strings.Contains(next, "new_feature.go") {
-		t.Fatalf("the next session must hear about the leftovers, got %q", next)
+	if strings.Contains(next, "node_modules") || strings.Contains(next, "new_feature.go") {
+		t.Fatalf("the next session heard about leftovers: %q", next)
 	}
 }
 
@@ -391,7 +386,8 @@ func TestLeftoversSurviveInlineFinishDeadline(t *testing.T) {
 			if err := e.engine.Snapshot(e.root, "s1"); err != nil {
 				t.Fatal(err)
 			}
-			path := testenv.Leftover(t, e.root, "node_modules")
+			e.write("test-results/report.html") // a rule covers it; the hook never saw it
+			path := filepath.Join(e.root, "test-results")
 			engine, svc := *e.engine, *e.engine.Svc
 			// Model Git/filesystem work having exhausted the hook's shared
 			// deadline, without a sleep or changing the production budget.
@@ -406,7 +402,7 @@ func TestLeftoversSurviveInlineFinishDeadline(t *testing.T) {
 			}
 			e.finishEvent(next, "s1")
 			st := e.state()
-			if len(st.Items) != 0 || len(st.Proposals) != 1 || st.Proposals[0].Kind != core.ProposalLeftovers ||
+			if len(st.Items) != 0 || len(st.Proposals) != 1 || st.Proposals[0].Kind != core.ProposalOnboard ||
 				len(st.Proposals[0].Candidates) != 1 || st.Proposals[0].Candidates[0].Path != path {
 				t.Fatalf("next ending event lost the original session difference: %+v", st)
 			}
@@ -852,57 +848,6 @@ func TestNoticeRedeliveredAfterContextOrNotificationTimeout(t *testing.T) {
 	}
 }
 
-func TestRejectedLeftoversStayRejectedAcrossSessions(t *testing.T) {
-	if testing.Short() {
-		t.Skip("requires a real Git repository or child process")
-	}
-	e := newEnv(t)
-	e.ask() // exercises the proposal itself, as "ask" mode keeps it
-	e.event(map[string]any{"hook_event_name": "SessionStart"})
-	e.event(map[string]any{"hook_event_name": "SessionStart", "session_id": "s2"})
-	testenv.Leftover(t, e.root, "node_modules")
-	testenv.Leftover(t, e.root, "dist")
-	e.finishEvent("Stop", "s1")
-	proposals := e.state().Proposals
-	if len(proposals) == 0 {
-		t.Fatal("Stop created no leftover proposal (a hook that skipped under load also lands here)")
-	}
-	p := proposals[0]
-	// Ledger paths can differ in case from Git's spelling.
-	if err := e.engine.Svc.Store.Update(func(st *core.State) error {
-		for i := range st.Proposals[0].Candidates {
-			st.Proposals[0].Candidates[i].Path = strings.ToUpper(st.Proposals[0].Candidates[i].Path)
-		}
-		return nil
-	}); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := e.engine.Svc.Reject([]string{fmt.Sprint(p.ID)}); err != nil {
-		t.Fatal(err)
-	}
-	// A finish that read the old snapshot before Reject must not recreate it.
-	if _, created, added, err := e.engine.Svc.Propose(p.Kind, p.Project, p.Session, p.Candidates); err != nil || created || added != 0 {
-		t.Fatalf("concurrent stale finish recreated rejection: created=%v added=%d err=%v", created, added, err)
-	}
-	for _, event := range []string{"Stop", "SessionEnd"} {
-		e.finishEvent(event, "s1")
-		if st := e.state(); len(st.Proposals) != 0 || len(st.Items) != 0 {
-			t.Fatalf("rejected leftovers reproposed: %+v", st)
-		}
-	}
-	testenv.Leftover(t, e.root, "coverage")
-	e.finishEvent("Stop", "s1")
-	st := e.state()
-	if len(st.Proposals) != 1 || len(st.Proposals[0].Candidates) != 1 || !strings.HasSuffix(st.Proposals[0].Candidates[0].Path, "coverage") {
-		t.Fatalf("new leftovers suppressed: %+v", st)
-	}
-	e.finishEvent("SessionEnd", "s2")
-	st = e.state()
-	if len(st.Proposals) != 1 || len(st.Proposals[0].Candidates) != 1 || !strings.HasSuffix(st.Proposals[0].Candidates[0].Path, "coverage") {
-		t.Fatalf("another session repeated decided or pending leftovers: %+v", st)
-	}
-}
-
 func TestContextReadTimeoutDoesNotMarkNotified(t *testing.T) {
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
@@ -996,11 +941,10 @@ func TestTieredRegistersAgentFilesAndAnnouncesThemOnce(t *testing.T) {
 	if ctx := e.wrote(old); !strings.Contains(ctx, "obit approve") || len(e.state().Items) != 1 {
 		t.Fatalf("a pre-existing file must still be proposed: %q %+v", ctx, e.state())
 	}
-	testenv.Leftover(t, e.root, "node_modules")
 	e.finishEvent("Stop", "s1")
 	next := e.event(map[string]any{"hook_event_name": "SessionStart", "source": "startup", "session_id": "s2"})
-	if !strings.Contains(next, "node_modules") || !strings.Contains(next, "regenerable") || strings.Contains(next, "debug.log (created") {
-		t.Fatalf("the next session hears only the new receipts, got %q", next)
+	if strings.Contains(next, "debug.log (created") {
+		t.Fatalf("a told receipt was repeated, got %q", next)
 	}
 	if again := e.event(map[string]any{"hook_event_name": "SessionStart", "source": "startup", "session_id": "s3"}); strings.Contains(again, "registered") {
 		t.Fatalf("receipts are told to one session only, got %q", again)

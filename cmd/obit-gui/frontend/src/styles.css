@@ -137,6 +137,9 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
 .cols-watch { grid-template-columns: minmax(0, 1fr) 70px 160px 100px auto; }
 .cols-handled { grid-template-columns: minmax(0, 1fr) 104px 176px auto; }
 .cols-handled .acts { display: flex; gap: 6px; justify-content: flex-end; }
+.cols-failed { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 150px auto; }
+.cols-failed .reason { color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
+.cols-failed .acts { display: flex; gap: 6px; justify-content: flex-end; }
 .mode-card .panel-head { flex-wrap: wrap; }
 .mode-card p { margin: 0; }
 .num { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-2); white-space: nowrap; }
@@ -335,6 +338,9 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
 .notice-chip { position: relative; display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 4px 0 12px; border-radius: 999px; font-size: 12.5px; font-weight: 600; line-height: 1; white-space: nowrap; }
 .notice-chip.paused { background: var(--warn-soft); color: var(--text); }
 .notice-chip.update { background: var(--accent-soft); color: var(--accent); }
+.notice-chip.auto { padding-right: 12px; border: 1px solid var(--line); background: none; color: var(--muted); font-family: inherit; cursor: pointer; }
+.notice-chip.auto.on { color: var(--text); }
+.notice-chip.auto:hover { background: var(--hover); }
 .notice-text { flex: 1; }
 .notice-icon { display: none; width: 15px; height: 15px; flex-shrink: 0; }
 .notices .notice-act { height: 22px; padding: 0 10px; border: 0; border-radius: 999px; background: var(--accent); color: var(--on-accent); font: inherit; cursor: pointer; }

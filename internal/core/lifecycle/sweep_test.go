@@ -493,3 +493,47 @@ func TestRecycleCommitPreservesConcurrentExtension(t *testing.T) {
 		})
 	}
 }
+
+// A burial that keeps failing is retried at growing intervals, then stops
+// with its reason until the user retries it.
+func TestFailingBurialStopsRetryingUntilAsked(t *testing.T) {
+	f := newFixture(t)
+	path := f.file("locked.txt")
+	item := f.add(path, time.Hour)
+	f.fs.fail = errors.New("the file is in use")
+	f.clock = f.clock.Add(time.Hour)
+	var gaps []time.Duration
+	for range 20 {
+		if _, err := f.svc.Sweep(false); err != nil {
+			t.Fatal(err)
+		}
+		it := f.items()[0]
+		if it.Stuck() {
+			break
+		}
+		gaps = append(gaps, it.NextAttempt.Sub(f.clock))
+		f.clock = it.NextAttempt
+	}
+	it := f.items()[0]
+	growing := len(gaps) == 11 && gaps[0] == time.Minute
+	for i := 1; growing && i < len(gaps); i++ {
+		growing = gaps[i] == 2*gaps[i-1]
+	}
+	if !it.Stuck() || it.LastError == "" || !growing {
+		t.Fatalf("retries: stuck=%v attempts=%d gaps=%v %q", it.Stuck(), it.Attempts, gaps, it.LastError)
+	}
+	st, err := f.svc.Store.Read()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if next, _ := st.NextDue(); next.Before(core.RetryStopped) {
+		t.Fatalf("a stopped item still wakes the resident at %v", next)
+	}
+	f.fs.fail = nil
+	if rows, err := f.svc.Retry([]string{fmt.Sprint(item.ID)}); err != nil || core.Failed(rows) {
+		t.Fatalf("retry: %+v %v", rows, err)
+	}
+	if out := f.sweepAt(0); len(out) != 1 || out[0].Action != core.ActionBuried {
+		t.Fatalf("retried burial: %+v", out)
+	}
+}

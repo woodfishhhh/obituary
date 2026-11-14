@@ -102,7 +102,7 @@ flowchart TD
 |---|---|---|
 | 路径能不能碰 | `core.Guard.Check` | 盘符根、系统目录、用户文件夹本身及其上级（含重定向的已知文件夹）；先还原 8.3 短名和 junction |
 | 能不能自动登记 | `auto.Engine.vetUnit` | 规则、会话遗留物、批准的提议三条路都过它：在项目里、未被跟踪（里面也没有被跟踪的）、不会缩短已有寿命 |
-| 要不要先问用户 | `auto.Engine.directClass`（写入当场）、`auto.Engine.autoCandidates`（已有提议） | 提议模式 `[proposals] mode`：`ask` 全提议；`tiered` 只放行「agent 新建」「能重新生成」「会话容器」；`auto` 全放行。拒绝过的项目一律不放行。放行的照样过 `vetUnit` 和批准的全部关卡，并留一张 `AutoReceipt` |
+| 要不要先问用户 | `auto.Engine.directClass`（写入当场）、`auto.Engine.autoCandidates`（已有提议） | 提议模式 `[proposals] mode`：`off`（默认）不自动登记也不生成提议；`ask` 全提议；`tiered` 只放行「agent 新建」「会话容器」；`auto` 全放行。依赖、构建输出和缓存（`auto.NeverAutomatic`）任何模式都不登记也不提议。拒绝过的项目一律不放行。放行的照样过 `vetUnit` 和批准的全部关卡，并留一张 `AutoReceipt` |
 | 是不是 agent 这次新建的 | `auto.Engine.createdThisSession` | 三样都要：hook 看到 agent 写（`Options.Written`）；本会话本项目的 Git 快照（带 `git` 标记）里没有这个单元、它的上级和它里面的东西；单元及其中每一项的文件系统创建时间都晚于快照时间（容差 2 秒，最多看 5000 项）。缺一样就当作不是，改为提议 |
 | 收工整理列哪些文件 | `auto.Engine.CleanupCandidates` | hook 记下的本会话写入里，过 `createdThisSession` 同样的证明、没有寿命（自己或上级不是条目）、不在待处理提议里、不在 `.obit/` 里、Git 不跟踪的文件 |
 | 到期了还能不能下葬 | `core.Service.recheckAutomatic` | 自动登记的条目在下葬前重新问一遍：还在原项目、仍未被跟踪、规则没有改为保护它 |
@@ -123,11 +123,12 @@ flowchart TD
 1. **显式**：`obit add` / `mark`、`obit mktemp`。只过 Guard 和身份校验，用户点名的路径就是用户的意思。`mktemp` 的 cwd 必须是存在的目录。
 2. **规则**：写文件之后的 hook，或 `obit rules apply`。`auto.decide` 在真实路径上找项目、加载已信任的规则、匹配出登记单元（目录可以整体折叠成一个单元，除非里面有被否定规则保护的东西），再过 `vetUnit`。
 3. **提议**：项目第一次要自动登记、单次太大、会话遗留物、会话容器，按提议模式不能直接登记的，都先生成提议。`obit approve` 原子地认领提议，对每个候选重新 `vetCandidate`（还在、还在同一个项目、规则没保护、过 `vetUnit`），通过的以来源 `proposal` 登记。
-   - **分级（提议模式）**：`[proposals] mode` 默认 `tiered`。写文件的 hook 里，规则匹配的单元若能证明是 agent 本会话新建的（见「关卡」），不论项目有没有同意过、单元多大，都直接走 Apply 登记（来源仍是 `rule`）；会话差分里被 Git 忽略、名字可重新生成的单元同样直接登记；遗留物和容器先照常生成提议，紧接着用 `ClaimProposalAuto` 认领、按 `autoCandidates` 挑出可放行的候选走批准的同一条路，只是不记项目同意。每个这样登记的条目在同一次账本提交里留一张 `AutoReceipt`（类别 `created` / `regenerable` / `container` / `auto`），hook 把还没告诉过任何会话的回执汇总告诉一个会话（写文件之后或下次会话开始），`obit proposals` 和小窗口「待你决定」在条目还被跟踪时列出它们；`obit spare` 撤回时删掉回执，容器还记成这个会话拒绝过，不会被再登记。`auto` 模式下项目第一次和太大的单元也直接登记，`ask` 模式下行为和以前一样。拒绝过的项目在任何模式下都只提议。
-   - **迁移与重试**：后台每次刷新提议后跑 `AutoApprovePending`，按当前模式把还在等的提议重新分一次。1.1.1 之前的遗留物提议可能列着没被 Git 忽略的新文件（还没提交的工作），所以遗留物候选必须名字可重新生成、并且此刻 `git ls-files --ignored` 认它被忽略才放行；容器候选必须带着归属项目的理由（compose 工作目录或绑定挂载），提议的项目必须是 Git 工作区的根（不在项目里的会话拿会话目录当「项目」，比如用户目录，它下面的绑定挂载证明不了什么），而且没有别的待处理提议认领同一个容器（几个会话同时开着时说不清是谁起的）；`onboard` / `large` 无法事后证明是 agent 新建的，只在 `auto` 模式下放行。proposals.lock 被用户的决定占着时跳过，下一轮再试。
+   - **提议模式**：`[proposals] mode` 默认 `off`：hook 的 Observe、会话差分和容器发现都不做（`auto.Engine.off`），什么都不会自己进讣告，进讣告的只有显式命令、右键菜单和文件夹策略。可选 `tiered`：写文件的 hook 里，规则匹配的单元若能证明是 agent 本会话新建的（见「关卡」），不论项目有没有同意过、单元多大，都直接走 Apply 登记（来源仍是 `rule`）；容器先照常生成提议，紧接着用 `ClaimProposalAuto` 认领、按 `autoCandidates` 挑出可放行的候选走批准的同一条路，只是不记项目同意。每个这样登记的条目在同一次账本提交里留一张 `AutoReceipt`（类别 `created` / `container` / `auto`），hook 把还没告诉过任何会话的回执汇总告诉一个会话（写文件之后或下次会话开始），`obit proposals` 和小窗口「待你决定」在条目还被跟踪时列出它们；`obit spare` 撤回时删掉回执，容器还记成这个会话拒绝过，不会被再登记。`auto` 模式下项目第一次和太大的单元也直接登记，`ask` 模式下都先提议。拒绝过的项目在任何模式下都只提议。依赖、构建输出和缓存（`auto.regenerableNames`，由 `auto.NeverAutomatic` 判断）在任何模式下都不登记、不提议：它们被忽略不代表没用，删了要重装或重建。
+   - **迁移与重试**：后台每次刷新提议后跑 `AutoApprovePending`，按当前模式把还在等的提议重新分一次（`off` 什么都不放行）。容器候选必须带着归属项目的理由（compose 工作目录或绑定挂载），提议的项目必须是 Git 工作区的根（不在项目里的会话拿会话目录当「项目」，比如用户目录，它下面的绑定挂载证明不了什么），而且没有别的待处理提议认领同一个容器（几个会话同时开着时说不清是谁起的）；`onboard` / `large` 无法事后证明是 agent 新建的，只在 `auto` 模式下放行。刷新时从旧提议里撤掉 `NeverAutomatic` 认得的候选，清空的提议自动撤回。proposals.lock 被用户的决定占着时跳过，下一轮再试。
+   - **升级到关闭**：1.3 起默认 `off`。后台 tick 第一次运行时（`app.migrateAutoOff`，数据目录里的 `migrated-1.3-auto-off` 标记保证只做一次）经 `integrate` 的计划和备份把 `[proposals] mode` 写成 `off`，并把 `NeverAutomatic` 认得的自动登记条目 `Cancel`（东西留在原处，不再计时）；之后用户再改的模式一直有效。
    - 提议会过期：展示时（hook、`obit proposals`、MCP）只用 Lstat 去掉已不存在的候选，hook 里不起 git；后台运行器（每次 tick 和 `obit reap`）按项目用 `git ls-files` 批量复核（按 Windows 原生命令行 32767 字符上限分批，匹配规则和 git 的 `:(icase)` 一样只折叠 ASCII 大小写），已被跟踪或已不存在的候选按原始路径加修订号精确移除，清空的提议自动撤回（审计记为 `proposal-withdrawn`，不算用户拒绝）。
-   - 会话遗留物（D-0045）只收 Git 忽略、名字属于依赖 / 构建输出 / 缓存（`auto.regenerableNames`）的条目，所以每条提议都是 agent 可以建议批准的：没被忽略的新文件是还没提交的工作，被忽略的也不一定能重新生成（`.env`、`settings.local.json`、`*.tfstate`）。会话差分用 `Untracked`（不带 `--exclude-standard`）找新路径交给规则，用 `Ignored`（`--ignored --exclude-standard`）找候选；Git 会把「只装着被忽略文件、本身没被忽略」的目录也列进忽略结果，`Ignored` 用一次不带 `--ignored` 的列表把它去掉，只留里面的文件，因为之后写进这个目录的东西不会被忽略。快照仍记全部未跟踪路径，候选或它的上级在快照里就算会话前已有。容器提议同理只收 compose 工作目录或绑定挂载在会话项目里的。
-   - 会话遗留物仍按会话分组；在账本写锁内跳过同项目其他会话已提议的路径，保留原提议的编号、会话、候选修订和通知记录。同会话刷新照常更新修订，已登记且文件身份仍相同的路径也不重复提议。
+   - 会话差分（模式不是 `off` 时）用 `Untracked`（不带 `--exclude-standard`）找本会话新出现的路径交给规则，按模式登记或提议；规则认不得的不登记、不提议，不再生成遗留物提议：没被忽略的新文件是还没提交的工作，被忽略的也不一定能重新生成（`.env`、`settings.local.json`、`*.tfstate`）。快照仍记全部未跟踪路径，路径或它的上级在快照里就算会话前已有。容器提议只收 compose 工作目录或绑定挂载在会话项目里的。
+   - 旧版本留下的遗留物提议仍按会话分组；在账本写锁内跳过同项目其他会话已提议的路径，保留原提议的编号、会话、候选修订和通知记录。同会话刷新照常更新修订，已登记且文件身份仍相同的路径也不重复提议。
    - 遗留物的文件拒绝记录在同项目的各会话间共享，沿用最多 256 组、4096 路径的有界历史；容器拒绝仍按会话。批准时只有成功结案且修订未变的候选才清理旧账本中其他 leftovers 提议里的同路径，重试项与并发刷新保留；拒绝也清理这些同路径。清空的孪生提议一并移除，其中其他候选原样保留。后台刷新继续只裁剪不存在或已被 Git 跟踪的候选，已有重复在用户作决定时收尾。
    - 项目根 `Lstat` 明确不存在时，后台核对卷根可访问、最近现存祖先可读且卷标识相同，并逐级确认现存祖先都是普通目录（无 junction、符号链接或挂载点）；满足后按候选原路径和修订号裁剪，清空时撤回，审计注明 `project deleted`、提议编号和项目路径。裁剪前在提议锁内再次核对，不改变用户同意或拒绝状态，也不移动文件。改名后的旧路径同样按消失处理。
    - 卷离线、祖先拒绝访问或为重解析点、项目根不是目录、`.git` 读不到等情况继续保留提议并报告重试。GUI、CLI、MCP 共用只读的候选存在性过滤；GUI 待决定计数沿用同一列表并加待信任规则数，指纹只包含展示内容，部分展示的快照必须等后台裁剪后重新审阅才能决定。
@@ -141,9 +142,9 @@ flowchart TD
 
 1. 逐条认领已到期的条目，记下它的修订号 `Rev`。
 2. 用文件 ID 找到对象现在的位置（被改名、移动了也找得到）。
-3. 过 Guard；自动登记的条目过 `recheckAutomatic`（在下葬的写锁内再过一次）。
+3. 过 Guard；自动登记的条目过 `recheckAutomatic`（在下葬的写锁内再过一次）。目录条目先在锁外用最多 30 秒（`guardWalkBudget`）找里面有没有 Git 仓库：找到就拒绝，没找完就记成失败稍后重试；锁内只做 100 毫秒的快速复查，复查超时而锁外已经找完时，只重做不需要遍历的检查（`force` 检查），锁内绝不把「没找完」当成「没有」。
 4. 下葬（见下一节；或按配置进回收站）。
-5. 回写：如果期间这条记录被续命或取消（`Rev` 变了），以新记录为准。拒绝的从账本删掉，文件原地不动；重试的记下错误并指数退避。
+5. 回写：如果期间这条记录被续命或取消（`Rev` 变了），以新记录为准。拒绝的从账本删掉，文件原地不动；重试的记下错误并指数退避（1 分钟起翻倍，最长一天）；连续 12 次失败后 `NextAttempt` 设为 `RetryStopped`（9999 年），不再自动重试，等用户 `Retry`（小窗口「重试」）、`extend`（都会清零计数）或 `spare`。后台每次 tick 还跑 `SettleVanished`：没到期的条目在讣告之外被删掉了（`locate` 确定 `ErrNotFound`），记成「外部移除」并结案，不等到期。
 
 ### 墓地
 
@@ -373,14 +374,14 @@ POSIX 没有「在同一个源句柄上改名」，所以换一种做法：先�
 |---|---|
 | `store.json` | v17 热账本：条目、提议、自动登记回执（`autoReceipts`，可选字段，旧版本读写时丢掉不影响别的）、项目状态、策略、统计、待投递审计、容器意图、数据归属，以及墓地引用和完整安全索引；通过 `store.lock` 串行提交，经 `os.Root` 按目录句柄替换 |
 | `graveyard.<generation>.json` | 不可变墓地快照：`burials`、`restoreCleanups` 和 `parentChains` / `operations` / `origins` / `volumes` 去重表；由热账本的 `{generation,file,hash}` 引用，校验版本、DataID、generation 和 SHA-256 后才能使用 |
-| `store.v<版本>-<SHA-256>.json.bak` | 升级前的完整原字节；保留为回退证据，不覆盖不同内容 |
+| `store.v<版本>-<SHA-256>.json.bak` | 升级前的完整原字节；保留为回退证据，不覆盖不同内容。最新的一份一直保留；更早的满 30 天、且内容仍与名字里的哈希一致时，由 Tick 删除（数据目录不能下葬，所以讣告自己清理） |
 | `audit.jsonl` | 审计日志（`obit log`） |
 | `trusted_rules.json` | 已信任的 `.obitrules` 及其 SHA-256（版本 2，键是真实长名；版本 1 的旧键丢掉了大小写，无法证明对应哪个文件，所以一律当作未信任，提示 `trust store format was upgraded; review the rules and run obit trust again`；下一次 trust / untrust 写成版本 2） |
 | `graveyard\` | 这块盘的墓地：坟墓目录，以及正在下葬或复活的那几个的清单 `*.json` |
 | `sessions\` | 会话快照（`*.json`）、本会话 hook 看到的写入（`*.writes`）、收工整理的状态（`*.cleanup`）和遗留物计算的去抖标记；30 天后清掉 |
 | `shortcut-receipts\` | 开始菜单与桌面快捷方式的归属回执及事务锁 |
 | `integration-receipts\` | agent 集成的归属回执、owners、reference 旁注及事务锁 |
-| `integration-backups\` | 项目集成修改用户配置时保留的编号备份 |
+| `integration-backups\` | 项目集成修改用户配置时保留的编号备份；满 30 天由 Tick 删除。全局集成的备份放在被改文件旁边（如 `~/.claude/settings.json.bak`），写下时就登记 30 天寿命 |
 | `hook.log` / `hook-audit.log` | hook 错误与 `skip:` 说明 / hook 审计（加锁轮转） |
 | `obitd.log` | 后台进程日志（轮转） |
 | `proposal-log.json` / `proposal-log.lock` | 按项目保存上次提议刷新错误；共用锁文件以独占方式串行更新，临时文件经 `os.Root.Rename` 替换，常驻和各次 `--once` 共用去重状态 |
@@ -419,6 +420,8 @@ POSIX 没有「在同一个源句柄上改名」，所以换一种做法：先�
 - **定时任务**（默认，`obit daemon enable`）：任务计划程序里的隐藏任务 `Obituary Runner`，每 5 分钟和每次登录运行 `obitd --once --home … --config-dir …`。用 XML 定义（UTF-16 带 BOM，描述只用 ASCII，因为 `schtasks /Query /XML` 按控制台代码页输出），用电池时也运行，错过的会补跑，已有一个在跑时不重复启动。
 - **macOS / Linux**：macOS 是 launchd 用户代理 `~/Library/LaunchAgents/site.woodfish.obituary.plist`（`StartInterval` 5 分钟、`RunAtLoad`），Linux 是 systemd 用户单元 `obituary.timer` + `obituary.service`（`OnCalendar=*:0/5`、`Persistent=true`），都运行同样的 `obitd --once --home … --config-dir …`。文件头带讣告的所有者标记，被别人改过或不是讣告写的就保留不动、只报告。
 - **常驻**（`--resident`）：命名互斥量标识「谁在服务这个数据目录」，`obitd.stop` 让它退出，开机自启写 HKCU Run。启动时和之后每 5 分钟都会 Tick 一次（不只在有条目到期时），所以只剩待恢复清单时也有人处理。
+- **常驻只靠事件醒来，不轮询**：它等数据目录的文件变化（`store.json`、`obitd.stop`、`obitd.paused`、`update.json`）、下一个到期时间和 5 分钟的全量对账。一串连续的提交（agent 一口气写很多文件）合并成一步：安静 300 毫秒再处理，最多推迟 2 秒。每一步先记下 `store.json` 的修改时间再读账本，修改时间没变的事件（包括这一步自己提交引起的）不再唤醒；Windows 丢了事件（缓冲溢出）就按有变化处理，不退出。hook 因账本忙而排队的写入只做回放，不跑整轮 Tick。托盘菜单直接用这一步读到的账本，不再另读。托盘图标的显示开关监听配置目录，`config.toml` 变了才重读。文件夹策略的监视（`internal/watch`）只监视策略文件夹本身、不递归；账本提交只重新核对策略有没有变，文件夹里的事件才重新扫描文件夹，两种事件同样合并。
+- **强制检查不遍历**：`Guard.CheckContext` 带 `force` 时，目录里有 Git 仓库或遍历没做完都不会拒绝，所以直接跳过遍历。资源管理器标签同步对每个跟踪的文件夹做的就是这种检查，以前每次同步都要把 `node_modules` 这类大目录整棵走一遍。
 - **提议重试日志**：同项目、同原因只写一次，原因变化或后台确认恢复时再写；按项目分别比较，避免项目遍历顺序或其他 tick 错误造成重复。去重保存在数据目录，覆盖每次重新启动的 `--once`；暂停或未完成的提议刷新保留原诊断状态。原始错误继续由 `Tick` 返回，`--once` 仍失败退出，缓存读写错误也保留并输出原诊断。
 - **兜底**：登记、批准、`mktemp`、`rules apply`、`bury` 成功后调用 `cmdutil.EnsureDaemon`：有常驻进程在服务这个数据目录，或定时任务的 `--home` 正好是它（`ScheduleServes`，用和 obitd 相同的参数解析），就什么都不做；否则临时起一个常驻进程。`--json` 模式下不往 stderr 写提示。
 - 所有子进程都带 `CREATE_NO_WINDOW`，后台永远不弹黑框；`obitd.exe` 必须用 `-ldflags=-H=windowsgui` 构建。

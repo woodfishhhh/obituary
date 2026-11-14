@@ -107,6 +107,9 @@ func (p *integrationTarget) backupPOSIX(c Change, data []byte) error {
 			return err
 		}
 		_, writeErr := f.Write(data)
+		if backup == p {
+			p.backedUp = filepath.Join(p.root.Name(), backupPath(p.name, n))
+		}
 		if err := errors.Join(writeErr, f.Sync(), f.Close()); err != nil {
 			return err
 		}

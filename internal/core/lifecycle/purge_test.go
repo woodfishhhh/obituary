@@ -452,3 +452,37 @@ func TestTickBlocksManifestContentIDAndFilenameID(t *testing.T) {
 		t.Fatalf("Tick lost content ID from recovery block: %+v, %+v, %v", out, purged, err)
 	}
 }
+
+// A pnpm node_modules is full of junctions, some pointing outside it at
+// workspace packages. Burying and purging the folder removes the junctions
+// themselves, never what they point at.
+func TestBuryAndPurgeNeverFollowJunctions(t *testing.T) {
+	f := newFixture(t)
+	outside := filepath.Dir(f.file("workspace-package/keep.txt"))
+	f.file("app/node_modules/.pnpm/dep/index.js")
+	modules := filepath.Join(f.dir, "app", "node_modules")
+	if out, err := exec.Command("cmd", "/c", "mklink", "/J", filepath.Join(modules, "workspace-package"), outside).CombinedOutput(); err != nil {
+		t.Fatalf("mklink: %v %s", err, out)
+	}
+	f.add(modules, time.Hour)
+	outcomes := f.sweepAt(time.Hour)
+	graves := f.burials()
+	if len(graves) != 1 {
+		t.Fatalf("node_modules not buried: %+v", outcomes)
+	}
+	check := func(stage string) {
+		t.Helper()
+		if data, err := os.ReadFile(filepath.Join(outside, "keep.txt")); err != nil || string(data) != "workspace-package/keep.txt" {
+			t.Fatalf("%s reached through the junction: %q %v", stage, data, err)
+		}
+	}
+	check("burial")
+	rows, err := f.svc.PurgeRefs([]string{fmt.Sprint(graves[0].ID)}, false)
+	if err != nil || len(rows) != 1 || rows[0].Action != core.ActionPurged {
+		t.Fatalf("purge: %+v %v", rows, err)
+	}
+	check("purge")
+	if exists(filepath.Dir(graves[0].Grave)) {
+		t.Fatal("grave left behind")
+	}
+}

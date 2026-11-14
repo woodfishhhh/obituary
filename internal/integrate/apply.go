@@ -54,10 +54,22 @@ func Apply(changes []Change) error {
 	return apply(changes, nil)
 }
 
+// ApplyWithBackups is Apply that also returns the backups it wrote beside
+// the files it changed, so the caller can give them a lifespan.
+func ApplyWithBackups(changes []Change) ([]string, error) {
+	var backups []string
+	err := applyRecording(changes, nil, &backups)
+	return backups, err
+}
+
+func apply(changes []Change, afterWrite func(string) error) error {
+	return applyRecording(changes, afterWrite, nil)
+}
+
 // afterWrite simulates interruption for this apply only, after a durable write.
 //
 //nolint:funlen // Preserve the existing write transaction while scoping its interruption hook to one call.
-func apply(changes []Change, afterWrite func(string) error) (err error) {
+func applyRecording(changes []Change, afterWrite func(string) error, backups *[]string) (err error) {
 	for _, c := range changes {
 		if c.readOnly {
 			return fmt.Errorf("%s: read-only installation plan cannot be applied", c.Path)
@@ -128,6 +140,9 @@ func apply(changes []Change, afterWrite func(string) error) (err error) {
 		}
 		err = p.write(c)
 		p.root.Close()
+		if backups != nil && p.backedUp != "" {
+			*backups = append(*backups, p.backedUp)
+		}
 		if err != nil {
 			return err
 		}

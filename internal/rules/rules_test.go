@@ -242,3 +242,22 @@ func TestTrustRefusesContentChangedAfterReview(t *testing.T) {
 		t.Fatalf("got %s", state.Status)
 	}
 }
+
+// Editing backups get a week as a way back; names that merely contain "bak"
+// or "old" are not backups.
+func TestBuiltinRulesCoverBackups(t *testing.T) {
+	t.Parallel()
+	base := testenv.NativeFixture(`C:\repo`)
+	s := set(t, base, "")
+	for _, name := range []string{"config.json.bak", "settings.json.bak.1", "app.yaml.bak-20261114", "a.toml.bak_old", "main.go.orig", "patch.rej", "notes.old", "db.backup", "report.txt~"} {
+		path := filepath.Join(base, "src", name)
+		if m, ok, err := s.Match(path, false); err != nil || !ok || m.Lifespan != 7*24*time.Hour {
+			t.Errorf("Match(%s) = %+v %v %v; want a 7d backup lifespan", name, m, ok, err)
+		}
+	}
+	for _, name := range []string{"foo.bakery.txt", "bakfile.txt", "old.txt", "golden.oldest", "backup.go", "orig.md", "LOG.old", "log.old"} {
+		if m, ok, err := s.Match(filepath.Join(base, "src", name), false); err != nil || ok {
+			t.Errorf("Match(%s) = %+v; not a backup", name, m)
+		}
+	}
+}

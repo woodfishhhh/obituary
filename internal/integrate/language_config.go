@@ -30,9 +30,9 @@ func PlanSessionCleanupConfig(path string, enabled bool) (Change, error) {
 // PlanProposalModeConfig sets [proposals] mode the same way.
 func PlanProposalModeConfig(path, mode string) (Change, error) {
 	switch mode {
-	case config.ProposalsTiered, config.ProposalsAuto, config.ProposalsAsk:
+	case config.ProposalsOff, config.ProposalsTiered, config.ProposalsAuto, config.ProposalsAsk:
 	default:
-		return Change{}, fmt.Errorf("proposals.mode must be %q, %q or %q", config.ProposalsTiered, config.ProposalsAuto, config.ProposalsAsk)
+		return Change{}, fmt.Errorf("proposals.mode must be %q, %q, %q or %q", config.ProposalsOff, config.ProposalsTiered, config.ProposalsAuto, config.ProposalsAsk)
 	}
 	return planConfigValue(path, "proposals", "mode", strconv.Quote(mode))
 }

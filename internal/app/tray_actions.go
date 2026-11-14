@@ -15,23 +15,58 @@ import (
 func (r *Resident) RecentBurials() ([]core.Burial, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	state, err := r.Service.Store.Inspect()
+	_, g, err := r.view()
 	if err != nil {
 		return nil, err
 	}
-	burials := slices.Clone(state.Burials)
+	return slices.Clone(g.recent), nil
+}
+
+// graves is what the resident and tray need from a graveyard snapshot. It
+// stays valid while the hot ledger names the same snapshot.
+type graves struct {
+	ref    core.GraveyardReference
+	next   time.Time // the next purge, when has
+	has    bool
+	count  int
+	recent []core.Burial // newest first, at most 10
+}
+
+func summarize(st core.State) *graves {
+	g := &graves{count: len(st.Burials)}
+	if st.Graveyard != nil {
+		g.ref = *st.Graveyard
+	}
+	only := core.State{Burials: st.Burials}
+	g.next, g.has = only.NextDue()
+	burials := slices.Clone(st.Burials)
 	slices.SortFunc(burials, func(a, b core.Burial) int {
 		if c := b.BuriedAt.Compare(a.BuriedAt); c != 0 {
 			return c
 		}
 		return cmp.Compare(b.ID, a.ID)
 	})
-	return burials[:min(10, len(burials))], nil
+	g.recent = slices.Clone(burials[:min(10, len(burials))])
+	return g
+}
+
+// view is what the last step read, or the whole ledger without one; the
+// caller holds r.mu.
+func (r *Resident) view() (core.State, *graves, error) {
+	if r.hot != nil && r.graves != nil {
+		return *r.hot, r.graves, nil
+	}
+	st, err := r.Service.Store.Inspect()
+	if err != nil {
+		return st, nil, err
+	}
+	return st, summarize(st), nil
 }
 
 func (r *Resident) Restore(id int64) (core.GraveResult, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	r.hot, r.graves = nil, nil // the menu refreshed after this must not show the grave
 	results, err := r.Service.Resurrect([]string{strconv.FormatInt(id, 10)})
 	result := results[0]
 	if err != nil {
@@ -47,7 +82,7 @@ func (r *Resident) Restore(id int64) (core.GraveResult, error) {
 func (r *Resident) Counts(now time.Time) (due, graves int, err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	state, err := r.Service.Store.Inspect()
+	state, g, err := r.view()
 	if err != nil {
 		return 0, 0, err
 	}
@@ -56,13 +91,13 @@ func (r *Resident) Counts(now time.Time) (due, graves int, err error) {
 			due++
 		}
 	}
-	return due, len(state.Burials), nil
+	return due, g.count, nil
 }
 
 func (r *Resident) Upcoming(now time.Time) ([]core.Item, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	state, err := r.Service.Store.Inspect()
+	state, _, err := r.view()
 	if err != nil {
 		return nil, err
 	}

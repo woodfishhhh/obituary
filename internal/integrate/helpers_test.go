@@ -314,7 +314,8 @@ func pluginEngine(t *testing.T, approved bool) (string, *auto.Engine) {
 		t.Fatal(err)
 	}
 	testenv.InitRepo(t, root)
-	e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: home}, Guard: core.Guard{System: []string{home}}, FS: winfs.FS{}}, Trust: rules.TrustStore{Path: filepath.Join(home, "trust.json")}}
+	// Plugins report writes; automatic registration must be on to see them.
+	e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: home}, Guard: core.Guard{System: []string{home}}, FS: winfs.FS{}, ProposalMode: core.ProposalsTiered}, Trust: rules.TrustStore{Path: filepath.Join(home, "trust.json")}}
 	e.Svc.Owner, e.Svc.Recheck = auto.Owner, e.RecheckRules
 	if approved {
 		if err := e.Svc.Store.Update(func(st *core.State) error {

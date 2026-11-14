@@ -63,7 +63,10 @@ func printItems(svc *core.Service, items []ledger.Item, now time.Time) error {
 	fmt.Fprintln(w, "ID\tEXPIRES\tLEFT\tPATH\tNOTE")
 	for _, item := range items {
 		note := item.Note
-		if item.LastError != "" {
+		if item.Stuck() {
+			// Extend clears the failure count, so it is the command-line Retry.
+			note = fmt.Sprintf("stopped retrying after %d attempts: %s; obit extend #%d 1m tries again, obit spare #%d stops tracking", item.Attempts, item.LastError, item.ID, item.ID)
+		} else if item.LastError != "" {
 			note = fmt.Sprintf("retry %d: %s", item.Attempts, item.LastError)
 		}
 		if warning := identityWarning(item); warning != "" {

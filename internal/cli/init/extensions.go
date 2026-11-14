@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/hook"
 	"github.com/woodfishhhh/obituary/internal/integrate"
 )
@@ -112,8 +113,15 @@ func extensionInstalled(remove []integrate.Change, kind, agent string) bool {
 }
 
 func applyIntegrationPlan(changes []integrate.Change, uninstall bool) error {
+	var backups []string
+	defer func() { expireBackups(backups) }()
+	apply := func(batch []integrate.Change) error {
+		written, err := integrate.ApplyWithBackups(batch)
+		backups = append(backups, written...)
+		return err
+	}
 	if !uninstall {
-		return applyInstallPlan(changes)
+		return applyInstallPlan(changes, apply)
 	}
 	var errs []error
 	// Hook removal and each optional extension have independent preflights.
@@ -124,21 +132,21 @@ func applyIntegrationPlan(changes []integrate.Change, uninstall bool) error {
 				batch = append(batch, c)
 			}
 		}
-		if err := integrate.Apply(batch); err != nil {
+		if err := apply(batch); err != nil {
 			errs = append(errs, err)
 		}
 	}
 	return errors.Join(errs...)
 }
 
-func applyInstallPlan(changes []integrate.Change) error {
+func applyInstallPlan(changes []integrate.Change, apply func([]integrate.Change) error) error {
 	var required []integrate.Change
 	for _, c := range changes {
 		if !c.Implicit {
 			required = append(required, c)
 		}
 	}
-	if err := integrate.Apply(required); err != nil {
+	if err := apply(required); err != nil {
 		return err
 	}
 	for _, kind := range []string{"mcp", "skill"} {
@@ -148,11 +156,27 @@ func applyInstallPlan(changes []integrate.Change) error {
 				optional = append(optional, c)
 			}
 		}
-		if err := integrate.Apply(optional); err != nil {
+		if err := apply(optional); err != nil {
 			fmt.Printf("warning: implicit %s refresh failed: %v\n", kind, err)
 		}
 	}
 	return nil
+}
+
+// expireBackups gives the backups obit init wrote beside the files it changed
+// the lifespan of Obituary's own backups, so they do not pile up in an agent's
+// configuration folder; the graveyard still holds them for a while after.
+func expireBackups(paths []string) {
+	if len(paths) == 0 {
+		return
+	}
+	svc, err := app.Open()
+	if err == nil {
+		err = app.ExpireBackups(svc, paths)
+	}
+	if err != nil {
+		fmt.Printf("warning: backups kept without a lifespan: %v\n", err)
+	}
 }
 
 func (p Planner) showExtensions(scope integrate.Scope, agent string) error {

@@ -1,7 +1,7 @@
-// The paused and new-version notices: small chips each shell puts in its own
+// The paused, new-version and automatic-registration notices: small chips each shell puts in its own
 // top bar (or sidebar), so they never cover the page. Placement B in
 // docs/playground/notice-placement.html, chosen by the owner on 2026-11-14.
-import { ArrowUpCircle, PauseCircle, X } from "lucide-react";
+import { ArrowUpCircle, Inbox, PauseCircle, X } from "lucide-react";
 import { useState } from "react";
 import { useApi } from "./api";
 import { useLoad } from "./hooks";
@@ -14,6 +14,7 @@ export default function Notices({ page, setPage, summary: s, refresh }: Pick<She
   return (
     <div className="notices">
       {s?.paused ? <PausedChip onResumed={refresh} /> : null}
+      {s?.autoMode && (page === "upcoming" || page === "horizon") ? <AutoChip mode={s.autoMode} onView={() => setPage("settings")} /> : null}
       {page !== "settings" ? <UpdateChip onView={() => setPage("settings")} /> : null}
     </div>
   );
@@ -34,6 +35,19 @@ function UpdateChip({ onView }: { onView: () => void }) {
       <button type="button" className="notice-act" onClick={onView}>{t("upd.bannerView")}</button>
       <button type="button" className="notice-x" aria-label={t("upd.bannerSkip")} title={t("upd.bannerSkip")} onClick={() => { skipUpdate(latest); setSkipped(latest); }}><X aria-hidden /></button>
     </span>
+  );
+}
+
+// The home page says whether anything goes in by itself, so a file that
+// shows up there is never a surprise; Settings switches it.
+function AutoChip({ mode, onView }: { mode: string; onView: () => void }) {
+  const off = mode === "off";
+  const title = off ? t("auto.off") : t("auto.on", t(`dec.mode.${mode as "tiered" | "auto" | "ask"}`));
+  return (
+    <button type="button" className={`notice-chip auto${off ? "" : " on"}`} title={title} aria-label={title} onClick={onView}>
+      <Inbox className="notice-icon" aria-hidden />
+      <span className="notice-text">{off ? t("auto.chipOff") : t("auto.chipOn")}</span>
+    </button>
   );
 }
 

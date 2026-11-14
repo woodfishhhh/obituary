@@ -1,4 +1,4 @@
-import { EyeOff, Hourglass, TimerReset } from "lucide-react";
+import { EyeOff, Hourglass, RotateCcw, TimerReset } from "lucide-react";
 import { useState } from "react";
 import { useApi } from "../api";
 import { when } from "../format";
@@ -38,6 +38,18 @@ export default function Upcoming({ embedded = false }: { embedded?: boolean }) {
     bump();
   }
 
+  // A burial that failed: try it again now, or stop tracking it.
+  async function retry(id: number) {
+    if (!api.Retry) return;
+    report(await api.Retry([`#${id}`]), t("up.retry"));
+    bump();
+  }
+  async function spare(id: number, path: string) {
+    if (!await confirm({ title: t("ask.cancel", 1), body: <><p>{t("ask.cancelBody")}</p><ul><li>{path}</li></ul></>, ok: t("stopTracking"), danger: true })) return;
+    report(await api.Cancel([`#${id}`]), t("stopTracking"));
+    bump();
+  }
+
   return (
     <>
       <Head title={embedded ? undefined : t("head.upcoming")}>
@@ -67,7 +79,13 @@ export default function Upcoming({ embedded = false }: { embedded?: boolean }) {
                 <input type="checkbox" aria-label={t("select", `#${it.id}`)} checked={chosen.has(it.id)} onChange={() => toggle(it.id)} />
                 <div>
                   <NameCell path={it.path} isDir={it.isDir} note={it.note} kind={it.kind} />
-                  {it.lastError ? <span className="tag danger">{it.lastError}</span> : null}
+                  {it.lastError ? (
+                    <span className="toolbar" style={{ margin: 0 }}>
+                      <span className="tag danger">{it.nextAttempt?.startsWith("9999") ? t("up.stuck", it.lastError) : it.lastError}</span>
+                      {api.Retry ? <Button icon={RotateCcw} onClick={() => retry(it.id)}>{t("up.retry")}</Button> : null}
+                      <Button icon={EyeOff} onClick={() => spare(it.id, it.path)}>{t("stopTracking")}</Button>
+                    </span>
+                  ) : null}
                 </div>
                 <LifeLine start={it.createdAt} end={it.expiresAt} left={(s) => t("life.left", s)} over={t("life.expired")} soonMs={3600e3} />
                 <span className="when">{when(it.expiresAt)}</span>

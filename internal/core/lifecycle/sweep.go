@@ -43,9 +43,15 @@ type Outcome struct {
 	Burial       *Burial   `json:"burial,omitempty"`
 	err          error     // a ledger failure, distinct from a retryable filesystem outcome
 	retryCommand string    // selected from the pre-move ledger's discoverable roots
+	searched     bool      // the full repository search passed before store.lock
 }
 
-const maxBackoff = time.Hour
+// A failing burial is retried at growing intervals, up to a day apart, and
+// after maxAttempts it stops until the user retries or spares it.
+const (
+	maxBackoff  = 24 * time.Hour
+	maxAttempts = 12
+)
 
 // Sweep recycles every due item. With dryRun it only reports what it would do.
 //
@@ -206,6 +212,9 @@ func (s *Service) commitOutcome(st *State, o Outcome) {
 	current.Attempts++
 	current.LastError = o.Detail
 	current.NextAttempt = s.now().Add(backoff(current.Attempts))
+	if current.Attempts >= maxAttempts {
+		current.NextAttempt = RetryStopped
+	}
 	current.Rev++
 }
 

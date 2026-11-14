@@ -8,6 +8,11 @@ const ActionAdded = ledger.ActionAdded
 const ActionUpdated = ledger.ActionUpdated
 const ActionExtended = ledger.ActionExtended
 const ActionCanceled = ledger.ActionCanceled
+const ActionRetried = ledger.ActionRetried
+
+// RetryStopped marks an item whose burial stopped retrying (see Item.Stuck).
+var RetryStopped = ledger.RetryStopped
+
 const ActionRecycled = ledger.ActionRecycled
 const ActionVanished = ledger.ActionVanished
 const ActionReplaced = ledger.ActionReplaced

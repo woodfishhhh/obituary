@@ -215,7 +215,7 @@ taskbar = false
 
 func TestProposalsModeConfig(t *testing.T) {
 	for _, tc := range []struct{ text, want string }{
-		{"", ProposalsTiered}, {Template, ProposalsTiered}, {"[proposals]\n", ProposalsTiered},
+		{"", ProposalsOff}, {Template, ProposalsOff}, {"[proposals]\n", ProposalsOff}, {"[proposals]\nmode='off'", ProposalsOff},
 		{"[proposals]\nmode='auto'", ProposalsAuto}, {"[proposals]\nmode='ask'", ProposalsAsk},
 		{"[proposals]\nmode='tiered'", ProposalsTiered},
 	} {

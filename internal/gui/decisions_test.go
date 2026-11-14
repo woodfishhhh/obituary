@@ -512,7 +512,7 @@ func TestDecisionsShowModeAndWhatWentInWithoutAsking(t *testing.T) {
 		t.Fatal(err)
 	}
 	rows, err := a.Proposals()
-	if err != nil || rows.Mode != core.ProposalsTiered || len(rows.Handled) != 1 || rows.Handled[0].Class != core.AutoCreated || rows.Handled[0].Item.Path != path {
+	if err != nil || rows.Mode != core.ProposalsOff || len(rows.Handled) != 1 || rows.Handled[0].Class != core.AutoCreated || rows.Handled[0].Item.Path != path {
 		t.Fatalf("decisions view: %+v %v", rows, err)
 	}
 	plan, err := a.PlanProposalMode(core.ProposalsAuto)

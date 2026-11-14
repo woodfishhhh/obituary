@@ -14,6 +14,7 @@ Obituary gives files and directories a lifespan. When it runs out they are burie
 | delete a file or directory | `obit bury <path>...`, or `obit rm -rf <path>` with the usual `rm` arguments. Not plain `rm -rf`, `del`, `Remove-Item` or `git clean`. |
 | create scratch space | `dir=$(obit mktemp 1d)` in bash, `$dir = obit mktemp 1d` in PowerShell |
 | leave a debug script, log, screenshot or test output | `obit mark <path> 2d` (any lifespan: `30m`, `2h`, `3d`, `1w`, `1d12h`) |
+| back up a file before editing it (`*.bak` and the like) | `obit mark <backup> 1w` |
 | recreate something that is missing | first `obit graveyard --here`; if it is there, `obit resurrect <id>` |
 | undo the deletion you just made | `obit resurrect --last` |
 | are asked, when you stop, to sort files you created this session | `obit mark <path> 2d` for scratch, `obit bury <path>` for what is done with; deliverables stay |
@@ -47,15 +48,15 @@ If tools named `obit_*` are available (Obituary's MCP server), they do the same 
 
 ## Decisions that belong to the user
 
-- Automatic registration without asking: what an agent created in its session (the hook saw the write, and nothing was there when the session started), the Git-ignored dependencies, build output and caches a session leaves, and the containers it starts for the project get a lifespan at once. Obituary reports them afterwards; `obit spare <id>` undoes one and `obit extend <id> <lifespan>` keeps it longer.
-- Proposals: anything else Obituary would register automatically, such as a rule-matched file that existed before the session, becomes a proposal instead. A proposal lists only what is safe to approve (uncommitted work never appears), and approved items stay restorable after burial. `obit proposals` lists pending proposals and what went in without asking. The user answers with `obit approve <id>` or `obit reject <id>`; describe the proposal, recommend approving it, and let them decide. An explicit `obit mark` or `obit mktemp` takes effect at once and is not a proposal.
-- The proposal mode is the user's setting (`[proposals] mode` in `config.toml`, or the window's Decisions page): `tiered` (the default, as above), `auto` (everything automatic goes in and is reported afterwards) or `ask` (everything is proposed first).
+- Nothing goes into Obituary by itself unless the user turns automatic registration on: what goes in is what you register (`obit mark`, `obit mktemp`, `obit bury`) and what the user registers from the Explorer context menu on Windows or with folder policies.
+- Automatic registration is the user's setting (`[proposals] mode` in `config.toml`, or the window's Decisions page): `off` (the default), `tiered` (what an agent created in its session, the hook having seen the write, and the containers it starts for the project get a lifespan at once and are reported afterwards; the rest is proposed), `auto` (everything automatic goes in and is reported afterwards) or `ask` (everything is proposed first). `obit spare <id>` undoes a registration made without asking and `obit extend <id> <lifespan>` keeps it longer.
+- Proposals: a proposal lists only what is safe to approve (uncommitted work never appears), and approved items stay restorable after burial. `obit proposals` lists pending proposals and what went in without asking. The user answers with `obit approve <id>` or `obit reject <id>`; describe the proposal, recommend approving it, and let them decide. An explicit `obit mark` or `obit mktemp` takes effect at once and is not a proposal.
 - Project rules: a repository's `.obitrules` takes effect after the user reviews it and runs `obit trust`.
 - Purging: `obit purge` deletes graveyard items permanently and is the user's call. `obit purge <id>` also lets the user abandon an interrupted resurrection that can no longer be verified.
 
 ## Facts worth knowing
 
-- Files tracked by Git are never given a lifespan automatically, and an automatic lifespan is checked against Git again before burial.
+- Files tracked by Git, and dependencies, build output and caches (`node_modules`, `dist`, `__pycache__` and the like), are never given a lifespan automatically, and an automatic lifespan is checked against Git again before burial.
 - Burying a directory takes everything inside it. A directory that contains a `.git` repository needs `obit bury --force`; `obit rm -rf` buries it the way `rm -rf` would delete it.
 - With `mode = "recycle"` in Obituary's configuration, buried and expired items go to the system Recycle Bin and are restored from there. `obit config` shows the mode in effect.
 - `obit stats` shows how much has been buried, purged and resurrected; `obit doctor` checks the installation.

@@ -90,3 +90,29 @@ func TestExtendAndCancelKeepReceipts(t *testing.T) {
 		t.Fatalf("cancel not persisted: %+v %v", left, err)
 	}
 }
+
+// A burial that stopped retrying is made due again from the window.
+func TestRetryMakesAStuckItemDue(t *testing.T) {
+	a, root := fixture(t)
+	it := add(t, a, filepath.Join(root, "locked"), time.Now().Add(time.Hour))
+	if err := a.deps.Service.Store.Update(func(st *core.State) error {
+		st.Items[0].ExpiresAt = time.Now().Add(-time.Hour)
+		st.Items[0].Attempts, st.Items[0].NextAttempt, st.Items[0].LastError = 12, core.RetryStopped, "in use"
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if s, err := a.Summary(); err != nil || s.DecisionCount != 1 {
+		t.Fatalf("a stuck burial is not waiting for a decision: %+v %v", s, err)
+	}
+	out, err := a.Retry([]string{ref(it.ID)})
+	if err != nil || out.Results[0].Action != core.ActionRetried || out.Results[0].Item.Stuck() || !out.Results[0].Item.Due(time.Now()) {
+		t.Fatalf("retry: %+v %v", out, err)
+	}
+	if s, err := a.Summary(); err != nil || s.DecisionCount != 0 {
+		t.Fatalf("a retried burial still waits for a decision: %+v %v", s, err)
+	}
+	if _, err := a.Retry(nil); err == nil {
+		t.Fatal("empty refs accepted")
+	}
+}

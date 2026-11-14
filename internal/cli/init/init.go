@@ -118,7 +118,7 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 				if !cmdutil.IsTerminal(os.Stdin) {
 					return errors.New("not a terminal: re-run with --yes to apply these changes")
 				}
-				fmt.Print("Apply these changes (backups are kept as .bak)? [y/N] ")
+				fmt.Print("Apply these changes (backups are kept as .bak for 30 days)? [y/N] ")
 				answer, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 				if a := strings.ToLower(strings.TrimSpace(answer)); a != "y" && a != "yes" {
 					return errors.New("nothing changed")

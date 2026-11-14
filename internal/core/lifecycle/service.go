@@ -32,15 +32,17 @@ const (
 
 // Proposal modes ([proposals] mode in config.toml).
 const (
+	ProposalsOff    = "off"
 	ProposalsTiered = "tiered"
 	ProposalsAuto   = "auto"
 	ProposalsAsk    = "ask"
 )
 
-// Proposals returns the effective proposal mode.
+// Proposals returns the effective proposal mode. Empty means off: a service
+// that never read the configuration registers nothing by itself.
 func (s *Service) Proposals() string {
 	if s.ProposalMode == "" {
-		return ProposalsTiered
+		return ProposalsOff
 	}
 	return s.ProposalMode
 }

@@ -3,7 +3,11 @@ package integrate
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func TestProjectBackupCreatesMissingDataDirectory(t *testing.T) {
@@ -43,5 +47,37 @@ func TestProjectBackupsPreserveOriginalOutsideProject(t *testing.T) {
 	entries, err := os.ReadDir(s.Project)
 	if err != nil || len(entries) != 1 || entries[0].Name() != "AGENTS.md" {
 		t.Fatal("backup polluted project", entries, err)
+	}
+}
+
+// obit init's copies of project files leave the data directory after the
+// lifespan of Obituary's own backups; nothing else there is touched.
+func TestPruneBackupsAgesOutProjectCopies(t *testing.T) {
+	home := t.TempDir()
+	dir := filepath.Join(home, "integration-backups")
+	now := time.Now()
+	hash := strings.Repeat("ab", 32)
+	ages := map[string]time.Duration{
+		hash + ".bak":   ledger.BackupLifespan + time.Hour,
+		hash + ".bak.2": ledger.BackupLifespan + time.Hour,
+		hash + ".bak.3": time.Hour,
+		"notes.txt":     ledger.BackupLifespan + time.Hour,
+	}
+	for name, age := range ages {
+		writeIntegrationFile(t, filepath.Join(dir, name), "x")
+		if err := os.Chtimes(filepath.Join(dir, name), now.Add(-age), now.Add(-age)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := PruneBackups(home, now); err != nil {
+		t.Fatal(err)
+	}
+	for name, want := range map[string]bool{hash + ".bak": false, hash + ".bak.2": false, hash + ".bak.3": true, "notes.txt": true} {
+		if _, err := os.Stat(filepath.Join(dir, name)); (err == nil) != want {
+			t.Errorf("%s kept=%v, want %v", name, err == nil, want)
+		}
+	}
+	if err := PruneBackups(t.TempDir(), now); err != nil {
+		t.Fatalf("no backups yet: %v", err)
 	}
 }

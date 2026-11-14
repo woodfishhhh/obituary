@@ -74,9 +74,11 @@ type Hooks struct {
 	SessionCleanup bool `toml:"session_cleanup"`
 }
 
-// Proposal modes: what automatic registration may do without asking.
+// Proposal modes: whether automatic registration runs, and what it may do
+// without asking.
 const (
-	ProposalsTiered = "tiered" // the agent's own files, regenerable leftovers and session containers go in; the rest waits
+	ProposalsOff    = "off"    // nothing is registered automatically; only obit commands and the context menu
+	ProposalsTiered = "tiered" // the agent's own files and session containers go in; the rest waits
 	ProposalsAuto   = "auto"   // everything automatic registration finds goes in
 	ProposalsAsk    = "ask"    // everything waits for approval
 )
@@ -111,7 +113,7 @@ func (g Graveyard) Retention() time.Duration {
 
 // Default returns the built-in configuration.
 func Default() Config {
-	return Config{Graveyard: Graveyard{Mode: ModeGraveyard, RetentionDays: 7}, Explorer: Explorer{Enabled: true}, Watch: Watch{StableWindow: "10m"}, UI: UI{Language: i18n.Auto, Tray: true, Taskbar: true}, Update: Update{Check: true}, Hooks: Hooks{SessionCleanup: true}, Proposals: Proposals{Mode: ProposalsTiered}}
+	return Config{Graveyard: Graveyard{Mode: ModeGraveyard, RetentionDays: 7}, Explorer: Explorer{Enabled: true}, Watch: Watch{StableWindow: "10m"}, UI: UI{Language: i18n.Auto, Tray: true, Taskbar: true}, Update: Update{Check: true}, Hooks: Hooks{SessionCleanup: true}, Proposals: Proposals{Mode: ProposalsOff}}
 }
 
 // Template is what `obit config --create` writes.
@@ -152,17 +154,20 @@ session_summary = false
 session_cleanup = true
 
 [proposals]
-# What automatic registration may do without asking you first:
-#   "tiered"  files the agent created in this session (seen by the hook),
-#             Git-ignored dependencies, build output and caches the session left,
-#             and containers the session started go in directly; you are told
+# Automatic registration, off by default:
+#   "off"     nothing goes in by itself: only what an agent or you register
+#             (obit mark / mktemp / bury, the Explorer context menu, folder
+#             policies you set).
+#   "tiered"  files the agent created in this session (seen by the hook) and
+#             containers the session started go in directly; you are told
 #             afterwards and can undo it (obit spare / extend / resurrect).
 #             Anything else waits in obit proposals for your approval.
 #   "auto"    everything automatic registration finds goes in directly;
 #             you are told afterwards.
 #   "ask"     everything waits for your approval first.
-# Git-tracked files are never registered automatically in any mode.
-mode = "tiered"
+# In every mode, Git-tracked files and dependencies, build output and caches
+# (node_modules, dist, __pycache__ and the like) are never registered.
+mode = "off"
 
 [update]
 # Read public GitHub release metadata at most once per day; no usage data is sent.
@@ -322,9 +327,9 @@ func (c Config) validate(path string) error {
 		return fmt.Errorf("%s: watch.stable_window must be a positive duration (for example 10m)", path)
 	}
 	switch c.Proposals.Mode {
-	case ProposalsTiered, ProposalsAuto, ProposalsAsk:
+	case ProposalsOff, ProposalsTiered, ProposalsAuto, ProposalsAsk:
 	default:
-		return fmt.Errorf("%s: proposals.mode must be %q, %q or %q, not %q", path, ProposalsTiered, ProposalsAuto, ProposalsAsk, c.Proposals.Mode)
+		return fmt.Errorf("%s: proposals.mode must be %q, %q, %q or %q, not %q", path, ProposalsOff, ProposalsTiered, ProposalsAuto, ProposalsAsk, c.Proposals.Mode)
 	}
 	switch c.Graveyard.Mode {
 	case ModeGraveyard, ModeRecycle:

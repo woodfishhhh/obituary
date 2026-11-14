@@ -276,7 +276,7 @@ func TestDeclinedProjectIsNeverRegisteredWithoutAsking(t *testing.T) {
 		t.Fatal(err)
 	}
 	st = r.state()
-	if len(st.Items) != 0 || fmt.Sprint(candidateNames(st)) != "[leftovers:dist]" {
+	if len(st.Items) != 0 || len(st.Proposals) != 0 {
 		t.Fatalf("declined project registered without asking: items %+v proposals %v", st.Items, candidateNames(st))
 	}
 }
@@ -307,9 +307,11 @@ func TestPendingProposalsAreSortedAgainByMode(t *testing.T) {
 		handled string
 		pending string
 	}{
-		{core.ProposalsAsk, "map[]", "[leftovers:dist leftovers:feature.go onboard:old.log]"},
-		{core.ProposalsTiered, "map[dist:regenerable]", "[leftovers:feature.go onboard:old.log]"},
-		{core.ProposalsAuto, "map[dist:regenerable old.log:auto]", "[leftovers:feature.go]"},
+		// dist/ is build output: withdrawn in any mode, never registered.
+		{core.ProposalsAsk, "map[]", "[leftovers:feature.go onboard:old.log]"},
+		{core.ProposalsOff, "map[]", "[leftovers:feature.go onboard:old.log]"},
+		{core.ProposalsTiered, "map[]", "[leftovers:feature.go onboard:old.log]"},
+		{core.ProposalsAuto, "map[old.log:auto]", "[leftovers:feature.go]"},
 	} {
 		r.engine.Svc.ProposalMode = step.mode
 		if err := r.engine.RefreshProposals(); err != nil {
@@ -360,25 +362,61 @@ func TestSessionContainersAreRegisteredAndSparingSticks(t *testing.T) {
 func TestDirectClassFollowsTheMode(t *testing.T) {
 	r := newEngineFixture(t)
 	unit := r.write("dist/app.js", "x")
-	regen := map[string]bool{strings.ToLower(filepath.Join(r.root, "dist")): true}
 	for _, tc := range []struct {
 		mode string
 		opts Options
 		want string
 	}{
-		{core.ProposalsAsk, Options{Written: true, regenerable: regen}, ""},
+		{core.ProposalsAsk, Options{Written: true}, ""},
+		{core.ProposalsOff, Options{Written: true}, ""},
 		{core.ProposalsTiered, Options{Written: true}, ""}, // no session snapshot: not proven created
-		{core.ProposalsTiered, Options{regenerable: regen}, core.AutoRegenerable},
 		{core.ProposalsAuto, Options{}, core.AutoAll},
-		{"", Options{}, ""}, // unset means tiered
+		{"", Options{}, ""}, // unset means off
 	} {
 		r.engine.Svc.ProposalMode = tc.mode
 		if got := r.engine.directClass(r.root, unit, tc.opts); got != tc.want {
 			t.Errorf("mode %q %+v: got %q, want %q", tc.mode, tc.opts, got, tc.want)
 		}
 	}
-	if within(map[string]bool{}, unit) || !within(regen, unit) || within(regen, r.root) {
-		t.Fatal("within must match the entry and what lies below it only")
+	for path, want := range map[string]string{
+		filepath.Join(r.root, "dist", "app.js"):                           filepath.Join(r.root, "dist"),
+		filepath.Join(r.root, "src", "node_modules", "m", "index.js"):     filepath.Join(r.root, "src", "node_modules"),
+		filepath.Join(r.root, "src", "app.tsbuildinfo"):                   filepath.Join(r.root, "src", "app.tsbuildinfo"),
+		filepath.Join(r.root, "src", "distribution.txt"):                  "",
+		filepath.Join(filepath.Dir(r.root), "node_modules", "outside.js"): "",
+	} {
+		if got := NeverAutomatic(r.root, path); got != want {
+			t.Errorf("NeverAutomatic(%s) = %q, want %q", path, got, want)
+		}
+	}
+}
+
+// Off, the default, registers and proposes nothing on its own: not what the
+// agent wrote, not what the session left, not what a pending proposal holds.
+func TestOffModeRegistersNothing(t *testing.T) {
+	if testing.Short() {
+		t.Skip("real Git repository")
+	}
+	t.Parallel()
+	r := newRepo(t)
+	r.ask()
+	pending := r.observe(r.write("old.log", "x"))
+	r.engine.Svc.ProposalMode = ""
+	r.snapshot("s")
+	written := r.write("debug.log", "x")
+	if d := r.observe(written)[written]; d.Action != Skipped || d.Reason != "automatic registration is off" {
+		t.Fatalf("written file: %+v", d)
+	}
+	r.write("left.log", "x")
+	if notices, err := r.engine.Leftovers(r.root, "s"); err != nil || len(notices) != 0 {
+		t.Fatalf("leftovers: %v %v", notices, err)
+	}
+	if err := r.engine.RefreshProposals(); err != nil {
+		t.Fatal(err)
+	}
+	st := r.state()
+	if len(st.Items) != 0 || fmt.Sprint(candidateNames(st)) != "[onboard:old.log]" || len(pending) != 1 {
+		t.Fatalf("off mode handled something: items %+v proposals %v", st.Items, candidateNames(st))
 	}
 }
 
@@ -423,5 +461,36 @@ func TestUnprovenSessionContainersStayProposals(t *testing.T) {
 				t.Fatalf("an unproven container was registered: items %+v proposals %v", st.Items, candidateNames(st))
 			}
 		})
+	}
+}
+
+// Backups an agent leaves while editing get the built-in week; the user's own
+// backups stay proposals, tracked ones and look-alikes are never touched.
+func TestTieredBackupsTheAgentLeaves(t *testing.T) {
+	if testing.Short() {
+		t.Skip("real Git repository")
+	}
+	t.Parallel()
+	r := newRepo(t)
+	users := r.write("old/settings.json.bak", "the user's")
+	tracked := r.write("fixtures/golden.orig", "tracked")
+	r.commit("fixtures/golden.orig")
+	r.snapshot("s")
+	r.write("fixtures/golden.orig", "rewritten by the agent")
+	created := r.write("config.json.bak", "x")
+	leveldb := r.write("cache/LOG.old", "x")
+	bakery := r.write("foo.bakery.txt", "x")
+	got := r.observe(users, tracked, created, leveldb, bakery)
+	st := r.state()
+	if d := got[created]; d.Action != Registered || d.Lifespan != "1w" || receipts(st)["config.json.bak"] != core.AutoCreated {
+		t.Fatalf("agent's backup = %+v, receipts %v; want registered for a week", d, receipts(st))
+	}
+	if len(st.Items) != 1 || fmt.Sprint(candidateNames(st)) != "[onboard:settings.json.bak]" {
+		t.Fatalf("only the agent's backup is registered and the user's proposed: %v %+v", candidateNames(st), st.Items)
+	}
+	for _, p := range []string{tracked, leveldb, bakery} {
+		if got[p].Action == Registered || got[p].Action == Proposed {
+			t.Fatalf("%s must be left alone: %+v", p, got[p])
+		}
 	}
 }

@@ -29,6 +29,16 @@ func (s *Service) Extend(refs []string, d time.Duration) ([]Result, error) {
 	})
 }
 
+// Retry makes each referenced item, whose burial failed, due again now, with
+// a fresh count of attempts.
+func (s *Service) Retry(refs []string) ([]Result, error) {
+	return s.mutate(refs, ActionRetried, func(st *State, idx int) {
+		item := &st.Items[idx]
+		item.Attempts, item.NextAttempt, item.LastError = 0, time.Time{}, ""
+		item.Rev++
+	})
+}
+
 // Cancel stops tracking each referenced item; the files themselves are untouched.
 func (s *Service) Cancel(refs []string) ([]Result, error) {
 	return s.mutate(refs, ActionCanceled, func(st *State, idx int) {

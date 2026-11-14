@@ -8,6 +8,8 @@ export interface Summary {
   decisionCount: number;
   paused: boolean;
   error?: string;
+  // [proposals] mode; missing on an older backend.
+  autoMode?: ProposalMode | string;
 }
 
 // A Docker container tracked by full ID (core.KindContainer); path is
@@ -66,6 +68,8 @@ export interface Item {
   note?: string;
   source?: string;
   lastError?: string;
+  // When a failed burial is tried again; year 9999 once retries stopped.
+  nextAttempt?: string;
 }
 
 export interface Candidate {
@@ -86,6 +90,8 @@ export interface Proposal {
   // The version the user is looking at (internal/gui ReviewedProposal).
   // Approve and Reject send it back; a proposal that changed since is refused.
   fingerprint: string;
+  // Why it cannot be decided now ("docker-unavailable"); missing when it can.
+  blocked?: string;
 }
 
 // Something the proposal mode let in without asking (core.AutoHandled),
@@ -97,7 +103,7 @@ export interface AutoHandled {
 }
 
 // [proposals] mode in config.toml.
-export type ProposalMode = "tiered" | "auto" | "ask";
+export type ProposalMode = "off" | "tiered" | "auto" | "ask";
 
 // One proposal's outcome (core.ProposalResult). On approval, results holds
 // one entry per candidate, ref being the candidate's path; any of them can
@@ -158,6 +164,8 @@ export interface Settings {
   taskbar?: boolean;
   startMenu?: boolean;
   desktopShortcut?: boolean;
+  // [proposals] mode; missing on an older backend.
+  proposalMode?: ProposalMode | string;
 }
 
 export interface Plan {
@@ -232,6 +240,8 @@ export interface Api {
   Upcoming(within: "" | "24h" | "7d"): Promise<{ items: Item[] }>;
   Extend(refs: string[], lifespan: string): Promise<BatchReply<Result>>;
   Cancel(refs: string[]): Promise<BatchReply<Result>>;
+  // Missing on an older backend.
+  Retry?(refs: string[]): Promise<BatchReply<Result>>;
   // handled and mode are missing on an older backend.
   Proposals(): Promise<{ proposals: Proposal[]; handled?: AutoHandled[]; mode?: ProposalMode | string }>;
   Approve(refs: string[], fingerprints: string[]): Promise<BatchReply<ProposalResult>>;

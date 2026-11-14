@@ -68,14 +68,18 @@ func checkScratchLink(t *testing.T, kind string, junction bool) {
 		t.Fatal(err)
 	}
 	if kind != "root" {
+		ageLink(t, link, old)
 		if err := os.Chtimes(root, old, old); err != nil {
 			t.Fatal(err)
 		}
 	}
 	var log bytes.Buffer
 	testenv.ReapScratch(temp, time.Now(), &log)
-	if _, err := os.Lstat(root); err != nil {
-		t.Fatal("linked scratch was removed", err)
+	// A link inside the scratch goes with it, as a link; a linked scratch root
+	// or owner record is never trusted.
+	removed := kind == "owned-child" || kind == "legacy-child"
+	if _, err := os.Lstat(root); os.IsNotExist(err) != removed {
+		t.Fatalf("scratch removed=%v, want %v: %v; log=%s", os.IsNotExist(err), removed, err, &log)
 	}
 	if data, err := os.ReadFile(filepath.Join(outside, "keep.txt")); err != nil || string(data) != "fixture" {
 		t.Fatalf("target changed: %q %v", data, err)
@@ -85,6 +89,25 @@ func checkScratchLink(t *testing.T, kind string, junction bool) {
 	}
 	if got := fixtureDACL(t, filepath.Join(outside, "keep.txt")); got != fileBefore {
 		t.Fatalf("target file DACL changed: %s => %s", fileBefore, got)
+	}
+}
+
+// ageLink dates the link itself; os.Chtimes would date its target.
+func ageLink(t *testing.T, path string, at time.Time) {
+	t.Helper()
+	name, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h, err := windows.CreateFile(name, windows.FILE_WRITE_ATTRIBUTES, windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE|windows.FILE_SHARE_DELETE, nil,
+		windows.OPEN_EXISTING, windows.FILE_FLAG_OPEN_REPARSE_POINT|windows.FILE_FLAG_BACKUP_SEMANTICS, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer windows.CloseHandle(h)
+	ft := windows.NsecToFiletime(at.UnixNano())
+	if err := windows.SetFileTime(h, &ft, &ft, &ft); err != nil {
+		t.Fatal(err)
 	}
 }
 

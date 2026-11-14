@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -423,7 +424,7 @@ func TestReplayFailureDoesNotBlockOtherObservationsOrLeftovers(t *testing.T) {
 		t.Fatal(err)
 	}
 	good := r.write("good.log", "register")
-	r.leftover("node_modules")
+	r.write("test-results/report.html", "x")
 	if err := r.engine.Svc.Store.Update(func(st *core.State) error {
 		st.Projects = map[string]core.ProjectState{core.ProjectKey(r.root): {Consent: core.ConsentApproved}}
 		return nil
@@ -438,14 +439,19 @@ func TestReplayFailureDoesNotBlockOtherObservationsOrLeftovers(t *testing.T) {
 		t.Fatal(err)
 	}
 	r.engine.Svc.FS = &unreadableObservationFS{FS: r.engine.Svc.FS, path: bad}
-	notices, err := r.engine.Finish(r.root, "s")
-	if err != nil || len(notices) != 1 || notices[0].Proposal.Kind != core.ProposalLeftovers {
-		t.Fatalf("failed observation blocked leftovers: %+v %v", notices, err)
+	if _, err := r.engine.Finish(r.root, "s"); err != nil {
+		t.Fatal(err)
 	}
 	rows, err := r.engine.Svc.Store.DeferredObservations()
 	st, readErr := r.engine.Svc.Store.Read()
-	if err != nil || readErr != nil || len(rows) != 1 || rows[0].Path != bad || len(st.Items) != 1 || st.Items[0].Path != good {
-		t.Fatalf("retry lost or blocked healthy entry: queue=%+v items=%+v err=%v/%v", rows, st.Items, err, readErr)
+	var paths []string
+	for _, it := range st.Items {
+		paths = append(paths, filepath.Base(it.Path))
+	}
+	slices.Sort(paths)
+	// The project is approved, so the leftover the rule covers goes in too.
+	if err != nil || readErr != nil || len(rows) != 1 || rows[0].Path != bad || fmt.Sprint(paths) != "[good.log test-results]" {
+		t.Fatalf("retry lost or blocked healthy entry or leftover: queue=%+v items=%v err=%v/%v", rows, paths, err, readErr)
 	}
 }
 
@@ -459,12 +465,12 @@ func TestFinishStillComputesLeftoversWhenQueueUnreadable(t *testing.T) {
 	if err := r.engine.Snapshot(r.root, "s"); err != nil {
 		t.Fatal(err)
 	}
-	r.leftover("node_modules")
+	r.write("test-results/report.html", "x")
 	if err := os.WriteFile(filepath.Join(r.engine.Svc.Store.Home, "observations.jsonl"), []byte("{broken"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	notices, err := r.engine.Finish(r.root, "s")
-	if err != nil || len(notices) != 1 || notices[0].Proposal.Kind != core.ProposalLeftovers {
+	if err != nil || len(notices) != 1 || notices[0].Proposal.Kind != core.ProposalOnboard {
 		t.Fatalf("queue error prevented leftovers: %+v %v", notices, err)
 	}
 }

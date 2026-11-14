@@ -18,6 +18,7 @@ const (
 	ActionUpdated  = "updated"
 	ActionExtended = "extended"
 	ActionCanceled = "canceled"
+	ActionRetried  = "retry-requested"
 	ActionRecycled = "recycled" // moved to the Recycle Bin (detail notes a new path if it had moved)
 	ActionVanished = "vanished" // gone before it expired; nothing to do
 	ActionReplaced = "replaced" // a different object now sits at the path; left alone

@@ -42,8 +42,6 @@ type Options struct {
 	Written bool
 	// AutoClass records a receipt: registered without asking (see directClass).
 	AutoClass string
-	// regenerable holds the session's fresh, Git-ignored regenerable paths.
-	regenerable map[string]bool
 }
 
 // Decision is what happened to one path.
@@ -262,6 +260,9 @@ func (e *Engine) matchRule(ref string, seen map[string]bool) (Decision, project.
 // lifespan, be it the same object under another name, an item inside it or
 // an item it lies in. A reason is a definite refusal; an error is retryable.
 func (e *Engine) vetUnit(proj project.Project, unit string, state *core.State, located locations) (string, error) {
+	if dir := NeverAutomatic(proj.Root, unit); dir != "" {
+		return "dependencies, build output and caches are never registered automatically (" + dir + ")", nil
+	}
 	id, err := e.Svc.FS.Identify(unit)
 	if err != nil {
 		if errors.Is(err, core.ErrNotFound) || errors.Is(err, core.ErrUnsafe) {

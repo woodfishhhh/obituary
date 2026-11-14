@@ -8,10 +8,13 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	initcmd "github.com/woodfishhhh/obituary/internal/cli/init"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/integrate"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 )
@@ -319,5 +322,30 @@ func TestInitExtensionsOptInShowRefreshUninstall(t *testing.T) {
 				t.Fatalf("uninstall: %s %v", out, err)
 			}
 		})
+	}
+}
+
+// The backups obit init leaves beside a user's files expire like Obituary's
+// other backups, instead of piling up in the agent's configuration folder.
+func TestInitBackupsGetALifespan(t *testing.T) {
+	root, executable := clitest.DoctorFixture(t)
+	settings := filepath.Join(root, "claude", "settings.json")
+	clitest.WriteFixture(t, settings, `{"model": "user's choice"}`)
+	if out, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "-g", "--agent", "claude", "--no-skill", "--no-context-menu", "--no-shortcuts", "--yes"); err != nil {
+		t.Fatal(out, err)
+	}
+	svc, err := app.Open()
+	if err != nil {
+		t.Fatal(err)
+	}
+	st, err := svc.Store.Read()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(st.Items) != 1 || !strings.EqualFold(st.Items[0].Path, settings+".bak") || st.Items[0].Source != "init" {
+		t.Fatalf("backup not registered: %+v", st.Items)
+	}
+	if left := time.Until(st.Items[0].ExpiresAt); left < ledger.BackupLifespan-time.Hour || left > ledger.BackupLifespan {
+		t.Fatalf("backup lifespan %v", left)
 	}
 }

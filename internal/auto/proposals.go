@@ -47,7 +47,9 @@ func (e *Engine) refreshProjectProposals(proposals []core.Proposal) []error {
 	for _, p := range proposals {
 		for _, c := range p.Candidates {
 			paths = append(paths, c.Path)
-			if _, err := os.Lstat(c.Path); errors.Is(err, os.ErrNotExist) {
+			if c.Kind != core.KindContainer && NeverAutomatic(root, c.Path) != "" {
+				stale[c.Path] = true // proposed before dependencies and build output were left alone
+			} else if _, err := os.Lstat(c.Path); errors.Is(err, os.ErrNotExist) {
 				stale[c.Path] = true
 			} else if err != nil {
 				errs = append(errs, err)

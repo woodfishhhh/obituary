@@ -14,6 +14,7 @@ type Summary struct {
 	DecisionCount     int    `json:"decisionCount"`
 	Paused            bool   `json:"paused"`
 	Error             string `json:"error,omitempty"`
+	AutoMode          string `json:"autoMode,omitempty"` // [proposals] mode, for the home page
 }
 
 func (a *API) Summary() (Summary, error) {
@@ -32,6 +33,14 @@ func (a *API) Summary() (Summary, error) {
 		return Summary{}, err
 	}
 	out := Summary{TrackedCount: len(state.Items), DecisionCount: len(core.ExistingProposals(state.Proposals)), Paused: paused}
+	if cfg, err := a.readConfig(); err == nil {
+		out.AutoMode = cfg.Proposals.Mode
+	}
+	for _, it := range state.Items {
+		if it.Stuck() { // retries stopped: it waits for Retry or Stop tracking
+			out.DecisionCount++
+		}
+	}
 	for _, f := range files.Rules {
 		if f.Status == rules.Untrusted || f.Status == rules.Changed {
 			out.DecisionCount++

@@ -40,6 +40,7 @@ function seed(scenario: Scenario) {
     { id: 23, path: `${DL}\\report-q3.csv`, isDir: false, createdAt: at(-200), expiresAt: at(136), source: "watch" },
     { id: 24, path: `${SHOP}\\coverage`, isDir: true, createdAt: at(-2), expiresAt: at(70), source: "rule", note: "rule coverage" },
     { id: 25, path: `${DL}\\obs-recording-1102.mkv`, isDir: false, createdAt: at(-10), expiresAt: at(3), source: "watch" },
+    { id: 30, path: `${SHOP}\\old-build-cache`, isDir: true, createdAt: at(-60), expiresAt: at(-26), source: "cli", lastError: "the process cannot access the file because it is being used by another process", nextAttempt: "9999-01-01T00:00:00Z" },
     { id: 26, path: "docker:shop-db-test (3f9c2a1b7e04)", isDir: false, kind: "container", createdAt: at(-20), expiresAt: at(12), source: "cli" },
     { id: 27, path: `${SHOP}\\dist`, isDir: true, createdAt: at(-30), expiresAt: at(42), source: "proposal", note: "auto-approved #29 (regenerable)" },
     { id: 28, path: `${SHOP}\\scratch-repro.py`, isDir: false, createdAt: at(-1), expiresAt: at(47), source: "rule", note: "rule *.py (.obitrules:3)" },
@@ -91,7 +92,7 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
     : { current: "1.0.0", latest: "1.0.1", newer: true, name: "1.0.1", published: at(-20), checkedAt: at(-2), enabled: true, channel: "scoop", command: "scoop update obituary",
         url: "https://github.com/woodfishhhh/obituary/releases/tag/v1.0.1",
         notes: ["## 修复", "", "- 托盘菜单在高 DPI 屏幕上不再模糊", "- 文件夹策略遇到只读文件时会跳过并记日志，不再整轮停下", "", "## 改进", "", "- 墓地页搜索支持按扩展名过滤"].join("\n") };
-  let proposalMode: ProposalMode = "tiered";
+  let proposalMode: ProposalMode = "off";
   // Receipts follow their items, as core.State.AutoHandled does.
   const handled = (): AutoHandled[] => s.receipts.flatMap((r) => {
     const item = s.items.find((it) => it.id === r.id);
@@ -132,7 +133,8 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
   return {
     Summary: () => wait({
       trackedCount: s.items.length, graveCount: s.burials.length, graveBytes: s.burials.reduce((n, b) => n + b.size, 0),
-      pendingGraveCount: 0, decisionCount: s.proposals.length + s.rules.filter((r) => r.status !== "trusted").length, paused: settings.paused,
+      pendingGraveCount: 0, decisionCount: s.proposals.length + s.rules.filter((r) => r.status !== "trusted").length + s.items.filter((x) => x.nextAttempt?.startsWith("9999")).length, paused: settings.paused,
+      autoMode: proposalMode,
     }),
     Graveyard: ({ filter }) => {
       const rows = s.burials.filter((b) => !filter || b.path.toLowerCase().includes(filter.toLowerCase()))
@@ -169,6 +171,10 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
       });
       return wait({ results });
     },
+    Retry: (refs) => {
+      refs.forEach((ref) => { const it = s.items.find((x) => x.id === idOf(ref)); if (it) { it.lastError = undefined; it.nextAttempt = undefined; } });
+      return wait({ results: refs.map((ref) => ({ ref, action: "retry-requested" })) });
+    },
     Cancel: (refs) => {
       refs.forEach((ref) => { const i = s.items.findIndex((x) => x.id === idOf(ref)); if (i >= 0) s.items.splice(i, 1); });
       return wait({ results: refs.map((ref) => ({ ref, action: "canceled" })) });
@@ -191,7 +197,7 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
     PickFolder: () => wait(DL.replace("Downloads", "Videos\\Captures")),
     ShowInFolder: () => wait(undefined),
     RemoveWatch: (path) => { const i = watches.findIndex((w) => w.path === path); if (i >= 0) watches.splice(i, 1); return wait({ action: "removed", changed: i >= 0 }); },
-    Settings: () => wait({ ...settings }),
+    Settings: () => wait({ ...settings, proposalMode }),
     PlanSettings: (mode, days) => plan("settings", [
       ...(mode !== settings.mode ? [{ target: "[graveyard] mode", before: settings.mode, after: mode }] : []),
       ...(days !== settings.retentionDays ? [{ target: "[graveyard] retention_days", before: String(settings.retentionDays), after: String(days) }] : []),

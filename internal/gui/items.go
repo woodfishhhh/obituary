@@ -55,6 +55,17 @@ func (a *API) Extend(refs []string, lifespan string) (ItemReply, error) {
 	return ItemReply{Results: list(results), Error: errorText(err)}, nil
 }
 
+// Retry makes items whose burial failed due again now.
+func (a *API) Retry(refs []string) (ItemReply, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if err := requireRefs(refs); err != nil {
+		return ItemReply{Results: []core.Result{}}, err
+	}
+	results, err := a.deps.Service.Retry(refs)
+	return ItemReply{Results: list(results), Error: errorText(err)}, nil
+}
+
 func (a *API) Cancel(refs []string) (ItemReply, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()

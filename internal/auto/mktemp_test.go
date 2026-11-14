@@ -222,9 +222,14 @@ func TestSweepQueriesGitAfterFinalDirectoryGuard(t *testing.T) {
 		if err := os.Rename(index, staged); err != nil {
 			t.Fatal(err)
 		}
-		published := false
+		// The first Guard is the repository search before store.lock; the
+		// index appears at the second, the final Guard under the lock.
+		published, guards := false, 0
 		r.engine.Svc.Guard.Canonical = func(path string) (string, error) {
-			if strings.EqualFold(path, dir) && !published {
+			if strings.EqualFold(path, dir) {
+				guards++
+			}
+			if guards == 2 && !published {
 				if err := os.Rename(staged, index); err != nil {
 					t.Fatal(err)
 				}

@@ -75,7 +75,8 @@ func printHandled(handled []core.AutoHandled, now time.Time) {
 }
 
 var modeText = map[string]string{
-	core.ProposalsTiered: "tiered: files the agent created in its session, regenerable leftovers and session containers go in without asking; the rest waits here",
+	core.ProposalsOff:    "off: nothing goes in by itself; agents use obit mark / mktemp / bury, and you the context menu",
+	core.ProposalsTiered: "tiered: files the agent created in its session and session containers go in without asking; the rest waits here",
 	core.ProposalsAuto:   "auto: everything automatic registration finds goes in without asking",
 	core.ProposalsAsk:    "ask: every automatic registration waits here first",
 }
@@ -87,6 +88,8 @@ func printMode(mode string) {
 	}
 	fmt.Printf("\nproposal mode %s.\n", modeText[mode])
 	switch mode {
+	case core.ProposalsOff:
+		fmt.Printf("To turn automatic registration on, set [proposals] mode = \"tiered\" (or \"ask\", \"auto\") in %s, or switch it on the window's Decisions page.\n", path)
 	case core.ProposalsAuto:
 		fmt.Printf("To be asked again, set [proposals] mode = \"tiered\" (or \"ask\") in %s, or switch it on the window's Decisions page.\n", path)
 	default:

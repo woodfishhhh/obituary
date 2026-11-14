@@ -23,6 +23,8 @@ type integrationTarget struct {
 	root     *os.Root
 	name     string
 	location integrationLocation
+	// backedUp is the backup written beside the file, which gets a lifespan.
+	backedUp string
 }
 
 // Test seam after pinning the destination parent, before any mutation in it.
@@ -235,6 +237,7 @@ func (p *integrationTarget) backup(data []byte, write bool) error {
 			return err
 		}
 		_, err = f.Write(data)
+		p.backedUp = filepath.Join(p.root.Name(), name)
 		return errors.Join(err, f.Close())
 	}
 	return fmt.Errorf("too many backups of %s", p.name)

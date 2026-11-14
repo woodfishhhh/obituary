@@ -4,11 +4,13 @@ package app
 import (
 	"errors"
 	"path/filepath"
+	"time"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
 	"github.com/woodfishhhh/obituary/internal/config"
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/docker"
+	"github.com/woodfishhhh/obituary/internal/integrate"
 	"github.com/woodfishhhh/obituary/internal/rules"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
 	"github.com/woodfishhhh/obituary/internal/watch"
@@ -43,23 +45,43 @@ func Engine(svc *core.Service) *auto.Engine {
 	return &auto.Engine{Svc: svc, Trust: rules.TrustStore{Path: filepath.Join(svc.Store.Home, "trusted_rules.json")}}
 }
 
+// configured takes one fresh configuration snapshot, as the resident can
+// outlive a GUI configuration edit, without mutating the service shared with
+// the folder watcher. A malformed configuration stops the work.
+func configured(svc *core.Service) (*core.Service, error) {
+	cfg, err := config.Load()
+	if err != nil {
+		return nil, err
+	}
+	svc = svc.WithContext(svc.Store.Context())
+	svc.Mode, svc.Retention = cfg.Graveyard.Mode, cfg.Graveyard.Retention()
+	svc.WatchStableWindow = cfg.Watch.Stability()
+	svc.ProposalMode = cfg.Proposals.Mode
+	return svc, nil
+}
+
+// ReplayObservations absorbs the writes hooks queued while the ledger was
+// busy, without the rest of a tick.
+func ReplayObservations(svc *core.Service) error {
+	svc, err := configured(svc)
+	if err != nil {
+		return err
+	}
+	return Engine(svc).ReplayObservations()
+}
+
 // Tick drains hook writes before reaping, in both resident and one-shot runs.
 func Tick(svc *core.Service) ([]core.Outcome, []core.GraveResult, error) {
 	paused, err := Paused(svc.Store.Home)
 	if err != nil || paused {
 		return nil, nil, err
 	}
-	// The resident can outlive a GUI configuration edit. Take one fresh
-	// configuration snapshot per tick without mutating the service shared
-	// with the folder watcher. A malformed configuration stops this tick.
-	cfg, err := config.Load()
+	// Before the configuration is read: it may switch automatic registration off.
+	migrateErr := migrateAutoOff(svc)
+	svc, err = configured(svc)
 	if err != nil {
 		return nil, nil, err
 	}
-	svc = svc.WithContext(svc.Store.Context())
-	svc.Mode, svc.Retention = cfg.Graveyard.Mode, cfg.Graveyard.Retention()
-	svc.WatchStableWindow = cfg.Watch.Stability()
-	svc.ProposalMode = cfg.Proposals.Mode
 	// Hooks and other processes commit ledger changes and defer the Explorer
 	// refresh to this tick, whose own sweep may change nothing. Notify once
 	// when the ledger differs from the one Explorer labels were last synced
@@ -76,7 +98,14 @@ func Tick(svc *core.Service) ([]core.Outcome, []core.GraveResult, error) {
 	if errors.Is(err, core.ErrSweepBusy) {
 		err = nil // another worker owns this round; callers must not log an error
 	}
+	vanished, vanishedErr := svc.SettleVanished()
+	if errors.Is(vanishedErr, core.ErrSweepBusy) {
+		vanishedErr = nil
+	}
+	outcomes = append(outcomes, vanished...)
 	diagnostics, diagnosticErr := svc.RegistrationLocationDiagnostics()
 	diagnosticErr = errors.Join(diagnosticErr, svc.Store.Record(diagnostics...))
-	return outcomes, purged, joinTickErrors(proposalErr, queuedErr, watchErr, err, diagnosticErr)
+	// Obituary's own backups in the data directory, which nothing can bury.
+	backupErr := errors.Join(svc.Store.PruneMigrationBackups(time.Now()), integrate.PruneBackups(svc.Store.Home, time.Now()))
+	return outcomes, purged, joinTickErrors(proposalErr, migrateErr, queuedErr, watchErr, err, vanishedErr, diagnosticErr, backupErr)
 }

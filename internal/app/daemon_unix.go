@@ -77,6 +77,8 @@ func spawn(path string, args ...string) error {
 type Resident struct {
 	Service *core.Service
 	mu      sync.Mutex
+	hot     *core.State
+	graves  *graves
 }
 
 func Serve(*core.Service, *log.Logger) error { return Start("") }

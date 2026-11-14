@@ -133,3 +133,41 @@ func waitItems(t *testing.T, ctx context.Context, svc *core.Service, count int) 
 		}
 	}
 }
+
+// Agents commit the ledger constantly; those commits re-check the policies
+// but never rescan the watched folders, which only their own events do.
+func TestLedgerCommitsDoNotRescanFolders(t *testing.T) {
+	svc, dir := fixture(t)
+	if _, err := svc.SetWatch(dir, "30d", core.WatchFirstSeen); err != nil {
+		t.Fatal(err)
+	}
+	approvePolicies(t, svc)
+	write(t, filepath.Join(dir, "early.txt"))
+	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
+	defer cancel()
+	events, errs := make(chan fsnotify.Event), make(chan error)
+	add := func(string) error { return nil }
+	closeWatcher := func() error { close(events); close(errs); return nil }
+	done := make(chan error, 1)
+	go func() {
+		done <- watch.RunWithSource(ctx, svc, add, func(string) error { return nil }, closeWatcher, events, errs)
+	}()
+	defer func() {
+		cancel()
+		if err := <-done; err != nil {
+			t.Error(err)
+		}
+	}()
+	waitItems(t, ctx, svc, 1) // the first scan is over
+	late := filepath.Join(dir, "late.txt")
+	write(t, late)
+	for range 1000 {
+		events <- fsnotify.Event{Name: filepath.Join(svc.Store.Home, "store.json"), Op: fsnotify.Write}
+	}
+	time.Sleep(time.Second)
+	if st, err := svc.Store.Read(); err != nil || len(st.Items) != 1 {
+		t.Fatalf("a ledger commit rescanned the folder: %v %+v", err, st.Items)
+	}
+	events <- fsnotify.Event{Name: late, Op: fsnotify.Create}
+	waitItems(t, ctx, svc, 2)
+}

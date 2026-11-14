@@ -3,10 +3,13 @@ package tray
 import (
 	"context"
 	"log"
-	"time"
+	"os"
+	"path/filepath"
+	"strings"
 	"unicode/utf16"
 	"unsafe"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/woodfishhhh/obituary/internal/config"
 	"github.com/woodfishhhh/obituary/internal/desktop"
 	"golang.org/x/sys/windows"
@@ -63,7 +66,9 @@ func modifyIcon(data iconState) error {
 	return nil
 }
 
-func watchVisibility(ctx context.Context, ticks <-chan time.Time, load func() (bool, error), apply func(bool) error, logger *log.Logger) {
+// watchVisibility applies [ui] tray now and whenever the file at path
+// changes. The OS reports the change, so an idle tray reads nothing.
+func watchVisibility(ctx context.Context, path string, load func() (bool, error), apply func(bool) error, logger *log.Logger) {
 	refresh := func() {
 		enabled, err := load()
 		if err == nil {
@@ -73,19 +78,39 @@ func watchVisibility(ctx context.Context, ticks <-chan time.Time, load func() (b
 			logger.Printf("tray visibility: %v", err)
 		}
 	}
+	w, err := fsnotify.NewWatcher()
+	if err != nil {
+		refresh()
+		logger.Printf("tray visibility: %v", err)
+		return
+	}
+	defer w.Close()
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		logger.Printf("tray visibility: %v", err)
+	} else if err := w.Add(filepath.Dir(path)); err != nil {
+		logger.Printf("tray visibility: %v", err)
+	}
 	refresh()
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticks:
-			refresh()
+		case event := <-w.Events:
+			if strings.EqualFold(filepath.Base(event.Name), filepath.Base(path)) {
+				refresh()
+			}
+		case err := <-w.Errors:
+			logger.Printf("tray visibility: %v", err)
+			refresh() // events may have been lost
 		}
 	}
 }
 
 func followVisibility(ctx context.Context, logger *log.Logger) {
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
-	watchVisibility(ctx, ticker.C, func() (bool, error) { cfg, err := config.Load(); return cfg.UI.Tray, err }, setVisible, logger)
+	path, err := config.Path()
+	if err != nil {
+		logger.Printf("tray visibility: %v", err)
+		return
+	}
+	watchVisibility(ctx, path, func() (bool, error) { cfg, err := config.Load(); return cfg.UI.Tray, err }, setVisible, logger)
 }

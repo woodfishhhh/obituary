@@ -1,18 +1,18 @@
-import { Check, CheckCheck, EyeOff, FileCode2, Inbox, ShieldCheck, ShieldOff, TimerReset, X } from "lucide-react";
+import { Check, CheckCheck, EyeOff, FileCode2, Inbox, RotateCcw, ShieldCheck, ShieldOff, TimerReset, X } from "lucide-react";
 import { useState } from "react";
 import { errorText, useApi } from "../api";
 import { t } from "../i18n";
 import { bytes, extendedTo, lifespanText, ruleOrigin, rulePattern, underProject, when } from "../format";
 import { useLoad, useRefresh } from "../hooks";
 import { askDecisions, setAskDecisions } from "../prefs";
-import type { AutoHandled, Proposal, ProposalMode, ProposalResult, RuleFile } from "../types";
+import type { AutoHandled, Item, Proposal, ProposalMode, ProposalResult, RuleFile } from "../types";
 import { Button, Empty, Head, LifeLine, NameCell, Outcome, Seg, Skeleton, isContainer, useConfirm, useToast, type OutcomeNote } from "../ui";
 import { extendSpans, spanLabel } from "../variants/shared";
 
 const kinds = ["onboard", "large", "leftovers", "watch-policy", "watch-burial", "container"] as const;
 const kindText = (kind: string) => ((kinds as readonly string[]).includes(kind) ? t(`kind.${kind as (typeof kinds)[number]}`) : kind);
 const ruleTone: Record<string, string> = { untrusted: "warn", changed: "danger", trusted: "ok" };
-const modes: ProposalMode[] = ["tiered", "auto", "ask"];
+export const modes: ProposalMode[] = ["off", "tiered", "auto", "ask"];
 const classes = ["created", "regenerable", "container", "auto"] as const;
 const classText = (c: string) => ((classes as readonly string[]).includes(c) ? t(`dec.class.${c as (typeof classes)[number]}`) : c);
 const ruleText = (status: string): [string, string] => (ruleTone[status] ? [t(`rule.${status as "untrusted" | "changed" | "trusted"}`), ruleTone[status]] : [status, ""]);
@@ -22,7 +22,7 @@ export default function Decisions() {
   const { version, bump } = useRefresh();
   const confirm = useConfirm();
   const toast = useToast();
-  const { data, error, loading } = useLoad(() => Promise.all([api.Proposals(), api.Rules()]), [api, version]);
+  const { data, error, loading } = useLoad(() => Promise.all([api.Proposals(), api.Rules(), api.Upcoming("24h")]), [api, version]);
   const [note, setNote] = useState<OutcomeNote | null>(null);
   if (loading && !data) return <><Head title={t("page.decisions")} /><div className="card"><Skeleton /></div></>;
   const proposals = data?.[0].proposals ?? [];
@@ -31,7 +31,9 @@ export default function Decisions() {
   const rules = data?.[1].rules ?? [];
   const pending = rules.filter((r) => r.status !== "trusted");
   const trusted = rules.filter((r) => r.status === "trusted");
-  const waiting = proposals.length + pending.length;
+  // A failed burial is due by definition, so the next 24 hours hold them all.
+  const failed = (data?.[2].items ?? []).filter((it) => it.lastError && (stuck(it) || !waitingWatch(it.lastError)));
+  const waiting = proposals.length + pending.length + failed.filter(stuck).length;
   // An expired folder moves now when approved; it is never part of "approve all".
   const batchable = proposals.filter((p) => p.kind !== "watch-burial");
 
@@ -74,7 +76,8 @@ export default function Decisions() {
       {error ? <div className="notice error">{t("dec.readError", error)}</div> : null}
       {note ? <Outcome note={note} onClose={() => setNote(null)} /> : null}
       {mode && api.PlanProposalMode ? <ModeCard mode={mode} /> : null}
-      {!waiting ? <div className="card"><Empty icon={Inbox} title={t("dec.none")} text={t("dec.noneText")} /></div> : null}
+      {!waiting && !failed.length ? <div className="card"><Empty icon={Inbox} title={t("dec.none")} text={t("dec.noneText")} /></div> : null}
+      {failed.length ? <FailedList items={failed} /> : null}
       {proposals.length ? (
         <div className="section-title section-row">
           <span>{t("dec.proposals")}</span>
@@ -92,12 +95,12 @@ export default function Decisions() {
 
 // The proposal mode, switched where proposals are decided. Going fully
 // automatic widens what agents may do, so it asks first; the rest apply at once.
-function ModeCard({ mode }: { mode: string }) {
+export function ModeCard({ mode }: { mode: string }) {
   const api = useApi();
   const { bump } = useRefresh();
   const confirm = useConfirm();
   const toast = useToast();
-  const current = (modes as string[]).includes(mode) ? (mode as ProposalMode) : "tiered";
+  const current = (modes as string[]).includes(mode) ? (mode as ProposalMode) : "off";
   async function choose(next: ProposalMode) {
     if (next === current || !api.PlanProposalMode) return;
     if (next === "auto" && !await confirm({ title: t("dec.askAuto"), body: <p>{t("dec.askAutoBody")}</p>, ok: t("dec.askAutoOk") })) return;
@@ -118,6 +121,48 @@ function ModeCard({ mode }: { mode: string }) {
       </div>
       <p className="hint">{t(`dec.modeDesc.${current}`)}</p>
     </section>
+  );
+}
+
+// Retries stop after repeated failures (the backend's far-future NextAttempt).
+const stuck = (it: Item) => !!it.nextAttempt?.startsWith("9999");
+// A folder-policy item waiting for its folder to go quiet has not failed
+// (the backend's texts, as obit doctor matches them).
+const waitingWatch = (e: string) => e.startsWith("folder child is still active") || e.startsWith("download temporary name is still present:");
+
+// Burials that failed, with the reason: try again now, or stop tracking and
+// leave the file where it is.
+function FailedList({ items }: { items: Item[] }) {
+  const api = useApi();
+  const { bump } = useRefresh();
+  const confirm = useConfirm();
+  const toast = useToast();
+  async function act(it: Item, retry: boolean) {
+    if (!retry && !await confirm({ title: t("ask.cancel", 1), body: <><p>{t("ask.cancelBody")}</p><ul><li>{it.path}</li></ul></>, ok: t("stopTracking"), danger: true })) return;
+    const reply = await (retry && api.Retry ? api.Retry : api.Cancel)([`#${it.id}`]);
+    const failure = reply.error || reply.results.find((r) => r.error)?.error;
+    if (failure) toast(failure, "error");
+    else toast(retry ? t("dec.retried", it.path) : t("dec.undone", it.path));
+    bump();
+  }
+  return (
+    <>
+      <div className="section-title">{t("dec.burials")}</div>
+      <p className="hint">{t("dec.burialsHint")}</p>
+      <div className="card list">
+        {items.map((it) => (
+          <div key={it.id} className="row cols-failed">
+            <NameCell path={it.path} isDir={it.isDir} kind={it.kind} />
+            <span className="reason">{it.lastError}</span>
+            <span><span className={`tag ${stuck(it) ? "danger" : "warn"}`}>{stuck(it) ? t("dec.stuck") : t("dec.retrying", when(it.nextAttempt))}</span></span>
+            <span className="acts">
+              {api.Retry ? <Button icon={RotateCcw} onClick={() => act(it, true)}>{t("up.retry")}</Button> : null}
+              <Button kind="danger" icon={EyeOff} onClick={() => act(it, false)}>{t("stopTracking")}</Button>
+            </span>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -256,8 +301,9 @@ function ProposalCard({ p, onOutcome }: { p: Proposal; onOutcome: (note: Outcome
       <div className="panel-foot">
         <span className="hint grow">{sized ? t("dec.total", n, bytes(total)) : t("dec.count", n)}</span>
         <Button icon={X} onClick={() => decide(false)}>{t("reject")}</Button>
-        <Button kind="primary" icon={Check} onClick={() => decide(true)}>{t("approve")}</Button>
+        <Button kind="primary" icon={Check} disabled={p.blocked === "docker-unavailable"} onClick={() => decide(true)}>{t("approve")}</Button>
       </div>
+      {p.blocked === "docker-unavailable" ? <div className="notice warn">{t("dec.dockerDown")}</div> : null}
     </section>
   );
 }

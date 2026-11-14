@@ -28,7 +28,7 @@ func (e *Engine) SnapshotSession(root, session string) error {
 // ContainerLeftovers runs only in the background finish process. Snapshot writes
 // only its existing timestamp; hook entry points never enumerate Docker.
 func (e *Engine) ContainerLeftovers(root, session string) ([]Notice, error) {
-	if e.Svc.Docker == nil {
+	if e.Svc.Docker == nil || e.off() {
 		return nil, nil
 	}
 	root, err := pathutil.LongAbs(root)

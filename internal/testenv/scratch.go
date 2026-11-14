@@ -194,11 +194,16 @@ func prepareScratch(path string, cutoff time.Time, acl *windows.ACL, restore boo
 		return fmt.Errorf("open fixture ACL %s: %w", path, err)
 	}
 	defer windows.CloseHandle(h) // pins each ancestor during ACL restoration
-	if info.FileAttributes&windows.FILE_ATTRIBUTE_REPARSE_POINT != 0 {
-		return fmt.Errorf("reparse point: %s", path)
-	}
 	if !time.Unix(0, info.LastWriteTime.Nanoseconds()).Before(cutoff) {
 		return errScratchRecent
+	}
+	if info.FileAttributes&windows.FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+		if !restore {
+			return fmt.Errorf("reparse point: %s", path)
+		}
+		// A fixture's link: os.Root removes the link itself, so neither its
+		// target's ACL nor its contents are ever touched.
+		return nil
 	}
 	// The candidate root is already readable and pinned by os.OpenRoot.
 	if restore {
@@ -239,9 +244,7 @@ func checkScratchLeaf(entry os.DirEntry, cutoff time.Time) error {
 	if err != nil {
 		return err
 	}
-	if !info.Mode().IsRegular() {
-		return fmt.Errorf("reparse or special file: %s", entry.Name())
-	}
+	// A link or special file is removed as an entry, never followed.
 	if !info.ModTime().Before(cutoff) {
 		return errScratchRecent
 	}

@@ -25,6 +25,16 @@ func binaryPath(t *testing.T, name string) string {
 	return filepath.Join(dir, name+".exe")
 }
 
+// autoOn turns automatic registration on in OBIT_CONFIG_DIR (it is off by
+// default) for tests of what it registers, followed by extra settings. The
+// marker in OBIT_HOME stands for an install already past the one-time switch
+// to off, so a resident's tick leaves the setting alone.
+func autoOn(t *testing.T, extra string) {
+	t.Helper()
+	writeFixture(t, filepath.Join(os.Getenv("OBIT_CONFIG_DIR"), "config.toml"), "[proposals]\nmode = \"tiered\"\n"+extra)
+	writeFixture(t, filepath.Join(os.Getenv("OBIT_HOME"), "migrated-1.3-auto-off"), "")
+}
+
 func writeFixture(t *testing.T, path, data string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
@@ -48,6 +58,7 @@ func commandRepo(t *testing.T) (string, core.Store) {
 	home := filepath.Join(root, "data")
 	t.Setenv("OBIT_HOME", home)
 	t.Setenv("OBIT_CONFIG_DIR", filepath.Join(root, "config"))
+	autoOn(t, "")
 	// A resident for this disposable home makes the CLI take its normal
 	// Running branch before any scheduler lookup. No OS runner is installed.
 	ctx, cancel := context.WithCancel(context.Background())

@@ -14,27 +14,39 @@ import (
 	"github.com/woodfishhhh/obituary/internal/project"
 )
 
-// The proposal mode ([proposals] mode) decides which automatic registrations
-// wait for the user. "tiered" lets in, without asking, only what is
-// demonstrably the session's own and recreatable: files the hook saw the agent
-// write that did not exist when the session started, Git-ignored dependencies,
-// build output and caches, and containers tied to the project. "auto" lets in
-// everything automatic registration finds; "ask" proposes everything. Every
-// path still passes vetUnit (never Git-tracked, never shortening a lifespan),
-// and each registration made without asking leaves an AutoReceipt so it is
-// announced afterwards and can be undone.
+// The proposal mode ([proposals] mode) decides whether automatic registration
+// runs and which of its registrations wait for the user. "off", the default,
+// registers and proposes nothing: only obit commands, the context menu and
+// folder policies put things in. "tiered" lets in, without asking, only what
+// is demonstrably the session's own: files the hook saw the agent write that
+// did not exist when the session started, and containers tied to the project.
+// "auto" lets in everything automatic registration finds; "ask" proposes
+// everything. Every path still passes vetUnit (never Git-tracked, never a
+// dependency, build output or cache, never shortening a lifespan), and each
+// registration made without asking leaves an AutoReceipt so it is announced
+// afterwards and can be undone.
+
+// off reports whether automatic registration is off.
+func (e *Engine) off() bool { return e.Svc.Proposals() == core.ProposalsOff }
+
+// offDecisions skips every path while automatic registration is off.
+func offDecisions(paths []string) []Decision {
+	decisions := make([]Decision, len(paths))
+	for i, path := range paths {
+		decisions[i] = Decision{Path: path, Action: Skipped, Reason: "automatic registration is off"}
+	}
+	return decisions
+}
 
 // directClass decides whether a rule-matched unit may be registered without
 // asking, and as what ("" means propose it). A declined project never gets here.
 func (e *Engine) directClass(root, unit string, opts Options) string {
 	mode := e.Svc.Proposals()
 	switch {
-	case mode == core.ProposalsAsk:
+	case mode == core.ProposalsAsk || mode == core.ProposalsOff:
 		return ""
 	case opts.Written && e.createdThisSession(root, opts.Session, unit):
 		return core.AutoCreated
-	case within(opts.regenerable, unit):
-		return core.AutoRegenerable
 	case mode == core.ProposalsAuto:
 		return core.AutoAll
 	}
@@ -210,12 +222,10 @@ func (e *Engine) pendingProposal(id int64) (core.Proposal, core.State, bool, err
 // it returns still passes every approval gate; the rest stays a proposal.
 func (e *Engine) autoCandidates(p core.Proposal, st core.State) ([]core.Candidate, string) {
 	mode := e.Svc.Proposals()
-	if mode == core.ProposalsAsk || st.Projects[core.ProjectKey(p.Project)].Consent == core.ConsentDeclined {
-		return nil, "" // asked for everything, or declined automatic registration here
+	if mode == core.ProposalsAsk || mode == core.ProposalsOff || st.Projects[core.ProjectKey(p.Project)].Consent == core.ConsentDeclined {
+		return nil, "" // off, asked for everything, or declined automatic registration here
 	}
 	switch p.Kind {
-	case core.ProposalLeftovers:
-		return e.regenerableCandidates(p), core.AutoRegenerable
 	case core.ProposalContainer:
 		return sessionContainers(p, st), core.AutoContainer
 	case core.ProposalOnboard, core.ProposalLarge:
@@ -247,30 +257,6 @@ func sessionContainers(p core.Proposal, st core.State) []core.Candidate {
 			return other.ID != p.ID && slices.ContainsFunc(other.Candidates, func(o core.Candidate) bool { return sameCandidate(o, c) })
 		})
 	})
-}
-
-// regenerableCandidates keeps the leftovers Git ignores now and a tool
-// recreates. Proposals from versions before 1.1.1 also listed new files Git
-// does not ignore, which are uncommitted work: they stay for the user.
-func (e *Engine) regenerableCandidates(p core.Proposal) []core.Candidate {
-	var named []core.Candidate
-	for _, c := range p.Candidates {
-		if c.Kind != core.KindContainer && regenerable(c.Path) {
-			named = append(named, c)
-		}
-	}
-	if len(named) == 0 {
-		return nil
-	}
-	ignored, err := project.Project{Root: p.Project}.Ignored()
-	if err != nil {
-		return nil // Git cannot say: nothing qualifies this round
-	}
-	set := map[string]bool{}
-	for _, path := range ignored {
-		set[strings.ToLower(filepath.Clean(path))] = true
-	}
-	return slices.DeleteFunc(named, func(c core.Candidate) bool { return !within(set, c.Path) })
 }
 
 func sameCandidate(a, b core.Candidate) bool {

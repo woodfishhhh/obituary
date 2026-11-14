@@ -136,14 +136,13 @@ func (g Guard) CheckContext(ctx context.Context, path string, force bool) error 
 	if pathcheck.IsLink(info) {
 		return refuse("it is a link or junction; give the real location instead", false)
 	}
-	if info.IsDir() {
+	// Force passes a contained repository and an unfinished walk alike, so a
+	// forced check skips the walk (Explorer labels force every tracked folder).
+	if info.IsDir() && !force {
 		switch found, err := g.findRepository(ctx, path); {
 		case err != nil:
 			if ctx.Err() != nil {
 				return ctx.Err()
-			}
-			if force {
-				return nil
 			}
 			return fmt.Errorf("check %s for .git repositories: %w", path, err)
 		case found != "":

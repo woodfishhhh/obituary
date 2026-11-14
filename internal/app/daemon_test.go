@@ -203,7 +203,12 @@ func TestBackgroundTickReplaysQueuedWrites(t *testing.T) {
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}
-	t.Parallel()
+	// Tick rereads config.toml; the queued write needs registration on.
+	configDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(configDir, "config.toml"), []byte("[proposals]\nmode = \"tiered\"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("OBIT_CONFIG_DIR", configDir)
 	root, home := t.TempDir(), t.TempDir()
 	testenv.InitRepo(t, root)
 	path := filepath.Join(root, "debug.log")
@@ -211,6 +216,7 @@ func TestBackgroundTickReplaysQueuedWrites(t *testing.T) {
 		t.Fatal(err)
 	}
 	svc := &core.Service{Store: core.Store{Home: home}, FS: winfs.FS{}}
+	upgraded(t, home)
 	if err := svc.Store.Update(func(st *core.State) error {
 		st.Projects = map[string]core.ProjectState{core.ProjectKey(root): {Consent: core.ConsentApproved}}
 		return nil

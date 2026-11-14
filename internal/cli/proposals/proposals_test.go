@@ -81,6 +81,11 @@ func TestProposalsListsWhatWentInWithoutAsking(t *testing.T) {
 		t.Fatal(err)
 	}
 	out, _, err := clitest.Execute(t, NewCmd())
+	if err != nil || !strings.Contains(out, "proposal mode off") || !strings.Contains(out, `[proposals] mode = "tiered"`) {
+		t.Fatalf("default mode hint: %s %v", out, err)
+	}
+	clitest.WriteFixture(t, filepath.Join(os.Getenv("OBIT_CONFIG_DIR"), "config.toml"), "[proposals]\nmode = \"tiered\"\n")
+	out, _, err = clitest.Execute(t, NewCmd())
 	for _, want := range []string{"no pending proposals", "registered without asking", "#7", "created", "debug.log", "obit spare <id>", "proposal mode tiered", `[proposals] mode = "auto"`} {
 		if err != nil || !strings.Contains(out, want) {
 			t.Fatalf("output lacks %q: %s %v", want, out, err)

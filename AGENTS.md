@@ -18,7 +18,7 @@
 - `internal/config`：`config.toml`（TOML，所有键都可以省略，有内置默认值）。
 - `internal/rules`：`.gitignore` 写法加寿命的规则、内置规则、信任存储（先信任再加载）。否定规则优先：目录里有受保护的东西时，不把整个目录当成一个单元。
 - `internal/project`：Git 工作区。`Find` 只向上找 `.git`，不启动 git 进程（hook 每次都要调用它，而且 git 出错时必须得到「重试」而不是「不在项目里」），遵守 `GIT_CEILING_DIRECTORIES`。是否被跟踪只问 `git`（每次调用最多 15 秒，超时算错误），问不出来就当作已被跟踪。`.obit/` 会写进 `info/exclude`。
-- `internal/auto`：按规则自动登记（Apply）、`MkTemp`；`observe.go` 给 hook 用：Observe（还没问过的项目先提议，已同意就按规则登记，太大的改为提议）、Snapshot / Leftovers（会话差分，遗留物只提议、不登记）。
+- `internal/auto`：按规则自动登记（Apply）、`MkTemp`；`observe.go` 给 hook 用：Observe（还没问过的项目先提议，已同意就按规则登记，太大的改为提议）、Snapshot / Leftovers（会话差分，新路径交给规则，规则认不得的不登记也不提议）。`[proposals] mode` 默认 `off`，这些都不做；依赖、构建输出和缓存（`NeverAutomatic`）任何模式都不自动登记。
 - `internal/hook`：各 agent 的薄壳，只把 payload 换成通用的 `Event`，具体处理全在 `Handle`。`claude.go`、`codex.go`（解析 apply_patch 补丁，只认第 0 列的文件头，把 WSL 的 `/mnt/x` 路径换成 `X:`）。永远退出 0，错误写进 `hook.log`；返回给 agent 的文字不超过 2000 字符。慢活通过 `Runner` 交给后台进程（`internal/cli/cmdutil/runner.go`），hook 里不做。
 - `internal/guardrm`：删除护栏（`obit init --guard-rm` 才注册的 PreToolUse）。`rewrite.go` 的 `Suggest` 先解析命令（bash 在 `lex_bash.go`，用 shfmt 的解析器 `mvdan.cc/sh/v3/syntax`；PowerShell 在 `lex.go`，手写的引号感知分词），只认命令位置上的 `rm` / `rmdir` / `git clean` / `Remove-Item`，给出只换命令词、保留参数原文的等价 obit 命令，看不懂就放行；`options.go` / `powershell.go` 解析 `obit rm` / `rmdir` / `git-clean` / `remove-item` 接受的参数；`audit.go` 记拦截和放行的计数。每条 shell 命令前都会触发，所以不读账本、不起 git、不碰网络。
 - `internal/e2e`：跨模块的端到端测试（外部包）：真实 shell 执行、hook 与 MCP 的协议抓取、安装、后台进程。
@@ -35,6 +35,7 @@
 - 自动登记相关的改动，测试要跑在真的临时 Git 仓库里（参考 `internal/auto` 的 `newRepo`），不要假装 Git 的回答。
 - Claude Code 的 Stop hook 每个回合都会触发，只要返回 additionalContext 或 block，Claude 就会接着跑下去，所以 Stop / SessionEnd 默认静默。唯一的例外是收工整理（`[hooks] session_cleanup`）：只对能接着干的宿主（Claude Code、Codex 的 Stop，由适配器设 `CanContinue`）、每个会话最多一次（先独占写下 `sessions/*.cleanup` 再输出，宁可丢一次也不循环）、只列 agent 自己这次新建且没归类的文件，`stop_hook_active` 时不出声。SessionEnd 默认只有 1.5 秒，重活交给 `obitd --once`。给 agent 的文字写成陈述，不写成命令（官方文档的建议，祈使句可能触发提示注入防护）。
 - hook 的真机验收：在临时 Git 仓库里执行 `obit init --yes`（只写项目里的 `.claude/`，不碰全局），设好 `OBIT_HOME`，再跑 `claude -p "…" --model haiku --allowedTools Write`，检查 `obit proposals` 和 `hook.log`。
+- **常驻进程和托盘不定时轮询（2026-11-14 定）。** 只靠事件醒来：数据目录和配置目录的文件变化、下一个到期时间，唯一的定时是 5 分钟一次的全量对账。一串连续事件合并成一次处理（安静 300 毫秒，最多推迟 2 秒），自己的提交不唤醒自己。新增唤醒来源时，同时加一条「空闲零唤醒」测试（参考 `internal/app/resident_test.go` 的 `TestIdleResidentHasZeroWakeups`）。
 - **进度不放在本仓库。** 路线、里程碑、任务拆分和决策记录在维护者的私有仓库里（维护者本机检出在被忽略的 `docs-internal/`），由维护者更新。GitHub 上只保留里程碑和少量 issue：不要把任务拆成一串 issue，一次最多新开一个（所有者 2026-11-09 定）；做完已有 issue 对应的事项时在提交说明里写 `Closes #<编号>`。
 - **测试按功能命名，不按审查轮次或阶段命名。** 新测试放进它所测功能的文件（`graveyard_test.go`、`manifest_test.go`、`delete_guard_test.go`……），不要新建 `review5_test.go`、`m2a_test.go` 这类文件；每轮修了什么、为什么修，写进 commit message。跨模块的端到端测试（真实 shell 执行 → 下葬 → 复活、协议抓取）放在 `internal/e2e/`，以外部包的方式写。
 - **测试文件与源文件一一配对。** `bury.go` 的测试放 `bury_test.go`；只有共用的 `helpers_test.go`、`main_test.go`、`export_test.go` 例外，以及跨模块的 `internal/e2e/`。外部测试包（`package x_test`）因为导入循环没法并进同名的 `_test.go` 时，用 `<源文件>_external_test.go`。不要新建找不到同名源文件的测试文件（如 `mcp_recycle_test.go`），把测试并进它所测函数所在源文件对应的 `_test.go`。

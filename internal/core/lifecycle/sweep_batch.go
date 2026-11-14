@@ -69,6 +69,17 @@ func (s *Service) sweepBurials(state State, roots []resolvedGraveyardRoot, block
 
 func (s *Service) prepareExpiredBurial(item Item, roots []resolvedGraveyardRoot, current *State) *preparedBurial {
 	out := s.prepareSettlement(item, false, ReasonExpired, roots, current)
+	if out.Action == "" && out.err == nil && item.IsDir && !item.Force {
+		// Search the folder for a repository here, without store.lock and
+		// with the time a large folder needs.
+		ctx, cancel := context.WithTimeout(s.Store.Context(), guardWalkBudget)
+		err := s.Guard.CheckContext(ctx, out.Path, false)
+		cancel()
+		if err != nil {
+			return &preparedBurial{out: settlementGuardFailure(out, err)}
+		}
+		out.searched = true
+	}
 	p := &preparedBurial{out: out}
 	if out.Action == "" && out.err == nil {
 		p = s.prepareBurial(out, ReasonExpired)

@@ -18,7 +18,7 @@ type WatchPolicy = ledger.WatchPolicy
 
 // Watches returns persisted policies, including policies waiting for approval.
 func (s *Service) Watches() ([]WatchPolicy, error) {
-	st, err := s.Store.Read()
+	st, err := s.Store.ReadHot() // policies live in the hot ledger
 	return st.Watches, err
 }
 

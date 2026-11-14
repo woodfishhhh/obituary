@@ -1,14 +1,15 @@
-import { AppWindow, Archive, CalendarClock, ClipboardList, FolderInput, FolderOpen, LayoutGrid, ListChecks, Monitor, MousePointerClick, PanelBottom, PauseCircle, Plus, Power, Sparkles, Trash2 } from "lucide-react";
+import { AppWindow, Archive, CalendarClock, ClipboardList, FolderInput, FolderOpen, Inbox, LayoutGrid, ListChecks, Monitor, MousePointerClick, PanelBottom, PauseCircle, Plus, Power, Sparkles, Trash2 } from "lucide-react";
 import { Fragment, useState, type ReactNode } from "react";
 import { errorText, useApi } from "../api";
 import { bytes, lifespanText, when } from "../format";
 import { useLoad, useRefresh } from "../hooks";
 import { askDecisions, setAskDecisions } from "../prefs";
 import { t, useLangChoice } from "../i18n";
-import type { Lifetime, Plan, PlanReceipt, WatchPolicy } from "../types";
+import type { Lifetime, Plan, PlanReceipt, ProposalMode, WatchPolicy } from "../types";
 import { Button, Head, Outcome, Seg, Skeleton, useConfirm, useToast, type OutcomeNote } from "../ui";
 import About from "./About";
 import Appearance from "./Appearance";
+import { modes } from "./Decisions";
 
 const watchActive = (p: WatchPolicy) => p.consent === undefined || (p.consent === "approved" && (p.approvedRev ?? 0) === (p.rev ?? 0));
 const ages = (): [string, string][] => [["first-seen", t("set.age.firstSeen")], ["modified", t("set.age.modified")]];
@@ -89,6 +90,16 @@ export default function Settings() {
             {days !== null && days !== String(s.retentionDays) ? <Button kind="primary" onClick={async () => apply(await api.PlanSettings(s.mode, Number(days)), t("set.retentionDone", Number(days)))}>{t("set.save")}</Button> : null}
           </span>
         </Setting>
+        {s.proposalMode !== undefined && api.PlanProposalMode ? (
+          <Setting icon={Inbox} label={t("dec.mode")} desc={t(`dec.modeDesc.${(modes as string[]).includes(s.proposalMode) ? (s.proposalMode as ProposalMode) : "off"}`)}>
+            <select className="select" value={s.proposalMode} aria-label={t("dec.mode")} onChange={async (e) => {
+              const next = e.target.value as ProposalMode;
+              await apply(await api.PlanProposalMode!(next), t("dec.modeDone", t(`dec.mode.${next}`)), { ask: next === "auto", body: <p>{t("dec.askAutoBody")}</p> });
+            }}>
+              {modes.map((m) => <option key={m} value={m}>{t(`dec.mode.${m}`)}</option>)}
+            </select>
+          </Setting>
+        ) : null}
         <Setting icon={PauseCircle} label={t("set.auto")} desc={s.paused ? t("set.autoPaused") : t("set.autoOn")}>
           <Switch on={!s.paused} label={t("set.auto")} onToggle={async () => apply(await api.PlanPause(!s.paused), s.paused ? t("set.resumed") : t("set.paused"))} />
         </Setting>

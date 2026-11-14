@@ -55,6 +55,13 @@ func (it Item) Due(now time.Time) bool {
 	return !it.ExpiresAt.After(now) && !it.NextAttempt.After(now)
 }
 
+// RetryStopped is the NextAttempt of an item whose burial kept failing: it
+// waits, with its LastError, until the user asks for a retry or spares it.
+var RetryStopped = time.Date(9999, 1, 1, 0, 0, 0, 0, time.UTC)
+
+// Stuck reports whether automatic retries of the item's burial stopped.
+func (it Item) Stuck() bool { return !it.NextAttempt.Before(RetryStopped) }
+
 // Burial is an item lying in the graveyard: moved out of the way, still
 // restorable until it is purged.
 type Burial struct {

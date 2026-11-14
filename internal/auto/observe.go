@@ -24,7 +24,7 @@ var (
 	LargeFiles       = 200
 )
 
-// LeftoverLifespan is what approved leftovers get.
+// LeftoverLifespan is what approved container proposals get.
 const LeftoverLifespan = "3d"
 
 // Notice tells the agent about a proposal it has not heard of yet.
@@ -64,6 +64,9 @@ func size(path string) (int64, int) {
 // nothing happens. It returns the proposals the session should hear about.
 func (e *Engine) Observe(paths []string, session string) ([]Decision, []Notice, error) {
 	e.sets = nil
+	if e.off() {
+		return offDecisions(paths), nil, nil
+	}
 	// An unidentifiable write cannot release a keep decision; the ordinary
 	// per-path inspection below still reports that path's failure or refusal.
 	rows, _ := e.Svc.CaptureObservations(paths, session)
@@ -79,6 +82,13 @@ func (e *Engine) Observe(paths []string, session string) ([]Decision, []Notice, 
 // Decisions keep the input order, so retries queue the exact captured event.
 func (e *Engine) ObserveCaptured(rows []core.Observation) ([]Decision, []Notice, error) {
 	e.sets = nil
+	if e.off() {
+		var paths []string
+		for _, row := range rows {
+			paths = append(paths, row.Path)
+		}
+		return offDecisions(paths), nil, nil
+	}
 	var decisions []Decision
 	var notices []Notice
 	var failures error
@@ -108,6 +118,9 @@ func (e *Engine) ObserveCaptured(rows []core.Observation) ([]Decision, []Notice,
 // registration and proposal failures stay in their decisions and are joined
 // after every input has been processed.
 func (e *Engine) observe(paths []string, opts Options, located locations) ([]Decision, []Notice, error) {
+	if e.off() {
+		return offDecisions(paths), nil, nil
+	}
 	opts.Session = core.NormalizeSession(opts.Session)
 	state, err := e.Svc.Store.ReadHot()
 	if err != nil {
@@ -336,12 +349,14 @@ func (e *Engine) pruneSnapshots(dir string) {
 }
 
 // Leftovers compares the project with the session's snapshot. New paths a
-// rule covers go through Observe. Of the rest, only what Git ignores and a
-// tool regenerates (dependencies, build output, caches) becomes a leftovers
-// proposal, so the agent can recommend approving it; a new file Git does not
-// ignore is uncommitted work and is never proposed (see regenerableNames).
+// rule covers go through Observe; nothing else is proposed. Dependencies,
+// build output and caches are never registered automatically (see
+// regenerableNames), and a new file Git does not ignore is uncommitted work.
 func (e *Engine) Leftovers(root, session string) ([]Notice, error) {
 	e.sets = nil
+	if e.off() {
+		return nil, nil
+	}
 	root, err := pathutil.LongAbs(root)
 	if err != nil {
 		return nil, err
@@ -353,68 +368,12 @@ func (e *Engine) Leftovers(root, session string) ([]Notice, error) {
 	if err != nil {
 		return nil, err
 	}
-	repo := project.Project{Root: root}
-	fresh, err := e.freshLeftovers(root, snap, repo.Untracked)
+	fresh, err := e.freshLeftovers(root, snap, project.Project{Root: root}.Untracked)
 	if err != nil || len(fresh) == 0 {
-		return nil, err // nothing new untracked means nothing new ignored either
-	}
-	ignored, err := e.freshLeftovers(root, snap, repo.Ignored)
-	if err != nil {
 		return nil, err
 	}
-	var disposable []string
-	for _, p := range ignored {
-		if regenerable(p) {
-			disposable = append(disposable, p)
-		}
-	}
-	located := locations{}
-	regenerated := map[string]bool{}
-	for _, p := range disposable {
-		regenerated[strings.ToLower(filepath.Clean(p))] = true
-	}
-	_, notices, observeErr := e.observe(fresh, Options{Session: session, regenerable: regenerated}, located)
-	state, err := e.Svc.Store.ReadHot()
-	if err != nil {
-		return notices, err
-	}
-	cands := e.leftoverCandidates(disposable, &state, located)
-	n, err := e.propose(core.ProposalLeftovers, root, session, cands, nil)
-	if n != nil {
-		n, err = e.settleNotice(*n, err)
-	}
-	if n != nil {
-		notices = append(notices, *n)
-	}
-	return notices, errors.Join(observeErr, err)
-}
-
-func (e *Engine) leftoverCandidates(paths []string, state *core.State, located locations) []core.Candidate {
-	var cands []core.Candidate
-	seen := map[string]bool{}
-	for _, p := range paths {
-		d := e.decide(p, state, seen, located)
-		if d.Action != Skipped || d.Reason != reasonNoRule {
-			continue // handled by rule, already tracked, or not ours to touch
-		}
-		proj, ok, err := project.Find(d.Unit)
-		if err != nil || !ok {
-			continue
-		}
-		if reason, err := e.vetUnit(proj, d.Unit, state, located); err != nil || reason != "" {
-			continue
-		}
-		set, _, err := e.RuleSet(proj.Root)
-		if err != nil {
-			continue
-		}
-		if protected, err := set.Protects(d.Unit, isDirectory(d.Unit)); err != nil || protected {
-			continue
-		}
-		bytes, _ := size(d.Unit)
-		cands = append(cands, core.Candidate{Path: d.Unit, Lifespan: LeftoverLifespan, Size: bytes})
-	}
-	return cands
+	_, notices, err := e.observe(fresh, Options{Session: session}, locations{})
+	return notices, err
 }
 
 // freshLeftovers lists what list reports now that predates neither the
