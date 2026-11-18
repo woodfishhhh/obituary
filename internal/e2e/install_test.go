@@ -102,7 +102,8 @@ func TestGuardInstalledExecutableReference(t *testing.T) {
 						}
 					}
 					payload, _ := json.Marshal(map[string]any{"hook_event_name": "PreToolUse", "cwd": cwd, "tool_name": tool, "tool_input": input})
-					child := exec.Command(`C:\Program Files\Git\bin\bash.exe`, "--noprofile", "--norc", "-c", installed)
+					// Codex runs commandWindows in PowerShell (its native Windows default shell).
+					child := exec.Command("powershell.exe", "-NoProfile", "-NonInteractive", "-Command", installed)
 					if agent == "claude" {
 						if !filepath.IsAbs(installed) || strings.Join(handler.Args, " ") != "hook claude" {
 							t.Fatalf("invalid Claude exec form: %+v", handler)

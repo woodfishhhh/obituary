@@ -83,7 +83,7 @@ obit spare 12            # 撤回一项自动登记：东西留在原处，不�
 obit init -g --agent codex   # ~/.codex/hooks.json + AGENTS.md 里的说明块；obit init --agent codex 只装当前项目
 ```
 
-- 同一份 `hooks.json` 同时支持 Windows 和 WSL：`command` 写 `/mnt/d/…/obit.exe hook codex`（WSL 里通过 interop 调用 Windows 版），`commandWindows` 写 Windows 路径。WSL 传来的 `/mnt/<盘>/…` 路径会自动换成 `<盘>:\…`；WSL 自己文件系统里的路径（`/home/…`）暂时静默跳过。
+- 同一份 `hooks.json` 同时支持 Windows 和 WSL：`command` 写 `/mnt/d/…/obit.exe hook codex`（WSL 里通过 interop 调用 Windows 版），`commandWindows` 写 PowerShell 形式的 Windows 命令（`& "D:/…/obit.exe" hook codex`），因为 Windows 版 Codex 用 PowerShell 跑 hook。WSL 传来的 `/mnt/<盘>/…` 路径会自动换成 `<盘>:\…`；WSL 自己文件系统里的路径（`/home/…`）暂时静默跳过。
 - Codex 改文件用 `apply_patch`，讣告从补丁里解析出新增、修改、移动后的文件（删除的不算）。
 - **Codex 只执行你信任过的 hook**：装完后打开 Codex，运行 `/hooks`，信任讣告的 hook。项目级的 hook 还需要这个项目本身是受信任的。
 - 项目级安装时，如果 `.codex`、`.claude` 或备份文件是指向项目外的链接，就拒绝写入。

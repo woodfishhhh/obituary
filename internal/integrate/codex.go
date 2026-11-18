@@ -65,6 +65,11 @@ func PlanCodex(s Scope, command, commandWindows string, uninstall bool) ([]Chang
 			}
 		}
 	}
+	if commandWindows != "" {
+		// Codex runs commandWindows in PowerShell, where `"C:/obit.exe" hook`
+		// is a parse error (exit 1) unless it starts with the call operator.
+		commandWindows = powershellHookCommand(commandWindows)
+	}
 	spec := codexSpec(command, commandWindows)
 	noticeCommand, err := graveNoticeCommand(s, hooksPath, "codex", command)
 	if err != nil {

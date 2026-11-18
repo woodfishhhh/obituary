@@ -81,7 +81,7 @@ obit spare 12            # undo an automatic registration: it stays where it is,
 obit init -g --agent codex   # ~/.codex/hooks.json plus a block in AGENTS.md; obit init --agent codex installs into this project
 ```
 
-- One `hooks.json` serves Windows and WSL: `command` is `/mnt/d/…/obit.exe hook codex` (WSL calls the Windows build through interop) and `commandWindows` is the Windows command. `/mnt/<drive>/…` paths from WSL become `<drive>:\…`; paths inside WSL's own file system (`/home/…`) are skipped for now.
+- One `hooks.json` serves Windows and WSL: `command` is `/mnt/d/…/obit.exe hook codex` (WSL calls the Windows build through interop) and `commandWindows` is the Windows command in PowerShell form (`& "D:/…/obit.exe" hook codex`), because native Codex runs hooks in PowerShell. `/mnt/<drive>/…` paths from WSL become `<drive>:\…`; paths inside WSL's own file system (`/home/…`) are skipped for now.
 - Codex edits files with `apply_patch`; Obituary reads the patch for added, changed and moved files (deleted ones do not count).
 - **Codex runs only hooks you trusted.** After installing, open Codex, run `/hooks` and trust Obituary's hooks. Project hooks also need the project itself to be trusted.
 - A project install refuses to write if `.codex`, `.claude` or a backup file is a link pointing outside the project.

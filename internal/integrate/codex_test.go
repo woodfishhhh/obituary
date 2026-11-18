@@ -110,7 +110,7 @@ func TestCodexInstallServesWindowsAndWSLAndUninstallsCleanly(t *testing.T) {
 		t.Fatal(err)
 	}
 	stop := parsed.Hooks["Stop"]
-	if len(stop) != 2 || stop[0].Hooks[0].Command != "notify-me" || stop[1].Hooks[0].Command != unixCmd || stop[1].Hooks[0].CommandWindows != winCmd {
+	if len(stop) != 2 || stop[0].Hooks[0].Command != "notify-me" || stop[1].Hooks[0].Command != unixCmd || stop[1].Hooks[0].CommandWindows != "& "+winCmd {
 		t.Fatalf("want the user's Stop hook and ours with both commands:\n%s", hooks)
 	}
 	if end := parsed.Hooks["SessionEnd"]; len(end) != 1 || end[0].Hooks[0].Timeout != 3 {
