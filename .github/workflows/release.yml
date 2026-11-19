@@ -42,12 +42,6 @@ jobs:
         run: go run ./scripts/winres -check bin/release
       - name: Finalize local channel manifests (no channel publishing)
         run: node scripts/finalize-manifests.mjs bin/release
-      - name: Stage the versioned installers for the mirror
-        shell: bash
-        run: |
-          # Match the tagged bytes used by the manual mirror upload, not the Windows checkout.
-          git show HEAD:install.sh > bin/release/install.sh
-          git show HEAD:packaging/install.ps1 > bin/release/install.ps1
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-files
@@ -56,8 +50,6 @@ jobs:
             bin/release/*.zip
             bin/release/*.tar.gz
             bin/release/checksums.txt
-            bin/release/install.ps1
-            bin/release/install.sh
             bin/release/CHANGELOG.md
             bin/release/scoop/**
             bin/release/winget/**
@@ -96,53 +88,3 @@ jobs:
             if [[ "$TAG" == *-* ]]; then flags+=(--prerelease); fi
             gh release create "$TAG" release/*.zip release/*.tar.gz release/checksums.txt "${flags[@]}"
           fi
-
-  # Copies the archives, checksums.txt and tagged installers to the mainland China mirror
-  # (https://obituary.woodfish.site/download/<tag>/), which install.ps1 falls
-  # back to. Skipped when the deploy key is not configured.
-  mirror:
-    needs: publish
-    runs-on: ubuntu-latest
-    # A fallback: scripts/mirror-release.sh uploads through a computer in China
-    # in minutes, while this crosses the border at about 25 KB/s in the evening.
-    timeout-minutes: 90
-    permissions: {}
-    steps:
-      - id: key
-        env:
-          CN_DEPLOY_KEY: ${{ secrets.CN_DEPLOY_KEY }}
-        run: echo "present=$([ -n "$CN_DEPLOY_KEY" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
-      - if: steps.key.outputs.present == 'yes'
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: release-files
-          path: release
-      - name: Copy the release files to the mirror
-        if: steps.key.outputs.present == 'yes'
-        shell: bash
-        env:
-          CN_DEPLOY_KEY: ${{ secrets.CN_DEPLOY_KEY }}
-          CN_DEPLOY_HOST: ${{ secrets.CN_DEPLOY_HOST }}
-          CN_DEPLOY_KNOWN_HOSTS: ${{ secrets.CN_DEPLOY_KNOWN_HOSTS }}
-          TAG: ${{ github.ref_name }}
-        run: |
-          set -euo pipefail
-          umask 077
-          ssh_dir="$RUNNER_TEMP/cn-ssh"
-          mkdir -p "$ssh_dir"
-          trap 'rm -rf "$ssh_dir"' EXIT
-          echo "$CN_DEPLOY_KEY" > "$ssh_dir/key"
-          echo "$CN_DEPLOY_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
-          mkdir -p "upload/$TAG"
-          cp release/*.zip release/*.tar.gz release/checksums.txt "upload/$TAG/"
-          cp release/install.ps1 release/install.sh "upload/$TAG/"
-          # No --delete: download/ keeps every earlier version.
-          ssh_cmd="ssh -i $ssh_dir/key -o IdentitiesOnly=yes -o UserKnownHostsFile=$ssh_dir/known_hosts -o StrictHostKeyChecking=yes"
-          # The server lets one upload through at a time (rrsync); the release
-          # archives, latest.json and the site can overlap, so wait and retry.
-          for attempt in $(seq 1 10); do
-            if rsync -rlt --chmod=D755,F644 -e "$ssh_cmd" "upload/$TAG" "obit-deploy@$CN_DEPLOY_HOST:download/"; then break; fi
-            if [[ $attempt == 10 ]]; then exit 1; fi
-            echo "upload attempt $attempt failed; retrying in 30 s"
-            sleep 30
-          done

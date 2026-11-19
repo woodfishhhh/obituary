@@ -201,6 +201,8 @@ jobs:
           node-version: "22"
       - name: Build POSIX packages
         run: go build ./...
+      - name: Reject invalid CN mirror SSH commands before networking
+        run: python3 scripts/cn-mirror-pull.test.py
       - name: Cross-build Linux ARM64
         run: GOOS=linux GOARCH=arm64 go build ./cmd/...
       # The race detector runs here only: Linux has cgo and a C compiler on the

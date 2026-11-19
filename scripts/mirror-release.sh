@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
-# Copies a release's archives and checksums.txt to the mainland China mirror
-# through a computer in China. GitHub's runners reach the mirror across the
-# border at about 25 KB/s in the evening (40 minutes for one release), while a
-# computer in China downloads from GitHub and uploads to the mirror at about
-# 1 MB/s. gh downloads draft assets too, so the mirror is complete before the
-# release is published. The release workflow's own upload stays as a fallback.
+# Manual fallback from a computer in China: gh can download and pre-stage
+# draft archives, checksums and tagged installers. Normally the mirror pulls
+# these files and updates latest.json itself after the release is published.
 #
 # Usage: bash scripts/mirror-release.sh VERSION [SSH_HOST]
 set -euo pipefail

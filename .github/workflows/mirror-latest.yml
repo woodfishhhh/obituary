@@ -3,58 +3,40 @@ name: mirror-latest
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published stable release tag (vX.Y.Z)
+        required: true
+        type: string
 
-permissions:
-  contents: read
-
-concurrency:
-  group: mirror-latest
-  cancel-in-progress: false
+permissions: {}
 
 jobs:
   mirror:
-    if: ${{ !github.event.release.draft && !github.event.release.prerelease }}
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'release' && !github.event.release.draft && !github.event.release.prerelease)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - id: key
-        env:
-          CN_DEPLOY_KEY: ${{ secrets.CN_DEPLOY_KEY }}
-        run: echo "present=$([ -n "$CN_DEPLOY_KEY" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
-      - name: Read the published release metadata
-        if: steps.key.outputs.present == 'yes'
+      - name: Trigger the mirror pull and wait for it to finish
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-          RELEASE_ID: ${{ github.event.release.id }}
-        run: |
-          set -euo pipefail
-          gh api "repos/$GH_REPO/releases/$RELEASE_ID" |
-            jq -e 'if .draft == false and .prerelease == false then
-              {tag_name, name, body, html_url, published_at, draft, prerelease}
-              else error("Release must be published and stable") end' > latest.json
-      - name: Copy the latest release metadata to the mirror
-        if: steps.key.outputs.present == 'yes'
-        shell: bash
-        env:
-          CN_DEPLOY_KEY: ${{ secrets.CN_DEPLOY_KEY }}
+          CN_MIRROR_TRIGGER_KEY: ${{ secrets.CN_MIRROR_TRIGGER_KEY }}
           CN_DEPLOY_HOST: ${{ secrets.CN_DEPLOY_HOST }}
           CN_DEPLOY_KNOWN_HOSTS: ${{ secrets.CN_DEPLOY_KNOWN_HOSTS }}
+          TAG: ${{ inputs.tag || github.event.release.tag_name }}
         run: |
           set -euo pipefail
+          [[ $TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Expected a stable tag (vX.Y.Z)' >&2; exit 1; }
+          : "${CN_MIRROR_TRIGGER_KEY:?Missing CN_MIRROR_TRIGGER_KEY}" "${CN_DEPLOY_HOST:?Missing CN_DEPLOY_HOST}" "${CN_DEPLOY_KNOWN_HOSTS:?Missing CN_DEPLOY_KNOWN_HOSTS}"
           umask 077
-          ssh_dir="$RUNNER_TEMP/cn-ssh"
-          mkdir -p "$ssh_dir"
-          trap 'rm -rf "$ssh_dir"' EXIT
-          echo "$CN_DEPLOY_KEY" > "$ssh_dir/key"
-          echo "$CN_DEPLOY_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
-          ssh_cmd="ssh -i $ssh_dir/key -o IdentitiesOnly=yes -o UserKnownHostsFile=$ssh_dir/known_hosts -o StrictHostKeyChecking=yes"
-          # The server lets one upload through at a time (rrsync); the release
-          # archives, latest.json and the site can overlap, so wait and retry.
-          for attempt in $(seq 1 10); do
-            if rsync -rlt --chmod=D755,F644 -e "$ssh_cmd" latest.json "obit-deploy@$CN_DEPLOY_HOST:download/latest.json"; then break; fi
-            if [[ $attempt == 10 ]]; then exit 1; fi
-            echo "upload attempt $attempt failed; retrying in 30 s"
-            sleep 30
-          done
+          ssh_dir=$(mktemp -d "$RUNNER_TEMP/cn-ssh.XXXXXX")
+          trap 'rm -rf -- "$ssh_dir"' EXIT
+          printf '%s\n' "$CN_MIRROR_TRIGGER_KEY" > "$ssh_dir/key"
+          printf '%s\n' "$CN_DEPLOY_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          ssh_opts=(-o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes
+                    -o "UserKnownHostsFile=$ssh_dir/known_hosts" -o ConnectTimeout=15
+                    -o ServerAliveInterval=30 -i "$ssh_dir/key")
+          ssh "${ssh_opts[@]}" -- "obit-deploy@$CN_DEPLOY_HOST" "pull $TAG"
