@@ -167,21 +167,31 @@ func TestDeletionDeepNesting(t *testing.T) {
 	}
 }
 
-func TestEmbeddedBashDeletion(t *testing.T) {
-	backtick := string(rune(96))
-	dollarOpen := string(rune(36)) + string(rune(40))
+func TestEmbeddedDeletion(t *testing.T) {
 	for _, tc := range []struct {
 		name, command, want string
 	}{
-		{"backtick", "echo " + backtick + "rm -rf build" + backtick, "rm"},
-		{"dollar-find", "echo '" + dollarOpen + "find . -delete)'", "find -delete"},
-		{"heredoc-xargs", "cat <<EOF\n" + backtick + "xargs rm" + backtick + "\nEOF", "xargs rm"},
-		{"text", "echo " + backtick + "ordinary text" + backtick, ""},
+		{"backtick", "echo `rm -rf build`", "rm"},
+		{"dollar-find", "echo '$(find . -delete)'", "find -delete"},
+		{"heredoc-xargs", "cat <<'EOF'\n`xargs rm`\nEOF", "xargs rm"},
+		{"dollar-remove-item", "Write-Output '$(Remove-Item -Recurse build)'", "Remove-Item"},
+		{"nested", "echo \"$(echo '`rm x`')\"", "rm"}, // literal to both parsers inside $(…)
+		{"text", "echo `ordinary text` '$(go test ./...)'", ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := EmbeddedBashDeletion(tc.command); got != tc.want {
-				t.Fatalf("EmbeddedBashDeletion = %q, want %q", got, tc.want)
+			if got := EmbeddedDeletion(tc.command); got != tc.want {
+				t.Fatalf("EmbeddedDeletion = %q, want %q", got, tc.want)
 			}
 		})
+	}
+}
+
+func TestEmbeddedDeletionReadsQuotedHeredoc(t *testing.T) {
+	command := "codex --codex-run-as-apply-patch \"$(cat <<'PATCH'\n- Fix: the guard denies `find -delete`.\nPATCH\n)\""
+	if got := Deletion(command, Bash); got != "" {
+		t.Fatalf("Bash reading = %q; a quoted heredoc keeps backticks literal", got)
+	}
+	if got := EmbeddedDeletion(command); got != "find -delete" {
+		t.Fatalf("EmbeddedDeletion = %q, want find -delete", got)
 	}
 }

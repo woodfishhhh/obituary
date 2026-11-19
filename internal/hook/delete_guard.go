@@ -20,15 +20,15 @@ func guardDelete(home string, ev Event) (string, error) {
 		why = "delete guard is disabled"
 	}
 	if why == "" {
+		why = codexWindowsEmbeddedDeletion(ev)
+		guidance = why
+	}
+	if why == "" {
 		var context guardrm.Context
 		context, why = deleteGuardContext(ev)
 		if why == "" {
-			if reason := codexWindowsEmbeddedDeletion(ev); reason != "" {
-				why, guidance = reason, reason
-			} else {
-				equivalent, summary, why = guardrm.SuggestWithSummary(ev.Command, context)
-				guidance = deletionGuidance(ev, why, context.Executable)
-			}
+			equivalent, summary, why = guardrm.SuggestWithSummary(ev.Command, context)
+			guidance = deletionGuidance(ev, why, context.Executable)
 		}
 	}
 	if why == "" || guidance != "" {
@@ -51,21 +51,19 @@ func guardDelete(home string, ev Event) (string, error) {
 	return "", nil
 }
 
-// deletionGuidance denies a literal deletion that has no exact equivalent:
-// denying runs nothing, so it cannot select more than the command would.
+const codexWindowsEmbeddedDeletionReason = "Obituary's delete guard is on: Codex on Windows passes commands through another shell, where quoting may fail, so a deletion inside backticks or $(...) in this command may really execute, even inside quotes or a quoted heredoc. Text containing backticks stays inert when an editing tool writes it to a file and the command receives the file path."
 
-const codexWindowsEmbeddedDeletionReason = "Codex on Windows passes commands through another shell, where quoting may fail and deletion in this text may really execute. Text containing backticks should be written with an editing tool; the same applies to shell substitutions. When needed, pass file paths to the command."
-
+// codexWindowsEmbeddedDeletion needs no shell, working directory or
+// executable: whichever shell finally reads the text, the deletion can run.
 func codexWindowsEmbeddedDeletion(ev Event) string {
-	if ev.Host != "codex" || runtime.GOOS != "windows" || !windowsCwd(ev.Cwd) && !guardrm.WSLMountedPath(ev.Cwd) {
-		return ""
-	}
-	if guardrm.EmbeddedBashDeletion(ev.Command) == "" {
+	if ev.Host != "codex" || runtime.GOOS != "windows" || guardrm.EmbeddedDeletion(ev.Command) == "" {
 		return ""
 	}
 	return codexWindowsEmbeddedDeletionReason
 }
 
+// deletionGuidance denies a literal deletion that has no exact equivalent:
+// denying runs nothing, so it cannot select more than the command would.
 func deletionGuidance(ev Event, why, executable string) string {
 	if why == "" {
 		return ""

@@ -59,7 +59,8 @@ func TestCodexEmbeddedDeletionGuardScope(t *testing.T) {
 	}{
 		{"codex-windows", "codex", "exec_command", "cmd", "C:/repo", runtime.GOOS == "windows"},
 		{"claude-unchanged", "claude", "Bash", "command", "C:/repo", false},
-		{"codex-non-windows", "codex", "exec_command", "cmd", "/tmp/repo", false},
+		// On Windows a POSIX cwd skips the ordinary guard (WSL context); this rule still applies.
+		{"codex-posix-cwd", "codex", "exec_command", "cmd", "/tmp/repo", runtime.GOOS == "windows"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -90,9 +91,9 @@ func TestCodexEmbeddedDeletionGuardScope(t *testing.T) {
 				for _, phrase := range []string{
 					"Codex on Windows passes commands through another shell",
 					"quoting may fail",
-					"deletion in this text may really execute",
-					"Text containing backticks should be written with an editing tool",
-					"pass file paths to the command",
+					"may really execute",
+					"an editing tool writes it to a file",
+					"the command receives the file path",
 				} {
 					if !strings.Contains(reason, phrase) {
 						t.Errorf("denial reason lacks %q: %s", phrase, reason)

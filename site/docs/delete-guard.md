@@ -1,6 +1,5 @@
 # 删除护栏
 
-- **Windows 上的 Codex 片段也拦。** Codex 在 Windows 上会把命令再交给另一层 shell，引用符号可能失效，所以命令原文任意位置的反引号片段或 `$(…)` 片段里出现删除，也会被拦下；其中的内容按 Bash 解析。带反引号的文字请用编辑工具写进文件，需要时把文件路径交给命令。
 agent 删光用户目录、删空整块盘，这样的事故已经有人贴出来过不止一次。打开删除护栏后，agent 执行 `rm -rf build`、`rmdir`、`git clean -fdx`、`Remove-Item -Recurse` 这类删除命令时，讣告会拦下这一次执行，并告诉 agent 一条等价命令，比如 `obit rm -rf build`。agent 改用它之后，东西进墓地而不是消失，`obit resurrect <id>` 一条命令放回原处。
 
 ```powershell
@@ -33,6 +32,7 @@ $ obit resurrect --last
 - **运行时才选出的目标先列出再下葬。** Bash 的 `find -delete`、`find -exec rm`（含 `-execdir`）和 `xargs rm`，以及 PowerShell 的 `Get-ChildItem … | Remove-Item`，都会被拦下，但不提供等价改写。先列出并核对目标，再把明确的路径逐项或批量交给 `obit rm -- <路径>...`；只查找或列出路径的 `find` 不受影响。护栏不分析任意包装命令，例如 `sudo rm` 和 `bash -c '…'`。
 - **不会退回成真删。** `obit rm` / `obit remove-item` / `obit git-clean` 的每个路径都走下葬；被拒绝（盘符根、系统目录、用户目录本身等）时照 `rm` 的格式报错、返回非零。
 - **怕命令在路上变了样。** agent 想的命令和真正执行的命令之间，隔着 shell 的引号和转义，还可能隔着一层改写命令的代理。一个符号被吃掉，`rm -rf "$OUT"/` 就成了 `rm -rf /`。所以 `obit rm` 动手前按磁盘上的真实路径再核对一遍。
+- **Windows 上的 Codex，引号里的替换也查。** Codex 在 Windows 上会把命令再交给另一层 shell，引号可能在那一层失效，按 Bash 规则只是文字的内容也可能被执行。所以 Windows 上 Codex 的命令里，反引号片段和 `$(…)` 片段不论出现在引号、带引号的 heredoc 还是注释里，都按 Bash 和 PowerShell 两种读法检查，里面出现删除就拦下。带反引号的文字用编辑工具写进文件、再把文件路径交给命令，就不会被拦。
 - 被 Git 跟踪的文件也照样下葬，这样未提交的修改也找得回来（这是 agent 主动删除，和「自动登记绝不碰被跟踪文件」不冲突）。
 - `obit rm -rf` 一个含 `.git` 的目录会把整个仓库下葬：真正的 `rm -rf` 会把它永久删掉，下葬至少还能复活。系统目录、用户文件夹这些不能强制的保护照样生效。
 - **等价命令刻意收窄**：等价命令绝不能比原命令选中更多东西，所以讣告不做跨 shell 的翻译，只在下表的写法里给。给不出时照样拦下，理由里写明为什么给不出，并说明 `obit bury <路径>`（字面路径）和 `obit git-clean` 可以做到可复活的删除，agent 据此改写命令。

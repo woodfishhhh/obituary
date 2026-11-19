@@ -1,6 +1,7 @@
 package guardrm
 
 import (
+	"cmp"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -21,92 +22,80 @@ func Deletion(command string, shell Shell) string {
 	return ""
 }
 
-// EmbeddedBashDeletion scans raw text for backtick and command-substitution
-// fragments, then applies Bash deletion detection to each fragment. The scan
-// deliberately ignores the surrounding shell quoting because Windows Codex
-// may pass that text through another shell with different quoting rules.
-func EmbeddedBashDeletion(command string) string {
-	return embeddedBashDeletion(command, 0)
+// EmbeddedDeletion reads every backtick span and $(…) in raw text as code,
+// quoted or not, and names the first deletion that Bash or PowerShell would
+// run there. Windows Codex may hand the text to another shell whose quoting
+// differs, so quotes, quoted heredocs and comments prove nothing here.
+func EmbeddedDeletion(command string) string {
+	return embeddedDeletion(command, 0)
 }
 
-func embeddedBashDeletion(command string, depth int) string {
+func embeddedDeletion(s string, depth int) string {
 	if depth > maxNesting {
-		return wordDeletion(command, false)
+		return cmp.Or(wordDeletion(s, false), wordDeletion(s, true))
 	}
-	for i := 0; i < len(command); i++ {
-		switch {
-		case command[i] == 96:
-			if end := backtickEnd(command, i+1); end >= 0 {
-				fragment := command[i+1 : end]
-				if found := embeddedBashDeletion(fragment, depth+1); found != "" {
-					return found
-				}
-				if found := Deletion(fragment, Bash); found != "" {
-					return found
-				}
-				i = end
-			}
-		case command[i] == 36 && i+1 < len(command) && command[i+1] == 40:
-			if end := commandSubstitutionEnd(command, i+2); end >= 0 {
-				fragment := command[i+2 : end]
-				if found := embeddedBashDeletion(fragment, depth+1); found != "" {
-					return found
-				}
-				if found := Deletion(fragment, Bash); found != "" {
-					return found
-				}
-				i = end
-			}
+	for i := 0; i < len(s); i++ {
+		start, end := i+1, -1
+		if s[i] == '`' {
+			end = backtickEnd(s, start)
+		} else if strings.HasPrefix(s[i:], "$(") {
+			start++
+			end = commandSubstitutionEnd(s, start)
 		}
+		if end < 0 {
+			continue // unmatched: whatever follows is still scanned
+		}
+		fragment := s[start:end]
+		if found := embeddedDeletion(fragment, depth+1); found != "" {
+			return found
+		}
+		if found := cmp.Or(Deletion(fragment, Bash), Deletion(fragment, PowerShell)); found != "" {
+			return found
+		}
+		i = end
 	}
 	return ""
 }
 
+// backtickEnd finds the backtick closing a span whose body starts at start.
 func backtickEnd(s string, start int) int {
 	for i := start; i < len(s); i++ {
-		if s[i] == 92 && i+1 < len(s) {
+		switch s[i] {
+		case '\\':
 			i++
-			continue
-		}
-		if s[i] == 96 {
+		case '`':
 			return i
 		}
 	}
 	return -1
 }
 
+// commandSubstitutionEnd finds the ) closing a $( whose body starts at start,
+// skipping quotes, escapes, backtick spans and nested $(…).
 func commandSubstitutionEnd(s string, start int) int {
 	depth := 1
 	var quote byte
 	for i := start; i < len(s); i++ {
-		c := s[i]
-		if quote != 0 {
-			if c == 92 && quote != 39 && i+1 < len(s) {
+		switch c := s[i]; {
+		case quote != 0:
+			if c == '\\' && quote == '"' {
 				i++
 			} else if c == quote {
 				quote = 0
 			}
-			continue
-		}
-		switch c {
-		case 92:
-			if i+1 < len(s) {
-				i++
-			}
-		case 39, 34:
+		case c == '\\':
+			i++
+		case c == '\'' || c == '"':
 			quote = c
-		case 96:
+		case c == '`':
 			if end := backtickEnd(s, i+1); end >= 0 {
 				i = end
 			}
-		case 36:
-			if i+1 < len(s) && s[i+1] == 40 {
-				depth++
-				i++
-			}
-		case 41:
-			depth--
-			if depth == 0 {
+		case strings.HasPrefix(s[i:], "$("):
+			depth++
+			i++
+		case c == ')':
+			if depth--; depth == 0 {
 				return i
 			}
 		}
