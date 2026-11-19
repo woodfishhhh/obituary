@@ -84,14 +84,11 @@ It checks PATH, the background process, each agent connection, the data folder a
 
 ## Updates
 
-Once a day at most, Obituary checks whether a new stable release is out. It reads public release information only and sends no usage data; when GitHub is unreachable it checks the mainland China mirror instead. When there is a new release, the tray menu and the small window tell you, and Settings > About and updates shows the command for the way you installed it:
+Once a day at most, Obituary checks for a new stable release. The check reads public release information and sends no usage data. If GitHub is unreachable, it checks the mainland China mirror. Installing an update still requires your confirmation.
 
-- Scoop: `scoop update obituary`
-- winget: `winget upgrade woodfishhhh.Obituary`
-- Homebrew (macOS): `brew upgrade --cask obituary`
-- Install script: run it again (it installs the latest release by default)
+When a release is available, install it from Settings > About and updates in the Windows window. Obituary closes the window and the running tray, updates through the original install channel, then attempts to restore the tray and reopen the window. Scoop, WinGet, Homebrew (macOS) and the Obituary installer scripts are supported. For a manually extracted copy, download a replacement from the release page.
 
-Obituary checks and tells you; you run the update. In a terminal, `obit update` shows your version and the update command, and `obit update --check` checks right away.
+In a terminal, use `obit update` for version information and the last result, `obit update --check` to check now, and `obit update --apply` to install the cached newer release. Combine them as `obit update --check --apply` to check first. On Windows, close the window before updating from a terminal. The command returns after handing off to a background process; see About and updates or run `obit update` again for the final result and log path.
 
 To keep it from going online on its own, turn off "Check for updates automatically" in Settings, or put this in `config.toml`:
 

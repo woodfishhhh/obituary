@@ -42,6 +42,9 @@ jobs:
         run: go run ./scripts/winres -check bin/release
       - name: Finalize local channel manifests (no channel publishing)
         run: node scripts/finalize-manifests.mjs bin/release
+      - name: Stage the versioned installers for the mirror
+        shell: bash
+        run: cp install.sh packaging/install.ps1 bin/release/
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-files
@@ -50,6 +53,8 @@ jobs:
             bin/release/*.zip
             bin/release/*.tar.gz
             bin/release/checksums.txt
+            bin/release/install.ps1
+            bin/release/install.sh
             bin/release/CHANGELOG.md
             bin/release/scoop/**
             bin/release/winget/**
@@ -89,7 +94,7 @@ jobs:
             gh release create "$TAG" release/*.zip release/*.tar.gz release/checksums.txt "${flags[@]}"
           fi
 
-  # Copies the same archives and checksums.txt to the mainland China mirror
+  # Copies the archives, checksums.txt and tagged installers to the mainland China mirror
   # (https://obituary.woodfish.site/download/<tag>/), which install.ps1 falls
   # back to. Skipped when the deploy key is not configured.
   mirror:
@@ -127,6 +132,7 @@ jobs:
           echo "$CN_DEPLOY_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
           mkdir -p "upload/$TAG"
           cp release/*.zip release/*.tar.gz release/checksums.txt "upload/$TAG/"
+          cp release/install.ps1 release/install.sh "upload/$TAG/"
           # No --delete: download/ keeps every earlier version.
           ssh_cmd="ssh -i $ssh_dir/key -o IdentitiesOnly=yes -o UserKnownHostsFile=$ssh_dir/known_hosts -o StrictHostKeyChecking=yes"
           # The server lets one upload through at a time (rrsync); the release

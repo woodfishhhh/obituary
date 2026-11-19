@@ -386,6 +386,7 @@ POSIX 没有「在同一个源句柄上改名」，所以换一种做法：先�
 | `obitd.log` | 后台进程日志（轮转） |
 | `proposal-log.json` / `proposal-log.lock` | 按项目保存上次提议刷新错误；共用锁文件以独占方式串行更新，临时文件经 `os.Root.Rename` 替换，常驻和各次 `--once` 共用去重状态 |
 | `update.json` / `update.lock` | 正式版更新检查缓存和独立的检查锁；缓存记录检查时间、ETag、发布说明和最近错误，不读写账本 |
+| `update-apply.json` / `update-apply.lock` / `update-*.log` | 上次应用更新结果、独占执行锁和逐次升级日志，与检查缓存分开写 |
 | `*.lock`、`obitd.stop` | 锁文件；常驻进程的停止信号 |
 
 配置目录 `%APPDATA%\obituary`（`OBIT_CONFIG_DIR` 可改）：`config.toml`，所有键都可省略。项目里只有 `.obit/`（`mktemp` 的临时目录），自动写进 `.git/info/exclude`。
@@ -427,7 +428,7 @@ POSIX 没有「在同一个源句柄上改名」，所以换一种做法：先�
 - 所有子进程都带 `CREATE_NO_WINDOW`，后台永远不弹黑框；`obitd.exe` 必须用 `-ldflags=-H=windowsgui` 构建。
 - `obit doctor` 只读地检查以上所有环节（PATH、obitd、运行器、两家集成、数据目录权限、账本、信任存储、hook 日志、配置），给出 PASS / WARN / FAIL，有 FAIL 时退出码 1。
 
-### 更新检查
+### 更新
 
 三个程序共用 `internal/buildinfo.Version`，发布时注入。`internal/update` 用 `golang.org/x/mod/semver` 比较正式版；开发构建按基础正式版号比较，同号正式版不提示更新。
 
@@ -435,7 +436,9 @@ POSIX 没有「在同一个源句柄上改名」，所以换一种做法：先�
 
 `[update] check` 默认开启；关闭后自动检查静默返回，显式 `CheckUpdate` / `obit update --check` 允许手动查询。测试环境通过 `OBIT_TEST_NO_UPDATE=1` 阻止默认端点请求，HTTP 测试显式注入本机服务器。缓存复用账本的共享删除读取和原子替换辅助函数，与账本使用不同的锁。
 
-安装方式按程序路径判断 Scoop、WinGet、Homebrew，脚本安装由同目录的 `.obituary-install.json` 标识（`install.sh` 写的回执 `owner` 是 `obituary-install-sh-v1`，更新命令是带同一目录、同一来源重新运行 `install.sh`；其余是 `install.ps1`）；只生成对应更新命令，其他安装方式给出 release 链接。GUI 的 `Update` 和 doctor 只读缓存，托盘仅在有新版时显示入口。
+安装方式按程序路径判断 Scoop、WinGet、Homebrew，脚本安装由同目录的 `.obituary-install.json` 标识。GUI 的 `Update` 只读检查缓存和上次升级结果；有新正式版时才可执行升级，其他安装方式给出发布页。包管理器用固定参数列表调用，脚本安装只用 HTTPS 从目标 tag 下载（镜像安装先试镜像的同版本目录，取不到再试 GitHub 的 tag，归档仍由脚本按原渠道下载和校验）。查询新版本不会自动启动升级。
+
+Windows 的 `ApplyUpdate` 和 `obit update --apply` 都从 2 小时寿命的临时目录启动 `obit.exe` 副本，保留原安装路径及数据、配置目录。副本锁定调用方的进程句柄、拿到执行锁并创建日志后，经管道发回确认（调用方最多等 10 秒）；收到确认后旧进程退出，副本最多等 30 秒。副本先核对当前安装版本，再用已有的关闭回执停止常驻进程（等待互斥量释放、进程退出各最多 10 秒），执行升级（下载与安装共 10 分钟，单次脚本请求最多 10 秒），并重新读取安装后的版本（最多 10 秒）。无论成功还是失败，尝试恢复此前运行的常驻进程（最多 5 秒），写下结果后按需重新打开窗口。macOS / Linux 没有常驻模式和桌面窗口，CLI 在原进程中执行，不更改已有调度设置。
 
 ## 测试
 

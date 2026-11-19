@@ -108,6 +108,16 @@ func TestCheckUpdateReportsSettingChangedDuringRequest(t *testing.T) {
 	}
 }
 
+func TestUpdateInfoIncludesLastApply(t *testing.T) {
+	a, _ := fixture(t)
+	write(t, filepath.Join(filepath.Dir(a.deps.Executable), ".obituary-install.json"), `{}`)
+	write(t, filepath.Join(a.deps.Service.Store.Home, "update-apply.json"), `{"targetVersion":"9.0.0","at":"2026-11-19T00:00:00Z","success":false,"error":"installer failed","logPath":"apply.log"}`)
+	info, err := a.Update()
+	if err != nil || !info.CanApply || info.LastApply == nil || info.LastApply.TargetVersion != "9.0.0" || info.LastApply.Success || info.LastApply.LogPath != "apply.log" || info.LastApply.Error != "installer failed" {
+		t.Fatalf("update info=%+v, err=%v", info, err)
+	}
+}
+
 func TestPlanUpdateCheckPreservesConfigAndRejectsStalePlan(t *testing.T) {
 	a, _ := fixture(t)
 	path := filepath.Join(a.deps.ConfigDir, "config.toml")

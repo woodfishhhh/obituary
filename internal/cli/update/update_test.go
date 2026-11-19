@@ -47,3 +47,12 @@ func TestUpdateReadsCacheAndChecksOnRequest(t *testing.T) {
 		t.Fatalf("calls=%d", calls)
 	}
 }
+
+func TestUpdateApplyRejectsUnsupportedInstallation(t *testing.T) {
+	t.Setenv("OBIT_HOME", t.TempDir())
+	cmd := newCmd(nil)
+	cmd.SetArgs([]string{"--apply"})
+	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "not supported") {
+		t.Fatal(err)
+	}
+}

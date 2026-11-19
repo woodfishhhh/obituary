@@ -19,6 +19,11 @@ if command -v cygpath >/dev/null; then work=$(cygpath -u "$work"); fi
 gh release download "v$version" -R woodfishhhh/obituary -D "$work" -p 'obituary_*' -p checksums.txt
 (cd "$work" && sha256sum -c checksums.txt)
 
+# These must come from the release tag, never the mutable site root.
+tag_url="https://raw.githubusercontent.com/woodfishhhh/obituary/v$version"
+curl -fsS --max-time 30 "$tag_url/packaging/install.ps1" -o "$work/install.ps1"
+curl -fsS --max-time 30 "$tag_url/install.sh" -o "$work/install.sh"
+
 # The mirror host is small and shared: one low-priority stream into a staging
 # folder, checked again there before the files take their public names.
 tar -C "$work" -cf - . | ssh "$host" "set -e
@@ -34,7 +39,7 @@ cd /
 rmdir \"\$stage\""
 
 # Read back over HTTPS exactly what users will download.
-for f in checksums.txt $(awk '{print $2}' "$work/checksums.txt"); do
+for f in install.ps1 install.sh checksums.txt $(awk '{print $2}' "$work/checksums.txt"); do
   curl -fsS --max-time 300 "https://cn.obituary.woodfish.site/download/v$version/$f" | cmp -s - "$work/$f" \
     || { echo "the mirror's $f differs from the release" >&2; exit 1; }
 done

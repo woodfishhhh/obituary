@@ -121,8 +121,12 @@ func TestDetectChannelFollowsHomebrewLink(t *testing.T) {
 	if err := os.Symlink(real, link); err != nil {
 		t.Fatal(err)
 	}
-	if got := DetectChannel(link); got != "homebrew" {
-		t.Fatalf("channel=%s", got)
+	want, err := filepath.EvalSymlinks(real)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if installed, channel := installation(link); channel != "homebrew" || installed != want {
+		t.Fatalf("channel=%s path=%q want %q", channel, installed, want)
 	}
 }
 

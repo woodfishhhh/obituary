@@ -57,6 +57,10 @@ func Start(home string) error {
 	if err != nil {
 		return err
 	}
+	return startAt(home, path)
+}
+
+func startAt(home, path string) error {
 	cmd := exec.Command(path, daemonArgs(home)...)
 	detach(cmd)
 	if err := cmd.Start(); err != nil {

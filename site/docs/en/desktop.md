@@ -23,6 +23,10 @@ Resurrect files, approve proposals and change settings without the command line.
 - The window, tray and context menu follow `[ui] language` in `config.toml` (`auto`, `zh-CN` or `en`; `auto` follows Windows). You can switch it in Settings.
 - It needs the WebView2 runtime (built into Windows 11 and present on most Windows 10 machines) and is x64 only.
 
+### Updates
+
+Install a newer stable release from Settings > About and updates. Obituary closes the window and the running tray, updates through the original Scoop, WinGet or script channel, then attempts to restore the tray and reopen the window. Failures and log paths are shown on the same page. For a manually extracted copy, download a replacement from the release page.
+
 ### Eight looks
 
 Switch in Settings → Appearance. It changes only how the window looks on this computer, at once.

@@ -84,14 +84,11 @@ obit doctor
 
 ## 更新
 
-讣告每天最多联网一次，看有没有新的正式版。它只读公开的版本信息，不发送任何使用数据；连不上 GitHub 时会改从国内镜像检查。有新版时，托盘菜单和小窗口会提示你，设置页的「关于与更新」里给出对应你安装方式的升级命令：
+讣告每天最多联网一次，看有没有新的正式版。检查只读公开的版本信息，不发送使用数据；连不上 GitHub 时会改从国内镜像检查。安装更新仍要你主动确认。
 
-- Scoop：`scoop update obituary`
-- winget：`winget upgrade woodfishhhh.Obituary`
-- Homebrew（macOS）：`brew upgrade --cask obituary`
-- 安装脚本：再运行一次（默认装最新正式版）
+有新版时，在 Windows 小窗口的「设置 → 关于与更新」点击安装。讣告会关闭窗口和正在运行的托盘，通过原安装渠道升级，然后尝试恢复托盘并重新打开窗口。支持 Scoop、WinGet、Homebrew（macOS）和讣告安装脚本；手动解压的版本请从发布页下载替换。
 
-讣告只负责检查和提醒，升级由你来运行。终端里用 `obit update` 看当前版本和升级命令，用 `obit update --check` 马上检查一次。
+终端里用 `obit update` 查看版本和上次升级结果，`obit update --check` 立即检查，`obit update --apply` 安装已查到的新版；也可以用 `obit update --check --apply` 先查再装。Windows 下从终端升级前请先关闭小窗口。命令交接给后台后就会返回，最终结果和日志路径见「关于与更新」或再次运行 `obit update`。
 
 不想让它自动联网：在设置页关掉「自动检查更新」，或者在 `config.toml` 里写：
 

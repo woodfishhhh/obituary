@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/woodfishhhh/obituary/internal/userdirs"
@@ -43,16 +42,18 @@ func cleanPath(value string) string {
 }
 
 func DetectChannel(executable string) string {
-	// The Homebrew cask links bin/obit to its Caskroom copy; os.Executable
-	// reports the link. Windows channels are read from the path as launched.
-	if runtime.GOOS != "windows" {
-		if real, err := filepath.EvalSymlinks(executable); err == nil {
-			executable = real
-		}
+	_, channel := installation(executable)
+	return channel
+}
+
+func installation(executable string) (string, string) {
+	// Both WinGet and the Homebrew cask can launch through a link outside the package.
+	if real, err := filepath.EvalSymlinks(executable); err == nil {
+		executable = real
 	}
 	packages, _ := userdirs.WinGetPackages()
 	info, err := os.Stat(filepath.Join(filepath.Dir(executable), ".obituary-install.json"))
-	return Channel(executable, packages, err == nil && info.Mode().IsRegular())
+	return executable, Channel(executable, packages, err == nil && info.Mode().IsRegular())
 }
 
 type receipt struct{ Owner, Source string }
