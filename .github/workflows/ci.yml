@@ -168,7 +168,7 @@ jobs:
         uses: golangci/golangci-lint-action@4afd733a84b1f43292c63897423277bb7f4313a9 # v8.0.0
         with:
           version: v2.15.0
-          args: ${{ github.event_name == 'push' && format('--new-from-rev={0}', github.event.before) || '' }}
+          args: ${{ github.event_name == 'push' && format('--new-from-rev={0}', github.event.before) || '--new-from-merge-base=origin/main' }}
       - name: go vet (linux)
         env:
           GOOS: linux
@@ -179,7 +179,7 @@ jobs:
         uses: golangci/golangci-lint-action@4afd733a84b1f43292c63897423277bb7f4313a9 # v8.0.0
         with:
           version: v2.15.0
-          args: ${{ github.event_name == 'push' && format('--new-from-rev={0}', github.event.before) || '' }}
+          args: ${{ github.event_name == 'push' && format('--new-from-rev={0}', github.event.before) || '--new-from-merge-base=origin/main' }}
 
   # Run every package on both POSIX platforms whenever the Windows shards do.
   linux:
