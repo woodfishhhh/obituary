@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -51,8 +52,10 @@ func daemonMutexName(home string) (*uint16, error) {
 	return windows.UTF16PtrFromString(fmt.Sprintf(`Local\Obituary-obitd-%s-%x`, user.User.Sid.String(), sum[:16]))
 }
 
+var publishDaemonStart = func(home string) error { return writeDaemonProcess(home, false, nil) }
+
 // NewResident returns nil without error when this user's store is served already.
-func NewResident(svc *core.Service, logger *log.Logger) (*Resident, error) {
+func NewResident(svc *core.Service, logger *log.Logger) (r *Resident, err error) {
 	if err := os.MkdirAll(svc.Store.Home, 0o700); err != nil {
 		return nil, err
 	}
@@ -60,7 +63,11 @@ func NewResident(svc *core.Service, logger *log.Logger) (*Resident, error) {
 	if err != nil {
 		return nil, err
 	}
-	mutex, err := windows.CreateMutex(nil, false, name)
+	// Stop may see the mutex before the process receipt exists. Keep it
+	// owned until startup publishes the receipt; ownership is thread-local.
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	mutex, err := windows.CreateMutex(nil, true, name)
 	if errors.Is(err, windows.ERROR_ALREADY_EXISTS) {
 		windows.CloseHandle(mutex)
 		return nil, nil
@@ -68,6 +75,12 @@ func NewResident(svc *core.Service, logger *log.Logger) (*Resident, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		windows.ReleaseMutex(mutex)
+		if r == nil {
+			windows.CloseHandle(mutex)
+		}
+	}()
 	w, err := fsnotify.NewWatcher()
 	if err == nil {
 		err = w.Add(svc.Store.Home)
@@ -76,15 +89,21 @@ func NewResident(svc *core.Service, logger *log.Logger) (*Resident, error) {
 		if w != nil {
 			w.Close()
 		}
-		windows.CloseHandle(mutex)
 		return nil, err
 	}
-	if err := writeDaemonProcess(svc.Store.Home, false, nil); err != nil {
+	if err := publishDaemonStart(svc.Store.Home); err != nil {
 		w.Close()
-		windows.CloseHandle(mutex)
 		return nil, err
 	}
 	logger.Printf("obitd started (pid %d, home %s)", os.Getpid(), svc.Store.Home)
+	watchObservations(svc, w, logger)
+	r = resident(svc, logger)
+	r.watcher, r.mutex = w, mutex
+	r.stopFolderWatch = startFolderWatch(svc, logger)
+	return r, nil
+}
+
+func watchObservations(svc *core.Service, w *fsnotify.Watcher, logger *log.Logger) {
 	// A hook that cannot take store.lock queues its write here and leaves the
 	// replay to this resident, so a new file must wake it. Without the watch
 	// the queue still drains at each tick.
@@ -94,10 +113,6 @@ func NewResident(svc *core.Service, logger *log.Logger) (*Resident, error) {
 	} else if err := w.Add(dir); err != nil {
 		logger.Printf("queued writes wait for the next check: %v", err)
 	}
-	r := resident(svc, logger)
-	r.watcher, r.mutex = w, mutex
-	r.stopFolderWatch = startFolderWatch(svc, logger)
-	return r, nil
 }
 
 func resident(svc *core.Service, logger *log.Logger) *Resident {

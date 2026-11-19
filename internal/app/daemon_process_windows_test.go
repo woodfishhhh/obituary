@@ -9,11 +9,13 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/winfs"
+	"golang.org/x/sys/windows"
 )
 
 func init() {
@@ -188,5 +190,57 @@ func TestDaemonExitRequiresShutdownReceipt(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(home, "obitd.process.json")); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestStopWaitsForStartupReceipt(t *testing.T) {
+	home := t.TempDir()
+	starting, publish, done := make(chan struct{}), make(chan struct{}), make(chan struct{})
+	resume := sync.OnceFunc(func() { close(publish) })
+	oldPublish, oldWait := publishDaemonStart, waitStartupMutex
+	publishDaemonStart = func(home string) error {
+		close(starting)
+		<-publish
+		return oldPublish(home)
+	}
+	waitStartupMutex = func(h windows.Handle, timeout uint32) (uint32, error) {
+		status, err := oldWait(h, 0)
+		if status != uint32(windows.WAIT_TIMEOUT) || err != nil {
+			t.Errorf("Stop could acquire the mutex before publication: status=%d err=%v", status, err)
+			resume()
+			return status, err
+		}
+		resume()
+		return oldWait(h, timeout)
+	}
+	ctx := t.Context()
+	var runErr error
+	go func() {
+		defer close(done)
+		svc := &core.Service{Store: core.Store{Home: home}, FS: winfs.FS{}}
+		r, err := NewResident(svc, log.New(io.Discard, "", 0))
+		if err != nil || r == nil {
+			runErr = errors.Join(errors.New("resident did not start"), err)
+			return
+		}
+		defer r.Close()
+		runErr = r.Run(ctx)
+	}()
+	t.Cleanup(func() {
+		resume()
+		<-done
+		publishDaemonStart, waitStartupMutex = oldPublish, oldWait
+	})
+	select {
+	case <-starting:
+	case <-done:
+		t.Fatal(runErr)
+	}
+	if err := Stop(home); err != nil {
+		t.Fatal(err)
+	}
+	<-done
+	if runErr != nil {
+		t.Fatal(runErr)
 	}
 }

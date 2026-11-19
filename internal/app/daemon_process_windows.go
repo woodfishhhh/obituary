@@ -2,9 +2,11 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"golang.org/x/sys/windows"
@@ -15,6 +17,38 @@ type daemonProcess struct {
 	Created uint64 `json:"created"`
 	Closed  bool   `json:"closed"`
 	Error   string `json:"error,omitempty"`
+}
+
+var waitStartupMutex = windows.WaitForSingleObject
+
+func waitDaemonStartup(home string, limit time.Duration) (bool, error) {
+	name, err := daemonMutexName(home)
+	if err != nil {
+		return false, err
+	}
+	h, err := windows.OpenMutex(windows.SYNCHRONIZE|windows.MUTEX_MODIFY_STATE, false, name)
+	if errors.Is(err, windows.ERROR_FILE_NOT_FOUND) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	// Do not keep the presence mutex alive while waiting for the resident to exit.
+	defer windows.CloseHandle(h)
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	status, err := waitStartupMutex(h, uint32(max(0, limit/time.Millisecond)))
+	if err != nil {
+		return false, err
+	}
+	switch status {
+	case windows.WAIT_OBJECT_0:
+		return true, windows.ReleaseMutex(h)
+	case windows.WAIT_ABANDONED:
+		return false, errors.Join(errors.New("daemon abandoned startup"), windows.ReleaseMutex(h))
+	default:
+		return false, errors.New("daemon did not finish startup")
+	}
 }
 
 func processCreated(h windows.Handle) (uint64, error) {

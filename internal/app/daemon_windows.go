@@ -120,7 +120,12 @@ func SpawnSelf(args ...string) error {
 
 // Stop asks a running daemon to exit and waits for it.
 func Stop(home string) error {
-	if !Running(home) {
+	deadline := time.Now().Add(10 * time.Second)
+	running, err := waitDaemonStartup(home, time.Until(deadline))
+	if err != nil {
+		return err
+	}
+	if !running {
 		return clearStopRequest(home)
 	}
 	check, closeHandle, verifyErr := daemonExitCheck(home)
@@ -130,7 +135,7 @@ func Stop(home string) error {
 	if err := os.WriteFile(stopPath(home), nil, 0o600); err != nil {
 		return err
 	}
-	if err := waitFor(func() bool { return !Running(home) }, 10*time.Second, "daemon did not stop"); err != nil {
+	if err := waitFor(func() bool { return !Running(home) }, time.Until(deadline), "daemon did not stop"); err != nil {
 		return err
 	}
 	if verifyErr != nil {
