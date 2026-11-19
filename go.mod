@@ -6,7 +6,7 @@ toolchain go1.26.11
 
 require (
 	fyne.io/systray v1.12.2
-	github.com/Microsoft/go-winio v0.6.2
+	github.com/Microsoft/go-winio v0.6.4
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/go-ole/go-ole v1.3.0
 	github.com/modelcontextprotocol/go-sdk v1.8.0
@@ -16,7 +16,7 @@ require (
 	github.com/tc-hib/winres v0.3.1
 	github.com/wailsapp/wails/v2 v2.17.1
 	go.yaml.in/yaml/v3 v3.0.6
-	golang.org/x/mod v0.42.0
+	golang.org/x/mod v0.43.0
 	golang.org/x/sys v0.50.0
 	mvdan.cc/sh/v3 v3.14.1
 )
