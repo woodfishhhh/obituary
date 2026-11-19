@@ -108,7 +108,7 @@ const zh = {
   },
   flow: {
     head: "agent 删掉的，先进墓地",
-    lead: "打开删除护栏后，rm -rf、git clean、Remove-Item 换成等价的 obit 命令。",
+    lead: "打开删除护栏后，rm -rf、git clean、Remove-Item 换成等价的 obit 命令，find -delete、xargs rm 也拦得住。",
     values: [
       { title: "默认就有", line: "agent 写调试脚本、日志、截图时自己给它寿命，到期进墓地，七天内能复活。" },
       { title: "想多管一点", line: "右键把文件放进讣告，给下载文件夹设策略；想让讣告自己登记，在设置里打开自动登记。" },
@@ -311,7 +311,7 @@ const en: Copy = {
   },
   flow: {
     head: "What an agent deletes goes to the graveyard first",
-    lead: "With the delete guard on, rm -rf, git clean and Remove-Item become the equivalent obit command.",
+    lead: "With the delete guard on, rm -rf, git clean and Remove-Item become the equivalent obit command, and find -delete or xargs rm are stopped too.",
     values: [
       { title: "Out of the box", line: "Your agent gives the debug scripts, logs and screenshots it writes a lifespan; they go to the graveyard when due, restorable for seven days." },
       { title: "When you want more", line: "Right-click files to add them, give your Downloads folder a policy, or turn on automatic registration in Settings." },
