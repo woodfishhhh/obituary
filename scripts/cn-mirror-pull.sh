@@ -26,21 +26,36 @@ trap 'exit 143' TERM
 files=$stage/files
 mkdir -- "$files"
 get "$api/releases/tags/$tag" > "$stage/release.json"
-prefix="https://github.com/$repo/releases/download/$tag/"
-jq -er --arg tag "$tag" --arg prefix "$prefix" '
+jq -er --arg tag "$tag" --arg assets "$api/releases/assets/" '
   if .tag_name != $tag or .draft != false or .prerelease != false then
     error("Release must be published and stable")
   else .assets[] | select(.name == "checksums.txt" or (.name | startswith("obituary_"))) |
-    if (.name | test("[^A-Za-z0-9._-]") | not) and
-       .browser_download_url == ($prefix + .name) then
-      [.name, .browser_download_url] | @tsv
+    if (.name | test("[^A-Za-z0-9._-]") | not) and .url == ($assets + (.id | tostring)) then
+      [.name, .url] | @tsv
     else error("Invalid release asset name or URL") end
   end' "$stage/release.json" > "$stage/assets"
 
+# github.com often times out from this host while api.github.com answers in under a
+# second, so each try asks the API for the asset's short-lived signed URL (one request:
+# the anonymous limit is 60 an hour) and aria2 opens its 16 connections on that URL.
 aria_opts=(--max-tries=5 --retry-wait=5 --timeout=45 --connect-timeout=15 --no-conf
+           --continue=true --allow-overwrite=true --auto-file-renaming=false
            --console-log-level=error --summary-interval=0 --show-console-readout=false --download-result=hide)
+fetch() {
+  local signed
+  for _ in 1 2 3; do
+    signed=$(curl -qfsS --proto '=https' --retry 3 --max-time 30 -o /dev/null -w '%{redirect_url}' \
+      -H 'Accept: application/octet-stream' "$2") || signed=
+    if [[ $signed == https://* ]] &&
+       nice -n 19 aria2c -x16 -s16 -k1M "${aria_opts[@]}" --dir="$files" --out="$1" "$signed"; then
+      return 0
+    fi
+    sleep 10
+  done
+  fail "Could not download $1"
+}
 while IFS=$'\t' read -r name url; do
-  nice -n 19 aria2c -x16 -s16 -k1M "${aria_opts[@]}" --dir="$files" --out="$name" "$url"
+  fetch "$name" "$url"
 done < "$stage/assets"
 
 # Validate the list before asking sha256sum to open any paths from it.
