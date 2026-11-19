@@ -44,7 +44,10 @@ jobs:
         run: node scripts/finalize-manifests.mjs bin/release
       - name: Stage the versioned installers for the mirror
         shell: bash
-        run: cp install.sh packaging/install.ps1 bin/release/
+        run: |
+          # Match the tagged bytes used by the manual mirror upload, not the Windows checkout.
+          git show HEAD:install.sh > bin/release/install.sh
+          git show HEAD:packaging/install.ps1 > bin/release/install.ps1
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-files
