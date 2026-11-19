@@ -126,8 +126,9 @@ func TestOnlyUserDirsResolvesUserLocations(t *testing.T) {
 		rel = filepath.ToSlash(rel)
 		if entry.IsDir() {
 			// bin holds ignored build/test artifacts, not repository source;
-			// testdata holds fixture programs that run with explicit test homes.
-			if rel == ".git" || rel == "bin" || rel == "internal/userdirs" || entry.Name() == "testdata" || entry.Name() == "node_modules" {
+			// testdata holds fixture programs that run with explicit test homes;
+			// dot directories (.git, a project's own .obit scratch) are not source.
+			if rel != "." && strings.HasPrefix(entry.Name(), ".") || rel == "bin" || rel == "internal/userdirs" || entry.Name() == "testdata" || entry.Name() == "node_modules" {
 				return filepath.SkipDir
 			}
 			return nil
