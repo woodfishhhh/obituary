@@ -62,9 +62,10 @@ func deletionGuidance(ev Event, why, executable string) string {
 		return ""
 	}
 	// Statements, not instructions: the agent reads this as tool context.
-	reason := fmt.Sprintf("Obituary's delete guard is on: `%s` deletes permanently and no exact obit equivalent applies to this command (%s). `%s bury <path>...` provides restorable deletion for literal paths, `%s git-clean` for git clean; `obit resurrect` restores graveyard entries.", deletion, why, executable, executable)
+	const discovered = " For targets selected at runtime, the safe alternative is to list and review the paths first, then give them as explicit operands to `%s rm -- <path>...`."
+	reason := fmt.Sprintf("Obituary's delete guard is on: `%s` deletes permanently and no exact obit equivalent applies to this command (%s). `%s bury <path>...` provides restorable deletion for literal paths, `%s git-clean` for git clean; `obit resurrect` restores graveyard entries."+discovered, deletion, why, executable, executable, executable)
 	if len(reason) > maxContext {
-		reason = fmt.Sprintf("Obituary's delete guard is on: `%s` deletes permanently and no exact obit equivalent applies to this command. `obit bury <path>...` provides restorable deletion for literal paths, `obit git-clean` for git clean, through the installed obit executable.", deletion)
+		reason = fmt.Sprintf("Obituary's delete guard is on: `%s` deletes permanently and no exact obit equivalent applies to this command. `obit bury <path>...` provides restorable deletion for literal paths, `obit git-clean` for git clean, through the installed obit executable."+discovered, deletion, "obit")
 	}
 	return reason
 }

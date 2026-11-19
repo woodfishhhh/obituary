@@ -282,6 +282,39 @@ func TestPreToolUseCLIWithoutConfigOrLedger(t *testing.T) {
 	}
 }
 
+func TestPreToolUseCLIIndirectDeletion(t *testing.T) {
+	if testing.Short() {
+		t.Skip("requires a real hook subprocess")
+	}
+	cwd := t.TempDir()
+	kept := filepath.Join(cwd, "keep.log")
+	writeFixture(t, kept, "keep")
+	for _, command := range []string{`find . -name '*.log' -delete`, `find . -name '*.log' -print0 | xargs -0 rm`} {
+		payload, err := json.Marshal(map[string]any{"hook_event_name": "PreToolUse", "cwd": cwd, "tool_name": "Bash", "tool_input": map[string]string{"command": command}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		probe := exec.Command(binaryPath(t, "obit"), "hook", "claude")
+		probe.Stdin = bytes.NewReader(payload)
+		out, err := probe.Output()
+		var response struct {
+			Hook struct {
+				Decision string `json:"permissionDecision"`
+				Reason   string `json:"permissionDecisionReason"`
+			} `json:"hookSpecificOutput"`
+		}
+		if err != nil || json.Unmarshal(out, &response) != nil || response.Hook.Decision != "deny" ||
+			!strings.Contains(response.Hook.Reason, "no exact obit equivalent applies") ||
+			!strings.Contains(response.Hook.Reason, "list and review the paths first") ||
+			!strings.Contains(response.Hook.Reason, " rm -- <path>...") {
+			t.Fatalf("%q: expected denial with guidance, got %s (%v)", command, out, err)
+		}
+		if data, err := os.ReadFile(kept); err != nil || string(data) != "keep" {
+			t.Fatalf("hook changed the target: %q (%v)", data, err)
+		}
+	}
+}
+
 func TestRegisteredAgentCLIProtocols(t *testing.T) {
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")

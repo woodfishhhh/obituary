@@ -385,6 +385,8 @@ func TestSuggestComplexCommandsPassThrough(t *testing.T) {
 		`rm a; cat <(rm b)`, `rm a; echo >(rm b)`, `rm a; (rm b)`,
 		`rm a; eval 'rm b'`, `rm a; exec rm b`, `rm a; sudo rm b`,
 		`rm a; xargs rm`, `rm a; find . -delete`, `rm a; find . -exec rm {} \;`,
+		`find . -delete`, `find . -exec rm {} +`, `find . -exec rm {} \;`,
+		`find . -print0 | xargs rm -rf`, `xargs -0 rm`,
 		`rm a; f() { rm b; }`, `rm a; alias rm='echo'`, `rm a; source setup`,
 		`rm a; . setup`, `rm a; if true; then rm b; fi`, `rm a & rm b`,
 		`rm a > out`, `rm a 2>/dev/null`, `rm a; $COMMAND b`,

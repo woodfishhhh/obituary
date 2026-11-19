@@ -977,6 +977,35 @@ func TestDeleteGuardDeniesDeletionWithoutEquivalent(t *testing.T) {
 	}
 }
 
+func TestDeleteGuardDiscoveredPaths(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		tool, command string
+		deny          bool
+	}{
+		{"Bash", `find . -name x -delete`, true},
+		{"Bash", `find . -exec rm -rf {} +`, true},
+		{"Bash", `find . -exec rm {} \;`, true},
+		{"Bash", `find . -print0 | xargs rm -rf`, true},
+		{"Bash", `xargs -0 rm`, true},
+		{"PowerShell", `Get-ChildItem *.log | Remove-Item`, true},
+		{"Bash", `find . -name '*.go'`, false},
+		{"Bash", `find . -type f -print`, false},
+	} {
+		t.Run(tc.command, func(t *testing.T) {
+			t.Parallel()
+			got := guardSuggestion(t, "claude", t.TempDir(), tc.tool, map[string]any{"command": tc.command})
+			want := ""
+			if tc.deny {
+				want = noEquivalent
+			}
+			if got != want {
+				t.Errorf("guard reply = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
 func TestDeleteWSLSafeRelativeOnly(t *testing.T) {
 	t.Parallel()
 	for _, command := range []string{

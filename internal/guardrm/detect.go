@@ -8,11 +8,9 @@ import (
 	"mvdan.cc/sh/v3/syntax"
 )
 
-// Deletion names the rm, rmdir, git clean or Remove-Item (or alias) that the
-// shell would run at a command position, or returns "". Unlike Suggest it
-// accepts any syntax: denying runs nothing, so it can never select more than
-// the command. Strings, comments, arguments and dynamic command words do not
-// count, and neither do previews (rm --help, git clean -n).
+// Deletion names a recognized deletion at a command position (including
+// Bash find and xargs actions), or returns "". Unlike Suggest it accepts
+// compound syntax: denying runs nothing. Text and previews do not count.
 func Deletion(command string, shell Shell) string {
 	switch shell {
 	case Bash:
@@ -52,7 +50,7 @@ func bashDeletionIn(s string) string {
 	found := ""
 	syntax.Walk(f, func(node syntax.Node) bool {
 		if call, ok := node.(*syntax.CallExpr); ok && found == "" {
-			found = commandDeletion(bashWords(call.Args), false)
+			found = bashCommandDeletion(bashWords(call.Args))
 		}
 		return found == ""
 	})
@@ -64,6 +62,10 @@ func bashDeletionIn(s string) string {
 func bashWords(args []*syntax.Word) []string {
 	words := make([]string, len(args))
 	for i, arg := range args {
+		if arg.Lit() == "{}" { // find's literal placeholder is not a brace expansion
+			words[i] = "{}"
+			continue
+		}
 		var b strings.Builder
 		bashDecode(arg.Parts, false, &b)
 		words[i] = b.String()
@@ -112,12 +114,23 @@ func bashDecodeLiteral(v string, quoted bool, b *strings.Builder) {
 // wordDeletion over-approximates for source that cannot be read reliably.
 func wordDeletion(s string, powerShell bool) string {
 	words := strings.FieldsFunc(s, func(r rune) bool { return strings.ContainsRune(" \t\r\n;&|(){}<>`'\"$@,", r) })
+	findSeen := false
 	for i := range words {
+		if !powerShell {
+			findSeen = findSeen || strings.TrimSuffix(commandBase(words[i]), ".exe") == "find"
+			if findSeen && words[i] == "-delete" {
+				return "find -delete"
+			}
+		}
 		if found := commandDeletion(words[i:], powerShell); found != "" {
 			return found
 		}
 	}
 	return ""
+}
+
+func commandBase(word string) string {
+	return strings.ToLower(word[strings.LastIndexAny(word, `/\`)+1:])
 }
 
 // commandDeletion checks one simple command's decoded words. Path-qualified
@@ -126,7 +139,7 @@ func commandDeletion(words []string, powerShell bool) string {
 	if len(words) == 0 {
 		return ""
 	}
-	base := strings.ToLower(words[0][strings.LastIndexAny(words[0], `/\`)+1:])
+	base := commandBase(words[0])
 	name := strings.TrimSuffix(base, ".exe")
 	switch {
 	case strings.ContainsRune(base, 0):

@@ -28,7 +28,8 @@ $ obit resurrect --last
 ## 原则
 
 - **只拦不改。** 讣告不改写 agent 的命令：Claude Code 会按改写后的命令检查权限，改写会让你设的 `deny` 规则失效。拦下再让 agent 自己发出等价命令，你的所有权限规则照常生效。
-- **出现字面的删除就拦。** 命令里任何一个命令位置上出现 `rm`、`rmdir`、`git clean`、`Remove-Item`（含 `del`、`rd`、`ri` 这些别名），不论在 `&&`、`||`、`;`、管道、`$(…)`、子 shell、条件还是循环里，都拦下这一次执行，例如 `rm -rf build && npm run build`、`rm -rf build 2>/dev/null`、`git clean -fdx && npm ci`。拦下本身什么都不执行，所以多拦不会删错东西。字符串、注释、`echo` 的参数里的 `rm` 不算；`rm --help`、`git clean -n`、`Remove-Item -WhatIf` 只是预览，也不算；`sudo rm`、`xargs rm`、`find -delete` 里的删除是别的程序在做，照常放行（设了 `OBIT_HOOK_AUDIT=1` 会记进审计日志）。
+- **出现字面的删除就拦。** 命令里任何一个命令位置上出现 `rm`、`rmdir`、`git clean`、`Remove-Item`（含 `del`、`rd`、`ri` 这些别名），不论在 `&&`、`||`、`;`、管道、`$(…)`、子 shell、条件还是循环里，都拦下这一次执行，例如 `rm -rf build && npm run build`、`rm -rf build 2>/dev/null`、`git clean -fdx && npm ci`。字符串、注释、`echo` 的参数里的 `rm` 不算；`rm --help`、`git clean -n`、`Remove-Item -WhatIf` 只是预览，也不算。
+- **运行时才选出的目标先列出再下葬。** Bash 的 `find -delete`、`find -exec rm`（含 `-execdir`）和 `xargs rm`，以及 PowerShell 的 `Get-ChildItem … | Remove-Item`，都会被拦下，但不提供等价改写。先列出并核对目标，再把明确的路径逐项或批量交给 `obit rm -- <路径>...`；只查找或列出路径的 `find` 不受影响。护栏不分析任意包装命令，例如 `sudo rm` 和 `bash -c '…'`。
 - **不会退回成真删。** `obit rm` / `obit remove-item` / `obit git-clean` 的每个路径都走下葬；被拒绝（盘符根、系统目录、用户目录本身等）时照 `rm` 的格式报错、返回非零。
 - **怕命令在路上变了样。** agent 想的命令和真正执行的命令之间，隔着 shell 的引号和转义，还可能隔着一层改写命令的代理。一个符号被吃掉，`rm -rf "$OUT"/` 就成了 `rm -rf /`。所以 `obit rm` 动手前按磁盘上的真实路径再核对一遍。
 - 被 Git 跟踪的文件也照样下葬，这样未提交的修改也找得回来（这是 agent 主动删除，和「自动登记绝不碰被跟踪文件」不冲突）。
