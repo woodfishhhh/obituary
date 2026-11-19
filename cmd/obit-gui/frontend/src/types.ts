@@ -209,6 +209,18 @@ export interface UpdateInfo {
   enabled: boolean;
   channel: "scoop" | "winget" | "script" | "other" | string;
   command?: string;
+  // In-app update: whether this channel supports it, and how the last one went.
+  canApply?: boolean;
+  lastApply?: LastApply;
+}
+
+export interface LastApply {
+  targetVersion: string;
+  logPath: string;
+  at: string;
+  version?: string;
+  success: boolean;
+  error?: string;
 }
 
 export interface LogLine {
@@ -274,6 +286,8 @@ export interface Api {
   Update?(): Promise<UpdateInfo>;
   CheckUpdate?(): Promise<UpdateInfo>;
   PlanUpdateCheck?(enabled: boolean): Promise<Plan>;
+  // Starts the update helper; the window quits once it returns.
+  ApplyUpdate?(): Promise<{ targetVersion: string; logPath: string }>;
   ApplyPlan(id: string): Promise<PlanReceipt>;
   Logs(q: { source: string; lines: number; text: string; from: string; to: string; level: string }): Promise<LogPage>;
 }

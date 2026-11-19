@@ -89,7 +89,7 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
   const plans = new Map<string, () => PlanReceipt>();
   const update: UpdateInfo = scenario === "empty"
     ? { current: "1.0.0", newer: false, enabled: true, channel: "scoop", checkedAt: at(-3), latest: "1.0.0", url: "https://github.com/woodfishhhh/obituary/releases/tag/v1.0.0" }
-    : { current: "1.0.0", latest: "1.0.1", newer: true, name: "1.0.1", published: at(-20), checkedAt: at(-2), enabled: true, channel: "scoop", command: "scoop update obituary",
+    : { current: "1.0.0", latest: "1.0.1", newer: true, name: "1.0.1", published: at(-20), checkedAt: at(-2), enabled: true, channel: "scoop", command: "scoop update obituary", canApply: true,
         url: "https://github.com/woodfishhhh/obituary/releases/tag/v1.0.1",
         notes: ["## 修复", "", "- 托盘菜单在高 DPI 屏幕上不再模糊", "- 文件夹策略遇到只读文件时会跳过并记日志，不再整轮停下", "", "## 改进", "", "- 墓地页搜索支持按扩展名过滤"].join("\n") };
   let proposalMode: ProposalMode = "off";
@@ -241,6 +241,7 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
     PlanSessionSummary: (on) => plan("sessionSummary", on === settings.sessionSummary ? [] : [{ target: "[hooks] session_summary", before: String(settings.sessionSummary), after: String(on) }], () => { settings.sessionSummary = on; }),
     Update: () => wait({ ...update }),
     CheckUpdate: () => new Promise((r) => setTimeout(() => { update.checkedAt = new Date().toISOString(); r({ ...update }); }, 900)),
+    ApplyUpdate: () => new Promise((r) => setTimeout(() => r({ targetVersion: update.latest ?? "", logPath: "C:\\Users\\me\\AppData\\Local\\obituary\\update-1.log" }), 600)),
     PlanUpdateCheck: (on) => plan("updateCheck", on === update.enabled ? [] : [{ target: "[update] check", before: String(update.enabled), after: String(on) }], () => { update.enabled = on; }),
     PlanTrayIcon: (on) => plan("trayIcon", on === settings.trayIcon ? [] : [{ target: "[ui] tray", before: String(settings.trayIcon), after: String(on) }], () => { settings.trayIcon = on; }),
     PlanTaskbar: (on) => plan("taskbar", on === settings.taskbar ? [] : [{ target: "[ui] taskbar", before: String(settings.taskbar), after: String(on) }], () => { settings.taskbar = on; }),

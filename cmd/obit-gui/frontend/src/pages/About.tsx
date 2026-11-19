@@ -1,11 +1,11 @@
-import { BellRing, Copy, RefreshCw } from "lucide-react";
+import { BellRing, Copy, Download, RefreshCw } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { errorText, useApi } from "../api";
 import { when } from "../format";
 import { useLoad } from "../hooks";
 import { t } from "../i18n";
 import type { Plan, UpdateInfo } from "../types";
-import { Button, useToast } from "../ui";
+import { Button, useConfirm, useToast } from "../ui";
 
 const REPO = "https://github.com/woodfishhhh/obituary";
 const channels = ["scoop", "winget", "script", "other"] as const;
@@ -22,7 +22,8 @@ async function copyText(text: string) {
 }
 
 // Version, how this copy was installed, the release check and its switch.
-// With a newer release the card says what to run: the app only checks and tells.
+// With a newer release the card offers to update in place where the install
+// channel allows it, and always shows the command to run by hand.
 export default function About({ apply, switchFor }: {
   apply: (plan: Plan, title: string) => Promise<void>;
   switchFor: (on: boolean, label: string, onToggle: () => void) => ReactNode;
@@ -62,6 +63,7 @@ export default function About({ apply, switchFor }: {
         </div>
         {api.CheckUpdate ? <Button icon={RefreshCw} onClick={check} disabled={checking} aria-busy={checking}>{checking ? t("upd.checking") : t("upd.check")}</Button> : null}
       </div>
+      <LastApplyNote info={info} />
       {info.newer && info.latest ? <NewRelease info={info} /> : (
         <p className="hint about-status">
           {info.error ? t("upd.failed", info.error) : info.latest ? t("upd.latest") : t("upd.never")}
@@ -84,8 +86,38 @@ function Link({ href, children }: { href: string; children: ReactNode }) {
   return <a role="link" tabIndex={0} onClick={() => openURL(href)} onKeyDown={(e) => { if (e.key === "Enter") openURL(href); }}>{children}</a>;
 }
 
+// The outcome of the last in-app update: a failure stays until a later one
+// succeeds; a success shows only while it is the version running now.
+function LastApplyNote({ info }: { info: UpdateInfo }) {
+  const last = info.lastApply;
+  if (!last) return null;
+  if (last.success) return last.version === info.current ? <p className="hint about-status">{t("upd.applied", last.version)}</p> : null;
+  return (
+    <p className="hint about-status about-error" role="alert">
+      {t("upd.lastFailed", last.targetVersion, last.error ?? "")}
+      <br />{t("upd.lastLog", last.logPath)}
+    </p>
+  );
+}
+
 function NewRelease({ info }: { info: UpdateInfo }) {
+  const api = useApi();
   const toast = useToast();
+  const confirm = useConfirm();
+  const [starting, setStarting] = useState(false);
+  const canApply = !!(info.canApply && api.ApplyUpdate);
+  async function update() {
+    if (!(await confirm({ title: t("upd.applyTitle", info.latest ?? ""), body: <p>{t("upd.applyBody")}</p>, ok: t("upd.apply") }))) return;
+    setStarting(true);
+    try {
+      await api.ApplyUpdate!();
+      // The helper waits for this process to exit before it replaces any file.
+      window.runtime?.Quit?.();
+    } catch (error) {
+      toast(t("upd.applyFailed", errorText(error)), "error");
+      setStarting(false);
+    }
+  }
   async function copy() {
     try {
       await copyText(info.command ?? "");
@@ -100,9 +132,12 @@ function NewRelease({ info }: { info: UpdateInfo }) {
         <b>{t("upd.newer", info.latest ?? "")}</b>
         {info.published ? <span className="hint">{t("upd.published", when(info.published))}</span> : null}
       </div>
+      {canApply ? (
+        <div><Button kind="primary" icon={Download} onClick={update} disabled={starting} aria-busy={starting}>{starting ? t("upd.applying") : t("upd.apply")}</Button></div>
+      ) : null}
       {info.command ? (
         <>
-          <p>{t("upd.howTo")}</p>
+          <p>{canApply ? t("upd.orTerminal") : t("upd.howTo")}</p>
           <div className="about-cmd"><code>{info.command}</code><Button kind="ghost" icon={Copy} onClick={copy}>{t("upd.copy")}</Button></div>
         </>
       ) : <p>{t("upd.howToOther")}</p>}

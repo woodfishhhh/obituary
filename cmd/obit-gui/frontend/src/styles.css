@@ -367,6 +367,7 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
 .about-id b { font-size: 15px; }
 .about-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--muted); font-size: 0.9em; }
 .about-status { margin: 0; padding: 0 16px 14px 72px; }
+.about-error { color: var(--danger); overflow-wrap: anywhere; }
 .about-new { display: grid; gap: 10px; margin: 0 16px 14px 72px; padding: 14px 16px; border: 1px solid var(--accent, var(--line)); border-radius: var(--radius-sm); background: var(--panel-2); }
 .about-new-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
 .about-new-head b { font-size: 15px; }
