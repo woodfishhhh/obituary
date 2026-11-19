@@ -23,8 +23,12 @@ func guardDelete(home string, ev Event) (string, error) {
 		var context guardrm.Context
 		context, why = deleteGuardContext(ev)
 		if why == "" {
-			equivalent, summary, why = guardrm.SuggestWithSummary(ev.Command, context)
-			guidance = deletionGuidance(ev, why, context.Executable)
+			if reason := codexWindowsEmbeddedDeletion(ev); reason != "" {
+				why, guidance = reason, reason
+			} else {
+				equivalent, summary, why = guardrm.SuggestWithSummary(ev.Command, context)
+				guidance = deletionGuidance(ev, why, context.Executable)
+			}
 		}
 	}
 	if why == "" || guidance != "" {
@@ -49,6 +53,19 @@ func guardDelete(home string, ev Event) (string, error) {
 
 // deletionGuidance denies a literal deletion that has no exact equivalent:
 // denying runs nothing, so it cannot select more than the command would.
+
+const codexWindowsEmbeddedDeletionReason = "Codex on Windows passes commands through another shell, where quoting may fail and deletion in this text may really execute. Text containing backticks should be written with an editing tool; the same applies to shell substitutions. When needed, pass file paths to the command."
+
+func codexWindowsEmbeddedDeletion(ev Event) string {
+	if ev.Host != "codex" || runtime.GOOS != "windows" || !windowsCwd(ev.Cwd) && !guardrm.WSLMountedPath(ev.Cwd) {
+		return ""
+	}
+	if guardrm.EmbeddedBashDeletion(ev.Command) == "" {
+		return ""
+	}
+	return codexWindowsEmbeddedDeletionReason
+}
+
 func deletionGuidance(ev Event, why, executable string) string {
 	if why == "" {
 		return ""

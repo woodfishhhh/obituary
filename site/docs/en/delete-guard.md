@@ -1,5 +1,6 @@
 # Delete guard
 
+- **Windows Codex text is guarded too.** Codex passes commands through another shell on Windows, where quoting can fail, so deletion anywhere inside a backtick or `$(…)` fragment in the original command is denied; the fragment is parsed as Bash. Text containing backticks should be written with an editing tool, and file paths should be passed to the command when needed.
 Agents wiping a home directory or a whole drive is no longer hypothetical; people have posted it more than once. When the delete guard is on and an agent runs `rm -rf build`, `rmdir`, `git clean -fdx`, `Remove-Item -Recurse` or a similar delete, Obituary stops that execution and tells the agent the equivalent command, such as `obit rm -rf build`. Once the agent uses it, things go to the graveyard instead of disappearing, and `obit resurrect <id>` puts them back.
 
 ```powershell
@@ -43,7 +44,8 @@ $ obit resurrect --last
 | Claude Code (Bash tool) | `rm`, `rmdir`, `git clean`, optionally preceded by a literal `cd x` (joined with `&&`, `;` or a newline); `rm -f *.log` (when no file in the folder starts with `-`), `rm -rf ../dist`, `rm -- "$target"` (variables after `--`) | Every other literal delete: other statements before or after (`npm …`, `trap`, `hash`), variables before `--`, POSIX absolute paths starting with `/`, redirections, `\|\|`, pipelines, `$(…)`, interactive deletes, `/usr/bin/rm` with a path | Commands that do not delete |
 | Codex, under WSL's `/mnt/<drive>` | A single `rm` / `rmdir` whose arguments are relative paths without `..`, `~`, wildcards or quotes | Every other literal delete, including `git clean` and paths into WSL's own file system | A working directory inside WSL's own file system |
 | Codex, declared Windows PowerShell | A single `Remove-Item` or alias with one literal path (`-Recurse`, `-Force` allowed) | Every other literal delete: multiple statements, pipelines, other parameters such as `-ErrorAction`, provider paths, `~`, wildcards, backticks | Text inside curly-quoted strings |
-| Codex on Windows with an unknown shell, pwsh on Linux, `git rm` | — | — | Everything |
+| Codex on Windows with an unknown shell | — | Deletion inside raw backtick or `$(…)` fragments | Other commands |
+| pwsh on Linux, `git rm` | — | — | Everything |
 
 For an equivalent command, the delete must be the **last segment** of the command, joined only with `&&`, `;` or newlines, and file names ending in a dot or space get none (Windows would normalise them into another name). A literal delete in any of these is still stopped.
 

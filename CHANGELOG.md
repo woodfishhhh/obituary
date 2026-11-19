@@ -1,5 +1,10 @@
 # Changelog / 更新日志
 
+## Unreleased
+
+- 修复：Windows 上的 Codex 命令原文里，反引号或 `$(…)` 片段包含删除时，删除护栏会拦下这一次执行，并说明命令可能再经过一层 shell。
+- Fix: the delete guard now denies Windows Codex commands whose raw backtick or `$(…)` fragments contain deletion, because Codex may pass the command through another shell.
+
 ## 1.4.2 - 2026-11-19
 
 - 修复：删除护栏现在会拦下 Bash 的 `find -delete`、`find -exec rm` 和 `xargs rm`，并提示先列出目标，再用 `obit rm` 下葬。

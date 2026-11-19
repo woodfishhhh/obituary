@@ -137,6 +137,8 @@ obit init -g --guard-rm                 # Claude Code；Codex 加 --agent codex�
 </p>
 
 开启后，agent 执行 `rm -rf build`、`rmdir`、`git clean -fdx`、`Remove-Item -Recurse` 这类删除命令时，讣告会拦下这一次执行，并告诉 agent 一条等价命令，比如 `obit rm -rf build`。agent 改用它之后，东西进墓地而不是消失，`obit resurrect <id>` 一条命令放回原处。
+- **Windows 上的 Codex 片段也拦。** Codex 在 Windows 上会把命令再交给另一层 shell，引用符号可能失效，所以命令原文任意位置的反引号片段或 `$(…)` 片段里出现删除，也会被拦下；其中的内容按 Bash 解析。带反引号的文字请用编辑工具写进文件，需要时把文件路径交给命令。
+
 
 - **只拦不改。** 讣告不改写 agent 的命令：Claude Code 会按改写后的命令检查权限，改写会让你设的 `deny` 规则失效。拦下再让 agent 自己发出等价命令，你的所有权限规则照常生效。
 - **出现字面的删除就拦。** 命令里任何一个命令位置上出现 `rm`、`rmdir`、`git clean`、`Remove-Item`（含 `del`、`rd`、`ri` 这些别名），不论在 `&&`、`||`、`;`、管道、`$(…)`、子 shell、条件还是循环里，都拦下这一次执行，例如 `rm -rf build && npm run build`、`rm -rf build 2>/dev/null`、`git clean -fdx && npm ci`。字符串、注释、`echo` 的参数里的 `rm` 不算；`rm --help`、`git clean -n`、`Remove-Item -WhatIf` 只是预览，也不算。
@@ -154,7 +156,8 @@ obit init -g --guard-rm                 # Claude Code；Codex 加 --agent codex�
   | Claude Code（Bash 工具） | `rm`、`rmdir`、`git clean`，前面只能有字面的 `cd x`（用 `&&`、`;` 或换行连接）；`rm -f *.log`（当前目录里没有以 `-` 开头的文件时）、`rm -rf ../dist`、`rm -- "$target"`（变量在 `--` 之后） | 其他字面删除：前后还有别的语句（`npm …`、`trap`、`hash` 等）、`--` 之前的变量（可能展开成选项）、以 `/` 开头的 POSIX 绝对路径、重定向、`\|\|`、管道、`$(…)`、交互式、带路径的 `/usr/bin/rm` | 不是删除的命令 |
   | Codex，WSL 的 `/mnt/<盘>` 下 | 单独一条 `rm` / `rmdir`，参数都是不含 `..`、`~`、通配、引号的相对路径（建议用 interop 的 `obit.exe`） | 其他字面删除，含 `git clean` 和指向 WSL 自己文件系统的路径 | 工作目录在 WSL 自己的文件系统里 |
   | Codex，明确是 Windows PowerShell | 单独一条 `Remove-Item` 或别名，只带一个字面路径（可加 `-Recurse`、`-Force`） | 其他字面删除：多条语句、管道、`-ErrorAction` 等其他参数、provider 路径、`~`、通配、反引号 | 弯引号字符串里的文字 |
-  | Codex 在 Windows 上但看不出是哪种 shell、Linux 上的 pwsh、`git rm` | — | — | 全部放行 |
+  | Codex 在 Windows 上但看不出是哪种 shell | — | 原文反引号或 `$(…)` 片段中的删除 | 其他命令 |
+  | Linux 上的 pwsh、`git rm` | — | — | 全部放行 |
 
   另外几条给等价命令的规则：删除命令必须是整条命令的**最后一段**，前面只能用 `&&`、`;` 或换行连接（`obit rm` 和 `rm` 的成功与失败不完全一样，后面若还有依赖退出码的命令，结果可能分叉）；文件名以点或空格结尾的不给（Windows 会把它们归一化成另一个名字）；bash 命令里有回车、NUL 字节、反引号，或者反斜杠续行和 `#` 注释同时出现、续行不止一处的，也不给。这些情况下命令里的字面删除照样拦下。建议命令里的 obit 与已安装的 hook 用同一个路径。
 

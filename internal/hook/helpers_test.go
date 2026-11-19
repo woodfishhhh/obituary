@@ -287,7 +287,7 @@ func guardSuggestion(t *testing.T, agent, cwd, tool string, input map[string]any
 	if response.HookSpecificOutput.PermissionDecision != "deny" {
 		t.Fatal(out.String())
 	}
-	if strings.Contains(response.HookSpecificOutput.PermissionDecisionReason, "no exact obit equivalent applies") {
+	if strings.Contains(response.HookSpecificOutput.PermissionDecisionReason, "no exact obit equivalent applies") || strings.Contains(response.HookSpecificOutput.PermissionDecisionReason, "Codex on Windows passes commands through another shell") {
 		return noEquivalent
 	}
 	parts := strings.Split(response.HookSpecificOutput.PermissionDecisionReason, "`")

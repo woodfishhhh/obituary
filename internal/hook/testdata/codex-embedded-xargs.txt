@@ -1,0 +1,3 @@
+cat <<EOF
+`xargs rm`
+EOF

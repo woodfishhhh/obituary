@@ -166,3 +166,22 @@ func TestDeletionDeepNesting(t *testing.T) {
 		t.Errorf("deep Bash nesting: %q (%s)", got, why)
 	}
 }
+
+func TestEmbeddedBashDeletion(t *testing.T) {
+	backtick := string(rune(96))
+	dollarOpen := string(rune(36)) + string(rune(40))
+	for _, tc := range []struct {
+		name, command, want string
+	}{
+		{"backtick", "echo " + backtick + "rm -rf build" + backtick, "rm"},
+		{"dollar-find", "echo '" + dollarOpen + "find . -delete)'", "find -delete"},
+		{"heredoc-xargs", "cat <<EOF\n" + backtick + "xargs rm" + backtick + "\nEOF", "xargs rm"},
+		{"text", "echo " + backtick + "ordinary text" + backtick, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := EmbeddedBashDeletion(tc.command); got != tc.want {
+				t.Fatalf("EmbeddedBashDeletion = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}

@@ -1,0 +1,11 @@
+codex --codex-run-as-apply-patch "$(cat <<'PATCH'
+*** Begin Patch
+*** Update File: CHANGELOG.md
+@@
+-## Unreleased
++## 1.4.2 - 2026-11-19
+@@
+ - Fix: the delete guard now denies Bash `find -delete`, `find -exec rm`, and `xargs rm`, and explains how to list the targets first and bury them with `obit rm`.
+*** End Patch
+PATCH
+)"

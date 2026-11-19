@@ -1196,3 +1196,13 @@ func TestRemoveItemBinding(t *testing.T) {
 		}
 	}
 }
+
+func TestCodexWindowsEmbeddedDeletionDecision(t *testing.T) {
+	command := "echo " + string(rune(96)) + "rm -rf build" + string(rune(96))
+	t.Setenv("OBIT_GUARD_RM", "1")
+	t.Setenv("OBIT_DISABLED", "0")
+	got, err := guardDelete(t.TempDir(), Event{Host: "codex", Cwd: "C:/repo", Command: command})
+	if err != nil || !strings.Contains(got, "Codex on Windows passes commands through another shell") {
+		t.Fatalf("embedded deletion decision: %q, %v", got, err)
+	}
+}
