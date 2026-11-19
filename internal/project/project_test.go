@@ -683,20 +683,10 @@ func TestGitTimeoutRetriesAutomaticBurial(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	originalCommand, originalTimeout := gitCommand, gitTimeout
-	t.Cleanup(func() { gitCommand, gitTimeout = originalCommand, originalTimeout })
-	gitTimeout = 100 * time.Millisecond
-	var commands []*exec.Cmd
-	gitCommand = func(ctx context.Context, _ string, _ ...string) *exec.Cmd {
-		cmd := exec.CommandContext(ctx, exe, "-test.run=^TestHangingGitHelper$")
-		cmd.Env = append(os.Environ(), "OBIT_HANGING_GIT=1")
-		commands = append(commands, cmd)
-		return cmd
-	}
+	assertGitReaped := observeGitTimeout(t, exe)
 	p := Project{Root: root}
 	for _, operation := range []string{"tracked", "untracked", "ensure", "sweep"} {
 		t.Run(operation, func(t *testing.T) {
-			started := time.Now()
 			var err error
 			switch operation {
 			case "tracked":
@@ -730,11 +720,48 @@ func TestGitTimeoutRetriesAutomaticBurial(t *testing.T) {
 			if operation != "sweep" && !errors.Is(err, context.DeadlineExceeded) {
 				t.Errorf("Git timeout not returned: %v", err)
 			}
-			last := commands[len(commands)-1]
-			if time.Since(started) > time.Second || last.ProcessState == nil || last.ProcessState.Success() {
-				t.Fatalf("Git not killed and reaped promptly: duration=%s state=%v", time.Since(started), last.ProcessState)
-			}
+			assertGitReaped(t)
 		})
+	}
+}
+
+func observeGitTimeout(t *testing.T, exe string) func(*testing.T) {
+	t.Helper()
+	originalCommand, originalTimeout, originalOutput := gitCommand, gitTimeout, gitOutput
+	t.Cleanup(func() { gitCommand, gitTimeout, gitOutput = originalCommand, originalTimeout, originalOutput })
+	gitTimeout = 100 * time.Millisecond
+	var last *exec.Cmd
+	var deadline, waited time.Time
+	var killed bool
+	gitCommand = func(ctx context.Context, _ string, _ ...string) *exec.Cmd {
+		cmd := exec.CommandContext(ctx, exe, "-test.run=^TestHangingGitHelper$")
+		cmd.Env = append(os.Environ(), "OBIT_HANGING_GIT=1")
+		last, waited, killed = cmd, time.Time{}, false
+		deadline, _ = ctx.Deadline()
+		cancel := cmd.Cancel
+		cmd.Cancel = func() error {
+			err := cancel()
+			killed = err == nil
+			return err
+		}
+		return cmd
+	}
+	gitOutput = func(cmd *exec.Cmd) ([]byte, error) {
+		out, err := cmd.Output()
+		waited = time.Now()
+		return out, err
+	}
+	return func(t *testing.T) {
+		t.Helper()
+		if last == nil || waited.IsZero() {
+			t.Fatal("Git did not reach Wait")
+		}
+		elapsed := waited.Sub(deadline)
+		// Keep the original one-second budget, less the 100 ms before cancellation.
+		if elapsed < 0 || elapsed > time.Second-gitTimeout || !killed || last.ProcessState.ExitCode() != 1 {
+			t.Fatalf("Git not killed and reaped promptly: post-deadline=%s killed=%t state=%v", elapsed, killed, last.ProcessState)
+		}
+		last = nil
 	}
 }
 
