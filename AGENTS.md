@@ -53,6 +53,14 @@
 - **文档写现在的规则和原因，不写过程。** `docs/architecture.md`、README 只写现在怎么做、为什么；「第几轮审查试过什么、又撤回了」这类经过写进提交说明，定期压缩成规则。
 - 这台机器上 Git Bash 的 `rm` 是会把文件移进回收站的包装脚本。清理自己的临时文件用 `/usr/bin/rm`。排查回收站里多出来的条目时，先排除 `rm`，再怀疑代码。
 
+## 国内发布镜像
+
+`mirror-latest.yml` 与 `pages.yml` 的 `deploy-cn` 共用 `cn-deploy`，不取消运行中的任务。正式 Release 发布时自动推送；重放用 `gh workflow run mirror-latest.yml --ref main -f tag=vX.Y.Z`。runner 用只读 `GITHUB_TOKEN` 下载 Release 的六个归档和 `checksums.txt`，从同一 Git 标签取两个安装脚本；核对归档清单和 SHA-256 后，经固定的 `CN_DEPLOY_KNOWN_HOSTS` 上传。`transport.sha256` 校验脚本和元数据的传输，不是独立的发布者签名。
+
+专用仓库 Secret 是 `CN_RELEASE_DEPLOY_KEY`，ed25519 指纹 `SHA256:XDh6ylMRs/gpoyCC1T2TXzwFlHlIUOLIpmPzVpdoQ2E`。非 root 用户 `obit-deploy` 的 `authorized_keys` 只为这把钥匙增加 `restrict,command="/usr/local/bin/obituary-mirror-publish"`。该入口来自 `scripts/cn-mirror-pull.sh`，只接受以 `/home/obit-deploy/release-staging`（0700）为根的只写 rrsync，或 `publish vX.Y.Z`。两者都拿 `download/.pull.lock`；服务端从 `incoming/` 复核文件和哈希，在同一文件系统上改名发布完整版本，再按 runner 核对的最新正式版原子更新 `latest.json`。同标签内容不同则拒绝覆盖，相同则保留原文件。日志用 `journalctl -t obituary-mirror` 查。
+
+人工备用仍是原来的 `pull vX.Y.Z`（`CN_MIRROR_TRIGGER_KEY`、`/usr/local/bin/obituary-mirror-pull`，源码 `scripts/cn-mirror-pull-legacy.sh`）；只有这条备用路径从服务器访问 GitHub。回滚时先等 `cn-deploy` 空闲，回退本次工作流，再只移除上述指纹对应的新增授权行并撤销 `CN_RELEASE_DEPLOY_KEY`。核对原授权行和旧脚本与服务器 `/root/obituary-cn-mirror-<日期时间>-<后缀>/` 中的备份一致，不覆盖后续新增授权。需要恢复索引时，先核对备份的 `download.inventory` 和最新版本，持 `.pull.lock` 将备份的 `latest.json` 通过同目录临时文件改名恢复；不要删除任何已发布版本。最后停用新增入口和 staging，保留备份及旧 `pull` 入口。回滚不改 `CN_DEPLOY_KEY`、原站点钥匙或 `deploy-cn`。
+
 ## 命令
 
 ```bash

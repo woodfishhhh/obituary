@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 
-SCRIPT = Path(__file__).with_name("cn-mirror-pull.sh")
+SCRIPT = Path(__file__).with_name("cn-mirror-pull-legacy.sh")
 
 
 class MirrorCommandTests(unittest.TestCase):
