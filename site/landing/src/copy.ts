@@ -96,6 +96,8 @@ const zh = {
   switchLang: { label: "English", href: "en/" },
   nav: { why: "为什么", life: "一生", window: "小窗口", install: "安装", docs: "文档" },
   hero: {
+    // The eyebrow cycles through what Obituary is to an agent; label is what screen readers get.
+    tagline: { before: "讣告 · AI 的", words: ["回收站", "拦截器", "后悔药", "清洁工"], after: "", label: "讣告 · AI 的回收站" },
     before: "给 AI 写下的文件一个",
     sparkle: "寿命",
     after: "",
@@ -299,6 +301,12 @@ const en: Copy = {
   switchLang: { label: "中文", href: "" },
   nav: { why: "Why", life: "Lifecycle", window: "The window", install: "Install", docs: "Docs" },
   hero: {
+    tagline: {
+      before: "Obituary — the",
+      words: ["trash bin", "interceptor", "undo button", "cleaner"],
+      after: "for AI agents",
+      label: "Obituary — the trash bin for AI agents",
+    },
     before: "Give AI files a ",
     sparkle: "lifespan",
     after: "",

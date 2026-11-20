@@ -1,4 +1,5 @@
 import { BorderBeam } from "@/components/ui/border-beam";
+import { RotatingWord } from "@/components/ui/rotating-word";
 import { ShimmerLink } from "@/components/ui/shimmer-link";
 import { SparklesText } from "@/components/ui/sparkles-text";
 import type { Copy } from "@/copy";
@@ -17,6 +18,14 @@ export function Hero({ c }: { c: Copy }) {
 
       <div className="mx-auto grid min-h-[calc(100svh-4.5rem)] max-w-[1240px] items-center gap-12 px-6 pt-10 pb-20 md:px-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:pt-6">
         <div className="flex flex-col items-start gap-6">
+          <p className="inline-flex items-center gap-1.5 rounded-full border border-line-2 bg-paper/70 px-4 py-1.5 text-sm font-medium text-ink-2 backdrop-blur md:text-base">
+            <span className="sr-only">{h.tagline.label}</span>
+            <span aria-hidden="true" className="inline-flex items-center gap-1.5">
+              {h.tagline.before}
+              <RotatingWord words={h.tagline.words} className="brand-text font-semibold" />
+              {h.tagline.after}
+            </span>
+          </p>
           <h1 id="hero-head" className="max-w-[13ch] text-[clamp(2.75rem,5.6vw,4.75rem)] leading-[1.04] font-semibold tracking-[-0.03em] text-ink">
             {h.before}
             <SparklesText className="brand-text" colors={{ first: brand.gold, second: brand.sky }} sparklesCount={8}>
