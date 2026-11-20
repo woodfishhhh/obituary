@@ -88,7 +88,7 @@ Cada plataforma de un vistazo:
 | Instalación | Scoop, el script `install.ps1`(winget en revisión) | Homebrew, el script `install.sh` | el script `install.sh` |
 | Comprueba la caducidad cada 5 minutos | proceso residente en la bandeja, Programador de tareas como respaldo | agente launchd de usuario | temporizador `systemd --user`; crontab de usuario sin systemd |
 | CLI, cementerio y resurrección, registro automático opcional, guardia de eliminación, integración con agentes(hooks, Skill, MCP), contenedores Docker, políticas de carpetas | sí | sí | sí |
-| Bandeja, ventana pequeña, menús contextuales, fechas de entierro en el Explorador, accesos del menú Inicio y del escritorio | sí | en su lugar el CLI: `obit list`, `obit graveyard`, `obit resurrect` | Ventana y bandeja en Ubuntu 24.04 amd64 (`.deb`) |
+| Bandeja, ventana pequeña, menús contextuales, fechas de entierro en el Explorador, accesos del menú Inicio y del escritorio | sí | Ventana y bandeja en macOS mediante DMG universal; todavía sin menú contextual | Ventana y bandeja en Ubuntu 24.04 amd64 (deb) |
 | Modo Papelera de reciclaje | sí | solo cementerio | solo cementerio |
 
 Para instalar manualmente, actualizar y desinstalar, consulta la [guía de instalación](docs/install.en.md).

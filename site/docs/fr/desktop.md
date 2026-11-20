@@ -2,6 +2,19 @@
 
 Ressuscitez des fichiers, approuvez les propositions et modifiez les réglages sans passer par la ligne de commande.
 
+## Petite fenêtre et icône de barre des menus sur macOS
+
+Téléchargez le DMG universel de macOS et le fichier de checksums de la même version. Vérifiez le SHA-256, ouvrez le DMG puis faites glisser Obituary.app vers Applications ou le dossier Applications de l’utilisateur; éjectez le DMG avant d’activer le lancement à la connexion.
+
+L’app contient la petite fenêtre Wails, l’icône de barre des menus et les auxiliaires obit et obitd. L’agent utilisateur launchd qui vérifie les échéances toutes les 5 minutes reste un secours séparé. Dans les réglages, activez le lancement du tray à la connexion pour installer le LaunchAgent d’Obituary; le désactiver retire uniquement cette entrée.
+
+### Première ouverture d’une app non signée
+
+Cette version n’est ni signée Developer ID ni notariée. Vérifiez la source et le SHA-256, puis essayez de l’ouvrir une fois. Si macOS ne peut pas vérifier le développeur, ouvrez « Réglages Système → Confidentialité et sécurité », choisissez « Ouvrir quand même » pour Obituary, confirmez, puis réessayez. Ne désactivez pas Gatekeeper globalement et ne supprimez pas la quarantaine récursivement. Arrêtez-vous si macOS signale une app endommagée, un logiciel malveillant ou une politique d’organisation.
+
+### Proposition de Homebrew Cask
+
+Le cask doit installer le même DMG universel, copier Obituary.app dans Applications et exposer obit et obitd depuis l’app bundle. Tant que le DMG de bureau n’a pas une URL stable et une vérification de désinstallation relue, il reste séparé du cask CLI existant.
 ## L’icône de notification
 
 `obit init` affiche une icône dans la zone de notification à l’ouverture de session. Son menu permet de :

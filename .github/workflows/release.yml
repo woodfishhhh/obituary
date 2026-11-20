@@ -17,6 +17,11 @@ jobs:
     with:
       snapshot: false
 
+  macos-desktop:
+    uses: ./.github/workflows/macos-desktop.yml
+    with:
+      snapshot: false
+
   build:
     runs-on: windows-latest
     timeout-minutes: 30
@@ -61,7 +66,7 @@ jobs:
             bin/release/homebrew/**
 
   publish:
-    needs: [build, linux-desktop]
+    needs: [build, linux-desktop, macos-desktop]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -75,10 +80,15 @@ jobs:
         with:
           name: linux-desktop-deb
           path: release
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: macos-desktop-package
+          path: release/macos
       - name: Verify archives and add the native package to the same checksum list
         working-directory: release
         run: |
           sha256sum "obituary_${GITHUB_REF_NAME#v}_linux_amd64.deb" >> checksums.txt
+          sed 's#  #  macos/#' macos/checksums.txt >> checksums.txt
           sha256sum --check --strict checksums.txt
       - name: Upload only to a draft release
         shell: bash
@@ -96,9 +106,9 @@ jobs:
           if [[ -n "$id" ]]; then
             # Recheck immediately before upload in case it was published meanwhile.
             gh api "repos/$GH_REPO/releases/$id" | jq -e '.draft == true' > /dev/null
-            gh release upload "$TAG" release/*.zip release/*.tar.gz release/*.deb release/checksums.txt --clobber
+            gh release upload "$TAG" release/*.zip release/*.tar.gz release/*.deb release/macos/*.app.zip release/macos/*.dmg release/checksums.txt --clobber
           else
             flags=(--draft --verify-tag --title "$TAG" --notes-file release/CHANGELOG.md)
             if [[ "$TAG" == *-* ]]; then flags+=(--prerelease); fi
-            gh release create "$TAG" release/*.zip release/*.tar.gz release/*.deb release/checksums.txt "${flags[@]}"
+            gh release create "$TAG" release/*.zip release/*.tar.gz release/*.deb release/macos/*.app.zip release/macos/*.dmg release/checksums.txt "${flags[@]}"
           fi

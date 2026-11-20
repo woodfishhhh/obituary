@@ -1,4 +1,4 @@
-//go:build linux && desktop
+//go:build (linux || darwin) && desktop
 
 package app
 

@@ -88,7 +88,7 @@ Read https://obituary.woodfish.site/agent-install.md and follow it to install Ob
 | 安裝方式 | Scoop、`install.ps1` 腳本（winget 審核中） | Homebrew、`install.sh` 腳本 | `install.sh` 腳本 |
 | 每 5 分鐘檢查到期 | 常駐系統匣程序，工作排程器作為備援 | 使用者 launchd agent | `systemd --user` 計時器；沒有 systemd 時使用使用者 crontab |
 | CLI、墓地與復活、選用的自動登記、刪除護欄、agent 整合（hook、Skill、MCP）、Docker 容器、資料夾政策 | 有 | 有 | 有 |
-| 系統匣、小視窗、右鍵選單、檔案總管中的下葬日期、開始選單和桌面捷徑 | 有 | 改用 CLI：`obit list`、`obit graveyard`、`obit resurrect` | Ubuntu 24.04 amd64 桌面套件（`.deb`）提供小視窗與系統匣 |
+| 系統匣、小視窗、右鍵選單、檔案總管中的下葬日期、開始選單和桌面捷徑 | 有 | macOS 通用 DMG 提供小視窗與選單列托盤，暫不提供右鍵選單 | Ubuntu 24.04 amd64 桌面套件（deb）提供小視窗與系統匣 |
 | 資源回收筒模式 | 有 | 僅墓地 | 僅墓地 |
 
 手動安裝、更新和解除安裝請參閱[安裝指南](docs/install.md)。

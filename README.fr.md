@@ -88,7 +88,7 @@ Chaque plateforme en bref :
 | Installation | Scoop, script `install.ps1`(winget en revue) | Homebrew, script `install.sh` | script `install.sh` |
 | Vérification de l’expiration toutes les 5 minutes | processus résident dans la barre système, Planificateur des tâches en secours | agent launchd utilisateur | minuteur `systemd --user` ; crontab utilisateur sans systemd |
 | CLI, cimetière et résurrection, enregistrement automatique optionnel, garde de suppression, intégration agent(hooks, Skill, MCP), conteneurs Docker, politiques de dossiers | oui | oui | oui |
-| Barre système, petite fenêtre, menus contextuels, dates d’enterrement dans l’Explorateur, raccourcis du menu Démarrer et du bureau | oui | le CLI à la place : `obit list`, `obit graveyard`, `obit resurrect` | Fenêtre et icône de notification sur Ubuntu 24.04 amd64 (`.deb`) |
+| Barre système, petite fenêtre, menus contextuels, dates d’enterrement dans l’Explorateur, raccourcis du menu Démarrer et du bureau | oui | Petite fenêtre et icône de barre des menus macOS via DMG universel; pas encore de menu contextuel | Fenêtre et icône de notification sur Ubuntu 24.04 amd64 (deb) |
 | Mode Corbeille | oui | cimetière uniquement | cimetière uniquement |
 
 Pour installer manuellement, mettre à jour et désinstaller, consultez le [guide d’installation](docs/install.en.md).

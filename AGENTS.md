@@ -74,6 +74,8 @@ go build -ldflags=-H=windowsgui -o bin/obitd.exe ./cmd/obitd
 
 Linux 桌面用 Ubuntu 24.04 amd64 原生构建：安装 `libgtk-3-dev libwebkit2gtk-4.1-dev`，前端改动先运行 `node scripts/build-frontend.mjs`。`CGO_ENABLED=1 go build -tags desktop,production,webkit2_41 -o bin/obit-gui ./cmd/obit-gui` 构建 Wails 小窗口。`goreleaser release -f .goreleaser-linux-desktop.yaml --snapshot --skip=publish` 生成 `bin/linux-desktop/*.deb`；六个原有归档仍用 `.goreleaser.yaml`。桌面作业的系统依赖见 `.github/workflows/linux-desktop.yml`；`bash scripts/test-linux-desktop-session.sh bin/linux-desktop/*.deb <证据目录>` 使用私有 Xvfb、会话总线和临时用户目录，验证窗口、托盘、复活和通知。不要在宿主显示器上验收。仅在一次性 Ubuntu 24.04 容器中用 `scripts/test-linux-desktop-package.sh` 验证安装与移除。
 
+macOS GUI 只能在 GitHub Actions 的 macOS runner 上构建和验收：`go test -tags desktop ./internal/app ./internal/gui ./internal/tray` 验证原生绑定，`bash scripts/build-macos-desktop.sh VERSION OUTPUT_DIR` 生成通用 `Obituary.app`、DMG 和 checksums。工作流 `.github/workflows/macos-desktop.yml` 还会用 `plutil`、`lipo`、ad-hoc `codesign`、`hdiutil` 和 app 内的 `--smoke` 检查包，并上传窗口与菜单栏截图；Windows 本地不要交叉构建 macOS GUI，也不要把 CI 收据当作真机通知授权或首次放行证明。
+
 **静态检查（所有者 2026-11-10 定）。** `.golangci.yml` 只开 staticcheck、errorlint、funlen（50 行）、nestif（复杂度 4），对应上面「函数不超过 50 行、嵌套不超过 4 层」的规则。只拦新增的问题（`new-from-merge-base: main`）；已有的超长函数和深嵌套是重构清单，记在 docs/milestones/m3-speed.md。交付前和 vet 一起跑，新代码不许新增告警；确需例外用 `//nolint:<linter> // 原因` 写明理由。`unused` 不在 CI 里：Linux 构建下，只被 Windows 代码调用的共用函数会被误报。拆包或删掉调用方之后，手动跑一次 `golangci-lint run --new-from-merge-base= --enable-only unused ./...` 查死代码，Windows 构建下应当是 0。
 
 **测试分两档，全量只在 CI 上跑（所有者 2026-11-10 定，决策 D-0038）。** 测试大多碰真实文件系统、Git 和子进程。几个 worker 在同一台机器上同时跑全量时，全部慢二三十倍，所以：

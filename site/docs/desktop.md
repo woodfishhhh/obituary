@@ -2,6 +2,19 @@
 
 不会用命令行，也能复活文件、批准提议、改设置。
 
+## macOS 小窗口和菜单栏图标
+
+从同一个发布版本下载通用 macOS DMG 和 checksums.txt。先核对 SHA-256，再打开 DMG，把 Obituary.app 拖到「应用程序」或用户的 Applications 文件夹；启用登录启动前先弹出 DMG。
+
+这个 app 里有 Wails 小窗口、菜单栏图标，以及配套的 obit 和 obitd。每 5 分钟运行一次的 launchd 用户代理仍是独立的兜底任务。在设置页打开「随登录启动托盘」会安装讣告自己的用户 LaunchAgent；关闭它只会移除这一项。
+
+### 第一次打开未签名 app
+
+这个发布包没有 Developer ID 签名，也没有公证。确认下载自可信发布页并核对 SHA-256 后，先尝试打开一次。如果 macOS 提示无法验证开发者，打开「系统设置 → 隐私与安全性」，在讣告对应位置选择「仍要打开」，确认系统提示后再打开。不要全局关闭 Gatekeeper，也不要递归清除隔离属性；如果系统报告 app 已损坏、包含恶意软件，或公司策略禁止放行，请停止。
+
+### Homebrew Cask 方案
+
+Cask 应安装同一个通用 DMG，把 Obituary.app 复制到「应用程序」，并从 app bundle 提供 obit 和 obitd。在桌面 DMG 有稳定发布地址并完成卸载回执复核前，现有 CLI 压缩包 cask 与桌面 cask 分开。
 ## Ubuntu 24.04（amd64）
 
 从同一个发布版本下载桌面包 `obituary_<版本>_linux_amd64.deb` 和 `checksums.txt`。在下载目录运行以下命令，把 `VERSION` 换成实际版本号，校验成功后再安装：

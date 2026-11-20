@@ -88,7 +88,7 @@ Die Plattformen im Überblick:
 | Installation | Scoop, das `install.ps1`-Skript(winget wird geprüft) | Homebrew, das `install.sh`-Skript | das `install.sh`-Skript |
 | Ablaufprüfung alle 5 Minuten | residenter Tray-Prozess, Aufgabenplanung als Fallback | Benutzer-agent von launchd | `systemd --user`-Timer; Benutzer-crontab ohne systemd |
 | CLI, Friedhof und Wiederbelebung, optionale automatische Registrierung, Löschschutz, Agent-Integration(Hooks, Skill, MCP), Docker-Container, Ordner-Richtlinien | ja | ja | ja |
-| Tray, kleines Fenster, Kontextmenüs, Begräbnisdaten im Explorer, Startmenü- und Desktop-Verknüpfungen | ja | stattdessen CLI: `obit list`, `obit graveyard`, `obit resurrect` | Fenster und Tray unter Ubuntu 24.04 amd64 (`.deb`) |
+| Tray, kleines Fenster, Kontextmenüs, Begräbnisdaten im Explorer, Startmenü- und Desktop-Verknüpfungen | ja | Kleines Fenster und Menüsymbol unter macOS per universellem DMG; noch kein Kontextmenü | Fenster und Tray unter Ubuntu 24.04 amd64 (deb) |
 | Papierkorbmodus | ja | nur Friedhof | nur Friedhof |
 
 Manuelle Installation, Aktualisierung und Deinstallation stehen im [Installationsleitfaden](docs/install.en.md).

@@ -88,7 +88,7 @@ Read https://obituary.woodfish.site/agent-install.md and follow it to install Ob
 | インストール | Scoop、`install.ps1` スクリプト（winget は審査中） | Homebrew、`install.sh` スクリプト | `install.sh` スクリプト |
 | 5 分ごとの期限確認 | 常駐トレイプロセス、予備としてタスクスケジューラ | ユーザー launchd エージェント | `systemd --user` タイマー、systemd がない場合はユーザー crontab |
 | CLI、墓地と復活、任意の自動登録、削除ガード、エージェント連携（hook、Skill、MCP）、Docker コンテナ、フォルダーポリシー | あり | あり | あり |
-| トレイ、小さなウィンドウ、コンテキストメニュー、エクスプローラーの埋葬日、スタートメニューとデスクトップショートカット | あり | CLI を使用：`obit list`、`obit graveyard`、`obit resurrect` | Ubuntu 24.04 amd64 の `.deb` でウィンドウとトレイを利用可能 |
+| トレイ、小さなウィンドウ、コンテキストメニュー、エクスプローラーの埋葬日、スタートメニューとデスクトップショートカット | あり | macOS の universal DMG で小窓とメニューバーのトレイを利用可能、コンテキストメニューは未対応 | Ubuntu 24.04 amd64 の deb でウィンドウとトレイを利用可能 |
 | ごみ箱モード | あり | 墓地のみ | 墓地のみ |
 
 手動インストール、更新、アンインストールは[インストールガイド](docs/install.en.md)をご覧ください。

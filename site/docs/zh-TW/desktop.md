@@ -2,6 +2,19 @@
 
 不必開啟命令列，也能復活檔案、核准提議和變更設定。
 
+## macOS 小視窗與選單列圖示
+
+從同一個發行版本下載通用 macOS DMG 和 checksums.txt。先核對 SHA-256，再開啟 DMG，把 Obituary.app 拖到「應用程式」或使用者的 Applications 資料夾；啟用登入啟動前先退出 DMG。
+
+這個 app 包含 Wails 小視窗、選單列圖示，以及配套的 obit 和 obitd。每 5 分鐘執行一次的 launchd 使用者代理仍是獨立的備援。在設定中開啟「登入時啟動托盤」會安裝讣告自己的使用者 LaunchAgent；關閉時只移除這個項目。
+
+### 第一次開啟未簽名的 app
+
+這個發行包沒有 Developer ID 簽名，也沒有公證。從可信的發行頁確認來源並核對 SHA-256 後，先嘗試開啟一次。如果 macOS 顯示無法驗證開發者，開啟「系統設定 → 隱私權與安全性」，在讣告項目選擇「仍要開啟」，確認系統提示後再開啟。不要全域關閉 Gatekeeper，也不要遞迴清除隔離屬性；如果系統報告 app 已損壞、含有惡意軟體，或公司政策禁止放行，請停止。
+
+### Homebrew Cask 方案
+
+Cask 應安裝同一個通用 DMG，把 Obituary.app 複製到「應用程式」，並從 app bundle 提供 obit 和 obitd。在桌面 DMG 有穩定發行網址並完成卸載回執核對前，現有 CLI 壓縮包 cask 與桌面 cask 分開。
 ## 系統匣
 
 `obit init` 會讓系統匣圖示在登入時啟動。選單包含：
