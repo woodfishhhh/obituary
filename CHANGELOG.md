@@ -1,5 +1,14 @@
 # Changelog / 更新日志
 
+## 1.5.0 - 2026-11-21
+
+- 命令行、Windows 托盘、小窗口和资源管理器菜单共用同一个语言设置，可选择英文或简体中文。
+- The CLI, Windows tray, desktop window and File Explorer menu now share one language setting for English or Simplified Chinese.
+- Windows 小窗口以 GB 或 TB 显示大小时保留两位小数；修复了日历弹窗顶部线条在圆角处突出的显示问题。
+- The Windows desktop window shows two decimal places for sizes in GB or TB. The top line of the calendar dialog now follows its rounded corners.
+- 新增匿名使用统计，默认开启，可用 `obit config telemetry off` 关闭；详情见[隐私政策](https://obituary.woodfish.site/docs/privacy.html)。
+- Anonymous usage statistics are on by default. To turn them off, run `obit config telemetry off`. See the [privacy policy](https://obituary.woodfish.site/docs/privacy.html).
+
 ## 1.4.3 - 2026-11-20
 
 - 修复：Windows 上的 Codex 命令里，反引号或 `$(…)` 片段即使在引号或带引号的 heredoc 里，只要包含删除，删除护栏也会拦下：Codex 会把命令再交给另一层 shell，引号可能失效。
