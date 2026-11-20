@@ -22,17 +22,17 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/i18n/es/lifecycle-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/i18n/es/lifecycle-light.svg">
-    <img alt="Ciclo de vida: registrar (obit add debug.log 2h o desde el menú contextual) → caducar (obit list muestra lo que queda; antes puedes usar obit extend u obit spare) → recoger en el cementerio (obit graveyard, conservado siete días por defecto) → resucitar (obit resurrect 3, vuelve a su lugar sin sobrescribir), o eliminar permanentemente después de la retención (obit purge)" src="docs/assets/readme/i18n/es/lifecycle-light.svg" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo/demo-en-dark.gif">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/demo/demo-en-light.gif">
+    <img alt="Demostración: el rm -rf build de un agente es detenido por el guardia de eliminación, obit rm -rf build lo entierra en su lugar y obit resurrect --last lo devuelve todo" src="docs/assets/demo/demo-en-light.gif" width="100%">
   </picture>
 </p>
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo/demo-en-dark.gif">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/demo/demo-en-light.gif">
-    <img alt="Demostración: el rm -rf build de un agente es detenido por el guardia de eliminación, obit rm -rf build lo entierra en su lugar y obit resurrect --last lo devuelve todo" src="docs/assets/demo/demo-en-light.gif" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/i18n/es/lifecycle-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/i18n/es/lifecycle-light.svg">
+    <img alt="Ciclo de vida: registrar (obit add debug.log 2h o desde el menú contextual) → caducar (obit list muestra lo que queda; antes puedes usar obit extend u obit spare) → recoger en el cementerio (obit graveyard, conservado siete días por defecto) → resucitar (obit resurrect 3, vuelve a su lugar sin sobrescribir), o eliminar permanentemente después de la retención (obit purge)" src="docs/assets/readme/i18n/es/lifecycle-light.svg" width="100%">
   </picture>
 </p>
 

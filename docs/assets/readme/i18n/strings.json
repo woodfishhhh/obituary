@@ -55,9 +55,9 @@
   },
   "zh-TW": {
     "name": "繁體中文",
-    "title": "讣告 Obituary 的生命週期",
+    "title": "訃告 Obituary 的生命週期",
     "register": "登記",
-    "register_note": "或右鍵放進讣告",
+    "register_note": "或右鍵放進訃告",
     "expire": "到期",
     "expire_note": "誰還剩多久",
     "reap": "收割",
@@ -71,14 +71,14 @@
     "extend_note": "延長，",
     "spare_note": "保留",
     "guard_title": "刪除命令",
-    "guard_first": "agent 發出，讣告攔下",
+    "guard_first": "agent 發出，訃告攔下",
     "guard_bridge": "只攔不改",
     "guard_equiv": "等價命令",
     "guard_second": "agent 改用它，東西進墓地",
     "guard_res": "復活",
     "guard_res_note": "一條命令放回原處",
-    "life_desc": "登記（obit add，或右鍵放進讣告）→ 到期（obit list 看誰還剩多久）→ 收割，下葬進墓地（obit graveyard，預設保留 7 天）→ 復活（obit resurrect，放回原處，絕不覆蓋已有檔案），或保留期過後永久刪除（obit purge）。",
-    "guard_desc": "agent 發出 rm -rf build，讣告攔下這次執行（只攔不改），告訴 agent 等價命令 obit rm -rf build；agent 改用它，東西進墓地，obit resurrect <id> 一條命令放回原處。"
+    "life_desc": "登記（obit add，或右鍵放進訃告）→ 到期（obit list 看誰還剩多久）→ 收割，下葬進墓地（obit graveyard，預設保留 7 天）→ 復活（obit resurrect，放回原處，絕不覆蓋已有檔案），或保留期過後永久刪除（obit purge）。",
+    "guard_desc": "agent 發出 rm -rf build，訃告攔下這次執行（只攔不改），告訴 agent 等價命令 obit rm -rf build；agent 改用它，東西進墓地，obit resurrect <id> 一條命令放回原處。"
   },
   "ja": {
     "name": "日本語",

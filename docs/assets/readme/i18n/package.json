@@ -1,0 +1,17 @@
+{
+  "name": "obituary-readme-diagrams",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Generates and checks the README diagrams (layout.js is measured in headless Chromium).",
+  "packageManager": "pnpm@11.11.0",
+  "scripts": {
+    "browser": "playwright install chromium",
+    "generate": "node generate.mjs",
+    "check": "node ../../../../scripts/check-readme-diagrams.mjs",
+    "test": "node --test ../../../../scripts/check-readme-diagrams.test.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

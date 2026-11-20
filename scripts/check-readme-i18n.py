@@ -2,7 +2,6 @@ from pathlib import Path
 import os
 import re
 import sys
-import json
 
 ROOT = Path(__file__).resolve().parents[1]
 README_NAMES = ["README.md", "README.zh-CN.md", "README.zh-TW.md", "README.ja.md", "README.ko.md", "README.es.md", "README.fr.md", "README.de.md", "README.pt-BR.md", "README.ru.md"]
@@ -53,10 +52,6 @@ for name in README_NAMES:
     if len(image_paths) < 4:
         errors.append(f"{name}: too few images {len(image_paths)}")
 svg_root = Path(os.environ.get("README_SVG_ROOT", str(ROOT / "docs" / "assets" / "readme" / "i18n")))
-word_languages = {"en", "es", "fr", "de", "pt-BR", "ru", "ko"}
-svg_strings = json.loads((ROOT / "docs" / "assets" / "readme" / "i18n" / "strings.json").read_text(encoding="utf-8"))
-leading_punctuation = set(",.!?;:，。！？；：、、)]}」』》”’")
-letter = re.compile(r"[A-Za-zÀ-ÖØ-öø-ÿА-Яа-я가-힣]", re.UNICODE)
 for language in ["en", "zh-CN", "zh-TW", "ja", "ko", "es", "fr", "de", "pt-BR", "ru"]:
     for diagram in ["lifecycle", "delete-guard"]:
         for theme in ["light", "dark"]:
@@ -80,15 +75,6 @@ for language in ["en", "zh-CN", "zh-TW", "ja", "ko", "es", "fr", "de", "pt-BR", 
                     errors.append(f"{path}: displayed font below 11px: {value[:40]}")
                 if font_size >= 22 and display_size < 16:
                     errors.append(f"{path}: displayed title below 16px: {value[:40]}")
-            middle = [re.sub(r"<[^>]+>", "", value) for value in re.findall(r'<text[^>]*text-anchor="middle"[^>]*>(.*?)</text>', svg, re.S)]
-            if diagram == "delete-guard" and len(middle) > 1:
-                for previous, current in zip(middle, middle[1:]):
-                    if language in word_languages and previous and current and letter.search(previous[-1]) and letter.match(current[0]):
-                        source_bridge = svg_strings[language]["guard_bridge"]
-                        if previous + current in source_bridge:
-                            errors.append(f"{path}: word split between {previous!r} and {current!r}")
-                    if current and current[0] in leading_punctuation:
-                        errors.append(f"{path}: punctuation starts wrapped line {current!r}")
             if diagram == "lifecycle" and "resurrect-star" not in svg:
                 errors.append(f"{path}: missing resurrect star")
             if diagram == "delete-guard" and "guard-star" not in svg:
@@ -99,4 +85,4 @@ for language in ["en", "zh-CN", "zh-TW", "ja", "ko", "es", "fr", "de", "pt-BR", 
 if errors:
     print("\n".join(errors))
     sys.exit(1)
-print(f"OK: {len(README_NAMES)} README files, matching language bars, {source_heading_count} headings, {len(source_blocks)} code blocks, links/images and 40 SVG static checks pass")
+print(f"OK: {len(README_NAMES)} README files, matching language bars, {source_heading_count} headings, {len(source_blocks)} code blocks, links/images and 40 SVG static checks pass (layout: node scripts/check-readme-diagrams.mjs)")

@@ -136,9 +136,9 @@ obit init -g --guard-rm                 # Claude Code; add --agent codex for Cod
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/readme/delete-guard-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="assets/readme/delete-guard-light.svg">
-    <img alt="Delete guard: the agent issues rm -rf build; Obituary stops this one execution (deny, never rewrite) and tells the agent the equivalent obit rm -rf build; the agent runs that, the folder goes to the graveyard, and obit resurrect &lt;id&gt; puts it back" src="assets/readme/delete-guard-light.svg" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/readme/i18n/en/delete-guard-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/readme/i18n/en/delete-guard-light.svg">
+    <img alt="Delete guard: the agent issues rm -rf build; Obituary stops this one execution (deny, never rewrite) and tells the agent the equivalent obit rm -rf build; the agent runs that, the folder goes to the graveyard, and obit resurrect &lt;id&gt; puts it back" src="assets/readme/i18n/en/delete-guard-light.svg" width="100%">
   </picture>
 </p>
 

@@ -98,9 +98,9 @@ go build -ldflags=-H=windowsgui -o bin/obitd.exe ./cmd/obitd
 
 - 英文 `README.md` 是唯一源文件；每次修改必须在同一次提交中同步 `README.zh-CN.md`、`README.zh-TW.md`、`README.ja.md`、`README.ko.md`、`README.es.md`、`README.fr.md`、`README.de.md`、`README.pt-BR.md`、`README.ru.md`。
 - 10 份 README 的第一行语言栏必须相同，每种语言都链接到根目录对应文件。顺序及国旗对应为：English（美国 `us`）、简体中文（中国 `cn`）、繁體中文（中国 `cn`）、日本語（日本 `jp`）、한국어（韩国 `kr`）、Español（西班牙 `es`）、Français（法国 `fr`）、Deutsch（德国 `de`）、Português (Brasil)（巴西 `br`）、Русский（俄罗斯 `ru`）。每个语言名之前用 `<img>` 引用 `docs/assets/flags/` 下的 SVG，高 14 px，垂直居中，`alt` 留空；不用国旗 emoji。
-- 图片变体位于 `docs/assets/readme/i18n/<语言代码>/`，文案在 `strings.json`，模板是 `lifecycle-<主题>.svg.tmpl` 与 `delete-guard-<主题>.svg.tmpl`；重新生成运行 `python docs/assets/readme/i18n/generate.py`。
+- 图片变体位于 `docs/assets/readme/i18n/<语言代码>/`，文案在 `strings.json`，排版引擎是 `layout.js`。生成和检查脚本要在无头浏览器里量字宽，依赖固定版本的 Playwright，装在 `docs/assets/readme/i18n/`（自己的 `package.json` 和 `pnpm-lock.yaml`，不依赖全局装的 Playwright）。第一次：`cd docs/assets/readme/i18n && pnpm install --frozen-lockfile && pnpm browser`（后一步是 `playwright install chromium`）。之后在同一目录：`pnpm generate` 重新生成 40 张图，`pnpm check` 检查版面，`pnpm test` 确认检查脚本仍能抓到故意弄坏的图。改文案或排版必须重新生成并提交 SVG；SVG 是用本机字体量的，CI 上的字体不同，所以 CI 只检查、不重新生成。
 - 图片生成结果要与 README 语言同步；简体中文和繁體中文使用中文 demo GIF，其余语言使用英文 demo GIF。软件本身完成多语言后再重做 GIF 和右键菜单截图。
-- SVG 生成器使用统一的字符宽度布局规则，自动计算卡片、间距、换行、箭头说明和星标锚点；不使用横向压缩，标题不低于 22 px，说明不低于 14 px。生成后运行 `python scripts/check-readme-i18n.py`，再用浏览器检查文本边界、图标重叠和截断。
+- 图的文字宽度一律在浏览器里用真实字体量出来（同时按更宽的 Verdana 回退字体留余量），不靠估算字宽；不使用横向压缩，说明文字在 880 px 宽度下不小于 14 px。`pnpm check`（即 `scripts/check-readme-diagrams.mjs`）取每段文字和每个卡片、命令框、箭头的真实边界框，查文字重叠、越出卡片或命令框、命令框不在自己的卡片里、间距与内边距、碰到箭头、对比度、孤字、行首标点和折行后与 `strings.json` 不一致，并用回退字体再查一遍。新增或放宽检查规则时，在 `scripts/check-readme-diagrams.test.mjs` 里加一条对应的故意弄坏的图，并把规则临时关掉确认测试会失败。检查通过后仍要用无头浏览器逐张看图，脚本不替代眼睛。`.github/workflows/readme-diagrams.yml` 在 README、`docs/assets/readme/` 或检查脚本改动时安装 Chromium 并跑 `check-readme-i18n.py`、`pnpm check`、`pnpm test`，必须通过。README 里演示动图在前、生命周期图在后（10 个语言版本一致）。
 - 维护术语表：
 
 | English | zh-CN | zh-TW | ja | ko | es | fr | de | pt-BR | ru |
@@ -113,4 +113,4 @@ go build -ldflags=-H=windowsgui -o bin/obitd.exe ./cmd/obitd
 | register | 登记 | 登記 | 登録 | 등록 | registrar | enregistrer | registrieren | registrar | зарегистрировать |
 
 `purge` 在非中文译文中表示永久删除；中文 README 保留现有的“火化”隐喻。
-- 本地检查运行 `python scripts/check-readme-i18n.py`；它检查相对链接、图片路径、页内锚点、标题数量、代码块和 README 结构。每次更新还要同步官网、`docs/` 文档和这些译文。
+- 本地检查运行 `python scripts/check-readme-i18n.py`；它检查相对链接、图片路径、页内锚点、标题数量、代码块和 README 结构。图的版面由 `node scripts/check-readme-diagrams.mjs` 检查。每次更新还要同步官网、`docs/` 文档和这些译文。

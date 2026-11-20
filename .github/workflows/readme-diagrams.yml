@@ -1,0 +1,62 @@
+# Checks the README diagrams: the layout of every SVG (text against cards,
+# chips and arrows, in the declared fonts and in wide fallback fonts) and that
+# the checker itself still catches deliberately broken diagrams. Runs only when
+# a README, a diagram source (strings.json, layout.js, the SVGs) or a checker
+# changes, so a wording change that breaks a picture is stopped here.
+name: readme-diagrams
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "README*.md"
+      - "docs/assets/readme/**"
+      - "scripts/check-readme-*"
+      - ".github/workflows/readme-diagrams.yml"
+  pull_request:
+    paths:
+      - "README*.md"
+      - "docs/assets/readme/**"
+      - "scripts/check-readme-*"
+      - ".github/workflows/readme-diagrams.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: readme-diagrams-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  diagrams:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          version: "11.11.0"
+          run_install: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: docs/assets/readme/i18n/pnpm-lock.yaml
+      - name: Install the pinned Playwright and Chromium
+        working-directory: docs/assets/readme/i18n
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
+      - name: README links, anchors, language bars and image paths
+        run: python3 scripts/check-readme-i18n.py
+      - name: Diagram layout
+        working-directory: docs/assets/readme/i18n
+        run: pnpm check
+      - name: The checker catches broken diagrams
+        working-directory: docs/assets/readme/i18n
+        run: pnpm test

@@ -23,17 +23,17 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/i18n/zh-CN/lifecycle-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/i18n/zh-CN/lifecycle-light.svg">
-    <img alt="生命周期：登记（obit add debug.log 2h，或右键放进讣告）→ 到期（obit list 看谁还剩多久，到期之前可以 obit extend 续命、obit spare 饶命）→ 收割，下葬进墓地（obit graveyard，默认保留 7 天）→ 复活（obit resurrect 3，放回原处，绝不覆盖已有文件），或保留期过后火化（obit purge，真正删除）" src="docs/assets/readme/i18n/zh-CN/lifecycle-light.svg" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo/demo-dark.gif">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/demo/demo-light.gif">
+    <img alt="演示：agent 执行 rm -rf build 被删除护栏拦下，改用 obit rm -rf build 后东西进墓地，obit resurrect --last 一条命令原样复活" src="docs/assets/demo/demo-light.gif" width="100%">
   </picture>
 </p>
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo/demo-dark.gif">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/demo/demo-light.gif">
-    <img alt="演示：agent 执行 rm -rf build 被删除护栏拦下，改用 obit rm -rf build 后东西进墓地，obit resurrect --last 一条命令原样复活" src="docs/assets/demo/demo-light.gif" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/i18n/zh-CN/lifecycle-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/i18n/zh-CN/lifecycle-light.svg">
+    <img alt="生命周期：登记（obit add debug.log 2h，或右键放进讣告）→ 到期（obit list 看谁还剩多久，到期之前可以 obit extend 续命、obit spare 饶命）→ 收割，下葬进墓地（obit graveyard，默认保留 7 天）→ 复活（obit resurrect 3，放回原处，绝不覆盖已有文件），或保留期过后火化（obit purge，真正删除）" src="docs/assets/readme/i18n/zh-CN/lifecycle-light.svg" width="100%">
   </picture>
 </p>
 

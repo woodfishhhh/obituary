@@ -138,9 +138,9 @@ obit init -g --guard-rm                 # Claude Code；Codex 加 --agent codex�
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/readme/delete-guard-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="assets/readme/delete-guard-light.svg">
-    <img alt="删除护栏：agent 发出 rm -rf build，讣告拦下这一次执行（只拦不改），告诉 agent 等价命令 obit rm -rf build；agent 改用它，东西进墓地，obit resurrect &lt;id&gt; 一条命令放回原处" src="assets/readme/delete-guard-light.svg" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/readme/i18n/zh-CN/delete-guard-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/readme/i18n/zh-CN/delete-guard-light.svg">
+    <img alt="删除护栏：agent 发出 rm -rf build，讣告拦下这一次执行（只拦不改），告诉 agent 等价命令 obit rm -rf build；agent 改用它，东西进墓地，obit resurrect &lt;id&gt; 一条命令放回原处" src="assets/readme/i18n/zh-CN/delete-guard-light.svg" width="100%">
   </picture>
 </p>
 

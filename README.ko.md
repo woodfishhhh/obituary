@@ -22,17 +22,17 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/i18n/ko/lifecycle-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/i18n/ko/lifecycle-light.svg">
-    <img alt="수명 주기: 등록(obit add debug.log 2h 또는 컨텍스트 메뉴) → 만료(obit list로 남은 항목 확인; 그 전에 obit extend 또는 obit spare) → 묘지에 매장(obit graveyard, 기본 7일 보관) → 부활(obit resurrect 3, 원래 위치로 복원하고 덮어쓰지 않음), 또는 보관 기간 후 영구 삭제(obit purge)" src="docs/assets/readme/i18n/ko/lifecycle-light.svg" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo/demo-en-dark.gif">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/demo/demo-en-light.gif">
+    <img alt="데모: 에이전트의 rm -rf build가 삭제 가드에 의해 중지되고, obit rm -rf build로 묘지에 매장된 뒤 obit resurrect --last로 모두 돌아옵니다" src="docs/assets/demo/demo-en-light.gif" width="100%">
   </picture>
 </p>
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo/demo-en-dark.gif">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/demo/demo-en-light.gif">
-    <img alt="데모: 에이전트의 rm -rf build가 삭제 가드에 의해 중지되고, obit rm -rf build로 묘지에 매장된 뒤 obit resurrect --last로 모두 돌아옵니다" src="docs/assets/demo/demo-en-light.gif" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/i18n/ko/lifecycle-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/i18n/ko/lifecycle-light.svg">
+    <img alt="수명 주기: 등록(obit add debug.log 2h 또는 컨텍스트 메뉴) → 만료(obit list로 남은 항목 확인; 그 전에 obit extend 또는 obit spare) → 묘지에 매장(obit graveyard, 기본 7일 보관) → 부활(obit resurrect 3, 원래 위치로 복원하고 덮어쓰지 않음), 또는 보관 기간 후 영구 삭제(obit purge)" src="docs/assets/readme/i18n/ko/lifecycle-light.svg" width="100%">
   </picture>
 </p>
 

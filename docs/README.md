@@ -40,15 +40,15 @@ README 用 `<picture>` 按访问者的主题在浅色版和深色版之间切换
 
 ## README 图解
 
-[`assets/readme/`](assets/readme/) 里是 README 的两张图解，浅色、深色各一份，同样用 `<picture>` 切换：
+[`assets/readme/i18n/`](assets/readme/i18n/) 里是 README 和使用说明里的图解，每种语言两张，浅色、深色各一份，同样用 `<picture>` 切换：
 
 | 文件 | 内容 |
 |---|---|
 | `assets/readme/i18n/<语言>/lifecycle-light.svg`、`lifecycle-dark.svg` | 10 种语言的生命周期：登记 → 到期 → 下葬进墓地 → 复活或永久删除 |
 | `assets/readme/i18n/<语言>/delete-guard-light.svg`、`delete-guard-dark.svg` | 10 种语言的删除护栏：拦下删除命令 → 等价的 `obit` 命令 → 复活 |
 | `assets/readme/i18n/strings.json` | 图片文案表，语言代码与 README 文件一致 |
-| `assets/readme/i18n/*.svg.tmpl` | 从现有 SVG 抽出的浅色、深色模板 |
+| `assets/readme/i18n/layout.js`、`generate.mjs`、`package.json`、`pnpm-lock.yaml` | 排版引擎、生成脚本，以及固定版本的 Playwright |
 
-图里的命令和说明都取自 README 正文。修改英文源 README 或图片文案后，在仓库根目录运行 `python docs/assets/readme/i18n/generate.py`，重新生成 10 种语言的浅色、深色变体。生成器用同一套字符宽度规则自动计算卡片宽度、间距、换行、箭头说明和星标位置，不使用横向压缩；标题至少 22 px、说明至少 14 px，并保留 CJK 与西里尔字体回退。生成后运行 `python scripts/check-readme-i18n.py`，再用浏览器检查文本边界、图标重叠和截断。
+图里的命令和说明都取自 README 正文。修改英文源 README 或图片文案后，在 `docs/assets/readme/i18n/` 里运行 `pnpm generate`（第一次先运行 `pnpm install --frozen-lockfile && pnpm browser`），重新生成 10 种语言的浅色、深色变体。生成脚本在无头浏览器里用真实字体量出每段文字的宽度（同时按 Verdana 这类更宽的回退字体留出余量），再排版：每步一张宽卡片，箭头上的说明放在箭头旁的空隙里，长文案按词或按标点折行，不会拆开单词、不会让标点出现在行首、不会留下孤字；不使用横向压缩，说明文字在 880 px 宽度下不小于 14 px。生成后运行 `pnpm check`（即 `scripts/check-readme-diagrams.mjs`）：它在浏览器里取每段文字和每个卡片、命令框、箭头的真实边界框，检查文字是否互相压住、是否越出卡片或命令框、间距和内边距是否够、是否碰到箭头、对比度、孤字和行首标点，以及折行后的文字是否仍与 `strings.json` 一致，同时再用 Verdana 回退字体检查一遍；`pnpm test` 会把图故意弄坏，确认检查脚本仍能抓到；再运行 `python scripts/check-readme-i18n.py` 检查 README 的链接、锚点和图片路径。README、`docs/assets/readme/` 或检查脚本改动时，CI（`readme-diagrams.yml`）会安装 Chromium 把这些检查全部跑一遍。
 
 README 开头的演示动图在 [`assets/demo/`](assets/demo/)：`demo-light.gif`、`demo-dark.gif` 是中文版，`demo-en-*.gif` 是英文版。它们由 [`assets/readme/demo/build.py`](assets/readme/demo/build.py) 生成：先写出 SVG 源文件和动作描述（`*.motion.json`），再逐帧渲染成 GIF，每个约 7 秒、0.6 MB。终端里的文字照抄 `obit` 的真实输出，路径换成了演示目录。要改文案，就改 `build.py` 再重新生成四个 GIF，`build.py` 开头写了命令。

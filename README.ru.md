@@ -22,17 +22,17 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/i18n/ru/lifecycle-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/i18n/ru/lifecycle-light.svg">
-    <img alt="Жизненный цикл: зарегистрировать (obit add debug.log 2h или через контекстное меню) → истечь (obit list показывает оставшееся; до этого доступны obit extend и obit spare) → похоронить на кладбище (obit graveyard, по умолчанию хранится семь дней) → воскресить (obit resurrect 3, вернуть на место без перезаписи) или удалить навсегда после хранения (obit purge)" src="docs/assets/readme/i18n/ru/lifecycle-light.svg" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo/demo-en-dark.gif">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/demo/demo-en-light.gif">
+    <img alt="Демонстрация: rm -rf build агента останавливается защитой удаления, obit rm -rf build вместо этого хоронит его, а obit resurrect --last возвращает всё обратно" src="docs/assets/demo/demo-en-light.gif" width="100%">
   </picture>
 </p>
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo/demo-en-dark.gif">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/demo/demo-en-light.gif">
-    <img alt="Демонстрация: rm -rf build агента останавливается защитой удаления, obit rm -rf build вместо этого хоронит его, а obit resurrect --last возвращает всё обратно" src="docs/assets/demo/demo-en-light.gif" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/i18n/ru/lifecycle-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/i18n/ru/lifecycle-light.svg">
+    <img alt="Жизненный цикл: зарегистрировать (obit add debug.log 2h или через контекстное меню) → истечь (obit list показывает оставшееся; до этого доступны obit extend и obit spare) → похоронить на кладбище (obit graveyard, по умолчанию хранится семь дней) → воскресить (obit resurrect 3, вернуть на место без перезаписи) или удалить навсегда после хранения (obit purge)" src="docs/assets/readme/i18n/ru/lifecycle-light.svg" width="100%">
   </picture>
 </p>
 

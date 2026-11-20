@@ -22,17 +22,17 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/i18n/de/lifecycle-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/i18n/de/lifecycle-light.svg">
-    <img alt="Lebenszyklus: registrieren (obit add debug.log 2h oder über das Kontextmenü) → ablaufen (obit list zeigt, was übrig ist; vorher obit extend oder obit spare) → im Friedhof begraben (obit graveyard, standardmäßig sieben Tage aufbewahrt) → wiederbeleben (obit resurrect 3, zurück an den alten Ort ohne Überschreiben), oder nach der Aufbewahrung dauerhaft löschen (obit purge)" src="docs/assets/readme/i18n/de/lifecycle-light.svg" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo/demo-en-dark.gif">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/demo/demo-en-light.gif">
+    <img alt="Demo: Das rm -rf build eines Agenten wird vom Löschschutz gestoppt, obit rm -rf build begräbt es stattdessen und obit resurrect --last bringt alles zurück" src="docs/assets/demo/demo-en-light.gif" width="100%">
   </picture>
 </p>
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo/demo-en-dark.gif">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/demo/demo-en-light.gif">
-    <img alt="Demo: Das rm -rf build eines Agenten wird vom Löschschutz gestoppt, obit rm -rf build begräbt es stattdessen und obit resurrect --last bringt alles zurück" src="docs/assets/demo/demo-en-light.gif" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/i18n/de/lifecycle-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/i18n/de/lifecycle-light.svg">
+    <img alt="Lebenszyklus: registrieren (obit add debug.log 2h oder über das Kontextmenü) → ablaufen (obit list zeigt, was übrig ist; vorher obit extend oder obit spare) → im Friedhof begraben (obit graveyard, standardmäßig sieben Tage aufbewahrt) → wiederbeleben (obit resurrect 3, zurück an den alten Ort ohne Überschreiben), oder nach der Aufbewahrung dauerhaft löschen (obit purge)" src="docs/assets/readme/i18n/de/lifecycle-light.svg" width="100%">
   </picture>
 </p>
 

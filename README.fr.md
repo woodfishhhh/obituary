@@ -22,17 +22,17 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/i18n/fr/lifecycle-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/i18n/fr/lifecycle-light.svg">
-    <img alt="Cycle de vie : enregistrer (obit add debug.log 2h ou depuis le menu contextuel) → expirer (obit list affiche ce qui reste ; obit extend ou obit spare avant cela) → enterrer au cimetière (obit graveyard, conservé sept jours par défaut) → ressusciter (obit resurrect 3, retour à sa place sans écraser), ou supprimer définitivement après la rétention (obit purge)" src="docs/assets/readme/i18n/fr/lifecycle-light.svg" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo/demo-en-dark.gif">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/demo/demo-en-light.gif">
+    <img alt="Démonstration : le rm -rf build d’un agent est bloqué par le garde de suppression, obit rm -rf build l’enterre à la place et obit resurrect --last remet tout en place" src="docs/assets/demo/demo-en-light.gif" width="100%">
   </picture>
 </p>
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo/demo-en-dark.gif">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/demo/demo-en-light.gif">
-    <img alt="Démonstration : le rm -rf build d’un agent est bloqué par le garde de suppression, obit rm -rf build l’enterre à la place et obit resurrect --last remet tout en place" src="docs/assets/demo/demo-en-light.gif" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/i18n/fr/lifecycle-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/i18n/fr/lifecycle-light.svg">
+    <img alt="Cycle de vie : enregistrer (obit add debug.log 2h ou depuis le menu contextuel) → expirer (obit list affiche ce qui reste ; obit extend ou obit spare avant cela) → enterrer au cimetière (obit graveyard, conservé sept jours par défaut) → ressusciter (obit resurrect 3, retour à sa place sans écraser), ou supprimer définitivement après la rétention (obit purge)" src="docs/assets/readme/i18n/fr/lifecycle-light.svg" width="100%">
   </picture>
 </p>
 

@@ -22,17 +22,17 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/i18n/pt-BR/lifecycle-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/i18n/pt-BR/lifecycle-light.svg">
-    <img alt="Ciclo de vida: registrar (obit add debug.log 2h ou pelo menu de contexto) → expirar (obit list mostra o que resta; antes disso use obit extend ou obit spare) → enterrar no cemitério (obit graveyard, mantido por sete dias por padrão) → ressuscitar (obit resurrect 3, voltar ao local sem sobrescrever), ou excluir permanentemente após a retenção (obit purge)" src="docs/assets/readme/i18n/pt-BR/lifecycle-light.svg" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo/demo-en-dark.gif">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/demo/demo-en-light.gif">
+    <img alt="Demonstração: o rm -rf build de um agente é bloqueado pelo guardião de exclusão, obit rm -rf build o enterra em vez disso e obit resurrect --last traz tudo de volta" src="docs/assets/demo/demo-en-light.gif" width="100%">
   </picture>
 </p>
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo/demo-en-dark.gif">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/demo/demo-en-light.gif">
-    <img alt="Demonstração: o rm -rf build de um agente é bloqueado pelo guardião de exclusão, obit rm -rf build o enterra em vez disso e obit resurrect --last traz tudo de volta" src="docs/assets/demo/demo-en-light.gif" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/i18n/pt-BR/lifecycle-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/i18n/pt-BR/lifecycle-light.svg">
+    <img alt="Ciclo de vida: registrar (obit add debug.log 2h ou pelo menu de contexto) → expirar (obit list mostra o que resta; antes disso use obit extend ou obit spare) → enterrar no cemitério (obit graveyard, mantido por sete dias por padrão) → ressuscitar (obit resurrect 3, voltar ao local sem sobrescrever), ou excluir permanentemente após a retenção (obit purge)" src="docs/assets/readme/i18n/pt-BR/lifecycle-light.svg" width="100%">
   </picture>
 </p>
 

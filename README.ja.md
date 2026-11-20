@@ -22,17 +22,17 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/i18n/ja/lifecycle-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/i18n/ja/lifecycle-light.svg">
-    <img alt="ライフサイクル：登録（obit add debug.log 2h、またはコンテキストメニューから）→ 期限切れ（obit list で残り時間を確認し、期限前なら obit extend または obit spare）→ 墓地へ埋葬（obit graveyard、既定で 7 日間保持）→ 復活（obit resurrect 3、元の場所へ戻し、上書きしない）、または保持期間後に永久削除（obit purge）" src="docs/assets/readme/i18n/ja/lifecycle-light.svg" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo/demo-en-dark.gif">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/demo/demo-en-light.gif">
+    <img alt="デモ：エージェントの rm -rf build は削除ガードに止められ、obit rm -rf build で墓地へ埋葬され、obit resurrect --last ですべて戻ります" src="docs/assets/demo/demo-en-light.gif" width="100%">
   </picture>
 </p>
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo/demo-en-dark.gif">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/demo/demo-en-light.gif">
-    <img alt="デモ：エージェントの rm -rf build は削除ガードに止められ、obit rm -rf build で墓地へ埋葬され、obit resurrect --last ですべて戻ります" src="docs/assets/demo/demo-en-light.gif" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/i18n/ja/lifecycle-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/i18n/ja/lifecycle-light.svg">
+    <img alt="ライフサイクル：登録（obit add debug.log 2h、またはコンテキストメニューから）→ 期限切れ（obit list で残り時間を確認し、期限前なら obit extend または obit spare）→ 墓地へ埋葬（obit graveyard、既定で 7 日間保持）→ 復活（obit resurrect 3、元の場所へ戻し、上書きしない）、または保持期間後に永久削除（obit purge）" src="docs/assets/readme/i18n/ja/lifecycle-light.svg" width="100%">
   </picture>
 </p>
 

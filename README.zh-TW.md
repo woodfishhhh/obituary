@@ -22,17 +22,17 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/i18n/zh-TW/lifecycle-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/i18n/zh-TW/lifecycle-light.svg">
-    <img alt="生命週期：登記（obit add debug.log 2h，或從右鍵選單加入）→ 到期（obit list 查看剩餘項目；到期前可用 obit extend 或 obit spare）→ 收割並下葬進墓地（obit graveyard，預設保留 7 天）→ 復活（obit resurrect 3，放回原處，絕不覆蓋），或保留期後永久刪除（obit purge）" src="docs/assets/readme/i18n/zh-TW/lifecycle-light.svg" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo/demo-dark.gif">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/demo/demo-light.gif">
+    <img alt="示範：agent 執行 rm -rf build 被刪除護欄攔下，改用 obit rm -rf build 後進入墓地，obit resurrect --last 將全部放回原處" src="docs/assets/demo/demo-light.gif" width="100%">
   </picture>
 </p>
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo/demo-dark.gif">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/demo/demo-light.gif">
-    <img alt="示範：agent 執行 rm -rf build 被刪除護欄攔下，改用 obit rm -rf build 後進入墓地，obit resurrect --last 將全部放回原處" src="docs/assets/demo/demo-light.gif" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/i18n/zh-TW/lifecycle-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/i18n/zh-TW/lifecycle-light.svg">
+    <img alt="生命週期：登記（obit add debug.log 2h，或從右鍵選單加入）→ 到期（obit list 查看剩餘項目；到期前可用 obit extend 或 obit spare）→ 收割並下葬進墓地（obit graveyard，預設保留 7 天）→ 復活（obit resurrect 3，放回原處，絕不覆蓋），或保留期後永久刪除（obit purge）" src="docs/assets/readme/i18n/zh-TW/lifecycle-light.svg" width="100%">
   </picture>
 </p>
 
