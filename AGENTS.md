@@ -85,3 +85,23 @@ go build -ldflags=-H=windowsgui -o bin/obitd.exe ./cmd/obitd
 - `filepath.WalkDir` 里对非目录条目返回 `SkipDir`，会跳过它后面的所有同级条目，找 `.git` 时会漏掉，所以不要这样用。
 - 这台机器上的 `python3` 是 Windows 应用商店的占位程序，要用 `python`。
 - 不要把测试的 TEMP 指向 Python `tempfile.mkdtemp` 建的目录（Python 3.13 起它在 Windows 上带受保护的 ACL）：`TestOwnerReportsDeniedProjectDiscovery` 在那里恢复 `.git` 的 ACL 会失败，留下只有管理员能删的目录。清理办法：提权后对确切的目录执行 `takeown /f <目录> /r /d y` 和 `icacls <目录> /reset /t /c /q`，再用普通权限删掉。
+
+## README 多语言维护
+
+- 英文 `README.md` 是唯一源文件；每次修改必须在同一次提交中同步 `README.zh-CN.md`、`README.zh-TW.md`、`README.ja.md`、`README.ko.md`、`README.es.md`、`README.fr.md`、`README.de.md`、`README.pt-BR.md`、`README.ru.md`。
+- README 顶部语言栏按固定顺序列出 English、简体中文、繁體中文、日本語、한국어、Español、Français、Deutsch、Português (Brasil)、Русский；当前语言加粗，其余链接到根目录对应文件。
+- 图片变体位于 `docs/assets/readme/i18n/<语言代码>/`，文案在 `strings.json`，模板是 `lifecycle-<主题>.svg.tmpl` 与 `delete-guard-<主题>.svg.tmpl`；重新生成运行 `python docs/assets/readme/i18n/generate.py`。
+- 图片生成结果要与 README 语言同步；简体中文和繁體中文使用中文 demo GIF，其余语言使用英文 demo GIF。软件本身完成多语言后再重做 GIF 和右键菜单截图。
+- 维护术语表：
+
+| English | zh-CN | zh-TW | ja | ko | es | fr | de | pt-BR | ru |
+|---|---|---|---|---|---|---|---|---|---|
+| bury | 下葬 | 下葬 | 埋葬 | 매장 | enterrar | enterrer | begraben | enterrar | похоронить |
+| graveyard | 墓地 | 墓地 | 墓地 | 묘지 | cementerio | cimetière | Friedhof | cemitério | кладбище |
+| resurrect | 复活 | 復活 | 復活 | 부활 | resucitar | ressusciter | wiederbeleben | ressuscitar | воскресить |
+| lifespan | 寿命 | 壽命 | 寿命 | 수명 | vida útil | durée de vie | Lebensdauer | vida útil | срок жизни |
+| expire | 到期 | 到期 | 期限切れ | 만료 | caducar | expirer | ablaufen | expirar | истекать |
+| register | 登记 | 登記 | 登録 | 등록 | registrar | enregistrer | registrieren | registrar | зарегистрировать |
+
+`purge` 在非中文译文中表示永久删除；中文 README 保留现有的“火化”隐喻。
+- 本地检查运行 `python scripts/check-readme-i18n.py`；它检查相对链接、图片路径、页内锚点、标题数量、代码块和 README 结构。每次更新还要同步官网、`docs/` 文档和这些译文。

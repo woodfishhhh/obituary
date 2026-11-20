@@ -1,6 +1,6 @@
 # Installing Obituary
 
-[中文](install.md) · [Home](../README.en.md)
+[中文](install.md) · [Home](../README.md)
 
 The easiest way is to let your agent install it: send it the sentence from the README. This page is for installing by hand.
 

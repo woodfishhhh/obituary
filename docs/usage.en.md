@@ -1,8 +1,8 @@
 # User guide
 
-[中文](usage.md) · [Home](../README.en.md)
+[中文](usage.md) · [Home](../README.md)
 
-Everything Obituary does, in detail. Installing is in the [install guide](install.en.md); the command summary is the README's [Quick start](../README.en.md#quick-start).
+Everything Obituary does, in detail. Installing is in the [install guide](install.en.md); the command summary is the README's [Quick start](../README.md#quick-start).
 
 ## For people: tray, small window, context menu
 

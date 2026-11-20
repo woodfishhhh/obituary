@@ -1,5 +1,5 @@
 // Every sentence on the landing page, in both languages. Claims come from the
-// repository's README.md / README.en.md only; keep them in step. The Chinese
+// repository's README.md (the English source) only; keep them in step. The Chinese
 // strings here also decide which glyphs scripts/subset-fonts.mjs keeps.
 
 import { version } from "@/config";
@@ -53,7 +53,7 @@ const archives = (macLabels: [string, string]): Record<Os, { label: string; file
 });
 
 // The sentence a user sends to their agent; it matches README.md and
-// README.en.md word for word.
+// README.md word for word.
 export const agentInstall = {
   zh: "读 https://obituary.woodfish.site/agent-install.md ，照里面的步骤帮我安装讣告并接入你自己。",
   en: "Read https://obituary.woodfish.site/agent-install.md and follow it to install Obituary and connect it to yourself.",
