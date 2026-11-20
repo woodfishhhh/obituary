@@ -831,6 +831,7 @@ func TestNoticeRedeliveredAfterContextOrNotificationTimeout(t *testing.T) {
 			text, err := Handle(e.engine, ev, nil)
 			if release != nil {
 				release()
+				waitForHookStoreUnlock(t, e.engine.Svc.Store.Home)
 			}
 			proposalConsent = previous
 			if write && (text == "" || err != nil) || !write && (text != "" || !errors.Is(err, context.DeadlineExceeded)) {
@@ -846,6 +847,23 @@ func TestNoticeRedeliveredAfterContextOrNotificationTimeout(t *testing.T) {
 			}
 		})
 	}
+}
+
+func waitForHookStoreUnlock(t testing.TB, home string) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		release, ok, err := ledger.TryLockExclusive(filepath.Join(home, "store.lock"))
+		if err != nil {
+			t.Fatalf("probe store.lock: %v", err)
+		}
+		if ok {
+			release()
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Fatal("store.lock remained held after notification timeout")
 }
 
 func TestContextReadTimeoutDoesNotMarkNotified(t *testing.T) {
