@@ -39,9 +39,9 @@ export const ptBR: Strings = {
     terms: { windows: "Windows 10 e 11, licença MIT", macos: "macOS em Apple silicon e Intel, licença MIT", linux: "Linux em x64 e ARM64, licença MIT" } as Record<Os, string>,
   },
   demo: {
-    label: "Um exemplo funcional da janela pequena do Obituary: passe o mouse sobre um arquivo para ver sua vida útil, clique para selecioná-lo e estendê-la, arraste para um dia posterior. Dados de exemplo.",
-    card: { path: "Caminho original", left: "Resta", life: "Vida útil", expires: "Expira", purges: "Excluído", buried: "Enterrado", size: "Tamanho", hint: "Clique para selecionar; depois estenda ou pare de rastrear" },
-    tips: ["Passe o mouse ou toque para ver a vida útil", "Clique para estender", "Arraste para um dia posterior"],
+    label: "Um exemplo funcional da janela pequena do Obituary: passe o mouse sobre um arquivo para ver sua vida útil, clique para selecioná-lo e prolongá-la, arraste para um dia posterior. Dados de exemplo.",
+    card: { path: "Caminho original", left: "Resta", life: "Vida útil", expires: "Expira", purges: "Excluído", buried: "Enterrado", size: "Tamanho", hint: "Clique para selecionar; depois prolongue ou pare de rastrear" },
+    tips: ["Passe o mouse ou toque para ver a vida útil", "Clique para prolongar", "Arraste para um dia posterior"],
   },
   flow: {
     head: "O que um agente apaga vai primeiro para o cemitério",
@@ -65,10 +65,10 @@ export const ptBR: Strings = {
     endDone: "Retenção acabou, excluído",
   },
   story: {
-    head: "Os agentes nos levaram a criar isso",
+    head: "Os agentes nos levaram a criar o Obituary",
     cards: {
       mess: {
-        title: "Agentes fazem sujeira mais rápido do que pessoas limpam",
+        title: "Agentes fazem bagunça mais rápido do que as pessoas conseguem arrumar",
         line: "O agente sabe o que escreveu e dá uma vida útil a isso na hora; você adiciona os seus com um clique direito. Tudo o que entra sai no prazo.",
         tracked: "seu código, fica",
         rule: "vida útil dada pelo agente",
@@ -96,30 +96,30 @@ export const ptBR: Strings = {
     label: "A vida de um arquivo: registrar, expirar, enterrar, depois ressuscitar ou excluir",
     stages: [
       { name: "Registrar", line: "O agente registra, ou você adiciona com um clique direito." },
-      { name: "Expirar", line: "Até lá, veja o que resta, estenda ou poupe." },
+      { name: "Expirar", line: "Até lá, veja o que resta, prolongue ou poupe." },
       { name: "Enterrar", line: "Ao vencer, vai para um cemitério no mesmo disco, do jeito que estava; sete dias por padrão." },
     ],
-    extend: "Estender",
+    extend: "Prolongar",
     spare: "Poupar",
     outcomes: [
       { name: "Ressuscitar", line: "Volta ao lugar, sem sobrescrever nada." },
-      { name: "Excluir", line: "Só depois da retenção é apagado de verdade." },
+      { name: "Excluir permanentemente", line: "Só depois da retenção é apagado de verdade." },
     ],
     or: "ou",
   },
   window: {
     head: "Ressuscite sem a linha de comando",
-    lead: "Abra pelo menu Iniciar, pela área de trabalho ou pela bandeja; clique com o botão direito em um arquivo para adicioná-lo ao Obituary.",
+    lead: "Abra a janela pelo menu Iniciar, pela área de trabalho ou pela bandeja; clique com o botão direito em um arquivo para adicioná-lo ao Obituary.",
     looks: { calendar: "Calendário", palette: "Uma linha" } as Record<LookId, string>,
-    pages: { upcoming: "A enterrar", graveyard: "A excluir", decisions: "Para você" } as Record<PageId, string>,
+    pages: { upcoming: "Próximos enterros", graveyard: "Cemitério", decisions: "Para você" } as Record<PageId, string>,
     lookLabel: "Visual",
     pageLabel: "Página",
     notes: {
-      calendar: "Uma coluna por dia; cada arquivo fica no dia em que é enterrado ou excluído. Arraste-o para um dia posterior para estendê-lo.",
-      palette: "Uma linha de entrada, tudo pelo teclado: encontre um arquivo e pressione Enter para ressuscitar ou estender.",
+      calendar: "Uma coluna por dia; cada arquivo fica no dia em que é enterrado ou excluído. Arraste-o para um dia posterior para prolongá-lo.",
+      palette: "Uma linha de entrada, tudo pelo teclado: encontre um arquivo e pressione Enter para ressuscitar ou prolongar.",
     } as Record<LookId, string>,
     pageNotes: {
-      upcoming: "O que ainda está no lugar, com uma vida útil; estenda ou poupe quando quiser antes de expirar.",
+      upcoming: "O que ainda está no lugar, com uma vida útil; prolongue ou poupe quando quiser antes de expirar.",
       graveyard: "O que já foi enterrado e ainda pode ser restaurado; ressuscitar devolve ao lugar sem sobrescrever, e só excluir apaga de verdade.",
       decisions: "Enterros que falharam mostram o motivo, com Tentar de novo em um clique; com o registro automático ligado, as propostas também esperam aqui por você.",
     } as Record<PageId, string>,
@@ -149,7 +149,7 @@ export const ptBR: Strings = {
   community: {
     head: "Ajude a melhorar o Obituary",
     lead: "Issues e pull requests são bem-vindos. O melhor é uma issue que já traz a correção: encontre um problema, conserte e seu avatar aparece aqui.",
-    next: "O próximo pode ser você",
+    next: "Pode ser você",
     howTo: "Como contribuir",
     stars: "Estrelas ao longo do tempo",
     starHistoryAlt: "Estrelas do repositório do Obituary ao longo do tempo",
@@ -183,7 +183,7 @@ export const ptBR: Strings = {
     agentLine: "Envie esta frase ao agente que você usa (Claude Code, Codex, Cursor…). Ele para onde a decisão é sua.",
     agentSentence: agentSentenceEn,
     agentLabel: "A frase para o seu agente",
-    handHead: "À mão",
+    handHead: "Manualmente",
     handLine: {
       windows: "Escolha uma das três e depois rode obit doctor para conferir a instalação.",
       macos: "Escolha uma das duas e depois rode obit doctor para conferir a instalação. A bandeja, a janela pequena e os menus de contexto existem só no Windows; aqui, obit list, obit graveyard e obit resurrect fazem o trabalho.",

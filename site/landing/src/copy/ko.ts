@@ -21,12 +21,12 @@ export const ko: Strings = {
     language: "언어",
     hint: { text: "이 페이지는 한국어로도 볼 수 있습니다.", go: "한국어로 보기", close: "닫기" },
   },
-  nav: { why: "이유", life: "수명 주기", window: "작은 창", install: "설치", docs: "문서" },
+  nav: { why: "왜 필요한가", life: "수명 주기", window: "작은 창", install: "설치", docs: "문서" },
   hero: {
     tagline: { before: "Obituary — AI 에이전트를 위한", words: ["휴지통", "수문장", "되돌리기 버튼", "청소 도우미"], after: "", label: "Obituary — AI 에이전트를 위한 휴지통" },
     before: "AI가 만든 파일에 ",
     sparkle: "수명",
-    after: "을",
+    after: "을 주세요",
     line: "남긴 것은 수명이 끝나면 스스로 정리되고, 삭제한 것은 7일 동안 되돌릴 수 있습니다.",
     primary: { windows: "Windows에 설치", macos: "macOS에 설치", linux: "Linux에 설치" } as Record<Os, string>,
     systemLabel: "운영체제 선택",
@@ -34,15 +34,15 @@ export const ko: Strings = {
     terms: { windows: "Windows 10과 11, MIT 라이선스", macos: "macOS(Apple 실리콘과 Intel), MIT 라이선스", linux: "Linux(x64와 ARM64), MIT 라이선스" } as Record<Os, string>,
   },
   demo: {
-    label: "Obituary 작은 창의 사용해 볼 수 있는 예시입니다. 파일에 포인터를 올리면 수명이 보이고, 클릭해 선택한 뒤 연장하거나 뒤쪽 날짜로 끌어 놓을 수 있습니다. 예시 데이터입니다.",
+    label: "직접 조작해 볼 수 있는 Obituary 작은 창 예시입니다. 파일에 마우스를 올리면 수명이 보이고, 클릭해 선택한 뒤 연장하거나 이후 날짜로 끌어 놓을 수 있습니다. 예시 데이터입니다.",
     card: { path: "원래 경로", left: "남은 시간", life: "수명", expires: "만료", purges: "영구 삭제", buried: "매장", size: "크기", hint: "클릭해 선택한 뒤 연장하거나 추적을 중단" },
-    tips: ["올리거나 탭해서 수명 보기", "클릭해서 연장", "뒤쪽 날짜로 끌기"],
+    tips: ["마우스를 올리거나 탭해서 수명 보기", "클릭해서 연장", "이후 날짜로 끌기"],
   },
   flow: {
     head: "에이전트가 삭제한 것은 먼저 묘지로",
     lead: "삭제 가드를 켜면 rm -rf, git clean, Remove-Item이 동등한 obit 명령으로 바뀌고, find -delete와 xargs rm도 중지됩니다.",
     values: [
-      { title: "처음부터 동작", line: "에이전트는 디버그 스크립트, 로그, 스크린샷을 쓸 때 스스로 수명을 부여합니다. 만료되면 묘지로 가고, 7일 동안은 부활시킬 수 있습니다." },
+      { title: "처음부터 작동", line: "에이전트는 디버그 스크립트, 로그, 스크린샷을 쓸 때 스스로 수명을 부여합니다. 만료되면 묘지로 가고, 7일 동안은 부활시킬 수 있습니다." },
       { title: "더 관리하고 싶다면", line: "오른쪽 클릭으로 파일을 추가하거나, Downloads 폴더에 정책을 설정하거나, 설정에서 자동 등록을 켤 수 있습니다." },
     ],
     agents: ["Claude Code", "Codex", "다른 에이전트"],
@@ -60,7 +60,7 @@ export const ko: Strings = {
     endDone: "보관 기간 종료, 영구 삭제",
   },
   story: {
-    head: "Obituary는 에이전트가 필요해서 만들어졌습니다",
+    head: "에이전트 때문에 Obituary를 만들게 됐습니다",
     cards: {
       mess: {
         title: "에이전트가 어지르는 속도는 사람이 치우는 속도보다 빠릅니다",
@@ -106,11 +106,11 @@ export const ko: Strings = {
     head: "명령줄 없이도 부활시킬 수 있습니다",
     lead: "시작 메뉴, 바탕 화면, 트레이에서 열 수 있습니다. 파일을 오른쪽 클릭해 Obituary에 추가할 수 있습니다.",
     looks: { calendar: "달력", palette: "한 줄" } as Record<LookId, string>,
-    pages: { upcoming: "곧 매장", graveyard: "곧 영구 삭제", decisions: "결정 대기" } as Record<PageId, string>,
+    pages: { upcoming: "곧 매장", graveyard: "묘지", decisions: "결정 대기" } as Record<PageId, string>,
     lookLabel: "외관",
     pageLabel: "페이지",
     notes: {
-      calendar: "한 열이 하루이고, 파일은 매장되거나 영구 삭제되는 날에 놓입니다. 뒤쪽 날짜로 끌면 그날까지 연장됩니다.",
+      calendar: "한 열이 하루이고, 파일은 매장되거나 영구 삭제되는 날에 놓입니다. 이후 날짜로 끌면 그날까지 연장됩니다.",
       palette: "한 줄 입력으로 키보드만 사용합니다. 파일을 찾아 Enter로 부활시키거나 연장합니다.",
     } as Record<LookId, string>,
     pageNotes: {
@@ -144,7 +144,7 @@ export const ko: Strings = {
   community: {
     head: "Obituary를 함께 만들어 가요",
     lead: "issue와 PR을 환영합니다. 가장 반가운 것은 수정까지 담긴 issue입니다. 문제를 찾고 직접 고치면 여러분의 아바타가 여기에 올라갑니다.",
-    next: "다음은 당신",
+    next: "다음은 여러분",
     howTo: "참여 방법",
     stars: "Star 추이",
     starHistoryAlt: "Obituary 저장소의 Star 수 추이",

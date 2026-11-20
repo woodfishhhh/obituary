@@ -12,7 +12,7 @@ export const zhTW: Strings = {
     noscriptDocs: "閱讀文件",
   },
   a11y: {
-    skip: "跳到正文",
+    skip: "跳到主要內容",
     mainNav: "主導覽",
     footerNav: "頁尾",
     brand: "讣告",
@@ -34,9 +34,9 @@ export const zhTW: Strings = {
     terms: { windows: "Windows 10 和 11，MIT 授權", macos: "macOS（Apple 晶片和 Intel），MIT 授權", linux: "Linux（x64 和 ARM64），MIT 授權" } as Record<Os, string>,
   },
   demo: {
-    label: "讣告小視窗的介面範例，可以操作：停在檔案上看壽命，點一下選取再延長，拖到後面的日子。範例資料。",
+    label: "讣告小視窗的介面範例，可以操作：游標停在檔案上看壽命，點一下選取再延長，拖到之後的日期。範例資料。",
     card: { path: "原路徑", left: "還剩", life: "壽命", expires: "到期", purges: "永久刪除", buried: "下葬", size: "大小", hint: "點一下選取，再延長或不再追蹤" },
-    tips: ["游標停上去或點按，看它的壽命", "點一下，續命", "拖到後面的日子"],
+    tips: ["游標停上去或點按，看它的壽命", "點一下，續命", "拖到之後的日期"],
   },
   flow: {
     head: "agent 刪掉的，先進墓地",
@@ -106,11 +106,11 @@ export const zhTW: Strings = {
     head: "不會用命令列，也能復活",
     lead: "開始功能表、桌面、系統匣都能開啟；右鍵檔案就能放進讣告。",
     looks: { calendar: "月曆", palette: "單行" } as Record<LookId, string>,
-    pages: { upcoming: "即將下葬", graveyard: "即將永久刪除", decisions: "待你決定" } as Record<PageId, string>,
+    pages: { upcoming: "即將下葬", graveyard: "墓地", decisions: "待你決定" } as Record<PageId, string>,
     lookLabel: "外觀",
     pageLabel: "頁面",
     notes: {
-      calendar: "每一欄是一天，檔案排在它下葬或永久刪除的那一天；拖到後面某天就延長到那天。",
+      calendar: "每一欄是一天，檔案排在它下葬或永久刪除的那一天；拖到之後的某一天，就延長到那一天。",
       palette: "一行輸入，鍵盤直達：搜尋檔案，按 Enter 復活或延長。",
     } as Record<LookId, string>,
     pageNotes: {

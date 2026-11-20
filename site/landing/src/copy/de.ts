@@ -8,7 +8,7 @@ export const de: Strings = {
     title: "Obituary — der Papierkorb für KI-Agenten",
     description: "Obituary — der Papierkorb für KI-Agenten. Was deine KI hinterlässt, verschwindet beim Ablauf von selbst; was deine KI löscht, kommt sieben Tage lang zurück. Ein Windows-Werkzeug, dessen Löschschutz aus rm -rf ein wiederherstellbares Begräbnis macht.",
     ogDescription: "Was deine KI hinterlässt, verschwindet beim Ablauf von selbst; was deine KI löscht, kommt sieben Tage lang zurück. Installieren und vergessen.",
-    noscript: "Obituary — der Papierkorb für KI-Agenten: Gib Dateien und Ordnern eine Lebensdauer, begrabe sie beim Ablauf im Friedhof und belebe sie während der Aufbewahrung wieder.",
+    noscript: "Obituary — der Papierkorb für KI-Agenten: Gib Dateien und Ordnern eine Lebensdauer, begrabe sie beim Ablauf auf dem Friedhof und belebe sie während der Aufbewahrung wieder.",
     noscriptDocs: "Dokumentation lesen",
   },
   a11y: {
@@ -23,7 +23,7 @@ export const de: Strings = {
   },
   nav: { why: "Warum", life: "Lebenszyklus", window: "Das Fenster", install: "Installieren", docs: "Doku" },
   hero: {
-    tagline: { before: "Obituary — der", words: ["Papierkorb", "Wächter", "Rückgängig-Knopf", "Aufräumer"], after: "für KI-Agenten", label: "Obituary — der Papierkorb für KI-Agenten" },
+    tagline: { before: "Obituary — der", words: ["Papierkorb", "Wächter", "Rückgängig-Button", "Aufräumer"], after: "für KI-Agenten", label: "Obituary — der Papierkorb für KI-Agenten" },
     before: "Gib den Dateien deiner KI eine ",
     sparkle: "Lebensdauer",
     after: "",
@@ -34,15 +34,15 @@ export const de: Strings = {
     terms: { windows: "Windows 10 und 11, MIT-Lizenz", macos: "macOS auf Apple Silicon und Intel, MIT-Lizenz", linux: "Linux auf x64 und ARM64, MIT-Lizenz" } as Record<Os, string>,
   },
   demo: {
-    label: "Ein funktionierendes Beispiel für das kleine Fenster von Obituary: Fahre über eine Datei, um ihre Lebensdauer zu sehen, klicke, um sie auszuwählen und zu verlängern, und ziehe sie auf einen späteren Tag. Beispieldaten.",
+    label: "Ein funktionierendes Beispiel für das kleine Fenster von Obituary: Bewege den Mauszeiger über eine Datei, um ihre Lebensdauer zu sehen, klicke, um sie auszuwählen und zu verlängern, und ziehe sie auf einen späteren Tag. Beispieldaten.",
     card: { path: "Ursprünglicher Pfad", left: "Verbleibend", life: "Lebensdauer", expires: "Läuft ab", purges: "Gelöscht", buried: "Begraben", size: "Größe", hint: "Klicken zum Auswählen, dann verlängern oder nicht mehr verfolgen" },
     tips: ["Darüberfahren oder tippen für die Lebensdauer", "Klicken zum Verlängern", "Auf einen späteren Tag ziehen"],
   },
   flow: {
-    head: "Was ein Agent löscht, kommt zuerst in den Friedhof",
+    head: "Was ein Agent löscht, kommt zuerst auf den Friedhof",
     lead: "Bei aktivem Löschschutz werden rm -rf, git clean und Remove-Item zum gleichwertigen obit-Befehl, und auch find -delete und xargs rm werden gestoppt.",
     values: [
-      { title: "Von Anfang an", line: "Dein Agent gibt den Debug-Skripten, Logs und Screenshots, die er schreibt, eine Lebensdauer; beim Ablauf kommen sie in den Friedhof und sind sieben Tage lang wiederherstellbar." },
+      { title: "Von Anfang an", line: "Dein Agent gibt den Debug-Skripten, Logs und Screenshots, die er schreibt, eine Lebensdauer; beim Ablauf kommen sie auf den Friedhof und sind sieben Tage lang wiederherstellbar." },
       { title: "Wenn du mehr willst", line: "Füge Dateien per Rechtsklick hinzu, lege eine Richtlinie für deinen Downloads-Ordner fest oder schalte die automatische Registrierung in den Einstellungen ein." },
     ],
     agents: ["Claude Code", "Codex", "Andere Agenten"],
@@ -60,7 +60,7 @@ export const de: Strings = {
     endDone: "Aufbewahrung vorbei, gelöscht",
   },
   story: {
-    head: "Agenten haben uns dazu gedrängt, es zu schreiben",
+    head: "Die Agenten haben uns dazu gedrängt, Obituary zu bauen",
     cards: {
       mess: {
         title: "Agenten erzeugen schneller Unordnung, als Menschen sie beseitigen",
@@ -76,8 +76,8 @@ export const de: Strings = {
       },
       guard: {
         title: "Angst vor einem einzigen rm -rf",
-        line: "Der Löschschutz stoppt dieses eine Löschen und schlägt das Gleichwertige vor; es kommt in den Friedhof, und ein Befehl bringt es zurück.",
-        steps: ["der Agent löscht build", "der Schutz verweigert; rm läuft nie", "der gleichwertige Befehl", "im Friedhof, nach 7 Tagen gelöscht", "wieder wie vorher"],
+        line: "Der Löschschutz stoppt dieses eine Löschen und schlägt das Gleichwertige vor; es kommt auf den Friedhof, und ein Befehl bringt es zurück.",
+        steps: ["der Agent löscht build", "der Schutz verweigert; rm läuft nie", "der gleichwertige Befehl", "auf dem Friedhof, nach 7 Tagen gelöscht", "wieder wie vorher"],
       },
       shell: {
         title: "Angst, dass sich der Befehl unterwegs verändert",
@@ -92,21 +92,21 @@ export const de: Strings = {
     stages: [
       { name: "Registrieren", line: "Der Agent registriert sie, oder du fügst sie per Rechtsklick hinzu." },
       { name: "Ablaufen", line: "Bis dahin: ansehen, was übrig ist, verlängern oder verschonen." },
-      { name: "Begraben", line: "Beim Ablauf wandert sie unverändert in einen Friedhof auf demselben Laufwerk; standardmäßig 7 Tage." },
+      { name: "Begraben", line: "Beim Ablauf wandert sie unverändert auf den Friedhof desselben Laufwerks; standardmäßig 7 Tage." },
     ],
     extend: "Verlängern",
     spare: "Verschonen",
     outcomes: [
       { name: "Wiederbeleben", line: "Zurück an ihren Platz, nichts wird überschrieben." },
-      { name: "Löschen", line: "Erst nach der Aufbewahrung wird wirklich gelöscht." },
+      { name: "Dauerhaft löschen", line: "Erst nach der Aufbewahrung wird wirklich gelöscht." },
     ],
     or: "oder",
   },
   window: {
     head: "Wiederbeleben ohne Kommandozeile",
-    lead: "Öffne es über das Startmenü, den Desktop oder den Infobereich; ein Rechtsklick auf eine Datei fügt sie Obituary hinzu.",
+    lead: "Öffne das Fenster über das Startmenü, den Desktop oder den Infobereich; ein Rechtsklick auf eine Datei fügt sie Obituary hinzu.",
     looks: { calendar: "Kalender", palette: "Eine Zeile" } as Record<LookId, string>,
-    pages: { upcoming: "Bald begraben", graveyard: "Bald gelöscht", decisions: "Für dich" } as Record<PageId, string>,
+    pages: { upcoming: "Bald begraben", graveyard: "Friedhof", decisions: "Für dich" } as Record<PageId, string>,
     lookLabel: "Ansicht",
     pageLabel: "Seite",
     notes: {
@@ -125,9 +125,9 @@ export const de: Strings = {
     agentCol: "Der Agent",
     obitCol: "Obituary",
     rows: [
-      { agent: "rm -rf build", obit: "Bei aktivem Löschschutz verweigert, stattdessen wird obit rm -rf build vorgeschlagen; es kommt in den Friedhof und kann zurückkehren." },
+      { agent: "rm -rf build", obit: "Bei aktivem Löschschutz verweigert, stattdessen wird obit rm -rf build vorgeschlagen; es kommt auf den Friedhof und kann zurückkehren." },
       { agent: "obit mark debug.log 2d", obit: "Wird in zwei Tagen begraben und ist danach sieben Tage lang unverändert wiederherstellbar." },
-      { agent: "obit mktemp 1d", obit: "Einen Tag später begräbt sich der ganze Scratch-Ordner von selbst." },
+      { agent: "obit mktemp 1d", obit: "Einen Tag später begräbt sich der ganze temporäre Ordner von selbst." },
       { agent: "liest eine bereits begrabene Datei", obit: "Ihm wird sofort die Nummer genannt; obit resurrect bringt sie zurück." },
     ],
     promisesHead: "Drei Versprechen",
@@ -144,7 +144,7 @@ export const de: Strings = {
   community: {
     head: "Mach Obituary mit uns besser",
     lead: "Issues und Pull Requests sind willkommen. Am besten ist ein Issue, das seine Lösung mitbringt: Finde ein Problem, behebe es, und dein Avatar erscheint hier.",
-    next: "Du könntest der Nächste sein",
+    next: "Vielleicht du",
     howTo: "So kannst du mitmachen",
     stars: "Sterne im Zeitverlauf",
     starHistoryAlt: "Sterne des Obituary-Repositorys im Zeitverlauf",

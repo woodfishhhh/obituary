@@ -19,7 +19,7 @@ export const fr: Strings = {
     values: "Ce que fait Obituary",
     wordmark: "Obituary 讣告",
     language: "Langue",
-    hint: { text: "Cette page existe aussi en français.", go: "Voir en français", close: "Fermer l’invitation" },
+    hint: { text: "Cette page existe aussi en français.", go: "Voir en français", close: "Fermer le message" },
   },
   nav: { why: "Pourquoi", life: "Cycle de vie", window: "La fenêtre", install: "Installer", docs: "Docs" },
   hero: {
@@ -39,9 +39,9 @@ export const fr: Strings = {
     terms: { windows: "Windows 10 et 11, licence MIT", macos: "macOS sur Apple silicon et Intel, licence MIT", linux: "Linux sur x64 et ARM64, licence MIT" } as Record<Os, string>,
   },
   demo: {
-    label: "Un exemple fonctionnel de la petite fenêtre d’Obituary : survolez un fichier pour voir sa durée de vie, cliquez pour le sélectionner et la prolonger, faites-le glisser vers un jour plus tardif. Données d’exemple.",
+    label: "Un exemple fonctionnel de la petite fenêtre d’Obituary : survolez un fichier pour voir sa durée de vie, cliquez pour le sélectionner et la prolonger, faites-le glisser vers un jour ultérieur. Données d’exemple.",
     card: { path: "Chemin d’origine", left: "Reste", life: "Durée de vie", expires: "Expire", purges: "Supprimé", buried: "Enterré", size: "Taille", hint: "Cliquez pour sélectionner, puis prolongez ou cessez le suivi" },
-    tips: ["Survolez ou touchez pour voir sa durée de vie", "Cliquez pour la prolonger", "Faites-le glisser vers un jour plus tardif"],
+    tips: ["Survolez ou touchez pour voir sa durée de vie", "Cliquez pour la prolonger", "Faites-le glisser vers un jour ultérieur"],
   },
   flow: {
     head: "Ce qu’un agent supprime passe d’abord par le cimetière",
@@ -103,19 +103,19 @@ export const fr: Strings = {
     spare: "Épargner",
     outcomes: [
       { name: "Ressusciter", line: "Retour à sa place, sans rien écraser." },
-      { name: "Supprimer", line: "Ce n’est qu’après la rétention qu’il est vraiment supprimé." },
+      { name: "Supprimer définitivement", line: "Ce n’est qu’après la rétention qu’il est vraiment supprimé." },
     ],
     or: "ou",
   },
   window: {
     head: "Ressuscitez sans ligne de commande",
-    lead: "Ouvrez-la depuis le menu Démarrer, le bureau ou la zone de notification ; un clic droit sur un fichier l’ajoute à Obituary.",
+    lead: "Ouvrez la fenêtre depuis le menu Démarrer, le bureau ou la zone de notification ; un clic droit sur un fichier l’ajoute à Obituary.",
     looks: { calendar: "Calendrier", palette: "Une ligne" } as Record<LookId, string>,
-    pages: { upcoming: "À enterrer", graveyard: "À supprimer", decisions: "À vous de voir" } as Record<PageId, string>,
+    pages: { upcoming: "À enterrer", graveyard: "Cimetière", decisions: "À vous de voir" } as Record<PageId, string>,
     lookLabel: "Aspect",
     pageLabel: "Page",
     notes: {
-      calendar: "Une colonne par jour ; chaque fichier se place au jour où il est enterré ou supprimé. Faites-le glisser vers un jour plus tardif pour le prolonger.",
+      calendar: "Une colonne par jour ; chaque fichier se place au jour où il est enterré ou supprimé. Faites-le glisser vers un jour ultérieur pour le prolonger.",
       palette: "Une ligne de saisie, tout au clavier : trouvez un fichier, puis Entrée pour le ressusciter ou le prolonger.",
     } as Record<LookId, string>,
     pageNotes: {
@@ -154,7 +154,7 @@ export const fr: Strings = {
     stars: "Étoiles au fil du temps",
     starHistoryAlt: "Étoiles du dépôt Obituary au fil du temps",
     qqHead: "Groupe QQ",
-    qqLine: "Les utilisateurs chinois discutent ici : scannez le code ou cherchez le numéro du groupe dans QQ.",
+    qqLine: "Les utilisateurs sinophones discutent ici : scannez le code ou cherchez le numéro du groupe dans QQ.",
     qqAlt: "QR code du groupe QQ d’Obituary, numéro 1135603207",
   },
   install: {

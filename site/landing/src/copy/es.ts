@@ -59,7 +59,7 @@ export const es: Strings = {
     backNote: "obit resurrect",
     end: "Eliminar",
     endNote: "tras la retención",
-    graveLeft: "Se puede resucitar",
+    graveLeft: "Restaurable durante",
     days: "días",
     backDone: "De vuelta en su sitio",
     endDone: "Retención cumplida, eliminado",
@@ -103,15 +103,15 @@ export const es: Strings = {
     spare: "Perdonar",
     outcomes: [
       { name: "Resucitar", line: "Vuelve a su sitio sin sobrescribir nada." },
-      { name: "Eliminar", line: "Solo tras la retención se borra de verdad." },
+      { name: "Eliminar permanentemente", line: "Solo tras la retención se borra de verdad." },
     ],
     or: "o",
   },
   window: {
     head: "Resucita sin la línea de comandos",
-    lead: "Ábrela desde Inicio, el escritorio o la bandeja; haz clic derecho en un archivo para añadirlo a Obituary.",
+    lead: "Abre la ventana desde Inicio, el escritorio o la bandeja; haz clic derecho en un archivo para añadirlo a Obituary.",
     looks: { calendar: "Calendario", palette: "Una línea" } as Record<LookId, string>,
-    pages: { upcoming: "Por enterrar", graveyard: "Por eliminar", decisions: "Para ti" } as Record<PageId, string>,
+    pages: { upcoming: "Por enterrar", graveyard: "Cementerio", decisions: "Para ti" } as Record<PageId, string>,
     lookLabel: "Aspecto",
     pageLabel: "Página",
     notes: {
@@ -149,7 +149,7 @@ export const es: Strings = {
   community: {
     head: "Mejoremos Obituary juntos",
     lead: "Las issues y los pull requests son bienvenidos. Lo mejor es una issue que trae su arreglo: encuentra un problema, corrígelo y tu avatar aparecerá aquí.",
-    next: "El siguiente podrías ser tú",
+    next: "Podrías ser tú",
     howTo: "Cómo colaborar",
     stars: "Estrellas a lo largo del tiempo",
     starHistoryAlt: "Estrellas del repositorio de Obituary a lo largo del tiempo",
