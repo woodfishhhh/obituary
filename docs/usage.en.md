@@ -20,6 +20,14 @@ obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans 
 - Explorer dates come from a hidden `desktop.ini` in the folder and appear by default only in Downloads, on the Desktop and in folders under a policy. `[explorer]` in `config.toml` turns them off (`enabled = false`) or on everywhere (`everywhere = true`). Explorer caches folder views, so after extending a lifespan the same window may show the old date for up to a minute.
 - The window, tray and context menu follow `[ui] language` in `config.toml` (`auto`, `zh-CN` or `en`; `auto` follows Windows). You can switch it in Settings.
 
+## Switch Language
+
+Obituary supports English and Simplified Chinese. The command line, tray, small window and Explorer menu share one language setting.
+
+- Temporary switch: set OBIT_LANG=en or OBIT_LANG=zh-CN before running a command. With auto or no variable, Obituary checks configuration, LC_ALL, LC_MESSAGES, LANG and the system UI language.
+- Save the setting: run obit config --language en, obit config --language zh-CN or obit config --language auto.
+- Inspect it: run obit config. ui.language is the saved value and effective_language is the language used by this run.
+
 ## Claude Code
 
 ```powershell

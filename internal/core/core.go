@@ -118,6 +118,8 @@ type Observation = lifecycle.Observation
 
 var ErrProposalChanged = lifecycle.ErrProposalChanged
 
+const ErrorCodeProposalChanged = lifecycle.ErrorCodeProposalChanged
+
 var ErrProposalBusy = lifecycle.ErrProposalBusy
 
 type WatchReview = lifecycle.WatchReview

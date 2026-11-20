@@ -32,8 +32,9 @@ func ReportGraves(results []core.GraveResult, asJSON bool, describe func(core.Gr
 }
 
 func printGraveResult(r core.GraveResult, describe func(core.GraveResult) string) {
+	language := Localizer()
 	if r.Warning != "" {
-		fmt.Fprintln(os.Stderr, "warning:", r.Warning)
+		fmt.Fprintln(os.Stderr, language.Text("cli.warning", map[string]any{"Text": r.Warning}))
 	}
 	if r.Error == "" {
 		fmt.Println(describe(r))
@@ -47,13 +48,13 @@ func printGraveResult(r core.GraveResult, describe func(core.GraveResult) string
 		fmt.Println(describe(r))
 	}
 	if r.Action == core.ActionNotExecuted {
-		fmt.Fprintln(os.Stderr, r.Ref+":", r.Error)
+		fmt.Fprintln(os.Stderr, language.Text("cli.not_executed", map[string]any{"Ref": r.Ref, "Text": r.Error}))
 		return
 	}
 	if r.Action == core.ActionBlocked {
-		fmt.Fprintln(os.Stderr, "blocked:", label+":", r.Error)
+		fmt.Fprintln(os.Stderr, language.Text("cli.blocked", map[string]any{"Label": label, "Text": r.Error}))
 	} else {
-		fmt.Fprintln(os.Stderr, "error:", label+":", r.Error)
+		fmt.Fprintln(os.Stderr, language.Text("cli.error", map[string]any{"Label": label, "Text": r.Error}))
 	}
 }
 
@@ -75,8 +76,9 @@ func ReportBury(results []core.GraveResult, asJSON bool, describe func(core.Grav
 }
 
 func printBuryResult(r core.GraveResult, describe func(core.GraveResult) string) {
+	language := Localizer()
 	if r.Warning != "" {
-		fmt.Fprintln(os.Stderr, "warning:", r.Warning)
+		fmt.Fprintln(os.Stderr, language.Text("cli.warning", map[string]any{"Text": r.Warning}))
 	}
 	if r.Error == "" {
 		fmt.Println(describe(r))
@@ -86,7 +88,7 @@ func printBuryResult(r core.GraveResult, describe func(core.GraveResult) string)
 	if r.Detail != "" {
 		detail = r.Detail
 	}
-	fmt.Printf("%s  %s: %s\n", r.Action, r.Ref, detail)
+	fmt.Println(language.Text("cli.bury.error", map[string]any{"Action": r.Action, "Ref": r.Ref, "Text": detail}))
 }
 
 // errReported marks failures whose details were already printed.
@@ -97,7 +99,7 @@ const TimeLayout = "2006-01-02 15:04"
 // committed turns an audit-log failure into a warning: the change itself was saved.
 func Committed(err error) error {
 	if OnlyAuditErrors(err) {
-		fmt.Fprintln(os.Stderr, "warning:", err)
+		fmt.Fprintln(os.Stderr, Localizer().Text("cli.warning", map[string]any{"Text": err}))
 		return nil
 	}
 	return err

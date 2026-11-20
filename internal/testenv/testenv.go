@@ -35,6 +35,15 @@ func Main(m *testing.M) (code int) {
 		}
 		return 0
 	}
+	previousLanguage, hadLanguage := os.LookupEnv("OBIT_LANG")
+	_ = os.Setenv("OBIT_LANG", "en")
+	defer func() {
+		if hadLanguage {
+			_ = os.Setenv("OBIT_LANG", previousLanguage)
+		} else {
+			_ = os.Unsetenv("OBIT_LANG")
+		}
+	}()
 	desktop, err := realDesktopSnapshot()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "test desktop snapshot:", err)

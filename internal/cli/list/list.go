@@ -12,14 +12,16 @@ import (
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/core/lifespan"
+	"github.com/woodfishhhh/obituary/internal/i18n"
 )
 
 func NewCmd() *cobra.Command {
 	var asJSON bool
+	language := cmdutil.Localizer()
 	cmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
-		Short:   "Show tracked paths and Docker containers, soonest expiry first",
+		Short:   language.Text("cli.list.short", nil),
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			svc, err := cmdutil.Open()
@@ -34,10 +36,14 @@ func NewCmd() *cobra.Command {
 			if asJSON {
 				return printItemsJSON(svc, state.Items, now)
 			}
-			return printItems(svc, state.Items, now)
+			return printItems(svc, state.Items, now, cmdutil.Localizer())
 		},
 	}
-	cmd.Flags().BoolVar(&asJSON, "json", false, "print JSON")
+	cmd.Flags().BoolVar(&asJSON, "json", false, language.Text("cli.list.json", nil))
+	cmdutil.SetLocalizedHelp(cmd, func(language *i18n.Localizer, command *cobra.Command) {
+		command.Short = language.Text("cli.list.short", nil)
+		command.Flags().Lookup("json").Usage = language.Text("cli.list.json", nil)
+	})
 	return cmd
 }
 
@@ -54,20 +60,20 @@ func printItemsJSON(svc *core.Service, items []ledger.Item, now time.Time) error
 	return cmdutil.PrintJSON(rows)
 }
 
-func printItems(svc *core.Service, items []ledger.Item, now time.Time) error {
+func printItems(svc *core.Service, items []ledger.Item, now time.Time, language *i18n.Localizer) error {
 	if len(items) == 0 {
-		fmt.Println("nothing is tracked")
+		fmt.Println(language.Text("cli.list.empty", nil))
 		return nil
 	}
 	w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(w, "ID\tEXPIRES\tLEFT\tPATH\tNOTE")
+	fmt.Fprintln(w, language.Text("cli.list.header", nil))
 	for _, item := range items {
 		note := item.Note
 		if item.Stuck() {
 			// Extend clears the failure count, so it is the command-line Retry.
-			note = fmt.Sprintf("stopped retrying after %d attempts: %s; obit extend #%d 1m tries again, obit spare #%d stops tracking", item.Attempts, item.LastError, item.ID, item.ID)
+			note = language.Text("cli.list.stopped", map[string]any{"Attempts": item.Attempts, "Error": item.LastError, "ID": item.ID})
 		} else if item.LastError != "" {
-			note = fmt.Sprintf("retry %d: %s", item.Attempts, item.LastError)
+			note = language.Text("cli.list.retry", map[string]any{"Attempts": item.Attempts, "Error": item.LastError})
 		}
 		if warning := identityWarning(item); warning != "" {
 			note += "; " + warning
@@ -76,7 +82,7 @@ func printItems(svc *core.Service, items []ledger.Item, now time.Time) error {
 			if strings.HasPrefix(item.LastError, "folder child is still active") {
 				note = fmt.Sprintf("retry %d", item.Attempts)
 			}
-			note += fmt.Sprintf("; quiet for %s more (stable_window=%s); next check %s", status.QuietFor, status.StableWindow, status.NextCheck.Format(time.RFC3339))
+			note += "; " + language.Text("cli.list.quiet", map[string]any{"QuietFor": status.QuietFor, "StableWindow": status.StableWindow, "NextCheck": status.NextCheck.Format(time.RFC3339)})
 		}
 		fmt.Fprintf(w, "#%d\t%s\t%s\t%s\t%s\n", item.ID, item.ExpiresAt.Local().Format(cmdutil.TimeLayout),
 			lifespan.FormatRemaining(time.Until(item.ExpiresAt)), item.Path, note)

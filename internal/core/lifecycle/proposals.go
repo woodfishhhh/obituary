@@ -264,10 +264,11 @@ func (s *Service) MarkNotifiedBatch(ids []int64, session string) ([]bool, error)
 
 // ProposalResult is the outcome of approving or rejecting one proposal.
 type ProposalResult struct {
-	Ref      string   `json:"ref"`
-	Proposal Proposal `json:"proposal"`
-	Results  []Result `json:"results,omitempty"` // one per candidate on approval
-	Error    string   `json:"error,omitempty"`
+	ErrorCode string   `json:"errorCode,omitempty"`
+	Ref       string   `json:"ref"`
+	Proposal  Proposal `json:"proposal"`
+	Results   []Result `json:"results,omitempty"` // one per candidate on approval
+	Error     string   `json:"error,omitempty"`
 }
 
 func parseProposalRef(ref string) (int64, error) {
@@ -418,6 +419,9 @@ func (s *Service) reject(refs []string, review func(int, Proposal) error) ([]Pro
 			if review != nil {
 				if err := review(i, r.Proposal); err != nil {
 					r.Error = err.Error()
+					if errors.Is(err, ErrProposalChanged) {
+						r.ErrorCode = ErrorCodeProposalChanged
+					}
 					return nil
 				}
 			}

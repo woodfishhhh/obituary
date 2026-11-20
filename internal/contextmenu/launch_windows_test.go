@@ -53,6 +53,7 @@ func TestContextMenuActionsAndNotifications(t *testing.T) {
 }
 
 func TestContextMenuNotificationLanguages(t *testing.T) {
+	t.Setenv("OBIT_LANG", "")
 	root := t.TempDir()
 	t.Setenv("OBIT_CONFIG_DIR", root)
 	for _, tc := range []struct{ language, success, failure, message string }{

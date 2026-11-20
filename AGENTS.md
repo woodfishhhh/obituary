@@ -70,6 +70,14 @@ go build -ldflags=-H=windowsgui -o bin/obitd.exe ./cmd/obitd
 - 全量和变异在 CI 上跑。仓库公开，标准机器不计分钟：每次推送和 PR 都跑全量（按包拆成四个并行任务，列出最慢的 30 个测试）和 Linux（带 `-race`）、macOS 上的 POSIX 测试，大约 10 分钟出结果；变异每周跑一次，也可以手动触发。打包和安装测试只在打包相关文件改动时跑（最慢的一项，为省时间）。推送不用攒批，推完看一眼 CI。
 - 新写的测试：只要会起子进程、建 Git 仓库或要等超过 1 秒，就在开头写 `if testing.Short() { t.Skip("…") }`，并保证同一处逻辑在 `-short` 下还有一个快的测试覆盖。测试里默认不 fsync，只有专门检查落盘顺序的测试打开。
 
+## 多语言
+
+- 新增用户可见文字时，先在 internal/i18n/messages.go 增加稳定的点分消息 ID 和英文默认文案，再在 messages/active.zh-CN.json 增加对应翻译；不要把用户文字散落回 CLI 或托盘实现。
+- 英文源文案由 Go 中的 go-i18n Message 定义维护，active.en.json 是可提交的提取结果；新增或修改消息后运行 goi18n extract 并检查两种语言的键和占位符。
+- 新增语言时复制 active.zh-CN.json 的键集合，使用规范 BCP 47 标签，运行语言目录一致性测试，并在语言解析测试中覆盖显式设置、环境变量、区域变量和回退路径。
+- OBIT_LANG、配置项 ui.language、LC_ALL、LC_MESSAGES、LANG 和操作系统界面语言按既定优先级解析；zh-TW、zh-HK、zh-MO 等繁体标签不能落到简体中文。
+- 永远不翻译守卫和 hook 的拒绝提示、等价命令、宿主协议输出、MCP 工具名与描述、JSON 字段、退出码、路径、版本前缀、日志标记、注册表键和 Wails DTO 字段；hook 路径不加载语言目录。
+
 ## 已知坑
 
 - 在 Git Bash 里直接敲 `schtasks /Delete /TN …` 这类命令时，`/Delete` 会被 MSYS 当成路径转换掉。手动操作用 PowerShell（`Get-ScheduledTask`、`Unregister-ScheduledTask`，它们也能看到隐藏的任务）；Go 代码里调用 `schtasks` 不受影响。

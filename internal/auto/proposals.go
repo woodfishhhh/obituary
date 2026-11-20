@@ -155,6 +155,9 @@ func (e *Engine) approve(refs []string, claim func(int, string) (core.Proposal, 
 		p, release, err := claim(i, ref)
 		if err != nil {
 			r.Error = err.Error()
+			if errors.Is(err, core.ErrProposalChanged) {
+				r.ErrorCode = core.ErrorCodeProposalChanged
+			}
 			out = append(out, r)
 			continue
 		}
@@ -193,6 +196,9 @@ func (e *Engine) approveWatchProposal(p core.Proposal, r *core.ProposalResult) b
 		}
 		if err != nil {
 			r.Error = err.Error()
+			if errors.Is(err, core.ErrProposalChanged) {
+				r.ErrorCode = core.ErrorCodeProposalChanged
+			}
 		} else {
 			r.Results = []core.Result{{Ref: outcome.Path, Item: &outcome.Item}}
 		}
@@ -205,6 +211,9 @@ func (e *Engine) approveWatchProposal(p core.Proposal, r *core.ProposalResult) b
 		}
 		if err != nil {
 			r.Error = err.Error()
+			if errors.Is(err, core.ErrProposalChanged) {
+				r.ErrorCode = core.ErrorCodeProposalChanged
+			}
 		}
 		return true
 	}

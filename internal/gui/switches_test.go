@@ -160,6 +160,7 @@ func TestOnlyCurrentPlanCanBeApplied(t *testing.T) {
 // The confirmation shows where each entry appears and what it is called, not
 // registry paths or raw trees.
 func TestContextMenuPreviewIsReadable(t *testing.T) {
+	t.Setenv("OBIT_LANG", "")
 	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	a, _ := fixture(t)
 	a.deps.SystemLanguage = func() string { return "zh-CN" }

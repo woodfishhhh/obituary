@@ -22,6 +22,14 @@ obit watch --remove C:\Users\你\Downloads    # 移除策略，它登记过的�
 - 小窗口 `obit-gui.exe` 和 `obitd.exe` 放在同一个目录，托盘才能打开它。每个开关先给你看要改什么，确认后才写入；信任 `.obitrules` 时只信任你在窗口里看到的那一版内容。
 - 资源管理器里的日期靠文件夹里隐藏的 `desktop.ini`，默认只在下载、桌面和文件夹策略管的目录里显示；`config.toml` 的 `[explorer]` 可以关掉（`enabled = false`）或扩大到其他位置（`everywhere = true`）。资源管理器有自己的缓存，延长寿命后同一个窗口最长约一分钟还显示旧日期。
 
+## 切换语言
+
+讣告支持 English 和简体中文。命令行、托盘、小窗口和资源管理器菜单共用同一个语言设置。
+
+- 临时切换：设置环境变量 OBIT_LANG=en 或 OBIT_LANG=zh-CN 后运行命令；auto 或删除变量时按配置、LC_ALL、LC_MESSAGES、LANG 和系统界面语言选择。
+- 保存设置：运行 obit config --language en、obit config --language zh-CN 或 obit config --language auto。
+- 查看当前设置：运行 obit config；其中 ui.language 是保存值，effective_language 是本次运行实际使用的语言。
+
 ## 接入 Claude Code
 
 ```powershell

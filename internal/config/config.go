@@ -93,7 +93,7 @@ type Update struct {
 	Check bool `toml:"check"`
 }
 
-// UI controls native desktop and window language independently of CLI output.
+// UI controls the language shared by CLI, native desktop and the window.
 type UI struct {
 	Language string `toml:"language"`
 	Tray     bool   `toml:"tray"`
@@ -189,8 +189,8 @@ everywhere = false
 in_git = false
 
 [ui]
-# Native desktop and window language: "auto", "zh-CN", or "en".
-# auto follows the Windows user interface language.
+# Language shared by CLI, native desktop and the window: "auto", "zh-CN" or "en".
+# auto follows OBIT_LANG, locale environment variables and the OS UI language.
 language = "auto"
 # Show the tray icon; background cleanup and update checks continue when hidden.
 tray = true

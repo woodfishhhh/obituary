@@ -16,6 +16,7 @@ import (
 )
 
 func TestExplorerMenuCommandFlow(t *testing.T) {
+	t.Setenv("OBIT_LANG", "")
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}

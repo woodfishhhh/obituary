@@ -13,15 +13,16 @@ import (
 )
 
 func TestLanguageSettingsAndPlan(t *testing.T) {
+	t.Setenv("OBIT_LANG", "")
 	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	a, _ := fixture(t)
 	a.deps.SystemLanguage = func() string { return "zh-TW" }
 	settings, err := a.Settings()
-	if err != nil || settings.Language != "auto" || settings.EffectiveLanguage != "zh-CN" {
+	if err != nil || settings.Language != "auto" || settings.EffectiveLanguage != "en" {
 		t.Fatalf("defaults: %+v %v", settings, err)
 	}
 	data, err := json.Marshal(settings)
-	if err != nil || !strings.Contains(string(data), `"language":"auto"`) || !strings.Contains(string(data), `"effectiveLanguage":"zh-CN"`) {
+	if err != nil || !strings.Contains(string(data), `"language":"auto"`) || !strings.Contains(string(data), `"effectiveLanguage":"en"`) {
 		t.Fatalf("frontend contract: %s %v", data, err)
 	}
 	plan, err := a.PlanLanguage("en")
@@ -61,6 +62,7 @@ func TestLanguageSettingsAndPlan(t *testing.T) {
 }
 
 func TestLanguagePlanIncludesInstalledMenu(t *testing.T) {
+	t.Setenv("OBIT_LANG", "")
 	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	a, _ := fixture(t)
 	a.deps.SystemLanguage = func() string { return "zh-CN" }
@@ -105,6 +107,7 @@ func TestLanguagePlanIncludesInstalledMenu(t *testing.T) {
 }
 
 func TestLanguagePlanRetainsPartialReceipt(t *testing.T) {
+	t.Setenv("OBIT_LANG", "")
 	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	a, _ := fixture(t)
 	a.deps.SystemLanguage = func() string { return "zh-CN" }
@@ -145,6 +148,7 @@ func TestLanguagePlanRetainsPartialReceipt(t *testing.T) {
 }
 
 func TestLanguagePlanPreservesConcurrentEdits(t *testing.T) {
+	t.Setenv("OBIT_LANG", "")
 	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	for _, changed := range []string{"config", "registry"} {
 		t.Run(changed, func(t *testing.T) {

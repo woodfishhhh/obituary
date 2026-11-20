@@ -9,16 +9,36 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/config"
+	"github.com/woodfishhhh/obituary/internal/integrate"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
 )
 
 func NewCmd() *cobra.Command {
 	var create bool
+	var language string
 	cmd := &cobra.Command{
 		Use:   "config",
 		Short: "Show the configuration file and effective settings (--create writes the defaults)",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if create && language != "" {
+				return errors.New("--create and --language cannot be used together")
+			}
+			if language != "" {
+				path, err := config.Path()
+				if err != nil {
+					return err
+				}
+				change, err := integrate.PlanLanguageConfig(path, language)
+				if err != nil {
+					return err
+				}
+				if err := integrate.Apply([]integrate.Change{change}); err != nil {
+					return err
+				}
+				fmt.Printf("language = %q\n", language)
+				return nil
+			}
 			if create {
 				path, err := config.Create()
 				if err != nil {
@@ -46,6 +66,7 @@ func NewCmd() *cobra.Command {
 			fmt.Printf("\n[graveyard]\nmode = %q\nretention_days = %d\n", cfg.Graveyard.Mode, cfg.Graveyard.RetentionDays)
 			fmt.Printf("\n[update]\ncheck = %t\n", cfg.Update.Check)
 			fmt.Printf("\n[watch]\nstable_window = %q\n", cfg.Watch.StableWindow)
+			fmt.Printf("\n[ui]\nlanguage = %q\neffective_language = %q\n", cfg.UI.Language, config.UILanguage())
 			fmt.Printf("\n[hooks]\n# List expiring items and recent burials at session start.\nsession_summary = %t\n# Ask the agent once per session to sort the files it created without a lifespan.\nsession_cleanup = %t\n", cfg.Hooks.SessionSummary, cfg.Hooks.SessionCleanup)
 			fmt.Printf("\n[proposals]\n# off: nothing goes in by itself. tiered: the agent's own new files and session containers\n# go in without asking; the rest waits. auto: everything goes in. ask: everything waits.\nmode = %q\n", cfg.Proposals.Mode)
 			if len(cfg.AgentShells) > 0 {
@@ -62,5 +83,6 @@ func NewCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&create, "create", false, "write a config file with the defaults")
+	cmd.Flags().StringVar(&language, "language", "", "set the language: auto, en or zh-CN")
 	return cmd
 }

@@ -23,6 +23,18 @@ func TestConfigShowsUpdateCheck(t *testing.T) {
 	}
 }
 
+func TestConfigSetsLanguage(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("OBIT_CONFIG_DIR", dir)
+	for _, language := range []string{"en", "zh-CN", "auto"} {
+		out, _, err := clitest.Execute(t, NewCmd(), "--language", language)
+		data, readErr := os.ReadFile(filepath.Join(dir, "config.toml"))
+		if err != nil || readErr != nil || !strings.Contains(string(data), "language = \""+language+"\"") || !strings.Contains(out, "language = \""+language+"\"") {
+			t.Fatalf("language %s: %s %v %v", language, out, err, readErr)
+		}
+	}
+}
+
 func TestConfigShowsWatchStableWindow(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("OBIT_CONFIG_DIR", dir)

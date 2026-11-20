@@ -145,6 +145,7 @@ func TestContainerSessionsDoNotDuplicateOrOwnProjects(t *testing.T) {
 }
 
 func TestApproveContainerUnavailableKeepsProposalAndLocalizes(t *testing.T) {
+	t.Setenv("OBIT_LANG", "")
 	r := newEngineFixture(t)
 	r.ask()
 	id := docker.Identity{ID: strings.Repeat("b", 64), Name: "cache", Created: time.Now()}

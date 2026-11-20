@@ -9,6 +9,7 @@ import (
 )
 
 func TestUILanguageUsesAutoOnUnreadableConfiguration(t *testing.T) {
+	t.Setenv("OBIT_LANG", "")
 	root := t.TempDir()
 	t.Setenv("OBIT_CONFIG_DIR", root)
 	path := filepath.Join(root, "config.toml")

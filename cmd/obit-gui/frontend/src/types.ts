@@ -113,6 +113,7 @@ export interface ProposalResult {
   proposal?: Proposal;
   results?: Result[];
   error?: string;
+  errorCode?: string;
 }
 
 export interface RuleFile {
@@ -242,7 +243,7 @@ export interface LogPage {
 
 export interface GraveResult { ref: string; action?: string; path?: string; error?: string }
 export interface Result { ref: string; action?: string; error?: string }
-export interface BatchReply<T> { results: T[]; error?: string }
+export interface BatchReply<T> { results: T[]; error?: string; errorCode?: string }
 
 export interface Api {
   Summary(): Promise<Summary>;

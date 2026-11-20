@@ -17,6 +17,7 @@ import (
 )
 
 func TestUpdateMenuLocalizedAndOpensGUI(t *testing.T) {
+	t.Setenv("OBIT_LANG", "")
 	home := t.TempDir()
 	items := &fakeItem{}
 	r := &app.Resident{Service: &core.Service{Store: core.Store{Home: home}}}

@@ -36,6 +36,7 @@ func (f *fakeItem) AddSubMenuItem(title, tooltip string) menuItem {
 }
 
 func TestMenuRefreshUsesCurrentLanguage(t *testing.T) {
+	t.Setenv("OBIT_LANG", "")
 	root := t.TempDir()
 	t.Setenv("OBIT_CONFIG_DIR", root)
 	items := &fakeItem{}

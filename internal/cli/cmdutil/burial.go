@@ -15,15 +15,25 @@ const RecycleRecovery = "sent to the system Recycle Bin; restore from the Recycl
 func SetBurialHelp(cmd *cobra.Command) {
 	help := cmd.HelpFunc()
 	cmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
-		cmd.Short = "Move paths using the configured deletion mode; recovery depends on that mode"
+		language := Localizer()
+		cmd.Short = language.Text("cli.bury.short", nil)
 		cfg, err := config.Load()
 		if err == nil {
 			switch cfg.Graveyard.Mode {
 			case config.ModeGraveyard:
-				cmd.Short = "Move paths into the graveyard now (restore with obit resurrect)"
+				cmd.Short = language.Text("cli.bury.short.graveyard", nil)
 			case config.ModeRecycle:
-				cmd.Short = "Move paths to the system Recycle Bin (restore from the Recycle Bin)"
+				cmd.Short = language.Text("cli.bury.short.recycle", nil)
 			}
+		}
+		if flag := cmd.Flags().Lookup("force"); flag != nil {
+			flag.Usage = language.Text("cli.bury.force", nil)
+		}
+		if flag := cmd.Flags().Lookup("note"); flag != nil {
+			flag.Usage = language.Text("cli.bury.note", nil)
+		}
+		if flag := cmd.Flags().Lookup("json"); flag != nil {
+			flag.Usage = language.Text("cli.bury.json", nil)
 		}
 		help(cmd, args)
 	})

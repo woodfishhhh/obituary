@@ -34,7 +34,7 @@ func TestReviewedProposalDecisionsPreserveChangedSnapshot(t *testing.T) {
 					}
 				} else {
 					out, err := f.svc.RejectReviewed([]string{fmt.Sprint(p.ID)}, []string{fingerprint})
-					if err != nil || len(out) != 1 || out[0].Error != core.ErrProposalChanged.Error() {
+					if err != nil || len(out) != 1 || out[0].Error != core.ErrProposalChanged.Error() || out[0].ErrorCode != core.ErrorCodeProposalChanged {
 						t.Fatalf("changed review rejected candidates: %+v %v", out, err)
 					}
 				}
@@ -119,7 +119,7 @@ func TestWatchReviewRejectsDivergentPolicy(t *testing.T) {
 						divergeWatchReview(t, f, change)
 					}
 					out, err := (&auto.Engine{Svc: f.svc}).ApproveReviewed([]string{fmt.Sprint(p.ID)}, []string{fingerprint})
-					if err != nil || len(out) != 1 || out[0].Error != core.ErrProposalChanged.Error() {
+					if err != nil || len(out) != 1 || out[0].Error != core.ErrProposalChanged.Error() || out[0].ErrorCode != core.ErrorCodeProposalChanged {
 						t.Fatalf("divergent watch policy approved: %+v %v", out, err)
 					}
 				}

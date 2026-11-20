@@ -13,6 +13,8 @@ import (
 
 var ErrProposalChanged = errors.New("提议已变化，请重新查看")
 
+const ErrorCodeProposalChanged = "proposal_changed"
+
 type WatchReview = ledger.WatchReview
 
 func watchReview(p WatchPolicy) WatchReview { return ledger.WatchReviewOf(p) }

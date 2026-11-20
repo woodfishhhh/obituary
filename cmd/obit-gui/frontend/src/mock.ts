@@ -117,7 +117,7 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
     if (i < 0) return { ref, error: "没有这个提议" };
     const p = s.proposals[i];
     if (p.drift) { p.candidates.push(p.drift); p.drift = undefined; }
-    if (seen !== fingerprint(p)) return { ref, error: "提议已变化，请重新查看" };
+    if (seen !== fingerprint(p)) return { ref, error: "提议已变化，请重新查看", errorCode: "proposal_changed" };
     s.proposals.splice(i, 1);
     if (!approve) return { ref, proposal: view(p) };
     const results = p.candidates.map((c) => {

@@ -216,9 +216,8 @@ function HandledList({ handled }: { handled: AutoHandled[] }) {
 }
 
 // The fingerprint sent back is the version shown on this card: a proposal
-// that gained or lost candidates since is refused, never half-applied. The
-// backend's message (core.ErrProposalChanged) is matched, not translated.
-const CHANGED = "提议已变化，请重新查看";
+// that gained or lost candidates since is refused, never half-applied.
+const PROPOSAL_CHANGED = "proposal_changed";
 
 function ProposalCard({ p, onOutcome }: { p: Proposal; onOutcome: (note: OutcomeNote | null) => void }) {
   const api = useApi();
@@ -251,17 +250,19 @@ function ProposalCard({ p, onOutcome }: { p: Proposal; onOutcome: (note: Outcome
     const ref = `#${p.id}`;
     let result: ProposalResult | undefined;
     let failure: string | undefined;
+    let failureCode: string | undefined;
     try {
       const reply = await (approve ? api.Approve : api.Reject)([ref], [p.fingerprint]);
       const results = reply.results ?? [];
       result = results.find((r) => r.ref === ref || r.ref === String(p.id)) ?? results[0];
       failure = result?.error ?? reply.error ?? (result ? undefined : t("dec.noReply"));
+      failureCode = result?.errorCode ?? reply.errorCode;
     } catch (error) {
       failure = errorText(error);
     }
     bump();
     if (failure) {
-      const changed = failure.includes(CHANGED);
+      const changed = failureCode === PROPOSAL_CHANGED;
       onOutcome(changed
         ? { title: t("dec.changed", p.id, approve), text: t("dec.changedText") }
         : { title: t("dec.failed", p.id, approve), text: failure });

@@ -14,9 +14,10 @@ func NewCmd() *cobra.Command {
 		force, asJSON bool
 		note          string
 	)
+	language := cmdutil.Localizer()
 	cmd := &cobra.Command{
 		Use:   "bury <path>...",
-		Short: "Move paths now using the configured deletion mode",
+		Short: language.Text("cli.bury.short", nil),
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			svc, err := cmdutil.Open()
@@ -34,18 +35,21 @@ func NewCmd() *cobra.Command {
 					break
 				}
 			}
+			language := cmdutil.Localizer()
 			reportErr := cmdutil.ReportBury(results, asJSON, func(r core.GraveResult) string {
 				if r.Action == core.ActionRecycled {
-					return fmt.Sprintf("%-8s %s  (%s)", r.Action, r.Ref, cmdutil.RecycleRecovery)
+					return language.Text("cli.bury.recycled", map[string]any{"Action": r.Action, "Ref": r.Ref})
 				}
 				if r.Action == core.ActionResurrected && r.Burial != nil {
-					return fmt.Sprintf("#%d resurrected  %s (recovered)", r.Burial.ID, r.Path)
+					return language.Text("cli.bury.resurrected", map[string]any{"ID": r.Burial.ID, "Path": r.Path})
 				}
 				if r.Burial == nil {
 					return fmt.Sprintf("%-8s %s", r.Action, r.Ref)
 				}
-				return fmt.Sprintf("#%d buried   %s  (%s, restorable until %s)", r.Burial.ID, r.Burial.Path,
-					textutil.Bytes(r.Burial.Size), r.Burial.PurgeAt.Local().Format(cmdutil.TimeLayout))
+				return language.Text("cli.bury.buried", map[string]any{
+					"ID": r.Burial.ID, "Path": r.Burial.Path, "Size": textutil.Bytes(r.Burial.Size),
+					"PurgeAt": r.Burial.PurgeAt.Local().Format(cmdutil.TimeLayout),
+				})
 			})
 			if err := cmdutil.Committed(err); err != nil {
 				return err
@@ -53,9 +57,9 @@ func NewCmd() *cobra.Command {
 			return reportErr
 		},
 	}
-	cmd.Flags().BoolVar(&force, "force", false, "allow folders that contain a .git repository")
-	cmd.Flags().StringVar(&note, "note", "", "free-text note kept with the burial")
-	cmd.Flags().BoolVar(&asJSON, "json", false, "print JSON")
+	cmd.Flags().BoolVar(&force, "force", false, language.Text("cli.bury.force", nil))
+	cmd.Flags().StringVar(&note, "note", "", language.Text("cli.bury.note", nil))
+	cmd.Flags().BoolVar(&asJSON, "json", false, language.Text("cli.bury.json", nil))
 	cmdutil.SetBurialHelp(cmd)
 	return cmd
 }

@@ -1,7 +1,7 @@
-//go:build linux || darwin
+//go:build linux
 
 package i18n
 
-// Native UI integration is Windows-only; an unavailable UI language resolves
-// to English through the common resolver.
+// Linux has no platform-specific language lookup here; locale environment
+// variables are handled by Resolve before this callback is consulted.
 func SystemLanguage() string { return "" }

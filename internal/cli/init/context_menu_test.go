@@ -17,6 +17,7 @@ import (
 )
 
 func TestContextMenuPreviewDescribesChanges(t *testing.T) {
+	t.Setenv("OBIT_LANG", "")
 	clitest.CommandDir(t)
 	// Pin the label language: CI runners use an English Windows UI.
 	cfgPath, err := config.Path()

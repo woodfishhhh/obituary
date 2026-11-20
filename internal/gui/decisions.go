@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,8 +29,9 @@ type ProposalList struct {
 	Mode string `json:"mode"`
 }
 type ProposalReply struct {
-	Results []core.ProposalResult `json:"results"`
-	Error   string                `json:"error,omitempty"`
+	ErrorCode string                `json:"errorCode,omitempty"`
+	Results   []core.ProposalResult `json:"results"`
+	Error     string                `json:"error,omitempty"`
 }
 
 func (a *API) Proposals() (ProposalList, error) {
@@ -92,7 +94,7 @@ func (a *API) Approve(refs, fingerprints []string) (ProposalReply, error) {
 	results, err := engine.ApproveReviewed(refs, fingerprints)
 	// Watch approvals are handled by Engine.Approve, as in the CLI. Its
 	// registrations are reconciled by the resident's directory notifications.
-	return ProposalReply{Results: list(results), Error: errorText(err)}, nil
+	return ProposalReply{Results: list(results), Error: errorText(err), ErrorCode: proposalErrorCode(err)}, nil
 }
 
 func (a *API) Reject(refs, fingerprints []string) (ProposalReply, error) {
@@ -102,7 +104,14 @@ func (a *API) Reject(refs, fingerprints []string) (ProposalReply, error) {
 		return ProposalReply{Results: []core.ProposalResult{}}, err
 	}
 	results, err := a.deps.Service.RejectReviewed(refs, fingerprints)
-	return ProposalReply{Results: list(results), Error: errorText(err)}, nil
+	return ProposalReply{Results: list(results), Error: errorText(err), ErrorCode: proposalErrorCode(err)}, nil
+}
+
+func proposalErrorCode(err error) string {
+	if errors.Is(err, core.ErrProposalChanged) {
+		return core.ErrorCodeProposalChanged
+	}
+	return ""
 }
 
 type RuleFile struct {
