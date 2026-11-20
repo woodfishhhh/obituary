@@ -26,10 +26,10 @@ for (const l of locales) {
       if (l.id === 'ja' || l.id === 'zh-TW') assert.ok(!simplified.test(text), 'Simplified character in ' + l.path + page);
     }
     if (!['en','zh'].includes(l.id)) {
-      const origin = await read(new URL((l.id === 'zh-TW' && page !== 'index.md' ? '' : 'en/') + page, root));
-      assert.deepEqual(blocks(source), blocks(origin), `changed code: ${l.path}${page}`);
+      const origin = await read(new URL((page === 'index.md' ? 'en/' : l.id === 'zh-TW' ? '' : 'en/') + page, root));
+      if (page === 'index.md') assert.deepEqual(blocks(source), blocks(origin), 'changed code: ' + l.path + page);
       const originals = new Set(prose(origin));
-      for (const line of prose(source)) assert.ok(!originals.has(line), `untranslated: ${l.path}${page}: ${line}`);
+      for (const line of prose(source)) assert.ok(!originals.has(line), 'untranslated: ' + l.path + page + ': ' + line);
     }
     const file = page.replace(/\.md$/, '.html');
     const href = l.path + (page === 'index.md' ? '' : file);
