@@ -139,15 +139,7 @@ export const zh = {
   },
   agents: {
     head: "接到你用的 agent 上",
-    lead: "obit init -g --agent 后面写上下面的灰色名字，一次接一家或几家。",
-    note: "各家能做到的程度不一样：写文件后的登记、会话开头的提示、删除护栏、MCP、Skill。",
-    link: "逐项看各家支持到哪一步",
-    href: "agents",
-    kinds: {
-      hook: { title: "原生 hook", line: "讣告注册到 agent 自己的 hook 里。" },
-      plugin: { title: "插件", line: "讣告装一个小插件，插件调用 obit hook。" },
-      rules: { title: "规则文件和 MCP", line: "没有可用的 hook，只装规则文件和 MCP 服务。" },
-    },
+    lead: "每一家都是一条命令。点你用的那个。",
   },
   community: {
     head: "一起把讣告做好",

@@ -143,36 +143,22 @@ button:disabled { cursor: not-allowed; }
   color: transparent;
 }
 
-/* Spotlight Card (components/reactbits/SpotlightCard.tsx): a soft light under the pointer, lit by hover,
-   by keyboard focus inside the card, or for a moment by a tap. */
-.spot { transition: border-color 300ms, translate 200ms, scale 160ms; }
-.spot-light {
-  opacity: 0;
-  transition: opacity 400ms ease;
-  background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 30%), var(--spot), transparent 72%);
+/* Logo Loop (components/reactbits/LogoLoop.tsx): a band that loops sideways on one transform. */
+.logo-loop { overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
+.logo-loop-track { display: flex; width: max-content; margin: 0; padding: 0.5rem 0; list-style: none; animation: logo-loop var(--loop-duration, 70s) linear infinite; will-change: transform; }
+.logo-loop[data-reverse] .logo-loop-track { animation-direction: reverse; }
+.logo-loop-item { flex: none; margin-right: 0.75rem; }
+@keyframes logo-loop { to { transform: translate3d(-50%, 0, 0); } }
+.logo-loop[data-paused="true"] .logo-loop-track, .logo-loop:hover .logo-loop-track { animation-play-state: paused; }
+/* With keyboard focus inside, the band stops being a loop and becomes a row the browser can scroll to the focused logo. */
+.logo-loop[data-focus="true"] { overflow-x: auto; mask-image: none; scrollbar-width: thin; }
+.logo-loop[data-focus="true"] .logo-loop-track { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .logo-loop { overflow: visible; mask-image: none; padding: 0 1.5rem; }
+  .logo-loop-track { width: auto; flex-wrap: wrap; justify-content: center; gap: 0.75rem; animation: none; }
+  .logo-loop-item { margin-right: 0; }
+  .logo-loop-item[aria-hidden="true"] { display: none; }
 }
-.spot[data-lit="true"] .spot-light, .spot:focus-within .spot-light { opacity: 1; }
-.spot[data-lit="true"], .spot:focus-within { border-color: color-mix(in oklab, var(--color-cobalt) 35%, var(--color-line)); }
-.spot:active { scale: 0.98; }
-@media (hover: hover) { .spot[data-lit="true"] { translate: 0 -2px; } }
-
-/* The rotating word on the first screen (components/ui/rotating-word.tsx). */
-.rw-in { animation: rw-in 620ms cubic-bezier(0.2, 0.9, 0.3, 1.15) both; }
-.rw-out { animation: rw-out 220ms cubic-bezier(0.3, 0, 0.7, 0.4) both; }
-@keyframes rw-in { from { opacity: 0; transform: translate3d(0, 70%, 0); } }
-@keyframes rw-out { to { opacity: 0; transform: translate3d(0, -70%, 0); } }
-
-/* Content that fades up on first view (components/ui/reveal.tsx); hidden only once the script runs. */
-.reveal { transition: opacity 600ms var(--ease-out-soft), transform 600ms var(--ease-out-soft); }
-.js .reveal:not(.in) { opacity: 0; transform: translate3d(0, 14px, 0); }
-
-/* Sections below the first screen are laid out and painted when they come near the viewport, not at load;
-   the size is a stand-in the browser replaces with the real one once it has seen the section. */
-main > section ~ section, footer { content-visibility: auto; contain-intrinsic-size: auto 800px; }
-
-/* The first screen comes in with a CSS animation, not a script: it starts with the HTML. */
-.rise { animation: rise 700ms var(--ease-out-soft) both; }
-@keyframes rise { from { opacity: 0; transform: translate3d(0, 14px, 0); } }
 
 /* Sparkles (components/ui/sparkles-text.tsx): opacity and transform only, so they run on the compositor. */
 .sparkle {

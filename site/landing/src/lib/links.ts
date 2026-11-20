@@ -3,6 +3,7 @@
 // one .html file per page.
 export function siteLink(href: string): string {
   if (/^[a-z]+:/i.test(href) || href.startsWith("#")) return href;
-  const path = href.startsWith("docs/") && !href.endsWith("/") && !href.endsWith(".html") ? `${href}.html` : href;
-  return `${import.meta.env.BASE_URL}${path}`;
+  const [page, fragment] = href.split("#");
+  const path = page.startsWith("docs/") && !page.endsWith("/") && !page.endsWith(".html") ? `${page}.html` : page;
+  return `${import.meta.env.BASE_URL}${path}${fragment === undefined ? "" : `#${fragment}`}`;
 }

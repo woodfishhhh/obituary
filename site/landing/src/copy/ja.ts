@@ -139,15 +139,7 @@ export const ja: Strings = {
   },
   agents: {
     head: "使っているエージェントにつなぐ",
-    lead: "obit init -g --agent のあとに下の灰色の名前を書けば、1 つでも複数でも一度につなげます。",
-    note: "対応の範囲はエージェントごとに違います：書き込み後の登録、セッション開始時の通知、削除ガード、MCP、Skill。",
-    link: "各エージェントの対応状況を見る",
-    href: "agents",
-    kinds: {
-      hook: { title: "ネイティブ hook", line: "Obituary をエージェント自身の hook に登録します。" },
-      plugin: { title: "プラグイン", line: "小さなプラグインを入れ、そのプラグインが obit hook を呼びます。" },
-      rules: { title: "ルールファイルと MCP", line: "使える hook がないため、ルールファイルと MCP サーバーだけを入れます。" },
-    },
+    lead: "どれも 1 つのコマンドでつながります。使っているものをクリック。",
   },
   community: {
     head: "Obituary を一緒によくする",

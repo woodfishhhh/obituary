@@ -45,7 +45,7 @@ part of a website or product, but not sold or redistributed on their own.
 - `landing/src/components/reactbits/CountUp.tsx`
 - `landing/src/components/reactbits/DecryptedText.tsx`
 - `landing/src/components/reactbits/ElectricBorder.tsx`
-- `landing/src/components/reactbits/SpotlightCard.tsx` (adapted from Spotlight Card)
+- `landing/src/components/reactbits/LogoLoop.tsx` (adapted from Logo Loop: the loop runs as a CSS animation, with pause on hover and focus)
 - `landing/src/components/reactbits/StarBorder.tsx`
 
 ```

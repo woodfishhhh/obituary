@@ -139,15 +139,7 @@ export const zhTW: Strings = {
   },
   agents: {
     head: "接到你用的 agent 上",
-    lead: "obit init -g --agent 後面寫上下面的灰色名稱，一次接一家或幾家。",
-    note: "各家能做到的程度不一樣：寫檔案後的登記、工作階段開頭的提示、刪除護欄、MCP、Skill。",
-    link: "逐項看各家支援到哪一步",
-    href: "agents",
-    kinds: {
-      hook: { title: "原生 hook", line: "讣告註冊到 agent 自己的 hook 裡。" },
-      plugin: { title: "外掛", line: "讣告安裝一個小外掛，外掛呼叫 obit hook。" },
-      rules: { title: "規則檔和 MCP", line: "沒有可用的 hook，只安裝規則檔和 MCP 伺服器。" },
-    },
+    lead: "每一家都只要一條命令。點你用的那一個。",
   },
   community: {
     head: "一起把讣告做好",

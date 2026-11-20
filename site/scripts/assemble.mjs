@@ -54,6 +54,18 @@ function mirrorGuide(text, host) {
   return guide;
 }
 
+// Every agent on the landing page links to its documentation; refuse a build where one lands on nothing.
+const { agentData, agentDocLink } = await import(new URL("landing/src/agents-data.ts", root).href);
+for (const lang of ["zh", "en", "de"]) {
+  for (const { id } of agentData) {
+    const [file, fragment] = agentDocLink(id, lang).split("#");
+    const html = await readFile(new URL(file, out), "utf8").catch(() => {
+      throw new Error(`landing page links to ${file} (agent ${id}, ${lang}), which the docs build does not have`);
+    });
+    if (!html.includes(`id="${decodeURIComponent(fragment)}"`)) throw new Error(`landing page links to ${file}#${fragment} (agent ${id}, ${lang}), which has no such heading`);
+  }
+}
+
 const guide = await readFile(new URL("docs/agent-install.md", repo), "utf8");
 if (mirror) {
   await writeFile(new URL("agent-install.md", out), mirrorGuide(guide, "https://cn.obituary.woodfish.site/"));

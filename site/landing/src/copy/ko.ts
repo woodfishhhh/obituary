@@ -139,15 +139,7 @@ export const ko: Strings = {
   },
   agents: {
     head: "쓰고 있는 에이전트에 연결",
-    lead: "obit init -g --agent 뒤에 아래 회색 이름을 적으면 하나든 여러 개든 한 번에 연결됩니다.",
-    note: "지원 범위는 에이전트마다 다릅니다: 쓰기 후 등록, 세션 시작 시 안내, 삭제 가드, MCP, Skill.",
-    link: "에이전트별 지원 범위 보기",
-    href: "agents",
-    kinds: {
-      hook: { title: "네이티브 hook", line: "Obituary를 에이전트 자체의 hook에 등록합니다." },
-      plugin: { title: "플러그인", line: "작은 플러그인을 설치하고, 플러그인이 obit hook을 호출합니다." },
-      rules: { title: "규칙 파일과 MCP", line: "쓸 수 있는 hook이 없어 규칙 파일과 MCP 서버만 설치합니다." },
-    },
+    lead: "모두 명령 하나로 연결됩니다. 쓰는 것을 클릭하세요.",
   },
   community: {
     head: "Obituary를 함께 만들어 가요",

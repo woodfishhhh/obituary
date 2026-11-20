@@ -144,15 +144,7 @@ export const ptBR: Strings = {
   },
   agents: {
     head: "Conecte os agentes que você usa",
-    lead: "obit init -g --agent seguido dos nomes em cinza abaixo conecta um ou vários agentes.",
-    note: "Cada agente oferece um nível diferente de suporte: registro após escrever, aviso no início da sessão, guardião de exclusão, MCP e Skill.",
-    link: "Veja o que cada um suporta",
-    href: "agents",
-    kinds: {
-      hook: { title: "Hooks nativos", line: "O Obituary se registra nos hooks do próprio agente." },
-      plugin: { title: "Plugin", line: "O Obituary instala um pequeno plugin que chama obit hook." },
-      rules: { title: "Regras e MCP", line: "Sem hook utilizável; só um arquivo de regras e o servidor MCP." },
-    },
+    lead: "Cada um se conecta com um só comando. Escolha o seu.",
   },
   community: {
     head: "Ajude a melhorar o Obituary",
