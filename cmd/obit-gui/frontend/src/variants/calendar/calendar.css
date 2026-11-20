@@ -132,8 +132,10 @@
 [data-variant="calendar"] .btn.danger, [data-variant="calendar"] .btn.danger.solid { border-color: var(--text); background: var(--text); color: var(--panel); }
 [data-variant="calendar"] .btn.danger:hover:not(:disabled) { background: var(--text); filter: brightness(1.25); }
 [data-variant="calendar"] .overlay { background: var(--scrim); }
-[data-variant="calendar"] .dialog { border-radius: 14px; box-shadow: var(--shadow-pop); }
-[data-variant="calendar"] .dialog::before { content: ""; display: block; height: 4px; border-radius: 14px 14px 0 0; background: linear-gradient(90deg, var(--cobalt), var(--sky) 34%, var(--glint) 60%, var(--cream) 80%, var(--gold)); }
+/* The accent line is flat and the dialog clips it to its own rounded corners. As a layer with a radius of its
+   own, a 4px-tall strip shrinks that radius to 4px and its corners stick out past the dialog's 14px curve. */
+[data-variant="calendar"] .dialog { border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-pop); }
+[data-variant="calendar"] .dialog::before { content: ""; display: block; height: 4px; background: linear-gradient(90deg, var(--cobalt), var(--sky) 34%, var(--glint) 60%, var(--cream) 80%, var(--gold)); }
 [data-variant="calendar"] .toast { border-radius: 10px; background: var(--text); color: var(--panel); }
 [data-variant="calendar"] .toast.error { box-shadow: inset 4px 0 0 var(--gold), var(--shadow-pop); }
 
