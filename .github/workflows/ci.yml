@@ -244,7 +244,7 @@ jobs:
           GOOS=darwin GOARCH=amd64 go build ./cmd/obit ./cmd/obitd
           GOOS=darwin GOARCH=arm64 go build ./cmd/obit ./cmd/obitd
       - name: POSIX tests
-        run: go test ./...
+        run: go test -p 1 ./...
       - name: POSIX installation mutations
         env:
           OBIT_TEST_POSIX_MUTATIONS: "1"
@@ -311,7 +311,7 @@ jobs:
           if ($pkgs.Count -eq 0) {
             $pkgs = @(go list ./... | Where-Object { $_ -notmatch '/internal/(core(/|$)|(e2e|integrate|cli/init|cli/doctor)$)' })
           }
-          go run ${{ env.GOTESTSUM }} --format testname --jsonfile test.json -- -count=1 -timeout 30m $pkgs
+          go run ${{ env.GOTESTSUM }} --format testname --jsonfile test.json -- -count=1 -p 1 -timeout 30m $pkgs
       - name: Slowest 30 tests
         if: always()
         shell: bash
