@@ -3,7 +3,7 @@ package i18n
 import "testing"
 
 func TestResolveLanguage(t *testing.T) {
-	t.Setenv("OBIT_LANG", "")
+	getenv := func(string) string { return "" }
 	for _, tc := range []struct {
 		setting, system string
 		want            Language
@@ -14,7 +14,7 @@ func TestResolveLanguage(t *testing.T) {
 	} {
 		t.Run(tc.setting+"/"+tc.system, func(t *testing.T) {
 			calls := 0
-			got := Resolve(tc.setting, func() string { calls++; return tc.system })
+			got := ResolveWith(tc.setting, getenv, func() string { calls++; return tc.system })
 			if got != tc.want || (calls == 1) != (tc.setting == Auto) {
 				t.Fatalf("language=%s system calls=%d", got, calls)
 			}
