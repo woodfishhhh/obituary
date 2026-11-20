@@ -36,12 +36,7 @@ export const agentData: AgentData[] = [
   { name: "QoderWork", id: "qoderwork" },
 ];
 
-// Where an agent's documentation is, relative to the site root. Until every agent has a page of its own,
-// Claude Code and Codex have their sections on the overview page and the others are listed under "Other
-// agents" there; the docs are in Chinese and English, so every language but Simplified Chinese opens the
-// English ones. When the agents' own pages exist, this is the one function to change.
+// siteLink adds the .html suffix to this site-relative documentation route.
 export function agentDocLink(id: string, lang: string): string {
-  const zh = lang === "zh";
-  const section = id === "claude" ? "claude-code" : id === "codex" ? "codex" : zh ? "其他-agent" : "other-agents";
-  return `${zh ? "docs/agents.html" : "docs/en/agents.html"}#${encodeURIComponent(section)}`;
+  return `docs/${lang === "zh" ? "" : lang + "/"}agents/${id}`;
 }

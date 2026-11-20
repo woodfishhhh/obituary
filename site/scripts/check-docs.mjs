@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readdir, readFile } from 'node:fs/promises';
 import { locales } from '../landing/src/locales.ts';
+import { agentData, agentDocLink } from '../landing/src/agents-data.ts';
 
 const root = new URL('../docs/', import.meta.url);
 const output = new URL(process.env.VITE_SITE === 'cn' ? '../dist-cn/docs/' : '../dist/docs/', import.meta.url);
@@ -17,6 +18,17 @@ const simplified = /[为这们让从后还过发进开关与业专门问无现�
 const sitemap = await read(new URL('sitemap.xml', output));
 for (const l of locales) {
   assert.deepEqual(await pageNames(new URL(l.path || '.', root)), pages, l.html);
+  const agentPages = agentData.map(a => `agents/${a.id}.md`);
+  const landing = await read(new URL(`../${l.path}index.html`, output));
+  const directory = await read(new URL(`${l.path}agents.html`, output));
+  const article = directory.match(/<div[^>]+class="vp-doc[^>]*>([\s\S]*?)<\/main>/)?.[1];
+  for (const { id } of agentData) {
+    const route = `docs/${l.path}agents/${id}`;
+    const target = `${route}.html`;
+    assert.equal(agentDocLink(id, l.id), route, `landing route: ${id} (${l.id})`);
+    assert.ok(landing.includes(`href="${process.env.SITE_BASE ?? '/'}${target}"`), `missing landing link: ${target}`);
+    assert.ok(article?.includes(`href="${process.env.SITE_BASE ?? '/'}${target}"`), `missing directory entry: ${target}`);
+  }
   for (const page of pages) {
     const source = await read(new URL(l.path + page, root));
     assert.ok(!/<[0-9]+>/.test(withoutCodeBlocks(source)), 'placeholder marker in ' + l.path + page);
@@ -31,15 +43,21 @@ for (const l of locales) {
       const originals = new Set(prose(origin));
       for (const line of prose(source)) assert.ok(!originals.has(line), 'untranslated: ' + l.path + page + ': ' + line);
     }
+  }
+  for (const page of [...pages, ...agentPages]) {
     const file = page.replace(/\.md$/, '.html');
     const href = l.path + (page === 'index.md' ? '' : file);
     const html = await read(new URL(l.path + file, output));
+    if (agentPages.includes(page)) {
+      const name = agentData.find(a => page === `agents/${a.id}.md`).name;
+      assert.ok(html.match(/<h1\b[^>]*>([^<]*)/u)?.[1].trim() === name, `wrong agent: ${href}`);
+    }
     assert.ok(sitemap.includes(`/docs/${href}</loc>`), `sitemap: ${href}`);
     for (const other of locales) {
       const dest = other.path + (page === 'index.md' ? '' : file);
       assert.ok(html.includes(`hreflang="${other.html}" href="${process.env.SITE_URL ?? 'https://obituary.woodfish.site'}${process.env.SITE_BASE ?? '/'}docs/${dest}"`), `alternate ${other.html} on ${href}`);
     }
-    if (process.env.VITE_SITE === 'cn' && page === 'index.md') {
+    if (process.env.VITE_SITE === 'cn' && (page === 'index.md' || agentPages.includes(page))) {
       const commands = [...html.matchAll(/<pre\b[^>]*>([\s\S]*?)<\/pre>/g)].map(m => m[1].replace(/<[^>]+>/g,'')).join('\n');
       for (const script of ['install.sh','install.ps1']) assert.ok(commands.includes(`https://cn.obituary.woodfish.site/${script}`), `mirror ${script}: ${l.html}`);
       for (const flag of ['bash install.sh --mirror cn', '.\\install.ps1 -Mirror cn']) assert.ok(commands.includes(flag), `mirror arguments: ${l.html}`);
@@ -47,4 +65,4 @@ for (const l of locales) {
     }
   }
 }
-console.log(`Checked ${pages.length} pages × ${locales.length} languages, alternate links, sitemap and installers.`);
+console.log(`Checked ${pages.length} docs and ${agentData.length} agent guides × ${locales.length} languages, landing links, directories, alternate links, sitemap and installers.`);

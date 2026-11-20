@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { type DefaultTheme, type LocaleConfig } from 'vitepress';
 import { locales, type Lang } from '../../landing/src/locales';
+import { guides } from './agents/catalog';
 
 // Navigation titles come from the translated page itself.
 const groups = [
@@ -23,10 +24,11 @@ const labels: Record<Lang, string[]> = {
 export function docLocales(site: string, repo: string): LocaleConfig<DefaultTheme.Config> {
   return Object.fromEntries(locales.map(({ id, path, html, name }) => {
     const [home,docs,download,start,agents,more,reference,outline,prev,next,,language,menu,top,edit] = labels[id];
-    const sidebar = groups.map((pages, i) => ({ text: [start,agents,more,reference][i], items: pages.map(page => ({
-      text: readFileSync(new URL(`../${path}${page}.md`, import.meta.url), 'utf8').match(/^# (.+)$/m)![1].trim(),
-      link: `/${path}${page === 'index' ? '' : page}`,
-    })) }));
+    const sidebar = groups.map((pages, i) => ({ text: [start,agents,more,reference][i], items: pages.map(page => {
+      const text = readFileSync(new URL(`../${path}${page}.md`, import.meta.url), 'utf8').match(/^# (.+)$/m)![1].trim();
+      const link = `/${path}${page === 'index' ? '' : page}`;
+      return page === 'agents' ? { text, link, collapsed: true, items: guides.map(a => ({ text: a.name, link: `${link}/${a.id}` })) } : { text, link };
+    }) }));
     const brand = id === 'zh' ? '讣告' : id === 'zh-TW' ? '訃告' : 'Obituary';
     return [id === 'zh' ? 'root' : id, {
       label: name, lang: html, title: `${brand} · ${docs}`, titleTemplate: `:title · ${brand}`,
