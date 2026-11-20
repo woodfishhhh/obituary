@@ -133,7 +133,7 @@ La ejecución en segundo plano, la conexión de cada agente, el guardia de elimi
 - [Cobertura de agentes](docs/agents.md): hasta dónde se conecta cada uno de los 30 agentes
 - [Índice de documentación](docs/README.md): todos los documentos, incluida la arquitectura y las normas de código
 - [Política de firma de código](https://obituary.woodfish.site/docs/en/code-signing): firma de código gratuita proporcionada por [SignPath.io](https://about.signpath.io/), con certificado de [SignPath Foundation](https://signpath.org/)
-- [Política de privacidad](https://obituary.woodfish.site/docs/en/privacy): Obituary solo comprueba una vez al día si hay una versión nueva, y puedes desactivarlo
+- [Política de privacidad](https://obituary.woodfish.site/docs/en/privacy)
 
 ## Construye Obituary con nosotros
 

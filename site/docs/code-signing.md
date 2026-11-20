@@ -22,4 +22,4 @@ Free code signing provided by [SignPath.io](https://about.signpath.io/), certifi
 
 ## 隐私
 
-讣告联网只做一件事：每天最多一次检查新版本，可以随时关掉。详见[隐私政策](privacy)。
+使用统计和自动检查更新可以分别关闭。详见[隐私政策](privacy)。

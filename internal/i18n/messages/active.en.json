@@ -50,5 +50,7 @@
   "tray.summary_paused": "Paused, nothing is buried · %d in the graveyard",
   "tray.today_at": "Today %s",
   "tray.tomorrow_at": "Tomorrow %s",
-  "tray.yesterday_at": "Yesterday %s"
+  "tray.yesterday_at": "Yesterday %s",
+  "telemetry.help": "Usage statistics: a random installation ID, version, OS, architecture, interface language and installation channel help measure installation counts and version use. No files, paths or commands are sent; IP addresses and user agents are not stored. Disable with obit config telemetry off or OBIT_TELEMETRY=0.",
+  "telemetry.syntax": "Use obit config telemetry on or obit config telemetry off."
 }

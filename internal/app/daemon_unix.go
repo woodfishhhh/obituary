@@ -49,11 +49,15 @@ func daemonArgs(home string) []string {
 }
 
 func RunOnce(home string) error {
+	return runDaemonFlag(home, "--once")
+}
+
+func runDaemonFlag(home, flag string) error {
 	path, err := DaemonPath()
 	if err != nil {
 		return err
 	}
-	return spawn(path, append([]string{"--once"}, daemonArgs(home)...)...)
+	return spawn(path, append([]string{flag}, daemonArgs(home)...)...)
 }
 
 func SpawnSelf(args ...string) error {

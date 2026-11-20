@@ -35,6 +35,21 @@ func TestConfigSetsLanguage(t *testing.T) {
 	}
 }
 
+func TestConfigTelemetrySwitch(t *testing.T) {
+	t.Setenv("OBIT_CONFIG_DIR", t.TempDir())
+	t.Setenv("OBIT_HOME", t.TempDir())
+	for _, mode := range []string{"off", "on"} {
+		if _, _, e := clitest.Execute(t, NewCmd(), "telemetry", mode); e != nil {
+			t.Fatal(e)
+		}
+		out, _, e := clitest.Execute(t, NewCmd())
+		want := "[telemetry]\nenabled = " + map[string]string{"on": "true", "off": "false"}[mode]
+		if e != nil || !strings.Contains(out, want) {
+			t.Fatal(out, e)
+		}
+	}
+}
+
 func TestConfigShowsWatchStableWindow(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("OBIT_CONFIG_DIR", dir)

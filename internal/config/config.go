@@ -33,6 +33,7 @@ type Config struct {
 	Hooks             Hooks             `toml:"hooks"`
 	Proposals         Proposals         `toml:"proposals"`
 	Update            Update            `toml:"update"`
+	Telemetry         Telemetry         `toml:"telemetry"`
 	CodexWindowsShell string            `toml:"codex_windows_shell,omitempty"`
 	AgentShells       map[string]string `toml:"agent_shells,omitempty"`
 }
@@ -93,6 +94,10 @@ type Update struct {
 	Check bool `toml:"check"`
 }
 
+type Telemetry struct {
+	Enabled bool `toml:"enabled"`
+}
+
 // UI controls the language shared by CLI, native desktop and the window.
 type UI struct {
 	Language string `toml:"language"`
@@ -113,7 +118,7 @@ func (g Graveyard) Retention() time.Duration {
 
 // Default returns the built-in configuration.
 func Default() Config {
-	return Config{Graveyard: Graveyard{Mode: ModeGraveyard, RetentionDays: 7}, Explorer: Explorer{Enabled: true}, Watch: Watch{StableWindow: "10m"}, UI: UI{Language: i18n.Auto, Tray: true, Taskbar: true}, Update: Update{Check: true}, Hooks: Hooks{SessionCleanup: true}, Proposals: Proposals{Mode: ProposalsOff}}
+	return Config{Graveyard: Graveyard{Mode: ModeGraveyard, RetentionDays: 7}, Explorer: Explorer{Enabled: true}, Watch: Watch{StableWindow: "10m"}, UI: UI{Language: i18n.Auto, Tray: true, Taskbar: true}, Update: Update{Check: true}, Telemetry: Telemetry{Enabled: true}, Hooks: Hooks{SessionCleanup: true}, Proposals: Proposals{Mode: ProposalsOff}}
 }
 
 // Template is what `obit config --create` writes.
@@ -173,6 +178,9 @@ mode = "off"
 # Read public GitHub release metadata at most once per day; no usage data is sent.
 # Manual checks remain available when automatic checks are disabled.
 check = true
+
+[telemetry]
+enabled = true
 
 [watch]
 # Quiet interval before moving a folder-policy child (Go duration syntax).

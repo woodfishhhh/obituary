@@ -5,3 +5,7 @@ import "strconv"
 func PlanUpdateCheckConfig(path string, enabled bool) (Change, error) {
 	return planConfigValue(path, "update", "check", strconv.FormatBool(enabled))
 }
+
+func PlanTelemetryConfig(path string, enabled bool) (Change, error) {
+	return planConfigValue(path, "telemetry", "enabled", strconv.FormatBool(enabled))
+}

@@ -32,9 +32,14 @@ func main() {
 	menu := flag.Bool("context-menu", false, "run an explicit Explorer action and show its result")
 	menuServer := flag.Bool("context-menu-server", false, "receive an Explorer selection through COM")
 	withTray := flag.Bool("tray", defaultTray == "true", "show the resident tray icon")
+	usageStamp := flag.String("usage-report", "", "")
 	flag.Parse()
 	if err := setDirectoryOverrides(map[*string]string{home: "OBIT_HOME", configDir: "OBIT_CONFIG_DIR"}); err != nil {
 		os.Exit(2)
+	}
+	if *usageStamp != "" {
+		app.SendUsage(*usageStamp)
+		return
 	}
 	if *menu || *menuServer {
 		run := contextmenu.Run

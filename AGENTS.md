@@ -2,6 +2,10 @@
 
 给文件和文件夹设定寿命，到期下葬进墓地，面向 AI agent 设计。命令行是 `obit`，后台进程是 `obitd`。Go 1.26，支持 Windows、macOS 和 Linux（macOS / Linux 有命令行和后台程序，小窗口、托盘、右键菜单和回收站模式只在 Windows 上）。用法见 `README.md`，流程、关卡和 `core.FS` 契约见 `docs/architecture.md`（改动跨模块时先读它）。
 
+## 使用统计
+
+统计默认开启，从首次真实使用起可上报；CLI、GUI 和协议入口均不提示、不请求确认。不要把空闲后台、健康检查或查更新算作活跃。各进程共享滚动 24 小时限额；失败也消耗限额，不重试。只发送随机安装 ID、版本、系统、架构、界面语言和安装渠道。持久关闭或设置 `OBIT_TELEMETRY=0` 应清除 ID 和待发状态；CI 和 `DO_NOT_TRACK=1` 禁止该进程上报。服务端不保存 IP 或 User-Agent。面向用户的说明放在官网中英文隐私页，不写进 README；`obit config telemetry --help` 列出关闭方式。
+
 ## 布局
 
 - `cmd/obit`：命令行入口（cobra），`main.go` 只创建根命令、注册子命令、把错误映射成退出码。子命令带主题别名：`mark`=add、`spare`=cancel、`reap`=sweep。

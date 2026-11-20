@@ -4,6 +4,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"debug/pe"
 	"encoding/json"
 	"errors"
@@ -84,11 +85,17 @@ func TestProductionExecutableSmokeWithoutCGO(t *testing.T) {
 }
 
 func TestWindowOptionsBindAPIAndExitOnClose(t *testing.T) {
+	testenv.EnableUsage(t)
 	a, err := gui.Open()
 	if err != nil {
 		t.Fatal(err)
 	}
 	options := windowOptions(a, 900, 600)
+	// A Wails dialog needs a frontend context. First use must complete without one.
+	options.OnStartup(context.Background())
+	if _, err := os.Stat(filepath.Join(os.Getenv("OBIT_HOME"), "usage.json")); err != nil {
+		t.Fatalf("opening the window did not reserve the first report: %v", err)
+	}
 	if options.Title != config.UILanguage().Text(i18n.AppName) || options.Width != 900 || options.Height != 600 || options.HideWindowOnClose || options.SingleInstanceLock == nil || options.SingleInstanceLock.OnSecondInstanceLaunch == nil || len(options.Bind) != 1 || options.Bind[0] != a {
 		t.Fatalf("window options: %+v", options)
 	}

@@ -28,6 +28,8 @@ var messageBundle = func() *goi18n.Bundle {
 // regenerate active.en.json from these literals, while the runtime still has
 // a safe English fallback if a translation file is incomplete.
 var defaultMessages = map[string]*goi18n.Message{
+	"telemetry.help":           &goi18n.Message{ID: "telemetry.help", Other: "Usage statistics: a random installation ID, version, OS, architecture, interface language and installation channel help measure installation counts and version use. No files, paths or commands are sent; IP addresses and user agents are not stored. Disable with obit config telemetry off or OBIT_TELEMETRY=0."},
+	"telemetry.syntax":         &goi18n.Message{ID: "telemetry.syntax", Other: "Use obit config telemetry on or obit config telemetry off."},
 	"cli.list.short":           &goi18n.Message{ID: "cli.list.short", Other: "Show tracked paths and Docker containers, soonest expiry first"},
 	"cli.list.json":            &goi18n.Message{ID: "cli.list.json", Other: "print JSON"},
 	"cli.list.empty":           &goi18n.Message{ID: "cli.list.empty", Other: "nothing is tracked"},

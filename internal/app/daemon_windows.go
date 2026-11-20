@@ -91,11 +91,15 @@ func detach(cmd *exec.Cmd) {
 // RunOnce starts a detached `obitd --once` that does one round of work for
 // home and exits. It does not wait.
 func RunOnce(home string) error {
+	return runDaemonFlag(home, "--once")
+}
+
+func runDaemonFlag(home, flag string) error {
 	path, err := DaemonPath()
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command(path, append([]string{"--once"}, daemonArgs(home)...)...)
+	cmd := exec.Command(path, append([]string{flag}, daemonArgs(home)...)...)
 	detach(cmd)
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("start %s: %w", path, err)

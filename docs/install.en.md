@@ -84,7 +84,7 @@ It checks PATH, the background process, each agent connection, the data folder a
 
 ## Updates
 
-Once a day at most, Obituary checks for a new stable release. The check reads public release information and sends no usage data. If GitHub is unreachable, it checks the mainland China mirror. Installing an update still requires your confirmation.
+Obituary automatically checks for a stable release at most once a day. This check sends no usage data. If GitHub is unreachable, it checks the mainland China mirror. Installing an update still requires your confirmation.
 
 When a release is available, install it from Settings > About and updates in the Windows window. Obituary closes the window and the running tray, updates through the original install channel, then attempts to restore the tray and reopen the window. Scoop, WinGet, Homebrew (macOS) and the Obituary installer scripts are supported. For a manually extracted copy, download a replacement from the release page.
 

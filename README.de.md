@@ -133,7 +133,7 @@ Hintergrundbetrieb, Agent-Verbindungen, Löschschutz, MCP und Skill werden im [B
 - [Agent-Abdeckung](docs/agents.md): wie weit jeder der 30 Agenten verbunden wird
 - [Dokumentationsindex](docs/README.md): alle Dokumente einschließlich Architektur und Code-Regeln
 - [Richtlinie zur Codesignatur](https://obituary.woodfish.site/docs/en/code-signing): kostenlose Codesignatur von [SignPath.io](https://about.signpath.io/), Zertifikat von [SignPath Foundation](https://signpath.org/)
-- [Datenschutzrichtlinie](https://obituary.woodfish.site/docs/en/privacy): Obituary prüft nur einmal täglich auf eine neue Version, und du kannst diese Prüfung abschalten
+- [Datenschutzrichtlinie](https://obituary.woodfish.site/docs/en/privacy)
 
 ## Obituary gemeinsam weiterentwickeln
 

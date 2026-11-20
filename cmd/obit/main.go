@@ -67,6 +67,7 @@ func main() {
 		rmcmd.NewCmd(), rmdircmd.NewCmd(), removeitemcmd.NewCmd(),
 		gitcleancmd.NewCmd(), mcpcmd.NewCmd(buildinfo.Version),
 	)
+	cmdutil.SetUsage(root)
 	if err := root.Execute(); err != nil {
 		if !errors.Is(err, cmdutil.ErrReported) {
 			fmt.Fprintln(os.Stderr, "obit:", err)

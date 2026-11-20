@@ -1,8 +1,16 @@
 # Privacy policy
 
-Obituary runs on your own computer. Its ledger, graveyard, logs and settings stay on that computer. Obituary collects no usage data, uploads no crash reports, and never sends your files, their paths or their contents anywhere.
+Obituary's ledger, graveyard, logs and settings stay on your computer. Obituary never uploads crash reports, files, paths or file contents.
 
-## The one thing the program does on the network: check for a new version
+## Usage statistics
+
+Statistics are on by default and are used only to count active installations and measure version distribution. During actual use, Obituary may send a random installation ID, version, operating system, architecture, interface language and installation channel at most once every 24 hours. It does not send files, paths or commands, or store IP addresses or User-Agent headers. Run `obit config telemetry off` or set `OBIT_TELEMETRY=0` to disable reporting. Nothing is reported in CI or when `DO_NOT_TRACK=1` is set.
+
+The server stores neither IP addresses nor user agents nor raw installation IDs. A separately keyed digest can link reports from the same installation, not identify a person. Daily activity expires after 400 days; only the digest and first and last observation dates are kept long term for deduplication. Successful reports per channel are counted in aggregate. Only the maintainers can view the authenticated dashboard.
+
+Disabling reporting clears the local installation ID and any pending report. Update checks have a separate switch.
+
+## Checking for a new version
 
 - At most once a day it reads public release information: the latest release of the Obituary repository on `https://api.github.com`, or, when GitHub does not answer, `https://cn.obituary.woodfish.site/download/latest.json` on the mirror in mainland China.
 - The request carries only what any web request carries: your IP address and a User-Agent with Obituary's version (for example `Obituary/1.0.0`).

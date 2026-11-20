@@ -133,7 +133,7 @@ Le fonctionnement en arrière-plan, la connexion de chaque agent, le garde de su
 - [Couverture des agents](docs/agents.md) : jusqu’où chacun des 30 agents se connecte
 - [Index des documents](docs/README.md) : tous les documents, dont l’architecture et les règles de code
 - [Politique de signature du code](https://obituary.woodfish.site/docs/en/code-signing) : signature gratuite par [SignPath.io](https://about.signpath.io/), certificat par [SignPath Foundation](https://signpath.org/)
-- [Politique de confidentialité](https://obituary.woodfish.site/docs/en/privacy) : Obituary ne fait qu’une vérification quotidienne d’une nouvelle version, que vous pouvez désactiver
+- [Politique de confidentialité](https://obituary.woodfish.site/docs/en/privacy)
 
 ## Construisons Obituary ensemble
 

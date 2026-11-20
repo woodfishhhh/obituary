@@ -133,7 +133,7 @@ obit log                                    # the full record of everything done
 - [エージェント対応表](docs/agents.md)：30 個のエージェントがどこまで接続できるか
 - [ドキュメント索引](docs/README.md)：アーキテクチャとコード規約を含む全ドキュメント
 - [コード署名ポリシー](https://obituary.woodfish.site/docs/en/code-signing)：[SignPath.io](https://about.signpath.io/) による無料のコード署名、証明書は [SignPath Foundation](https://signpath.org/)
-- [プライバシーポリシー](https://obituary.woodfish.site/docs/en/privacy)：Obituary のネットワーク通信は、無効化できる毎日の新バージョン確認だけです
+- [プライバシーポリシー](https://obituary.woodfish.site/docs/en/privacy)
 
 ## Obituary と一緒に作る
 

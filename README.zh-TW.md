@@ -133,7 +133,7 @@ obit log                                    # the full record of everything done
 - [agent 覆蓋表](docs/agents.md)：30 個 agent 各自能接入到哪一步
 - [文件索引](docs/README.md)：包含架構與程式碼規範的全部文件
 - [程式碼簽署政策](https://obituary.woodfish.site/docs/code-signing)：由 [SignPath.io](https://about.signpath.io/) 提供免費程式碼簽署，憑證由 [SignPath Foundation](https://signpath.org/) 提供
-- [隱私政策](https://obituary.woodfish.site/docs/privacy)：讣告只會每天檢查一次新版本，可關閉這項網路連線
+- [隱私政策](https://obituary.woodfish.site/docs/privacy)
 
 ## 一起打造讣告
 

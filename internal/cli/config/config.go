@@ -8,7 +8,10 @@ import (
 	"slices"
 
 	"github.com/spf13/cobra"
+	"github.com/woodfishhhh/obituary/internal/app"
+	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/config"
+	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/integrate"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
 )
@@ -65,6 +68,7 @@ func NewCmd() *cobra.Command {
 			}
 			fmt.Printf("\n[graveyard]\nmode = %q\nretention_days = %d\n", cfg.Graveyard.Mode, cfg.Graveyard.RetentionDays)
 			fmt.Printf("\n[update]\ncheck = %t\n", cfg.Update.Check)
+			fmt.Printf("\n[telemetry]\nenabled = %t\n", cfg.Telemetry.Enabled)
 			fmt.Printf("\n[watch]\nstable_window = %q\n", cfg.Watch.StableWindow)
 			fmt.Printf("\n[ui]\nlanguage = %q\neffective_language = %q\n", cfg.UI.Language, config.UILanguage())
 			fmt.Printf("\n[hooks]\n# List expiring items and recent burials at session start.\nsession_summary = %t\n# Ask the agent once per session to sort the files it created without a lifespan.\nsession_cleanup = %t\n", cfg.Hooks.SessionSummary, cfg.Hooks.SessionCleanup)
@@ -84,5 +88,34 @@ func NewCmd() *cobra.Command {
 	}
 	cmd.Flags().BoolVar(&create, "create", false, "write a config file with the defaults")
 	cmd.Flags().StringVar(&language, "language", "", "set the language: auto, en or zh-CN")
+	cmd.AddCommand(telemetryCmd())
 	return cmd
+}
+
+func telemetryCmd() *cobra.Command {
+	c := &cobra.Command{Use: "telemetry on|off", Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 || (args[0] != "on" && args[0] != "off") {
+			return errors.New(cmdutil.Localizer().Text("telemetry.syntax", nil))
+		}
+		return nil
+	}, RunE: func(cmd *cobra.Command, args []string) error {
+		path, err := config.Path()
+		if err != nil {
+			return err
+		}
+		change, err := integrate.PlanTelemetryConfig(path, args[0] == "on")
+		if err != nil {
+			return err
+		}
+		if err := integrate.Apply([]integrate.Change{change}); err != nil {
+			return err
+		}
+		if args[0] == "off" {
+			return app.ForgetUsage()
+		}
+		return nil
+	}}
+	// Do not load locale/config on every invocation simply to construct a command tree.
+	cmdutil.SetLocalizedHelp(c, func(l *i18n.Localizer, cmd *cobra.Command) { cmd.Short = l.Text("telemetry.help", nil) })
+	return c
 }

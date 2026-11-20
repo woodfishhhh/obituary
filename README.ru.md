@@ -133,7 +133,7 @@ obit log                                    # the full record of everything done
 - [Охват агентов](docs/agents.md): насколько подключается каждый из 30 агентов
 - [Индекс документов](docs/README.md): все документы, включая архитектуру и правила кода
 - [Политика подписи кода](https://obituary.woodfish.site/docs/en/code-signing): бесплатная подпись от [SignPath.io](https://about.signpath.io/), сертификат от [SignPath Foundation](https://signpath.org/)
-- [Политика конфиденциальности](https://obituary.woodfish.site/docs/en/privacy): Obituary лишь раз в день проверяет новую версию, и эту проверку можно отключить
+- [Политика конфиденциальности](https://obituary.woodfish.site/docs/en/privacy)
 
 ## Создавайте Obituary вместе с нами
 

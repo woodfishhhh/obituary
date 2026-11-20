@@ -133,7 +133,7 @@ obit log                                    # the full record of everything done
 - [에이전트 지원표](docs/agents.md): 30개 에이전트가 어느 단계까지 연결되는지
 - [문서 색인](docs/README.md): 아키텍처와 코드 규칙을 포함한 모든 문서
 - [코드 서명 정책](https://obituary.woodfish.site/docs/en/code-signing): [SignPath.io](https://about.signpath.io/)가 무료 코드 서명을 제공하며 인증서는 [SignPath Foundation](https://signpath.org/)이 제공합니다
-- [개인정보 보호정책](https://obituary.woodfish.site/docs/en/privacy): Obituary의 네트워크 기능은 끌 수 있는 하루 한 번의 새 버전 확인뿐입니다
+- [개인정보 보호정책](https://obituary.woodfish.site/docs/en/privacy)
 
 ## Obituary 함께 만들기
 

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/core"
 )
 
@@ -16,6 +17,9 @@ func addMCPTool[I any](server *mcp.Server, svc *core.Service, name, description 
 		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: readOnly},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in I) (*mcp.CallToolResult, any, error) {
 		out := boundMCPReply(run(svc.WithContext(ctx), in))
+		if out.Error == "" {
+			app.ObserveUsage()
+		}
 		return &mcp.CallToolResult{IsError: out.Error != ""}, out, nil
 	})
 }

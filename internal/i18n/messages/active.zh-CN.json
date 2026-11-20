@@ -1,4 +1,6 @@
 {
+  "telemetry.help": "使用统计：仅用随机安装 ID、版本、系统、架构、界面语言和安装渠道了解安装规模和版本分布。不发送文件、路径或命令，不保存 IP 地址或 User-Agent。运行 obit config telemetry off 或设置 OBIT_TELEMETRY=0 即可关闭。",
+  "telemetry.syntax": "请使用 obit config telemetry on 或 obit config telemetry off。",
   "cli.list.short": "按到期时间显示受保护的路径和 Docker 容器",
   "cli.list.json": "输出 JSON",
   "cli.list.empty": "没有正在跟踪的内容",

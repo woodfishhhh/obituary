@@ -15,6 +15,16 @@ import (
 	"github.com/woodfishhhh/obituary/internal/runkey"
 )
 
+// EnableUsage opts an isolated test into local usage reservations.
+func EnableUsage(t *testing.T) {
+	t.Helper()
+	for _, key := range strings.Fields("OBIT_TELEMETRY DO_NOT_TRACK CI CONTINUOUS_INTEGRATION GITHUB_ACTIONS GITLAB_CI JENKINS_URL TF_BUILD TEAMCITY_VERSION BUILDKITE") {
+		t.Setenv(key, "")
+	}
+	t.Setenv("OBIT_CONFIG_DIR", t.TempDir())
+	t.Setenv("OBIT_HOME", t.TempDir())
+}
+
 // Main runs a package's tests in disposable user and Git environments.
 // The caller may redirect TEMP/TMPDIR to choose where the scratch is created.
 func Main(m *testing.M) (code int) {
@@ -179,6 +189,9 @@ func graveyardEntries(root string) map[string]bool {
 }
 
 func isolate(scratch string) error {
+	if err := os.Setenv("OBIT_TELEMETRY", "0"); err != nil {
+		return err
+	}
 	if err := os.Setenv("OBIT_TEST_NO_UPDATE", "1"); err != nil {
 		return err
 	}

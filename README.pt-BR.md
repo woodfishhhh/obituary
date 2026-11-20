@@ -133,7 +133,7 @@ Execução em segundo plano, conexão com cada agente, guardião de exclusão, M
 - [Cobertura de agentes](docs/agents.md): até onde cada um dos 30 agentes se conecta
 - [Índice de documentos](docs/README.md): todos os documentos, incluindo arquitetura e regras de código
 - [Política de assinatura de código](https://obituary.woodfish.site/docs/en/code-signing): assinatura gratuita fornecida por [SignPath.io](https://about.signpath.io/), com certificado da [SignPath Foundation](https://signpath.org/)
-- [Política de privacidade](https://obituary.woodfish.site/docs/en/privacy): Obituary só verifica uma nova versão uma vez por dia, e você pode desligar isso
+- [Política de privacidade](https://obituary.woodfish.site/docs/en/privacy)
 
 ## Construa o Obituary conosco
 

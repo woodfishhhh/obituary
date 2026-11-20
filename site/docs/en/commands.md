@@ -80,6 +80,7 @@ obit doctor              # read-only check (--json)
 obit stats               # eulogy: how much was buried, space freed, resurrections (alias: eulogy)
 obit log                 # the full record of everything done
 obit config              # show the configuration; --create writes a commented default
+obit config telemetry off # disable usage reporting and clear the local installation ID; update checks are separate
 obit hook audit          # with OBIT_HOOK_AUDIT=1: what each hook received and did
 obit uninstall           # remove everything Obituary set up (try --dry-run first)
 ```
@@ -91,6 +92,7 @@ Query and result commands (`list`, `graveyard`, `proposals`, `stats`, `mark`, `b
 | Variable | Effect |
 |---|---|
 | `OBIT_DISABLED=1` | turn hooks off temporarily |
+| `OBIT_TELEMETRY=0`, `DO_NOT_TRACK=1` | disable usage reporting for this process; CI does not report |
 | `OBIT_GUARD_RM=0` | turn the delete guard off temporarily |
 | `OBIT_HOOK_AUDIT=1` | record what each hook received and did |
 | `OBIT_TRUST_PROJECT_RULES=1` | trust a project's `.obitrules` in CI |

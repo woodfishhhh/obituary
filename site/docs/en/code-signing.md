@@ -20,4 +20,4 @@ Every change from anyone outside the team is reviewed by a maintainer before it 
 
 ## Privacy
 
-Obituary does one thing on the network: it checks for a new version at most once a day, and that can be turned off. See the [privacy policy](privacy).
+Usage statistics and automatic update checks can be disabled independently. See the [privacy policy](privacy).

@@ -67,6 +67,9 @@ func runAgentHook(agent hook.Agent, event string, noticeOnly bool) {
 	// Decode first: PreToolUse avoids service/config loading. Grave notices
 	// read a bounded shared snapshot only for indexed, absent paths.
 	ev.NoticeOnly = noticeOnly
+	if ev.Name == "SessionStart" && ev.Session != "" {
+		app.ObserveUsage()
+	}
 	runDecodedEvent(agent, home, ev)
 }
 

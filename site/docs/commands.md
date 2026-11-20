@@ -80,6 +80,7 @@ obit doctor              # 只读体检（支持 --json）
 obit stats               # 悼词：埋了多少、腾出多少空间、复活过几次（同 eulogy）
 obit log                 # 生平记录：做过的所有事
 obit config              # 查看配置；--create 生成带注释的默认配置
+obit config telemetry off # 关闭使用统计并清除本地安装 ID；不影响查更新
 obit hook audit          # 设了 OBIT_HOOK_AUDIT=1 时，查看每次 hook 收到了什么、做了什么
 obit uninstall           # 撤掉讣告装过的所有东西（先 --dry-run 看看）
 ```
@@ -91,6 +92,7 @@ obit uninstall           # 撤掉讣告装过的所有东西（先 --dry-run 看
 | 变量 | 作用 |
 |---|---|
 | `OBIT_DISABLED=1` | 临时关掉 hook |
+| `OBIT_TELEMETRY=0`、`DO_NOT_TRACK=1` | 禁止当前进程上报使用统计；CI 默认不上报 |
 | `OBIT_GUARD_RM=0` | 临时关掉删除护栏 |
 | `OBIT_HOOK_AUDIT=1` | 记下每次 hook 收到了什么、做了什么 |
 | `OBIT_TRUST_PROJECT_RULES=1` | CI 里信任项目的 `.obitrules` |
