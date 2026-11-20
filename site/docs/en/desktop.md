@@ -2,7 +2,20 @@
 
 Resurrect files, approve proposals and change settings without the command line.
 
-## The tray
+## Ubuntu 24.04 (amd64)
+
+Download the `obituary_<version>_linux_amd64.deb` desktop package and `checksums.txt` from the same release. From the download directory, install the verified package (replace `VERSION` with the version you downloaded):
+
+```bash
+file=obituary_VERSION_linux_amd64.deb
+grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt install "./$file"
+```
+
+Open **Obituary** from Applications. The window uses GTK 3 and WebKitGTK 4.1; apt installs the required libraries. To start the tray at your next desktop login, enable **Settings → Start the tray at sign-in**. Turn it off there to remove Obituary's XDG autostart entry.
+
+The tray needs a StatusNotifierItem host. On GNOME without one, open the same window from Applications; no shell extension is required. To remove the package, turn off tray autostart, quit the tray and run `sudo apt remove obituary-desktop`. Your graveyard, settings, existing CLI and user timer stay in place.
+
+## The Windows tray
 
 `obit init` starts a tray icon at login. Its menu has:
 
@@ -12,7 +25,7 @@ Resurrect files, approve proposals and change settings without the command line.
 - Open Obituary (the small window; a notification explains when `obit-gui.exe` is not next to `obitd.exe`);
 - Quit (the scheduled task keeps working).
 
-## The small window
+## The Windows window
 
 `obit-gui.exe` has five pages: Upcoming, Graveyard, Decisions, Settings and Logs. "Obituary" in Start, the desktop shortcut and "Open Obituary" in the tray menu all open it.
 

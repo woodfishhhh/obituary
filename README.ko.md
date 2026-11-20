@@ -59,7 +59,7 @@ Obituary는 에이전트가 필요해서 만들어졌습니다. 버전 0.0.1이 
 - **이름이 아니라 파일 ID로 추적합니다.** 모든 기록에는 볼륨 일련 번호와 128비트 파일 ID가 저장되므로 이름을 바꾸거나 이동해도 찾을 수 있고, 원래 경로에 다른 파일이 생기면 건드리지 않습니다.
 - **Claude Code와 Codex.** `obit init`은 hook과 Agent Skill을 등록합니다. MCP 서버는 선택 사항이며 `--uninstall`은 Obituary가 추가한 것만 제거합니다.
 - **Windows에서 Everything처럼 트레이에 상주합니다.** `obit init`은 로그인할 때 트레이 아이콘을 시작합니다. 메뉴에서 최근 매장을 보고 복원하거나 자동 정리를 일시 중지하고 Obituary의 작은 창을 열 수 있습니다. Windows 작업 스케줄러는 예비 수단으로 남습니다.
-- **작은 창(Windows).** Upcoming, Graveyard, Decisions, Settings, Logs에서 명령줄 없이 파일을 복원하고 제안을 승인하며 설정을 바꿀 수 있습니다(`obit-gui.exe` 또는 트레이 메뉴의 “Open Obituary”). 중국어와 영어, 8가지 외관을 제공합니다.
+- **작은 창(Windows / Ubuntu 24.04 amd64).** Upcoming, Graveyard, Decisions, Settings, Logs에서 명령줄 없이 파일을 복원하고 제안을 승인하며 설정을 바꿀 수 있습니다(`obit-gui.exe` 또는 트레이 메뉴의 “Open Obituary”). 중국어와 영어, 8가지 외관을 제공합니다. Ubuntu에서는 앱 목록에서 Obituary를 엽니다.
 - **탐색기의 컨텍스트 메뉴와 날짜(Windows).** 파일이나 폴더를 오른쪽 클릭하고(여러 개 선택 가능) → “Add to Obituary” → 1일, 7일, 30일 또는 “Bury now (recoverable)”를 선택합니다. Windows 11에서는 “Show more options” 아래에 있습니다. Downloads와 Desktop의 추적 항목은 실제 파일명은 그대로 둔 채 “name (11-13 burial)”로 표시됩니다.
 - **Docker 컨테이너.** `obit docker add <container> 3d`는 컨테이너에 수명을 부여합니다. 만료되면 `docker stop`으로 중지하고(`obit resurrect`로 다시 시작), 보관 기간이 지난 뒤에만 `docker rm`으로 제거합니다. 볼륨과 이미지는 건드리지 않습니다. 자동 등록을 켜면 프로젝트용 에이전트 세션이 시작한 컨테이너도 등록되고 나중에 알려 줍니다.
 - **폴더 정책.** `obit watch Downloads 2w`는 그곳에 들어오는 모든 파일을 2주 뒤 매장합니다. 만료된 하위 폴더는 제안만 만들고 승인한 뒤 매장합니다. 정책 자체도 승인이 필요합니다.
@@ -88,7 +88,7 @@ Read https://obituary.woodfish.site/agent-install.md and follow it to install Ob
 | 설치 방법 | Scoop, `install.ps1` 스크립트(winget 검토 중) | Homebrew, `install.sh` 스크립트 | `install.sh` 스크립트 |
 | 5분마다 만료 확인 | 상주 트레이 프로세스, 작업 스케줄러를 예비로 사용 | 사용자 launchd 에이전트 | `systemd --user` 타이머; systemd가 없으면 사용자 crontab |
 | CLI, 묘지와 부활, 선택적 자동 등록, 삭제 가드, 에이전트 통합(hook, Skill, MCP), Docker 컨테이너, 폴더 정책 | 있음 | 있음 | 있음 |
-| 트레이, 작은 창, 컨텍스트 메뉴, 탐색기의 매장 날짜, 시작 메뉴와 바탕 화면 바로 가기 | 있음 | CLI 사용: `obit list`, `obit graveyard`, `obit resurrect` | macOS와 같음 |
+| 트레이, 작은 창, 컨텍스트 메뉴, 탐색기의 매장 날짜, 시작 메뉴와 바탕 화면 바로 가기 | 있음 | CLI 사용: `obit list`, `obit graveyard`, `obit resurrect` | Ubuntu 24.04 amd64용 `.deb`에서 작은 창과 트레이 지원 |
 | 휴지통 모드 | 있음 | 묘지만 사용 | 묘지만 사용 |
 
 수동 설치, 업데이트, 제거는 [설치 가이드](docs/install.en.md)를 참고하세요.

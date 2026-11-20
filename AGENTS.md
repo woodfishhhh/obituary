@@ -1,6 +1,6 @@
 # 讣告 Obituary
 
-给文件和文件夹设定寿命，到期下葬进墓地，面向 AI agent 设计。命令行是 `obit`，后台进程是 `obitd`。Go 1.26，支持 Windows、macOS 和 Linux（macOS / Linux 有命令行和后台程序，小窗口、托盘、右键菜单和回收站模式只在 Windows 上）。用法见 `README.md`，流程、关卡和 `core.FS` 契约见 `docs/architecture.md`（改动跨模块时先读它）。
+给文件和文件夹设定寿命，到期下葬进墓地，面向 AI agent 设计。命令行是 `obit`，后台进程是 `obitd`。Go 1.26，支持 Windows、macOS 和 Linux。Windows 与 Ubuntu 24.04 amd64 有小窗口和托盘；资源管理器右键菜单和系统回收站模式只在 Windows 上。用法见 `README.md`，流程、关卡和 `core.FS` 契约见 `docs/architecture.md`（改动跨模块时先读它）。
 
 ## 使用统计
 
@@ -71,6 +71,8 @@ go build -ldflags=-H=windowsgui -o bin/obitd.exe ./cmd/obitd
 ```
 
 `bin/` 已忽略。只格式化改过的文件（`gofmt -w <files>`）。
+
+Linux 桌面用 Ubuntu 24.04 amd64 原生构建：安装 `libgtk-3-dev libwebkit2gtk-4.1-dev`，前端改动先运行 `node scripts/build-frontend.mjs`。`CGO_ENABLED=1 go build -tags desktop,production,webkit2_41 -o bin/obit-gui ./cmd/obit-gui` 构建 Wails 小窗口。`goreleaser release -f .goreleaser-linux-desktop.yaml --snapshot --skip=publish` 生成 `bin/linux-desktop/*.deb`；六个原有归档仍用 `.goreleaser.yaml`。桌面作业的系统依赖见 `.github/workflows/linux-desktop.yml`；`bash scripts/test-linux-desktop-session.sh bin/linux-desktop/*.deb <证据目录>` 使用私有 Xvfb、会话总线和临时用户目录，验证窗口、托盘、复活和通知。不要在宿主显示器上验收。仅在一次性 Ubuntu 24.04 容器中用 `scripts/test-linux-desktop-package.sh` 验证安装与移除。
 
 **静态检查（所有者 2026-11-10 定）。** `.golangci.yml` 只开 staticcheck、errorlint、funlen（50 行）、nestif（复杂度 4），对应上面「函数不超过 50 行、嵌套不超过 4 层」的规则。只拦新增的问题（`new-from-merge-base: main`）；已有的超长函数和深嵌套是重构清单，记在 docs/milestones/m3-speed.md。交付前和 vet 一起跑，新代码不许新增告警；确需例外用 `//nolint:<linter> // 原因` 写明理由。`unused` 不在 CI 里：Linux 构建下，只被 Windows 代码调用的共用函数会被误报。拆包或删掉调用方之后，手动跑一次 `golangci-lint run --new-from-merge-base= --enable-only unused ./...` 查死代码，Windows 构建下应当是 0。
 

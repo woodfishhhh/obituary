@@ -2,7 +2,20 @@
 
 不会用命令行，也能复活文件、批准提议、改设置。
 
-## 托盘
+## Ubuntu 24.04（amd64）
+
+从同一个发布版本下载桌面包 `obituary_<版本>_linux_amd64.deb` 和 `checksums.txt`。在下载目录运行以下命令，把 `VERSION` 换成实际版本号，校验成功后再安装：
+
+```bash
+file=obituary_VERSION_linux_amd64.deb
+grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt install "./$file"
+```
+
+从应用列表打开「讣告」。小窗口使用 GTK 3 和 WebKitGTK 4.1，依赖由 apt 安装。希望下次登录桌面时启动托盘，在设置页打开「随登录启动托盘」；关闭同一开关会移除讣告自己的 XDG 自启项。
+
+托盘需要支持 StatusNotifierItem 的宿主。GNOME 没有宿主时，仍可从应用列表打开同一窗口，无需安装扩展。卸载时先关闭托盘自启并退出托盘，再运行 `sudo apt remove obituary-desktop`；墓地、设置、原有 CLI 和用户定时器都会保留。
+
+## Windows 托盘
 
 `obit init` 让托盘图标随登录启动，常驻在任务栏通知区。菜单顶上一行写着 24 小时内要下葬几项、墓地里有几座（暂停时写「已暂停」）。菜单里有：
 

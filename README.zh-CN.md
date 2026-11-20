@@ -60,7 +60,7 @@
 - **认文件，不认文件名**：每条记录都存着卷序列号和 128 位文件 ID，文件改名或移动了照样找得到；原路径上换成了别的文件，就不碰它。
 - **接入 Claude Code 和 Codex**：`obit init` 注册 hook 和 Agent Skill，MCP 服务可选；`--uninstall` 只删讣告加的东西。
 - **托盘常驻，像 Everything**（Windows）：`obit init` 让托盘图标随登录启动，菜单里能看最近下葬的、点一下复活、暂停自动清理、打开讣告的小窗口；Windows 任务计划留作兜底。
-- **一个小窗口**（Windows）：即将下葬、即将火化（墓地）、待你决定、设置、日志五页，不会用命令行也能复活文件、批准提议、改设置（`obit-gui.exe`，托盘菜单「打开讣告」）。
+- **一个小窗口**（Windows / Ubuntu 24.04 amd64）：即将下葬、即将火化（墓地）、待你决定、设置、日志五页，不会用命令行也能复活文件、批准提议、改设置（`obit-gui.exe`，托盘菜单「打开讣告」）。 Ubuntu 上从应用列表打开讣告。
 - **右键菜单和资源管理器里的日期**（Windows）：右键文件或文件夹（可多选）→「放进讣告」→ 1 天、7 天、30 天或「现在埋掉（可恢复）」，Windows 11 在「显示更多选项」里；下载、桌面里被跟踪的东西显示成「名字（11-13 下葬）」，真实文件名不变。
 - **Docker 容器**：`obit docker add <容器> 3d` 给容器设寿命；到期先 `docker stop`（`obit resurrect` 就是重新启动），保留期过后才 `docker rm`。卷和镜像一律不碰。打开自动登记后，agent 会话里为这个项目新起的容器也会登记，事后告诉你。
 - **文件夹策略**：`obit watch 下载目录 2w`，放进来的文件各自两周后进墓地；子文件夹到期时只生成提议，等你批准才下葬（策略本身也要你批准）。
@@ -89,7 +89,7 @@ Read https://obituary.woodfish.site/agent-install.md and follow it to install Ob
 | 怎么装 | Scoop、安装脚本 `install.ps1`（winget 审核中） | Homebrew、安装脚本 `install.sh` | 安装脚本 `install.sh` |
 | 每 5 分钟检查到期 | 托盘常驻进程，任务计划程序兜底 | launchd 用户代理 | `systemd --user` 定时器；没有 systemd 时用用户 crontab |
 | 命令行、墓地与复活、自动登记（可选）、删除护栏、agent 集成（hook、Skill、MCP）、Docker 容器、文件夹策略 | 有 | 有 | 有 |
-| 托盘、小窗口、右键菜单、资源管理器里的下葬日期、开始菜单和桌面快捷方式 | 有 | 用命令行代替：`obit list`、`obit graveyard`、`obit resurrect` | 同 macOS |
+| 托盘、小窗口、右键菜单、资源管理器里的下葬日期、开始菜单和桌面快捷方式 | 有 | 用命令行代替：`obit list`、`obit graveyard`、`obit resurrect` | Ubuntu 24.04 amd64 桌面包（`.deb`）提供小窗口和托盘 |
 | 回收站模式 | 有 | 只用墓地 | 只用墓地 |
 
 自己装、更新和卸载见[安装文档](docs/install.md)。

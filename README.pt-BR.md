@@ -59,7 +59,7 @@ Os agentes nos levaram a criar isso. Assim que a versão 0.0.1 funcionou, instal
 - **Arquivos são rastreados por identidade, não por nome.** Cada registro guarda o número de série do volume e o ID de arquivo de 128 bits, então arquivos renomeados ou movidos continuam sendo encontrados; outro arquivo no caminho antigo permanece intacto.
 - **Claude Code e Codex.** `obit init` registra hooks e um Agent Skill; o servidor MCP é opcional e `--uninstall` remove apenas o que Obituary adicionou.
 - **Fica na bandeja, como o Everything (Windows).** `obit init` inicia um ícone ao entrar. O menu mostra enterros recentes, permite ressuscitar, pausar a limpeza automática e abrir a janela do Obituary. O Agendador de Tarefas do Windows fica como alternativa.
-- **Uma janela pequena (Windows).** Upcoming, Graveyard, Decisions, Settings e Logs permitem ressuscitar arquivos, aprovar propostas e mudar configurações sem a linha de comando(`obit-gui.exe` ou “Open Obituary”). Chinês e inglês, oito aparências.
+- **Uma janela pequena (Windows / Ubuntu 24.04 amd64).** Upcoming, Graveyard, Decisions, Settings e Logs permitem ressuscitar arquivos, aprovar propostas e mudar configurações sem a linha de comando(`obit-gui.exe` ou “Open Obituary”). Chinês e inglês, oito aparências. No Ubuntu, abra o Obituary pelo menu de aplicativos.
 - **Menu de contexto e datas no Explorer (Windows).** Clique com o botão direito → “Add to Obituary” → 1, 7 ou 30 dias, ou “Bury now (recoverable)”. No Windows 11 fica em “Show more options”. Itens rastreados em Downloads e Desktop aparecem como “name (11-13 burial)” sem mudar o nome real.
 - **Contêineres Docker.** `obit docker add <container> 3d` dá uma vida útil ao contêiner; ao expirar, `docker stop` o para(`obit resurrect` o inicia novamente) e `docker rm` só o remove depois da retenção. Volumes e imagens nunca são tocados. Com o registro automático, contêineres iniciados por uma sessão do agente para o projeto também são registrados.
 - **Políticas de pastas.** `obit watch Downloads 2w` enterra cada arquivo que chega ali duas semanas depois. Uma subpasta expirada apenas gera uma proposta e é enterrada após aprovação; a própria política também precisa de aprovação.
@@ -88,7 +88,7 @@ Cada plataforma de relance:
 | Instalação | Scoop, o script `install.ps1`(winget em análise) | Homebrew, o script `install.sh` | o script `install.sh` |
 | Verifica expiração a cada 5 minutos | processo residente na bandeja, Agendador de Tarefas como alternativa | agente launchd do usuário | timer `systemd --user`; crontab do usuário sem systemd |
 | CLI, cemitério e ressurreição, registro automático opcional, guardião de exclusão, integração com agentes(hooks, Skill, MCP), contêineres Docker, políticas de pastas | sim | sim | sim |
-| Bandeja, janela pequena, menus de contexto, datas de enterro no Explorer, atalhos do menu Iniciar e da área de trabalho | sim | use o CLI: `obit list`, `obit graveyard`, `obit resurrect` | como no macOS |
+| Bandeja, janela pequena, menus de contexto, datas de enterro no Explorer, atalhos do menu Iniciar e da área de trabalho | sim | use o CLI: `obit list`, `obit graveyard`, `obit resurrect` | Janela e bandeja no Ubuntu 24.04 amd64 (`.deb`) |
 | Modo Lixeira | sim | somente cemitério | somente cemitério |
 
 Para instalar manualmente, atualizar e desinstalar, consulte o [guia de instalação](docs/install.en.md).

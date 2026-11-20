@@ -59,7 +59,7 @@ Obituary entstand, weil Agenten uns dazu gedrängt haben. Sobald Version 0.0.1 l
 - **Nach Identität statt nach Name verfolgen.** Jeder Eintrag enthält Volume-Seriennummer und 128-Bit-Datei-ID. Deshalb wird eine umbenannte oder verschobene Datei weiterhin gefunden, während eine andere Datei am alten Pfad unangetastet bleibt.
 - **Claude Code und Codex.** `obit init` registriert Hooks und einen Agent Skill; ein MCP-Server ist optional, und `--uninstall` entfernt nur Obituary-eigene Einträge.
 - **Wie Everything im Windows-Infobereich.** `obit init` startet beim Anmelden ein Tray-Symbol. Das Menü zeigt letzte Begräbnisse, erlaubt die Wiederbelebung, pausiert die automatische Bereinigung und öffnet das kleine Obituary-Fenster. Eine geplante Windows-Aufgabe bleibt als Fallback.
-- **Ein kleines Fenster (Windows).** Upcoming, Graveyard, Decisions, Settings und Logs ermöglichen Wiederbelebung, Vorschlagsfreigaben und Einstellungen ohne Kommandozeile(`obit-gui.exe` oder „Open Obituary“ im Tray). Chinesisch und Englisch, acht Oberflächen.
+- **Ein kleines Fenster (Windows / Ubuntu 24.04 amd64).** Upcoming, Graveyard, Decisions, Settings und Logs ermöglichen Wiederbelebung, Vorschlagsfreigaben und Einstellungen ohne Kommandozeile(`obit-gui.exe` oder „Open Obituary“ im Tray). Chinesisch und Englisch, acht Oberflächen. Unter Ubuntu lässt sich Obituary über das Anwendungsmenü öffnen.
 - **Kontextmenü und Daten im Explorer (Windows).** Rechtsklick → „Add to Obituary“ → 1, 7 oder 30 Tage oder „Bury now (recoverable)“. Unter Windows 11 liegt es unter „Show more options“. Verfolgte Elemente in Downloads und Desktop erscheinen als „name (11-13 burial)“, der echte Dateiname bleibt gleich.
 - **Docker-Container.** `obit docker add <container> 3d` gibt einem Container eine Lebensdauer. Bei Ablauf stoppt `docker stop` ihn(`obit resurrect` startet ihn wieder), und erst nach der Aufbewahrung entfernt `docker rm` ihn. Volumes und Images werden nie angefasst. Bei automatischer Registrierung werden auch Container registriert, die eine Agent-Sitzung für das Projekt startet.
 - **Ordner-Richtlinien.** `obit watch Downloads 2w` begräbt jede dort eintreffende Datei zwei Wochen später. Ein abgelaufener Unterordner erzeugt nur einen Vorschlag und wird nach deiner Zustimmung begraben; die Richtlinie selbst braucht ebenfalls deine Zustimmung.
@@ -88,7 +88,7 @@ Die Plattformen im Überblick:
 | Installation | Scoop, das `install.ps1`-Skript(winget wird geprüft) | Homebrew, das `install.sh`-Skript | das `install.sh`-Skript |
 | Ablaufprüfung alle 5 Minuten | residenter Tray-Prozess, Aufgabenplanung als Fallback | Benutzer-agent von launchd | `systemd --user`-Timer; Benutzer-crontab ohne systemd |
 | CLI, Friedhof und Wiederbelebung, optionale automatische Registrierung, Löschschutz, Agent-Integration(Hooks, Skill, MCP), Docker-Container, Ordner-Richtlinien | ja | ja | ja |
-| Tray, kleines Fenster, Kontextmenüs, Begräbnisdaten im Explorer, Startmenü- und Desktop-Verknüpfungen | ja | stattdessen CLI: `obit list`, `obit graveyard`, `obit resurrect` | wie macOS |
+| Tray, kleines Fenster, Kontextmenüs, Begräbnisdaten im Explorer, Startmenü- und Desktop-Verknüpfungen | ja | stattdessen CLI: `obit list`, `obit graveyard`, `obit resurrect` | Fenster und Tray unter Ubuntu 24.04 amd64 (`.deb`) |
 | Papierkorbmodus | ja | nur Friedhof | nur Friedhof |
 
 Manuelle Installation, Aktualisierung und Deinstallation stehen im [Installationsleitfaden](docs/install.en.md).

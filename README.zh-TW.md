@@ -59,7 +59,7 @@
 - **依檔案身分追蹤，而不是檔名。** 每筆記錄都保存磁碟區序號和 128 位元檔案 ID，因此改名或搬移後仍能找到；如果原路徑出現另一個檔案，則會保持不動。
 - **Claude Code 和 Codex。** `obit init` 會註冊 hook 和 Agent Skill；MCP 伺服器可選，`--uninstall` 只移除讣告加入的內容。
 - **像 Everything 一樣常駐 Windows 系統匣。** `obit init` 會在登入時啟動系統匣圖示；選單可查看最近的下葬、點擊復活、暫停自動清理並開啟讣告小視窗。Windows 工作排程器仍作為備援。
-- **Windows 小視窗。** Upcoming、Graveyard、Decisions、Settings 和 Logs 讓你不用命令列就能復活檔案、核准提案和變更設定（`obit-gui.exe`，或系統匣選單的「Open Obituary」）。支援中文和英文，以及八種外觀。
+- **Windows / Ubuntu 24.04 amd64 小視窗。** Upcoming、Graveyard、Decisions、Settings 和 Logs 讓你不用命令列就能復活檔案、核准提案和變更設定（`obit-gui.exe`，或系統匣選單的「Open Obituary」）。支援中文和英文，以及八種外觀。 在 Ubuntu 上從應用程式選單開啟訃告。
 - **檔案總管右鍵選單和日期（Windows）。** 右鍵檔案或資料夾（可多選）→「Add to Obituary」→ 1、7 或 30 天，或「Bury now (recoverable)」；Windows 11 位於「Show more options」。Downloads 和桌面上的追蹤項目會顯示為「name (11-13 burial)」，實際檔名不變。
 - **Docker 容器。** `obit docker add <container> 3d` 為容器設定壽命；到期時用 `docker stop` 停止（`obit resurrect` 會重新啟動），保留期後才用 `docker rm` 移除。卷和映像檔永遠不會被碰。開啟自動登記後，agent 工作階段為專案啟動的容器也會登記，之後會告知你。
 - **資料夾政策。** `obit watch Downloads 2w` 會讓其中每個新檔案兩週後下葬。到期的子資料夾只會產生提案，核准後才下葬；政策本身也需要你核准。
@@ -88,7 +88,7 @@ Read https://obituary.woodfish.site/agent-install.md and follow it to install Ob
 | 安裝方式 | Scoop、`install.ps1` 腳本（winget 審核中） | Homebrew、`install.sh` 腳本 | `install.sh` 腳本 |
 | 每 5 分鐘檢查到期 | 常駐系統匣程序，工作排程器作為備援 | 使用者 launchd agent | `systemd --user` 計時器；沒有 systemd 時使用使用者 crontab |
 | CLI、墓地與復活、選用的自動登記、刪除護欄、agent 整合（hook、Skill、MCP）、Docker 容器、資料夾政策 | 有 | 有 | 有 |
-| 系統匣、小視窗、右鍵選單、檔案總管中的下葬日期、開始選單和桌面捷徑 | 有 | 改用 CLI：`obit list`、`obit graveyard`、`obit resurrect` | 同 macOS |
+| 系統匣、小視窗、右鍵選單、檔案總管中的下葬日期、開始選單和桌面捷徑 | 有 | 改用 CLI：`obit list`、`obit graveyard`、`obit resurrect` | Ubuntu 24.04 amd64 桌面套件（`.deb`）提供小視窗與系統匣 |
 | 資源回收筒模式 | 有 | 僅墓地 | 僅墓地 |
 
 手動安裝、更新和解除安裝請參閱[安裝指南](docs/install.md)。
