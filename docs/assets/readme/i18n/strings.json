@@ -212,7 +212,7 @@
     "guard_second": "der Agent verwendet ihn, das Element kommt in den Friedhof",
     "guard_res": "Wiederbeleben",
     "guard_res_note": "ein Befehl bringt es zurück",
-    "life_desc": "Registrieren (obit add oder Kontextmenü) → ablaufen (obit list zeigt, was noch übrig ist) → im Friedhof begraben (obit graveyard, standardmäßig 7 Tage aufbewahrt) → wiederbeleben (obit resurrect, zurück an den alten Ort, ohne zu überschreiben) oder nach der Aufbewahrung dauerhaft löschen (obit purge).",
+    "life_desc": "Registrieren (obit add oder Kontextmenü) → ablaufen (obit list zeigt, was noch übrig ist) → auf dem Friedhof begraben (obit graveyard, standardmäßig 7 Tage aufbewahrt) → wiederbeleben (obit resurrect, zurück an den alten Ort, ohne zu überschreiben) oder nach der Aufbewahrung dauerhaft löschen (obit purge).",
     "guard_desc": "Ein Agent sendet rm -rf build; Obituary blockiert die Ausführung unverändert und nennt den gleichwertigen Befehl obit rm -rf build. Der Agent verwendet ihn, das Element kommt in den Friedhof, und obit resurrect <id> bringt es mit einem Befehl zurück."
   },
   "pt-BR": {

@@ -92,7 +92,8 @@ export function Community({ c }: { c: Copy }) {
                 className="group flex flex-col items-center gap-2 rounded-2xl p-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalt"
               >
                 <OpenPlace dim={i > 0} />
-                <span className={cn("w-full truncate text-center text-xs font-medium", i === 0 ? "text-cobalt" : "invisible")}>{m.next}</span>
+                {/* Wraps instead of cutting off, and borrows the cell's padding: on a phone the slot is only about 60px wide. The hidden copies keep every cell's height equal. */}
+                <span className={cn("-mx-2 self-stretch text-center text-xs leading-snug font-medium text-balance hyphens-manual", i === 0 ? "text-cobalt" : "invisible")}>{m.next}</span>
               </a>
             </li>
           ))}

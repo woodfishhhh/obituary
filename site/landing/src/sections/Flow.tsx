@@ -129,6 +129,7 @@ function Typed({ text, running }: { text: string; running: boolean }) {
 
 export function Flow({ c }: { c: Copy }) {
   const f = c.flow;
+  const [left, right] = f.graveLeft.split("{n}");
   const reduce = useReducedMotion() ?? false;
   const box = useRef<HTMLDivElement>(null);
   const a0 = useRef<HTMLDivElement>(null);
@@ -211,9 +212,10 @@ export function Flow({ c }: { c: Copy }) {
           <p className="max-w-[46ch] text-lg text-ink-2">{f.lead}</p>
         </div>
 
+        {/* Words here are never hyphenated or cut: the middle and right columns are as wide as their nodes, the left one takes what is left. */}
         <div
           ref={box}
-          className="relative grid grid-cols-1 items-center gap-6 rounded-3xl border border-line bg-paper/80 p-6 backdrop-blur lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-10 md:p-12"
+          className="relative grid grid-cols-1 items-center gap-6 rounded-3xl border border-line bg-paper/80 p-6 backdrop-blur hyphens-manual [:lang(zh)_&]:break-keep lg:grid-cols-[minmax(14rem,1fr)_auto_auto] lg:gap-10 md:p-12"
         >
           <svg aria-hidden="true" className="pointer-events-none absolute inset-0 hidden h-full w-full overflow-visible lg:block">
             <defs>
@@ -324,7 +326,7 @@ export function Flow({ c }: { c: Copy }) {
             <Node ref={obit} className={cn("flex-col gap-2 px-8 py-6 text-center", running && phase === "intercept" && "border-transparent")}>
               <img src={mark} alt="" width={720} height={397} loading="lazy" decoding="async" className="h-auto w-32" />
               <span className="text-lg font-semibold">{f.obit}</span>
-              <span className={cn("max-w-[14ch] text-sm transition-colors duration-300", running && phase === "intercept" ? "text-cobalt" : "text-muted")}>
+              <span className={cn("max-w-[14ch] text-sm text-balance transition-colors duration-300", running && phase === "intercept" ? "text-cobalt" : "text-muted")}>
                 {f.obitNote}
               </span>
             </Node>
@@ -348,8 +350,9 @@ export function Flow({ c }: { c: Copy }) {
               >
                 <FolderIcon className="size-3.5 text-cobalt" aria-hidden="true" />
                 <span className="font-mono">build/</span>
+                {/* Each language writes the whole sentence and marks where the number goes, so how the number and its unit join is the copy's call. */}
                 <span className="text-muted">
-                  {f.graveLeft}{" "}
+                  {left}
                   <CountUp
                     key={`days-${round}-${past("rest")}-${ending === "end" && past("branch") ? "down" : "up"}`}
                     from={ending === "end" && past("branch") ? 7 : 0}
@@ -357,8 +360,8 @@ export function Flow({ c }: { c: Copy }) {
                     duration={ending === "end" && past("branch") ? 0.7 : 0.9}
                     trigger="load"
                     className="font-semibold text-cobalt tabular-nums"
-                  />{" "}
-                  {f.days}
+                  />
+                  {right}
                 </span>
               </span>
             </Node>
@@ -379,12 +382,12 @@ export function Flow({ c }: { c: Copy }) {
                   backgroundColor="var(--color-paper)"
                   textColor="var(--color-ink)"
                   borderColor="var(--color-line)"
-                  className="w-full justify-start! gap-3! px-4! py-3! font-normal! shadow-node"
+                  className="w-full justify-start! gap-3! px-4! py-3! font-normal! shadow-node sm:w-auto"
                 >
                   <SparkleIcon className="size-5 shrink-0 fill-gold text-gold-deep" aria-hidden="true" />
                   <span className="flex flex-col text-left leading-tight">
                     <span className="font-medium">{f.back}</span>
-                    <code className="font-mono text-xs text-muted">{f.backNote}</code>
+                    <code className="font-mono text-xs whitespace-nowrap text-muted">{f.backNote}</code>
                   </span>
                 </StarBorder>
               </div>
