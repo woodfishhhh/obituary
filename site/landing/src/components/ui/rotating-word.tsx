@@ -34,7 +34,7 @@ export function RotatingWord({ words, interval = 2600, className }: { words: rea
   useLayoutEffect(() => {
     const el = probe.current;
     if (!el) return;
-    const measure = () => setWidths(Array.from(el.children, (c) => (c as HTMLElement).offsetWidth));
+    const measure = () => setWidths(Array.from(el.children, (c) => Math.ceil(c.getBoundingClientRect().width)));
     measure();
     const ro = new ResizeObserver(measure);
     Array.from(el.children).forEach((c) => ro.observe(c));
@@ -57,7 +57,8 @@ export function RotatingWord({ words, interval = 2600, className }: { words: rea
     >
       <span ref={probe} aria-hidden="true" className="invisible absolute top-0 left-0">
         {words.map((w) => (
-          <span key={w} className="block w-max">{w}</span>
+          // Laid out letter by letter like the visible word: loose letters lose kerning, so the width differs from plain text.
+          <span key={w} className="block w-max">{graphemes(w).map((ch, i) => <span key={i} className="inline-block whitespace-pre">{ch}</span>)}</span>
         ))}
       </span>
       <AnimatePresence initial={false} mode="popLayout">
