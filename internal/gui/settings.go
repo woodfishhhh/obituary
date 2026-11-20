@@ -16,6 +16,7 @@ import (
 )
 
 type Settings struct {
+	Capabilities         Capabilities  `json:"capabilities"`
 	TrayIcon             bool          `json:"trayIcon"`
 	Taskbar              bool          `json:"taskbar"`
 	StartMenu            bool          `json:"startMenu"`
@@ -89,7 +90,7 @@ func (a *API) Settings() (Settings, error) {
 		return Settings{}, err
 	}
 	paused, err := app.Paused(a.deps.Service.Store.Home)
-	return Settings{TrayIcon: cfg.UI.Tray, Taskbar: cfg.UI.Taskbar, StartMenu: start != "", DesktopShortcut: desktop != "", Lifetime: lifetime, Downloads: downloadsFolder(), Mode: cfg.Graveyard.Mode, RetentionDays: cfg.Graveyard.RetentionDays, Language: cfg.UI.Language, EffectiveLanguage: language,
+	return Settings{Capabilities: platformCapabilities(), TrayIcon: cfg.UI.Tray, Taskbar: cfg.UI.Taskbar, StartMenu: start != "", DesktopShortcut: desktop != "", Lifetime: lifetime, Downloads: downloadsFolder(), Mode: cfg.Graveyard.Mode, RetentionDays: cfg.Graveyard.RetentionDays, Language: cfg.UI.Language, EffectiveLanguage: language,
 		ConfigPath: filepath.Join(a.deps.ConfigDir, "config.toml"), ContextMenuInstalled: menu.Installed,
 		ContextMenuCurrent: menu.Current, ContextMenuDetail: menu.Detail, Autostart: startup.Before != "", Paused: paused,
 		SessionSummary: cfg.Hooks.SessionSummary, SessionCleanup: cfg.Hooks.SessionCleanup, ProposalMode: cfg.Proposals.Mode}, err

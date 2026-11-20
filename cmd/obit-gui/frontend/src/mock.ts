@@ -83,7 +83,7 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
   // "auto" resolves the way the backend does from the Windows display
   // language; the browser's language stands in for it here.
   const windowsLanguage = () => (navigator.language.toLowerCase().startsWith("zh") ? "zh-CN" : "en");
-  const settings: Settings = { mode: "graveyard", retentionDays: 7, configPath: "C:\\Users\\me\\AppData\\Roaming\\obituary\\config.toml", contextMenuInstalled: true, contextMenuCurrent: true, contextMenuDetail: "", autostart: true, paused: false, language: "auto", effectiveLanguage: windowsLanguage(), sessionSummary: false, sessionCleanup: true, downloads: DL, trayIcon: true, taskbar: true, startMenu: true, desktopShortcut: true,
+  const settings: Settings = { capabilities: { contextMenu: true, taskbar: true, startMenu: true, desktopShortcut: true }, mode: "graveyard", retentionDays: 7, configPath: "C:\\Users\\me\\AppData\\Roaming\\obituary\\config.toml", contextMenuInstalled: true, contextMenuCurrent: true, contextMenuDetail: "", autostart: true, paused: false, language: "auto", effectiveLanguage: windowsLanguage(), sessionSummary: false, sessionCleanup: true, downloads: DL, trayIcon: true, taskbar: true, startMenu: true, desktopShortcut: true,
     lifetime: scenario === "empty" ? { buried: 0, buriedBytes: 0, purgedBytes: 0, resurrected: 0 } : { buried: 216, buriedBytes: 1_395_864_371, purgedBytes: 29_884_416, resurrected: 2 } };
   const watches: WatchPolicy[] = scenario === "empty" ? [] : [{ id: 3, path: DL, lifespan: "2w", age: "first-seen", createdAt: at(-500), consent: "approved", rev: 1, approvedRev: 1 }];
   const plans = new Map<string, () => PlanReceipt>();

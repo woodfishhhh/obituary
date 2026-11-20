@@ -137,6 +137,12 @@ export interface WatchPolicy {
 }
 
 export interface Settings {
+  capabilities?: {
+    contextMenu: boolean;
+    taskbar: boolean;
+    startMenu: boolean;
+    desktopShortcut: boolean;
+  };
   mode: "graveyard" | "recycle" | string;
   retentionDays: number;
   configPath: string;
