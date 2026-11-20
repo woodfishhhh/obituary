@@ -1,5 +1,5 @@
 import type { Copy } from "@/copy";
-import { shot, shotSize } from "@/lib/shots";
+import { Window } from "@/components/window";
 
 export function Lifecycle({ c }: { c: Copy }) {
   const l = c.life;
@@ -27,7 +27,7 @@ export function Lifecycle({ c }: { c: Copy }) {
           </ol>
         </div>
         <figure className="overflow-hidden rounded-2xl bg-paper shadow-shot ring-1 ring-ink/5">
-          <img src={shot(c.lang, "calendar-graveyard")} alt={l.alt} width={shotSize.width} height={shotSize.height} loading="lazy" decoding="async" className="block h-auto w-full" />
+          <Window c={c} look="calendar" page="graveyard" label={l.alt} />
         </figure>
       </div>
     </section>

@@ -14,3 +14,4 @@ landing/public/community/
 landing/src/generated/
 # The mainland China mirror build.
 dist-cn/
+landing/dist-ssr/

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { BorderBeam } from "@/components/ui/border-beam";
 import { brand } from "@/lib/brand";
 import type { Copy, LookId, PageId } from "@/copy";
-import { shot, shotSize, type Shot } from "@/lib/shots";
+import { Window } from "@/components/window";
 import { cn } from "@/lib/utils";
 
 function Segmented<T extends string>({ label, options, value, onChange }: { label: string; options: [T, string][]; value: T; onChange: (v: T) => void }) {
@@ -31,7 +31,6 @@ export function WindowLooks({ c }: { c: Copy }) {
   const w = c.window;
   const [look, setLook] = useState<LookId>("calendar");
   const [page, setPage] = useState<PageId>("upcoming");
-  const name: Shot = page === "upcoming" ? look : `${look}-${page}`;
   return (
     <section id="window" aria-labelledby="window-head" className="py-24 md:py-32">
       <div className="mx-auto max-w-[1240px] px-6 md:px-10">
@@ -45,16 +44,7 @@ export function WindowLooks({ c }: { c: Copy }) {
         </div>
         <div className="grid gap-8 lg:grid-cols-[minmax(0,8fr)_minmax(0,4fr)] lg:items-start">
           <figure className="relative overflow-hidden rounded-2xl bg-paper shadow-glow-soft ring-1 ring-ink/5">
-            <img
-              key={`${look}-${page}`}
-              src={shot(c.lang, name)}
-              alt={w.alt(w.looks[look], w.pages[page])}
-              width={shotSize.width}
-              height={shotSize.height}
-              loading="lazy"
-              decoding="async"
-              className="block h-auto w-full"
-            />
+            <Window c={c} look={look} page={page} label={w.alt(w.looks[look], w.pages[page])} interactive />
             <BorderBeam size={200} duration={9} colorFrom={brand.sky} colorTo={brand.gold} borderWidth={2} transition={{ repeat: 1 }} />
           </figure>
           <div className="flex flex-col gap-6 lg:pt-2" aria-live="polite">

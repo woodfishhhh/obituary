@@ -136,3 +136,7 @@ button:disabled { cursor: not-allowed; }
     transition-duration: 0.01ms !important;
   }
 }
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(4px); }
+}

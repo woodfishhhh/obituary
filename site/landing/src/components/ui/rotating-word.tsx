@@ -1,23 +1,50 @@
-import { useEffect, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
 
 import { cn } from "@/lib/utils";
 
-// One word of a sentence that rolls up to the next every `interval` ms. Hovering
-// pauses it, clicking advances it, and reduced motion keeps it still until clicked.
-// Every word sits invisibly in the same grid cell, so the slot is as wide as the
-// longest one and the sentence around it never shifts.
-export function RotatingWord({ words, interval = 2400, className }: { words: readonly string[]; interval?: number; className?: string }) {
+// One word of a sentence that changes every `interval` ms: the letters of the next word rise in
+// one after another while the old ones leave upward. Hovering pauses it, clicking advances it,
+// and under reduced motion it stays on the first word, fading when clicked. The slot is as wide
+// as the word being shown (measured from hidden copies of every word, so any language fits), and
+// glides to the next width instead of jumping.
+
+// Graphemes, so Chinese splits per character and accents stay whole.
+const graphemes = (s: string) => Array.from(new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(s), (x) => x.segment);
+
+const letter: Variants = {
+  hidden: { y: "70%", opacity: 0 },
+  show: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 200, damping: 22 } },
+  exit: { y: "-70%", opacity: 0, transition: { duration: 0.22, ease: [0.3, 0, 0.7, 0.4] } },
+};
+const fade: Variants = { hidden: { opacity: 0 }, show: { opacity: 1 }, exit: { opacity: 0 } };
+
+export function RotatingWord({ words, interval = 2600, className }: { words: readonly string[]; interval?: number; className?: string }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  const reduce = useReducedMotion();
-
+  const reduce = useReducedMotion() ?? false;
   useEffect(() => {
     if (reduce || paused || words.length < 2) return;
     const id = window.setInterval(() => setIndex((i) => (i + 1) % words.length), interval);
     return () => window.clearInterval(id);
   }, [reduce, paused, words.length, interval]);
 
+  const probe = useRef<HTMLSpanElement>(null);
+  const [widths, setWidths] = useState<number[]>([]);
+  useLayoutEffect(() => {
+    const el = probe.current;
+    if (!el) return;
+    const measure = () => setWidths(Array.from(el.children, (c) => (c as HTMLElement).offsetWidth));
+    measure();
+    const ro = new ResizeObserver(measure);
+    Array.from(el.children).forEach((c) => ro.observe(c));
+    void document.fonts?.ready.then(measure);
+    return () => ro.disconnect();
+  }, [words]);
+
+  const word = words[index % words.length];
+  const chars = graphemes(word);
+  const stagger = reduce ? 0 : Math.min(0.045, 0.2 / chars.length);
   return (
     <button
       type="button"
@@ -25,23 +52,35 @@ export function RotatingWord({ words, interval = 2400, className }: { words: rea
       onClick={() => setIndex((i) => (i + 1) % words.length)}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
-      className={cn("relative inline-grid cursor-pointer overflow-hidden align-bottom", className)}
+      style={{ width: widths[index], transition: reduce || widths.length === 0 ? undefined : "width 600ms cubic-bezier(0.22, 1, 0.36, 1)" }}
+      className={cn("relative inline-block max-w-full cursor-pointer overflow-hidden align-bottom whitespace-nowrap", className)}
     >
-      {words.map((w) => (
-        <span key={w} className="invisible col-start-1 row-start-1 whitespace-nowrap">
-          {w}
-        </span>
-      ))}
+      <span ref={probe} aria-hidden="true" className="invisible absolute top-0 left-0">
+        {words.map((w) => (
+          <span key={w} className="block w-max">{w}</span>
+        ))}
+      </span>
       <AnimatePresence initial={false} mode="popLayout">
         <motion.span
-          key={words[index]}
-          className="col-start-1 row-start-1 whitespace-nowrap"
-          initial={reduce ? false : { y: "100%", opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={reduce ? { opacity: 0, transition: { duration: 0 } } : { y: "-100%", opacity: 0 }}
-          transition={{ type: "spring", stiffness: 320, damping: 30 }}
+          key={word}
+          className="block"
+          initial="hidden"
+          animate="show"
+          exit="exit"
+          variants={{ hidden: {}, show: { transition: { delayChildren: reduce ? 0 : 0.04, staggerChildren: stagger } }, exit: { transition: { staggerChildren: stagger / 2 } } }}
         >
-          {words[index]}
+          {chars.map((ch, i) => (
+            <motion.span
+              key={i}
+              className="brand-text inline-block whitespace-pre"
+              // Each letter paints its own slice of the gradient: a parent's background-clip:text
+              // does not reach text that is moving or fading in a layer of its own.
+              style={{ backgroundSize: `${chars.length * 100}% 100%`, backgroundPosition: `${chars.length > 1 ? (i / (chars.length - 1)) * 100 : 0}% 0` }}
+              variants={reduce ? fade : letter}
+            >
+              {ch}
+            </motion.span>
+          ))}
         </motion.span>
       </AnimatePresence>
     </button>

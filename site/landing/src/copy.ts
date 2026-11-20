@@ -105,8 +105,12 @@ const zh = {
     primary: "安装到 Windows",
     secondary: "读文档",
     terms: "Windows 10 和 11，MIT 许可",
-    altPalette: "讣告小窗口的「一行」外观：在墓地里找文件，回车复活。示例数据。",
-    altCalendar: "讣告小窗口的「日历」外观：每一列是一天，文件排在它火化的那天。示例数据。",
+  },
+  // The interactive window: its accessible name, the hover card on a file, and the three things to try.
+  demo: {
+    label: "讣告小窗口的界面示例，可以操作：悬停看寿命，点一下选中再续命，拖到后面的日子。示例数据。",
+    card: { path: "原路径", left: "还剩", life: "寿命", expires: "到期", purges: "火化", buried: "下葬", size: "大小", hint: "点一下选中，再延长或不再跟踪" },
+    tips: ["悬停或点按，看它的寿命", "点一下，续命", "拖到后面的日子"],
   },
   flow: {
     head: "agent 删掉的，先进墓地",
@@ -314,8 +318,11 @@ const en: Copy = {
     primary: "Install on Windows",
     secondary: "Read the docs",
     terms: "Windows 10 and 11, MIT licensed",
-    altPalette: "Obituary's small window in the One line look: find a file in the graveyard and press Enter to resurrect it. Sample data.",
-    altCalendar: "Obituary's small window in the Calendar look: a column per day, each file on the day it is purged. Sample data.",
+  },
+  demo: {
+    label: "A working example of Obituary's small window: hover a file for its lifespan, click to select and extend, drag it to a later day. Sample data.",
+    card: { path: "Original path", left: "Left", life: "Lifespan", expires: "Expires", purges: "Cremated", buried: "Buried", size: "Size", hint: "Click to select, then extend or stop tracking" },
+    tips: ["Hover or tap for its lifespan", "Click to extend", "Drag to a later day"],
   },
   flow: {
     head: "What an agent deletes goes to the graveyard first",
