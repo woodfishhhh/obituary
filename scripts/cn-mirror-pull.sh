@@ -37,6 +37,8 @@ verify() (
   local archives=("$prefix"{darwin,linux}_{amd64,arm64}.tar.gz "$prefix"windows_{amd64,arm64}.zip)
   # Older releases have only the six archives; accept only the exact native package name.
   if [[ -e ${prefix}linux_amd64.deb ]]; then archives+=("${prefix}linux_amd64.deb"); fi
+  if [[ -e ${prefix}darwin_universal.app.zip ]]; then archives+=("${prefix}darwin_universal.app.zip"); fi
+  if [[ -e ${prefix}darwin_universal.dmg ]]; then archives+=("${prefix}darwin_universal.dmg"); fi
   regular_files . "${archives[@]}" install.sh install.ps1 checksums.txt release.json latest-tag transport.sha256
   check_sums checksums.txt "${archives[@]}"
   check_sums transport.sha256 install.sh install.ps1 checksums.txt release.json latest-tag

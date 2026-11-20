@@ -2,6 +2,19 @@
 
 Dateien wiederbeleben, Vorschläge genehmigen und Einstellungen ändern geht auch ohne Kommandozeile.
 
+## Kleines Fenster und Menüsymbol unter macOS
+
+Lade den universellen macOS-DMG und die Checksums-Datei aus derselben Veröffentlichung herunter. Prüfe die SHA-256-Summe, öffne das DMG und ziehe Obituary.app nach Programme oder in den Applications-Ordner des Benutzers; wirf das DMG aus, bevor du den Start bei der Anmeldung aktivierst.
+
+Die App enthält das kleine Wails-Fenster, das Menüsymbol sowie die Hilfsprogramme obit und obitd. Der Launchd-Benutzeragent für die Prüfung alle fünf Minuten bleibt ein unabhängiger Fallback. Aktiviere in den Einstellungen den Tray-Start bei der Anmeldung, um den eigenen LaunchAgent zu installieren; beim Deaktivieren wird nur dieser Eintrag entfernt.
+
+### Erste Öffnung einer unsignierten App
+
+Diese Veröffentlichung ist nicht mit Developer ID signiert und nicht notarisiert. Prüfe Quelle und SHA-256 und öffne die App einmal. Wenn macOS den Entwickler nicht verifizieren kann, öffne « Systemeinstellungen → Datenschutz & Sicherheit », wähle für Obituary « Trotzdem öffnen », bestätige und versuche es erneut. Deaktiviere Gatekeeper nicht global und entferne die Quarantäne nicht rekursiv. Bei Meldungen über Beschädigung, Malware oder eine Organisationsrichtlinie brich ab.
+
+### Vorschlag für Homebrew Cask
+
+Das Cask soll dasselbe universelle DMG installieren, Obituary.app nach Programme kopieren und obit sowie obitd aus dem App-Bundle verfügbar machen. Bis eine stabile DMG-URL und ein geprüfter Deinstallationsbeleg vorhanden sind, bleibt es vom bestehenden CLI-Cask getrennt.
 ## Das Symbol im Infobereich
 
 `obit init` richtet ein Symbol im Infobereich ein, das bei der Anmeldung erscheint. Sein Menü bietet:

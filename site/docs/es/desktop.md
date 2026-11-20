@@ -2,6 +2,19 @@
 
 Puedes resucitar archivos, aprobar propuestas y cambiar ajustes sin usar la línea de comandos.
 
+## Ventana pequeña e icono de la barra de menús en macOS
+
+Descarga el DMG universal de macOS y el archivo de checksums de la misma versión. Comprueba SHA-256, abre el DMG y arrastra Obituary.app a Aplicaciones o a la carpeta Applications del usuario; expulsa el DMG antes de activar el inicio de sesión.
+
+La app contiene la ventana Wails, el icono de la barra de menús y los auxiliares obit y obitd. El agente de usuario launchd que comprueba cada 5 minutos sigue siendo un respaldo independiente. En Ajustes, activa el inicio del tray al iniciar sesión para instalar el LaunchAgent de Obituary; al desactivarlo solo se elimina esa entrada.
+
+### Primer inicio de una app sin firma
+
+La versión no tiene firma Developer ID ni notarización. Confirma el origen y SHA-256, e intenta abrirla una vez. Si macOS no puede verificar al desarrollador, abre «Ajustes del Sistema → Privacidad y seguridad», elige «Abrir igualmente» para Obituary, confirma y vuelve a abrirla. No desactives Gatekeeper globalmente ni borres la cuarentena de forma recursiva. Detente ante avisos de app dañada, malware o políticas de la organización.
+
+### Propuesta para Homebrew Cask
+
+El cask debe instalar el mismo DMG universal, copiar Obituary.app a Aplicaciones y exponer obit y obitd desde el app bundle. Hasta que el DMG de escritorio tenga una URL estable y una comprobación de desinstalación revisada, se mantiene separado del cask existente para CLI.
 ## Bandeja del sistema
 
 `obit init` hace que aparezca un icono en la bandeja al iniciar sesión. Desde su menú puedes:

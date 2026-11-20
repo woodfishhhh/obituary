@@ -2,6 +2,19 @@
 
 Resurrect files, approve proposals and change settings without the command line.
 
+## macOS app and menu bar icon
+
+Download the universal macOS DMG and checksums file from the same release. Verify the SHA-256, open the DMG, and drag Obituary.app to Applications or the user's Applications folder; eject the DMG before enabling login startup.
+
+The app contains the Wails small window, the menu bar icon, and matching obit and obitd helpers. The five-minute launchd user agent remains a separate fallback. In Settings, enable Start the tray at sign-in to install Obituary's own user LaunchAgent; disable it there to remove only that entry.
+
+### First opening an unsigned app
+
+The release is not Developer ID signed or notarized. After checking the SHA-256 from a trusted release, try opening the app once. If macOS says it cannot verify the developer, open System Settings, Privacy and Security, choose Open Anyway for Obituary, confirm the prompt, and open it again. Do not disable Gatekeeper globally or clear quarantine recursively. Stop if macOS reports a damaged app, malware, or an organisation policy that forbids opening it.
+
+### Homebrew Cask proposal
+
+The cask should install the same universal DMG, copy Obituary.app to Applications, and expose obit and obitd from the app bundle. Keep the existing CLI archive cask separate until the desktop DMG has a stable release URL and a reviewed uninstall receipt.
 ## Ubuntu 24.04 (amd64)
 
 Download the `obituary_<version>_linux_amd64.deb` desktop package and `checksums.txt` from the same release. From the download directory, install the verified package (replace `VERSION` with the version you downloaded):

@@ -88,7 +88,7 @@ Cada plataforma de relance:
 | Instalação | Scoop, o script `install.ps1`(winget em análise) | Homebrew, o script `install.sh` | o script `install.sh` |
 | Verifica expiração a cada 5 minutos | processo residente na bandeja, Agendador de Tarefas como alternativa | agente launchd do usuário | timer `systemd --user`; crontab do usuário sem systemd |
 | CLI, cemitério e ressurreição, registro automático opcional, guardião de exclusão, integração com agentes(hooks, Skill, MCP), contêineres Docker, políticas de pastas | sim | sim | sim |
-| Bandeja, janela pequena, menus de contexto, datas de enterro no Explorer, atalhos do menu Iniciar e da área de trabalho | sim | use o CLI: `obit list`, `obit graveyard`, `obit resurrect` | Janela e bandeja no Ubuntu 24.04 amd64 (`.deb`) |
+| Bandeja, janela pequena, menus de contexto, datas de enterro no Explorer, atalhos do menu Iniciar e da área de trabalho | sim | Janela pequena e ícone da barra de menus no macOS por DMG universal; ainda sem menu de contexto | Janela e bandeja no Ubuntu 24.04 amd64 (deb) |
 | Modo Lixeira | sim | somente cemitério | somente cemitério |
 
 Para instalar manualmente, atualizar e desinstalar, consulte o [guia de instalação](docs/install.en.md).

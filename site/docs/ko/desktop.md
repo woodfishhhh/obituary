@@ -2,6 +2,19 @@
 
 명령줄 없이 파일을 부활시키고 제안을 승인하거나 설정을 바꿀 수 있습니다.
 
+## macOS 작은 창과 메뉴 막대 아이콘
+
+같은 릴리스에서 universal macOS DMG와 checksums.txt를 내려받습니다. SHA-256을 확인한 뒤 DMG를 열고 Obituary.app을 응용 프로그램 또는 사용자의 Applications 폴더로 드래그합니다. 로그인 시작을 켜기 전에 DMG를 추출하세요.
+
+app에는 Wails 작은 창, 메뉴 막대 아이콘, 함께 제공되는 obit과 obitd가 들어 있습니다. 5분마다 실행되는 launchd 사용자 에이전트는 별도의 대체 경로입니다. 설정에서 로그인 시 트레이 시작을 켜면 Obituary 전용 LaunchAgent가 설치되고, 끄면 해당 항목만 제거됩니다.
+
+### 서명되지 않은 app을 처음 열기
+
+이 릴리스에는 Developer ID 서명이나 공증이 없습니다. 신뢰할 수 있는 릴리스인지 확인하고 SHA-256을 검증한 뒤 한 번 열어 보세요. macOS가 개발자를 확인할 수 없다고 하면 「시스템 설정 → 개인정보 보호 및 보안」에서 Obituary의 「그래도 열기」를 선택하고 확인한 다음 다시 엽니다. Gatekeeper를 전역으로 끄거나 격리 속성을 재귀적으로 지우지 마세요. 손상, 악성 코드 또는 회사 정책 거부가 표시되면 중단합니다.
+
+### Homebrew Cask 제안
+
+Cask는 같은 universal DMG를 설치하고 Obituary.app을 응용 프로그램에 복사하며 app bundle의 obit과 obitd를 제공합니다. 데스크톱 DMG의 안정적인 공개 URL과 제거 확인이 준비될 때까지 기존 CLI cask와 분리합니다.
 ## 트레이
 
 `obit init`을 실행하면 로그인할 때 트레이 아이콘이 나타납니다. 메뉴에는 다음 항목이 있습니다.

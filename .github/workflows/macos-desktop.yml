@@ -1,0 +1,89 @@
+name: macOS desktop
+
+on:
+  workflow_call:
+    inputs:
+      snapshot:
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-13
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Run macOS desktop tests
+        run: go test -tags desktop ./internal/app ./internal/gui ./internal/tray
+      - name: Build universal app and DMG
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        run: bash scripts/build-macos-desktop.sh "${GITHUB_REF_NAME}" "$RUNNER_TEMP/macos-desktop"
+      - name: Verify bundle, architectures and checksums
+        run: |
+          set -euo pipefail
+          app="$RUNNER_TEMP/macos-desktop/Obituary.app"
+          plutil -lint "$app/Contents/Info.plist"
+          codesign --verify --deep --strict "$app"
+          test "$(lipo -archs "$app/Contents/MacOS/obit-gui")" = "x86_64 arm64"
+          test "$(lipo -archs "$app/Contents/MacOS/obitd")" = "x86_64 arm64"
+          test "$(lipo -archs "$app/Contents/MacOS/obit")" = "x86_64 arm64"
+          shasum -a 256 --check "$RUNNER_TEMP/macos-desktop/checksums.txt"
+      - name: Mount DMG and run packaged smoke
+        run: |
+          set -euo pipefail
+          dmg="$RUNNER_TEMP/macos-desktop/obituary_${GITHUB_REF_NAME#v}_darwin_universal.dmg"
+          mount="$RUNNER_TEMP/macos-dmg"
+          mkdir -p "$mount"
+          hdiutil attach "$dmg" -nobrowse -readonly -mountpoint "$mount"
+          test -x "$mount/Obituary.app/Contents/MacOS/obit-gui"
+          test -x "$mount/Obituary.app/Contents/MacOS/obitd"
+          export OBIT_HOME="$RUNNER_TEMP/macos-home"
+          export OBIT_CONFIG_DIR="$RUNNER_TEMP/macos-config"
+          mkdir -p "$OBIT_HOME" "$OBIT_CONFIG_DIR"
+          printf 'macOS desktop example\n' > "$RUNNER_TEMP/macos-example.txt"
+          "$mount/Obituary.app/Contents/MacOS/obit" mark "$RUNNER_TEMP/macos-example.txt" 7d
+          "$mount/Obituary.app/Contents/MacOS/obit-gui" --smoke
+          hdiutil detach "$mount"
+      - name: Capture window and menu bar evidence
+        if: always()
+        run: |
+          set +e
+          set -u
+          app="$RUNNER_TEMP/macos-desktop/Obituary.app"
+          export OBIT_HOME="$RUNNER_TEMP/macos-home"
+          export OBIT_CONFIG_DIR="$RUNNER_TEMP/macos-config"
+          mkdir -p "$RUNNER_TEMP/macos-evidence"
+          "$app/Contents/MacOS/obitd" --tray > "$RUNNER_TEMP/macos-evidence/obitd.log" 2>&1 &
+          daemon_pid=$!
+          sleep 3
+          "$app/Contents/MacOS/obit-gui" --width 1040 --height 700 > "$RUNNER_TEMP/macos-evidence/gui.log" 2>&1 &
+          gui_pid=$!
+          sleep 8
+          screencapture -x -T 2 "$RUNNER_TEMP/macos-evidence/window.png"
+          screencapture -x -T 2 "$RUNNER_TEMP/macos-evidence/menu-bar.png"
+          kill "$gui_pid" "$daemon_pid" 2>/dev/null || true
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: macos-desktop-package
+          if-no-files-found: error
+          path: |
+            $RUNNER_TEMP/macos-desktop/*.app.zip
+            $RUNNER_TEMP/macos-desktop/*.dmg
+            $RUNNER_TEMP/macos-desktop/checksums.txt
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: macos-desktop-evidence
+          if-no-files-found: warn
+          path: $RUNNER_TEMP/macos-evidence

@@ -13,7 +13,13 @@ import (
 )
 
 func diagnoseStartup(string, string) DoctorCheck {
-	return DoctorCheck{Name: "tray-startup", Status: "INFO", Detail: "tray startup and Explorer labels are Windows-only"}
+	if runtime.GOOS != "darwin" {
+		return DoctorCheck{Name: "tray-startup", Status: "INFO", Detail: "tray startup and Explorer labels are Windows-only"}
+	}
+	if path := cmdutil.RunnerAutostart(); path != "" {
+		return DoctorCheck{Name: "tray-startup", Status: "PASS", Detail: "tray starts at login: " + path}
+	}
+	return DoctorCheck{Name: "tray-startup", Status: "WARN", Detail: "tray login startup is absent; enable it in the Obituary window settings"}
 }
 
 func diagnoseRunner(home string) DoctorCheck {

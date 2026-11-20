@@ -40,6 +40,16 @@ run
   printf 'corrupt' >> "$desktop"
   if (verify "$tag" .) >/dev/null 2>&1; then exit 1; fi
 )
+(
+  cp -a "$input" "$work/with-macos"
+  cd "$work/with-macos"
+  for name in obituary_1.2.3_darwin_universal.app.zip obituary_1.2.3_darwin_universal.dmg; do
+    printf 'macOS desktop\n' > "$name"
+  done
+  sha256sum obituary_1.2.3_darwin_universal.* >> checksums.txt
+  transport
+  source "$script"; verify "$tag" .
+)
 reject 'Expected a stable tag' v1.2.3-rc.1
 touch .extra; reject 'Unexpected file count'; mv .extra "$work/extra"
 archive=obituary_1.2.3_linux_amd64.tar.gz
