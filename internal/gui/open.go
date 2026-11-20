@@ -25,7 +25,8 @@ func Open() (*API, error) {
 	if err != nil {
 		return nil, err
 	}
+	guiExe, daemonExe := companionExecutables(filepath.Dir(exe))
 	return New(Dependencies{Service: svc, Engine: app.Engine(svc), ConfigDir: dir,
-		Executable: filepath.Join(filepath.Dir(exe), "obit.exe"), Daemon: filepath.Join(filepath.Dir(exe), "obitd.exe"),
+		Executable: guiExe, Daemon: daemonExe,
 		ContextMenu: contextmenu.UserRegistry(), RunKey: runkey.Current})
 }
