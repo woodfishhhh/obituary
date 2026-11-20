@@ -3,11 +3,11 @@ import LogoLoop from "@/components/reactbits/LogoLoop";
 import type { Copy } from "@/copy";
 import { siteLink } from "@/lib/links";
 
-// Two bands of the same agents, running in opposite directions; each logo opens its documentation.
+// Three bands of nine agents, each agent in one band, running in alternate directions; each logo opens its documentation.
 export function Agents({ c }: { c: Copy }) {
   const a = c.agents;
   const items = agents.map((x) => ({ name: x.name, logo: x.logo, dark: x.dark, href: siteLink(agentDocLink(x.id, c.lang)) }));
-  const half = Math.ceil(items.length / 2);
+  const rows = [0, 1, 2].map((r) => items.slice(r * 9, r * 9 + 9));
   return (
     <section aria-labelledby="agents-head" className="relative overflow-hidden border-y border-line bg-paper-2 py-24 md:py-32">
       <div aria-hidden="true" className="dot-field fade-edges absolute inset-0 opacity-60" />
@@ -18,8 +18,9 @@ export function Agents({ c }: { c: Copy }) {
         </div>
       </div>
       <div className="relative flex flex-col gap-4">
-        <LogoLoop items={items.slice(0, half)} duration={80} label={a.head} />
-        <LogoLoop items={items.slice(half)} duration={95} reverse label={a.head} />
+        <LogoLoop items={rows[0]} duration={80} label={a.head} />
+        <LogoLoop items={rows[1]} duration={92} reverse label={a.head} />
+        <LogoLoop items={rows[2]} duration={86} label={a.head} />
       </div>
     </section>
   );
