@@ -1,14 +1,7 @@
+import { bytes } from "./bytes";
 import { t } from "./i18n";
 
-const units = ["B", "KB", "MB", "GB", "TB"];
-
-export function bytes(n: number): string {
-  if (!n) return "0 B";
-  let i = 0;
-  let v = n;
-  while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
-  return `${v >= 100 || i === 0 ? Math.round(v) : v.toFixed(1)} ${units[i]}`;
-}
+export { bytes };
 
 // Notes written by Obituary itself are stored in a fixed English form; show them in the window's language.
 // Approval writes "approved #16 (rule *.log (builtin:10))"; once approved the

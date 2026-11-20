@@ -6,7 +6,8 @@
   "packageManager": "pnpm@11.11.0",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "test": "node --test src/bytes.test.ts",
+    "build": "pnpm test && tsc --noEmit && vite build",
     "playground": "vite --open /playground.html"
   },
   "dependencies": {
@@ -16,6 +17,7 @@
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
+    "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.3.0",
