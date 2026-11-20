@@ -29,7 +29,7 @@ function Segmented<T extends string>({ label, options, value, onChange }: { labe
 
 export function WindowLooks({ c }: { c: Copy }) {
   const w = c.window;
-  const [look, setLook] = useState<LookId>("palette");
+  const [look, setLook] = useState<LookId>("calendar");
   const [page, setPage] = useState<PageId>("upcoming");
   const name: Shot = page === "upcoming" ? look : `${look}-${page}`;
   return (
@@ -40,7 +40,7 @@ export function WindowLooks({ c }: { c: Copy }) {
           <p className="max-w-[46ch] text-lg text-ink-2">{w.lead}</p>
         </div>
         <div className="mb-6 flex flex-wrap items-center gap-3">
-          <Segmented label={w.lookLabel} options={(["palette", "calendar"] as LookId[]).map((id) => [id, w.looks[id]])} value={look} onChange={setLook} />
+          <Segmented label={w.lookLabel} options={(["calendar", "palette"] as LookId[]).map((id) => [id, w.looks[id]])} value={look} onChange={setLook} />
           <Segmented label={w.pageLabel} options={(["upcoming", "graveyard", "decisions"] as PageId[]).map((id) => [id, w.pages[id]])} value={page} onChange={setPage} />
         </div>
         <div className="grid gap-8 lg:grid-cols-[minmax(0,8fr)_minmax(0,4fr)] lg:items-start">

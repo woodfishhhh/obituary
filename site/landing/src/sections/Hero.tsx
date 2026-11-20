@@ -48,13 +48,13 @@ export function Hero({ c }: { c: Copy }) {
           <p className="text-sm text-muted">{h.terms}</p>
         </div>
 
-        {/* The product's two faces: One line in front of the Calendar. */}
+        {/* The product's two faces: the Calendar in front of the One line. */}
         <div className="relative w-full pb-10 lg:pb-16">
           <figure className="relative ml-auto w-[93%] overflow-hidden rounded-2xl bg-paper shadow-shot-back ring-1 ring-ink/5">
-            <img src={shot(c.lang, "calendar")} alt={h.altBack} width={shotSize.width} height={shotSize.height} className="block h-auto w-full" fetchPriority="high" />
+            <img src={shot(c.lang, "palette")} alt={h.altPalette} width={shotSize.width} height={shotSize.height} className="block h-auto w-full" fetchPriority="high" />
           </figure>
           <figure className="absolute -bottom-2 left-0 w-[80%] overflow-hidden rounded-2xl bg-paper shadow-glow ring-1 ring-ink/5 lg:bottom-0">
-            <img src={shot(c.lang, "palette")} alt={h.altFront} width={shotSize.width} height={shotSize.height} className="block h-auto w-full" fetchPriority="high" />
+            <img src={shot(c.lang, "calendar")} alt={h.altCalendar} width={shotSize.width} height={shotSize.height} className="block h-auto w-full" fetchPriority="high" />
             <BorderBeam size={160} duration={7} colorFrom={brand.sky} colorTo={brand.gold} borderWidth={2} transition={{ repeat: 2 }} />
           </figure>
         </div>
