@@ -18,6 +18,9 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'release' && !github.event.release.draft && !github.event.release.prerelease)
     runs-on: ubuntu-latest
+    concurrency:
+      group: cn-deploy
+      cancel-in-progress: false
     timeout-minutes: 20
     steps:
       - name: Trigger the mirror pull and wait for it to finish

@@ -79,6 +79,9 @@ jobs:
   deploy-cn:
     if: ${{ !github.event.repository.private }}
     needs: build
+    concurrency:
+      group: cn-deploy
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions: {}
