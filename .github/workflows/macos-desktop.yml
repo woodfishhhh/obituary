@@ -78,12 +78,12 @@ jobs:
           name: macos-desktop-package
           if-no-files-found: error
           path: |
-            $RUNNER_TEMP/macos-desktop/*.app.zip
-            $RUNNER_TEMP/macos-desktop/*.dmg
-            $RUNNER_TEMP/macos-desktop/checksums.txt
+            ${{ runner.temp }}/macos-desktop/*.app.zip
+            ${{ runner.temp }}/macos-desktop/*.dmg
+            ${{ runner.temp }}/macos-desktop/checksums.txt
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: macos-desktop-evidence
           if-no-files-found: warn
-          path: $RUNNER_TEMP/macos-evidence
+          path: ${{ runner.temp }}/macos-evidence
