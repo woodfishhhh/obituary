@@ -2,15 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { CheckIcon, ChevronDownIcon } from "lucide-react";
 import type { Copy } from "@/copy";
 import { localeOf, locales, type Lang } from "@/locales";
+import { Flag } from "@/components/flags";
 import { siteLink } from "@/lib/links";
 import { cn } from "@/lib/utils";
 
 // Remembered so the page stops suggesting another language once a visitor has chosen one.
 export const chosenKey = "obit-lang";
-
-export function Flag({ id, className }: { id: Lang; className?: string }) {
-  return <img src={`${import.meta.env.BASE_URL}flags/${localeOf(id).flag}.svg`} alt="" width={20} height={15} className={cn("h-[15px] w-5 shrink-0 rounded-[3px] object-cover ring-1 ring-ink/15", className)} />;
-}
 
 // A <details> menu: it opens and its links work with scripts off. With scripts, Escape and a click
 // elsewhere close it and Escape returns the focus to the button.

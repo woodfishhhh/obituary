@@ -7,6 +7,7 @@ import { Flow } from "@/sections/Flow";
 import { Footer } from "@/sections/Footer";
 import { Hero } from "@/sections/Hero";
 import { Install } from "@/sections/Install";
+import { FlagSprite } from "@/components/flags";
 import { LangHint } from "@/components/lang-hint";
 import { Lifecycle } from "@/sections/Lifecycle";
 import { Nav } from "@/sections/Nav";
@@ -22,6 +23,7 @@ export function App({ lang }: { lang: Lang }) {
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:rounded-full focus:bg-ink focus:px-4 focus:py-2 focus:text-paper">
         {c.a11y.skip}
       </a>
+      <FlagSprite />
       <Nav c={c} />
       <main id="main">
         <Hero c={c} />

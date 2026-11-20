@@ -3,7 +3,8 @@ import { XIcon } from "lucide-react";
 import { copy } from "@/copy";
 import { localeOf, matchBrowser, type Lang } from "@/locales";
 import { siteLink } from "@/lib/links";
-import { Flag, chosenKey } from "@/components/language-menu";
+import { Flag } from "@/components/flags";
+import { chosenKey } from "@/components/language-menu";
 
 const dismissedKey = "obit-lang-hint-closed";
 
