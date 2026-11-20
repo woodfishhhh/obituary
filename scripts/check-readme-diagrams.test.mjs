@@ -25,7 +25,8 @@ const MUTANTS = [
   ["es/lifecycle-dark.svg", "card edge cuts through its command chip", "chip-outside-card", (t) => t.replace(CARD, withHead("850"))],
   ["ko/lifecycle-dark.svg", "card narrowed until its command chip lies outside it", "chip-outside-card", (t) => t.replace(CARD, withHead("520"))],
   ["pt-BR/delete-guard-light.svg", "card too short for its text", "card-padding", (t) => t.replace(FIRST_CARD_HEIGHT, withHead("66"))],
-  ["de/delete-guard-dark.svg", "command chip slid over the note", "text-crosses-chip", (t) => t.replace(/(<rect data-role="chip" x=")([0-9.]+)/, (m, head, x) => head + (parseFloat(x) - 300))],
+  // x=130 lies inside the title and note of the same row, whatever the fonts are
+  ["de/delete-guard-dark.svg", "command chip slid over the title and note", "text-crosses-chip", (t) => t.replace(/(<rect data-role="chip" x=")[0-9.]+/, withHead("130"))],
   ["en/lifecycle-light.svg", "note colour washed out", "contrast", (t) => { let n = 0; return t.replace(/fill="#53637D"/g, (m) => (n++ < 3 ? 'fill="#B6C1D2"' : m)); }],
   ["ru/lifecycle-dark.svg", "a word dropped from a note", "copy-differs", (t) => t.replace("что осталось", "что")],
   ["fr/lifecycle-light.svg", "title pushed down onto its command chip", "text-overlap", (t) => t.replace(/(<text x="[0-9.]+" y=")([0-9.]+)(" font-family="[^"]+" font-size="24" fill="[^"]+" font-weight="700" data-t="title" data-k="purge")/, (m, a, y, b) => a + (parseFloat(y) + 26) + b)],
