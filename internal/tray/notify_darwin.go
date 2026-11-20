@@ -4,7 +4,7 @@ package tray
 
 /*
 #cgo darwin CFLAGS: -x objective-c -fobjc-arc
-#cgo darwin LDFLAGS: -framework Foundation
+#cgo darwin LDFLAGS: -framework Foundation -framework UserNotifications
 #import <UserNotifications/UserNotifications.h>
 #include <stdlib.h>
 
