@@ -156,6 +156,26 @@ button:disabled { cursor: not-allowed; }
 .spot:active { scale: 0.98; }
 @media (hover: hover) { .spot[data-lit="true"] { translate: 0 -2px; } }
 
+/* The first screen comes in with a CSS animation, not a script: it starts with the HTML. */
+.rise { animation: rise 700ms var(--ease-out-soft) both; }
+@keyframes rise { from { opacity: 0; transform: translate3d(0, 14px, 0); } }
+
+/* Sparkles (components/ui/sparkles-text.tsx): opacity and transform only, so they run on the compositor. */
+.sparkle {
+  opacity: 0;
+  transform: scale(0) rotate(75deg);
+  animation: sparkle 3s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+.sparkles[data-paused="true"] .sparkle { animation-play-state: paused; }
+@keyframes sparkle {
+  0%, 26%, 100% { opacity: 0; transform: scale(0) rotate(75deg); }
+  13% { opacity: 1; transform: scale(var(--sp-scale, 1)) rotate(120deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sparkle { display: none; }
+}
+
 /* The light that travels around a border (components/ui/border-beam.tsx): a ring cut by a static mask,
    with one rotating layer behind it. Only the rotation animates, and it runs on the compositor. */
 .beam-ring {
