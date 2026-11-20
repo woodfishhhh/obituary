@@ -32,9 +32,22 @@ const guiStyles = () => ({
   },
 });
 
+// The page's own faces never swap in late: with font-display "optional" a face that has not arrived in the
+// first fraction of a second (the first screen's are preloaded, so it normally has) is left for the next
+// visit, instead of replacing the fallback in the middle of reading and shifting the layout.
+const fontsOptional = {
+  postcssPlugin: "obit-fonts-optional",
+  AtRule: {
+    "font-face": (rule: { walkDecls: (name: string, cb: (d: { value: string }) => void) => void; toString: () => string }) => {
+      if (/Geist/.test(rule.toString())) rule.walkDecls("font-display", (d) => { d.value = "optional"; });
+    },
+  },
+};
+
 export default defineConfig(({ isSsrBuild }) => ({
   base,
   plugins: [guiStyles(), react(), tailwindcss()],
+  css: { postcss: { plugins: [fontsOptional] } },
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)), "@gui": `${guiRoot}/src` },
     // The front end sits outside this package: its imports resolve to the copies installed here.

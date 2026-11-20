@@ -1,22 +1,16 @@
 import { lazy, Suspense } from "react";
 import type { Copy } from "@/copy";
-import { Agents } from "@/sections/Agents";
-import { Community } from "@/sections/Community";
-import { Footer } from "@/sections/Footer";
-import { Hero } from "@/sections/Hero";
-import { Install } from "@/sections/Install";
 import { FlagSprite } from "@/components/flags";
 import { LangHint } from "@/components/lang-hint";
-import { Lifecycle } from "@/sections/Lifecycle";
+import { whenNeeded } from "@/lib/idle";
+import { Hero } from "@/sections/Hero";
 import { Nav } from "@/sections/Nav";
-import { Promises } from "@/sections/Promises";
-import { Values } from "@/sections/Values";
-import { WindowLooks } from "@/sections/WindowLooks";
 
-// The sections that use the animation library load after the first screen. The built pages already
-// contain their HTML (scripts/prerender.mjs waits for them), so nothing is missing while they arrive.
-const Flow = lazy(() => import("@/sections/FlowLazy"));
-const Story = lazy(() => import("@/sections/StoryLazy"));
+// Only the first screen is hydrated at once. The rest of the page is HTML from the start (the build
+// waits for it) and its scripts load when the visitor first scrolls, touches or types, or a few
+// seconds after the page has loaded (lib/idle.ts).
+const Below = lazy(() => whenNeeded().then(() => import("@/sections/Below")));
+const BelowFooter = lazy(() => whenNeeded().then(() => import("@/sections/BelowFooter")));
 
 export function App({ c }: { c: Copy }) {
   return (
@@ -28,17 +22,9 @@ export function App({ c }: { c: Copy }) {
       <Nav c={c} />
       <main id="main">
         <Hero c={c} />
-        <Values c={c} />
-        <Suspense fallback={null}><Flow c={c} /></Suspense>
-        <Suspense fallback={null}><Story c={c} /></Suspense>
-        <Promises c={c} />
-        <Lifecycle c={c} />
-        <WindowLooks c={c} />
-        <Agents c={c} />
-        <Install c={c} />
-        <Community c={c} />
+        <Suspense fallback={null}><Below c={c} /></Suspense>
       </main>
-      <Footer c={c} />
+      <Suspense fallback={null}><BelowFooter c={c} /></Suspense>
       <LangHint lang={c.lang} />
     </>
   );

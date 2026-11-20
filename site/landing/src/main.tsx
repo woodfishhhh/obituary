@@ -9,8 +9,6 @@ import { langFromHtml, locales, type Lang } from "./locales";
 const wanted = import.meta.env.DEV ? new URLSearchParams(location.search).get("lang") : null;
 const lang: Lang = locales.find((l) => l.id === wanted)?.id ?? langFromHtml(document.documentElement.lang);
 if (import.meta.env.DEV) document.documentElement.lang = locales.find((l) => l.id === lang)!.html;
-// From here on, content that reveals on scroll may start hidden (.reveal in index.css).
-document.documentElement.classList.add("js");
 const root = document.getElementById("root")!;
 const c = await loadCopy(lang);
 const page = (
