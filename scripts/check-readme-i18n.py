@@ -26,6 +26,7 @@ def headings(text):
     return {slug(m.group(1)) for m in re.finditer(r"^##\s+(.+?)\s*$", text, re.M)}
 
 source = (ROOT / "README.md").read_text(encoding="utf-8")
+source_language_bar = source.partition("\n")[0]
 source_blocks = code_blocks(source)
 source_heading_count = len(headings(source))
 errors = []
@@ -35,6 +36,8 @@ for name in README_NAMES:
         errors.append(f"{name}: missing")
         continue
     text = path.read_text(encoding="utf-8")
+    if text.partition("\n")[0] != source_language_bar:
+        errors.append(f"{name}: language bar differs from README.md")
     for link in links(text):
         if not (ROOT / link).exists():
             errors.append(f"{name}: missing link {link}")
@@ -46,7 +49,7 @@ for name in README_NAMES:
         errors.append(f"{name}: heading count {len(headings(text))} != {source_heading_count}")
     if code_blocks(text) != source_blocks:
         errors.append(f"{name}: code blocks differ")
-    image_paths = [p for p in links(text) if p.endswith((".svg", ".gif", ".png", ".jpg", ".jpeg"))]
+    image_paths = [p for p in links(text) if p.endswith((".svg", ".gif", ".png", ".jpg", ".jpeg")) and not p.startswith("docs/assets/flags/")]
     if len(image_paths) < 4:
         errors.append(f"{name}: too few images {len(image_paths)}")
 svg_root = Path(os.environ.get("README_SVG_ROOT", str(ROOT / "docs" / "assets" / "readme" / "i18n")))
@@ -96,4 +99,4 @@ for language in ["en", "zh-CN", "zh-TW", "ja", "ko", "es", "fr", "de", "pt-BR", 
 if errors:
     print("\n".join(errors))
     sys.exit(1)
-print(f"OK: {len(README_NAMES)} README files, {source_heading_count} headings, {len(source_blocks)} code blocks, links/images and 40 SVG static checks pass")
+print(f"OK: {len(README_NAMES)} README files, matching language bars, {source_heading_count} headings, {len(source_blocks)} code blocks, links/images and 40 SVG static checks pass")

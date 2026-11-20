@@ -1,5 +1,7 @@
 # Third-party notices for docs/assets
 
+The README language bar uses the unmodified [flag-icons v7.5.0](https://github.com/lipis/flag-icons/tree/v7.5.0/flags/4x3) 4:3 SVGs in [`flags/`](flags/). The upstream MIT license is preserved in [`flags/LICENSE`](flags/LICENSE).
+
 The agent wall in `docs/assets/readme/agents/` (agents-light.svg, agents-dark.svg) contains agent marks from @lobehub/icons-static-svg 1.102.0 and four marks from their vendors, all used unaltered. Each mark is a trademark of its owner and appears only to show that Obituary connects to that agent; no endorsement is implied.
 
 ## @lobehub/icons-static-svg

@@ -97,7 +97,7 @@ go build -ldflags=-H=windowsgui -o bin/obitd.exe ./cmd/obitd
 ## README 多语言维护
 
 - 英文 `README.md` 是唯一源文件；每次修改必须在同一次提交中同步 `README.zh-CN.md`、`README.zh-TW.md`、`README.ja.md`、`README.ko.md`、`README.es.md`、`README.fr.md`、`README.de.md`、`README.pt-BR.md`、`README.ru.md`。
-- README 顶部语言栏按固定顺序列出 English、简体中文、繁體中文、日本語、한국어、Español、Français、Deutsch、Português (Brasil)、Русский；当前语言加粗，其余链接到根目录对应文件。
+- 10 份 README 的第一行语言栏必须相同，每种语言都链接到根目录对应文件。顺序及国旗对应为：English（美国 `us`）、简体中文（中国 `cn`）、繁體中文（中国 `cn`）、日本語（日本 `jp`）、한국어（韩国 `kr`）、Español（西班牙 `es`）、Français（法国 `fr`）、Deutsch（德国 `de`）、Português (Brasil)（巴西 `br`）、Русский（俄罗斯 `ru`）。每个语言名之前用 `<img>` 引用 `docs/assets/flags/` 下的 SVG，高 14 px，垂直居中，`alt` 留空；不用国旗 emoji。
 - 图片变体位于 `docs/assets/readme/i18n/<语言代码>/`，文案在 `strings.json`，模板是 `lifecycle-<主题>.svg.tmpl` 与 `delete-guard-<主题>.svg.tmpl`；重新生成运行 `python docs/assets/readme/i18n/generate.py`。
 - 图片生成结果要与 README 语言同步；简体中文和繁體中文使用中文 demo GIF，其余语言使用英文 demo GIF。软件本身完成多语言后再重做 GIF 和右键菜单截图。
 - SVG 生成器使用统一的字符宽度布局规则，自动计算卡片、间距、换行、箭头说明和星标锚点；不使用横向压缩，标题不低于 22 px，说明不低于 14 px。生成后运行 `python scripts/check-readme-i18n.py`，再用浏览器检查文本边界、图标重叠和截断。
