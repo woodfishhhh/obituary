@@ -2,8 +2,11 @@ package gui
 
 import (
 	"encoding/json"
+	"errors"
 	"regexp"
 	"testing"
+
+	"github.com/woodfishhhh/obituary/internal/core"
 )
 
 // A fresh ledger has no watches, proposals or burials. Every list the window
@@ -51,6 +54,9 @@ func TestEmptyLedgerListsAreArrays(t *testing.T) {
 	check("PlanSessionSummary", summary, err)
 	for name, plan := range map[string]func(bool) (Plan, error){"PlanTrayIcon": a.PlanTrayIcon, "PlanTaskbar": a.PlanTaskbar, "PlanStartMenu": a.PlanStartMenu, "PlanDesktopShortcut": a.PlanDesktopShortcut} {
 		p, err := plan(false)
+		if errors.Is(err, core.ErrUnsupported) {
+			continue // no plan is returned to the window for an unavailable integration
+		}
 		check(name, p, err)
 		if err == nil {
 			r, err := a.ApplyPlan(p.ID)

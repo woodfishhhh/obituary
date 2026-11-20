@@ -1,4 +1,4 @@
-//go:build linux
+//go:build linux && desktop
 
 package tray
 
@@ -71,7 +71,6 @@ func (m *menu) localize() {
 	m.open.SetTitle(language.Text(i18n.OpenData))
 	m.quit.SetTitle(language.Text(i18n.Quit))
 	m.quit.SetTooltip(language.Text(i18n.QuitHint))
-	m.showPaused(false)
 }
 
 func (m *menu) showPaused(paused bool) {

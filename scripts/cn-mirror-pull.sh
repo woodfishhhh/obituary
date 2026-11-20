@@ -35,6 +35,8 @@ verify() (
   [[ -d $2 && ! -L $2 ]] || fail 'Missing or linked staging directory'
   cd -- "$2"
   local archives=("$prefix"{darwin,linux}_{amd64,arm64}.tar.gz "$prefix"windows_{amd64,arm64}.zip)
+  # Older releases have only the six archives; accept only the exact native package name.
+  if [[ -e ${prefix}linux_amd64.deb ]]; then archives+=("${prefix}linux_amd64.deb"); fi
   regular_files . "${archives[@]}" install.sh install.ps1 checksums.txt release.json latest-tag transport.sha256
   check_sums checksums.txt "${archives[@]}"
   check_sums transport.sha256 install.sh install.ps1 checksums.txt release.json latest-tag

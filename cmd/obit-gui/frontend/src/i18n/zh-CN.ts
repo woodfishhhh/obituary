@@ -324,7 +324,7 @@ export const zh = {
   "set.resume": "恢复自动清理",
   "set.pause": "暂停自动清理",
   "set.autostart": "开机启动托盘",
-  "set.autostartDesc": "登录 Windows 后托盘图标自动出现",
+  "set.autostartDesc": "登录桌面时启动托盘",
   "set.autostartOff": "已关闭开机启动",
   "set.autostartOn": "已开启开机启动",
   "set.menu": "右键菜单",

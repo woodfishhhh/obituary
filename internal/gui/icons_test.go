@@ -112,6 +112,7 @@ func assertShortcutDirectories(t *testing.T, installed bool) {
 }
 
 func TestTaskbarFailureKeepsConfigReceipt(t *testing.T) {
+	testenv.WindowsOnly(t, "native Windows taskbar setter")
 	a, _ := fixture(t)
 	SetTaskbarSetter(a, func(bool) error { return errors.New("window unavailable") })
 	p, err := a.PlanTaskbar(false)

@@ -36,6 +36,11 @@ env:
   GOTESTSUM: gotest.tools/gotestsum@v1.13.0
 
 jobs:
+  linux-desktop:
+    uses: ./.github/workflows/linux-desktop.yml
+    permissions:
+      contents: read
+
   # Packaging is the slowest job and rarely touched: on pushes, run the
   # snapshot build and installer tests only when packaging inputs changed
   # (always on PRs, manual and scheduled runs).

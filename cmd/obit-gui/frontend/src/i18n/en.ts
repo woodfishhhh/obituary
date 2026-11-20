@@ -1,6 +1,6 @@
 // English copy. Typed as Messages, so a key missing from zh-CN.ts's set, an
 // extra key or a different signature fails the type check.
-import type { Messages } from "./zh-CN";
+import type { Messages } from "./zh-CN.ts";
 
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -318,7 +318,7 @@ export const en: Messages = {
   "set.resume": "Resume automatic clean-up",
   "set.pause": "Pause automatic clean-up",
   "set.autostart": "Start the tray at sign-in",
-  "set.autostartDesc": "The tray icon appears when you sign in to Windows",
+  "set.autostartDesc": "Start the tray when you sign in to your desktop",
   "set.autostartOff": "Start at sign-in turned off",
   "set.autostartOn": "Start at sign-in turned on",
   "set.menu": "Right-click menu",
@@ -589,7 +589,7 @@ export const en: Messages = {
   "cal.graveQuiet": "No cremations in the next few days",
   "cal.graveQuietText": "The graveyard is empty; buried files go on the day they are cremated",
   "cal.expired": "Expired",
-  "cal.meta": (source, age) => `${source}, lifespan ${age}`,
+  "cal.meta": (source, age) => `${source},\u00a0lifespan ${age}`,
   "cal.moveBody": (n, days, to) => `${plural(n, "Moves", "Each moves")} ${plural(days, "1 day", `${days} days`)} later${to ? `, now due ${to}` : ""}.`,
   "cal.upDeck": (n, today) => `${plural(n, "1 item is", `${n} items are`)} still in place, each on the day ${plural(n, "it is", "they are")} buried${today ? ` (${today} today)` : ""}. Drag one to a later day to extend it.`,
   "cal.upDeckEmpty": "Once a file has a lifespan, it sits on the day it will be buried.",

@@ -30,6 +30,16 @@ cmp install.sh "$public/$tag/install.sh"; cmp install.ps1 "$public/$tag/install.
 before=$(snapshot)
 run
 [[ $(snapshot) == "$before" ]]
+(
+  desktop=obituary_1.2.3_linux_amd64.deb
+  cp -a "$input" "$work/with-desktop"
+  cd "$work/with-desktop"
+  printf 'native desktop\n' > "$desktop"
+  sha256sum "$desktop" >> checksums.txt; transport
+  source "$script"; verify "$tag" .
+  printf 'corrupt' >> "$desktop"
+  if (verify "$tag" .) >/dev/null 2>&1; then exit 1; fi
+)
 reject 'Expected a stable tag' v1.2.3-rc.1
 touch .extra; reject 'Unexpected file count'; mv .extra "$work/extra"
 archive=obituary_1.2.3_linux_amd64.tar.gz

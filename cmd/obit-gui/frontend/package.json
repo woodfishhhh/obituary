@@ -6,7 +6,7 @@
   "packageManager": "pnpm@11.11.0",
   "scripts": {
     "dev": "vite",
-    "test": "node --test src/bytes.test.ts",
+    "test": "node --test src/bytes.test.ts src/i18n.test.ts",
     "build": "pnpm test && tsc --noEmit && vite build",
     "playground": "vite --open /playground.html"
   },

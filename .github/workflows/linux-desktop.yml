@@ -1,0 +1,44 @@
+name: Linux desktop package
+on:
+  workflow_call:
+    inputs:
+      snapshot:
+        type: boolean
+        default: true
+permissions:
+  contents: read
+jobs:
+  desktop:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+      - name: Install native build and headless test dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev xvfb xauth dbus-daemon python3-dbus python3-gi gir1.2-gtk-3.0 xdotool imagemagick
+      - name: Test desktop packages on a private display and bus
+        run: env -u WAYLAND_DISPLAY GDK_BACKEND=x11 xvfb-run -a dbus-run-session -- go test -tags desktop,production,webkit2_41 ./cmd/obit-gui ./internal/gui ./internal/tray ./internal/app
+      - uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de
+        with:
+          distribution: goreleaser
+          version: v2.20.0
+          args: release -f .goreleaser-linux-desktop.yaml --skip=publish ${{ inputs.snapshot && '--snapshot' || '' }}
+      - name: Verify clean install and removal
+        run: |
+          docker run --rm -v "$PWD/bin/linux-desktop:/pkg:ro" -v "$PWD/scripts:/checks:ro" ubuntu:24.04 bash -ec 'bash /checks/test-linux-desktop-package.sh /pkg/*.deb'
+      - name: Exercise the installed desktop on a private display and bus
+        run: |
+          mkdir "$RUNNER_TEMP/evidence"
+          bash scripts/test-linux-desktop-session.sh bin/linux-desktop/*.deb "$RUNNER_TEMP/evidence"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: linux-desktop-deb
+          path: bin/linux-desktop/*.deb
+          if-no-files-found: error

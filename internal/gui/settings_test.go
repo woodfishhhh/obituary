@@ -26,6 +26,10 @@ func TestSettingsDefaultsAndParseFailure(t *testing.T) {
 }
 
 func TestPlanSettingsPreservesTOMLCommentsAndOtherKeys(t *testing.T) {
+	mode := config.ModeGraveyard
+	if platformCapabilities().Recycle {
+		mode = config.ModeRecycle
+	}
 	for _, original := range []string{
 		"# keep\ncodex_windows_shell = 'bash'\n[graveyard] # grave comment\nmode = 'graveyard' # mode comment\nretention_days = 7 # days comment\n[agent_shells]\ncodex = 'bash'\n",
 		"\xef\xbb\xbf# keep\r\n[graveyard]\r\n# days comment\r\nretention_days = 7\r\n",
@@ -40,7 +44,7 @@ func TestPlanSettingsPreservesTOMLCommentsAndOtherKeys(t *testing.T) {
 			a, _ := fixture(t)
 			path := filepath.Join(a.deps.ConfigDir, "config.toml")
 			write(t, path, original)
-			plan, err := a.PlanSettings("recycle", 14)
+			plan, err := a.PlanSettings(mode, 14)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -59,7 +63,7 @@ func TestPlanSettingsPreservesTOMLCommentsAndOtherKeys(t *testing.T) {
 				t.Fatal(err)
 			}
 			cfg, err := config.Parse(data, path)
-			if err != nil || cfg.Graveyard.Mode != "recycle" || cfg.Graveyard.RetentionDays != 14 {
+			if err != nil || cfg.Graveyard.Mode != mode || cfg.Graveyard.RetentionDays != 14 {
 				t.Fatalf("config: %s %v", data, err)
 			}
 			for _, marker := range []string{"# keep", "# grave comment", "# mode comment", "# days comment", "unknown = 'untouched'", "codex = 'bash'", "# inline comment"} {

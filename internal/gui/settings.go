@@ -10,6 +10,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/config"
 	"github.com/woodfishhhh/obituary/internal/contextmenu"
+	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/integrate"
 	"github.com/woodfishhhh/obituary/internal/shortcut"
@@ -81,13 +82,16 @@ func (a *API) Settings() (Settings, error) {
 	if st, err := a.deps.Service.Store.Read(); err == nil {
 		lifetime = &Lifetime{Buried: st.Stats.Buried, BuriedBytes: st.Stats.BuriedBytes, PurgedBytes: st.Stats.PurgedBytes, Resurrected: st.Stats.Resurrected}
 	}
-	start, err := shortcut.Inspect(a.deps.Shortcuts, a.deps.Executable, shortcut.StartMenu)
-	if err != nil {
-		return Settings{}, err
-	}
-	desktop, err := shortcut.Inspect(a.deps.Shortcuts, a.deps.Executable, shortcut.Desktop)
-	if err != nil {
-		return Settings{}, err
+	var start, desktop string
+	if capabilities := platformCapabilities(); capabilities.StartMenu || capabilities.DesktopShortcut {
+		start, err = shortcut.Inspect(a.deps.Shortcuts, a.deps.Executable, shortcut.StartMenu)
+		if err != nil {
+			return Settings{}, err
+		}
+		desktop, err = shortcut.Inspect(a.deps.Shortcuts, a.deps.Executable, shortcut.Desktop)
+		if err != nil {
+			return Settings{}, err
+		}
 	}
 	paused, err := app.Paused(a.deps.Service.Store.Home)
 	return Settings{Capabilities: platformCapabilities(), TrayIcon: cfg.UI.Tray, Taskbar: cfg.UI.Taskbar, StartMenu: start != "", DesktopShortcut: desktop != "", Lifetime: lifetime, Downloads: downloadsFolder(), Mode: cfg.Graveyard.Mode, RetentionDays: cfg.Graveyard.RetentionDays, Language: cfg.UI.Language, EffectiveLanguage: language,
@@ -130,6 +134,9 @@ func (a *API) savePlan(action string, changes []ChangePreview, apply func() erro
 }
 
 func (a *API) PlanSettings(mode string, retentionDays int) (Plan, error) {
+	if mode == config.ModeRecycle && !platformCapabilities().Recycle {
+		return Plan{}, core.ErrUnsupported
+	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	path := filepath.Join(a.deps.ConfigDir, "config.toml")

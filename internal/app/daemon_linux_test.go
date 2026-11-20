@@ -1,4 +1,4 @@
-//go:build linux
+//go:build linux && desktop
 
 package app
 
@@ -69,5 +69,30 @@ func TestLinuxAutostartRejectsForeignEntry(t *testing.T) {
 	}
 	if _, err := PlanAutostart(nil, "/opt/obitd", "/data", "/config", true); err == nil {
 		t.Fatal("foreign autostart entry was accepted")
+	}
+	if err := os.WriteFile(path, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := PlanAutostart(nil, "/opt/obitd", "/data", "/config", false); err == nil {
+		t.Fatal("accepted removal of an empty entry")
+	}
+	if err := os.WriteFile(path, []byte(desktopEntry("/other/obitd", "/data", "/config")), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	plan, err := PlanAutostart(nil, "/opt/obitd", "/data", "/config", false)
+	if err != nil || !plan.Pending() {
+		t.Fatalf("relocated managed entry: %+v %v", plan, err)
+	}
+	if err := plan.Apply(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestLinuxAutostartEscapesDesktopArgumentsOnce(t *testing.T) {
+	text := desktopEntry(`/opt/a b/obitd`, `/tmp/a\b`, `/tmp/100%/config`)
+	for _, want := range []string{`Exec="/opt/a b/obitd"`, `--home "/tmp/a\\b"`, `--config-dir "/tmp/100%%/config"`} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("desktop entry missing %q: %s", want, text)
+		}
 	}
 }

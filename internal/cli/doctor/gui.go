@@ -16,8 +16,17 @@ type GUICheck struct {
 }
 
 func diagnoseGUI(daemon string, daemonErr error, version func(string) string) DoctorCheck {
+	if runtime.GOOS == "linux" && runtime.GOARCH == "amd64" {
+		if daemonErr == nil {
+			path := filepath.Join(filepath.Dir(daemon), "obit-gui")
+			if regularFile(path) == nil {
+				return DoctorCheck{Name: "gui", Status: "PASS", Detail: "desktop companion: " + path}
+			}
+		}
+		return DoctorCheck{Name: "gui", Status: "INFO", Detail: "the optional Ubuntu 24.04 desktop package provides the window and tray"}
+	}
 	if runtime.GOOS != "windows" {
-		return DoctorCheck{Name: "gui", Status: "INFO", Detail: "the GUI is Windows-only"}
+		return DoctorCheck{Name: "gui", Status: "INFO", Detail: "use the CLI on this platform"}
 	}
 	g := &GUICheck{Path: filepath.Join(filepath.Dir(daemon), "obit-gui.exe"), DaemonPath: daemon}
 	c := DoctorCheck{Name: "gui", Status: "WARN", GUI: g}

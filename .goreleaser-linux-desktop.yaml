@@ -1,0 +1,58 @@
+version: 2
+project_name: obituary
+dist: bin/linux-desktop
+
+# Native Ubuntu build; the six headless/Windows archives stay in .goreleaser.yaml.
+builds:
+  - id: cli
+    tags: [desktop]
+    main: ./cmd/obit
+    binary: obit
+    env: [CGO_ENABLED=0]
+    goos: [linux]
+    goarch: [amd64]
+    flags: [-trimpath]
+    ldflags: &version ['-s -w -X github.com/woodfishhhh/obituary/internal/buildinfo.Version={{ .Version }}']
+  - id: daemon
+    tags: [desktop]
+    main: ./cmd/obitd
+    binary: obitd
+    env: [CGO_ENABLED=0]
+    goos: [linux]
+    goarch: [amd64]
+    flags: [-trimpath]
+    ldflags: *version
+  - id: gui
+    main: ./cmd/obit-gui
+    binary: obit-gui
+    env: [CGO_ENABLED=1]
+    goos: [linux]
+    goarch: [amd64]
+    tags: [desktop, production, webkit2_41]
+    flags: [-trimpath]
+    ldflags: *version
+
+archives:
+  - formats: [binary]
+nfpms:
+  - package_name: obituary-desktop
+    file_name_template: 'obituary_{{ .Version }}_linux_{{ .Arch }}'
+    formats: [deb]
+    bindir: /usr/libexec/obituary
+    maintainer: woodfishhhh <woodfishhhh@users.noreply.github.com>
+    description: Obituary desktop window and tray for managing file lifespans.
+    homepage: https://obituary.woodfish.site
+    license: MIT
+    section: utils
+    dependencies: [libgtk-3-0t64, libwebkit2gtk-4.1-0, xdg-utils]
+    contents:
+      - src: packaging/linux/obituary.desktop
+        dst: /usr/share/applications/obituary.desktop
+      - src: internal/tray/obituary.png
+        dst: /usr/share/icons/hicolor/128x128/apps/obituary.png
+      - src: LICENSE
+        dst: /usr/share/doc/obituary-desktop/copyright
+checksum:
+  disable: true
+snapshot:
+  version_template: '{{ .Version }}-dev.{{ .ShortCommit }}'

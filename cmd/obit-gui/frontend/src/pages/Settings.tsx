@@ -80,7 +80,7 @@ export default function Settings() {
         <Setting icon={Archive} label={t("set.mode")} desc={s.mode === "recycle" ? t("set.modeRecycle") : t("set.modeGraveyard")}>
           <select className="select" value={s.mode} aria-label={t("set.mode")} onChange={async (e) => { const recycle = e.target.value === "recycle"; await apply(await api.PlanSettings(e.target.value, s.retentionDays), recycle ? t("set.toRecycle") : t("set.toGraveyard"), { ask: true, body: <p>{recycle ? t("set.toRecycleBody") : t("set.toGraveyardBody", s.retentionDays)}</p> }); }}>
             <option value="graveyard">{t("set.graveyardOption")}</option>
-            <option value="recycle">{t("set.recycle")}</option>
+            {s.capabilities?.recycle !== false && <option value="recycle">{t("set.recycle")}</option>}
           </select>
         </Setting>
         <Setting icon={CalendarClock} label={t("set.retention")} desc={t("set.retentionDesc")}>
@@ -121,9 +121,9 @@ export default function Settings() {
         </Setting>
       </div>
 
-      <div className="section-title">{t("set.entry")}</div>
+      {(!s.capabilities || Object.values(s.capabilities).some(Boolean)) && <><div className="section-title">{t("set.entry")}</div>
       <div className="card">
-        {s.trayIcon !== undefined && api.PlanTrayIcon ? (
+        {s.capabilities?.trayVisibility !== false && s.trayIcon !== undefined && api.PlanTrayIcon ? (
           <Setting icon={PanelBottom} label={t("set.tray")} desc={t("set.trayDesc")}>
             <Switch on={s.trayIcon} label={t("set.tray")} onToggle={async () => apply(await api.PlanTrayIcon!(!s.trayIcon), s.trayIcon ? t("set.trayOff") : t("set.trayOn"))} />
           </Setting>
@@ -148,7 +148,7 @@ export default function Settings() {
             <Switch on={s.contextMenuInstalled} label={t("set.menu")} onToggle={async () => apply(await api.PlanContextMenu(!s.contextMenuInstalled), s.contextMenuInstalled ? t("set.menuOff") : t("set.menuOn"), { ask: true })} />
           </Setting>
         ) : null}
-      </div>
+      </div></>}
 
       <div className="section-title">{t("set.watches")}</div>
       <p className="hint section-deck">{t("set.watchesDeck")}</p>

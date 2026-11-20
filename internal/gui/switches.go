@@ -10,10 +10,14 @@ import (
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/config"
 	"github.com/woodfishhhh/obituary/internal/contextmenu"
+	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 )
 
 func (a *API) PlanContextMenu(enabled bool) (Plan, error) {
+	if !platformCapabilities().ContextMenu {
+		return Plan{}, core.ErrUnsupported
+	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	cfg, err := a.readConfig()

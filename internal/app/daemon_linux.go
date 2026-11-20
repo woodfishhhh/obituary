@@ -1,4 +1,4 @@
-//go:build linux
+//go:build linux && desktop
 
 package app
 
@@ -157,10 +157,10 @@ func (p *AutostartPlan) Apply() error {
 	if current != p.Before {
 		return fmt.Errorf("autostart entry changed since planning")
 	}
+	if !p.Pending() {
+		return nil
+	}
 	if !p.enabled {
-		if current == "" {
-			return nil
-		}
 		return os.Remove(p.path)
 	}
 	if err := os.MkdirAll(filepath.Dir(p.path), 0o700); err != nil {
@@ -183,7 +183,10 @@ func (p *AutostartPlan) Apply() error {
 	if err := tmp.Close(); err != nil {
 		return err
 	}
-	return os.Rename(tmpName, p.path)
+	if err := os.Link(tmpName, p.path); err != nil {
+		return fmt.Errorf("write autostart entry: %w", err)
+	}
+	return os.Remove(tmpName)
 }
 
 func PlanAutostart(_ RunRegistry, daemon, home, config string, enabled bool) (*AutostartPlan, error) {
@@ -196,9 +199,12 @@ func PlanAutostart(_ RunRegistry, daemon, home, config string, enabled bool) (*A
 	if err != nil {
 		return nil, err
 	}
-	after, content := "", ""
+	if strings.ContainsAny(daemon+home+config, "\r\n\x00") {
+		return nil, errors.New("autostart paths must fit on a single desktop entry line")
+	}
+	content := desktopEntry(daemon, home, config)
+	after := ""
 	if enabled {
-		content = desktopEntry(daemon, home, config)
 		after = content
 	}
 	if before != "" && !managedDesktopEntry(before) {
@@ -208,14 +214,18 @@ func PlanAutostart(_ RunRegistry, daemon, home, config string, enabled bool) (*A
 }
 
 func readAutostart(path string) (string, error) {
-	data, err := os.ReadFile(path)
+	info, err := os.Lstat(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return "", nil
 	}
 	if err != nil {
 		return "", err
 	}
-	return string(data), nil
+	if !info.Mode().IsRegular() || info.Size() == 0 {
+		return "", fmt.Errorf("autostart entry is not a managed regular file: %s", path)
+	}
+	data, err := os.ReadFile(path)
+	return string(data), err
 }
 
 func managedDesktopEntry(content string) bool {
@@ -227,10 +237,9 @@ func desktopEntry(daemon, home, config string) string {
 }
 
 func desktopArg(value string) string {
-	if value == "" || !strings.ContainsAny(value, " \t\\\"") {
-		return value
-	}
-	return "\"" + strings.NewReplacer("\\", "\\\\", "\"", "\\\"").Replace(value) + "\""
+	// Desktop entries unescape the string value before interpreting Exec quoting.
+	value = strings.NewReplacer("\\", "\\\\", "\"", "\\\"", "%", "%%").Replace(value)
+	return "\"" + value + "\""
 }
 
 func SetAutostart(home string, enabled bool) error {

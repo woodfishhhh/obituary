@@ -1,4 +1,4 @@
-//go:build darwin
+//go:build darwin || (linux && !desktop)
 
 package main
 
@@ -8,6 +8,6 @@ import (
 )
 
 func main() {
-	fmt.Fprintln(os.Stderr, "obit-gui is not supported on this platform; use the obit CLI")
+	fmt.Fprintln(os.Stderr, "this build has no desktop window; use the obit CLI")
 	os.Exit(1)
 }

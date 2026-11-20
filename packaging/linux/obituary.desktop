@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Obituary
+Name[zh_CN]=讣告
+Exec=/usr/libexec/obituary/obit-gui
+Icon=obituary
+Terminal=false
+Categories=Utility;

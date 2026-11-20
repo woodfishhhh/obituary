@@ -1,4 +1,4 @@
-//go:build linux
+//go:build linux && desktop
 
 // Package tray is the Linux presentation layer. Actions live in app and can
 // be exercised without creating an icon or starting a desktop application.
@@ -68,16 +68,23 @@ func Run(svc *core.Service, logger *log.Logger) error {
 	done := make(chan error, 1)
 	systray.Run(func() {
 		m := newMenu(r)
-		go followVisibility(ctx, logger)
+		// systray drops clicks with no receiver. Quit must work during a menu refresh.
+		go func() {
+			select {
+			case <-ctx.Done():
+			case <-m.quit.clicks():
+				cancel()
+			}
+		}()
 		go func() { done <- r.Run(ctx); systray.Quit() }()
-		go m.run(ctx, cancel, changed, logger)
+		go m.run(ctx, changed, logger)
 	}, cancel)
 	cancel()
 	return <-done
 }
 
 func watcherAvailable() bool {
-	conn, err := dbus.SessionBus()
+	conn, err := dbus.ConnectSessionBus()
 	if err != nil {
 		return false
 	}
@@ -100,16 +107,13 @@ func newMenu(r *app.Resident) *menu {
 	}, config.UILanguage)
 }
 
-func (m *menu) run(ctx context.Context, cancel context.CancelFunc, changed <-chan struct{}, logger *log.Logger) {
+func (m *menu) run(ctx context.Context, changed <-chan struct{}, logger *log.Logger) {
 	m.refresh(ctx)
 	defer m.rowCancel()
 	for {
 		var err error
 		select {
 		case <-ctx.Done():
-			return
-		case <-m.quit.clicks():
-			cancel()
 			return
 		case <-m.open.clicks():
 			err = openDirectory(m.resident.Service.Store.Home)
@@ -119,6 +123,7 @@ func (m *menu) run(ctx context.Context, cancel context.CancelFunc, changed <-cha
 			err = m.openGUI.open()
 		case <-m.pause.clicks():
 			err = m.togglePause()
+			m.refresh(ctx)
 		case action := <-m.actions:
 			err = action()
 			m.refresh(ctx)
@@ -310,13 +315,13 @@ func directoryCommand(path string) (*exec.Cmd, error) {
 }
 
 func showBalloon(title, text string) error {
-	conn, err := dbus.SessionBus()
+	conn, err := dbus.ConnectSessionBus()
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
 	var id uint32
 	return conn.Object("org.freedesktop.Notifications", "/org/freedesktop/Notifications").Call(
-		"org.freedesktop.Notifications.Notify", 0, "obituary", uint32(0), "obituary", title, []string{}, map[string]dbus.Variant{}, int32(5000),
+		"org.freedesktop.Notifications.Notify", 0, "obituary", uint32(0), "obituary", title, text, []string{}, map[string]dbus.Variant{}, int32(5000),
 	).Store(&id)
 }

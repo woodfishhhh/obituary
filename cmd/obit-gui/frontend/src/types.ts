@@ -138,6 +138,8 @@ export interface WatchPolicy {
 
 export interface Settings {
   capabilities?: {
+    recycle?: boolean;
+    trayVisibility?: boolean;
     contextMenu: boolean;
     taskbar: boolean;
     startMenu: boolean;

@@ -1,4 +1,4 @@
-//go:build windows || linux
+//go:build windows || (linux && desktop)
 
 // Windows native build, without Wails CLI, Node or a C compiler:
 // CGO_ENABLED=0 go build -tags desktop,production -ldflags "-H windowsgui" -o bin/obit-gui.exe ./cmd/obit-gui
