@@ -43,3 +43,6 @@
 .vp-doc table {
   font-size: 0.9375rem;
 }
+
+/* One language menu at all widths, including the mobile header. */
+.VPNavBar .VPNavBarTranslations, .VPNavBarExtra .translations, .VPNavScreenTranslations { display:none }

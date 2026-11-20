@@ -11,3 +11,4 @@ run("node scripts/community.mjs");
 run("pnpm --filter landing build");
 run("pnpm --filter docs build");
 run("node scripts/assemble.mjs");
+run("node scripts/check-docs.mjs");

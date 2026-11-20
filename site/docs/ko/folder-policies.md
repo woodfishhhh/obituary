@@ -1,0 +1,24 @@
+# 폴더 정책
+
+폴더 정책을 설정하면 그 폴더에 들어오는 항목마다 수명이 따로 생깁니다. 다운로드 폴더가 대표적인 예입니다.
+
+```powershell
+obit watch C:\Users\you\Downloads 2w        # files that land in Downloads are buried two weeks later
+obit watch --list                           # folder policies, their exemptions and quiet periods
+obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans it registered
+```
+
+## 적용 조건
+
+- **정책은 승인을 받아야 합니다.** `obit watch`는 제안을 만듭니다. `obit approve`를 실행하거나 작은 창의 ‘For you’ 페이지에서 승인하면 정책이 적용됩니다.
+- **10분 동안 변경되지 않은 파일만 매장합니다.** 수명이 만료되고 최근 10분 동안 변경된 적이 없어야 합니다.
+- **하위 폴더는 따로 승인합니다.** 하위 폴더가 만료되면 제안만 만들고, 사용자가 승인한 뒤에 매장합니다.
+- 정책을 제거하면 그 정책이 등록한 수명도 취소됩니다.
+
+## 파일 탐색기의 날짜 표시 {#dates-in-explorer}
+
+다운로드 폴더, 바탕 화면, 정책을 적용한 폴더에서 추적 중인 항목은 파일 탐색기에 ‘이름 (11-13 매장)’처럼 표시됩니다. 실제 파일 이름은 바뀌지 않습니다.
+
+- 날짜 정보는 폴더의 숨김 파일 `desktop.ini`에서 가져옵니다.
+- `config.toml`의 `[explorer]` 섹션에서 `enabled = false`로 날짜 표시를 끄거나 `everywhere = true`로 모든 위치에서 표시할 수 있습니다.
+- 파일 탐색기는 폴더 보기를 캐시하므로 수명을 늘린 뒤 같은 창에 최대 1분 동안 이전 날짜가 남을 수 있습니다.

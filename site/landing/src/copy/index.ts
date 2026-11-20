@@ -1,4 +1,4 @@
-import type { Lang } from "../locales";
+import { localeOf, type Lang } from "../locales";
 import type { Strings } from "./types";
 
 export * from "./base";
@@ -25,6 +25,5 @@ export const loaders: Record<Lang, () => Promise<Strings>> = {
   ru: () => import("./ru").then((m) => m.ru),
 };
 
-// The docs are in Chinese and English; the other languages open the English ones.
-export const withLang = (lang: Lang, strings: Strings): Copy => ({ ...strings, lang, docs: lang === "zh" ? "docs/" : "docs/en/" });
+export const withLang = (lang: Lang, strings: Strings): Copy => ({ ...strings, lang, docs: `docs/${localeOf(lang).path}` });
 export const loadCopy = async (lang: Lang): Promise<Copy> => withLang(lang, await loaders[lang]());
