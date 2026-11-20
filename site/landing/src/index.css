@@ -1,5 +1,6 @@
 /* The landing page: the logo's cobalt, sky and gold on a white ground, as in
    the desktop window's Calendar look (cmd/obit-gui/frontend/src/theme.ts). */
+@layer theme, base, gui, components, utilities;
 @import "tailwindcss";
 @import "@fontsource-variable/geist/wght.css";
 @import "@fontsource-variable/geist-mono/wght.css";
@@ -88,6 +89,20 @@
   --color-muted-foreground: var(--color-muted);
 }
 
+/* Traditional Chinese, Japanese and Korean use the reader's own system faces: the Chinese display
+   font above holds only the Simplified glyphs the Chinese page needs. The page's lang picks the
+   regional forms of shared ideographs. */
+html:lang(zh-TW) { --font-sans: "Geist Variable", "PingFang TC", "Microsoft JhengHei UI", "Microsoft JhengHei", "Noto Sans TC", ui-sans-serif, system-ui, sans-serif; }
+html:lang(ja) { --font-sans: "Geist Variable", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", "Meiryo UI", "Noto Sans JP", ui-sans-serif, system-ui, sans-serif; }
+html:lang(ko) { --font-sans: "Geist Variable", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", ui-sans-serif, system-ui, sans-serif; }
+/* Long words of German or Russian break at syllables instead of overflowing. */
+html { hyphens: auto; }
+/* Japanese breaks between phrases, not in the middle of one (where the browser supports it). */
+html:lang(ja) { word-break: auto-phrase; }
+/* Korean has spaces between words, and a word stays whole. */
+html:lang(ko) { word-break: keep-all; }
+code, pre, kbd, .font-mono { hyphens: none; }
+
 html, body { overflow-x: clip; }
 html { scroll-behavior: smooth; scroll-padding-top: 96px; scrollbar-color: var(--color-line-2) var(--color-paper); }
 body {
@@ -128,6 +143,43 @@ button:disabled { cursor: not-allowed; }
   color: transparent;
 }
 
+/* Spotlight Card (components/reactbits/SpotlightCard.tsx): a soft light under the pointer, lit by hover,
+   by keyboard focus inside the card, or for a moment by a tap. */
+.spot { transition: border-color 300ms, translate 200ms, scale 160ms; }
+.spot-light {
+  opacity: 0;
+  transition: opacity 400ms ease;
+  background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 30%), var(--spot), transparent 72%);
+}
+.spot[data-lit="true"] .spot-light, .spot:focus-within .spot-light { opacity: 1; }
+.spot[data-lit="true"], .spot:focus-within { border-color: color-mix(in oklab, var(--color-cobalt) 35%, var(--color-line)); }
+.spot:active { scale: 0.98; }
+@media (hover: hover) { .spot[data-lit="true"] { translate: 0 -2px; } }
+
+/* The light that travels around a border (components/ui/border-beam.tsx): a ring cut by a static mask,
+   with one rotating layer behind it. Only the rotation animates, and it runs on the compositor. */
+.beam-ring {
+  overflow: hidden;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  container-type: size;
+}
+.beam-sweep {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: hypot(100cqw, 100cqh);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  background: conic-gradient(from 0deg, transparent 0 calc(360deg - var(--beam-tail)), var(--beam-from) calc(360deg - var(--beam-tail) * 0.35), var(--beam-to) 360deg);
+  will-change: transform;
+  animation: beam-turn var(--beam-duration) linear var(--beam-delay) infinite var(--beam-direction);
+}
+.beam-ring[data-paused="true"] .beam-sweep { animation-play-state: paused; }
+@keyframes beam-turn { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .beam-ring { display: none; }
+}
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after {

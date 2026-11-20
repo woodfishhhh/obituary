@@ -2,8 +2,12 @@ import { StrictMode } from "react";
 import { createRoot, hydrateRoot } from "react-dom/client";
 import "./index.css";
 import { App } from "./App";
+import { langFromHtml, locales, type Lang } from "./locales";
 
-const lang = document.documentElement.lang.startsWith("zh") ? "zh" : "en";
+// The built pages carry their language in <html lang>; in dev there is one page, and ?lang= picks the language.
+const wanted = import.meta.env.DEV ? new URLSearchParams(location.search).get("lang") : null;
+const lang: Lang = locales.find((l) => l.id === wanted)?.id ?? langFromHtml(document.documentElement.lang);
+if (import.meta.env.DEV) document.documentElement.lang = locales.find((l) => l.id === lang)!.html;
 const root = document.getElementById("root")!;
 const page = (
   <StrictMode>

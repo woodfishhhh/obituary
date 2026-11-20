@@ -1,16 +1,17 @@
-// The landing page sets its Chinese heads in Noto Sans SC. The full face is
-// several megabytes, so build only the glyphs the page's Chinese copy uses.
+// The Simplified Chinese page sets its heads in Noto Sans SC. The full face is
+// several megabytes, so build only the glyphs that page's copy and the demo notes use.
 // Output is generated (git-ignored) and rebuilt on every dev and build run.
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import subsetFont from "subset-font";
 
 const require = createRequire(import.meta.url);
-const copyFile = new URL("../src/copy.ts", import.meta.url);
+const copyFile = new URL("../src/copy/zh.ts", import.meta.url);
 const outDir = new URL("../src/assets/fonts/", import.meta.url);
 const weights = [600];
 
-const copy = await readFile(copyFile, "utf8");
+const demoFile = new URL("../src/demo/data.ts", import.meta.url);
+const copy = (await readFile(copyFile, "utf8")) + (await readFile(demoFile, "utf8"));
 // CJK ideographs, CJK punctuation and full-width forms; Latin stays in the
 // Latin face.
 const glyphs = new Set(copy.match(/[　-〿㐀-鿿＀-￯]/gu) ?? []);

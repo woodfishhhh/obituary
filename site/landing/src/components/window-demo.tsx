@@ -52,7 +52,7 @@ export function WindowDemo({ c, look, page, label, interactive = false, height =
 
   // The window has Chinese and English; the page's other languages show it in English.
   const guiLang: GuiLang = c.lang === "zh" ? "zh" : "en";
-  const demo = useMemo(() => createDemoApi(guiLang), [guiLang]);
+  const demo = useMemo(() => createDemoApi(c.lang), [c.lang]);
   const appearance = useMemo(() => ({ current: look, looks, choose: () => {} }), [look]);
   const [ready, setReady] = useState(false);
   useEffect(() => {

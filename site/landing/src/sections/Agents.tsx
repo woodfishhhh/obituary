@@ -1,5 +1,6 @@
 import { agents, type Agent, type Kind } from "@/agents";
 import type { Copy } from "@/copy";
+import SpotlightCard from "@/components/reactbits/SpotlightCard";
 import { siteLink } from "@/lib/links";
 import { cn } from "@/lib/utils";
 
@@ -42,16 +43,19 @@ export function Agents({ c }: { c: Copy }) {
                 {agents
                   .filter((x) => x.kind === kind)
                   .map((agent) => (
-                    <li
+                    <SpotlightCard
+                      as="li"
                       key={agent.id}
-                      className="flex min-w-0 flex-col items-center gap-2.5 rounded-2xl border border-line bg-paper px-2 pt-4 pb-3 text-center shadow-sm transition-colors hover:border-line-2"
+                      className="min-w-0 rounded-2xl border border-line bg-paper px-2 pt-4 pb-3 text-center shadow-sm"
                     >
-                      <Mark agent={agent} />
-                      <span className="flex w-full min-w-0 flex-col">
-                        <span className="truncate text-sm font-medium text-ink">{agent.name}</span>
-                        <code className="truncate font-mono text-xs text-muted">{agent.id}</code>
-                      </span>
-                    </li>
+                      <div className="flex min-w-0 flex-col items-center gap-2.5">
+                        <Mark agent={agent} />
+                        <span className="flex w-full min-w-0 flex-col">
+                          <span className="truncate text-sm font-medium text-ink">{agent.name}</span>
+                          <code className="truncate font-mono text-xs text-muted">{agent.id}</code>
+                        </span>
+                      </div>
+                    </SpotlightCard>
                   ))}
               </ul>
             </div>

@@ -1,106 +1,79 @@
-"use client"
-
-import { motion, type MotionStyle, type Transition } from "motion/react"
+import { useEffect, useRef } from "react"
 
 import { cn } from "@/lib/utils"
 
 interface BorderBeamProps {
-  /**
-   * The size of the border beam.
-   */
+  /** Length of the light as a share of the turn, in px along a 1000px edge: more means a longer tail. */
   size?: number
-  /**
-   * The duration of the border beam.
-   */
+  /** Seconds for one turn around the box. */
   duration?: number
-  /**
-   * The delay of the border beam.
-   */
+  /** Seconds to wait before the first turn starts moving. */
   delay?: number
-  /**
-   * The color of the border beam from.
-   */
   colorFrom?: string
-  /**
-   * The color of the border beam to.
-   */
   colorTo?: string
-  /**
-   * The motion transition of the border beam.
-   */
-  transition?: Transition
-  /**
-   * The class name of the border beam.
-   */
   className?: string
-  /**
-   * The style of the border beam.
-   */
   style?: React.CSSProperties
-  /**
-   * Whether to reverse the animation direction.
-   */
   reverse?: boolean
-  /**
-   * The initial offset position (0-100).
-   */
+  /** Where the light starts on its turn, 0 to 100. */
   initialOffset?: number
-  /**
-   * The border width of the beam.
-   */
   borderWidth?: number
 }
 
-export const BorderBeam = ({
+// A light that travels around the border of its parent (which needs `position: relative` and a radius).
+//
+// It is one large square with a conic gradient that only ever rotates, inside a ring cut out of the
+// parent by a static mask. A rotation is composited on the GPU, so no frame touches layout, style
+// or paint on the main thread. (The version before animated `offset-distance` from script: every
+// frame recalculated style and repainted a masked layer the size of the box, and the three beams
+// on the page kept doing it while scrolled out of view, which used most of the main thread.)
+// The turn pauses while the box is off screen or the tab is hidden, and resumes where it stopped.
+export function BorderBeam({
   className,
   size = 50,
   delay = 0,
   duration = 6,
   colorFrom = "#ffaa40",
   colorTo = "#9c40ff",
-  transition,
   style,
   reverse = false,
   initialOffset = 0,
   borderWidth = 1,
-}: BorderBeamProps) => {
+}: BorderBeamProps) {
+  const ring = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = ring.current
+    if (!el) return
+    let visible = false
+    const apply = () => { el.dataset.paused = visible && !document.hidden ? "false" : "true" }
+    const io = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; apply() })
+    io.observe(el)
+    document.addEventListener("visibilitychange", apply)
+    return () => { io.disconnect(); document.removeEventListener("visibilitychange", apply) }
+  }, [])
+
+  // The tail is as wide as `size` px on a 1000px edge, i.e. size / 1000 of a turn... capped so it stays a comet.
+  const tail = Math.min(140, Math.max(30, size * 0.36))
   return (
     <div
-      className="pointer-events-none absolute inset-0 rounded-[inherit] border-(length:--border-beam-width) border-transparent mask-[linear-gradient(transparent,transparent),linear-gradient(var(--color-ink),var(--color-ink))] mask-intersect [mask-clip:padding-box,border-box]"
-      style={
-        {
-          "--border-beam-width": `${borderWidth}px`,
-        } as React.CSSProperties
-      }
+      ref={ring}
+      aria-hidden="true"
+      data-paused="true"
+      className="beam-ring pointer-events-none absolute inset-0 rounded-[inherit]"
+      style={{ padding: borderWidth }}
     >
-      <motion.div
-        className={cn(
-          "absolute aspect-square",
-          "bg-linear-to-l from-(--color-from) via-(--color-to) to-transparent",
-          className
-        )}
+      <span
+        className={cn("beam-sweep", className)}
         style={
           {
-            width: size,
-            offsetPath: `rect(0 auto auto 0 round ${size}px)`,
-            "--color-from": colorFrom,
-            "--color-to": colorTo,
+            "--beam-from": colorFrom,
+            "--beam-to": colorTo,
+            "--beam-tail": `${tail}deg`,
+            "--beam-duration": `${duration}s`,
+            "--beam-delay": `${-delay - (initialOffset / 100) * duration}s`,
+            "--beam-direction": reverse ? "reverse" : "normal",
             ...style,
-          } as MotionStyle
+          } as React.CSSProperties
         }
-        initial={{ offsetDistance: `${initialOffset}%` }}
-        animate={{
-          offsetDistance: reverse
-            ? [`${100 - initialOffset}%`, `${-initialOffset}%`]
-            : [`${initialOffset}%`, `${100 + initialOffset}%`],
-        }}
-        transition={{
-          repeat: Infinity,
-          ease: "linear",
-          duration,
-          delay: -delay,
-          ...transition,
-        }}
       />
     </div>
   )

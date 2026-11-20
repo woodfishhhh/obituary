@@ -3,14 +3,15 @@
 // the lifetime totals come from ./data, so the calendar is full of believable files.
 import { createMockApi } from "@gui/mock";
 import type { Api, Burial, Item, Settings } from "@gui/types";
-import { demoGraves, demoItems, lifetime, type DemoItem, type DemoLang } from "./data";
+import type { Lang } from "@/locales";
+import { demoGraves, demoItems, lifetime, type DemoItem } from "./data";
 
 const HOUR = 3600e3;
 const hoursOf = (lifespan: string) => [...lifespan.toLowerCase().matchAll(/(\d+)([smhdw])/g)].reduce((n, [, c, u]) => n + Number(c) * ({ s: 1 / 3600, m: 1 / 60, h: 1, d: 24, w: 168 } as Record<string, number>)[u], 0);
 const idOf = (ref: string) => Number(ref.replace("#", ""));
 const wait = <T,>(v: T) => new Promise<T>((r) => setTimeout(() => r(v), 60));
 
-export function createDemoApi(lang: DemoLang): { api: Api; items: () => DemoItem[]; graves: () => Burial[] } {
+export function createDemoApi(lang: Lang): { api: Api; items: () => DemoItem[]; graves: () => Burial[] } {
   const base = createMockApi("normal");
   const items: DemoItem[] = demoItems(lang);
   const burials: Burial[] = demoGraves();

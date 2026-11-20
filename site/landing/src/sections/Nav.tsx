@@ -1,5 +1,7 @@
 import type { Copy } from "@/copy";
 import { repo } from "@/copy";
+import { LanguageMenu } from "@/components/language-menu";
+import { localeOf } from "@/locales";
 import { siteLink } from "@/lib/links";
 
 export function Nav({ c }: { c: Copy }) {
@@ -12,12 +14,12 @@ export function Nav({ c }: { c: Copy }) {
   return (
     <header className="fixed inset-x-0 top-3 z-50 px-3">
       <nav
-        aria-label={c.lang === "zh" ? "主导航" : "Main"}
+        aria-label={c.a11y.mainNav}
         className="mx-auto flex h-14 max-w-[1240px] items-center gap-2 rounded-full border border-line/80 bg-paper/75 pr-2 pl-4 shadow-nav backdrop-blur-md"
       >
-        <a href={c.lang === "zh" ? siteLink("") : siteLink("en/")} className="mr-2 flex items-center gap-2 rounded-full py-1 pr-2 font-semibold text-ink">
+        <a href={siteLink(localeOf(c.lang).path)} className="mr-2 flex items-center gap-2 rounded-full py-1 pr-2 font-semibold text-ink">
           <img src={`${import.meta.env.BASE_URL}icon-128.png`} alt="" width={32} height={32} className="size-8" />
-          <span>{c.lang === "zh" ? "讣告" : "Obituary"}</span>
+          <span className="max-sm:sr-only">{c.a11y.brand}</span>
         </a>
         <ul className="hidden items-center gap-1 md:flex">
           {links.map((l) => (
@@ -32,13 +34,7 @@ export function Nav({ c }: { c: Copy }) {
           <a href={siteLink(c.docs)} className="rounded-full px-2 py-2 text-sm font-medium whitespace-nowrap text-ink transition-colors hover:bg-paper-3 sm:px-3">
             {c.nav.docs}
           </a>
-          <a
-            href={siteLink(c.switchLang.href)}
-            hrefLang={c.lang === "zh" ? "en" : "zh-CN"}
-            className="rounded-full px-2 py-2 text-sm whitespace-nowrap text-ink-2 transition-colors hover:bg-paper-3 hover:text-ink sm:px-3"
-          >
-            {c.switchLang.label}
-          </a>
+          <LanguageMenu c={c} />
           <a href={repo} className="rounded-full bg-ink px-3 py-2 text-sm font-medium whitespace-nowrap text-paper transition-colors hover:bg-ink-2 sm:px-4">
             GitHub
           </a>

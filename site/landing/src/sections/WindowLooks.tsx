@@ -45,7 +45,7 @@ export function WindowLooks({ c }: { c: Copy }) {
         <div className="grid gap-8 lg:grid-cols-[minmax(0,8fr)_minmax(0,4fr)] lg:items-start">
           <figure className="relative overflow-hidden rounded-2xl bg-paper shadow-glow-soft ring-1 ring-ink/5">
             <Window c={c} look={look} page={page} label={w.alt(w.looks[look], w.pages[page])} interactive />
-            <BorderBeam size={200} duration={9} colorFrom={brand.sky} colorTo={brand.gold} borderWidth={2} transition={{ repeat: 1 }} />
+            <BorderBeam size={200} duration={9} colorFrom={brand.sky} colorTo={brand.gold} borderWidth={2} />
           </figure>
           <div className="flex flex-col gap-6 lg:pt-2" aria-live="polite">
             <div>

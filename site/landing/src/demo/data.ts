@@ -1,6 +1,7 @@
 // The sample files the window demo shows. Names, folders and sizes are what an agent really leaves
 // behind; the only words in here are the free-text notes, which have a table per language.
 import type { Burial, Item } from "@gui/types";
+import type { Lang } from "@/locales";
 
 const SHOP = "D:\\work\\shop";
 const API = "D:\\work\\api-server";
@@ -11,10 +12,10 @@ const MB = 1024 * 1024;
 const GB = 1024 * MB;
 
 export type NoteKey = "backup" | "docs" | "recording" | "session" | "build" | "spec" | "failing";
-export type DemoLang = "zh" | "en";
 
-// Notes the user or an agent typed in; every other language shows the English ones.
-export const notes: Record<DemoLang, Record<NoteKey, string>> = {
+// Notes the user or an agent typed in, in the language of the page; the window around them has
+// Chinese and English only.
+export const notes: Record<Lang, Record<NoteKey, string>> = {
   zh: {
     backup: "改之前的备份",
     docs: "周五前整理进文档",
@@ -32,6 +33,78 @@ export const notes: Record<DemoLang, Record<NoteKey, string>> = {
     build: "can be regenerated any time",
     spec: "until the review is done",
     failing: "state of the failing run",
+  },
+  "zh-TW": {
+    backup: "修改前的備份",
+    docs: "週五前整理進文件",
+    recording: "重現步驟，確認後可刪",
+    session: "agent 工作階段留下的",
+    build: "隨時能重新產生",
+    spec: "等審查結束",
+    failing: "失敗測試的現場",
+  },
+  ja: {
+    backup: "編集前のバックアップ",
+    docs: "金曜までにドキュメントへまとめる",
+    recording: "再現手順、確認できたら削除",
+    session: "エージェントのセッションが残したもの",
+    build: "いつでも再生成できる",
+    spec: "レビューが終わるまで",
+    failing: "失敗したテストの現場",
+  },
+  ko: {
+    backup: "편집 전 백업",
+    docs: "금요일까지 문서에 정리",
+    recording: "재현 단계, 확인되면 삭제",
+    session: "에이전트 세션이 남긴 것",
+    build: "언제든 다시 생성 가능",
+    spec: "리뷰가 끝날 때까지",
+    failing: "실패한 실행의 상태",
+  },
+  es: {
+    backup: "copia antes de editar",
+    docs: "pasar a la documentación antes del viernes",
+    recording: "pasos para reproducir; borrar al confirmar",
+    session: "dejado por una sesión del agente",
+    build: "se puede regenerar cuando sea",
+    spec: "hasta que acabe la revisión",
+    failing: "estado de la ejecución fallida",
+  },
+  fr: {
+    backup: "sauvegarde avant la modification",
+    docs: "à intégrer à la doc d’ici vendredi",
+    recording: "étapes de reproduction, à supprimer une fois confirmé",
+    session: "laissé par une session d’agent",
+    build: "peut être régénéré à tout moment",
+    spec: "jusqu’à la fin de la relecture",
+    failing: "état de l’exécution en échec",
+  },
+  de: {
+    backup: "Backup vor der Änderung",
+    docs: "bis Freitag in die Doku einarbeiten",
+    recording: "Schritte zum Nachstellen, nach Bestätigung löschen",
+    session: "von einer Agent-Sitzung hinterlassen",
+    build: "jederzeit neu erzeugbar",
+    spec: "bis das Review durch ist",
+    failing: "Zustand des fehlgeschlagenen Laufs",
+  },
+  "pt-BR": {
+    backup: "backup antes da edição",
+    docs: "incluir na documentação até sexta",
+    recording: "passos para reproduzir; apagar depois de confirmar",
+    session: "deixado por uma sessão do agente",
+    build: "pode ser gerado de novo a qualquer momento",
+    spec: "até a revisão terminar",
+    failing: "estado da execução que falhou",
+  },
+  ru: {
+    backup: "резервная копия перед правкой",
+    docs: "свести в документацию до пятницы",
+    recording: "шаги воспроизведения, удалить после подтверждения",
+    session: "осталось после сессии агента",
+    build: "можно пересобрать в любой момент",
+    spec: "до конца ревью",
+    failing: "состояние упавшего запуска",
   },
 };
 
@@ -72,7 +145,7 @@ const rows: Row[] = [
 export interface DemoItem extends Item { key?: NoteKey }
 
 // Every expiry is built from the clock at render time, so "today" is always today.
-export function demoItems(lang: DemoLang, now = Date.now()): DemoItem[] {
+export function demoItems(lang: Lang, now = Date.now()): DemoItem[] {
   const midnight = new Date(now).setHours(0, 0, 0, 0);
   return rows.map((r, i) => {
     // Today's rows stay today, even late in the evening, so no day is crowded by spillover.

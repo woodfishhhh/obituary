@@ -2,8 +2,9 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { BotIcon, CheckIcon, CopyIcon, DownloadIcon } from "lucide-react";
 import { BorderBeam } from "@/components/ui/border-beam";
 import { isMirror, mirrorFiles } from "@/config";
-import { agentInstall, installCode, type Copy, type Method, type Os } from "@/copy";
+import { installCode, type Copy, type Method, type Os } from "@/copy";
 import { brand } from "@/lib/brand";
+import { useOs } from "@/lib/os";
 import { cn } from "@/lib/utils";
 
 const osNames: Record<Os, string> = { windows: "Windows", macos: "macOS", linux: "Linux" };
@@ -11,20 +12,10 @@ const osNames: Record<Os, string> = { windows: "Windows", macos: "macOS", linux:
 // The sentence is the same on both builds: each serves its own
 // agent-install.md. The mirror build points every download at the mirror, so
 // a visitor in mainland China never waits on GitHub.
-const sentenceFor = (lang: Copy["lang"]) => agentInstall[lang];
 const mirrorScript = (os: Os) =>
   os === "windows"
     ? [`irm ${mirrorFiles.installScript} -OutFile install.ps1`, ".\\install.ps1 -Mirror cn"]
     : [`curl -fsSL ${mirrorFiles.installShell} -o install.sh`, "bash install.sh --mirror cn"];
-
-// The visitor's system, when the browser says it; Windows otherwise.
-function detectOs(): Os {
-  const ua = typeof navigator === "undefined" ? "" : navigator.userAgent;
-  if (/Windows/i.test(ua)) return "windows";
-  if (/Mac OS X|Macintosh/i.test(ua) && !/iPhone|iPad/i.test(ua)) return "macos";
-  if (/Linux|X11/i.test(ua) && !/Android/i.test(ua)) return "linux";
-  return "windows";
-}
 
 const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalt";
 
@@ -132,7 +123,7 @@ type Route = "ai" | "hand";
 
 function Platform({ c, os }: { c: Copy; os: Os }) {
   const i = c.install;
-  const sentence = sentenceFor(c.lang);
+  const sentence = c.install.agentSentence;
   const [route, setRoute] = useState<Route>("ai");
   const routes: { id: Route; label: string }[] = [
     { id: "ai", label: i.agentHead },
@@ -178,7 +169,7 @@ function Platform({ c, os }: { c: Copy; os: Os }) {
               {i.payoff}
             </p>
           </div>
-          <BorderBeam size={180} duration={8} colorFrom={brand.sky} colorTo={brand.gold} borderWidth={2} transition={{ repeat: 1 }} />
+          <BorderBeam size={180} duration={8} colorFrom={brand.sky} colorTo={brand.gold} borderWidth={2} />
         </div>
       ) : (
         <div id="route-hand-panel" role="tabpanel" aria-labelledby="route-hand">
@@ -217,8 +208,7 @@ function Platform({ c, os }: { c: Copy; os: Os }) {
 
 export function Install({ c }: { c: Copy }) {
   const i = c.install;
-  const [os, setOs] = useState<Os>("windows");
-  useEffect(() => setOs(detectOs()), []);
+  const [os, setOs] = useOs();
   return (
     <section id="install" aria-labelledby="install-head" className="relative pt-28 pb-24 md:pt-40 md:pb-32">
       <div className="mx-auto max-w-[1240px] px-6 md:px-10">
@@ -244,6 +234,7 @@ export function Install({ c }: { c: Copy }) {
             </button>
           ))}
         </div>
+        <p className="mb-8 max-w-[70ch] text-ink-2">{i.gets[os]}</p>
         <Platform c={c} os={os} />
       </div>
     </section>

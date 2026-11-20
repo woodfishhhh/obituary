@@ -20,10 +20,13 @@ const guiStyles = () => ({
     const root = guiRoot.replaceAll("\\", "/");
     if (file.startsWith(`${root}/src/`) && /\.tsx$/.test(file)) return code.replaceAll('src="icon.png"', `src="${base}icon-128.png"`);
     if (file !== `${root}/src/styles.css`) return null;
-    return code
+    // In its own cascade layer, below Tailwind's utilities: its bare `button { color: inherit; font: inherit }`
+    // would otherwise beat every text colour and font utility on the page's own buttons.
+    const sheet = code
       .replace(/^\* \{ box-sizing: border-box; \}\r?\n/m, "")
       .replace(/^html, body, #root \{[^\r\n]*\}\r?\n/m, "")
       .replaceAll('url("/fonts/', 'url("../public/fonts/');
+    return `@layer gui {\n${sheet}\n}`;
   },
 });
 
@@ -38,13 +41,8 @@ export default defineConfig(({ isSsrBuild }) => ({
   build: {
     outDir: isSsrBuild ? "dist-ssr" : "dist",
     emptyOutDir: true,
-    // The server build (scripts/prerender.mjs) starts from its own entry, not the two pages.
-    rollupOptions: isSsrBuild ? {} : {
-      input: {
-        zh: fileURLToPath(new URL("./index.html", import.meta.url)),
-        en: fileURLToPath(new URL("./en/index.html", import.meta.url)),
-      },
-    },
+    // One template: scripts/prerender.mjs writes a page per language from it. The server build starts from its own entry.
+    rollupOptions: isSsrBuild ? {} : { input: fileURLToPath(new URL("./index.html", import.meta.url)) },
   },
   server: { port: 5192, strictPort: true, fs: { allow: [fileURLToPath(new URL("../..", import.meta.url))] } },
 }));
