@@ -140,7 +140,8 @@ func TestCopilotWritesCreateRealProjectProposals(t *testing.T) {
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}
-	t.Parallel()
+	// This exercises the hook's one-second lock budget against a real Git repo;
+	// keep it out of package-wide parallel load so CI does not turn contention into a false failure.
 	for _, compat := range []bool{false, true} {
 		name := "copilot-cli-post"
 		host := "postToolUse"
