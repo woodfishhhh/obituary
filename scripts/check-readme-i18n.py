@@ -1,6 +1,8 @@
 from pathlib import Path
+import os
 import re
 import sys
+import json
 
 ROOT = Path(__file__).resolve().parents[1]
 README_NAMES = ["README.md", "README.zh-CN.md", "README.zh-TW.md", "README.ja.md", "README.ko.md", "README.es.md", "README.fr.md", "README.de.md", "README.pt-BR.md", "README.ru.md"]
@@ -47,7 +49,11 @@ for name in README_NAMES:
     image_paths = [p for p in links(text) if p.endswith((".svg", ".gif", ".png", ".jpg", ".jpeg"))]
     if len(image_paths) < 4:
         errors.append(f"{name}: too few images {len(image_paths)}")
-svg_root = ROOT / "docs" / "assets" / "readme" / "i18n"
+svg_root = Path(os.environ.get("README_SVG_ROOT", str(ROOT / "docs" / "assets" / "readme" / "i18n")))
+word_languages = {"en", "es", "fr", "de", "pt-BR", "ru", "ko"}
+svg_strings = json.loads((ROOT / "docs" / "assets" / "readme" / "i18n" / "strings.json").read_text(encoding="utf-8"))
+leading_punctuation = set(",.!?;:，。！？；：、、)]}」』》”’")
+letter = re.compile(r"[A-Za-zÀ-ÖØ-öø-ÿА-Яа-я가-힣]", re.UNICODE)
 for language in ["en", "zh-CN", "zh-TW", "ja", "ko", "es", "fr", "de", "pt-BR", "ru"]:
     for diagram in ["lifecycle", "delete-guard"]:
         for theme in ["light", "dark"]:
@@ -58,9 +64,28 @@ for language in ["en", "zh-CN", "zh-TW", "ja", "ko", "es", "fr", "de", "pt-BR", 
             svg = path.read_text(encoding="utf-8")
             if "textLength=" in svg or "lengthAdjust=" in svg:
                 errors.append(f"{path}: horizontal text compression is forbidden")
-            sizes = [float(value) for value in re.findall(r'font-size="([0-9.]+)"', svg)]
-            if any(size < 14 for size in sizes):
-                errors.append(f"{path}: text font below 14px")
+            width_match = re.search(r'<svg[^>]+width="([0-9.]+)"', svg)
+            canvas_width = float(width_match.group(1)) if width_match else 880.0
+            for match in re.finditer(r'<text([^>]*)>(.*?)</text>', svg, re.S):
+                attrs, value = match.groups()
+                font_match = re.search(r'font-size="([0-9.]+)"', attrs)
+                if not font_match:
+                    continue
+                font_size = float(font_match.group(1))
+                display_size = font_size * 880 / canvas_width
+                if display_size < 11:
+                    errors.append(f"{path}: displayed font below 11px: {value[:40]}")
+                if font_size >= 22 and display_size < 16:
+                    errors.append(f"{path}: displayed title below 16px: {value[:40]}")
+            middle = [re.sub(r"<[^>]+>", "", value) for value in re.findall(r'<text[^>]*text-anchor="middle"[^>]*>(.*?)</text>', svg, re.S)]
+            if diagram == "delete-guard" and len(middle) > 1:
+                for previous, current in zip(middle, middle[1:]):
+                    if language in word_languages and previous and current and letter.search(previous[-1]) and letter.match(current[0]):
+                        source_bridge = svg_strings[language]["guard_bridge"]
+                        if previous + current in source_bridge:
+                            errors.append(f"{path}: word split between {previous!r} and {current!r}")
+                    if current and current[0] in leading_punctuation:
+                        errors.append(f"{path}: punctuation starts wrapped line {current!r}")
             if diagram == "lifecycle" and "resurrect-star" not in svg:
                 errors.append(f"{path}: missing resurrect star")
             if diagram == "delete-guard" and "guard-star" not in svg:
