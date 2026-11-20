@@ -172,7 +172,19 @@ test('install verified snapshot releases without changing the user PATH', {
     assert.ok(notes.length <= 10000, `WinGet InstallationNotes length: ${notes.length}`);
     assert.equal(notes.split(updateNotice).length - 1, 1);
   });
-  await t.test('install all amd64 binaries together and run the installed CLI', async () => {
+  for (const [name, shell] of [['ps5', ps5], ['ps5 with PS7 modules', ps5]]) {
+    await t.test(`${name} installs and runs the snapshot CLI`, async () => {
+      const destination = join(root, name);
+      if (name !== 'ps5') env.PSModulePath = join(process.env.ProgramFiles, 'PowerShell/7/Modules');
+      let result;
+      try { result = await run('good', [], shell, destination); }
+      finally { delete env.PSModulePath; }
+      assert.equal(result.code, 0, result.stderr);
+      const { stdout } = await execute(join(destination, 'obit.exe'), ['--version'], { env, windowsHide: true });
+      assert.ok(stdout.includes(version), stdout);
+    });
+  }
+  await t.test('ps7 installs all amd64 binaries together and runs the installed CLI', async () => {
     const result = await run('good');
     assert.equal(result.code, 0, result.stderr);
     assert.match(result.stdout, /SHA-256 verified:/);

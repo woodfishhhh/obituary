@@ -32,7 +32,7 @@ param(
     [string]$Architecture,
 
     [ValidateNotNullOrEmpty()]
-    [string]$InstallDir = (Join-Path $env:LOCALAPPDATA 'Programs\obituary'),
+    [string]$InstallDir = [IO.Path]::Combine($env:LOCALAPPDATA, 'Programs\obituary'),
 
     [uri]$BaseUrl,
 
@@ -55,6 +55,10 @@ $ErrorActionPreference = 'Stop'
 
 if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
     throw 'install.ps1 installs the Windows edition. On macOS / Linux use install.sh: https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh'
+}
+# Load this engine's file, web, JSON and Add-Type cmdlets, not a parent's PSModulePath.
+foreach ($module in 'Microsoft.PowerShell.Management', 'Microsoft.PowerShell.Utility') {
+    Import-Module "$PSHOME/Modules/$module/$module.psd1" -ErrorAction Stop
 }
 if (-not $Architecture) {
     $nativeArchitecture = $env:PROCESSOR_ARCHITEW6432
@@ -192,6 +196,10 @@ public static class ObituaryInstall {
         stream.Position = 0;
         using (var hash = System.Security.Cryptography.SHA256.Create())
             return BitConverter.ToString(hash.ComputeHash(stream)).Replace("-", "");
+    }
+
+    public static string Hash(string path) {
+        using (var stream = File.OpenRead(path)) return Hash(stream);
     }
 
     public static string Text(FileStream stream) {
@@ -522,13 +530,13 @@ try {
     Get-Archive "$source/$archiveName" $archive
 
     $pattern = '^(?<Hash>[0-9a-fA-F]{64})\s+\*?' + [regex]::Escape($archiveName) + '$'
-    $expected = @(Get-Content -LiteralPath $checksums | ForEach-Object {
-        if ($_ -cmatch $pattern) { $Matches.Hash }
+    $expected = @(foreach ($line in [IO.File]::ReadLines($checksums)) {
+        if ($line -cmatch $pattern) { $Matches.Hash }
     })
     if ($expected.Count -ne 1) {
         throw "Expected exactly one SHA-256 entry for $archiveName in checksums.txt; found $($expected.Count)."
     }
-    $actual = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash
+    $actual = [ObituaryInstall]::Hash($archive)
     if ($actual -ine $expected[0]) {
         throw "SHA-256 mismatch for $archiveName; refusing to install."
     }
@@ -537,7 +545,8 @@ try {
     # Built-in extraction rejects paths outside its destination. Nothing from the
     # download is extracted, copied to the install directory, or executed before this point.
     $expanded = Join-Path $workDir 'expanded'
-    Expand-Archive -LiteralPath $archive -DestinationPath $expanded
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [IO.Compression.ZipFile]::ExtractToDirectory($archive, $expanded)
     $files = @('obit.exe', 'obitd.exe', 'LICENSE', 'README.txt')
     if ($Architecture -eq 'amd64') { $files += 'obit-gui.exe' }
     foreach ($name in $files) {
@@ -558,7 +567,7 @@ try {
     }
     $receipt = [ordered]@{ owner = 'obituary-install-v1'; source = $downloadSource; directory = $InstallDir; pathAdded = $pathAdded; pathEntry = $InstallDir; files = @(
         foreach ($name in $files) {
-            @{ name = $name; sha256 = (Get-FileHash -LiteralPath (Join-Path $expanded $name) -Algorithm SHA256).Hash }
+            @{ name = $name; sha256 = [ObituaryInstall]::Hash([IO.Path]::Combine($expanded, $name)) }
         }
     ) }
     # The receipt participates in the same pinned-directory transaction as the

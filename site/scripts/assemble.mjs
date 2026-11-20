@@ -69,11 +69,11 @@ for (const lang of ["zh", "en", "de"]) {
 const guide = await readFile(new URL("docs/agent-install.md", repo), "utf8");
 if (mirror) {
   await writeFile(new URL("agent-install.md", out), mirrorGuide(guide, "https://cn.obituary.woodfish.site/"));
-  await cp(new URL("packaging/install.ps1", repo), new URL("install.ps1", out));
 } else {
   await writeFile(new URL("agent-install.md", out), guide);
   // GitHub Pages serves this build at the custom domain.
   await writeFile(new URL("CNAME", out), "obituary.woodfish.site\n");
 }
 await cp(new URL("install.sh", repo), new URL("install.sh", out));
+await cp(new URL("packaging/install.ps1", repo), new URL("install.ps1", out));
 console.log(`assembled ${out.pathname}`);
