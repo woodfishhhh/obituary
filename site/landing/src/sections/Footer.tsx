@@ -10,7 +10,7 @@ export function Footer({ c }: { c: Copy }) {
   const f = c.footer;
   return (
     <footer className="relative overflow-hidden border-t border-line bg-paper-2">
-      <div aria-hidden="true" className="absolute -bottom-40 left-1/3 size-[36rem] rounded-full bg-glint/40 blur-3xl" />
+      <div aria-hidden="true" className="absolute -bottom-40 left-1/3 size-[46rem] bg-[radial-gradient(closest-side,color-mix(in_oklab,var(--color-glint)_50%,transparent),transparent)]" />
       <div className="relative mx-auto grid max-w-[1240px] gap-12 px-6 py-20 md:px-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-end">
         <div>
           <img src={wordmark} alt={c.a11y.wordmark} width={1040} height={369} loading="lazy" className="w-full max-w-[480px]" />

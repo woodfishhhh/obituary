@@ -33,9 +33,9 @@ export function Hero({ c }: { c: Copy }) {
     <section aria-labelledby="hero-head" className="relative isolate overflow-hidden pt-[4.5rem]">
       {/* A dot field fading out from the centre, soft washes in the logo's colours, and a glow the window floats on. */}
       <div aria-hidden="true" className="dot-field fade-edges absolute inset-0 -z-10" />
-      <div aria-hidden="true" className="absolute -top-48 -left-40 -z-10 size-[44rem] rounded-full bg-glint/55 blur-3xl" />
-      <div aria-hidden="true" className="absolute -top-24 -right-40 -z-10 size-[34rem] rounded-full bg-cream/55 blur-3xl" />
-      <div aria-hidden="true" className="absolute top-[26rem] left-1/2 -z-10 h-[30rem] w-[min(78rem,120vw)] -translate-x-1/2 rounded-[50%] [mask-image:radial-gradient(closest-side,black_55%,transparent)] bg-[conic-gradient(from_200deg_at_50%_50%,var(--color-sky)_0%,var(--color-glint)_30%,var(--color-cream)_58%,var(--color-glint)_82%,var(--color-sky)_100%)] opacity-40 blur-[110px]" />
+      <div aria-hidden="true" className="absolute -top-48 -left-40 -z-10 size-[56rem] bg-[radial-gradient(closest-side,color-mix(in_oklab,var(--color-glint)_70%,transparent),transparent)]" />
+      <div aria-hidden="true" className="absolute -top-24 -right-40 -z-10 size-[46rem] bg-[radial-gradient(closest-side,color-mix(in_oklab,var(--color-cream)_70%,transparent),transparent)]" />
+      <div aria-hidden="true" className="absolute top-[26rem] left-1/2 -z-10 h-[30rem] w-[min(78rem,120vw)] -translate-x-1/2 rounded-[50%] [mask-image:radial-gradient(closest-side,black_55%,transparent)] bg-[conic-gradient(from_200deg_at_50%_50%,var(--color-sky)_0%,var(--color-glint)_30%,var(--color-cream)_58%,var(--color-glint)_82%,var(--color-sky)_100%)] opacity-40" />
 
       <div className="mx-auto flex max-w-[1240px] flex-col items-center px-6 pt-12 text-center md:px-10 md:pt-16 lg:pt-20">
         <div>

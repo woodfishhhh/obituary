@@ -155,7 +155,7 @@ function Platform({ c, os }: { c: Copy; os: Os }) {
 
       {route === "ai" ? (
         <div id="route-ai-panel" role="tabpanel" aria-labelledby="route-ai" className="relative overflow-hidden rounded-3xl border border-glint bg-paper p-6 shadow-glow-soft md:p-10">
-          <div aria-hidden="true" className="absolute -top-24 -right-16 size-72 rounded-full bg-cream/50 blur-3xl" />
+          <div aria-hidden="true" className="absolute -top-24 -right-16 size-96 bg-[radial-gradient(closest-side,color-mix(in_oklab,var(--color-cream)_60%,transparent),transparent)]" />
           <div className="relative flex flex-col gap-5">
             <p className="max-w-[60ch] text-ink-2">{i.agentLine}</p>
             <div className="flex flex-col gap-3 rounded-2xl border border-line bg-paper-2 p-4 md:flex-row md:items-center md:gap-5 md:p-5">

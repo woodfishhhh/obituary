@@ -156,6 +156,20 @@ button:disabled { cursor: not-allowed; }
 .spot:active { scale: 0.98; }
 @media (hover: hover) { .spot[data-lit="true"] { translate: 0 -2px; } }
 
+/* The rotating word on the first screen (components/ui/rotating-word.tsx). */
+.rw-in { animation: rw-in 620ms cubic-bezier(0.2, 0.9, 0.3, 1.15) both; }
+.rw-out { animation: rw-out 220ms cubic-bezier(0.3, 0, 0.7, 0.4) both; }
+@keyframes rw-in { from { opacity: 0; transform: translate3d(0, 70%, 0); } }
+@keyframes rw-out { to { opacity: 0; transform: translate3d(0, -70%, 0); } }
+
+/* Content that fades up on first view (components/ui/reveal.tsx); hidden only once the script runs. */
+.reveal { transition: opacity 600ms var(--ease-out-soft), transform 600ms var(--ease-out-soft); }
+.js .reveal:not(.in) { opacity: 0; transform: translate3d(0, 14px, 0); }
+
+/* Sections below the first screen are laid out and painted when they come near the viewport, not at load;
+   the size is a stand-in the browser replaces with the real one once it has seen the section. */
+main > section ~ section, footer { content-visibility: auto; contain-intrinsic-size: auto 800px; }
+
 /* The first screen comes in with a CSS animation, not a script: it starts with the HTML. */
 .rise { animation: rise 700ms var(--ease-out-soft) both; }
 @keyframes rise { from { opacity: 0; transform: translate3d(0, 14px, 0); } }

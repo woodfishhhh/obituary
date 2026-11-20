@@ -25,7 +25,9 @@ const guiStyles = () => ({
     const sheet = code
       .replace(/^\* \{ box-sizing: border-box; \}\r?\n/m, "")
       .replace(/^html, body, #root \{[^\r\n]*\}\r?\n/m, "")
-      .replaceAll('url("/fonts/', 'url("../public/fonts/');
+      .replaceAll('url("/fonts/', 'url("../public/fonts/')
+      // Its text stays hidden until its faces arrive, rather than showing in another face and shifting when they do.
+      .replaceAll("font-display: swap", "font-display: block");
     return `@layer gui {\n${sheet}\n}`;
   },
 });
@@ -41,6 +43,8 @@ export default defineConfig(({ isSsrBuild }) => ({
   build: {
     outDir: isSsrBuild ? "dist-ssr" : "dist",
     emptyOutDir: true,
+    // scripts/prerender.mjs reads it to name each page's language module in a modulepreload link.
+    manifest: !isSsrBuild,
     // One template: scripts/prerender.mjs writes a page per language from it. The server build starts from its own entry.
     rollupOptions: isSsrBuild ? {} : { input: fileURLToPath(new URL("./index.html", import.meta.url)) },
   },

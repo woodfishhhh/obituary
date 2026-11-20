@@ -1,5 +1,5 @@
 import { ArchiveRestoreIcon, ChevronDownIcon, ChevronRightIcon, FlameIcon } from "lucide-react";
-import { BlurFade } from "@/components/ui/blur-fade";
+import { Reveal } from "@/components/ui/reveal";
 import type { Copy } from "@/copy";
 import { cn } from "@/lib/utils";
 
@@ -52,7 +52,7 @@ export function Lifecycle({ c }: { c: Copy }) {
         <ol aria-label={l.label} className="mt-14 grid grid-cols-1 gap-x-10 gap-y-12 lg:grid-cols-4 lg:grid-rows-2 lg:gap-y-5">
           {stages.map(({ s, codes }, i) => (
             <li key={s.name} className="relative min-w-0 lg:row-span-2">
-              <BlurFade inView delay={0.08 * i} direction="up" offset={14} className="h-full">
+              <Reveal delay={0.08 * i} className="h-full">
                 <div className={cn(card, "border-line hover:border-cobalt/40")}>
                   <span aria-hidden="true" className="grid size-10 place-items-center rounded-full border border-glint bg-soft font-mono text-base font-semibold text-cobalt">{i + 1}</span>
                   <h3 className="text-2xl font-semibold tracking-[-0.01em] hyphens-manual">{s.name}</h3>
@@ -71,7 +71,7 @@ export function Lifecycle({ c }: { c: Copy }) {
                     ) : null}
                   </div>
                 </div>
-              </BlurFade>
+              </Reveal>
               <Next className="-bottom-[2.4rem] left-1/2 -translate-x-1/2 lg:top-1/2 lg:right-[-2.35rem] lg:bottom-auto lg:left-auto lg:translate-x-0 lg:-translate-y-1/2" />
             </li>
           ))}
@@ -86,7 +86,7 @@ export function Lifecycle({ c }: { c: Copy }) {
                   {l.or}
                 </span>
               ) : null}
-              <BlurFade inView delay={0.08 * (3 + i)} direction="up" offset={14} className="h-full">
+              <Reveal delay={0.08 * (3 + i)} className="h-full">
                 <div className={cn(card, tone)}>
                   <span aria-hidden="true" className={cn("grid size-10 shrink-0 place-items-center rounded-full border", badge)}>{icon}</span>
                   <h3 className="text-2xl font-semibold tracking-[-0.01em] hyphens-manual">{o.name}</h3>
@@ -95,7 +95,7 @@ export function Lifecycle({ c }: { c: Copy }) {
                     {codes.map((code) => <Chip key={code}>{code}</Chip>)}
                   </div>
                 </div>
-              </BlurFade>
+              </Reveal>
             </li>
           ))}
         </ol>

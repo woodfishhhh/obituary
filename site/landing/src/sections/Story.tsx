@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useReducedMotion } from "motion/react";
 import { FileIcon, FolderIcon, SparkleIcon } from "lucide-react";
-import { BlurFade } from "@/components/ui/blur-fade";
+import { Reveal } from "@/components/ui/reveal";
 import { File, Folder, Tree } from "@/components/ui/file-tree";
 import { AnimatedSpan, Terminal, TypingAnimation } from "@/components/ui/terminal";
 import { emptyVarRun, graveNotice, guardRun, type Copy } from "@/copy";
@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 function Card({ className, title, line, children, i }: { className?: string; title: string; line: string; children: ReactNode; i: number }) {
   return (
-    <BlurFade inView delay={0.08 * i} className={cn("flex", className)}>
+    <Reveal delay={0.08 * i} className={cn("flex", className)}>
       <article className="flex w-full flex-col overflow-hidden rounded-3xl border border-line bg-paper shadow-card">
         <div className="relative min-h-[15rem] flex-1 border-b border-line bg-paper-2 p-5">{children}</div>
         <div className="flex flex-col gap-2 p-6">
@@ -17,7 +17,7 @@ function Card({ className, title, line, children, i }: { className?: string; tit
           <p className="text-ink-2">{line}</p>
         </div>
       </article>
-    </BlurFade>
+    </Reveal>
   );
 }
 

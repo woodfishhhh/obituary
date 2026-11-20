@@ -6,7 +6,6 @@ Licence notices for third-party material in `site/` and in the site it builds.
 
 These files were copied from Magic UI and adapted:
 
-- `landing/src/components/ui/blur-fade.tsx`
 - `landing/src/components/ui/border-beam.tsx`
 - `landing/src/components/ui/file-tree.tsx`
 - `landing/src/components/ui/sparkles-text.tsx`

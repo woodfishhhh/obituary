@@ -1,9 +1,7 @@
-import { MotionConfig } from "motion/react";
-import { copy } from "@/copy";
-import type { Lang } from "@/locales";
+import { lazy, Suspense } from "react";
+import type { Copy } from "@/copy";
 import { Agents } from "@/sections/Agents";
 import { Community } from "@/sections/Community";
-import { Flow } from "@/sections/Flow";
 import { Footer } from "@/sections/Footer";
 import { Hero } from "@/sections/Hero";
 import { Install } from "@/sections/Install";
@@ -12,14 +10,17 @@ import { LangHint } from "@/components/lang-hint";
 import { Lifecycle } from "@/sections/Lifecycle";
 import { Nav } from "@/sections/Nav";
 import { Promises } from "@/sections/Promises";
-import { Story } from "@/sections/Story";
 import { Values } from "@/sections/Values";
 import { WindowLooks } from "@/sections/WindowLooks";
 
-export function App({ lang }: { lang: Lang }) {
-  const c = copy[lang];
+// The sections that use the animation library load after the first screen. The built pages already
+// contain their HTML (scripts/prerender.mjs waits for them), so nothing is missing while they arrive.
+const Flow = lazy(() => import("@/sections/FlowLazy"));
+const Story = lazy(() => import("@/sections/StoryLazy"));
+
+export function App({ c }: { c: Copy }) {
   return (
-    <MotionConfig reducedMotion="user">
+    <>
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:rounded-full focus:bg-ink focus:px-4 focus:py-2 focus:text-paper">
         {c.a11y.skip}
       </a>
@@ -28,8 +29,8 @@ export function App({ lang }: { lang: Lang }) {
       <main id="main">
         <Hero c={c} />
         <Values c={c} />
-        <Flow c={c} />
-        <Story c={c} />
+        <Suspense fallback={null}><Flow c={c} /></Suspense>
+        <Suspense fallback={null}><Story c={c} /></Suspense>
         <Promises c={c} />
         <Lifecycle c={c} />
         <WindowLooks c={c} />
@@ -38,7 +39,7 @@ export function App({ lang }: { lang: Lang }) {
         <Community c={c} />
       </main>
       <Footer c={c} />
-      <LangHint lang={lang} />
-    </MotionConfig>
+      <LangHint lang={c.lang} />
+    </>
   );
 }

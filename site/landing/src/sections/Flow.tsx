@@ -322,7 +322,7 @@ export function Flow({ c }: { c: Copy }) {
             className="lg:mx-6"
           >
             <Node ref={obit} className={cn("flex-col gap-2 px-8 py-6 text-center", running && phase === "intercept" && "border-transparent")}>
-              <img src={mark} alt="" width={720} height={397} className="h-auto w-32" />
+              <img src={mark} alt="" width={720} height={397} loading="lazy" decoding="async" className="h-auto w-32" />
               <span className="text-lg font-semibold">{f.obit}</span>
               <span className={cn("max-w-[14ch] text-sm transition-colors duration-300", running && phase === "intercept" ? "text-cobalt" : "text-muted")}>
                 {f.obitNote}

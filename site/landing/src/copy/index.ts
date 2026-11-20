@@ -1,15 +1,5 @@
-import { locales, type Lang } from "../locales";
-import { de } from "./de";
-import { en } from "./en";
-import { es } from "./es";
-import { fr } from "./fr";
-import { ja } from "./ja";
-import { ko } from "./ko";
-import { ptBR } from "./pt-br";
-import { ru } from "./ru";
+import type { Lang } from "../locales";
 import type { Strings } from "./types";
-import { zh } from "./zh";
-import { zhTW } from "./zh-tw";
 
 export * from "./base";
 export type { Strings };
@@ -20,8 +10,21 @@ export type { Lang };
 // scripts/subset-fonts.mjs keeps (Simplified Chinese only; the others use the system's fonts).
 export type Copy = Strings & { lang: Lang; docs: string };
 
-const strings: Record<Lang, Strings> = { zh, "zh-TW": zhTW, en, ja, ko, es, fr, de, "pt-BR": ptBR, ru };
+// Each language is a module of its own, so a page loads its own words and no one else's; the built
+// page names that module in a modulepreload link (scripts/prerender.mjs), so it arrives with the script.
+export const loaders: Record<Lang, () => Promise<Strings>> = {
+  zh: () => import("./zh").then((m) => m.zh),
+  "zh-TW": () => import("./zh-tw").then((m) => m.zhTW),
+  en: () => import("./en").then((m) => m.en),
+  ja: () => import("./ja").then((m) => m.ja),
+  ko: () => import("./ko").then((m) => m.ko),
+  es: () => import("./es").then((m) => m.es),
+  fr: () => import("./fr").then((m) => m.fr),
+  de: () => import("./de").then((m) => m.de),
+  "pt-BR": () => import("./pt-br").then((m) => m.ptBR),
+  ru: () => import("./ru").then((m) => m.ru),
+};
+
 // The docs are in Chinese and English; the other languages open the English ones.
-export const copy = Object.fromEntries(
-  locales.map(({ id }) => [id, { ...strings[id], lang: id, docs: id === "zh" ? "docs/" : "docs/en/" }]),
-) as Record<Lang, Copy>;
+export const withLang = (lang: Lang, strings: Strings): Copy => ({ ...strings, lang, docs: lang === "zh" ? "docs/" : "docs/en/" });
+export const loadCopy = async (lang: Lang): Promise<Copy> => withLang(lang, await loaders[lang]());

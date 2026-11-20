@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { XIcon } from "lucide-react";
-import { copy } from "@/copy";
+import { loaders, type Strings } from "@/copy";
 import { localeOf, matchBrowser, type Lang } from "@/locales";
 import { siteLink } from "@/lib/links";
 import { Flag } from "@/components/flags";
@@ -13,23 +13,25 @@ const dismissedKey = "obit-lang-hint-closed";
 // closing it (or choosing a language in the menu) is remembered.
 export function LangHint({ lang }: { lang: Lang }) {
   const [offer, setOffer] = useState<Lang | null>(null);
+  // The offered language's own words, fetched only when there is something to offer.
+  const [words, setWords] = useState<Strings | null>(null);
   useEffect(() => {
     try {
       if (localStorage.getItem(chosenKey) || localStorage.getItem(dismissedKey)) return;
     } catch { /* storage blocked: the bar can still show, and just comes back next time */ }
     const wanted = matchBrowser(navigator.languages?.length ? navigator.languages : [navigator.language]);
-    if (wanted && wanted !== lang) setOffer(wanted);
+    if (wanted && wanted !== lang) void loaders[wanted]().then((w) => { setWords(w); setOffer(wanted); });
   }, [lang]);
-  if (!offer) return null;
+  if (!offer || !words) return null;
 
   const to = localeOf(offer);
-  const h = copy[offer].a11y.hint;
+  const h = words.a11y.hint;
   const close = () => {
     try { localStorage.setItem(dismissedKey, "1"); } catch { /* nothing to remember it in */ }
     setOffer(null);
   };
   return (
-    <aside aria-label={copy[offer].a11y.language} lang={to.html} className="fixed inset-x-3 bottom-3 z-40 mx-auto flex max-w-xl items-center gap-3 rounded-2xl border border-line bg-paper/95 py-2.5 pr-2 pl-4 shadow-nav backdrop-blur-md [animation:card-in_240ms_ease-out]">
+    <aside aria-label={words.a11y.language} lang={to.html} className="fixed inset-x-3 bottom-3 z-40 mx-auto flex max-w-xl items-center gap-3 rounded-2xl border border-line bg-paper/95 py-2.5 pr-2 pl-4 shadow-nav backdrop-blur-md [animation:card-in_240ms_ease-out]">
       <Flag id={offer} />
       <p className="min-w-0 flex-1 text-sm text-ink-2">
         {h.text}{" "}
