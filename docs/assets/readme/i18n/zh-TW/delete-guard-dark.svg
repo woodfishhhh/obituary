@@ -1,38 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="236" viewBox="0 0 1200 236" role="img" aria-labelledby="title desc">
-<title id="title">刪除命令</title>
+<svg xmlns="http://www.w3.org/2000/svg" width="1396" height="280" viewBox="0 0 1396 280" role="img" aria-labelledby="title desc">
+<title id="title">刪除命令: Obituary</title>
 <desc id="desc">agent 發出 rm -rf build，讣告攔下這次執行（只攔不改），告訴 agent 等價命令 obit rm -rf build；agent 改用它，東西進墓地，obit resurrect &lt;id&gt; 一條命令放回原處。</desc>
-<defs>
-<linearGradient id="spark" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#0876FF"/><stop offset=".55" stop-color="#16B8FA"/><stop offset=".62" stop-color="#FFE052"/><stop offset="1" stop-color="#FFB329"/></linearGradient>
-</defs>
-<rect x="1" y="1" width="1198" height="234" rx="28" fill="#0E1628" stroke="#22314D" stroke-width="2"/>
+<rect x="1" y="1" width="1394" height="278" rx="28" fill="#0B1120" stroke="#24324D" stroke-width="2"/>
 <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif">
-<g>
-<path d="M64 48H333L357 72V172A16 16 0 0 1 341 188H64A16 16 0 0 1 48 172V64A16 16 0 0 1 64 48Z" fill="#152039" stroke="#2E4166" stroke-width="2"/>
-<path d="M333 48V72H357Z" fill="#E9A95E" stroke="#2E4166" stroke-width="2" stroke-linejoin="round"/>
-<text x="72" y="96" font-size="28" font-weight="700" fill="#E8EEF9" id="guard-title">刪除命令</text>
-<rect x="68" y="114" width="156" height="34" rx="8" fill="#3B2119"/>
-<text x="81" y="137" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="18" fill="#FFA27E">rm -rf build</text>
-<text x="72" y="174" font-size="18" fill="#A1B1CC" id="guard-first">agent 發出，讣告攔下</text>
-</g>
-<path d="M357 118H434" stroke="#5E6C86" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M445 118l-13 -7.5v15Z" fill="#5E6C86"/>
-<text x="401" y="104" font-size="18" fill="#A1B1CC" text-anchor="middle" id="guard-bridge">只攔不改</text>
-<g>
-<path d="M461 48H730L754 72V172A16 16 0 0 1 738 188H461A16 16 0 0 1 445 172V64A16 16 0 0 1 461 48Z" fill="#152039" stroke="#2E4166" stroke-width="2"/>
-<path d="M730 48V72H754Z" fill="#E9A95E" stroke="#2E4166" stroke-width="2" stroke-linejoin="round"/>
-<text x="469" y="96" font-size="28" font-weight="700" fill="#E8EEF9" id="guard-equiv">等價命令</text>
-<rect x="465" y="114" width="210" height="34" rx="8" fill="#1B2B4E"/>
-<text x="478" y="137" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="18" fill="#8DBDFF">obit rm -rf build</text>
-<text x="469" y="174" font-size="18" fill="#A1B1CC" id="guard-second">agent 改用它，東西進墓地</text>
-</g>
-<path d="M754 118H831" stroke="#4C9BFF" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M842 118l-13 -7.5v15Z" fill="#4C9BFF"/>
-<g>
-<path d="M858 48H1128L1152 72V172A16 16 0 0 1 1136 188H858A16 16 0 0 1 842 172V64A16 16 0 0 1 858 48Z" fill="#152039" stroke="#2E4166" stroke-width="2"/>
-<path d="M1128 48V72H1152Z" fill="#E9A95E" stroke="#2E4166" stroke-width="2" stroke-linejoin="round"/>
-<text x="866" y="96" font-size="28" font-weight="700" fill="#E8EEF9" id="guard-res">復活</text>
-<rect x="862" y="114" width="231" height="34" rx="8" fill="#1B2B4E"/>
-<text x="875" y="137" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="18" fill="#8DBDFF">obit resurrect &lt;id&gt;</text>
-<text x="866" y="174" font-size="18" fill="#A1B1CC" id="guard-res-note">一條命令放回原處</text>
-<path d="M17.6 9.4c.3 5.3 1.2 6.5 5.2 7-4 .6-4.9 2-5.2 7.1-.6-5.1-1.3-6.4-5.5-7.1 4.2-.6 4.9-1.8 5.5-7Z" fill="url(#spark)" transform="translate(940 85) scale(1.9) translate(-17.5 -16.45)"/>
-</g>
-</g>
-</svg>
+<path d="M64 82H354L378 106V226A16 16 0 0 1 362 242H64A16 16 0 0 1 48 226V98A16 16 0 0 1 64 82Z" fill="#121C31" stroke="#24324D" stroke-width="2"/><path d="M354 82V106H378Z" fill="#F7C98B" stroke="#24324D" stroke-width="2" stroke-linejoin="round"/>
+<text x="72" y="130" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="28" fill="#E8EEF9" font-weight="700" id="guard_title">刪除命令</text>
+<rect x="68" y="148" width="156" height="36" rx="8" fill="#1B3155"/>
+<text x="81" y="172" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" font-size="18" fill="#FFA27E">rm -rf build</text>
+<text x="72" y="214" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="18" fill="#A1B1CC" id="guard_first">agent 發出，讣告攔下</text>
+<path d="M544 82H854L878 106V226A16 16 0 0 1 862 242H544A16 16 0 0 1 528 226V98A16 16 0 0 1 544 82Z" fill="#121C31" stroke="#24324D" stroke-width="2"/><path d="M854 82V106H878Z" fill="#F7C98B" stroke="#24324D" stroke-width="2" stroke-linejoin="round"/>
+<text x="552" y="130" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="28" fill="#E8EEF9" font-weight="700" id="guard_equiv">等價命令</text>
+<rect x="548" y="148" width="194.3" height="36" rx="8" fill="#1B3155"/>
+<text x="561" y="172" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" font-size="18" fill="#8DBDFF">obit rm -rf build</text>
+<text x="552" y="214" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="18" fill="#A1B1CC" id="guard_second">agent 改用它，東西進墓地</text>
+<path d="M1044 82H1324L1348 106V226A16 16 0 0 1 1332 242H1044A16 16 0 0 1 1028 226V98A16 16 0 0 1 1044 82Z" fill="#121C31" stroke="#24324D" stroke-width="2"/><path d="M1324 82V106H1348Z" fill="#F7C98B" stroke="#24324D" stroke-width="2" stroke-linejoin="round"/>
+<text x="1052" y="130" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="28" fill="#E8EEF9" font-weight="700" id="guard_res">復活</text>
+<path id="guard-star" d="M17.6 9.4c.3 5.3 1.2 6.5 5.2 7-4 .6-4.9 2-5.2 7.1-.6-5.1-1.3-6.4-5.5-7.1 4.2-.6 4.9-1.8 5.5-7Z" fill="url(#spark)" transform="translate(1120.0 119) scale(1.55) translate(-17.5 -16.45)"/>
+<rect x="1048" y="148" width="214.1" height="36" rx="8" fill="#1B3155"/>
+<text x="1061" y="172" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" font-size="18" fill="#8DBDFF">obit resurrect &lt;id&gt;</text>
+<text x="1052" y="214" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="18" fill="#A1B1CC" id="guard_res_note">一條命令放回原處</text>
+<path d="M378 160H516M528 160l-13 -7.5v15Z" stroke="#6F809E" stroke-width="3" stroke-linecap="round" fill="none"/><text x="453.0" y="142" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="16" fill="#53637D" text-anchor="middle">只攔不改</text>
+<path d="M878 160H1016M1028 160l-13 -7.5v15Z" stroke="#8DBDFF" stroke-width="3" stroke-linecap="round" fill="none"/>
+</g></svg>

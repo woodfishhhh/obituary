@@ -92,6 +92,7 @@ go build -ldflags=-H=windowsgui -o bin/obitd.exe ./cmd/obitd
 - README 顶部语言栏按固定顺序列出 English、简体中文、繁體中文、日本語、한국어、Español、Français、Deutsch、Português (Brasil)、Русский；当前语言加粗，其余链接到根目录对应文件。
 - 图片变体位于 `docs/assets/readme/i18n/<语言代码>/`，文案在 `strings.json`，模板是 `lifecycle-<主题>.svg.tmpl` 与 `delete-guard-<主题>.svg.tmpl`；重新生成运行 `python docs/assets/readme/i18n/generate.py`。
 - 图片生成结果要与 README 语言同步；简体中文和繁體中文使用中文 demo GIF，其余语言使用英文 demo GIF。软件本身完成多语言后再重做 GIF 和右键菜单截图。
+- SVG 生成器使用统一的字符宽度布局规则，自动计算卡片、间距、换行、箭头说明和星标锚点；不使用横向压缩，标题不低于 22 px，说明不低于 14 px。生成后运行 `python scripts/check-readme-i18n.py`，再用浏览器检查文本边界、图标重叠和截断。
 - 维护术语表：
 
 | English | zh-CN | zh-TW | ja | ko | es | fr | de | pt-BR | ru |

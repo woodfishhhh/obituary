@@ -1,68 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1228" height="410" viewBox="0 0 1228 410" role="img" aria-labelledby="title desc">
 <title id="title">讣告 Obituary 的生命周期</title>
 <desc id="desc">登记（obit add，或右键放进讣告）→ 到期（obit list 看谁还剩多久）→ 收割，下葬进墓地（obit graveyard，默认保留 7 天）→ 复活（obit resurrect，放回原处，绝不覆盖已有文件），或保留期过后火化（obit purge，真正删除）。</desc>
-<defs>
-<linearGradient id="spark" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#0876FF"/><stop offset=".55" stop-color="#16B8FA"/><stop offset=".62" stop-color="#FFE052"/><stop offset="1" stop-color="#FFB329"/></linearGradient>
-</defs>
-<rect x="1" y="1" width="1198" height="398" rx="28" fill="#F5F8FE" stroke="#DCE5F4" stroke-width="2"/>
+<defs><linearGradient id="spark" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#0876FF"/><stop offset=".55" stop-color="#16B8FA"/><stop offset=".62" stop-color="#FFE052"/><stop offset="1" stop-color="#FFB329"/></linearGradient></defs>
+<rect x="1" y="1" width="1226" height="408" rx="28" fill="#F5F8FE" stroke="#DCE5F4" stroke-width="2"/>
 <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif">
-<g>
-<path d="M64 130H310L334 154V254A16 16 0 0 1 318 270H64A16 16 0 0 1 48 254V146A16 16 0 0 1 64 130Z" fill="#FFFFFF" stroke="#C9D7EE" stroke-width="2"/>
-<path d="M310 130V154H334Z" fill="#F7C98B" stroke="#C9D7EE" stroke-width="2" stroke-linejoin="round"/>
-<text x="72" y="178" font-size="28" font-weight="700" fill="#0F1B33" id="register">登记</text>
-<rect x="68" y="196" width="253" height="34" rx="8" fill="#EAF2FF"/>
-<text x="81" y="219" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="18" fill="#0F56D9">obit add debug.log 2h</text>
-<text x="72" y="256" font-size="18" fill="#53637D" id="register-note">或右键放进讣告</text>
-</g>
-<path d="M334 200H363" stroke="#126CFF" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M374 200l-13 -7.5v15Z" fill="#126CFF"/>
-<g>
-<path d="M390 130H530L554 154V254A16 16 0 0 1 538 270H390A16 16 0 0 1 374 254V146A16 16 0 0 1 390 130Z" fill="#FFFFFF" stroke="#C9D7EE" stroke-width="2"/>
-<path d="M530 130V154H554Z" fill="#F7C98B" stroke="#C9D7EE" stroke-width="2" stroke-linejoin="round"/>
-<text x="398" y="178" font-size="28" font-weight="700" fill="#0F1B33" id="expire">到期</text>
-<rect x="394" y="196" width="123" height="34" rx="8" fill="#EAF2FF"/>
-<text x="407" y="219" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="18" fill="#0F56D9">obit list</text>
-<text x="398" y="256" font-size="18" fill="#53637D" id="expire-note">谁还剩多久</text>
-</g>
-<path d="M554 200H603" stroke="#126CFF" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M614 200l-13 -7.5v15Z" fill="#126CFF"/>
-<text x="584" y="186" font-size="18" fill="#53637D" text-anchor="middle" id="reap">收割</text>
-<g>
-<path d="M630 130H790L814 154V254A16 16 0 0 1 798 270H630A16 16 0 0 1 614 254V146A16 16 0 0 1 630 130Z" fill="#FFFFFF" stroke="#C9D7EE" stroke-width="2"/>
-<path d="M790 130V154H814Z" fill="#F7C98B" stroke="#C9D7EE" stroke-width="2" stroke-linejoin="round"/>
-<text x="638" y="178" font-size="28" font-weight="700" fill="#0F1B33" id="bury">下葬进墓地</text>
-<rect x="634" y="196" width="177" height="34" rx="8" fill="#EAF2FF"/>
-<text x="647" y="219" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="18" fill="#0F56D9">obit graveyard</text>
-<text x="638" y="256" font-size="18" fill="#53637D" id="bury-note">默认保留 7 天</text>
-</g>
-<path d="M814 200H844" stroke="#126CFF" stroke-width="3" stroke-linecap="round"/>
-<path d="M844 200V122Q844 114 852 114H863" stroke="#E0960A" stroke-width="3" stroke-linecap="round" fill="none"/>
-<path d="M874 114l-13 -7.5v15Z" fill="#E0960A"/>
-<path d="M844 200V278Q844 286 852 286H863" stroke="#9AA8BC" stroke-width="3" stroke-linecap="round" fill="none"/>
-<path d="M874 286l-13 -7.5v15Z" fill="#9AA8BC"/>
-<circle cx="844" cy="200" r="5" fill="#126CFF"/>
-<g>
-<path d="M890 44H1128L1152 68V168A16 16 0 0 1 1136 184H890A16 16 0 0 1 874 168V60A16 16 0 0 1 890 44Z" fill="#FFFFFF" stroke="#C9D7EE" stroke-width="2"/>
-<path d="M1128 44V68H1152Z" fill="#F7C98B" stroke="#C9D7EE" stroke-width="2" stroke-linejoin="round"/>
-<text x="898" y="92" font-size="28" font-weight="700" fill="#0F1B33" id="resurrect">复活</text>
-<rect x="894" y="110" width="199" height="34" rx="8" fill="#EAF2FF"/>
-<text x="907" y="133" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="18" fill="#0F56D9">obit resurrect 3</text>
-<text x="898" y="170" font-size="18" fill="#53637D" id="resurrect-note">放回原处，绝不覆盖已有文件</text>
-<path d="M17.6 9.4c.3 5.3 1.2 6.5 5.2 7-4 .6-4.9 2-5.2 7.1-.6-5.1-1.3-6.4-5.5-7.1 4.2-.6 4.9-1.8 5.5-7Z" fill="url(#spark)" transform="translate(972 81) scale(1.9) translate(-17.5 -16.45)"/>
-</g>
-<g>
-<path d="M890 216H1128L1152 240V340A16 16 0 0 1 1136 356H890A16 16 0 0 1 874 340V232A16 16 0 0 1 890 216Z" fill="#F3F5F9" stroke="#B6C1D2" stroke-width="2" stroke-dasharray="7 6"/>
-<path d="M1128 216V240H1152Z" fill="#DDE3EC" stroke="#B6C1D2" stroke-width="2" stroke-linejoin="round"/>
-<text x="898" y="264" font-size="28" font-weight="700" fill="#0F1B33" id="purge">火化</text>
-<rect x="894" y="282" width="134" height="34" rx="8" fill="#EAF2FF"/>
-<text x="907" y="305" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="18" fill="#0F56D9">obit purge</text>
-<text x="898" y="342" font-size="18" fill="#53637D" id="purge-note">保留期过后，真正删除</text>
-</g>
-<text x="52" y="84" font-size="22" font-weight="600" fill="#53637D" id="title">讣告 Obituary 的生命周期</text>
-<text x="52" y="318" font-size="18" fill="#53637D" id="before">到期之前可以</text>
-<rect x="168" y="295" width="145" height="34" rx="8" fill="#EAF2FF"/>
-<text x="181" y="318" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="18" fill="#0F56D9">obit extend</text>
-<text x="321" y="318" font-size="18" fill="#53637D" id="extend-note" textLength="50" lengthAdjust="spacingAndGlyphs">续命，</text>
-<rect x="383" y="295" width="134" height="34" rx="8" fill="#EAF2FF"/>
-<text x="396" y="318" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="18" fill="#0F56D9">obit spare</text>
-<text x="525" y="318" font-size="18" fill="#53637D" id="spare-note">饶命</text>
-</g>
-</svg>
+<text x="52" y="64" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="22" fill="#53637D" font-weight="600" id="section">讣告 Obituary 的生命周期</text>
+<path d="M64 112H310L334 136V248A16 16 0 0 1 318 264H64A16 16 0 0 1 48 248V128A16 16 0 0 1 64 112Z" fill="#FFFFFF" stroke="#DCE5F4" stroke-width="2"/><path d="M310 112V136H334Z" fill="#F7C98B" stroke="#DCE5F4" stroke-width="2" stroke-linejoin="round"/>
+<text x="72" y="160" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="28" fill="#0F1B33" font-weight="700" id="register">登记</text>
+<rect x="68" y="178" width="233.9" height="36" rx="8" fill="#EAF2FF"/>
+<text x="81" y="202" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" font-size="18" fill="#0F56D9">obit add debug.log 2h</text>
+<text x="72" y="240" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="18" fill="#53637D" id="register_note">或右键放进讣告</text>
+<path d="M392 112H532L556 136V248A16 16 0 0 1 540 264H392A16 16 0 0 1 376 248V128A16 16 0 0 1 392 112Z" fill="#FFFFFF" stroke="#DCE5F4" stroke-width="2"/><path d="M532 112V136H556Z" fill="#F7C98B" stroke="#DCE5F4" stroke-width="2" stroke-linejoin="round"/>
+<text x="400" y="160" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="28" fill="#0F1B33" font-weight="700" id="expire">到期</text>
+<rect x="396" y="178" width="132" height="36" rx="8" fill="#EAF2FF"/>
+<text x="409" y="202" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" font-size="18" fill="#0F56D9">obit list</text>
+<text x="400" y="240" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="18" fill="#53637D" id="expire_note">谁还剩多久</text>
+<path d="M614 112H804L828 136V248A16 16 0 0 1 812 264H614A16 16 0 0 1 598 248V128A16 16 0 0 1 614 112Z" fill="#FFFFFF" stroke="#DCE5F4" stroke-width="2"/><path d="M804 112V136H828Z" fill="#F7C98B" stroke="#DCE5F4" stroke-width="2" stroke-linejoin="round"/>
+<text x="622" y="160" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="26" fill="#0F1B33" font-weight="700" id="bury">下葬进墓地</text>
+<rect x="618" y="178" width="164.6" height="36" rx="8" fill="#EAF2FF"/>
+<text x="631" y="202" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" font-size="18" fill="#0F56D9">obit graveyard</text>
+<text x="622" y="240" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="18" fill="#53637D" id="bury_note">默认保留 7 天</text>
+<path d="M334 182H364M376 182l-13 -7.5v15Z" stroke="#0F56D9" stroke-width="3" stroke-linecap="round" fill="none"/>
+<path d="M556 182H586M598 182l-13 -7.5v15Z" stroke="#0F56D9" stroke-width="3" stroke-linecap="round" fill="none"/><text x="577.0" y="164" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="16" fill="#53637D" text-anchor="middle">收割</text>
+<path d="M828 182H858M870 182l-13 -7.5v15Z" stroke="#0F56D9" stroke-width="3" stroke-linecap="round" fill="none"/>
+<path d="M886 32H1156L1180 56V168A16 16 0 0 1 1164 184H886A16 16 0 0 1 870 168V48A16 16 0 0 1 886 32Z" fill="#FFFFFF" stroke="#DCE5F4" stroke-width="2"/><path d="M1156 32V56H1180Z" fill="#F7C98B" stroke="#DCE5F4" stroke-width="2" stroke-linejoin="round"/>
+<text x="894" y="80" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="28" fill="#0F1B33" font-weight="700" id="resurrect">复活</text>
+<path id="resurrect-star" d="M17.6 9.4c.3 5.3 1.2 6.5 5.2 7-4 .6-4.9 2-5.2 7.1-.6-5.1-1.3-6.4-5.5-7.1 4.2-.6 4.9-1.8 5.5-7Z" fill="url(#spark)" transform="translate(962.0 69) scale(1.55) translate(-17.5 -16.45)"/>
+<rect x="890" y="98" width="199" height="36" rx="8" fill="#EAF2FF"/>
+<text x="903" y="122" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" font-size="18" fill="#0F56D9">obit resurrect 3</text>
+<text x="894" y="158" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="18" fill="#53637D" id="resurrect-note">放回原处，绝不覆盖已有文件</text>
+<path d="M886 218H1156L1180 242V354A16 16 0 0 1 1164 370H886A16 16 0 0 1 870 354V234A16 16 0 0 1 886 218Z" fill="#F3F5F9" stroke="#B6C1D2" stroke-width="2" stroke-dasharray="7 6"/><path d="M1156 218V242H1180Z" fill="#B6C1D2" stroke="#B6C1D2" stroke-width="2" stroke-linejoin="round"/>
+<text x="894" y="266" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="26" fill="#0F1B33" font-weight="700" id="purge">火化</text>
+<rect x="890" y="284" width="150" height="36" rx="8" fill="#EAF2FF"/>
+<text x="903" y="308" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" font-size="18" fill="#0F56D9">obit purge</text>
+<text x="894" y="346" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="18" fill="#53637D" id="purge-note">保留期过后，真正删除</text>
+<text x="52" y="384" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="18" fill="#53637D" id="before">到期之前：</text>
+<rect x="152.0" y="361" width="145" height="36" rx="8" fill="#EAF2FF"/>
+<text x="165.0" y="385" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" font-size="18" fill="#0F56D9">obit extend</text>
+<text x="309.0" y="385" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="18" fill="#53637D" id="extend-note">续命，</text>
+<rect x="377.0" y="361" width="134" height="36" rx="8" fill="#EAF2FF"/>
+<text x="390.0" y="385" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" font-size="18" fill="#0F56D9">obit spare</text>
+<text x="522.0" y="385" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="18" fill="#53637D" id="spare-note">保留</text>
+</g></svg>

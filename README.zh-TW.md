@@ -1,8 +1,5 @@
 <p align="center"><a href="README.md">English</a> | <a href="README.zh-CN.md">简体中文</a> | <strong>繁體中文</strong> | <a href="README.ja.md">日本語</a> | <a href="README.ko.md">한국어</a> | <a href="README.es.md">Español</a> | <a href="README.fr.md">Français</a> | <a href="README.de.md">Deutsch</a> | <a href="README.pt-BR.md">Português (Brasil)</a> | <a href="README.ru.md">Русский</a></p>
-
 <div align="center">
-
-
   <h1>
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/obituary-horizontal-dark.png">
@@ -11,15 +8,15 @@
     </picture>
   </h1>
   <p>
-    <strong>Obituary — the trash bin for AI agents</strong><br>
-    What your AI leaves behind leaves on its own when it expires; what your AI deletes comes back for seven days.
+    <strong>讣告 · AI 的回收站</strong><br>
+    AI 寫下的垃圾到期自動離開，AI 刪掉的東西七天內都能找回。
   </p>
     <p>
-    <a href="#為什麼需要讣告">Why Obituary</a> ·
-    <a href="#安裝">Install</a> ·
-    <a href="#快速上手">Quick start</a> ·
-    <a href="docs/usage.md">User guide</a> ·
-    <a href="docs/README.md">Docs</a>
+    <a href="#為什麼需要讣告">為什麼需要讣告</a> ·
+    <a href="#安裝">安裝</a> ·
+    <a href="#快速上手">快速上手</a> ·
+    <a href="docs/usage.md">使用手冊</a> ·
+    <a href="docs/README.md">文件</a>
   </p>
 </div>
 
@@ -27,7 +24,7 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/i18n/zh-TW/lifecycle-dark.svg">
     <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/i18n/zh-TW/lifecycle-light.svg">
-    <img alt="Lifecycle: register (obit add debug.log 2h, or from the context menu) → expire (obit list shows what is left; obit extend or obit spare before then) → reap into the graveyard (obit graveyard, kept 7 days by default) → resurrect (obit resurrect 3, back where it was, never overwriting), or purge after retention (obit purge, the real delete)" src="docs/assets/readme/i18n/zh-TW/lifecycle-light.svg" width="100%">
+    <img alt="生命週期：登記（obit add debug.log 2h，或從右鍵選單加入）→ 到期（obit list 查看剩餘項目；到期前可用 obit extend 或 obit spare）→ 收割並下葬進墓地（obit graveyard，預設保留 7 天）→ 復活（obit resurrect 3，放回原處，絕不覆蓋），或保留期後永久刪除（obit purge）" src="docs/assets/readme/i18n/zh-TW/lifecycle-light.svg" width="100%">
   </picture>
 </p>
 
@@ -35,41 +32,41 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo/demo-dark.gif">
     <source media="(prefers-color-scheme: light)" srcset="docs/assets/demo/demo-light.gif">
-    <img alt="Demo: an agent's rm -rf build is stopped by the delete guard, obit rm -rf build buries it instead, and obit resurrect --last brings it all back" src="docs/assets/demo/demo-light.gif" width="100%">
+    <img alt="示範：agent 執行 rm -rf build 被刪除護欄攔下，改用 obit rm -rf build 後進入墓地，obit resurrect --last 將全部放回原處" src="docs/assets/demo/demo-light.gif" width="100%">
   </picture>
 </p>
 
-Obituary is the trash bin for AI agents: the agent and you decide what goes in. An agent gives the debug scripts, logs and screenshots it writes a lifespan as it writes them, and you add your own files from the right-click menu; whatever is in is buried when its time is up and can be restored as it was for 7 days. Nobody has to remember to clean up, and an agent's `rm -rf` no longer destroys anything for good. How it works inside: [docs/architecture.md](docs/architecture.md) (Chinese).
+讣告是 AI agent 的回收站：由 agent 和你一起決定什麼要放進來。agent 寫下除錯腳本、日誌和截圖時順手設定壽命，你也能從右鍵選單加入自己的檔案；進來的東西到期後會下葬，七天內可以原樣恢復。沒有人需要記得清理，agent 的 `rm -rf` 也不會再永久摧毀東西。內部運作方式見 [docs/architecture.md](docs/architecture.md)（中文）。
 
 ## 為什麼需要讣告
 
-Agents pushed us into writing it. As soon as version 0.0.1 ran we installed it on our own machines, and every version since was written by agents in repositories it was watching.
+讣告是被 agent 逼出來的。版本 0.0.1 能執行後，我們立刻安裝在自己的機器上；之後每個版本，都是 agent 在它監看的儲存庫裡寫出來的。
 
-- **Agents make mess faster than people clean it up.** Rotate between Claude Code, Codex, DeepSeek and WorkBuddy and a project soon fills with debug scripts, logs, screenshots and `test-results/`. Nobody can say which of it still matters, so nobody dares delete any of it. Obituary leaves the call to whoever knows best: an agent knows which debug scripts and logs it wrote and gives them a lifespan with `obit mark` as it writes them; you add your own files from the right-click menu. Once in, they are buried when due, and nobody has to remember to clean up.
-- **Not sure it's still needed? Bury it.** `obit bury` moves it into the graveyard, where it stays restorable as it was for seven days before it is really deleted. If an agent reaches for it during those seven days, Obituary tells it on the spot: it is in the graveyard, here is its number, and `obit resurrect` puts it back. The rest of the time it stays out of the way: an agent starts work knowing only that Obituary is there, without reading a list first.
-- **Afraid of one `rm -rf`.** Agents wiping a home directory or a whole drive is no longer hypothetical; people have posted it more than once. With the delete guard on, an agent's `rm -rf`, `git clean` or `Remove-Item` is stopped and replaced by the equivalent `obit` command: things go to the graveyard instead of disappearing. Detours such as `find -delete` and `xargs rm` are stopped too.
-- **Afraid the command changes on the way.** Between the command an agent means and the one that runs sit shell quoting, escaping and sometimes a proxy that rewrites commands. Lose one character and `rm -rf "$OUT"/` becomes `rm -rf /`. So Obituary does not trust the command text alone: before `obit rm` touches anything it checks the real path on disk, refuses drive roots, system directories and the user profile itself, and buries everything else where it can be resurrected. On Windows, Codex passes the command through another shell where quoting may fail, so a deletion inside backticks or `$(…)` in its commands is stopped even when it sits in quotes.
+- **agent 製造垃圾的速度比人清理得快。** 在 Claude Code、Codex、DeepSeek 和 WorkBuddy 之間切換，很快就會把專案塞滿除錯腳本、日誌、截圖和 `test-results/`。沒人說得準哪些還有用，所以誰也不敢刪。讣告把判斷交給最了解的人：agent 知道哪些除錯腳本和日誌是自己寫的，寫下時用 `obit mark` 設定壽命；你自己的檔案則從右鍵選單加入。進來後到期自動下葬，不必再記得清理。
+- **不確定還需不需要？先下葬。** `obit bury` 會把它移進墓地，七天內都能原樣恢復，保留期後才永久刪除。七天內 agent 再次需要它時，讣告會立即告知它東西在墓地和對應編號，`obit resurrect` 會把它放回原處。其他時間不會打擾 agent；它不用先讀清單就能開始工作。
+- **害怕一次 `rm -rf`。** agent 清空使用者目錄或整個磁碟已不是假設情境。開啟刪除護欄後，agent 的 `rm -rf`、`git clean` 和 `Remove-Item` 會被攔下，改成等價的 `obit` 命令；東西會進墓地而不是消失。`find -delete` 和 `xargs rm` 等繞路刪除也會被攔下。
+- **害怕命令在路上變形。** agent 想執行的命令和實際執行的命令之間，可能隔著 shell 引號、跳脫字元和改寫命令的代理。少一個字元，`rm -rf "$OUT"/` 就可能變成 `rm -rf /`。讣告不只信任命令文字：`obit rm` 動手前會核對磁碟上的實際路徑，拒絕磁碟根目錄、系統目錄和使用者目錄本身，其餘都以下葬方式保存並可復活。Windows 上 Codex 會把命令再交給另一層 shell，因此引號內反引號或 shell 替換中的刪除也會被攔下。
 
 ## 它能做什麼
 
-- **Give files and folders a lifespan.** `obit add debug.log 2h` buries it when time is up. Pick a moment with `--at`, extend it any time (`extend`), or spare it (`spare`).
-- **The agent decides what goes in.** `obit init` adds Obituary to the agent's instructions (`OBIT.md`, an Agent Skill, MCP optional). The agent gives the debug scripts, logs and screenshots it writes a lifespan with `obit mark`, takes scratch space from `obit mktemp`, buries what it is unsure about with `obit bury`, and registers the `*.bak` files it leaves while editing.
-- **You add your own.** On Windows, right-click files or folders in Explorer (several at once is fine), choose "Add to Obituary" and then 1, 7 or 30 days, or "Bury now (recoverable)"; or give a folder such as Downloads a policy.
-- **Automatic registration when you want it.** Off by default: nothing goes in by itself. Turned on in Settings, it registers by rule (`.playwright-mcp/`, `test-results/`, `*.log`, the `*.bak`, `*.orig` or `*~` backups left when editing, and so on) and from the writes the hooks see, in one of three modes: tiered (what the agent created this session goes straight in, files that were there before wait for you), fully automatic, or ask about everything. Dependencies, build output and caches are never registered automatically in any mode, and files tracked by Git are never touched.
-- **End-of-session tidy-up.** When an agent is about to stop, Obituary lists the files it created this session that nothing has sorted yet and asks it to give debug scripts, logs and screenshots a lifespan or bury them, keeping the deliverables. At most once per session.
-- **Anything an agent deletes can come back.** With the delete guard on, an agent's `rm -rf`, `git clean` and similar commands are stopped and the agent is told the equivalent `obit` command. It uses that instead, and things go to the graveyard rather than disappearing.
-- **Bury first, purge later.** The graveyard keeps everything for 7 days by default; `obit resurrect` puts it back where it was and never overwrites what is there now.
-- **Files are tracked by identity, not by name.** Every record keeps the volume serial number and the 128-bit file ID, so a renamed or moved file is still found, and a different file that now sits at the old path is left alone.
-- **Claude Code and Codex.** `obit init` registers hooks and an Agent Skill; an MCP server is optional; `--uninstall` removes only what Obituary added.
-- **Lives in the tray, like Everything (Windows).** `obit init` starts a tray icon at login. Its menu shows recent burials (click one to resurrect it), lets you pause automatic cleanup, and opens Obituary's small window. A Windows scheduled task remains as a fallback.
-- **A small window (Windows).** Upcoming, Graveyard, Decisions, Settings and Logs: resurrect files, approve proposals and change settings without the command line (`obit-gui.exe`, or "Open Obituary" in the tray menu). Chinese and English, eight looks.
-- **Context menu and dates in Explorer (Windows).** Right-click files or folders (several at once is fine) → "Add to Obituary" → 1, 7 or 30 days, or "Bury now (recoverable)"; on Windows 11 it is under "Show more options". Tracked items in Downloads and on the Desktop show as "name (11-13 burial)" while the real file name stays the same.
-- **Docker containers.** `obit docker add <container> 3d` gives a container a lifespan; at expiry it is stopped with `docker stop` (`obit resurrect` starts it again) and removed with `docker rm` only after the retention period. Volumes and images are never touched. With automatic registration on, containers an agent session started for the project are registered too, and you are told afterwards.
-- **Folder policies.** `obit watch Downloads 2w`: every file that lands there is buried two weeks later. An expired subfolder only produces a proposal and is buried after you approve it. The policy itself needs your approval too.
+- **為檔案和資料夾設定壽命。** `obit add debug.log 2h` 到期後會下葬；用 `--at` 指定時間，隨時用 `extend` 延長，或用 `spare` 停止追蹤。
+- **由 agent 決定什麼要進來。** `obit init` 會把讣告加入 agent 的指示（`OBIT.md`、Agent Skill、MCP 可選）。agent 用 `obit mark` 為寫下的除錯腳本、日誌和截圖設定壽命，用 `obit mktemp` 取得暫存空間，把拿不準的東西用 `obit bury` 下葬，也會登記編輯時留下的 `*.bak` 檔案。
+- **你也能加入自己的檔案。** Windows 上在檔案總管右鍵檔案或資料夾（可一次多選），選擇「Add to Obituary」後指定 1、7 或 30 天，或「Bury now (recoverable)」；也能替 Downloads 這類資料夾設定政策。
+- **需要時再開啟自動登記。** 預設關閉，不會自行加入任何東西。從設定開啟後，會依規則（`.playwright-mcp/`、`test-results/`、`*.log`、編輯時留下的 `*.bak`、`*.orig`、`*~` 等）以及 hook 看到的寫入登記，提供分級、全自動和全部詢問三種模式。依賴、建置輸出和快取在任何模式都不會自動登記，Git 追蹤中的檔案也不會碰。
+- **工作階段結束時整理。** agent 即將停止時，讣告會列出這次工作階段建立、尚未分類的檔案，請它為除錯腳本、日誌和截圖設定壽命或下葬，同時保留交付成果；每個工作階段最多一次。
+- **agent 刪掉的東西都能回來。** 開啟刪除護欄後，agent 的 `rm -rf`、`git clean` 等命令會被攔下，並收到等價的 `obit` 命令；改用後東西會進墓地而不是消失。
+- **先下葬，再永久刪除。** 墓地預設保留所有東西七天；`obit resurrect` 會放回原處，絕不覆蓋現在那裡的檔案。
+- **依檔案身分追蹤，而不是檔名。** 每筆記錄都保存磁碟區序號和 128 位元檔案 ID，因此改名或搬移後仍能找到；如果原路徑出現另一個檔案，則會保持不動。
+- **Claude Code 和 Codex。** `obit init` 會註冊 hook 和 Agent Skill；MCP 伺服器可選，`--uninstall` 只移除讣告加入的內容。
+- **像 Everything 一樣常駐 Windows 系統匣。** `obit init` 會在登入時啟動系統匣圖示；選單可查看最近的下葬、點擊復活、暫停自動清理並開啟讣告小視窗。Windows 工作排程器仍作為備援。
+- **Windows 小視窗。** Upcoming、Graveyard、Decisions、Settings 和 Logs 讓你不用命令列就能復活檔案、核准提案和變更設定（`obit-gui.exe`，或系統匣選單的「Open Obituary」）。支援中文和英文，以及八種外觀。
+- **檔案總管右鍵選單和日期（Windows）。** 右鍵檔案或資料夾（可多選）→「Add to Obituary」→ 1、7 或 30 天，或「Bury now (recoverable)」；Windows 11 位於「Show more options」。Downloads 和桌面上的追蹤項目會顯示為「name (11-13 burial)」，實際檔名不變。
+- **Docker 容器。** `obit docker add <container> 3d` 為容器設定壽命；到期時用 `docker stop` 停止（`obit resurrect` 會重新啟動），保留期後才用 `docker rm` 移除。卷和映像檔永遠不會被碰。開啟自動登記後，agent 工作階段為專案啟動的容器也會登記，之後會告知你。
+- **資料夾政策。** `obit watch Downloads 2w` 會讓其中每個新檔案兩週後下葬。到期的子資料夾只會產生提案，核准後才下葬；政策本身也需要你核准。
 
 ## 安裝
 
-Windows 10 / 11, macOS and Linux (x64 and ARM64). Send this sentence to the agent you use. It installs Obituary, connects it to itself and stops wherever a decision is yours:
+支援 Windows 10 / 11、macOS 和 Linux（x64 與 ARM64）。把下面這句話傳給你使用的 agent；它會安裝讣告、接入自己，遇到需要你決定的地方就停下來詢問：
 
 ```text
 Read https://obituary.woodfish.site/agent-install.md and follow it to install Obituary and connect it to yourself.
@@ -80,25 +77,25 @@ Read https://obituary.woodfish.site/agent-install.md and follow it to install Ob
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/agents/agents-dark.svg">
     <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/agents/agents-light.svg">
-    <img alt="Agents Obituary connects to: Claude Code, Codex, Cursor, GitHub Copilot, Gemini CLI, Windsurf, Trae, Qoder, CodeBuddy, Kimi, DeepSeek Harness, WorkBuddy, OpenCode, Cline, Roo Code, Kilo Code, OpenClaw, Hermes, MiniMax Code, Lingma, Google Antigravity, Mistral Vibe, Factory Droid, ZCode, Pi, Oh My Pi" src="docs/assets/readme/agents/agents-light.svg" width="100%">
+    <img alt="讣告可接入的 agent：Claude Code、Codex、Cursor、GitHub Copilot、Gemini CLI、Windsurf、Trae、Qoder、CodeBuddy、Kimi、DeepSeek Harness、WorkBuddy、OpenCode、Cline、Roo Code、Kilo Code、OpenClaw、Hermes、MiniMax Code、靈碼、Google Antigravity、Mistral Vibe、Factory Droid、ZCode、Pi、Oh My Pi" src="docs/assets/readme/agents/agents-light.svg" width="100%">
   </picture>
 </p>
 
-Each platform at a glance:
+各平台的安裝方式與功能：
 
 | | Windows | macOS | Linux |
 |---|---|---|---|
-| Install with | Scoop, the `install.ps1` script (winget in review) | Homebrew, the `install.sh` script | the `install.sh` script |
-| Checks for expiry every 5 minutes | resident tray process, Task Scheduler as a fallback | user launchd agent | `systemd --user` timer; a user crontab without systemd |
-| CLI, graveyard and resurrection, automatic registration (optional), delete guard, agent integration (hooks, Skill, MCP), Docker containers, folder policies | yes | yes | yes |
-| Tray, small window, context menus, burial dates in Explorer, Start menu and desktop shortcuts | yes | the CLI instead: `obit list`, `obit graveyard`, `obit resurrect` | as on macOS |
-| Recycle Bin mode | yes | graveyard only | graveyard only |
+| 安裝方式 | Scoop、`install.ps1` 腳本（winget 審核中） | Homebrew、`install.sh` 腳本 | `install.sh` 腳本 |
+| 每 5 分鐘檢查到期 | 常駐系統匣程序，工作排程器作為備援 | 使用者 launchd agent | `systemd --user` 計時器；沒有 systemd 時使用使用者 crontab |
+| CLI、墓地與復活、選用的自動登記、刪除護欄、agent 整合（hook、Skill、MCP）、Docker 容器、資料夾政策 | 有 | 有 | 有 |
+| 系統匣、小視窗、右鍵選單、檔案總管中的下葬日期、開始選單和桌面捷徑 | 有 | 改用 CLI：`obit list`、`obit graveyard`、`obit resurrect` | 同 macOS |
+| 資源回收筒模式 | 有 | 僅墓地 | 僅墓地 |
 
-Installing by hand, updating and uninstalling: see the [install guide](docs/install.md).
+手動安裝、更新和解除安裝請參閱[安裝指南](docs/install.md)。
 
 ## 快速上手
 
-Common commands (replace `<id>` with the number from an `obit add` or `obit bury` receipt, or from `obit list` / `obit graveyard`):
+常用命令（將 `<id>` 替換成 `obit add` 或 `obit bury` 回執中的編號，或 `obit list` / `obit graveyard` 列出的編號）：
 
 ```powershell
 obit add debug.log 2h                       # bury it in 2 hours (alias: mark)
@@ -118,30 +115,30 @@ obit stats                                  # eulogy: how much was buried, space
 obit log                                    # the full record of everything done
 ```
 
-Background running, connecting each agent, the delete guard, MCP and the Skill are covered in the [user guide](docs/usage.md).
+背景執行、接入各個 agent、刪除護欄、MCP 和 Skill 的詳細用法請參閱[使用手冊](docs/usage.md)。
 
 ## 文件
 
-- [User guide](docs/usage.md): every feature in detail
-- [Install guide](docs/install.md): installing by hand, updating and uninstalling
-- [Agent coverage](docs/agents.md): how far each of the 30 agents connects
-- [Docs index](docs/README.md): every document, including the architecture and code conventions
-- [Code signing policy](https://obituary.woodfish.site/docs/en/code-signing): Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/)
-- [Privacy policy](https://obituary.woodfish.site/docs/en/privacy): Obituary does one thing on the network, a daily check for a new version that you can turn off
+- [使用手冊](docs/usage.md)：每項功能的詳細說明
+- [安裝指南](docs/install.md)：手動安裝、更新和解除安裝
+- [agent 覆蓋表](docs/agents.md)：30 個 agent 各自能接入到哪一步
+- [文件索引](docs/README.md)：包含架構與程式碼規範的全部文件
+- [程式碼簽署政策](https://obituary.woodfish.site/docs/code-signing)：由 [SignPath.io](https://about.signpath.io/) 提供免費程式碼簽署，憑證由 [SignPath Foundation](https://signpath.org/) 提供
+- [隱私政策](https://obituary.woodfish.site/docs/privacy)：讣告只會每天檢查一次新版本，可關閉這項網路連線
 
 ## 一起打造讣告
 
-Issues and pull requests are welcome. The most welcome is an issue that comes with its fix: you found it, you fixed it, and once it is merged your avatar shows up here. [CONTRIBUTING.md](CONTRIBUTING.md) says how to start; report anything that could delete the wrong file privately, as [SECURITY.md](SECURITY.md) describes.
+歡迎提出 issue 和 PR。最受歡迎的是附帶修正的 issue：發現問題、順手修好，合併後你的頭像就會出現在這裡。如何開始請見 [CONTRIBUTING.md](CONTRIBUTING.md)；可能誤刪檔案的問題請依 [SECURITY.md](SECURITY.md) 說明私下回報。
 
-<a href="https://github.com/woodfishhhh/obituary/graphs/contributors"><img alt="Contributors" src="https://contrib.rocks/image?repo=woodfishhhh/obituary&max=100"></a>
+<a href="https://github.com/woodfishhhh/obituary/graphs/contributors"><img alt="貢獻者" src="https://contrib.rocks/image?repo=woodfishhhh/obituary&max=100"></a>
 
-Chinese-speaking users also chat in the QQ group **1135603207** and on the [LINUX DO](https://linux.do) community.
+使用中文的使用者也可以加入 QQ 群 **1135603207**，或在 [LINUX DO](https://linux.do) 社群交流。
 
 <p>
   <a href="https://star-history.com/#woodfishhhh/obituary&Date">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=woodfishhhh/obituary&type=Date&theme=dark">
-      <img alt="Star history" src="https://api.star-history.com/svg?repos=woodfishhhh/obituary&type=Date" width="100%">
+      <img alt="Star 歷史" src="https://api.star-history.com/svg?repos=woodfishhhh/obituary&type=Date" width="100%">
     </picture>
   </a>
 </p>

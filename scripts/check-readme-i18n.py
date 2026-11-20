@@ -47,7 +47,28 @@ for name in README_NAMES:
     image_paths = [p for p in links(text) if p.endswith((".svg", ".gif", ".png", ".jpg", ".jpeg"))]
     if len(image_paths) < 4:
         errors.append(f"{name}: too few images {len(image_paths)}")
+svg_root = ROOT / "docs" / "assets" / "readme" / "i18n"
+for language in ["en", "zh-CN", "zh-TW", "ja", "ko", "es", "fr", "de", "pt-BR", "ru"]:
+    for diagram in ["lifecycle", "delete-guard"]:
+        for theme in ["light", "dark"]:
+            path = svg_root / language / f"{diagram}-{theme}.svg"
+            if not path.exists():
+                errors.append(f"{path}: missing")
+                continue
+            svg = path.read_text(encoding="utf-8")
+            if "textLength=" in svg or "lengthAdjust=" in svg:
+                errors.append(f"{path}: horizontal text compression is forbidden")
+            sizes = [float(value) for value in re.findall(r'font-size="([0-9.]+)"', svg)]
+            if any(size < 14 for size in sizes):
+                errors.append(f"{path}: text font below 14px")
+            if diagram == "lifecycle" and "resurrect-star" not in svg:
+                errors.append(f"{path}: missing resurrect star")
+            if diagram == "delete-guard" and "guard-star" not in svg:
+                errors.append(f"{path}: missing guard star")
+            for ident in ["resurrect-star", "guard-star"]:
+                if ident in svg and "transform=\"translate(" not in svg:
+                    errors.append(f"{path}: {ident} has no measured anchor")
 if errors:
     print("\n".join(errors))
     sys.exit(1)
-print(f"OK: {len(README_NAMES)} README files, {source_heading_count} headings, {len(source_blocks)} code blocks, links and images resolve")
+print(f"OK: {len(README_NAMES)} README files, {source_heading_count} headings, {len(source_blocks)} code blocks, links/images and 40 SVG static checks pass")

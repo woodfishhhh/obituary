@@ -49,6 +49,6 @@ README 用 `<picture>` 按访问者的主题在浅色版和深色版之间切换
 | `assets/readme/i18n/strings.json` | 图片文案表，语言代码与 README 文件一致 |
 | `assets/readme/i18n/*.svg.tmpl` | 从现有 SVG 抽出的浅色、深色模板 |
 
-图里的命令和说明都取自 README 正文。修改英文源 README 或图片文案后，在仓库根目录运行 `python docs/assets/readme/i18n/generate.py`，重新生成 10 种语言的浅色、深色变体。生成器会为较长的文字设置 `textLength`，并保留 CJK 与西里尔字体回退。
+图里的命令和说明都取自 README 正文。修改英文源 README 或图片文案后，在仓库根目录运行 `python docs/assets/readme/i18n/generate.py`，重新生成 10 种语言的浅色、深色变体。生成器用同一套字符宽度规则自动计算卡片宽度、间距、换行、箭头说明和星标位置，不使用横向压缩；标题至少 22 px、说明至少 14 px，并保留 CJK 与西里尔字体回退。生成后运行 `python scripts/check-readme-i18n.py`，再用浏览器检查文本边界、图标重叠和截断。
 
 README 开头的演示动图在 [`assets/demo/`](assets/demo/)：`demo-light.gif`、`demo-dark.gif` 是中文版，`demo-en-*.gif` 是英文版。它们由 [`assets/readme/demo/build.py`](assets/readme/demo/build.py) 生成：先写出 SVG 源文件和动作描述（`*.motion.json`），再逐帧渲染成 GIF，每个约 7 秒、0.6 MB。终端里的文字照抄 `obit` 的真实输出，路径换成了演示目录。要改文案，就改 `build.py` 再重新生成四个 GIF，`build.py` 开头写了命令。

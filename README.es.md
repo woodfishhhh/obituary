@@ -1,8 +1,5 @@
 <p align="center"><a href="README.md">English</a> | <a href="README.zh-CN.md">简体中文</a> | <a href="README.zh-TW.md">繁體中文</a> | <a href="README.ja.md">日本語</a> | <a href="README.ko.md">한국어</a> | <strong>Español</strong> | <a href="README.fr.md">Français</a> | <a href="README.de.md">Deutsch</a> | <a href="README.pt-BR.md">Português (Brasil)</a> | <a href="README.ru.md">Русский</a></p>
-
 <div align="center">
-
-
   <h1>
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/obituary-horizontal-dark.png">
@@ -11,15 +8,15 @@
     </picture>
   </h1>
   <p>
-    <strong>Obituary — the trash bin for AI agents</strong><br>
-    What your AI leaves behind leaves on its own when it expires; what your AI deletes comes back for seven days.
+    <strong>Obituary — la papelera para agentes de IA</strong><br>
+    Lo que tu IA deja atrás se va solo cuando caduca; lo que tu IA elimina vuelve durante siete días.
   </p>
     <p>
-    <a href="#por-qué-obituary">Why Obituary</a> ·
-    <a href="#instalación">Install</a> ·
-    <a href="#inicio-rápido">Quick start</a> ·
-    <a href="docs/usage.en.md">User guide</a> ·
-    <a href="docs/README.md">Docs</a>
+    <a href="#por-qué-obituary">Por qué Obituary</a> ·
+    <a href="#instalación">Instalación</a> ·
+    <a href="#inicio-rápido">Inicio rápido</a> ·
+    <a href="docs/usage.en.md">Guía de usuario</a> ·
+    <a href="docs/README.md">Documentación</a>
   </p>
 </div>
 
@@ -27,7 +24,7 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/i18n/es/lifecycle-dark.svg">
     <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/i18n/es/lifecycle-light.svg">
-    <img alt="Lifecycle: register (obit add debug.log 2h, or from the context menu) → expire (obit list shows what is left; obit extend or obit spare before then) → reap into the graveyard (obit graveyard, kept 7 days by default) → resurrect (obit resurrect 3, back where it was, never overwriting), or purge after retention (obit purge, the real delete)" src="docs/assets/readme/i18n/es/lifecycle-light.svg" width="100%">
+    <img alt="Ciclo de vida: registrar (obit add debug.log 2h o desde el menú contextual) → caducar (obit list muestra lo que queda; antes puedes usar obit extend u obit spare) → recoger en el cementerio (obit graveyard, conservado siete días por defecto) → resucitar (obit resurrect 3, vuelve a su lugar sin sobrescribir), o eliminar permanentemente después de la retención (obit purge)" src="docs/assets/readme/i18n/es/lifecycle-light.svg" width="100%">
   </picture>
 </p>
 
@@ -35,41 +32,41 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo/demo-en-dark.gif">
     <source media="(prefers-color-scheme: light)" srcset="docs/assets/demo/demo-en-light.gif">
-    <img alt="Demo: an agent's rm -rf build is stopped by the delete guard, obit rm -rf build buries it instead, and obit resurrect --last brings it all back" src="docs/assets/demo/demo-en-light.gif" width="100%">
+    <img alt="Demostración: el rm -rf build de un agente es detenido por el guardia de eliminación, obit rm -rf build lo entierra en su lugar y obit resurrect --last lo devuelve todo" src="docs/assets/demo/demo-en-light.gif" width="100%">
   </picture>
 </p>
 
-Obituary is the trash bin for AI agents: the agent and you decide what goes in. An agent gives the debug scripts, logs and screenshots it writes a lifespan as it writes them, and you add your own files from the right-click menu; whatever is in is buried when its time is up and can be restored as it was for 7 days. Nobody has to remember to clean up, and an agent's `rm -rf` no longer destroys anything for good. How it works inside: [docs/architecture.md](docs/architecture.md) (Chinese).
+Obituary es la papelera para agentes de IA: el agente y tú decidís qué entra. El agente da una vida útil a los scripts de depuración, registros y capturas que escribe, y tú añades tus propios archivos desde el menú contextual; todo lo que entra se entierra al caducar y puede restaurarse tal como estaba durante siete días. Nadie tiene que acordarse de limpiar y el `rm -rf` de un agente ya no destruye nada para siempre. Consulta [docs/architecture.md](docs/architecture.md) para conocer su funcionamiento interno (en chino).
 
 ## Por qué Obituary
 
-Agents pushed us into writing it. As soon as version 0.0.1 ran we installed it on our own machines, and every version since was written by agents in repositories it was watching.
+Los agentes nos llevaron a escribirlo. En cuanto la versión 0.0.1 funcionó, la instalamos en nuestros propios equipos, y desde entonces cada versión ha sido escrita por agentes en los repositorios que vigilaba.
 
-- **Agents make mess faster than people clean it up.** Rotate between Claude Code, Codex, DeepSeek and WorkBuddy and a project soon fills with debug scripts, logs, screenshots and `test-results/`. Nobody can say which of it still matters, so nobody dares delete any of it. Obituary leaves the call to whoever knows best: an agent knows which debug scripts and logs it wrote and gives them a lifespan with `obit mark` as it writes them; you add your own files from the right-click menu. Once in, they are buried when due, and nobody has to remember to clean up.
-- **Not sure it's still needed? Bury it.** `obit bury` moves it into the graveyard, where it stays restorable as it was for seven days before it is really deleted. If an agent reaches for it during those seven days, Obituary tells it on the spot: it is in the graveyard, here is its number, and `obit resurrect` puts it back. The rest of the time it stays out of the way: an agent starts work knowing only that Obituary is there, without reading a list first.
-- **Afraid of one `rm -rf`.** Agents wiping a home directory or a whole drive is no longer hypothetical; people have posted it more than once. With the delete guard on, an agent's `rm -rf`, `git clean` or `Remove-Item` is stopped and replaced by the equivalent `obit` command: things go to the graveyard instead of disappearing. Detours such as `find -delete` and `xargs rm` are stopped too.
-- **Afraid the command changes on the way.** Between the command an agent means and the one that runs sit shell quoting, escaping and sometimes a proxy that rewrites commands. Lose one character and `rm -rf "$OUT"/` becomes `rm -rf /`. So Obituary does not trust the command text alone: before `obit rm` touches anything it checks the real path on disk, refuses drive roots, system directories and the user profile itself, and buries everything else where it can be resurrected. On Windows, Codex passes the command through another shell where quoting may fail, so a deletion inside backticks or `$(…)` in its commands is stopped even when it sits in quotes.
+- **Los agentes ensucian más rápido de lo que las personas limpian.** Alternar entre Claude Code, Codex, DeepSeek y WorkBuddy llena pronto un proyecto de scripts de depuración, registros, capturas y `test-results/`. Nadie sabe qué sigue siendo útil, así que nadie se atreve a borrarlo. Obituary deja la decisión en manos de quien mejor lo sabe: el agente reconoce sus scripts y registros y les da una vida útil con `obit mark` al escribirlos; tú añades tus archivos desde el menú contextual. Una vez dentro, se entierran al caducar y nadie tiene que recordar la limpieza.
+- **¿No sabes si todavía hace falta? Entiérralo.** `obit bury` lo mueve al cementerio, donde puede restaurarse tal como estaba durante siete días antes de eliminarse de verdad. Si un agente lo necesita durante esos siete días, Obituary le avisa al instante de que está en el cementerio y le da su número; `obit resurrect` lo devuelve. El resto del tiempo no molesta: el agente puede empezar sabiendo solo que Obituary está allí, sin leer primero una lista.
+- **Miedo a un solo `rm -rf`.** Que un agente borre un directorio personal o una unidad completa ya no es una hipótesis. Con el guardia de eliminación activado, `rm -rf`, `git clean` y `Remove-Item` se detienen y se sustituyen por el comando `obit` equivalente: las cosas van al cementerio en lugar de desaparecer. También se detienen rodeos como `find -delete` y `xargs rm`.
+- **Miedo a que el comando cambie por el camino.** Entre el comando que pretende el agente y el que se ejecuta están las comillas y escapes del shell, y a veces un proxy que reescribe comandos. Si se pierde un carácter, `rm -rf "$OUT"/` se convierte en `rm -rf /`. Obituary no confía solo en el texto: antes de que `obit rm` toque nada comprueba la ruta real del disco, rechaza raíces de unidad, directorios del sistema y el propio perfil del usuario, y entierra todo lo demás de forma recuperable. En Windows, Codex pasa el comando por otro shell, así que también se detiene una eliminación dentro de backticks o sustituciones de shell aunque esté entre comillas.
 
 ## Qué hace Obituary
 
-- **Give files and folders a lifespan.** `obit add debug.log 2h` buries it when time is up. Pick a moment with `--at`, extend it any time (`extend`), or spare it (`spare`).
-- **The agent decides what goes in.** `obit init` adds Obituary to the agent's instructions (`OBIT.md`, an Agent Skill, MCP optional). The agent gives the debug scripts, logs and screenshots it writes a lifespan with `obit mark`, takes scratch space from `obit mktemp`, buries what it is unsure about with `obit bury`, and registers the `*.bak` files it leaves while editing.
-- **You add your own.** On Windows, right-click files or folders in Explorer (several at once is fine), choose "Add to Obituary" and then 1, 7 or 30 days, or "Bury now (recoverable)"; or give a folder such as Downloads a policy.
-- **Automatic registration when you want it.** Off by default: nothing goes in by itself. Turned on in Settings, it registers by rule (`.playwright-mcp/`, `test-results/`, `*.log`, the `*.bak`, `*.orig` or `*~` backups left when editing, and so on) and from the writes the hooks see, in one of three modes: tiered (what the agent created this session goes straight in, files that were there before wait for you), fully automatic, or ask about everything. Dependencies, build output and caches are never registered automatically in any mode, and files tracked by Git are never touched.
-- **End-of-session tidy-up.** When an agent is about to stop, Obituary lists the files it created this session that nothing has sorted yet and asks it to give debug scripts, logs and screenshots a lifespan or bury them, keeping the deliverables. At most once per session.
-- **Anything an agent deletes can come back.** With the delete guard on, an agent's `rm -rf`, `git clean` and similar commands are stopped and the agent is told the equivalent `obit` command. It uses that instead, and things go to the graveyard rather than disappearing.
-- **Bury first, purge later.** The graveyard keeps everything for 7 days by default; `obit resurrect` puts it back where it was and never overwrites what is there now.
-- **Files are tracked by identity, not by name.** Every record keeps the volume serial number and the 128-bit file ID, so a renamed or moved file is still found, and a different file that now sits at the old path is left alone.
-- **Claude Code and Codex.** `obit init` registers hooks and an Agent Skill; an MCP server is optional; `--uninstall` removes only what Obituary added.
-- **Lives in the tray, like Everything (Windows).** `obit init` starts a tray icon at login. Its menu shows recent burials (click one to resurrect it), lets you pause automatic cleanup, and opens Obituary's small window. A Windows scheduled task remains as a fallback.
-- **A small window (Windows).** Upcoming, Graveyard, Decisions, Settings and Logs: resurrect files, approve proposals and change settings without the command line (`obit-gui.exe`, or "Open Obituary" in the tray menu). Chinese and English, eight looks.
-- **Context menu and dates in Explorer (Windows).** Right-click files or folders (several at once is fine) → "Add to Obituary" → 1, 7 or 30 days, or "Bury now (recoverable)"; on Windows 11 it is under "Show more options". Tracked items in Downloads and on the Desktop show as "name (11-13 burial)" while the real file name stays the same.
-- **Docker containers.** `obit docker add <container> 3d` gives a container a lifespan; at expiry it is stopped with `docker stop` (`obit resurrect` starts it again) and removed with `docker rm` only after the retention period. Volumes and images are never touched. With automatic registration on, containers an agent session started for the project are registered too, and you are told afterwards.
-- **Folder policies.** `obit watch Downloads 2w`: every file that lands there is buried two weeks later. An expired subfolder only produces a proposal and is buried after you approve it. The policy itself needs your approval too.
+- **Da una vida útil a archivos y carpetas.** `obit add debug.log 2h` lo entierra cuando se acaba el tiempo. Elige un momento con `--at`, amplíalo con `extend` o perdónalo con `spare`.
+- **El agente decide qué entra.** `obit init` añade Obituary a las instrucciones del agente(`OBIT.md`, Agent Skill y MCP son opcionales). El agente da una vida útil con `obit mark` a sus scripts, registros y capturas, obtiene espacio temporal con `obit mktemp`, entierra lo dudoso con `obit bury` y registra los archivos `*.bak` que deja al editar.
+- **Tú también puedes añadir archivos.** En Windows, haz clic derecho en archivos o carpetas del Explorador (se pueden seleccionar varios), elige “Add to Obituary” y selecciona 1, 7 o 30 días, o “Bury now (recoverable)”; también puedes dar una política a una carpeta como Downloads.
+- **Registro automático cuando lo quieras.** Está desactivado por defecto. Al activarlo en Settings, registra por reglas(`.playwright-mcp/`, `test-results/`, `*.log`, copias `*.bak`, `*.orig` o `*~`) y por las escrituras que ven los hooks. Hay tres modos: escalonado, totalmente automático o preguntar por todo. Las dependencias, salidas de compilación y cachés nunca se registran automáticamente y los archivos seguidos por Git nunca se tocan.
+- **Orden al terminar la sesión.** Cuando un agente está a punto de detenerse, Obituary enumera los archivos que creó en esa sesión y aún no se han clasificado, y le pide que dé una vida útil o entierre scripts, registros y capturas, conservando los entregables. Como máximo una vez por sesión.
+- **Lo que elimina un agente puede volver.** Con el guardia activado, `rm -rf`, `git clean` y comandos similares se detienen y el agente recibe el `obit` equivalente. Al usarlo, las cosas van al cementerio en vez de desaparecer.
+- **Entierra primero, elimina después.** El cementerio conserva todo durante siete días por defecto; `obit resurrect` lo devuelve a su lugar y nunca sobrescribe lo que hay allí.
+- **Los archivos se siguen por identidad, no por nombre.** Cada registro conserva el número de serie del volumen y el ID de archivo de 128 bits, así que un archivo renombrado o movido sigue encontrándose; si otro archivo ocupa la ruta anterior, se deja intacto.
+- **Claude Code y Codex.** `obit init` registra hooks y un Agent Skill; el servidor MCP es opcional y `--uninstall` solo elimina lo que añadió Obituary.
+- **Vive en la bandeja, como Everything (Windows).** `obit init` inicia un icono en la bandeja al entrar. Su menú muestra entierros recientes, permite resucitarlos, pausar la limpieza automática y abrir la ventana pequeña de Obituary. El Programador de tareas de Windows queda como respaldo.
+- **Una ventana pequeña (Windows).** Upcoming, Graveyard, Decisions, Settings y Logs permiten resucitar archivos, aprobar propuestas y cambiar ajustes sin la línea de comandos(`obit-gui.exe` o “Open Obituary” en la bandeja). Incluye chino y español, con ocho aspectos.
+- **Menú contextual y fechas en el Explorador (Windows).** Haz clic derecho en archivos o carpetas → “Add to Obituary” → 1, 7 o 30 días, o “Bury now (recoverable)”. En Windows 11 está en “Show more options”. Los elementos seguidos en Downloads y Desktop aparecen como “name (11-13 burial)” y el nombre real no cambia.
+- **Contenedores Docker.** `obit docker add <container> 3d` da una vida útil al contenedor; al caducar se detiene con `docker stop`(`obit resurrect` lo inicia de nuevo) y solo se elimina con `docker rm` después de la retención. Los volúmenes e imágenes nunca se tocan. Con el registro automático, también se registran los contenedores que una sesión del agente inicia para el proyecto.
+- **Políticas de carpetas.** `obit watch Downloads 2w` entierra cada archivo que llega allí dos semanas después. Una subcarpeta caducada solo crea una propuesta y se entierra cuando la apruebas; la política también necesita tu aprobación.
 
 ## Instalación
 
-Windows 10 / 11, macOS and Linux (x64 and ARM64). Send this sentence to the agent you use. It installs Obituary, connects it to itself and stops wherever a decision is yours:
+Windows 10 / 11, macOS y Linux (x64 y ARM64). Envía esta frase al agente que uses: instalará Obituary, se conectará a sí mismo y se detendrá cuando la decisión sea tuya.
 
 ```text
 Read https://obituary.woodfish.site/agent-install.md and follow it to install Obituary and connect it to yourself.
@@ -80,25 +77,25 @@ Read https://obituary.woodfish.site/agent-install.md and follow it to install Ob
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/agents/agents-dark.svg">
     <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/agents/agents-light.svg">
-    <img alt="Agents Obituary connects to: Claude Code, Codex, Cursor, GitHub Copilot, Gemini CLI, Windsurf, Trae, Qoder, CodeBuddy, Kimi, DeepSeek Harness, WorkBuddy, OpenCode, Cline, Roo Code, Kilo Code, OpenClaw, Hermes, MiniMax Code, Lingma, Google Antigravity, Mistral Vibe, Factory Droid, ZCode, Pi, Oh My Pi" src="docs/assets/readme/agents/agents-light.svg" width="100%">
+    <img alt="Agentes a los que se conecta Obituary: Claude Code, Codex, Cursor, GitHub Copilot, Gemini CLI, Windsurf, Trae, Qoder, CodeBuddy, Kimi, DeepSeek Harness, WorkBuddy, OpenCode, Cline, Roo Code, Kilo Code, OpenClaw, Hermes, MiniMax Code, Lingma, Google Antigravity, Mistral Vibe, Factory Droid, ZCode, Pi y Oh My Pi" src="docs/assets/readme/agents/agents-light.svg" width="100%">
   </picture>
 </p>
 
-Each platform at a glance:
+Cada plataforma de un vistazo:
 
 | | Windows | macOS | Linux |
 |---|---|---|---|
-| Install with | Scoop, the `install.ps1` script (winget in review) | Homebrew, the `install.sh` script | the `install.sh` script |
-| Checks for expiry every 5 minutes | resident tray process, Task Scheduler as a fallback | user launchd agent | `systemd --user` timer; a user crontab without systemd |
-| CLI, graveyard and resurrection, automatic registration (optional), delete guard, agent integration (hooks, Skill, MCP), Docker containers, folder policies | yes | yes | yes |
-| Tray, small window, context menus, burial dates in Explorer, Start menu and desktop shortcuts | yes | the CLI instead: `obit list`, `obit graveyard`, `obit resurrect` | as on macOS |
-| Recycle Bin mode | yes | graveyard only | graveyard only |
+| Instalación | Scoop, el script `install.ps1`(winget en revisión) | Homebrew, el script `install.sh` | el script `install.sh` |
+| Comprueba la caducidad cada 5 minutos | proceso residente en la bandeja, Programador de tareas como respaldo | agente launchd de usuario | temporizador `systemd --user`; crontab de usuario sin systemd |
+| CLI, cementerio y resurrección, registro automático opcional, guardia de eliminación, integración con agentes(hooks, Skill, MCP), contenedores Docker, políticas de carpetas | sí | sí | sí |
+| Bandeja, ventana pequeña, menús contextuales, fechas de entierro en el Explorador, accesos del menú Inicio y del escritorio | sí | en su lugar el CLI: `obit list`, `obit graveyard`, `obit resurrect` | como macOS |
+| Modo Papelera de reciclaje | sí | solo cementerio | solo cementerio |
 
-Installing by hand, updating and uninstalling: see the [install guide](docs/install.en.md).
+Para instalar manualmente, actualizar y desinstalar, consulta la [guía de instalación](docs/install.en.md).
 
 ## Inicio rápido
 
-Common commands (replace `<id>` with the number from an `obit add` or `obit bury` receipt, or from `obit list` / `obit graveyard`):
+Comandos habituales(sustituye `<id>` por el número del recibo de `obit add` o `obit bury`, o por el número de `obit list` / `obit graveyard`):
 
 ```powershell
 obit add debug.log 2h                       # bury it in 2 hours (alias: mark)
@@ -118,30 +115,30 @@ obit stats                                  # eulogy: how much was buried, space
 obit log                                    # the full record of everything done
 ```
 
-Background running, connecting each agent, the delete guard, MCP and the Skill are covered in the [user guide](docs/usage.en.md).
+La ejecución en segundo plano, la conexión de cada agente, el guardia de eliminación, MCP y Skill se explican en la [guía de usuario](docs/usage.en.md).
 
 ## Documentación
 
-- [User guide](docs/usage.en.md): every feature in detail
-- [Install guide](docs/install.en.md): installing by hand, updating and uninstalling
-- [Agent coverage](docs/agents.md): how far each of the 30 agents connects
-- [Docs index](docs/README.md): every document, including the architecture and code conventions
-- [Code signing policy](https://obituary.woodfish.site/docs/en/code-signing): Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/)
-- [Privacy policy](https://obituary.woodfish.site/docs/en/privacy): Obituary does one thing on the network, a daily check for a new version that you can turn off
+- [Guía de usuario](docs/usage.en.md): todas las funciones en detalle
+- [Guía de instalación](docs/install.en.md): instalación manual, actualización y desinstalación
+- [Cobertura de agentes](docs/agents.md): hasta dónde se conecta cada uno de los 30 agentes
+- [Índice de documentación](docs/README.md): todos los documentos, incluida la arquitectura y las normas de código
+- [Política de firma de código](https://obituary.woodfish.site/docs/en/code-signing): firma de código gratuita proporcionada por [SignPath.io](https://about.signpath.io/), con certificado de [SignPath Foundation](https://signpath.org/)
+- [Política de privacidad](https://obituary.woodfish.site/docs/en/privacy): Obituary solo comprueba una vez al día si hay una versión nueva, y puedes desactivarlo
 
 ## Construye Obituary con nosotros
 
-Issues and pull requests are welcome. The most welcome is an issue that comes with its fix: you found it, you fixed it, and once it is merged your avatar shows up here. [CONTRIBUTING.md](CONTRIBUTING.md) says how to start; report anything that could delete the wrong file privately, as [SECURITY.md](SECURITY.md) describes.
+Se aceptan issues y pull requests. Lo más útil es un issue que incluya su solución: encuentras el problema, lo arreglas y, cuando se integra, tu avatar aparece aquí. [CONTRIBUTING.md](CONTRIBUTING.md) explica cómo empezar; informa en privado de cualquier problema que pueda eliminar el archivo equivocado, como se describe en [SECURITY.md](SECURITY.md).
 
-<a href="https://github.com/woodfishhhh/obituary/graphs/contributors"><img alt="Contributors" src="https://contrib.rocks/image?repo=woodfishhhh/obituary&max=100"></a>
+<a href="https://github.com/woodfishhhh/obituary/graphs/contributors"><img alt="Colaboradores" src="https://contrib.rocks/image?repo=woodfishhhh/obituary&max=100"></a>
 
-Chinese-speaking users also chat in the QQ group **1135603207** and on the [LINUX DO](https://linux.do) community.
+Los usuarios de habla china también conversan en el grupo QQ **1135603207** y en la comunidad [LINUX DO](https://linux.do).
 
 <p>
   <a href="https://star-history.com/#woodfishhhh/obituary&Date">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=woodfishhhh/obituary&type=Date&theme=dark">
-      <img alt="Star history" src="https://api.star-history.com/svg?repos=woodfishhhh/obituary&type=Date" width="100%">
+      <img alt="Historial de estrellas" src="https://api.star-history.com/svg?repos=woodfishhhh/obituary&type=Date" width="100%">
     </picture>
   </a>
 </p>

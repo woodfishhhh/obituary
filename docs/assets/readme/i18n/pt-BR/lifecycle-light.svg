@@ -1,68 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1460" height="410" viewBox="0 0 1460 410" role="img" aria-labelledby="title desc">
 <title id="title">Ciclo de vida do Obituary</title>
 <desc id="desc">Registrar (obit add ou menu de contexto) → expirar (obit list mostra o que resta) → enterrar no cemitério (obit graveyard, mantido por 7 dias por padrão) → ressuscitar (obit resurrect, voltar ao local sem sobrescrever), ou excluir permanentemente após a retenção (obit purge).</desc>
-<defs>
-<linearGradient id="spark" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#0876FF"/><stop offset=".55" stop-color="#16B8FA"/><stop offset=".62" stop-color="#FFE052"/><stop offset="1" stop-color="#FFB329"/></linearGradient>
-</defs>
-<rect x="1" y="1" width="1198" height="398" rx="28" fill="#F5F8FE" stroke="#DCE5F4" stroke-width="2"/>
+<defs><linearGradient id="spark" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#0876FF"/><stop offset=".55" stop-color="#16B8FA"/><stop offset=".62" stop-color="#FFE052"/><stop offset="1" stop-color="#FFB329"/></linearGradient></defs>
+<rect x="1" y="1" width="1458" height="408" rx="28" fill="#F5F8FE" stroke="#DCE5F4" stroke-width="2"/>
 <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif">
-<g>
-<path d="M64 130H310L334 154V254A16 16 0 0 1 318 270H64A16 16 0 0 1 48 254V146A16 16 0 0 1 64 130Z" fill="#FFFFFF" stroke="#C9D7EE" stroke-width="2"/>
-<path d="M310 130V154H334Z" fill="#F7C98B" stroke="#C9D7EE" stroke-width="2" stroke-linejoin="round"/>
-<text x="72" y="178" font-size="28" font-weight="700" fill="#0F1B33" id="register">Registrar</text>
-<rect x="68" y="196" width="253" height="34" rx="8" fill="#EAF2FF"/>
-<text x="81" y="219" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="18" fill="#0F56D9">obit add debug.log 2h</text>
-<text x="72" y="256" font-size="18" fill="#53637D" id="register-note" textLength="235" lengthAdjust="spacingAndGlyphs">ou usar o menu de contexto</text>
-</g>
-<path d="M334 200H363" stroke="#126CFF" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M374 200l-13 -7.5v15Z" fill="#126CFF"/>
-<g>
-<path d="M390 130H530L554 154V254A16 16 0 0 1 538 270H390A16 16 0 0 1 374 254V146A16 16 0 0 1 390 130Z" fill="#FFFFFF" stroke="#C9D7EE" stroke-width="2"/>
-<path d="M530 130V154H554Z" fill="#F7C98B" stroke="#C9D7EE" stroke-width="2" stroke-linejoin="round"/>
-<text x="398" y="178" font-size="28" font-weight="700" fill="#0F1B33" id="expire">Expirar</text>
-<rect x="394" y="196" width="123" height="34" rx="8" fill="#EAF2FF"/>
-<text x="407" y="219" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="18" fill="#0F56D9">obit list</text>
-<text x="398" y="256" font-size="18" fill="#53637D" id="expire-note">o que resta</text>
-</g>
-<path d="M554 200H603" stroke="#126CFF" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M614 200l-13 -7.5v15Z" fill="#126CFF"/>
-<text x="584" y="186" font-size="18" fill="#53637D" text-anchor="middle" id="reap" textLength="49" lengthAdjust="spacingAndGlyphs">Recolher</text>
-<g>
-<path d="M630 130H790L814 154V254A16 16 0 0 1 798 270H630A16 16 0 0 1 614 254V146A16 16 0 0 1 630 130Z" fill="#FFFFFF" stroke="#C9D7EE" stroke-width="2"/>
-<path d="M790 130V154H814Z" fill="#F7C98B" stroke="#C9D7EE" stroke-width="2" stroke-linejoin="round"/>
-<text x="638" y="178" font-size="28" font-weight="700" fill="#0F1B33" id="bury" textLength="160" lengthAdjust="spacingAndGlyphs">Enterrar no cemitério</text>
-<rect x="634" y="196" width="177" height="34" rx="8" fill="#EAF2FF"/>
-<text x="647" y="219" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="18" fill="#0F56D9">obit graveyard</text>
-<text x="638" y="256" font-size="18" fill="#53637D" id="bury-note" textLength="160" lengthAdjust="spacingAndGlyphs">mantido por 7 dias por padrão</text>
-</g>
-<path d="M814 200H844" stroke="#126CFF" stroke-width="3" stroke-linecap="round"/>
-<path d="M844 200V122Q844 114 852 114H863" stroke="#E0960A" stroke-width="3" stroke-linecap="round" fill="none"/>
-<path d="M874 114l-13 -7.5v15Z" fill="#E0960A"/>
-<path d="M844 200V278Q844 286 852 286H863" stroke="#9AA8BC" stroke-width="3" stroke-linecap="round" fill="none"/>
-<path d="M874 286l-13 -7.5v15Z" fill="#9AA8BC"/>
-<circle cx="844" cy="200" r="5" fill="#126CFF"/>
-<g>
-<path d="M890 44H1128L1152 68V168A16 16 0 0 1 1136 184H890A16 16 0 0 1 874 168V60A16 16 0 0 1 890 44Z" fill="#FFFFFF" stroke="#C9D7EE" stroke-width="2"/>
-<path d="M1128 44V68H1152Z" fill="#F7C98B" stroke="#C9D7EE" stroke-width="2" stroke-linejoin="round"/>
-<text x="898" y="92" font-size="28" font-weight="700" fill="#0F1B33" id="resurrect">Ressuscitar</text>
-<rect x="894" y="110" width="199" height="34" rx="8" fill="#EAF2FF"/>
-<text x="907" y="133" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="18" fill="#0F56D9">obit resurrect 3</text>
-<text x="898" y="170" font-size="18" fill="#53637D" id="resurrect-note" textLength="238" lengthAdjust="spacingAndGlyphs">voltar ao local sem sobrescrever</text>
-<path d="M17.6 9.4c.3 5.3 1.2 6.5 5.2 7-4 .6-4.9 2-5.2 7.1-.6-5.1-1.3-6.4-5.5-7.1 4.2-.6 4.9-1.8 5.5-7Z" fill="url(#spark)" transform="translate(972 81) scale(1.9) translate(-17.5 -16.45)"/>
-</g>
-<g>
-<path d="M890 216H1128L1152 240V340A16 16 0 0 1 1136 356H890A16 16 0 0 1 874 340V232A16 16 0 0 1 890 216Z" fill="#F3F5F9" stroke="#B6C1D2" stroke-width="2" stroke-dasharray="7 6"/>
-<path d="M1128 216V240H1152Z" fill="#DDE3EC" stroke="#B6C1D2" stroke-width="2" stroke-linejoin="round"/>
-<text x="898" y="264" font-size="28" font-weight="700" fill="#0F1B33" id="purge" textLength="238" lengthAdjust="spacingAndGlyphs">Excluir permanentemente</text>
-<rect x="894" y="282" width="134" height="34" rx="8" fill="#EAF2FF"/>
-<text x="907" y="305" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="18" fill="#0F56D9">obit purge</text>
-<text x="898" y="342" font-size="18" fill="#53637D" id="purge-note" textLength="238" lengthAdjust="spacingAndGlyphs">apagar de verdade após a retenção</text>
-</g>
-<text x="52" y="84" font-size="22" font-weight="600" fill="#53637D" id="title">Ciclo de vida do Obituary</text>
-<text x="52" y="318" font-size="18" fill="#53637D" id="before" textLength="108" lengthAdjust="spacingAndGlyphs">Antes de expirar</text>
-<rect x="168" y="295" width="145" height="34" rx="8" fill="#EAF2FF"/>
-<text x="181" y="318" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="18" fill="#0F56D9">obit extend</text>
-<text x="321" y="318" font-size="18" fill="#53637D" id="extend-note" textLength="50" lengthAdjust="spacingAndGlyphs">estender,</text>
-<rect x="383" y="295" width="134" height="34" rx="8" fill="#EAF2FF"/>
-<text x="396" y="318" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="18" fill="#0F56D9">obit spare</text>
-<text x="525" y="318" font-size="18" fill="#53637D" id="spare-note">poupar</text>
-</g>
-</svg>
+<text x="52" y="64" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="22" fill="#53637D" font-weight="600" id="section">Ciclo de vida do Obituary</text>
+<path d="M64 112H329.40000000000003L353.40000000000003 136V248A16 16 0 0 1 337.40000000000003 264H64A16 16 0 0 1 48 248V128A16 16 0 0 1 64 112Z" fill="#FFFFFF" stroke="#DCE5F4" stroke-width="2"/><path d="M329.40000000000003 112V136H353.40000000000003Z" fill="#F7C98B" stroke="#DCE5F4" stroke-width="2" stroke-linejoin="round"/>
+<text x="72" y="160" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="28" fill="#0F1B33" font-weight="700" id="register">Registrar</text>
+<rect x="68" y="178" width="233.9" height="36" rx="8" fill="#EAF2FF"/>
+<text x="81" y="202" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" font-size="18" fill="#0F56D9">obit add debug.log 2h</text>
+<text x="72" y="240" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="18" fill="#53637D" id="register_note">ou usar o menu de contexto</text>
+<path d="M411.40000000000003 112H551.4000000000001L575.4000000000001 136V248A16 16 0 0 1 559.4000000000001 264H411.40000000000003A16 16 0 0 1 395.40000000000003 248V128A16 16 0 0 1 411.40000000000003 112Z" fill="#FFFFFF" stroke="#DCE5F4" stroke-width="2"/><path d="M551.4000000000001 112V136H575.4000000000001Z" fill="#F7C98B" stroke="#DCE5F4" stroke-width="2" stroke-linejoin="round"/>
+<text x="419.40000000000003" y="160" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="28" fill="#0F1B33" font-weight="700" id="expire">Expirar</text>
+<rect x="415.40000000000003" y="178" width="132" height="36" rx="8" fill="#EAF2FF"/>
+<text x="428.40000000000003" y="202" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" font-size="18" fill="#0F56D9">obit list</text>
+<text x="419.40000000000003" y="240" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="18" fill="#53637D" id="expire_note">o que resta</text>
+<path d="M633.4000000000001 112H941.7L965.7 136V248A16 16 0 0 1 949.7 264H633.4000000000001A16 16 0 0 1 617.4000000000001 248V128A16 16 0 0 1 633.4000000000001 112Z" fill="#FFFFFF" stroke="#DCE5F4" stroke-width="2"/><path d="M941.7 112V136H965.7Z" fill="#F7C98B" stroke="#DCE5F4" stroke-width="2" stroke-linejoin="round"/>
+<text x="641.4000000000001" y="160" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="26" fill="#0F1B33" font-weight="700" id="bury">Enterrar no cemitério</text>
+<rect x="637.4000000000001" y="178" width="164.6" height="36" rx="8" fill="#EAF2FF"/>
+<text x="650.4000000000001" y="202" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" font-size="18" fill="#0F56D9">obit graveyard</text>
+<text x="641.4000000000001" y="240" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="18" fill="#53637D" id="bury_note">mantido por 7 dias por padrão</text>
+<path d="M353.40000000000003 182H383.40000000000003M395.40000000000003 182l-13 -7.5v15Z" stroke="#0F56D9" stroke-width="3" stroke-linecap="round" fill="none"/>
+<path d="M575.4000000000001 182H605.4000000000001M617.4000000000001 182l-13 -7.5v15Z" stroke="#0F56D9" stroke-width="3" stroke-linecap="round" fill="none"/><text x="596.4000000000001" y="164" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="16" fill="#53637D" text-anchor="middle">Recolher</text>
+<path d="M965.7 182H995.7M1007.7 182l-13 -7.5v15Z" stroke="#0F56D9" stroke-width="3" stroke-linecap="round" fill="none"/>
+<path d="M1023.7 32H1388.6000000000001L1412.6000000000001 56V168A16 16 0 0 1 1396.6000000000001 184H1023.7A16 16 0 0 1 1007.7 168V48A16 16 0 0 1 1023.7 32Z" fill="#FFFFFF" stroke="#DCE5F4" stroke-width="2"/><path d="M1388.6000000000001 32V56H1412.6000000000001Z" fill="#F7C98B" stroke="#DCE5F4" stroke-width="2" stroke-linejoin="round"/>
+<text x="1031.7" y="80" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="28" fill="#0F1B33" font-weight="700" id="resurrect">Ressuscitar</text>
+<path id="resurrect-star" d="M17.6 9.4c.3 5.3 1.2 6.5 5.2 7-4 .6-4.9 2-5.2 7.1-.6-5.1-1.3-6.4-5.5-7.1 4.2-.6 4.9-1.8 5.5-7Z" fill="url(#spark)" transform="translate(1213.1000000000001 69) scale(1.55) translate(-17.5 -16.45)"/>
+<rect x="1027.7" y="98" width="199" height="36" rx="8" fill="#EAF2FF"/>
+<text x="1040.7" y="122" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" font-size="18" fill="#0F56D9">obit resurrect 3</text>
+<text x="1031.7" y="158" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="18" fill="#53637D" id="resurrect-note">voltar ao local sem sobrescrever</text>
+<path d="M1023.7 218H1388.6000000000001L1412.6000000000001 242V354A16 16 0 0 1 1396.6000000000001 370H1023.7A16 16 0 0 1 1007.7 354V234A16 16 0 0 1 1023.7 218Z" fill="#F3F5F9" stroke="#B6C1D2" stroke-width="2" stroke-dasharray="7 6"/><path d="M1388.6000000000001 218V242H1412.6000000000001Z" fill="#B6C1D2" stroke="#B6C1D2" stroke-width="2" stroke-linejoin="round"/>
+<text x="1031.7" y="266" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="26" fill="#0F1B33" font-weight="700" id="purge">Excluir permanentemente</text>
+<rect x="1027.7" y="284" width="150" height="36" rx="8" fill="#EAF2FF"/>
+<text x="1040.7" y="308" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" font-size="18" fill="#0F56D9">obit purge</text>
+<text x="1031.7" y="346" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="18" fill="#53637D" id="purge-note">apagar de verdade após a retenção</text>
+<text x="52" y="384" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="18" fill="#53637D" id="before">Antes de expirar:</text>
+<rect x="230.3" y="361" width="145" height="36" rx="8" fill="#EAF2FF"/>
+<text x="243.3" y="385" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" font-size="18" fill="#0F56D9">obit extend</text>
+<text x="387.3" y="385" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="18" fill="#53637D" id="extend-note">estender,</text>
+<rect x="490.40000000000003" y="361" width="134" height="36" rx="8" fill="#EAF2FF"/>
+<text x="503.40000000000003" y="385" font-family="ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace" font-size="18" fill="#0F56D9">obit spare</text>
+<text x="635.4000000000001" y="385" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Cyrillic', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans', 'Malgun Gothic', sans-serif" font-size="18" fill="#53637D" id="spare-note">mantê-lo</text>
+</g></svg>
