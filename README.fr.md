@@ -93,6 +93,15 @@ Chaque plateforme en bref :
 
 Pour installer manuellement, mettre à jour et désinstaller, consultez le [guide d’installation](docs/install.en.md).
 
+## Changer de langue
+
+Obituary prend actuellement en charge English et le chinois simplifié. La CLI, la zone de notification, la petite fenêtre et le menu de l’Explorateur partagent un même réglage.
+
+- Changement temporaire : définissez OBIT_LANG=en ou OBIT_LANG=zh-CN avant une commande.
+- Enregistrer le réglage : exécutez obit config --language en, obit config --language zh-CN ou obit config --language auto.
+- Choix automatique : supprimez OBIT_LANG et laissez ui.language = auto ; Obituary vérifie la configuration, LC_ALL, LC_MESSAGES, LANG puis la langue de l’interface du système.
+- Traduit dans cette phase : sorties et aides de list, bury et resurrect, ainsi que le texte de la zone de notification et des menus natifs Windows. Le protocole Hook et MCP reste en anglais et stable.
+
 ## Démarrage rapide
 
 Commandes courantes(remplacez `<id>` par le numéro du reçu de `obit add` ou `obit bury`, ou par celui affiché par `obit list` / `obit graveyard`) :

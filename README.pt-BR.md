@@ -93,6 +93,15 @@ Cada plataforma de relance:
 
 Para instalar manualmente, atualizar e desinstalar, consulte o [guia de instalação](docs/install.en.md).
 
+## Trocar o idioma
+
+Obituary oferece atualmente English e chinês simplificado. A CLI, a bandeja, a janela pequena e o menu do Explorer compartilham uma configuração.
+
+- Troca temporária: defina OBIT_LANG=en ou OBIT_LANG=zh-CN antes de executar um comando.
+- Salvar a opção: execute obit config --language en, obit config --language zh-CN ou obit config --language auto.
+- Escolha automática: remova OBIT_LANG e mantenha ui.language = auto; o Obituary verifica a configuração, LC_ALL, LC_MESSAGES, LANG e o idioma da interface do sistema.
+- Traduzido nesta fase: saída e ajuda de list, bury e resurrect, além dos textos da bandeja e dos menus nativos do Windows. O texto de protocolo do Hook e do MCP continua em inglês e estável.
+
 ## Início rápido
 
 Comandos comuns(substitua `<id>` pelo número do recibo de `obit add` ou `obit bury`, ou pelo número mostrado por `obit list` / `obit graveyard`):

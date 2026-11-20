@@ -93,6 +93,15 @@ Read https://obituary.woodfish.site/agent-install.md and follow it to install Ob
 
 Ручная установка, обновление и удаление описаны в [руководстве по установке](docs/install.en.md).
 
+## Переключение языка
+
+Сейчас Obituary поддерживает English и упрощённый китайский. CLI, трей, небольшое окно и меню Проводника используют одну настройку языка.
+
+- Временно: перед командой задайте OBIT_LANG=en или OBIT_LANG=zh-CN.
+- Сохранить настройку: выполните obit config --language en, obit config --language zh-CN или obit config --language auto.
+- Автоматический выбор: удалите OBIT_LANG и оставьте ui.language = auto; Obituary проверит конфигурацию, LC_ALL, LC_MESSAGES, LANG и язык интерфейса операционной системы.
+- Переведено на этом этапе: вывод и справка list, bury и resurrect, а также тексты трея и нативных меню Windows. Текст протоколов Hook и MCP остаётся стабильным английским.
+
 ## Быстрый старт
 
 Основные команды(замените `<id>` номером из квитанции `obit add` или `obit bury` либо номером из `obit list` / `obit graveyard`):

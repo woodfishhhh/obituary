@@ -94,6 +94,15 @@ Read https://obituary.woodfish.site/agent-install.md and follow it to install Ob
 
 自己装、更新和卸载见[安装文档](docs/install.md)。
 
+## 切换语言
+
+讣告目前支持 English 和简体中文，命令行、托盘、小窗口和资源管理器菜单共用一个语言设置。
+
+- 临时切换：在运行命令前设置 OBIT_LANG=en 或 OBIT_LANG=zh-CN。
+- 保存设置：运行 obit config --language en、obit config --language zh-CN 或 obit config --language auto。
+- 自动选择：删除 OBIT_LANG，并保持 ui.language = auto；讣告会依次检查配置、LC_ALL、LC_MESSAGES、LANG 和操作系统界面语言。
+- 本阶段已翻译：list、bury、resurrect 的输出和帮助，以及 Windows 托盘和原生菜单文字。Hook 和 MCP 协议文字保持英文且稳定。
+
 ## 快速上手
 
 常用命令（`<编号>` 换成 `obit add`、`obit bury` 回执里或 `obit list`、`obit graveyard` 列出的编号）：

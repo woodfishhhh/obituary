@@ -2,8 +2,13 @@ package i18n
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -12,18 +17,63 @@ func TestMessageFilesMatchEnglish(t *testing.T) {
 	if !slices.Equal(sortedKeys(english), sortedKeys(defaultMessages)) {
 		t.Fatalf("English catalog keys do not match Go defaults: file=%v defaults=%v", sortedKeys(english), sortedKeys(defaultMessages))
 	}
-	placeholders := regexp.MustCompile("%[ds]|[{][{][^}]+[}][}]")
-	for _, name := range []string{"messages/active.en.json", "messages/active.zh-CN.json"} {
-		catalog := readMessageFile(t, name)
-		if !slices.Equal(sortedKeys(catalog), sortedKeys(english)) {
-			t.Fatalf("%s keys do not match English: got=%v want=%v", name, sortedKeys(catalog), sortedKeys(english))
+	entries, err := messageFS.ReadDir("messages")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || entry.Name() == "active.en.json" || !strings.HasSuffix(entry.Name(), ".json") {
+			continue
 		}
-		for key, value := range english {
-			if got, want := placeholders.FindAllString(catalog[key], -1), placeholders.FindAllString(value, -1); !slices.Equal(got, want) {
-				t.Errorf("%s/%s placeholders: got=%v want=%v", name, key, got, want)
-			}
+		name := "messages/" + entry.Name()
+		if err := validateMessageCatalog(english, readMessageFile(t, name)); err != nil {
+			t.Errorf("%s: %v", name, err)
 		}
 	}
+}
+
+func TestMessageCatalogValidationRejectsMissingDirectory(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("testdata", "missing", "active.zh-CN.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog := map[string]string{}
+	if err := json.Unmarshal(data, &catalog); err != nil {
+		t.Fatal(err)
+	}
+	err = validateMessageCatalog(readMessageFile(t, "messages/active.en.json"), catalog)
+	if err == nil {
+		t.Fatalf("intentional missing catalog was accepted: %v", err)
+	}
+	t.Logf("intentional missing catalog rejected: %v", err)
+}
+
+func validateMessageCatalog(english, catalog map[string]string) error {
+	problems := []string{}
+	for _, key := range sortedKeys(english) {
+		if _, ok := catalog[key]; !ok {
+			problems = append(problems, "missing key "+key)
+		}
+	}
+	for _, key := range sortedKeys(catalog) {
+		if _, ok := english[key]; !ok {
+			problems = append(problems, "extra key "+key)
+		}
+	}
+	placeholders := regexp.MustCompile("%[ds]|[{][{][^}]+[}][}]")
+	for key, value := range english {
+		translated, ok := catalog[key]
+		if !ok {
+			continue
+		}
+		if got, want := placeholders.FindAllString(translated, -1), placeholders.FindAllString(value, -1); !slices.Equal(got, want) {
+			problems = append(problems, fmt.Sprintf("placeholder mismatch %s: got=%v want=%v", key, got, want))
+		}
+	}
+	if len(problems) == 0 {
+		return nil
+	}
+	return errors.New(strings.Join(problems, "; "))
 }
 
 func readMessageFile(t *testing.T, name string) map[string]string {

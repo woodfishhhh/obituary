@@ -93,6 +93,15 @@ Read https://obituary.woodfish.site/agent-install.md and follow it to install Ob
 
 수동 설치, 업데이트, 제거는 [설치 가이드](docs/install.en.md)를 참고하세요.
 
+## 언어 전환
+
+Obituary는 현재 English와 간체 중국어를 지원합니다. CLI, 트레이, 작은 창, 파일 탐색기 메뉴가 하나의 설정을 공유합니다.
+
+- 임시 전환: 명령을 실행하기 전에 OBIT_LANG=en 또는 OBIT_LANG=zh-CN을 설정합니다.
+- 저장: obit config --language en, obit config --language zh-CN 또는 obit config --language auto를 실행합니다.
+- 자동 선택: OBIT_LANG를 지우고 ui.language = auto로 두면 설정, LC_ALL, LC_MESSAGES, LANG, 운영체제 UI 언어를 차례로 확인합니다.
+- 이번 단계에서 번역된 항목: list, bury, resurrect 출력과 도움말, Windows 트레이와 기본 메뉴 텍스트입니다. Hook과 MCP 프로토콜 텍스트는 영어로 안정적으로 유지됩니다.
+
 ## 빠른 시작
 
 자주 쓰는 명령( `<id>`를 `obit add` 또는 `obit bury` 영수증의 번호, 혹은 `obit list` / `obit graveyard`에 표시된 번호로 바꾸세요):

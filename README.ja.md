@@ -93,6 +93,15 @@ Read https://obituary.woodfish.site/agent-install.md and follow it to install Ob
 
 手動インストール、更新、アンインストールは[インストールガイド](docs/install.en.md)をご覧ください。
 
+## 言語の切り替え
+
+Obituary は現在、English と簡体字中国語をサポートしています。CLI、トレイ、小さなウィンドウ、エクスプローラーのメニューで同じ設定を使います。
+
+- 一時的に切り替える：コマンドの前に OBIT_LANG=en または OBIT_LANG=zh-CN を設定します。
+- 保存する：obit config --language en、obit config --language zh-CN、または obit config --language auto を実行します。
+- 自動選択：OBIT_LANG を削除して ui.language = auto にすると、設定、LC_ALL、LC_MESSAGES、LANG、OS の UI 言語を順に確認します。
+- この段階で翻訳済み：list、bury、resurrect の出力とヘルプ、Windows のトレイとネイティブメニュー。Hook と MCP のプロトコル文字列は英語で安定しています。
+
 ## クイックスタート
 
 よく使うコマンド（`<id>` は `obit add` または `obit bury` の結果、あるいは `obit list` / `obit graveyard` に表示された番号に置き換えます）：
