@@ -13,20 +13,7 @@
 
 ## 改代码
 
-- 需要 Windows 和 Go 1.26+。构建命令见使用手册的[构建](docs/usage.md#构建)。
-- 先读 [AGENTS.md](AGENTS.md)，那里是代码约定。改动跨模块时再读 [docs/architecture.md](docs/architecture.md)。
-- 动到移动、下葬、删除的代码时，先写一个能证明不会误删的失败测试，再修。
-- 提交前跑：
-
-  ```bash
-  gofmt -l .
-  go vet ./...
-  golangci-lint run ./...
-  go test -short ./...
-  ```
-
-  全量测试和变异测试在 CI 上跑。
-- 改小窗口的界面：在 `cmd/obit-gui/frontend` 里 `pnpm install`、`pnpm dev` 预览，`pnpm build` 更新 `dist/`，`dist/` 要一起提交。
+- 先读 [AGENTS.md](AGENTS.md)。平台要求、构建与测试、文件安全和文档规范见[开发文档](https://obituary.woodfish.site/docs/dev/)。
 - 提交信息用英文，一句话说清改了什么，例如 `fix: resurrect keeps the original name when the folder is empty`。
 
 ## 许可
@@ -48,20 +35,7 @@ Issues and pull requests are welcome. The most welcome is an issue that comes wi
 
 ## Code
 
-- You need Windows and Go 1.26+. Build commands are in the user guide under [Build](docs/usage.en.md#build).
-- Read [AGENTS.md](AGENTS.md) first for the code conventions, and [docs/architecture.md](docs/architecture.md) when a change crosses modules.
-- When you touch code that moves, buries or deletes, first write a failing test that proves nothing wrong gets deleted, then fix it.
-- Before you send it:
-
-  ```bash
-  gofmt -l .
-  go vet ./...
-  golangci-lint run ./...
-  go test -short ./...
-  ```
-
-  The full suite and the mutation tests run in CI.
-- For the window's interface: in `cmd/obit-gui/frontend`, `pnpm install`, `pnpm dev` to preview, `pnpm build` to update `dist/`, and commit `dist/` too.
+- Read [AGENTS.md](AGENTS.md) first. See the [developer guide](https://obituary.woodfish.site/docs/en/dev/) for supported platforms, builds, tests, filesystem safety and documentation conventions.
 - Commit messages in English, one line saying what changed, e.g. `fix: resurrect keeps the original name when the folder is empty`.
 
 ## Licence
