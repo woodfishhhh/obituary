@@ -126,6 +126,38 @@ func TestScheduleRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(actual)
+	// Recreate the old task with a different first trigger, without an install receipt.
+	initial := taskStartBoundary(actual)
+	if err := removeScheduleFor(exe, home, config); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(filepath.Join(home, fallbackReceipt)); err != nil {
+		t.Fatal(err)
+	}
+	const changed = "2033-03-22T18:30:05"
+	if initial == "" || initial == changed {
+		t.Fatal("no distinct phase to change")
+	}
+	if err := registerTask(name, strings.Replace(actual, initial, changed, 1)); err != nil {
+		t.Fatal(err)
+	}
+	before, err := registeredTaskXML(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := installScheduleFor(exe, home); err != nil {
+		t.Fatal(err)
+	}
+	if err := removeScheduleFor(exe, home, config); err != nil {
+		t.Fatal(err)
+	}
+	if err := restoreFallbackSnapshot(home, exe, config); err != nil {
+		t.Fatal(err)
+	}
+	after, err := registeredTaskXML(name)
+	if err != nil || before != after || taskStartBoundary(after) != changed {
+		t.Fatalf("original trigger not restored: %s %v", taskStartBoundary(after), err)
+	}
 	target, err := ScheduleTarget()
 	if err != nil || !strings.Contains(target, "--once --home") {
 		t.Fatalf("target %q %v", target, err)

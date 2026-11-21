@@ -40,7 +40,11 @@ def probe(root):
     assert subprocess.run(["launchctl", "print", service], capture_output=True).returncode == 113
 
     def pid():
-        detail = command("launchctl", "print", service)
+        result = subprocess.run(["launchctl", "print", service], text=True, capture_output=True)
+        if result.returncode == 113:
+            return None
+        result.check_returncode()
+        detail = result.stdout
         match = re.search(r"^\s*pid = (\d+)$", detail, re.MULTILINE)
         if not match:
             return None

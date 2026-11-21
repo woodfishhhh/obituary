@@ -125,10 +125,20 @@ func installScheduleFor(daemon, home string) error {
 	}
 	current, err := registeredTaskXML(TaskName)
 	if err == nil {
-		if !ownedSchedule(current, daemon, home, config) {
-			return fmt.Errorf("preserving edited, disabled or foreign scheduled task %q", TaskName)
+		if field := fallbackDifference(current, daemon, home, config); field != "" {
+			return fmt.Errorf("preserving scheduled task %q: %s does not match this installation; see https://obituary.woodfish.site/docs/troubleshooting", TaskName, field)
 		}
-		return nil
+		if err := os.MkdirAll(home, 0700); err != nil {
+			return err
+		}
+		if err := snapshotFallback(home, current); err != nil {
+			return err
+		}
+		latest, err := registeredTaskXML(TaskName)
+		if err != nil || latest != current {
+			return errors.Join(err, errors.New("fallback changed while taking migration snapshot; preserved"))
+		}
+		return core.WriteMetadata(filepath.Join(home, fallbackReceipt), []byte(current))
 	}
 	if !errors.Is(err, os.ErrNotExist) {
 		return err

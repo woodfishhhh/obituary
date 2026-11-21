@@ -425,13 +425,17 @@ POSIX 没有「在同一个源句柄上改名」，所以换一种做法：先�
 
 - **定时任务**（默认，`obit daemon enable`）：任务计划程序里的隐藏任务 `Obituary Runner`，每 5 分钟和每次登录运行 `obitd --once --home … --config-dir …`。用 XML 定义（UTF-16 带 BOM，描述只用 ASCII，因为 `schtasks /Query /XML` 按控制台代码页输出），用电池时也运行，错过的会补跑，已有一个在跑时不重复启动。
 - **macOS / Linux**：macOS 是 launchd 用户代理 `~/Library/LaunchAgents/site.woodfish.obituary.plist`（`StartInterval` 5 分钟、`RunAtLoad`），Linux 是 systemd 用户单元 `obituary.timer` + `obituary.service`（`OnCalendar=*:0/5`、`Persistent=true`），都运行同样的 `obitd --once --home … --config-dir …`。文件头带讣告的所有者标记，被别人改过或不是讣告写的就保留不动、只报告。
-- **常驻**（`--resident`）：命名互斥量标识「谁在服务这个数据目录」，`obitd.stop` 让它退出，开机自启写 HKCU Run。启动时和之后每 5 分钟都会 Tick 一次（不只在有条目到期时），所以只剩待恢复清单时也有人处理。
+- **桌面常驻**（`--resident`）：Windows 的非提权登录任务运行 `obitd --supervise`，不设执行时限；监督进程阻塞等托盘子进程结束。macOS 的托盘 LaunchAgent 用 `SuccessfulExit=false`，Linux 图形会话用 `Restart=on-failure` 的用户服务，无图形 user manager 时保留 XDG 登录启动项。主动退出不触发重试，异常后由控制者重新启动；同一数据目录 15 分钟内第三次异常后不再启动业务进程。独立清理不依赖托盘。常驻内部仍每 5 分钟全量对账。
 - **常驻只靠事件醒来，不轮询**：它等数据目录的文件变化（`store.json`、`obitd.stop`、`obitd.paused`、`update.json`）、下一个到期时间和 5 分钟的全量对账。一串连续的提交（agent 一口气写很多文件）合并成一步：安静 300 毫秒再处理，最多推迟 2 秒。每一步先记下 `store.json` 的修改时间再读账本，修改时间没变的事件（包括这一步自己提交引起的）不再唤醒；Windows 丢了事件（缓冲溢出）就按有变化处理，不退出。hook 因账本忙而排队的写入只做回放，不跑整轮 Tick。托盘菜单直接用这一步读到的账本，不再另读。托盘图标的显示开关监听配置目录，`config.toml` 变了才重读。文件夹策略的监视（`internal/watch`）只监视策略文件夹本身、不递归；账本提交只重新核对策略有没有变，文件夹里的事件才重新扫描文件夹，两种事件同样合并。
 - **强制检查不遍历**：`Guard.CheckContext` 带 `force` 时，目录里有 Git 仓库或遍历没做完都不会拒绝，所以直接跳过遍历。资源管理器标签同步对每个跟踪的文件夹做的就是这种检查，以前每次同步都要把 `node_modules` 这类大目录整棵走一遍。
 - **提议重试日志**：同项目、同原因只写一次，原因变化或后台确认恢复时再写；按项目分别比较，避免项目遍历顺序或其他 tick 错误造成重复。去重保存在数据目录，覆盖每次重新启动的 `--once`；暂停或未完成的提议刷新保留原诊断状态。原始错误继续由 `Tick` 返回，`--once` 仍失败退出，缓存读写错误也保留并输出原诊断。
 - **兜底**：登记、批准、`mktemp`、`rules apply`、`bury` 成功后调用 `cmdutil.EnsureDaemon`：有常驻进程在服务这个数据目录，或定时任务的 `--home` 正好是它（`ScheduleServes`，用和 obitd 相同的参数解析），就什么都不做；否则临时起一个常驻进程。`--json` 模式下不往 stderr 写提示。
 - 所有子进程都带 `CREATE_NO_WINDOW`，后台永远不弹黑框；`obitd.exe` 必须用 `-ldflags=-H=windowsgui` 构建。
 - `obit doctor` 只读地检查以上所有环节（PATH、obitd、运行器、两家集成、数据目录权限、账本、信任存储、hook 日志、配置），给出 PASS / WARN / FAIL，有 FAIL 时退出码 1。
+
+### Windows 定时任务迁移
+
+旧五分钟任务由已知的完整 XML 模板识别，而不是凭任务名或动作。只有原本随安装时间变化的 `TimeTrigger/StartBoundary` 不参与匹配；它的时区、精度和具体时间不影响归属判断。执行账号必须是当前用户（SID 或账号名），动作必须绑定本次的程序、数据目录和配置目录。禁用、提权、额外动作或触发器、重复周期、电池策略、执行时限、重试等任何其他差异都保留，不强制覆盖。处理已有清理定义时，先保存系统当前导出的原文 `obitd.runner-before-migration.xml`，复读未变后记录收据。原任务不存在时才能从快照恢复；恢复后逐字核对系统导出，包括原来的首次触发时间。不同内容的同名任务和先前快照都不覆盖。
 
 ### 更新
 
