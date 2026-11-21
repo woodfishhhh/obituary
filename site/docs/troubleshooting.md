@@ -1,6 +1,6 @@
 # 排障
 
-出了问题，先运行 `obit doctor`。它只读不写，逐项检查安装、agent 集成、后台定时任务和数据，每一行以 `PASS`、`INFO`、`WARN` 或 `FAIL` 开头，后面写着原因和该怎么做；有 `FAIL` 时命令以非零退出码结束。要把结果发给别人看，加 `--json`；想看每个 agent 具体接上了哪些能力，加 `--verbose`。
+出了问题，先运行 `obit doctor`。它只读不写，逐项检查安装、agent 集成、后台定时任务和数据，每一行以 `通过`、`信息`、`警告` 或 `失败` 开头（英文界面是 `PASS`、`INFO`、`WARN`、`FAIL`），后面写着原因和该怎么做；有 `失败` 时命令以非零退出码结束。要把结果发给别人看，加 `--json`；想看每个 agent 具体接上了哪些能力，加 `--verbose`。
 
 下面每一条按同样的顺序写：你会看到什么，为什么，怎么办，怎么确认已经好了。
 
@@ -10,11 +10,11 @@
 
 Windows 上关掉终端重新打开就行。macOS 和 Linux 要把 `~/.local/bin` 加进 shell 配置，比如 zsh 在 `~/.zshrc` 里加一行 `export PATH="$HOME/.local/bin:$PATH"`，再开一个新终端。只装了 `.deb` 的话，用完整路径 `/usr/libexec/obituary/obit`，或者另外用安装脚本装一份命令行。
 
-`obit --version` 能打印版本号，`obit doctor` 里的 `path` 一行不再是 `WARN`，就是好了。
+`obit --version` 能打印版本号，`obit doctor` 里的 `path` 一行不再是 `警告`，就是好了。
 
 ## `obit doctor` 说找不到 `obitd`
 
-`obit doctor` 里出现 `FAIL obitd`，说明 `obit` 旁边没有后台程序 `obitd`。讣告到同一个文件夹里找它，所以只拷走 `obit` 一个文件是不够的。把 `obit` 和 `obitd` 放在一起，或者重新运行安装方式对应的安装；之后再运行 `obit doctor`，这一行变成 `PASS` 就是好了。
+`obit doctor` 里出现 `失败 obitd`，说明 `obit` 旁边没有后台程序 `obitd`。讣告到同一个文件夹里找它，所以只拷走 `obit` 一个文件是不够的。把 `obit` 和 `obitd` 放在一起，或者重新运行安装方式对应的安装；之后再运行 `obit doctor`，这一行变成 `通过` 就是好了。
 
 ## 下载的文件校验不通过
 
@@ -73,7 +73,7 @@ sudo apt install libgtk-3-0t64 libwebkit2gtk-4.1-0 xdg-utils
 
 ## 到期的东西没有被下葬
 
-文件寿命早到了，却还在原处，`obit daemon status` 里 `runner:` 一行写着 `off`。到期清理靠一个每 5 分钟运行一次的定时任务：Windows 是任务计划里的「Obituary Runner」，macOS 是 launchd 用户代理，Linux 是 systemd 用户定时器 `obituary.timer`。它没装、被关了，或者装给了另一个数据目录，时间到了就没人动手；这时到期的东西要等到下一次 `obit sweep`，或者 agent 的 hook 触发，才会被处理。
+文件寿命早到了，却还在原处，`obit daemon status` 里「运行方式」一行写着「未开启」。到期清理靠一个每 5 分钟运行一次的定时任务：Windows 是任务计划里的「Obituary Runner」，macOS 是 launchd 用户代理，Linux 是 systemd 用户定时器 `obituary.timer`。它没装、被关了，或者装给了另一个数据目录，时间到了就没人动手；这时到期的东西要等到下一次 `obit sweep`，或者 agent 的 hook 触发，才会被处理。
 
 运行 `obit daemon enable` 装上定时任务（Windows 上同时装登录托盘）；眼前就要清理，运行 `obit sweep`。Linux 上如果没有 systemd 用户服务（有些容器和精简系统是这样），`obit daemon enable` 装不上，就改用 cron，每 5 分钟运行一次 `obitd --once --home <数据目录> --config-dir <配置目录>`，这两个目录 `obit config` 都会告诉你。`obit daemon status` 里 `runner` 不再是 `off`，就是好了；Linux 上还可以用 `systemctl --user list-timers | grep obituary` 看到它。
 
@@ -89,7 +89,7 @@ sudo apt install libgtk-3-0t64 libwebkit2gtk-4.1-0 xdg-utils
 
 ## 配置文件写错了
 
-`obit config` 报 `config file has errors`，后面跟着文件路径、行号和键名，是因为 `config.toml` 里有讣告不认识的键，或者取值不合法。讣告不会悄悄忽略它们，否则 `retention = 30` 会让 7 天的保留期照旧生效，你却以为已经改了。按提示里的行号改正拼写、引号或时长，再运行 `obit config`；不再报错，`obit doctor` 里的 `config` 一行是 `PASS`，就是好了。各项的写法见[配置参考](./config)。
+`obit config` 报「配置文件有错误」（英文界面是 `config file has errors`），后面跟着文件路径、行号和键名，是因为 `config.toml` 里有讣告不认识的键，或者取值不合法。讣告不会悄悄忽略它们，否则 `retention = 30` 会让 7 天的保留期照旧生效，你却以为已经改了。按提示里的行号改正拼写、引号或时长，再运行 `obit config`；不再报错，`obit doctor` 里的 `config` 一行是 `通过`，就是好了。各项的写法见[配置参考](./config)。
 
 ## hook 没有生效
 
@@ -105,7 +105,7 @@ obit doctor --verbose      # 每个 agent 的接入情况
 
 没有装，就用 `obit init -g --agent <名字>` 装上，想先看计划就加 `--dry-run`。装完重启 agent；Codex 还要在里面运行 `/hooks`，信任讣告的 hook。想知道 hook 到底收到了什么，在启动 agent 的终端里先设 `OBIT_HOOK_AUDIT=1`，用一阵之后运行 `obit hook audit`。被拦下的删除命令不需要这个开关，本来就会记录。hook 自己的报错写在数据目录的 `hook.log` 里，`obit doctor` 的 `hook-log` 一行会数最近 24 小时的错误。
 
-`obit doctor` 里这个 agent 的那一行（比如 `claude`）是 `PASS`、写着 `integration is current`，就是装好了；用删除护栏的话，`claude-guard-rm` 这样的行要写 `registered: yes`。在启动 agent 的同一个终端里运行 `obit doctor`，如果环境变量把 hook 关了，这一行会变成 `WARN`，并写出是哪个变量。
+`obit doctor` 里这个 agent 的那一行（比如 `claude`）是 `通过`、写着「已安装」（英文界面是 `PASS` 和 `integration is current`），就是装好了；用删除护栏的话，`claude-guard-rm` 这样的行要写「已注册：是」（英文界面是 `registered: yes`）。在启动 agent 的同一个终端里运行 `obit doctor`，如果环境变量把 hook 关了，这一行会变成 `警告`，并写出是哪个变量。
 
 ## Docker 容器的提议批准不了
 

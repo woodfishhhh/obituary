@@ -19,10 +19,10 @@ obit init -g --guard-rm                 # Claude Code；Codex 加 --agent codex�
 ```console
 $ obit rm -rf build
 $ obit graveyard --here
-ID  BURIED            PURGE  SIZE  PATH
-#2  2026-11-11 00:36  in 7d  23 B  C:\work\build
+编号  下葬于            火化     大小  路径
+#2    2026-11-11 00:36  还剩 7d  23 B  C:\work\build
 $ obit resurrect --last
-#2 resurrected  C:\work\build
+#2 已复活  C:\work\build
 ```
 
 ## 原则

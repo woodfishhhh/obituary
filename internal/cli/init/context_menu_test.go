@@ -49,7 +49,7 @@ func TestContextMenuPreviewDescribesChanges(t *testing.T) {
 		if err != nil {
 			t.Fatal(out, err)
 		}
-		for _, want := range []string{action, "--context-menu-server", "obitd.exe", "\"%1\""} {
+		for _, want := range []string{map[string]string{"create": "创建", "update": "更新", "remove": "移除"}[action], "--context-menu-server", "obitd.exe", "\"%1\""} {
 			if !strings.Contains(out, want) {
 				t.Errorf("missing %q: %s", want, out)
 			}
