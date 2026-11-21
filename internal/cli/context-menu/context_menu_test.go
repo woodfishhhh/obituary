@@ -37,7 +37,7 @@ func TestMenuResurrectsLatestWithoutProjectAndKeepsExistingFile(t *testing.T) {
 	}
 	clitest.WriteFixture(t, paths[1], "replacement")
 	out, stderr, err := clitest.Execute(t, NewCmd(), "resurrect", root)
-	if err != nil || stderr != "" || !strings.Contains(out, "已复活") || !strings.Contains(out, "(resurrected)") {
+	if err != nil || stderr != "" || !strings.Contains(out, "Resurrected") || !strings.Contains(out, "(resurrected)") {
 		t.Fatal(out, stderr, err)
 	}
 	if data, err := os.ReadFile(paths[1]); err != nil || string(data) != "replacement" {
@@ -96,7 +96,7 @@ func TestMenuPolicyAndEmptyGraveyard(t *testing.T) {
 	if err != nil || len(st.Watches) != 1 || st.Watches[0].Consent != "pending" || len(st.Proposals) != 1 || len(st.Items) != 0 {
 		t.Fatalf("context menu did not propose an unapproved policy: %+v %v", st, err)
 	}
-	if _, _, err := clitest.Execute(t, NewCmd(), "resurrect", `C:\folder`); err == nil || !strings.Contains(err.Error(), "墓地为空") {
+	if _, _, err := clitest.Execute(t, NewCmd(), "resurrect", `C:\folder`); err == nil || !strings.Contains(err.Error(), "the graveyard is empty") {
 		t.Fatal(err)
 	}
 	if _, _, err := clitest.Execute(t, NewCmd(), "unknown", `C:\folder`); err == nil {

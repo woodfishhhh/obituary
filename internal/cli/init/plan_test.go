@@ -267,7 +267,7 @@ func TestInitManualStepsKeepAutomaticWorkAndHostState(t *testing.T) {
 	if !errors.Is(err, cmdutil.ErrReported) || stderr != "" {
 		t.Fatalf("manual setup was treated as a crash: %s %s %v", out, stderr, err)
 	}
-	for _, step := range []string{"plugins.entries.obituary.enabled=true", "plugins.allow", "mcp.servers.obituary", "OBIT_OPENCLAW_CWD", "未完成，需要手动步骤"} {
+	for _, step := range []string{"plugins.entries.obituary.enabled=true", "plugins.allow", "mcp.servers.obituary", "OBIT_OPENCLAW_CWD", "incomplete; manual steps required"} {
 		if !strings.Contains(out, step) {
 			t.Fatalf("missing complete step %q: %s", step, out)
 		}
@@ -291,7 +291,7 @@ func TestInitManualStepsKeepAutomaticWorkAndHostState(t *testing.T) {
 		}
 	}
 	out, _, err = clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "--show", "--agent", "openclaw")
-	if err != nil || !strings.Contains(out, "需要手动步骤") || !strings.Contains(out, "Next:") {
+	if err != nil || !strings.Contains(out, "manual steps required") || !strings.Contains(out, "Next:") {
 		t.Fatalf("project manual status: %s %v", out, err)
 	}
 }
