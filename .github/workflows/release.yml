@@ -106,9 +106,9 @@ jobs:
           if [[ -n "$id" ]]; then
             # Recheck immediately before upload in case it was published meanwhile.
             gh api "repos/$GH_REPO/releases/$id" | jq -e '.draft == true' > /dev/null
-            gh release upload "$TAG" release/*.zip release/*.tar.gz release/*.deb release/macos/*.app.zip release/macos/*.dmg release/checksums.txt --clobber
+            gh release upload "$TAG" release/*.zip release/*.tar.gz release/*.deb release/macos/*.dmg release/checksums.txt --clobber
           else
             flags=(--draft --verify-tag --title "$TAG" --notes-file release/CHANGELOG.md)
             if [[ "$TAG" == *-* ]]; then flags+=(--prerelease); fi
-            gh release create "$TAG" release/*.zip release/*.tar.gz release/*.deb release/macos/*.app.zip release/macos/*.dmg release/checksums.txt "${flags[@]}"
+            gh release create "$TAG" release/*.zip release/*.tar.gz release/*.deb release/macos/*.dmg release/checksums.txt "${flags[@]}"
           fi
