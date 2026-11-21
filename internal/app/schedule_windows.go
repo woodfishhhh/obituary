@@ -15,6 +15,7 @@ import (
 	"time"
 	"unicode/utf16"
 
+	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
 	"golang.org/x/sys/windows"
 )
@@ -108,7 +109,7 @@ var schtasks = func(args ...string) (string, error) {
 	return strings.TrimSpace(string(out)), err
 }
 
-// InstallSchedule registers (or replaces) the scheduled runner for home.
+// InstallSchedule never replaces a task registered under an existing name.
 func InstallSchedule(home string) error {
 	daemon, err := DaemonPath()
 	if err != nil {
@@ -137,7 +138,20 @@ func installScheduleFor(daemon, home string) error {
 		return err
 	}
 	text := taskXML(daemon, home, u.Username, time.Now().Add(time.Minute))
-	return registerTask(TaskName, text)
+	if err := os.MkdirAll(home, 0700); err != nil {
+		return err
+	}
+	if err := registerTask(TaskName, text); err != nil {
+		return err
+	}
+	actual, err := registeredTaskXML(TaskName)
+	if err != nil {
+		return err
+	}
+	if !generatedFallback(actual, daemon, home, config) || taskStartBoundary(actual) != taskStartBoundary(text) {
+		return fmt.Errorf("scheduled task %q changed during registration; not adopting it", TaskName)
+	}
+	return core.WriteMetadata(filepath.Join(home, fallbackReceipt), []byte(actual))
 }
 
 func registerTask(name, text string) error {

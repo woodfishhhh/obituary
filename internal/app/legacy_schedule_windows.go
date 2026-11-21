@@ -6,10 +6,20 @@ import (
 	"fmt"
 	"io"
 	"os/user"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/woodfishhhh/obituary/internal/core"
 )
+
+const fallbackReceipt = "obitd.runner-task.xml"
+
+func fallbackUnchanged(home, current string) bool {
+	original, err := core.ReadMetadata(filepath.Join(home, fallbackReceipt))
+	return err == nil && string(original) == current
+}
 
 // The scheduler exports SIDs and omits defaults. Recognize only the complete
 // known export (or the original template), not a subset of parsed fields.
@@ -22,15 +32,10 @@ const fallbackExport = `<Task version="1.4" xmlns="http://schemas.microsoft.com/
 
 func generatedFallback(definition, daemon, home, config string) bool {
 	const localTime = "2006-01-02T15:04:05"
-	var definitionTime struct {
-		Start string `xml:"Triggers>TimeTrigger>StartBoundary"`
-	}
 	raw := strings.TrimSpace(strings.TrimPrefix(definition, `<?xml version="1.0" encoding="UTF-16"?>`))
-	if err := xml.Unmarshal([]byte(raw), &definitionTime); err != nil {
-		return false
-	}
-	at, err := time.Parse(localTime, definitionTime.Start)
-	if err != nil || at.Format(localTime) != definitionTime.Start {
+	start := taskStartBoundary(raw)
+	at, err := time.Parse(localTime, start)
+	if err != nil || at.Format(localTime) != start {
 		return false
 	}
 	u, err := user.Current()
@@ -43,8 +48,22 @@ func generatedFallback(definition, daemon, home, config string) bool {
 		return true
 	}
 	args := fmt.Sprintf(`--once --home "%s" --config-dir "%s"`, home, config)
-	exported := fmt.Sprintf(fallbackExport, xmlText(TaskName), xmlText(u.Uid), definitionTime.Start, xmlText(u.Username), xmlText(daemon), xmlText(args))
+	exported := fmt.Sprintf(fallbackExport, xmlText(TaskName), xmlText(u.Uid), start, xmlText(u.Username), xmlText(daemon), xmlText(args))
 	return sameTaskXML(raw, exported)
+}
+
+func taskStartBoundary(definition string) string {
+	var task struct {
+		Start string `xml:"Triggers>TimeTrigger>StartBoundary"`
+	}
+	_, body, found := strings.Cut(definition, "?>")
+	if !found {
+		body = definition
+	}
+	if err := xml.Unmarshal([]byte(body), &task); err != nil {
+		return ""
+	}
+	return task.Start
 }
 
 func sameTaskXML(a, b string) bool {

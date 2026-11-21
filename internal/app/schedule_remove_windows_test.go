@@ -2,7 +2,9 @@ package app
 
 import (
 	"fmt"
+	"os"
 	"os/user"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -24,7 +26,7 @@ func TestLegacyRunnerPreservesEditedAndDisabledDefinitions(t *testing.T) {
 	t.Setenv("OBIT_CONFIG_DIR", config)
 	exe, home := "C:/bin/obitd.exe", t.TempDir()
 	definition := taskXML(exe, home, schedulerUser(t), time.Now())
-	if !ownedSchedule(definition, exe, home, config) {
+	if !generatedFallback(definition, exe, home, config) {
 		t.Fatal("generated fallback rejected")
 	}
 	for _, edit := range [][2]string{
@@ -32,7 +34,7 @@ func TestLegacyRunnerPreservesEditedAndDisabledDefinitions(t *testing.T) {
 		{"LeastPrivilege", "HighestAvailable"}, {"</Settings>", "<RestartOnFailure><Interval>PT1M</Interval><Count>9</Count></RestartOnFailure></Settings>"},
 	} {
 		changed := strings.ReplaceAll(definition, edit[0], edit[1])
-		if changed == definition || ownedSchedule(changed, exe, home, config) {
+		if changed == definition || generatedFallback(changed, exe, home, config) {
 			t.Errorf("accepted changed definition: %s", edit[1])
 		}
 	}
@@ -41,19 +43,50 @@ func TestLegacyRunnerPreservesEditedAndDisabledDefinitions(t *testing.T) {
 func (e schedulerExit) Error() string { return fmt.Sprintf("HRESULT %#x", uint32(e)) }
 func (e schedulerExit) ExitCode() int { return int(e) }
 
+func TestFallbackReceiptDistinguishesEditedStartFromAnotherValidInstall(t *testing.T) {
+	home, config := t.TempDir(), t.TempDir()
+	t.Setenv("OBIT_CONFIG_DIR", config)
+	const daemon = `C:\bin\obitd.exe`
+	user, at := schedulerUser(t), time.Now()
+	first := taskXML(daemon, home, user, at)
+	later := taskXML(daemon, home, user, at.Add(time.Hour))
+	if strings.Replace(first, taskStartBoundary(first), taskStartBoundary(later), 1) != later {
+		t.Fatal("fixture changed more than StartBoundary")
+	}
+	if ownedSchedule(first, daemon, home, config) || ownedSchedule(later, daemon, home, config) {
+		t.Fatal("adopted task without an original receipt")
+	}
+	if err := os.WriteFile(filepath.Join(home, fallbackReceipt), []byte(first), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if !ownedSchedule(first, daemon, home, config) || ownedSchedule(later, daemon, home, config) {
+		t.Fatal("original task export not enforced")
+	}
+}
+
+func savedFallback(t *testing.T) (string, string) {
+	t.Helper()
+	home := t.TempDir()
+	definition := taskXML(`C:\bin\obitd.exe`, home, schedulerUser(t), time.Now())
+	if err := os.WriteFile(filepath.Join(home, fallbackReceipt), []byte(definition), 0600); err != nil {
+		t.Fatal(err)
+	}
+	return home, definition
+}
+
 func TestScheduleRemovalPreviewUsesOwnership(t *testing.T) {
 	old := schtasks
 	t.Cleanup(func() { schtasks = old })
 	t.Setenv("OBIT_CONFIG_DIR", `C:\config`)
-	definition := taskXML(`C:\bin\obitd.exe`, `C:\home`, schedulerUser(t), time.Now())
+	home, definition := savedFallback(t)
 	for _, tc := range []struct {
 		name, daemon, home, config, want string
 		err                              error
 	}{
-		{"owned", `C:\bin\obitd.exe`, `C:\home`, `C:\config`, "remove scheduled task", nil},
-		{"foreign executable", `C:\other\obitd.exe`, `C:\home`, `C:\config`, "preserve scheduled task", nil},
+		{"owned", `C:\bin\obitd.exe`, home, `C:\config`, "remove scheduled task", nil},
+		{"foreign executable", `C:\other\obitd.exe`, home, `C:\config`, "preserve scheduled task", nil},
 		{"foreign home", `C:\bin\obitd.exe`, `C:\isolated`, `C:\config`, "preserve scheduled task", nil},
-		{"foreign config", `C:\bin\obitd.exe`, `C:\home`, `C:\isolated`, "preserve scheduled task", nil},
+		{"foreign config", `C:\bin\obitd.exe`, home, `C:\isolated`, "preserve scheduled task", nil},
 		{"query denied", "", "", "", "query failed", schedulerExit(0x80070005)},
 		{"absent", "", "", "", "unchanged scheduled task", schedulerExit(0x80070002)},
 	} {
@@ -68,7 +101,7 @@ func TestScheduleRemovalPreviewUsesOwnership(t *testing.T) {
 			if !strings.Contains(got, tc.want) {
 				t.Fatal(got)
 			}
-			if tc.err == nil && (!strings.Contains(got, `C:\bin\obitd.exe`) || !strings.Contains(got, `C:\home`)) {
+			if tc.err == nil && (!strings.Contains(got, `C:\bin\obitd.exe`) || !strings.Contains(got, home)) {
 				t.Fatal(got)
 			}
 		})
@@ -79,7 +112,7 @@ func TestRemoveScheduleChecksDefinitionAndDeletion(t *testing.T) {
 	old := schtasks
 	t.Cleanup(func() { schtasks = old })
 	t.Setenv("OBIT_CONFIG_DIR", `C:\config`)
-	definition := taskXML(`C:\bin\obitd.exe`, `C:\home`, schedulerUser(t), time.Now())
+	home, definition := savedFallback(t)
 	for _, scenario := range []string{"owned", "absent", "query denied", "changed before", "replaced after", "verify denied", "delete denied"} {
 		t.Run(scenario, func(t *testing.T) {
 			queries, deletes := 0, 0
@@ -109,7 +142,7 @@ func TestRemoveScheduleChecksDefinitionAndDeletion(t *testing.T) {
 				}
 				return definition, nil
 			}
-			err := removeScheduleFor(`C:\bin\obitd.exe`, `C:\home`, `C:\config`)
+			err := removeScheduleFor(`C:\bin\obitd.exe`, home, `C:\config`)
 			wantErr := scenario != "owned" && scenario != "absent"
 			if scenario == "absent" || scenario == "query denied" || scenario == "changed before" {
 				if deletes != 0 {
