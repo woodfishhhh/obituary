@@ -779,7 +779,7 @@ Usage: `obit init [flags]`
 | `--mcp` | aucun | `false` | Enregistrer le serveur MCP stdio d’Obituary |
 | `--no-context-menu` | aucun | `false` | Ne pas installer les menus contextuels de l’Explorateur |
 | `--no-shortcuts` | aucun | `false` | Ne pas créer les raccourcis du menu Démarrer et du Bureau |
-| `--no-skill` | aucun | `false` | Ne pas installer l’Agent Skill d’Obituary |
+| `--no-skill` | aucun | `false` | Laisser l’Agent Skill d’Obituary inchangé |
 | `--show` | aucun | `false` | Afficher ce qui est installé |
 | `--skill` | aucun | `false` | Installer l’Agent Skill d’Obituary (activé par défaut) |
 | `--uninstall` | aucun | `false` | Retirer ce qu’Obituary a ajouté |

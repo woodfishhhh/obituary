@@ -770,7 +770,7 @@ stdin から zcode のフックイベントを 1 件処理する。エラー時�
 | `--mcp` | なし | `false` | Obituary の MCP stdio サーバーを登録する |
 | `--no-context-menu` | なし | `false` | エクスプローラーのコンテキストメニューをインストールしない |
 | `--no-shortcuts` | なし | `false` | スタートメニューとデスクトップのショートカットを作らない |
-| `--no-skill` | なし | `false` | Obituary の Agent Skill をインストールしない |
+| `--no-skill` | なし | `false` | Obituary の Agent Skill には手を加えない |
 | `--show` | なし | `false` | インストール済みの内容を表示する |
 | `--skill` | なし | `false` | Obituary の Agent Skill をインストールする（既定で有効） |
 | `--uninstall` | なし | `false` | Obituary が追加したものを削除する |

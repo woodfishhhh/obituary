@@ -779,7 +779,7 @@ Uso: `obit init [flags]`
 | `--mcp` | ninguno | `false` | Registrar el servidor MCP stdio de Obituary |
 | `--no-context-menu` | ninguno | `false` | Omitir los menús contextuales del Explorador |
 | `--no-shortcuts` | ninguno | `false` | Omitir los accesos directos del menú Inicio y del escritorio |
-| `--no-skill` | ninguno | `false` | Omitir la instalación de la Agent Skill de Obituary |
+| `--no-skill` | ninguno | `false` | Dejar sin cambios la Agent Skill de Obituary |
 | `--show` | ninguno | `false` | Mostrar lo que está instalado |
 | `--skill` | ninguno | `false` | Instalar la Agent Skill de Obituary (activado por defecto) |
 | `--uninstall` | ninguno | `false` | Quitar lo que Obituary ha añadido |

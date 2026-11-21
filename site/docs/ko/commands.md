@@ -770,7 +770,7 @@ stdin으로 들어온 zcode 훅 이벤트 하나를 처리합니다. 오류가 �
 | `--mcp` | 없음 | `false` | Obituary MCP stdio 서버를 등록합니다 |
 | `--no-context-menu` | 없음 | `false` | 파일 탐색기 상황에 맞는 메뉴를 설치하지 않습니다 |
 | `--no-shortcuts` | 없음 | `false` | 시작 메뉴와 바탕 화면 바로 가기를 만들지 않습니다 |
-| `--no-skill` | 없음 | `false` | Obituary Agent Skill을 설치하지 않습니다 |
+| `--no-skill` | 없음 | `false` | Obituary Agent Skill을 변경하지 않습니다 |
 | `--show` | 없음 | `false` | 설치된 항목을 표시합니다 |
 | `--skill` | 없음 | `false` | Obituary Agent Skill을 설치합니다(기본적으로 활성화) |
 | `--uninstall` | 없음 | `false` | Obituary가 추가한 항목을 제거합니다 |

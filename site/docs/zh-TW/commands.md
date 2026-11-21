@@ -779,7 +779,7 @@ agent hook 的進入點（由 agent 呼叫，不是給人用的）
 | `--mcp` | 無 | `false` | 註冊訃告的 MCP stdio 伺服器 |
 | `--no-context-menu` | 無 | `false` | 不安裝檔案總管右鍵選單 |
 | `--no-shortcuts` | 無 | `false` | 不建立開始功能表和桌面捷徑 |
-| `--no-skill` | 無 | `false` | 不安裝訃告的 Agent Skill |
+| `--no-skill` | 無 | `false` | 不更動訃告的 Agent Skill |
 | `--show` | 無 | `false` | 顯示已安裝的項目 |
 | `--skill` | 無 | `false` | 安裝訃告的 Agent Skill（預設啟用） |
 | `--uninstall` | 無 | `false` | 移除訃告加入的項目 |

@@ -780,7 +780,7 @@ agent hook 的入口（由 agent 调用，不是给人用的）
 | `--mcp` | 无 | `false` | 注册讣告的 MCP stdio 服务 |
 | `--no-context-menu` | 无 | `false` | 不安装资源管理器右键菜单 |
 | `--no-shortcuts` | 无 | `false` | 不创建开始菜单和桌面快捷方式 |
-| `--no-skill` | 无 | `false` | 不安装讣告的 Agent Skill |
+| `--no-skill` | 无 | `false` | 不改动讣告的 Agent Skill |
 | `--show` | 无 | `false` | 显示已安装的内容 |
 | `--skill` | 无 | `false` | 安装讣告的 Agent Skill（默认启用） |
 | `--uninstall` | 无 | `false` | 移除讣告添加的内容 |

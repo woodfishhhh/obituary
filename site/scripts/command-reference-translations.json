@@ -2967,17 +2967,17 @@
       }
     },
     "--no-skill": {
-      "source": "skip installing the Obituary Agent Skill",
+      "source": "leave the Obituary Agent Skill unchanged",
       "translations": {
-        "zh": "不安装讣告的 Agent Skill",
-        "zh-TW": "不安裝訃告的 Agent Skill",
-        "ja": "Obituary の Agent Skill をインストールしない",
-        "ko": "Obituary Agent Skill을 설치하지 않습니다",
-        "es": "Omitir la instalación de la Agent Skill de Obituary",
-        "fr": "Ne pas installer l’Agent Skill d’Obituary",
-        "de": "Die Installation des Obituary-Agent-Skills überspringen",
-        "pt-BR": "Pular a instalação do Agent Skill do Obituary",
-        "ru": "Не устанавливать Agent Skill для Obituary"
+        "zh": "不改动讣告的 Agent Skill",
+        "zh-TW": "不更動訃告的 Agent Skill",
+        "ja": "Obituary の Agent Skill には手を加えない",
+        "ko": "Obituary Agent Skill을 변경하지 않습니다",
+        "es": "Dejar sin cambios la Agent Skill de Obituary",
+        "fr": "Laisser l’Agent Skill d’Obituary inchangé",
+        "de": "Den Obituary-Agent-Skill unverändert lassen",
+        "pt-BR": "Deixar o Agent Skill do Obituary inalterado",
+        "ru": "Оставить Agent Skill для Obituary без изменений"
       }
     },
     "--show": {

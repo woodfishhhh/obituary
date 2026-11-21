@@ -779,7 +779,7 @@ obit extend debug.log 30m
 | `--mcp` | нет | `false` | Зарегистрировать MCP-сервер Obituary для stdio |
 | `--no-context-menu` | нет | `false` | Не устанавливать контекстные меню Проводника |
 | `--no-shortcuts` | нет | `false` | Не создавать ярлыки в меню «Пуск» и на рабочем столе |
-| `--no-skill` | нет | `false` | Не устанавливать Agent Skill для Obituary |
+| `--no-skill` | нет | `false` | Оставить Agent Skill для Obituary без изменений |
 | `--show` | нет | `false` | Показать, что установлено |
 | `--skill` | нет | `false` | Установить Agent Skill для Obituary (включено по умолчанию) |
 | `--uninstall` | нет | `false` | Удалить то, что добавил Obituary |
