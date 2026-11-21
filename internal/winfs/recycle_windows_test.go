@@ -4,10 +4,22 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 )
+
+func TestRecycleRefusesReservedFileBeforeShell(t *testing.T) {
+	path := `\\?\` + filepath.Join(t.TempDir(), "NUL")
+	write(t, path)
+	t.Cleanup(func() { _ = os.Remove(path) })
+	// An empty identity prevents even a broken implementation from calling Shell.
+	err := (FS{}).Recycle(path, corefs.Identity{})
+	if !errors.Is(err, corefs.ErrUnsafe) || !strings.Contains(err.Error(), "graveyard") {
+		t.Fatalf("reserved Shell path: %v", err)
+	}
+}
 
 // TestRecycleMovesToRecycleBin touches the real Recycle Bin, so it only runs
 // with OBIT_TEST_RECYCLE=1.

@@ -5,7 +5,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+
+	"github.com/woodfishhhh/obituary/internal/pathutil"
 )
 
 // Git/MSYS installations are the shell's / even on a non-system drive.
@@ -60,6 +63,9 @@ func CheckParentTraversal(ref string) error {
 		if part == "" {
 			continue
 		}
+		if pathutil.IsReservedLeaf(part) {
+			return errors.New("reserved Windows directory component in parent traversal")
+		}
 		if prefix != "" && !strings.HasSuffix(prefix, string(filepath.Separator)) {
 			prefix += string(filepath.Separator)
 		}
@@ -70,6 +76,19 @@ func CheckParentTraversal(ref string) error {
 		}
 	}
 	return nil
+}
+
+// DeletionPath keeps the literal POSIX operand; on Windows resolve device
+// names before the caller asks for type, attributes or directory contents.
+func DeletionPath(ref string) (string, error) {
+	if runtime.GOOS == "windows" {
+		path, err := pathutil.Abs(ref)
+		if err != nil {
+			return "", err
+		}
+		return path, CheckParentTraversal(ref)
+	}
+	return ref, CheckParentTraversal(ref)
 }
 
 func EmptyDirectory(path string) error {

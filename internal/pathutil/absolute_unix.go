@@ -21,6 +21,10 @@ func Abs(path string) (string, error) {
 
 func LongAbs(path string) (string, error) { return Abs(path) }
 
+func ComparisonPath(path string) string { return path }
+
+func IsReservedLeaf(string) bool { return false }
+
 func RequiresDirectory(path string) bool {
 	return strings.HasSuffix(path, "/") && filepath.Clean(path) != "/"
 }

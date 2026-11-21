@@ -95,10 +95,10 @@ func RemovePaths(svc *core.Service, opts guardrm.RemoveOptions, name string, dir
 
 func checkRemovePath(ref string, opts guardrm.RemoveOptions, name string, directoryOnly bool) string {
 	report := func(err error) string { return fmt.Sprintf("%s: cannot remove '%s': %v\n", name, ref, err) }
-	if err := CheckParentTraversal(ref); err != nil {
+	path, err := DeletionPath(ref)
+	if err != nil {
 		return report(err)
 	}
-	path := ref
 	info, err := os.Lstat(path)
 	if ref == "" || errors.Is(err, os.ErrNotExist) {
 		if opts.Force {

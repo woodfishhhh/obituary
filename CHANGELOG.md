@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- 修复：Windows 本地盘上名叫 `NUL`、`con.txt`、`COM1` 等的文件可以正常登记、下葬、复活和火化；`obit rm ./NUL` 只处理当前目录的真实文件，不访问同名设备。
+- Fix: files named `NUL`, `con.txt`, `COM1`, and other DOS-reserved names on local Windows drives can be marked, buried, restored, and purged. `obit rm ./NUL` addresses the file in the current directory, never the device.
+
 - 手动解压的版本也能在「关于与更新」里一键升级，按钮是「下载并重启更新」；终端里用 `obit update --apply`。讣告先从 GitHub 下载（不通就改用国内镜像），核对 SHA-256 之后才关闭窗口，只替换自己的程序（`obit`、`obitd`、`obit-gui`），文件夹里的其他文件一概不动；旧程序留一天后进墓地，仍可复活，任何一步失败都会整体回滚。运行的是开发版、文件夹里缺程序或需要管理员权限时，页面会写明是哪一条不满足。
 - A copy you unpacked yourself can now update from About and updates with one button, "Download and restart to update", or with `obit update --apply`. Obituary downloads from GitHub (from the mirror in mainland China when GitHub does not answer), checks the SHA-256, and only then closes the window and replaces its own programs (`obit`, `obitd`, `obit-gui`); every other file in the folder stays as it is. The previous programs wait for a day before going to the graveyard, where they can be resurrected, and any failed step rolls everything back. When it cannot update itself (a development build, a missing program, a folder that needs administrator rights), the page says which condition fails.
 - 更新窗口在下载时保持打开并显示进度，下载并核对完成后才关闭；下载失败时窗口留在原处并显示原因。

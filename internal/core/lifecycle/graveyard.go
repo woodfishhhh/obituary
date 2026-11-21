@@ -114,6 +114,13 @@ func (s *Service) prepareGrave(path string, id int64, at time.Time) (string, *Id
 		return "", nil, err
 	}
 	grave := filepath.Join(dir, filepath.Base(path))
+	if pathutil.IsReservedLeaf(filepath.Base(path)) {
+		grave, err = pathutil.Abs(grave)
+		if err != nil {
+			_ = os.Remove(dir) // the empty grave just made
+			return "", nil, err
+		}
+	}
 	return grave, &graveID, nil
 }
 

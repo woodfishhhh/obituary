@@ -17,6 +17,64 @@ import (
 	core "github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
+func TestReservedFileLifecycle(t *testing.T) {
+	for _, name := range []string{"NUL", "con.txt", "COM1", "lpt9.log"} {
+		t.Run(name, func(t *testing.T) {
+			f := newFixture(t)
+			t.Chdir(f.dir)
+			path := `\\?\` + filepath.Join(f.dir, name)
+			if err := os.WriteFile(path, []byte(name), 0600); err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = os.Remove(path) })
+			item := f.add("./"+name, time.Hour)
+			if item.Path != path {
+				t.Fatalf("registered %q, want literal %q", item.Path, path)
+			}
+			bury := func(ref string) core.Burial {
+				t.Helper()
+				rows, err := f.svc.Bury([]string{ref}, false, "")
+				if err != nil || len(rows) != 1 || rows[0].Action != core.ActionBuried || exists(path) {
+					t.Fatalf("bury: %+v %v", rows, err)
+				}
+				b := *rows[0].Burial
+				if read(t, b.Grave) != name || *b.Identity != *item.Identity {
+					t.Fatal("grave lost content or identity", b)
+				}
+				return b
+			}
+			b := bury(name)
+			view := &core.GraveyardView{Burials: []core.Burial{b}}
+			if err := f.svc.FilterGraveyard(view, f.dir); err != nil || len(view.Burials) != 1 {
+				t.Fatalf("graveyard directory filter lost %q: %v", name, err)
+			}
+			rows, err := f.svc.Resurrect([]string{fmt.Sprint(b.ID)})
+			if err != nil || len(rows) != 1 || rows[0].Path != path || rows[0].Error != "" || rows[0].Warning != "" || read(t, path) != name {
+				t.Fatalf("restore: %+v %v", rows, err)
+			}
+			b = bury(path)
+			rows, err = f.svc.Purge(true, false)
+			if err != nil || len(rows) != 1 || rows[0].Action != core.ActionPurged || exists(b.Grave) || exists(filepath.Dir(b.Grave)) || len(f.burials()) != 0 {
+				t.Fatalf("purge: %+v %v", rows, err)
+			}
+		})
+	}
+}
+
+func TestReservedFileProtectedParent(t *testing.T) {
+	f := newFixture(t)
+	path := `\\?\` + filepath.Join(f.dir, "NUL")
+	if err := os.WriteFile(path, []byte("keep"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Remove(path) })
+	f.svc.Guard.System = append(f.svc.Guard.System, f.dir)
+	rows, err := f.svc.Bury([]string{path}, true, "")
+	if err != nil || len(rows) != 1 || !strings.Contains(rows[0].Error, "system or Obituary location") || read(t, path) != "keep" || len(f.burials()) != 0 {
+		t.Fatalf("protected reserved file: %+v %v", rows, err)
+	}
+}
+
 func TestBuryReservationUsesHotTransaction(t *testing.T) {
 	f := newFixture(t)
 	tracked := f.add(f.file("tracked"), time.Hour)

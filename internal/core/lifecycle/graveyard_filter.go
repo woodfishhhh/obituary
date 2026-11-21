@@ -17,7 +17,7 @@ func (s *Service) FilterGraveyard(view *GraveyardView, directory string) error {
 	if err != nil {
 		return err
 	}
-	directory = filepath.Clean(directory)
+	directory = pathutil.ComparisonPath(filepath.Clean(directory))
 	var burials []*Burial
 	for i := range view.Burials {
 		burials = append(burials, &view.Burials[i])
@@ -87,7 +87,7 @@ func (s *Service) graveyardOriginalPrefixes(burials []*Burial, directory string)
 				return nil, err
 			}
 		}
-		path = filepath.Clean(path)
+		path = pathutil.ComparisonPath(filepath.Clean(path))
 		if len(path) < len(directory) {
 			continue
 		}

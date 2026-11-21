@@ -53,7 +53,7 @@ func (s *Service) inspectCleanup(c RestoreCleanup, st State) PendingGrave {
 			return fail(errors.New("invalid cleanup identity"))
 		}
 	}
-	if c.Restore != nil && !validRestoreIntent(c.Restore, b.Identity) {
+	if c.Restore != nil && !validRestoreIntent(c.Restore, b) {
 		return fail(errors.New("invalid destination identity or name"))
 	}
 	if err := s.checkCleanupRoot(b, root, grave); err != nil {

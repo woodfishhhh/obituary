@@ -4,11 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 	"syscall"
 	"unsafe"
 
 	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"golang.org/x/sys/windows"
 )
 
@@ -70,6 +72,10 @@ func hresult(r uintptr, what string) error {
 // nuke warning plus no-UI flags make the shell skip, not permanently delete,
 // anything that cannot be recycled; the result is then verified on disk.
 func (fs FS) Recycle(path string, want corefs.Identity) error {
+	// Shell parses a display name, not an NT filename relative to a handle.
+	if pathutil.IsReservedLeaf(filepath.Base(path)) {
+		return fmt.Errorf("reserved Windows filename cannot be sent to the Recycle Bin; use graveyard mode: %w", corefs.ErrUnsafe)
+	}
 	got, err := fs.Identify(path)
 	if err != nil {
 		return err

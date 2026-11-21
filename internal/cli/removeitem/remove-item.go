@@ -52,10 +52,11 @@ func run(cmd *cobra.Command, args []string) error {
 	failed, buried := false, false
 	// -Force only affects provider attributes. Guard stays enabled.
 	check := func(path string) (bool, error) {
-		if err := removecmd.CheckParentTraversal(path); err != nil {
+		path, err := removecmd.DeletionPath(path)
+		if err != nil {
 			return false, err
 		}
-		err := checkItem(path, opts)
+		err = checkItem(path, opts)
 		return err == nil, err
 	}
 	results, err := svc.BuryDeletionChecked(opts.Paths, false, "remove-item", check)

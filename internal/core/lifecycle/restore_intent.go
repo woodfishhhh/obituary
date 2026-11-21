@@ -13,12 +13,13 @@ import (
 	"unicode/utf8"
 
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/pathutil"
 )
 
 type restoreIntent = ledger.RestoreIntent
 
-func validRestoreIntent(intent *restoreIntent, identity *Identity) bool {
-	return validRestoreParent(intent, identity) && validRestoreName(intent.Name)
+func validRestoreIntent(intent *restoreIntent, b Burial) bool {
+	return validRestoreParent(intent, b.Identity) && validRestoreName(intent.Name, b.Path)
 }
 
 func validRestoreParent(intent *restoreIntent, identity *Identity) bool {
@@ -32,13 +33,14 @@ func validRestoreParent(intent *restoreIntent, identity *Identity) bool {
 	return true
 }
 
-func validRestoreName(name string) bool {
+func validRestoreName(name, original string) bool {
 	if runtime.GOOS != "windows" {
 		return name != "" && name != "." && name != ".." && len(name) <= 255 && utf8.ValidString(name) && !strings.ContainsAny(name, "/\x00")
 	}
 	// IsLocal reuses Go's Windows device-name rules. It does not enforce a
 	// single component, forbidden Win32 characters, or the NTFS UTF-16 limit.
-	if !filepath.IsLocal(name) || name == "." || !utf8.ValidString(name) ||
+	literalOriginal := pathutil.ComparisonPath(original) != original && name == filepath.Base(original) && pathutil.IsReservedLeaf(name)
+	if (!filepath.IsLocal(name) && !literalOriginal) || name == "." || !utf8.ValidString(name) ||
 		strings.ContainsAny(name, `\/:<>"|?*`) || strings.HasSuffix(name, ".") || strings.HasSuffix(name, " ") {
 		return false
 	}
@@ -73,7 +75,7 @@ func pendingRestoreHint(b Burial) string {
 
 func writeRestoreIntent(b Burial, parent RestoreParent, name string) error {
 	intent := &restoreIntent{Parent: parent.Identity(), Name: name}
-	if !validRestoreIntent(intent, b.Identity) {
+	if !validRestoreIntent(intent, b) {
 		return errors.New("invalid resurrection destination identity or name; the intent was not written")
 	}
 	b.Size = 0 // accounting can still finish concurrently; the ledger owns it
@@ -99,7 +101,7 @@ func (s *Service) inspectRestoreIntent(p PendingGrave, st State) PendingGrave {
 		b = st.Burials[idx]
 		p.Burial = &b
 	}
-	if !validRestoreName(intent.Name) {
+	if !validRestoreName(intent.Name, b.Path) {
 		// Older writers could persist an overlong collision name. An exact
 		// recorded burial with its original object still inside proves no move
 		// happened. Never search a destination or abandon using invalid intent.
@@ -154,7 +156,7 @@ func checkRestoreCleanupIntent(c RestoreCleanup, b Burial) error {
 	if c.Kind != ActionResurrected && c.Kind != ActionAbandoned {
 		return errors.New("unknown cleanup kind")
 	}
-	if c.Restore != nil && !validRestoreIntent(c.Restore, b.Identity) {
+	if c.Restore != nil && !validRestoreIntent(c.Restore, b) {
 		return errors.New("invalid destination identity or name")
 	}
 	return nil
