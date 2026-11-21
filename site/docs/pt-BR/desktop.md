@@ -2,19 +2,53 @@
 
 Você pode ressuscitar arquivos, aprovar propostas e alterar as configurações sem usar a linha de comando.
 
+## O que cada uma das três plataformas oferece
+
+A janela, o ícone da bandeja e as notificações de desktop existem no Windows, no macOS e no Ubuntu 24.04; o menu de contexto, as etiquetas de data do Explorador de Arquivos e o modo Lixeira existem só no Windows. As edições de desktop para macOS e Ubuntu são, por enquanto, versões de pré-lançamento. Outras distribuições Linux não têm edição de desktop e usam a linha de comando.
+
+| | Windows | macOS | Ubuntu 24.04 |
+| --- | --- | --- | --- |
+| Janela | `obit-gui.exe`, só x64 | `Obituary.app`, universal para Intel e Apple Silicon | um pacote `.deb`, só amd64 |
+| Ícone | área de notificação | barra de menus | ícone na bandeja; exige um desktop que ofereça StatusNotifierItem |
+| Ícone no login | ativado por padrão após `obit init` | interruptor em Settings | interruptor em Settings |
+| Verificação de expiração | processo residente do ícone, com o Agendador de Tarefas como reserva | agente de usuário do launchd, a cada 5 minutos | timer de usuário do systemd, a cada 5 minutos |
+| Notificações de desktop | sim | sim | sim |
+| Menu de contexto | no Explorador de Arquivos | não | não |
+| Etiquetas de data no Explorador | sim | não | não |
+| Modo Lixeira | sim | não, só cemitério | não, só cemitério |
+| Instalado com | o script de instalação, Scoop, winget ou o arquivo compactado | o DMG | o `.deb` |
+| Primeira abertura | um arquivo baixado à mão pode gerar um aviso do SmartScreen | exige aprovação manual, veja [abaixo](#primeira-abertura-de-um-app-sem-assinatura) | abre direto |
+| Requisitos | o runtime do WebView2 | a 1.6.0 exige macOS 26 (corrigido na 1.6.1) | GTK 3 e WebKitGTK 4.1, instalados pelo apt |
+
 ## Janela pequena e ícone da barra de menus no macOS
 
-Baixe o DMG universal do macOS e o arquivo de checksums da mesma versão. Verifique o SHA-256, abra o DMG e arraste Obituary.app para Aplicativos ou para a pasta Applications do usuário; ejete o DMG antes de ativar a inicialização no login.
+Baixe o DMG universal (`obituary_<versão>_darwin_universal.dmg`) e o `checksums.txt` da página da versão, confira o SHA-256, abra o DMG, arraste o Obituary.app para Aplicativos, ejete o DMG e abra o app a partir de Aplicativos. Arraste primeiro porque a entrada de inicialização no login guarda onde o app está, e um app executado direto do DMG deixa de estar lá quando o DMG é ejetado.
 
-O app contém a janela Wails, o ícone da barra de menus e os auxiliares obit e obitd. O agente de usuário do launchd que verifica vencimentos a cada 5 minutos continua sendo um fallback separado. Em Configurações, ative o início da bandeja no login para instalar o LaunchAgent do Obituary; desativar remove somente essa entrada.
+O app contém a janela, o ícone da barra de menus e os programas `obit` e `obitd` que o acompanham. A expiração fica a cargo de outro agente de usuário do launchd que roda a cada 5 minutos; você o instala com `obit daemon enable`, e fechar a janela ou o ícone da barra de menus não o afeta. Ativar “Start the tray at sign-in” em Settings na janela instala o LaunchAgent de usuário do próprio Obituary, para que o ícone da barra de menus apareça quando você fizer login; desativá-lo remove apenas essa entrada.
+
+Remover `Obituary.app` mantém seus dados no diretório padrão `~/Library/Application Support/obituary/`: `store.json` contém o registro, `config.toml` guarda as configurações e `graveyard/` contém os arquivos enterrados nesse volume.
 
 ### Primeira abertura de um app sem assinatura
 
-Esta versão não tem assinatura Developer ID nem notarização. Confirme a origem e o SHA-256 e tente abrir uma vez. Se o macOS não puder verificar o desenvolvedor, abra « Ajustes do Sistema → Privacidade e Segurança », escolha « Abrir Mesmo Assim » para Obituary, confirme e abra novamente. Não desative o Gatekeeper globalmente nem remova a quarentena de forma recursiva. Pare diante de avisos de app danificado, malware ou política da organização.
+A versão não tem assinatura Developer ID nem notarização, então o macOS a barra na primeira vez. Depois de confirmar que o download veio de uma página de versões confiável e de conferir o SHA-256, abra o app normalmente uma vez. Se o sistema disser que não consegue verificar o desenvolvedor, abra Ajustes do Sistema, depois Privacidade e Segurança, encontre Obituary no fim da página, escolha “Abrir Mesmo Assim”, confirme mais uma vez e abra o app de novo. Não desative o Gatekeeper globalmente por causa disso nem apague o atributo de quarentena de forma recursiva. Se o sistema informar que o app está danificado ou contém malware, ou que uma política da empresa proíbe abri-lo, pare por aí.
 
-### Proposta de Homebrew Cask
+### A 1.6.0 exige macOS 26
 
-O cask deve instalar o mesmo DMG universal, copiar Obituary.app para Aplicativos e disponibilizar obit e obitd no app bundle. Até que o DMG de desktop tenha uma URL estável e uma verificação de desinstalação revisada, ele fica separado do cask existente para CLI.
+A janela do macOS na 1.6.0 exige o macOS 26. No macOS 15 e anteriores, o sistema diz que o app não é compatível com esta versão e ele não abre. Isso está corrigido na 1.6.1.
+
+## Ubuntu 24.04 (amd64)
+
+Baixe o pacote de desktop `obituary_<versão>_linux_amd64.deb` e o `checksums.txt` da página da versão. No diretório de download, execute os comandos abaixo, trocando `VERSION` pela versão que você baixou; o pacote só é instalado se a verificação for bem-sucedida:
+
+```bash
+file=obituary_VERSION_linux_amd64.deb
+grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt install "./$file"
+```
+
+Depois, abra o Obituary pela lista de aplicativos. A janela usa GTK 3 e WebKitGTK 4.1, e o apt os instala junto com o pacote. Os programas ficam em `/usr/libexec/obituary/`, que não está no seu PATH; para usar `obit` em um terminal, instale a linha de comando separadamente com o script de instalação.
+
+A bandeja precisa de um desktop que ofereça StatusNotifierItem, e o GNOME não oferece por padrão. Ali você abre a mesma janela pela lista de aplicativos, sem nenhuma extensão, mas não há ícone na bandeja. Para que o ícone apareça no seu próximo login, ative “Start the tray at sign-in” em Settings; desativá-lo apaga a entrada de inicialização que o Obituary escreveu. Para desinstalar, veja [Desinstalação](./uninstall).
+
 ## Bandeja do sistema
 
 `obit init` configura o ícone da bandeja para aparecer no login. No menu, você pode:
@@ -27,10 +61,10 @@ O cask deve instalar o mesmo DMG universal, copiar Obituary.app para Aplicativos
 
 ## A pequena janela
 
-`obit-gui.exe` tem cinco páginas: Upcoming, Graveyard, Decisions, Settings e Logs. A entrada “Obituary” no menu Iniciar, o atalho da área de trabalho e “Open Obituary” na bandeja abrem a mesma janela.
+`obit-gui.exe` tem cinco páginas: Expiring, Graveyard, For you, Settings e Logs. A entrada “Obituary” no menu Iniciar, o atalho da área de trabalho e “Open Obituary” na bandeja abrem a mesma janela.
 
-- A barra superior da página inicial mostra “Auto registration: off” ou “on”. Clique nela para abrir as configurações. No topo de Decisions ou em Settings você pode desativar o registro (padrão: só entra o que você e o agente registram), usar o modo em camadas, deixar tudo automático ou perguntar sempre. Veja [O que é registrado](./auto-register). A seção “Handled automatically”, mais abaixo, lista os itens registrados sem perguntar. Um clique desfaz o registro (a contagem para e o item fica no lugar) ou estende a vida útil.
-- Se um item expirar e não puder ser enterrado, por exemplo porque outro programa mantém o arquivo aberto, ele aparecerá em “Burials that failed” na página Decisions, com o motivo e a hora da próxima tentativa. O Obituary aumenta o intervalo entre as tentativas. Depois de repetidas falhas, ele espera sua decisão: “Retry” tenta de novo agora; “Stop tracking” encerra o acompanhamento e deixa o item no lugar.
+- A barra superior da página inicial mostra “Auto registration: off” ou “on”. Clique nela para abrir as configurações. No topo de For you ou em Settings você pode desativar o registro (padrão: só entra o que você e o agente registram), usar o modo em camadas, deixar tudo automático ou perguntar sempre. Veja [O que é registrado](./auto-register). A seção “Handled automatically”, mais abaixo, lista os itens registrados sem perguntar. Um clique desfaz o registro (a contagem para e o item fica no lugar) ou estende a vida útil.
+- Se um item expirar e não puder ser enterrado, por exemplo porque outro programa mantém o arquivo aberto, ele aparecerá em “Burials that failed” na página For you, com o motivo e a hora da próxima tentativa. O Obituary aumenta o intervalo entre as tentativas. Depois de repetidas falhas, ele espera sua decisão: “Retry” tenta de novo agora; “Stop tracking” encerra o acompanhamento e deixa o item no lugar.
 - Com o Docker parado, o botão de aprovação de uma proposta de contêiner fica indisponível. O cartão explica o motivo. Você poderá aprovar quando o Docker iniciar.
 - Ao confiar em um arquivo `.obitrules`, você aprova exatamente a versão mostrada na janela.
 - A janela, a bandeja e o menu de contexto seguem `[ui] language` em `config.toml` (`auto`, `zh-CN` ou `en`; `auto` usa o idioma do Windows). Você também pode alterar o idioma nas configurações.
@@ -80,6 +114,6 @@ O macOS e o Linux ainda não têm menu de contexto. Use `obit mark <path> 7d` pa
 | Atalho da área de trabalho | “Obituary” na área de trabalho. |
 | Menu de contexto | Entrada “Add to Obituary” no Explorador de Arquivos. |
 
-Para omitir esses itens na instalação, use `obit init --no-context-menu` para o menu de contexto e `--no-shortcuts` para os atalhos do menu Iniciar e da área de trabalho.
+Se você não os quiser na instalação, acrescente `obit init --no-context-menu` para omitir o menu de contexto ou `--no-shortcuts` para omitir os atalhos do menu Iniciar e da área de trabalho. As mesmas opções valem na desinstalação: `obit init --uninstall --no-shortcuts` mantém os atalhos existentes e remove o restante como de costume, e `--no-context-menu` faz o mesmo com o menu de contexto.
 
 Veja [Políticas de pastas](./folder-policies#dates-in-explorer) para saber como as datas de enterro aparecem no Explorador.

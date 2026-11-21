@@ -32,10 +32,17 @@ func (p *plan) printData(out io.Writer, purge bool) {
 	}
 }
 
-func (p *plan) purgeData(out io.Writer) error {
+func (p *plan) preflightData(out io.Writer) error {
 	if len(p.pending) != 0 {
 		return errors.New("data retained: pending graveyard recovery requires attention before --purge-data")
 	}
+	if err := p.cleanMetadata(false); err != nil {
+		return err
+	}
+	return p.purgeGraves(out, true)
+}
+
+func (p *plan) purgeGraves(out io.Writer, preview bool) error {
 	st, err := p.svc.Store.Inspect()
 	if err != nil {
 		return err
@@ -48,8 +55,11 @@ func (p *plan) purgeData(out io.Writer) error {
 		refs = append(refs, fmt.Sprint(b.ID))
 	}
 	if len(refs) > 0 {
-		results, err := p.svc.PurgeRefs(refs, false)
+		results, err := p.svc.PurgeRefs(refs, preview)
 		for _, r := range results {
+			if preview && r.Error == "" {
+				continue
+			}
 			fmt.Fprintf(out, "  %s %s %s\n", r.Ref, r.Action, r.Detail)
 			if r.Error != "" {
 				fmt.Fprintln(out, "    error:", r.Error)
@@ -62,10 +72,23 @@ func (p *plan) purgeData(out io.Writer) error {
 			return errors.Join(err, cmdutil.ErrReported)
 		}
 	}
+	return nil
+}
+
+func (p *plan) purgeData(out io.Writer) error {
+	// Stopping services and removing integrations can change the data directory.
+	if len(p.state.Burials) > 0 {
+		if err := p.cleanMetadata(false); err != nil {
+			return err
+		}
+	}
+	if err := p.purgeGraves(out, false); err != nil {
+		return err
+	}
 	if err := p.requireEmptyGraveyard(); err != nil {
 		return err
 	}
-	if err := removeMetadata(p.svc.Store.Home); err != nil {
+	if err := p.cleanMetadata(true); err != nil {
 		return err
 	}
 	fmt.Fprintln(out, "Removed owned data:", p.svc.Store.Home)
@@ -105,7 +128,8 @@ var metadataNames = []string{
 
 // os.Root supplies handle-relative operations on Windows (Go 1.26). Unknown
 // files, links, and nonempty subdirectories keep the ledger intact for review.
-func removeMetadata(home string) error {
+func (p *plan) cleanMetadata(remove bool) error {
+	home := p.svc.Store.Home
 	info, err := os.Lstat(home)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil
@@ -130,7 +154,11 @@ func removeMetadata(home string) error {
 	if err != nil || !os.SameFile(info, opened) {
 		return errors.Join(err, errors.New("data directory changed before cleanup"))
 	}
-	if err := removeMetadataEntries(root); err != nil {
+	entries, keepConfig, err := p.metadataEntries(root, opened, remove)
+	if err != nil || !remove {
+		return err
+	}
+	if err := removeMetadataEntries(root, entries); err != nil {
 		return err
 	}
 	current, err := parent.Lstat(filepath.Base(home))
@@ -140,27 +168,51 @@ func removeMetadata(home string) error {
 	if !os.SameFile(info, current) {
 		return errors.New("data directory changed during cleanup")
 	}
+	if keepConfig {
+		return nil
+	}
 	return parent.Remove(filepath.Base(home)) // empty directory only
 }
 
-func removeMetadataEntries(root *os.Root) error {
-	if err := core.VerifyDataOwner(root); err != nil {
-		return err
-	}
+func (p *plan) metadataEntries(root *os.Root, home os.FileInfo, remove bool) ([]os.DirEntry, bool, error) {
 	dir, err := root.Open(".")
 	if err != nil {
-		return err
+		return nil, false, err
 	}
 	entries, err := dir.ReadDir(-1)
 	dir.Close()
 	if err != nil {
-		return err
+		return nil, false, err
+	}
+	var keepConfig bool
+	if cfg, err := os.Stat(p.config); err == nil && os.SameFile(home, cfg) {
+		entries = slices.DeleteFunc(entries, func(e os.DirEntry) bool {
+			if e.Name() == "config.toml" && e.Type().IsRegular() {
+				keepConfig = true
+				return true
+			}
+			return false
+		})
+	}
+	if len(entries) == 0 && keepConfig {
+		return nil, true, nil // A repeated uninstall has nothing left to remove.
+	}
+	if err := core.VerifyDataOwner(root); err != nil {
+		return nil, false, err
+	}
+	var burials []core.Burial
+	if !remove {
+		burials = p.state.Burials
 	}
 	for _, entry := range entries {
-		if err := checkMetadata(root, entry.Name()); err != nil {
-			return err
+		if err := checkMetadata(root, entry.Name(), burials); err != nil {
+			return nil, false, err
 		}
 	}
+	return entries, keepConfig, nil
+}
+
+func removeMetadataEntries(root *os.Root, entries []os.DirEntry) error {
 	for _, entry := range entries {
 		if entry.Name() == "sessions" {
 			if err := removeSessions(root); err != nil {
@@ -179,7 +231,7 @@ func removeMetadataEntries(root *os.Root) error {
 	return nil
 }
 
-func checkMetadata(root *os.Root, name string) error {
+func checkMetadata(root *os.Root, name string, burials []core.Burial) error {
 	info, err := root.Lstat(name)
 	if err != nil {
 		return err
@@ -193,20 +245,41 @@ func checkMetadata(root *os.Root, name string) error {
 		return err
 	}
 	if info.IsDir() && name == "graveyard" {
-		dir, err := root.Open(name)
-		if err != nil {
-			return err
-		}
-		defer dir.Close()
-		names, err := dir.Readdirnames(-1)
-		if err == nil && len(names) == 0 {
-			return nil
-		}
+		return checkLocalGraves(root, burials)
 	}
 	if info.Mode().IsRegular() && (slices.Contains(metadataNames, name) || core.OwnedLedgerFile(root, name)) {
 		return nil
 	}
 	return fmt.Errorf("data retained: unknown file, link or nonempty directory %s", filepath.Join(root.Name(), name))
+}
+
+// Core verifies each listed grave and its manifest. Anything else in this
+// directory would prevent its final empty-directory removal after the purge.
+func checkLocalGraves(root *os.Root, burials []core.Burial) error {
+	dir, err := root.Open("graveyard")
+	if err != nil {
+		return err
+	}
+	defer dir.Close()
+	entries, err := dir.ReadDir(-1)
+	if err != nil {
+		return err
+	}
+	known := make(map[string]bool, len(burials))
+	for _, b := range burials {
+		if b.Kind != core.KindContainer {
+			grave := filepath.Dir(b.Grave)
+			known[grave] = true
+			known[grave+".json"] = true
+		}
+	}
+	for _, entry := range entries {
+		path := filepath.Join(root.Name(), "graveyard", entry.Name())
+		if !known[path] {
+			return fmt.Errorf("data retained: unknown graveyard entry %s", path)
+		}
+	}
+	return nil
 }
 
 const registryLocks = "registry-locks"

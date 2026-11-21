@@ -4,6 +4,8 @@
 
 - 修复：Windows 本地盘上名叫 `NUL`、`con.txt`、`COM1` 等的文件可以正常登记、下葬、复活和火化；`obit rm ./NUL` 只处理当前目录的真实文件，不访问同名设备。
 - Fix: files named `NUL`, `con.txt`, `COM1`, and other DOS-reserved names on local Windows drives can be marked, buried, restored, and purged. `obit rm ./NUL` addresses the file in the current directory, never the device.
+- `obit uninstall --purge-data` 会先检查墓地和数据目录，遇到未知文件不会先删掉坟墓。macOS 默认与账本同目录的 `config.toml` 留在原处，不必移走。`obit init --uninstall` 会保留 `--no-context-menu`、`--no-shortcuts` 或 `--no-skill` 指定跳过的项目。
+- `obit uninstall --purge-data` now checks the graveyard and data directory before purging any graves. It keeps `config.toml` in place even when it shares the ledger directory, as on macOS. `obit init --uninstall` leaves components selected with `--no-context-menu`, `--no-shortcuts` or `--no-skill` untouched.
 
 - 手动解压的版本也能在「关于与更新」里一键升级，按钮是「下载并重启更新」；终端里用 `obit update --apply`。讣告先从 GitHub 下载（不通就改用国内镜像），核对 SHA-256 之后才关闭窗口，只替换自己的程序（`obit`、`obitd`、`obit-gui`），文件夹里的其他文件一概不动；旧程序留一天后进墓地，仍可复活，任何一步失败都会整体回滚。运行的是开发版、文件夹里缺程序或需要管理员权限时，页面会写明是哪一条不满足。
 - A copy you unpacked yourself can now update from About and updates with one button, "Download and restart to update", or with `obit update --apply`. Obituary downloads from GitHub (from the mirror in mainland China when GitHub does not answer), checks the SHA-256, and only then closes the window and replaces its own programs (`obit`, `obitd`, `obit-gui`); every other file in the folder stays as it is. The previous programs wait for a day before going to the graveyard, where they can be resurrected, and any failed step rolls everything back. When it cannot update itself (a development build, a missing program, a folder that needs administrator rights), the page says which condition fails.

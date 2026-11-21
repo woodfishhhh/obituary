@@ -2,19 +2,53 @@
 
 Dateien wiederbeleben, Vorschläge genehmigen und Einstellungen ändern geht auch ohne Kommandozeile.
 
+## Was jede der drei Plattformen bietet
+
+Fenster, Infobereichs-Symbol und Desktop-Benachrichtigungen gibt es unter Windows, macOS und Ubuntu 24.04; das Kontextmenü, die Datumsmarkierungen im Explorer und der Papierkorbmodus existieren nur unter Windows. Die Desktop-Ausgaben für macOS und Ubuntu sind vorerst Vorabversionen. Andere Linux-Distributionen haben keine Desktop-Ausgabe und nutzen die Befehlszeile.
+
+| | Windows | macOS | Ubuntu 24.04 |
+| --- | --- | --- | --- |
+| Fenster | `obit-gui.exe`, nur x64 | `Obituary.app`, universell für Intel und Apple Silicon | ein `.deb`-Paket, nur amd64 |
+| Symbol | Infobereich | Menüleiste | Symbol im Infobereich; braucht einen Desktop mit StatusNotifierItem |
+| Symbol bei der Anmeldung | nach `obit init` standardmäßig an | Schalter in den Settings | Schalter in den Settings |
+| Prüfung auf Abgelaufenes | residenter Prozess des Symbols, Aufgabenplanung als Rückfall | launchd-Benutzeragent, alle 5 Minuten | systemd-Benutzer-Timer, alle 5 Minuten |
+| Desktop-Benachrichtigungen | ja | ja | ja |
+| Kontextmenü | im Explorer | nein | nein |
+| Datumsmarkierungen im Explorer | ja | nein | nein |
+| Papierkorbmodus | ja | nein, nur Friedhof | nein, nur Friedhof |
+| Installiert mit | dem Installationsskript, Scoop, winget oder dem Archiv | dem DMG | dem `.deb` |
+| Erster Start | ein von Hand heruntergeladenes Archiv kann eine SmartScreen-Warnung auslösen | braucht eine manuelle Freigabe, siehe [unten](#erste-offnung-einer-unsignierten-app) | öffnet sich direkt |
+| Voraussetzungen | die WebView2-Runtime | 1.6.0 braucht macOS 26 (behoben in 1.6.1) | GTK 3 und WebKitGTK 4.1, von apt installiert |
+
 ## Kleines Fenster und Menüsymbol unter macOS
 
-Lade den universellen macOS-DMG und die Checksums-Datei aus derselben Veröffentlichung herunter. Prüfe die SHA-256-Summe, öffne das DMG und ziehe Obituary.app nach Programme oder in den Applications-Ordner des Benutzers; wirf das DMG aus, bevor du den Start bei der Anmeldung aktivierst.
+Lade das universelle DMG (`obituary_<Version>_darwin_universal.dmg`) und `checksums.txt` von der Release-Seite herunter, prüfe den SHA-256, öffne das DMG, ziehe Obituary.app in „Programme“, wirf das DMG aus und öffne die App aus „Programme“. Ziehe sie zuerst heraus, weil der Autostart-Eintrag bei der Anmeldung festhält, wo die App liegt, und eine direkt aus dem DMG gestartete App nach dem Auswerfen dort nicht mehr ist.
 
-Die App enthält das kleine Wails-Fenster, das Menüsymbol sowie die Hilfsprogramme obit und obitd. Der Launchd-Benutzeragent für die Prüfung alle fünf Minuten bleibt ein unabhängiger Fallback. Aktiviere in den Einstellungen den Tray-Start bei der Anmeldung, um den eigenen LaunchAgent zu installieren; beim Deaktivieren wird nur dieser Eintrag entfernt.
+Die App enthält das Fenster, das Menüsymbol und die dazugehörigen Programme `obit` und `obitd`. Um das Ablaufen kümmert sich ein eigener launchd-Benutzeragent, der alle 5 Minuten läuft; du installierst ihn mit `obit daemon enable`, und das Schließen des Fensters oder des Menüsymbols berührt ihn nicht. Schaltest du in den Settings des Fensters „Start the tray at sign-in“ ein, wird der eigene Benutzer-LaunchAgent von Obituary installiert, damit das Menüsymbol bei der Anmeldung erscheint; schaltest du es aus, wird nur dieser Eintrag entfernt.
+
+Wenn du `Obituary.app` entfernst, bleiben deine Daten standardmäßig unter `~/Library/Application Support/obituary/`: das Register in `store.json`, die Einstellungen in `config.toml` und die auf diesem Volume begrabenen Dateien in `graveyard/`.
 
 ### Erste Öffnung einer unsignierten App
 
-Diese Veröffentlichung ist nicht mit Developer ID signiert und nicht notarisiert. Prüfe Quelle und SHA-256 und öffne die App einmal. Wenn macOS den Entwickler nicht verifizieren kann, öffne « Systemeinstellungen → Datenschutz & Sicherheit », wähle für Obituary « Trotzdem öffnen », bestätige und versuche es erneut. Deaktiviere Gatekeeper nicht global und entferne die Quarantäne nicht rekursiv. Bei Meldungen über Beschädigung, Malware oder eine Organisationsrichtlinie brich ab.
+Das Release hat keine Developer-ID-Signatur und ist nicht notarisiert, daher hält macOS es beim ersten Mal an. Stelle sicher, dass der Download von einer vertrauenswürdigen Release-Seite stammt, prüfe den SHA-256 und öffne die App dann einmal ganz normal. Sagt das System, es könne den Entwickler nicht überprüfen, öffne Systemeinstellungen, dann Datenschutz & Sicherheit, suche unten auf der Seite Obituary, wähle „Trotzdem öffnen“, bestätige noch einmal und öffne die App erneut. Schalte Gatekeeper dafür nicht global aus und entferne das Quarantäne-Attribut nicht rekursiv. Meldet das System, die App sei beschädigt oder enthalte Schadsoftware, oder verbietet eine Unternehmensrichtlinie das Öffnen, höre hier auf.
 
-### Vorschlag für Homebrew Cask
+### 1.6.0 braucht macOS 26
 
-Das Cask soll dasselbe universelle DMG installieren, Obituary.app nach Programme kopieren und obit sowie obitd aus dem App-Bundle verfügbar machen. Bis eine stabile DMG-URL und ein geprüfter Deinstallationsbeleg vorhanden sind, bleibt es vom bestehenden CLI-Cask getrennt.
+Das macOS-Fenster in 1.6.0 braucht macOS 26. Unter macOS 15 und früher meldet das System, die App sei mit dieser Version nicht kompatibel, und sie öffnet sich nicht. In 1.6.1 ist das behoben.
+
+## Ubuntu 24.04 (amd64)
+
+Lade das Desktop-Paket `obituary_<Version>_linux_amd64.deb` und `checksums.txt` von der Release-Seite herunter. Führe im Download-Verzeichnis die folgenden Befehle aus und ersetze `VERSION` durch die heruntergeladene Version; das Paket wird nur installiert, wenn die Prüfung gelingt:
+
+```bash
+file=obituary_VERSION_linux_amd64.deb
+grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt install "./$file"
+```
+
+Öffne danach Obituary aus der Anwendungsliste. Das Fenster nutzt GTK 3 und WebKitGTK 4.1, und apt installiert beides mit dem Paket. Die Programme liegen in `/usr/libexec/obituary/`, das nicht in deinem PATH steht; um `obit` im Terminal zu nutzen, installiere die Befehlszeile gesondert mit dem Installationsskript.
+
+Das Symbol im Infobereich braucht einen Desktop, der StatusNotifierItem bereitstellt, und GNOME tut das standardmäßig nicht. Dort öffnest du dasselbe Fenster aus der Anwendungsliste, ohne Erweiterung, aber es gibt kein Symbol. Damit das Symbol bei deiner nächsten Anmeldung erscheint, schalte in den Settings „Start the tray at sign-in“ ein; schaltest du es aus, wird der Autostart-Eintrag gelöscht, den Obituary geschrieben hat. Zum Deinstallieren siehe [Deinstallation](./uninstall).
+
 ## Das Symbol im Infobereich
 
 `obit init` richtet ein Symbol im Infobereich ein, das bei der Anmeldung erscheint. Sein Menü bietet:
@@ -27,10 +61,10 @@ Das Cask soll dasselbe universelle DMG installieren, Obituary.app nach Programme
 
 ## Das kleine Fenster
 
-`obit-gui.exe` hat fünf Seiten: Upcoming, Graveyard, Decisions, Settings und Logs. Du öffnest das Fenster über „Obituary“ im Startmenü, die Desktop-Verknüpfung oder „Open Obituary“ im Tray-Menü.
+`obit-gui.exe` hat fünf Seiten: Expiring, Graveyard, For you, Settings und Logs. Du öffnest das Fenster über „Obituary“ im Startmenü, die Desktop-Verknüpfung oder „Open Obituary“ im Tray-Menü.
 
-- Die obere Leiste der Startseite zeigt „Auto registration: off“ oder „on“. Ein Klick öffnet die Einstellungen. Oben auf Decisions und unter Settings kannst du zwischen aus (Standard: nur du und der Agent registrieren), abgestuft, vollautomatisch und immer nachfragen wählen; siehe [Was registriert wird](./auto-register). Weiter unten stehen unter „Handled automatically“ die ohne Rückfrage registrierten Einträge. Je Eintrag kannst du die Registrierung mit einem Klick rückgängig machen (die Frist endet, der Eintrag bleibt an Ort und Stelle) oder die Lebensdauer verlängern.
-- Fällige Einträge, die nicht begraben werden konnten, etwa weil ein Programm die Datei offen hält, erscheinen unter „Burials that failed“ auf Decisions. Dort stehen Grund und nächster Versuch. Die Wartezeit zwischen den Versuchen wächst. Nach wiederholten Fehlern wartet Obituary auf dich: „Retry“ versucht es sofort erneut, „Stop tracking“ lässt den Eintrag an seinem Platz und beendet die Überwachung.
+- Die obere Leiste der Startseite zeigt „Auto registration: off“ oder „on“. Ein Klick öffnet die Einstellungen. Oben auf For you und unter Settings kannst du zwischen aus (Standard: nur du und der Agent registrieren), abgestuft, vollautomatisch und immer nachfragen wählen; siehe [Was registriert wird](./auto-register). Weiter unten stehen unter „Handled automatically“ die ohne Rückfrage registrierten Einträge. Je Eintrag kannst du die Registrierung mit einem Klick rückgängig machen (die Frist endet, der Eintrag bleibt an Ort und Stelle) oder die Lebensdauer verlängern.
+- Fällige Einträge, die nicht begraben werden konnten, etwa weil ein Programm die Datei offen hält, erscheinen unter „Burials that failed“ auf For you. Dort stehen Grund und nächster Versuch. Die Wartezeit zwischen den Versuchen wächst. Nach wiederholten Fehlern wartet Obituary auf dich: „Retry“ versucht es sofort erneut, „Stop tracking“ lässt den Eintrag an seinem Platz und beendet die Überwachung.
 - Läuft Docker nicht, ist „Approve“ bei Containervorschlägen nicht verfügbar. Die Karte nennt den Grund. Sobald Docker läuft, kannst du den Vorschlag genehmigen.
 - Wenn du einer `.obitrules` vertraust, gilt das nur für die im Fenster angezeigte Version.
 - Fenster, Infobereich und Kontextmenü verwenden `[ui] language` aus `config.toml` (`auto`, `zh-CN` oder `en`; `auto` übernimmt die Windows-Sprache). Du kannst die Sprache auch in den Einstellungen ändern.
@@ -80,6 +114,6 @@ Unter macOS und Linux gibt es noch kein Kontextmenü. Nutze `obit mark <path> 7d
 | Desktop-Verknüpfung | "Obituary" auf dem Desktop |
 | Kontextmenü | Das Menü „Add to Obituary“ im Explorer. |
 
-Mit `obit init --no-context-menu` lässt du das Kontextmenü bei der Installation aus, mit `--no-shortcuts` die Verknüpfungen im Startmenü und auf dem Desktop.
+Willst du sie schon bei der Installation nicht haben, gib `obit init --no-context-menu` an, um das Kontextmenü wegzulassen, oder `--no-shortcuts`, um die Verknüpfungen im Startmenü und auf dem Desktop wegzulassen. Dieselben Optionen gelten beim Deinstallieren: `obit init --uninstall --no-shortcuts` lässt die vorhandenen Verknüpfungen stehen und entfernt den Rest wie gewohnt, und `--no-context-menu` verhält sich beim Kontextmenü genauso.
 
 Wie der Explorer die Begräbnisdaten anzeigt, steht unter [Ordnerrichtlinien](./folder-policies#dates-in-explorer).

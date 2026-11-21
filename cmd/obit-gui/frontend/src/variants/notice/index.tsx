@@ -8,7 +8,7 @@ import { bytes, graveSize, noteText } from "../../format";
 import Decisions from "../../pages/Decisions";
 import Logs from "../../pages/Logs";
 import Settings from "../../pages/Settings";
-import { t } from "../../i18n";
+import { t, useTrackingHint } from "../../i18n";
 import Notices from "../../notices";
 import { pageTitle, type ShellProps } from "../../shell";
 import { extendSpans, folderOf, hm, md, nameOf, parts, remaining, sourceLabel, span, Star, pause, useGraves, useItems } from "../shared";
@@ -150,6 +150,7 @@ type Range = "" | "24h" | "7d";
 const ranges = (): [Range, string][] => [["24h", t("range.24h")], ["7d", t("range.7d")], ["", t("range.all")]];
 
 function Upcoming() {
+  const emptyHint = useTrackingHint("nt.quietAll");
   const [range, setRange] = useState<Range>("24h");
   const [lifespan, setLifespan] = useState("1d");
   const it = useItems(range);
@@ -166,7 +167,7 @@ function Upcoming() {
       />
       {it.error ? <p className="nt-error">{t("up.readError", it.error)}</p> : null}
       {it.loading && !it.data ? <Loading /> : n === 0 ? (
-        <Empty title={t("nt.quiet")} text={range ? t("nt.quietRange") : t("nt.quietAll")} />
+        <Empty title={t("nt.quiet")} text={range ? t("nt.quietRange") : emptyHint} />
       ) : (
         <table className="nt-table">
           <thead>

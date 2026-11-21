@@ -9,7 +9,7 @@ import { bytes, graveSize } from "../../format";
 import Decisions from "../../pages/Decisions";
 import Logs from "../../pages/Logs";
 import Settings from "../../pages/Settings";
-import { t } from "../../i18n";
+import { t, useTrackingHint } from "../../i18n";
 import Notices from "../../notices";
 import { pageTitle, type ShellProps } from "../../shell";
 import { calm, DAY, extendSpans, folderOf, HOUR, nameOf, parts, pause, remaining, span, Star, STAR, useGraves, useItems } from "../shared";
@@ -215,6 +215,7 @@ function Graves() {
 // ── 即将下葬 ───────────────────────────────────────────────────────────
 
 function Upcoming() {
+  const emptyHint = useTrackingHint("up.quietAll");
   const it = useItems("");
   const { cam, setCam, box, bring, aim } = useCamera();
   const [lifespan, setLifespan] = useState("1d");
@@ -228,7 +229,7 @@ function Upcoming() {
       {!it.loading || it.data ? <Tunnel stones={stones} has={it.sel.has} toggle={it.sel.toggle} fate={null} cam={cam} bring={bring} aim={aim} /> : <Scene cam={cam} />}
       <Hud title={t("head.upcoming")} deck={it.items.length ? t("tn.upDeck", it.items.length) : t("tn.upDeckEmpty")} />
       {it.error ? <p className="tn-alert">{t("up.readError", it.error)}</p> : null}
-      {it.data && !it.items.length ? <Quiet title={t("tn.empty")} text={t("up.quietAll")} /> : null}
+      {it.data && !it.items.length ? <Quiet title={t("tn.empty")} text={emptyHint} /> : null}
       <Scrubber cam={cam} setCam={setCam} />
       <Dock open={k > 0}>
         <span className="tn-dock-count">{t("tn.pickedItems", k)}</span>

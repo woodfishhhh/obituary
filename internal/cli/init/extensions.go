@@ -26,7 +26,7 @@ func ApplyUninstall(changes []integrate.Change) error {
 func (p Planner) planExtensions(changes []integrate.Change, scope integrate.Scope, agent string, uninstall bool) ([]integrate.Change, error) {
 	installer, _ := integrate.LookupAgent(agent)
 	for _, kind := range []string{"mcp", "skill"} {
-		if kind == "skill" && p.SkipSkill && !uninstall {
+		if kind == "skill" && p.SkipSkill {
 			continue
 		}
 		explicit := kind == "mcp" && scope.MCP || kind == "skill" && scope.Skill

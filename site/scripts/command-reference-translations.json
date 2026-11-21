@@ -1,0 +1,4272 @@
+{
+  "obit": {
+    "summary": {
+      "source": "Obituary (讣告), the trash bin for AI agents: give files a lifespan; when it runs out they are buried in a graveyard you can resurrect from",
+      "translations": {
+        "zh": "讣告（Obituary），AI agent 的回收站：给文件设定寿命，寿命用完就下葬进墓地，墓地里的东西可以复活",
+        "zh-TW": "訃告（Obituary），AI agent 的資源回收筒：為檔案設定壽命，壽命用盡就下葬進墓地，墓地裡的東西可以復活",
+        "ja": "Obituary (讣告)。AI エージェント向けのごみ箱で、ファイルに寿命を設定する。寿命が尽きると墓地に埋葬され、そこから復活させられる",
+        "ko": "Obituary (讣告), AI 에이전트를 위한 휴지통입니다. 파일에 수명을 지정하면 수명이 다했을 때 묘지에 매장되고, 묘지에서 부활시킬 수 있습니다",
+        "es": "Obituary (讣告), la papelera de los agentes de IA: da una vida útil a los archivos y, cuando se agota, los entierra en un cementerio del que se pueden resucitar",
+        "fr": "Obituary (讣告), la corbeille des agents IA : donne une durée de vie aux fichiers ; une fois celle-ci écoulée, ils sont enterrés dans un cimetière d’où l’on peut les ressusciter",
+        "de": "Obituary (讣告), der Papierkorb für KI-Agenten: Dateien erhalten eine Lebensdauer; ist sie abgelaufen, werden sie auf einem Friedhof begraben, von dem aus sie sich wiederbeleben lassen",
+        "pt-BR": "Obituary (讣告), a lixeira dos agentes de IA: dá uma vida útil aos arquivos e, quando ela se esgota, eles são enterrados em um cemitério de onde podem ser ressuscitados",
+        "ru": "Obituary (讣告) — корзина для ИИ-агентов: задаёт файлам срок жизни; когда он истекает, файлы хоронят на кладбище, откуда их можно воскресить"
+      }
+    },
+    "--help": {
+      "source": "help for obit",
+      "translations": {
+        "zh": "obit 的帮助",
+        "zh-TW": "obit 的說明",
+        "ja": "obit のヘルプ",
+        "ko": "obit 도움말",
+        "es": "Ayuda de obit",
+        "fr": "Aide pour obit",
+        "de": "Hilfe zu obit",
+        "pt-BR": "Ajuda de obit",
+        "ru": "Справка по obit"
+      }
+    },
+    "--version": {
+      "source": "version for obit",
+      "translations": {
+        "zh": "obit 的版本信息",
+        "zh-TW": "obit 的版本資訊",
+        "ja": "obit のバージョン情報",
+        "ko": "obit 버전 정보",
+        "es": "Versión de obit",
+        "fr": "Version d’obit",
+        "de": "Version von obit",
+        "pt-BR": "Versão do obit",
+        "ru": "Версия obit"
+      }
+    }
+  },
+  "obit add": {
+    "summary": {
+      "source": "Give paths a lifespan (re-adding a tracked path resets its expiry)",
+      "translations": {
+        "zh": "给路径设定寿命（对已跟踪的路径再次登记，会重置它的到期时间）",
+        "zh-TW": "為路徑設定壽命（對已追蹤的路徑再次登記，會重設它的到期時間）",
+        "ja": "パスに寿命を設定する（追跡中のパスを再登録すると期限がリセットされる）",
+        "ko": "경로에 수명을 지정합니다(이미 추적 중인 경로를 다시 등록하면 만료 시각이 초기화됩니다)",
+        "es": "Asignar una vida útil a rutas (si se vuelve a registrar una ruta con seguimiento, se reinicia su caducidad)",
+        "fr": "Donner une durée de vie à des chemins (réenregistrer un chemin suivi réinitialise son échéance)",
+        "de": "Pfaden eine Lebensdauer geben (erneutes Hinzufügen eines verfolgten Pfads setzt dessen Ablauf zurück)",
+        "pt-BR": "Dar uma vida útil a caminhos (registrar de novo um caminho acompanhado reinicia o vencimento)",
+        "ru": "Задать путям срок жизни (повторная регистрация отслеживаемого пути сбрасывает срок его истечения)"
+      }
+    },
+    "--at": {
+      "source": "expire at a local time: \"2006-01-02 15:04\", \"2006-01-02\" or \"15:04\"",
+      "translations": {
+        "zh": "在指定的本地时间到期：\"2006-01-02 15:04\"、\"2006-01-02\" 或 \"15:04\"",
+        "zh-TW": "在指定的本機時間到期：\"2006-01-02 15:04\"、\"2006-01-02\" 或 \"15:04\"",
+        "ja": "指定したローカル時刻に期限切れにする：\"2006-01-02 15:04\"、\"2006-01-02\"、\"15:04\" のいずれか",
+        "ko": "지정한 현지 시각에 만료됩니다: \"2006-01-02 15:04\", \"2006-01-02\" 또는 \"15:04\"",
+        "es": "Caducar en una hora local concreta: \"2006-01-02 15:04\", \"2006-01-02\" o \"15:04\"",
+        "fr": "Expirer à une heure locale donnée : \"2006-01-02 15:04\", \"2006-01-02\" ou \"15:04\"",
+        "de": "Zu einer bestimmten lokalen Zeit ablaufen: \"2006-01-02 15:04\", \"2006-01-02\" oder \"15:04\"",
+        "pt-BR": "Expirar em um horário local: \"2006-01-02 15:04\", \"2006-01-02\" ou \"15:04\"",
+        "ru": "Задать местное время истечения срока: \"2006-01-02 15:04\", \"2006-01-02\" или \"15:04\""
+      }
+    },
+    "--force": {
+      "source": "allow folders that contain a .git repository",
+      "translations": {
+        "zh": "允许处理含有 .git 仓库的文件夹",
+        "zh-TW": "允許處理含有 .git 儲存庫的資料夾",
+        "ja": ".git リポジトリを含むフォルダーを許可する",
+        "ko": ".git 저장소가 들어 있는 폴더를 허용합니다",
+        "es": "Permitir carpetas que contienen un repositorio .git",
+        "fr": "Autoriser les dossiers qui contiennent un dépôt .git",
+        "de": "Ordner zulassen, die ein .git-Repository enthalten",
+        "pt-BR": "Permitir pastas que contêm um repositório .git",
+        "ru": "Разрешить папки, содержащие репозиторий .git"
+      }
+    },
+    "--help": {
+      "source": "help for add",
+      "translations": {
+        "zh": "add 的帮助",
+        "zh-TW": "add 的說明",
+        "ja": "add のヘルプ",
+        "ko": "add 도움말",
+        "es": "Ayuda de add",
+        "fr": "Aide pour add",
+        "de": "Hilfe zu add",
+        "pt-BR": "Ajuda de add",
+        "ru": "Справка по add"
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": "输出 JSON",
+        "zh-TW": "輸出 JSON",
+        "ja": "JSON を出力する",
+        "ko": "JSON으로 출력합니다",
+        "es": "Imprimir JSON",
+        "fr": "Afficher le JSON",
+        "de": "JSON ausgeben",
+        "pt-BR": "Exibir JSON",
+        "ru": "Вывести JSON"
+      }
+    },
+    "--no-daemon": {
+      "source": "do not start the background daemon",
+      "translations": {
+        "zh": "不启动后台进程",
+        "zh-TW": "不啟動背景程式",
+        "ja": "バックグラウンドのデーモンを起動しない",
+        "ko": "백그라운드 데몬을 시작하지 않습니다",
+        "es": "No iniciar el demonio en segundo plano",
+        "fr": "Ne pas démarrer le démon en arrière-plan",
+        "de": "Den Daemon im Hintergrund nicht starten",
+        "pt-BR": "Não iniciar o daemon em segundo plano",
+        "ru": "Не запускать фоновый процесс"
+      }
+    },
+    "--note": {
+      "source": "free-text note shown in the list",
+      "translations": {
+        "zh": "自由文本备注，显示在列表中",
+        "zh-TW": "自由文字備註，顯示在清單中",
+        "ja": "一覧に表示する自由記述のメモ",
+        "ko": "목록에 표시되는 자유 형식 메모",
+        "es": "Nota de texto libre que se muestra en la lista",
+        "fr": "Note libre affichée dans la liste",
+        "de": "Freitextnotiz, die in der Liste angezeigt wird",
+        "pt-BR": "Nota de texto livre exibida na lista",
+        "ru": "Произвольная заметка, которая показывается в списке"
+      }
+    }
+  },
+  "obit approve": {
+    "summary": {
+      "source": "Approve proposals: register what they list",
+      "translations": {
+        "zh": "批准提议：登记提议里列出的内容",
+        "zh-TW": "核准提議：登記提議中列出的項目",
+        "ja": "提案を承認する：提案に載っている項目を登録する",
+        "ko": "제안을 승인합니다: 제안에 나열된 항목을 등록합니다",
+        "es": "Aprobar propuestas: registrar lo que enumeran",
+        "fr": "Approuver des propositions : enregistrer ce qu’elles listent",
+        "de": "Vorschläge genehmigen: registrieren, was sie auflisten",
+        "pt-BR": "Aprovar propostas: registrar o que elas listam",
+        "ru": "Одобрить предложения: зарегистрировать то, что в них перечислено"
+      }
+    },
+    "--help": {
+      "source": "help for approve",
+      "translations": {
+        "zh": "approve 的帮助",
+        "zh-TW": "approve 的說明",
+        "ja": "approve のヘルプ",
+        "ko": "approve 도움말",
+        "es": "Ayuda de approve",
+        "fr": "Aide pour approve",
+        "de": "Hilfe zu approve",
+        "pt-BR": "Ajuda de approve",
+        "ru": "Справка по approve"
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": "输出 JSON",
+        "zh-TW": "輸出 JSON",
+        "ja": "JSON を出力する",
+        "ko": "JSON으로 출력합니다",
+        "es": "Imprimir JSON",
+        "fr": "Afficher le JSON",
+        "de": "JSON ausgeben",
+        "pt-BR": "Exibir JSON",
+        "ru": "Вывести JSON"
+      }
+    }
+  },
+  "obit bury": {
+    "summary": {
+      "source": "Move paths into the graveyard now (restore with obit resurrect)",
+      "translations": {
+        "zh": "立刻把路径移入墓地（用 obit resurrect 恢复）",
+        "zh-TW": "立刻把路徑移入墓地（可用 obit resurrect 還原）",
+        "ja": "パスをすぐに墓地へ移す（obit resurrect で復元できる）",
+        "ko": "경로를 지금 바로 묘지로 옮깁니다(obit resurrect로 복원)",
+        "es": "Mover rutas al cementerio ahora (se restauran con obit resurrect)",
+        "fr": "Déplacer des chemins vers le cimetière maintenant (restauration avec obit resurrect)",
+        "de": "Pfade sofort auf den Friedhof verschieben (Wiederherstellung mit obit resurrect)",
+        "pt-BR": "Mover caminhos para o cemitério agora (restaure com obit resurrect)",
+        "ru": "Переместить пути на кладбище сейчас (восстановление — obit resurrect)"
+      }
+    },
+    "--force": {
+      "source": "allow folders that contain a .git repository",
+      "translations": {
+        "zh": "允许处理含有 .git 仓库的文件夹",
+        "zh-TW": "允許處理含有 .git 儲存庫的資料夾",
+        "ja": ".git リポジトリを含むフォルダーを許可する",
+        "ko": ".git 저장소가 들어 있는 폴더를 허용합니다",
+        "es": "Permitir carpetas que contienen un repositorio .git",
+        "fr": "Autoriser les dossiers qui contiennent un dépôt .git",
+        "de": "Ordner zulassen, die ein .git-Repository enthalten",
+        "pt-BR": "Permitir pastas que contêm um repositório .git",
+        "ru": "Разрешить папки, содержащие репозиторий .git"
+      }
+    },
+    "--help": {
+      "source": "help for bury",
+      "translations": {
+        "zh": "bury 的帮助",
+        "zh-TW": "bury 的說明",
+        "ja": "bury のヘルプ",
+        "ko": "bury 도움말",
+        "es": "Ayuda de bury",
+        "fr": "Aide pour bury",
+        "de": "Hilfe zu bury",
+        "pt-BR": "Ajuda de bury",
+        "ru": "Справка по bury"
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": "输出 JSON",
+        "zh-TW": "輸出 JSON",
+        "ja": "JSON を出力する",
+        "ko": "JSON으로 출력합니다",
+        "es": "Imprimir JSON",
+        "fr": "Afficher le JSON",
+        "de": "JSON ausgeben",
+        "pt-BR": "Exibir JSON",
+        "ru": "Вывести JSON"
+      }
+    },
+    "--note": {
+      "source": "free-text note kept with the burial",
+      "translations": {
+        "zh": "随这次下葬一并保存的自由文本备注",
+        "zh-TW": "隨這次下葬一併保存的自由文字備註",
+        "ja": "埋葬に添えて保存する自由記述のメモ",
+        "ko": "매장과 함께 보관되는 자유 형식 메모",
+        "es": "Nota de texto libre que se guarda con el entierro",
+        "fr": "Note libre conservée avec l’enterrement",
+        "de": "Freitextnotiz, die zusammen mit dem Begräbnis gespeichert wird",
+        "pt-BR": "Nota de texto livre guardada junto com o enterro",
+        "ru": "Произвольная заметка, которая хранится вместе с захоронением"
+      }
+    }
+  },
+  "obit cancel": {
+    "summary": {
+      "source": "Spare paths or container IDs: stop tracking them and keep the objects",
+      "translations": {
+        "zh": "饶过路径或容器 ID：不再跟踪，对象原样保留",
+        "zh-TW": "放過路徑或容器 ID：停止追蹤，物件原樣保留",
+        "ja": "パスまたはコンテナ ID を助命する：追跡をやめ、対象はそのまま残す",
+        "ko": "경로나 컨테이너 ID를 살려 줍니다: 추적을 멈추고 대상은 그대로 둡니다",
+        "es": "Perdonar rutas o ID de contenedores: dejar de hacerles seguimiento y conservar los objetos",
+        "fr": "Épargner des chemins ou des ID de conteneur : arrêter leur suivi et conserver les objets",
+        "de": "Pfade oder Container-IDs verschonen: die Verfolgung beenden und die Objekte behalten",
+        "pt-BR": "Poupar caminhos ou IDs de contêiner: parar de acompanhá-los e manter os objetos",
+        "ru": "Пощадить пути или ID контейнеров: прекратить их отслеживание и оставить объекты как есть"
+      }
+    },
+    "--help": {
+      "source": "help for cancel",
+      "translations": {
+        "zh": "cancel 的帮助",
+        "zh-TW": "cancel 的說明",
+        "ja": "cancel のヘルプ",
+        "ko": "cancel 도움말",
+        "es": "Ayuda de cancel",
+        "fr": "Aide pour cancel",
+        "de": "Hilfe zu cancel",
+        "pt-BR": "Ajuda de cancel",
+        "ru": "Справка по cancel"
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": "输出 JSON",
+        "zh-TW": "輸出 JSON",
+        "ja": "JSON を出力する",
+        "ko": "JSON으로 출력합니다",
+        "es": "Imprimir JSON",
+        "fr": "Afficher le JSON",
+        "de": "JSON ausgeben",
+        "pt-BR": "Exibir JSON",
+        "ru": "Вывести JSON"
+      }
+    }
+  },
+  "obit completion": {
+    "summary": {
+      "source": "Generate the autocompletion script for obit for the specified shell.",
+      "translations": {
+        "zh": "为指定的 shell 生成 obit 的自动补全脚本。",
+        "zh-TW": "為指定的 shell 產生 obit 的自動完成指令碼。",
+        "ja": "指定したシェル用の obit のオートコンプリートスクリプトを生成する。",
+        "ko": "지정한 셸용 obit 자동 완성 스크립트를 생성합니다.",
+        "es": "Generar el script de autocompletado de obit para el shell indicado.",
+        "fr": "Générer le script d’autocomplétion d’obit pour le shell indiqué.",
+        "de": "Das Autovervollständigungsskript von obit für die angegebene Shell erzeugen.",
+        "pt-BR": "Gerar o script de autocompletar do obit para o shell indicado.",
+        "ru": "Создать скрипт автодополнения obit для указанной оболочки."
+      }
+    },
+    "--help": {
+      "source": "help for completion",
+      "translations": {
+        "zh": "completion 的帮助",
+        "zh-TW": "completion 的說明",
+        "ja": "completion のヘルプ",
+        "ko": "completion 도움말",
+        "es": "Ayuda de completion",
+        "fr": "Aide pour completion",
+        "de": "Hilfe zu completion",
+        "pt-BR": "Ajuda de completion",
+        "ru": "Справка по completion"
+      }
+    }
+  },
+  "obit completion bash": {
+    "summary": {
+      "source": "Generate the autocompletion script for the bash shell.",
+      "translations": {
+        "zh": "为 bash shell 生成自动补全脚本。",
+        "zh-TW": "為 bash shell 產生自動完成指令碼。",
+        "ja": "bash シェル用のオートコンプリートスクリプトを生成する。",
+        "ko": "bash 셸용 자동 완성 스크립트를 생성합니다.",
+        "es": "Generar el script de autocompletado para el shell bash.",
+        "fr": "Générer le script d’autocomplétion pour le shell bash.",
+        "de": "Das Autovervollständigungsskript für die Bash-Shell erzeugen.",
+        "pt-BR": "Gerar o script de autocompletar para o shell bash.",
+        "ru": "Создать скрипт автодополнения для оболочки bash."
+      }
+    },
+    "--help": {
+      "source": "help for bash",
+      "translations": {
+        "zh": "bash 的帮助",
+        "zh-TW": "bash 的說明",
+        "ja": "bash のヘルプ",
+        "ko": "bash 도움말",
+        "es": "Ayuda de bash",
+        "fr": "Aide pour bash",
+        "de": "Hilfe zu bash",
+        "pt-BR": "Ajuda de bash",
+        "ru": "Справка по bash"
+      }
+    },
+    "--no-descriptions": {
+      "source": "disable completion descriptions",
+      "translations": {
+        "zh": "关闭补全项的说明",
+        "zh-TW": "關閉自動完成項目的說明",
+        "ja": "補完候補の説明を無効にする",
+        "ko": "자동 완성 설명을 끕니다",
+        "es": "Desactivar las descripciones del autocompletado",
+        "fr": "Désactiver les descriptions de l’autocomplétion",
+        "de": "Beschreibungen der Autovervollständigung deaktivieren",
+        "pt-BR": "Desativar as descrições do autocompletar",
+        "ru": "Отключить описания в автодополнении"
+      }
+    }
+  },
+  "obit completion fish": {
+    "summary": {
+      "source": "Generate the autocompletion script for the fish shell.",
+      "translations": {
+        "zh": "为 fish shell 生成自动补全脚本。",
+        "zh-TW": "為 fish shell 產生自動完成指令碼。",
+        "ja": "fish シェル用のオートコンプリートスクリプトを生成する。",
+        "ko": "fish 셸용 자동 완성 스크립트를 생성합니다.",
+        "es": "Generar el script de autocompletado para el shell fish.",
+        "fr": "Générer le script d’autocomplétion pour le shell fish.",
+        "de": "Das Autovervollständigungsskript für die Fish-Shell erzeugen.",
+        "pt-BR": "Gerar o script de autocompletar para o shell fish.",
+        "ru": "Создать скрипт автодополнения для оболочки fish."
+      }
+    },
+    "--help": {
+      "source": "help for fish",
+      "translations": {
+        "zh": "fish 的帮助",
+        "zh-TW": "fish 的說明",
+        "ja": "fish のヘルプ",
+        "ko": "fish 도움말",
+        "es": "Ayuda de fish",
+        "fr": "Aide pour fish",
+        "de": "Hilfe zu fish",
+        "pt-BR": "Ajuda de fish",
+        "ru": "Справка по fish"
+      }
+    },
+    "--no-descriptions": {
+      "source": "disable completion descriptions",
+      "translations": {
+        "zh": "关闭补全项的说明",
+        "zh-TW": "關閉自動完成項目的說明",
+        "ja": "補完候補の説明を無効にする",
+        "ko": "자동 완성 설명을 끕니다",
+        "es": "Desactivar las descripciones del autocompletado",
+        "fr": "Désactiver les descriptions de l’autocomplétion",
+        "de": "Beschreibungen der Autovervollständigung deaktivieren",
+        "pt-BR": "Desativar as descrições do autocompletar",
+        "ru": "Отключить описания в автодополнении"
+      }
+    }
+  },
+  "obit completion powershell": {
+    "summary": {
+      "source": "Generate the autocompletion script for powershell.",
+      "translations": {
+        "zh": "为 powershell 生成自动补全脚本。",
+        "zh-TW": "為 powershell 產生自動完成指令碼。",
+        "ja": "powershell 用のオートコンプリートスクリプトを生成する。",
+        "ko": "powershell용 자동 완성 스크립트를 생성합니다.",
+        "es": "Generar el script de autocompletado para powershell.",
+        "fr": "Générer le script d’autocomplétion pour powershell.",
+        "de": "Das Autovervollständigungsskript für PowerShell erzeugen.",
+        "pt-BR": "Gerar o script de autocompletar para o powershell.",
+        "ru": "Создать скрипт автодополнения для powershell."
+      }
+    },
+    "--help": {
+      "source": "help for powershell",
+      "translations": {
+        "zh": "powershell 的帮助",
+        "zh-TW": "powershell 的說明",
+        "ja": "powershell のヘルプ",
+        "ko": "powershell 도움말",
+        "es": "Ayuda de powershell",
+        "fr": "Aide pour powershell",
+        "de": "Hilfe zu powershell",
+        "pt-BR": "Ajuda de powershell",
+        "ru": "Справка по powershell"
+      }
+    },
+    "--no-descriptions": {
+      "source": "disable completion descriptions",
+      "translations": {
+        "zh": "关闭补全项的说明",
+        "zh-TW": "關閉自動完成項目的說明",
+        "ja": "補完候補の説明を無効にする",
+        "ko": "자동 완성 설명을 끕니다",
+        "es": "Desactivar las descripciones del autocompletado",
+        "fr": "Désactiver les descriptions de l’autocomplétion",
+        "de": "Beschreibungen der Autovervollständigung deaktivieren",
+        "pt-BR": "Desativar as descrições do autocompletar",
+        "ru": "Отключить описания в автодополнении"
+      }
+    }
+  },
+  "obit completion zsh": {
+    "summary": {
+      "source": "Generate the autocompletion script for the zsh shell.",
+      "translations": {
+        "zh": "为 zsh shell 生成自动补全脚本。",
+        "zh-TW": "為 zsh shell 產生自動完成指令碼。",
+        "ja": "zsh シェル用のオートコンプリートスクリプトを生成する。",
+        "ko": "zsh 셸용 자동 완성 스크립트를 생성합니다.",
+        "es": "Generar el script de autocompletado para el shell zsh.",
+        "fr": "Générer le script d’autocomplétion pour le shell zsh.",
+        "de": "Das Autovervollständigungsskript für die Zsh-Shell erzeugen.",
+        "pt-BR": "Gerar o script de autocompletar para o shell zsh.",
+        "ru": "Создать скрипт автодополнения для оболочки zsh."
+      }
+    },
+    "--help": {
+      "source": "help for zsh",
+      "translations": {
+        "zh": "zsh 的帮助",
+        "zh-TW": "zsh 的說明",
+        "ja": "zsh のヘルプ",
+        "ko": "zsh 도움말",
+        "es": "Ayuda de zsh",
+        "fr": "Aide pour zsh",
+        "de": "Hilfe zu zsh",
+        "pt-BR": "Ajuda de zsh",
+        "ru": "Справка по zsh"
+      }
+    },
+    "--no-descriptions": {
+      "source": "disable completion descriptions",
+      "translations": {
+        "zh": "关闭补全项的说明",
+        "zh-TW": "關閉自動完成項目的說明",
+        "ja": "補完候補の説明を無効にする",
+        "ko": "자동 완성 설명을 끕니다",
+        "es": "Desactivar las descripciones del autocompletado",
+        "fr": "Désactiver les descriptions de l’autocomplétion",
+        "de": "Beschreibungen der Autovervollständigung deaktivieren",
+        "pt-BR": "Desativar as descrições do autocompletar",
+        "ru": "Отключить описания в автодополнении"
+      }
+    }
+  },
+  "obit config": {
+    "summary": {
+      "source": "Show the configuration file and effective settings (--create writes the defaults)",
+      "translations": {
+        "zh": "显示配置文件和当前生效的设置（--create 写入默认配置）",
+        "zh-TW": "顯示設定檔和目前生效的設定（--create 會寫入預設值）",
+        "ja": "設定ファイルと有効な設定を表示する（--create でデフォルト値を書き出す）",
+        "ko": "설정 파일과 적용 중인 설정을 표시합니다(--create는 기본값을 기록합니다)",
+        "es": "Mostrar el archivo de configuración y los ajustes efectivos (--create escribe los valores predeterminados)",
+        "fr": "Afficher le fichier de configuration et les paramètres effectifs (--create écrit les valeurs par défaut)",
+        "de": "Die Konfigurationsdatei und die wirksamen Einstellungen anzeigen (--create schreibt die Standardwerte)",
+        "pt-BR": "Exibir o arquivo de configuração e as definições em vigor (--create grava os valores padrão)",
+        "ru": "Показать файл конфигурации и действующие настройки (--create записывает значения по умолчанию)"
+      }
+    },
+    "--create": {
+      "source": "write a config file with the defaults",
+      "translations": {
+        "zh": "按默认值写出配置文件",
+        "zh-TW": "依預設值寫出設定檔",
+        "ja": "デフォルト値で設定ファイルを書き出す",
+        "ko": "기본값으로 설정 파일을 만듭니다",
+        "es": "Escribir un archivo de configuración con los valores predeterminados",
+        "fr": "Écrire un fichier de configuration avec les valeurs par défaut",
+        "de": "Eine Konfigurationsdatei mit den Standardwerten schreiben",
+        "pt-BR": "Gravar um arquivo de configuração com os valores padrão",
+        "ru": "Записать файл конфигурации со значениями по умолчанию"
+      }
+    },
+    "--help": {
+      "source": "help for config",
+      "translations": {
+        "zh": "config 的帮助",
+        "zh-TW": "config 的說明",
+        "ja": "config のヘルプ",
+        "ko": "config 도움말",
+        "es": "Ayuda de config",
+        "fr": "Aide pour config",
+        "de": "Hilfe zu config",
+        "pt-BR": "Ajuda de config",
+        "ru": "Справка по config"
+      }
+    },
+    "--language": {
+      "source": "set the language: auto, en or zh-CN",
+      "translations": {
+        "zh": "设置语言：auto、en 或 zh-CN",
+        "zh-TW": "設定語言：auto、en 或 zh-CN",
+        "ja": "言語を設定する：auto、en、zh-CN のいずれか",
+        "ko": "언어를 설정합니다: auto, en 또는 zh-CN",
+        "es": "Establecer el idioma: auto, en o zh-CN",
+        "fr": "Définir la langue : auto, en ou zh-CN",
+        "de": "Die Sprache festlegen: auto, en oder zh-CN",
+        "pt-BR": "Definir o idioma: auto, en ou zh-CN",
+        "ru": "Задать язык: auto, en или zh-CN"
+      }
+    }
+  },
+  "obit config telemetry": {
+    "summary": {
+      "source": "Usage statistics: a random installation ID, version, OS, architecture, interface language and installation channel help measure installation counts and version use. No files, paths or commands are sent; IP addresses and user agents are not stored. Disable with obit config telemetry off or OBIT_TELEMETRY=0.",
+      "translations": {
+        "zh": "使用统计：随机生成的安装 ID、版本、操作系统、架构、界面语言和安装渠道，用来统计安装数量和各版本的使用情况。不发送文件、路径或命令，也不保存 IP 地址和 User-Agent。用 obit config telemetry off 或 OBIT_TELEMETRY=0 关闭。",
+        "zh-TW": "使用統計：隨機產生的安裝 ID、版本、作業系統、架構、介面語言和安裝管道，用來統計安裝數量和各版本的使用情況。不會傳送檔案、路徑或指令，也不會儲存 IP 位址和 User-Agent。可用 obit config telemetry off 或 OBIT_TELEMETRY=0 關閉。",
+        "ja": "利用統計：ランダムなインストール ID、バージョン、OS、アーキテクチャ、表示言語、インストール経路が、インストール数とバージョンごとの利用状況の把握に役立つ。ファイル、パス、コマンドは送信しない。IP アドレスとユーザーエージェントは保存しない。obit config telemetry off または OBIT_TELEMETRY=0 で無効にできる。",
+        "ko": "사용 통계: 무작위 설치 ID, 버전, OS, 아키텍처, 인터페이스 언어, 설치 채널을 설치 수와 버전별 사용 현황을 파악하는 데 씁니다. 파일, 경로, 명령은 전송하지 않으며 IP 주소와 User-Agent도 저장하지 않습니다. obit config telemetry off 또는 OBIT_TELEMETRY=0으로 끌 수 있습니다.",
+        "es": "Estadísticas de uso: un ID de instalación aleatorio, la versión, el sistema operativo, la arquitectura, el idioma de la interfaz y el canal de instalación sirven para medir el número de instalaciones y el uso de cada versión. No se envían archivos, rutas ni comandos, y no se almacenan direcciones IP ni agentes de usuario. Se desactivan con obit config telemetry off o OBIT_TELEMETRY=0.",
+        "fr": "Statistiques d’utilisation : un ID d’installation aléatoire, la version, le système d’exploitation, l’architecture, la langue de l’interface et le canal d’installation servent à mesurer le nombre d’installations et l’usage des versions. Aucun fichier, chemin ni commande n’est envoyé ; les adresses IP et les agents utilisateurs ne sont pas conservés. Désactivation avec obit config telemetry off ou OBIT_TELEMETRY=0.",
+        "de": "Nutzungsstatistik: Eine zufällige Installations-ID, Version, Betriebssystem, Architektur, Oberflächensprache und Installationskanal helfen, Installationszahlen und die Nutzung der Versionen zu messen. Es werden keine Dateien, Pfade oder Befehle gesendet; IP-Adressen und User-Agents werden nicht gespeichert. Deaktivieren mit obit config telemetry off oder OBIT_TELEMETRY=0.",
+        "pt-BR": "Estatísticas de uso: um ID de instalação aleatório, versão, sistema operacional, arquitetura, idioma da interface e canal de instalação ajudam a medir o número de instalações e o uso das versões. Nenhum arquivo, caminho ou comando é enviado; endereços IP e user agents não são armazenados. Desative com obit config telemetry off ou OBIT_TELEMETRY=0.",
+        "ru": "Статистика использования: случайный ID установки, версия, ОС, архитектура, язык интерфейса и канал установки помогают оценивать число установок и использование версий. Файлы, пути и команды не отправляются; IP-адреса и User-Agent не сохраняются. Отключается командой obit config telemetry off или переменной OBIT_TELEMETRY=0."
+      }
+    },
+    "--help": {
+      "source": "help for telemetry",
+      "translations": {
+        "zh": "telemetry 的帮助",
+        "zh-TW": "telemetry 的說明",
+        "ja": "telemetry のヘルプ",
+        "ko": "telemetry 도움말",
+        "es": "Ayuda de telemetry",
+        "fr": "Aide pour telemetry",
+        "de": "Hilfe zu telemetry",
+        "pt-BR": "Ajuda de telemetry",
+        "ru": "Справка по telemetry"
+      }
+    }
+  },
+  "obit daemon": {
+    "summary": {
+      "source": "Control the background daemon (obitd)",
+      "translations": {
+        "zh": "控制后台进程（obitd）",
+        "zh-TW": "控制背景程式（obitd）",
+        "ja": "バックグラウンドのデーモン（obitd）を制御する",
+        "ko": "백그라운드 데몬(obitd)을 제어합니다",
+        "es": "Controlar el demonio en segundo plano (obitd)",
+        "fr": "Contrôler le démon en arrière-plan (obitd)",
+        "de": "Den Daemon im Hintergrund (obitd) steuern",
+        "pt-BR": "Controlar o daemon em segundo plano (obitd)",
+        "ru": "Управлять фоновым процессом (obitd)"
+      }
+    },
+    "--help": {
+      "source": "help for daemon",
+      "translations": {
+        "zh": "daemon 的帮助",
+        "zh-TW": "daemon 的說明",
+        "ja": "daemon のヘルプ",
+        "ko": "daemon 도움말",
+        "es": "Ayuda de daemon",
+        "fr": "Aide pour daemon",
+        "de": "Hilfe zu daemon",
+        "pt-BR": "Ajuda de daemon",
+        "ru": "Справка по daemon"
+      }
+    }
+  },
+  "obit daemon disable": {
+    "summary": {
+      "source": "Remove the scheduled runner and the resident daemon",
+      "translations": {
+        "zh": "移除定时任务和常驻进程",
+        "zh-TW": "移除排程工作和常駐程式",
+        "ja": "スケジュールされたタスクと常駐デーモンを削除する",
+        "ko": "예약 작업과 상주 데몬을 제거합니다",
+        "es": "Eliminar la tarea programada y el demonio residente",
+        "fr": "Supprimer la tâche planifiée et le démon résident",
+        "de": "Die geplante Aufgabe und den dauerhaft laufenden Daemon entfernen",
+        "pt-BR": "Remover a tarefa agendada e o daemon residente",
+        "ru": "Удалить задание планировщика и постоянно работающий фоновый процесс"
+      }
+    },
+    "--dry-run": {
+      "source": "only print the changes",
+      "translations": {
+        "zh": "只打印改动",
+        "zh-TW": "只列印變更內容",
+        "ja": "変更内容の表示だけを行う",
+        "ko": "변경 내용만 출력합니다",
+        "es": "Solo mostrar los cambios",
+        "fr": "Afficher seulement les changements",
+        "de": "Nur die Änderungen ausgeben",
+        "pt-BR": "Apenas exibir as alterações",
+        "ru": "Только вывести изменения"
+      }
+    },
+    "--help": {
+      "source": "help for disable",
+      "translations": {
+        "zh": "disable 的帮助",
+        "zh-TW": "disable 的說明",
+        "ja": "disable のヘルプ",
+        "ko": "disable 도움말",
+        "es": "Ayuda de disable",
+        "fr": "Aide pour disable",
+        "de": "Hilfe zu disable",
+        "pt-BR": "Ajuda de disable",
+        "ru": "Справка по disable"
+      }
+    }
+  },
+  "obit daemon enable": {
+    "summary": {
+      "source": "Enable the 5-minute user scheduler (and the login tray on Windows)",
+      "translations": {
+        "zh": "启用每 5 分钟运行一次的用户级定时任务（Windows 上同时启用随登录启动的托盘）",
+        "zh-TW": "啟用每 5 分鐘執行一次的使用者層級排程（Windows 上同時啟用隨登入啟動的系統匣）",
+        "ja": "5 分ごとに動くユーザー単位のスケジューラーを有効にする（Windows ではログイン時に起動するトレイも有効にする）",
+        "ko": "5분마다 실행되는 사용자 스케줄러를 활성화합니다(Windows에서는 로그인 시 시작되는 트레이도 활성화)",
+        "es": "Activar el programador de usuario de 5 minutos (y, en Windows, la bandeja que se inicia con la sesión)",
+        "fr": "Activer le planificateur utilisateur de 5 minutes (et, sous Windows, l’icône de la zone de notification lancée à l’ouverture de session)",
+        "de": "Den 5-Minuten-Benutzerplaner aktivieren (und unter Windows das Tray-Symbol bei der Anmeldung)",
+        "pt-BR": "Ativar o agendador de usuário de 5 minutos (e a bandeja iniciada no login, no Windows)",
+        "ru": "Включить пользовательский планировщик с интервалом 5 минут (и значок в области уведомлений при входе в систему в Windows)"
+      }
+    },
+    "--dry-run": {
+      "source": "only print the changes",
+      "translations": {
+        "zh": "只打印改动",
+        "zh-TW": "只列印變更內容",
+        "ja": "変更内容の表示だけを行う",
+        "ko": "변경 내용만 출력합니다",
+        "es": "Solo mostrar los cambios",
+        "fr": "Afficher seulement les changements",
+        "de": "Nur die Änderungen ausgeben",
+        "pt-BR": "Apenas exibir as alterações",
+        "ru": "Только вывести изменения"
+      }
+    },
+    "--help": {
+      "source": "help for enable",
+      "translations": {
+        "zh": "enable 的帮助",
+        "zh-TW": "enable 的說明",
+        "ja": "enable のヘルプ",
+        "ko": "enable 도움말",
+        "es": "Ayuda de enable",
+        "fr": "Aide pour enable",
+        "de": "Hilfe zu enable",
+        "pt-BR": "Ajuda de enable",
+        "ru": "Справка по enable"
+      }
+    },
+    "--resident": {
+      "source": "enable the tray without changing the scheduled fallback",
+      "translations": {
+        "zh": "只启用托盘，不改动兜底的定时任务",
+        "zh-TW": "只啟用系統匣，不更動備援的排程工作",
+        "ja": "予備のスケジュール実行は変更せず、トレイだけを有効にする",
+        "ko": "예비용 예약 작업은 바꾸지 않고 트레이만 활성화합니다",
+        "es": "Activar la bandeja sin modificar la tarea programada de respaldo",
+        "fr": "Activer l’icône de la zone de notification sans modifier la tâche planifiée de secours",
+        "de": "Das Tray aktivieren, ohne die geplante Aufgabe als Rückfallebene zu ändern",
+        "pt-BR": "Ativar a bandeja sem alterar a tarefa agendada de reserva",
+        "ru": "Включить значок в области уведомлений, не меняя резервное задание планировщика"
+      }
+    }
+  },
+  "obit daemon start": {
+    "summary": {
+      "source": "Start the daemon now",
+      "translations": {
+        "zh": "立即启动后台进程",
+        "zh-TW": "立即啟動背景程式",
+        "ja": "デーモンを今すぐ起動する",
+        "ko": "데몬을 지금 시작합니다",
+        "es": "Iniciar el demonio ahora",
+        "fr": "Démarrer le démon maintenant",
+        "de": "Den Daemon jetzt starten",
+        "pt-BR": "Iniciar o daemon agora",
+        "ru": "Запустить фоновый процесс сейчас"
+      }
+    },
+    "--help": {
+      "source": "help for start",
+      "translations": {
+        "zh": "start 的帮助",
+        "zh-TW": "start 的說明",
+        "ja": "start のヘルプ",
+        "ko": "start 도움말",
+        "es": "Ayuda de start",
+        "fr": "Aide pour start",
+        "de": "Hilfe zu start",
+        "pt-BR": "Ajuda de start",
+        "ru": "Справка по start"
+      }
+    }
+  },
+  "obit daemon status": {
+    "summary": {
+      "source": "Show daemon state and the next expiry",
+      "translations": {
+        "zh": "显示后台进程的状态和下一次到期时间",
+        "zh-TW": "顯示背景程式的狀態和下一次到期時間",
+        "ja": "デーモンの状態と次の期限を表示する",
+        "ko": "데몬 상태와 다음 만료 시각을 표시합니다",
+        "es": "Mostrar el estado del demonio y la próxima caducidad",
+        "fr": "Afficher l’état du démon et la prochaine échéance",
+        "de": "Den Zustand des Daemons und den nächsten Ablauf anzeigen",
+        "pt-BR": "Exibir o estado do daemon e o próximo vencimento",
+        "ru": "Показать состояние фонового процесса и время ближайшего истечения срока"
+      }
+    },
+    "--help": {
+      "source": "help for status",
+      "translations": {
+        "zh": "status 的帮助",
+        "zh-TW": "status 的說明",
+        "ja": "status のヘルプ",
+        "ko": "status 도움말",
+        "es": "Ayuda de status",
+        "fr": "Aide pour status",
+        "de": "Hilfe zu status",
+        "pt-BR": "Ajuda de status",
+        "ru": "Справка по status"
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": "输出 JSON",
+        "zh-TW": "輸出 JSON",
+        "ja": "JSON を出力する",
+        "ko": "JSON으로 출력합니다",
+        "es": "Imprimir JSON",
+        "fr": "Afficher le JSON",
+        "de": "JSON ausgeben",
+        "pt-BR": "Exibir JSON",
+        "ru": "Вывести JSON"
+      }
+    }
+  },
+  "obit daemon stop": {
+    "summary": {
+      "source": "Stop the daemon",
+      "translations": {
+        "zh": "停止后台进程",
+        "zh-TW": "停止背景程式",
+        "ja": "デーモンを停止する",
+        "ko": "데몬을 중지합니다",
+        "es": "Detener el demonio",
+        "fr": "Arrêter le démon",
+        "de": "Den Daemon stoppen",
+        "pt-BR": "Parar o daemon",
+        "ru": "Остановить фоновый процесс"
+      }
+    },
+    "--help": {
+      "source": "help for stop",
+      "translations": {
+        "zh": "stop 的帮助",
+        "zh-TW": "stop 的說明",
+        "ja": "stop のヘルプ",
+        "ko": "stop 도움말",
+        "es": "Ayuda de stop",
+        "fr": "Aide pour stop",
+        "de": "Hilfe zu stop",
+        "pt-BR": "Ajuda de stop",
+        "ru": "Справка по stop"
+      }
+    }
+  },
+  "obit docker": {
+    "summary": {
+      "source": "Track Docker containers by immutable full ID and creation time. Expiry stops the container and retains its writable layer. Resurrection starts it. After [graveyard] retention_days, purge removes stopped containers without removing volumes. This also applies in recycle mode. Images, volumes and networks are preserved.",
+      "translations": {
+        "zh": "按不可变的完整 ID 和创建时间跟踪 Docker 容器。到期时停止容器并保留它的可写层，复活时启动它。过了 [graveyard] retention_days 之后，火化会移除已停止的容器，但不移除卷；回收站模式下同样如此。镜像、卷和网络都会保留。",
+        "zh-TW": "依不可變的完整 ID 和建立時間追蹤 Docker 容器。到期時停止容器並保留它的可寫層，復活時啟動它。超過 [graveyard] retention_days 之後，永久刪除會移除已停止的容器，但不會移除磁碟區；資源回收筒模式下也一樣。映像檔、磁碟區和網路都會保留。",
+        "ja": "Docker コンテナを、不変の完全な ID と作成時刻で追跡する。期限が切れるとコンテナを停止し、書き込み可能なレイヤーは保持する。復活させると起動する。[graveyard] retention_days が過ぎると、永久削除で停止中のコンテナを削除するが、ボリュームは削除しない。ごみ箱モードでも同じ。イメージ、ボリューム、ネットワークは保持される。",
+        "ko": "Docker 컨테이너를 변하지 않는 전체 ID와 생성 시각으로 추적합니다. 만료되면 컨테이너를 중지하고 쓰기 가능한 레이어는 유지합니다. 부활시키면 컨테이너를 시작합니다. [graveyard] retention_days가 지나면 영구 삭제가 중지된 컨테이너를 제거하며 볼륨은 제거하지 않습니다. 휴지통 모드에서도 마찬가지입니다. 이미지, 볼륨, 네트워크는 보존됩니다.",
+        "es": "Hacer seguimiento de los contenedores de Docker por su ID completo inmutable y su fecha de creación. Al caducar, el contenedor se detiene y se conserva su capa de escritura. Al resucitarlo, se inicia. Una vez transcurridos los días de [graveyard] retention_days, la eliminación definitiva borra los contenedores detenidos sin borrar los volúmenes; esto también vale en modo papelera. Las imágenes, los volúmenes y las redes se conservan.",
+        "fr": "Suivre les conteneurs Docker par leur ID complet immuable et leur date de création. À l’expiration, le conteneur est arrêté et sa couche accessible en écriture est conservée. La résurrection le démarre. Une fois écoulés les jours de [graveyard] retention_days, la suppression définitive retire les conteneurs arrêtés sans toucher aux volumes ; cela vaut aussi en mode corbeille. Les images, les volumes et les réseaux sont conservés.",
+        "de": "Docker-Container anhand ihrer unveränderlichen vollständigen ID und ihrer Erstellungszeit verfolgen. Beim Ablauf wird der Container gestoppt und seine beschreibbare Schicht bleibt erhalten. Beim Wiederbeleben wird er gestartet. Nach Ablauf von [graveyard] retention_days entfernt das endgültige Löschen gestoppte Container, ohne Volumes zu entfernen; das gilt auch im Papierkorbmodus. Images, Volumes und Netzwerke bleiben erhalten.",
+        "pt-BR": "Acompanhar contêineres Docker pelo ID completo imutável e pela data de criação. No vencimento, o contêiner é parado e sua camada gravável é mantida. A ressurreição o inicia. Depois de [graveyard] retention_days, a exclusão permanente remove contêineres parados sem remover volumes; isso vale também no modo de lixeira. Imagens, volumes e redes são preservados.",
+        "ru": "Отслеживать контейнеры Docker по неизменяемому полному ID и времени создания. По истечении срока контейнер останавливается, а его слой для записи сохраняется. Воскрешение запускает контейнер. Когда пройдёт [graveyard] retention_days, окончательное удаление убирает остановленные контейнеры, не трогая тома; в режиме корзины то же самое. Образы, тома и сети сохраняются."
+      }
+    },
+    "--help": {
+      "source": "help for docker",
+      "translations": {
+        "zh": "docker 的帮助",
+        "zh-TW": "docker 的說明",
+        "ja": "docker のヘルプ",
+        "ko": "docker 도움말",
+        "es": "Ayuda de docker",
+        "fr": "Aide pour docker",
+        "de": "Hilfe zu docker",
+        "pt-BR": "Ajuda de docker",
+        "ru": "Справка по docker"
+      }
+    }
+  },
+  "obit docker add": {
+    "summary": {
+      "source": "Register one Docker container; expiry stops it",
+      "translations": {
+        "zh": "登记一个 Docker 容器；到期时停止它",
+        "zh-TW": "登記一個 Docker 容器；到期時停止它",
+        "ja": "Docker コンテナを 1 つ登録する。期限が切れると停止する",
+        "ko": "Docker 컨테이너 하나를 등록합니다. 만료되면 컨테이너를 중지합니다",
+        "es": "Registrar un contenedor de Docker; al caducar se detiene",
+        "fr": "Enregistrer un conteneur Docker ; l’expiration l’arrête",
+        "de": "Einen Docker-Container registrieren; beim Ablauf wird er gestoppt",
+        "pt-BR": "Registrar um contêiner Docker; no vencimento ele é parado",
+        "ru": "Зарегистрировать один контейнер Docker; по истечении срока он останавливается"
+      }
+    },
+    "--help": {
+      "source": "help for add",
+      "translations": {
+        "zh": "add 的帮助",
+        "zh-TW": "add 的說明",
+        "ja": "add のヘルプ",
+        "ko": "add 도움말",
+        "es": "Ayuda de add",
+        "fr": "Aide pour add",
+        "de": "Hilfe zu add",
+        "pt-BR": "Ajuda de add",
+        "ru": "Справка по add"
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": "输出 JSON",
+        "zh-TW": "輸出 JSON",
+        "ja": "JSON を出力する",
+        "ko": "JSON으로 출력합니다",
+        "es": "Imprimir JSON",
+        "fr": "Afficher le JSON",
+        "de": "JSON ausgeben",
+        "pt-BR": "Exibir JSON",
+        "ru": "Вывести JSON"
+      }
+    }
+  },
+  "obit docker list": {
+    "summary": {
+      "source": "List registered Docker containers",
+      "translations": {
+        "zh": "列出已登记的 Docker 容器",
+        "zh-TW": "列出已登記的 Docker 容器",
+        "ja": "登録済みの Docker コンテナを一覧表示する",
+        "ko": "등록된 Docker 컨테이너를 나열합니다",
+        "es": "Listar los contenedores de Docker registrados",
+        "fr": "Lister les conteneurs Docker enregistrés",
+        "de": "Registrierte Docker-Container auflisten",
+        "pt-BR": "Listar os contêineres Docker registrados",
+        "ru": "Показать список зарегистрированных контейнеров Docker"
+      }
+    },
+    "--help": {
+      "source": "help for list",
+      "translations": {
+        "zh": "list 的帮助",
+        "zh-TW": "list 的說明",
+        "ja": "list のヘルプ",
+        "ko": "list 도움말",
+        "es": "Ayuda de list",
+        "fr": "Aide pour list",
+        "de": "Hilfe zu list",
+        "pt-BR": "Ajuda de list",
+        "ru": "Справка по list"
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": "输出 JSON",
+        "zh-TW": "輸出 JSON",
+        "ja": "JSON を出力する",
+        "ko": "JSON으로 출력합니다",
+        "es": "Imprimir JSON",
+        "fr": "Afficher le JSON",
+        "de": "JSON ausgeben",
+        "pt-BR": "Exibir JSON",
+        "ru": "Вывести JSON"
+      }
+    }
+  },
+  "obit doctor": {
+    "summary": {
+      "source": "Check installation, integrations and data without changing anything",
+      "translations": {
+        "zh": "检查安装、集成和数据，不做任何改动",
+        "zh-TW": "檢查安裝、整合和資料，不做任何變更",
+        "ja": "インストール、連携、データを確認する。何も変更しない",
+        "ko": "아무것도 변경하지 않고 설치, 연동, 데이터를 점검합니다",
+        "es": "Comprobar la instalación, las integraciones y los datos sin cambiar nada",
+        "fr": "Vérifier l’installation, les intégrations et les données sans rien modifier",
+        "de": "Installation, Integrationen und Daten prüfen, ohne etwas zu ändern",
+        "pt-BR": "Verificar a instalação, as integrações e os dados sem alterar nada",
+        "ru": "Проверить установку, интеграции и данные, ничего не изменяя"
+      }
+    },
+    "--help": {
+      "source": "help for doctor",
+      "translations": {
+        "zh": "doctor 的帮助",
+        "zh-TW": "doctor 的說明",
+        "ja": "doctor のヘルプ",
+        "ko": "doctor 도움말",
+        "es": "Ayuda de doctor",
+        "fr": "Aide pour doctor",
+        "de": "Hilfe zu doctor",
+        "pt-BR": "Ajuda de doctor",
+        "ru": "Справка по doctor"
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": "输出 JSON",
+        "zh-TW": "輸出 JSON",
+        "ja": "JSON を出力する",
+        "ko": "JSON으로 출력합니다",
+        "es": "Imprimir JSON",
+        "fr": "Afficher le JSON",
+        "de": "JSON ausgeben",
+        "pt-BR": "Exibir JSON",
+        "ru": "Вывести JSON"
+      }
+    },
+    "--verbose": {
+      "source": "include agent capability details",
+      "translations": {
+        "zh": "包含 agent 的能力详情",
+        "zh-TW": "包含 agent 的功能細節",
+        "ja": "エージェントの機能の詳細を含める",
+        "ko": "에이전트 기능 세부 정보를 포함합니다",
+        "es": "Incluir los detalles de las capacidades del agente",
+        "fr": "Inclure les détails des capacités des agents",
+        "de": "Details zu den Fähigkeiten der Agenten einbeziehen",
+        "pt-BR": "Incluir detalhes dos recursos dos agentes",
+        "ru": "Включить подробности о возможностях агентов"
+      }
+    }
+  },
+  "obit extend": {
+    "summary": {
+      "source": "Push expiries back (counted from now if already due)",
+      "translations": {
+        "zh": "续命：把到期时间往后推（已经到期的从现在起算）",
+        "zh-TW": "延長壽命：把到期時間往後推（已經到期的從現在起算）",
+        "ja": "延長する：期限を先へ延ばす（すでに期限を過ぎていれば現在から数える）",
+        "ko": "연장: 만료 시각을 뒤로 미룹니다(이미 만료 시각이 지났다면 지금부터 계산합니다)",
+        "es": "Ampliar el plazo, retrasando la caducidad (si ya ha vencido, se cuenta desde ahora)",
+        "fr": "Prolonger : repousser les échéances (comptées à partir de maintenant si elles sont déjà dépassées)",
+        "de": "Verlängern: Abläufe nach hinten schieben (bei bereits abgelaufenen ab jetzt gerechnet)",
+        "pt-BR": "Prolongar: adiar os vencimentos (contados a partir de agora se já venceram)",
+        "ru": "Продлить: сдвинуть сроки истечения вперёд (если срок уже вышел, отсчёт идёт от текущего момента)"
+      }
+    },
+    "--help": {
+      "source": "help for extend",
+      "translations": {
+        "zh": "extend 的帮助",
+        "zh-TW": "extend 的說明",
+        "ja": "extend のヘルプ",
+        "ko": "extend 도움말",
+        "es": "Ayuda de extend",
+        "fr": "Aide pour extend",
+        "de": "Hilfe zu extend",
+        "pt-BR": "Ajuda de extend",
+        "ru": "Справка по extend"
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": "输出 JSON",
+        "zh-TW": "輸出 JSON",
+        "ja": "JSON を出力する",
+        "ko": "JSON으로 출력합니다",
+        "es": "Imprimir JSON",
+        "fr": "Afficher le JSON",
+        "de": "JSON ausgeben",
+        "pt-BR": "Exibir JSON",
+        "ru": "Вывести JSON"
+      }
+    }
+  },
+  "obit git-clean": {
+    "summary": {
+      "source": "Bury the paths selected by git clean's dry run",
+      "translations": {
+        "zh": "把 git clean 试运行选中的路径下葬",
+        "zh-TW": "把 git clean 試執行所選出的路徑下葬",
+        "ja": "git clean のドライランで選ばれたパスを埋葬する",
+        "ko": "git clean의 드라이런으로 선택된 경로를 매장합니다",
+        "es": "Enterrar las rutas seleccionadas por la simulación de git clean",
+        "fr": "Enterrer les chemins sélectionnés par la simulation de git clean",
+        "de": "Die vom Testlauf von git clean ausgewählten Pfade begraben",
+        "pt-BR": "Enterrar os caminhos selecionados pela simulação do git clean",
+        "ru": "Похоронить пути, выбранные пробным запуском git clean"
+      }
+    },
+    "--help": {
+      "source": "help for git-clean",
+      "translations": {
+        "zh": "git-clean 的帮助",
+        "zh-TW": "git-clean 的說明",
+        "ja": "git-clean のヘルプ",
+        "ko": "git-clean 도움말",
+        "es": "Ayuda de git-clean",
+        "fr": "Aide pour git-clean",
+        "de": "Hilfe zu git-clean",
+        "pt-BR": "Ajuda de git-clean",
+        "ru": "Справка по git-clean"
+      }
+    }
+  },
+  "obit graveyard": {
+    "summary": {
+      "source": "List what lies in the graveyard and can still be resurrected",
+      "translations": {
+        "zh": "列出墓地里还能复活的东西",
+        "zh-TW": "列出墓地裡仍可復活的項目",
+        "ja": "墓地にあり、まだ復活できるものを一覧表示する",
+        "ko": "묘지에 있으며 아직 부활시킬 수 있는 항목을 나열합니다",
+        "es": "Listar lo que hay en el cementerio y aún se puede resucitar",
+        "fr": "Lister ce que contient le cimetière et qui peut encore être ressuscité",
+        "de": "Auflisten, was auf dem Friedhof liegt und noch wiederbelebt werden kann",
+        "pt-BR": "Listar o que está no cemitério e ainda pode ser ressuscitado",
+        "ru": "Показать, что лежит на кладбище и ещё может быть воскрешено"
+      }
+    },
+    "--help": {
+      "source": "help for graveyard",
+      "translations": {
+        "zh": "graveyard 的帮助",
+        "zh-TW": "graveyard 的說明",
+        "ja": "graveyard のヘルプ",
+        "ko": "graveyard 도움말",
+        "es": "Ayuda de graveyard",
+        "fr": "Aide pour graveyard",
+        "de": "Hilfe zu graveyard",
+        "pt-BR": "Ajuda de graveyard",
+        "ru": "Справка по graveyard"
+      }
+    },
+    "--here": {
+      "source": "show only original paths in the current directory and its descendants",
+      "translations": {
+        "zh": "只显示原路径在当前目录及其所有下级目录中的项目",
+        "zh-TW": "只顯示原路徑位於目前目錄及其所有子目錄中的項目",
+        "ja": "元のパスが現在のディレクトリとその下位にあるものだけを表示する",
+        "ko": "원래 경로가 현재 디렉터리와 그 하위에 있는 항목만 표시합니다",
+        "es": "Mostrar solo las rutas originales situadas en el directorio actual y en sus subdirectorios",
+        "fr": "Afficher seulement les chemins d’origine situés dans le répertoire courant et ses sous-répertoires",
+        "de": "Nur Originalpfade anzeigen, die im aktuellen Verzeichnis und seinen Unterverzeichnissen liegen",
+        "pt-BR": "Mostrar apenas caminhos originais no diretório atual e em seus subdiretórios",
+        "ru": "Показать только исходные пути в текущем каталоге и его подкаталогах"
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": "输出 JSON",
+        "zh-TW": "輸出 JSON",
+        "ja": "JSON を出力する",
+        "ko": "JSON으로 출력합니다",
+        "es": "Imprimir JSON",
+        "fr": "Afficher le JSON",
+        "de": "JSON ausgeben",
+        "pt-BR": "Exibir JSON",
+        "ru": "Вывести JSON"
+      }
+    }
+  },
+  "obit help": {
+    "summary": {
+      "source": "Help provides help for any command in the application.",
+      "translations": {
+        "zh": "显示本程序中任意命令的帮助。",
+        "zh-TW": "顯示本程式中任一指令的說明。",
+        "ja": "アプリケーション内の任意のコマンドのヘルプを表示する。",
+        "ko": "애플리케이션의 모든 명령에 대한 도움말을 표시합니다.",
+        "es": "Mostrar la ayuda de cualquier comando de la aplicación.",
+        "fr": "Afficher l’aide de n’importe quelle commande de l’application.",
+        "de": "Hilfe zu jedem Befehl der Anwendung anzeigen.",
+        "pt-BR": "Exibir a ajuda de qualquer comando do aplicativo.",
+        "ru": "Показать справку по любой команде приложения."
+      }
+    },
+    "--help": {
+      "source": "help for help",
+      "translations": {
+        "zh": "help 的帮助",
+        "zh-TW": "help 的說明",
+        "ja": "help のヘルプ",
+        "ko": "help 도움말",
+        "es": "Ayuda de help",
+        "fr": "Aide pour help",
+        "de": "Hilfe zu help",
+        "pt-BR": "Ajuda de help",
+        "ru": "Справка по help"
+      }
+    }
+  },
+  "obit hook": {
+    "summary": {
+      "source": "Agent hook entry points (called by the agent, not by people)",
+      "translations": {
+        "zh": "agent hook 的入口（由 agent 调用，不是给人用的）",
+        "zh-TW": "agent hook 的進入點（由 agent 呼叫，不是給人用的）",
+        "ja": "エージェントのフックの入口（エージェントが呼び出すもので、人が使うものではない）",
+        "ko": "에이전트 훅 진입점(에이전트가 호출하며 사람이 직접 쓰는 것이 아님)",
+        "es": "Puntos de entrada de los hooks de agente (los llama el agente, no las personas)",
+        "fr": "Points d’entrée des hooks d’agent (appelés par l’agent, pas par des personnes)",
+        "de": "Einstiegspunkte für Agent-Hooks (vom Agenten aufgerufen, nicht von Menschen)",
+        "pt-BR": "Pontos de entrada dos hooks de agente (chamados pelo agente, não por pessoas)",
+        "ru": "Точки входа хуков агентов (их вызывает агент, а не человек)"
+      }
+    },
+    "--help": {
+      "source": "help for hook",
+      "translations": {
+        "zh": "hook 的帮助",
+        "zh-TW": "hook 的說明",
+        "ja": "hook のヘルプ",
+        "ko": "hook 도움말",
+        "es": "Ayuda de hook",
+        "fr": "Aide pour hook",
+        "de": "Hilfe zu hook",
+        "pt-BR": "Ajuda de hook",
+        "ru": "Справка по hook"
+      }
+    }
+  },
+  "obit hook antigravity": {
+    "summary": {
+      "source": "Handle one antigravity hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 antigravity hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 antigravity hook 事件；發生錯誤時放行",
+        "ja": "stdin から antigravity のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 antigravity 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de antigravity desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook antigravity depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von antigravity von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do antigravity a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука antigravity из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for antigravity",
+      "translations": {
+        "zh": "antigravity 的帮助",
+        "zh-TW": "antigravity 的說明",
+        "ja": "antigravity のヘルプ",
+        "ko": "antigravity 도움말",
+        "es": "Ayuda de antigravity",
+        "fr": "Aide pour antigravity",
+        "de": "Hilfe zu antigravity",
+        "pt-BR": "Ajuda de antigravity",
+        "ru": "Справка по antigravity"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook audit": {
+    "summary": {
+      "source": "Show hook and delete-guard audit trails",
+      "translations": {
+        "zh": "显示 hook 和删除护栏的审计记录",
+        "zh-TW": "顯示 hook 和刪除護欄的稽核記錄",
+        "ja": "フックと削除ガードの監査記録を表示する",
+        "ko": "훅과 삭제 가드의 감사 기록을 표시합니다",
+        "es": "Mostrar los registros de auditoría de los hooks y de la guardia de eliminación",
+        "fr": "Afficher les pistes d’audit des hooks et de la garde de suppression",
+        "de": "Audit-Protokolle der Hooks und des Löschschutzes anzeigen",
+        "pt-BR": "Exibir as trilhas de auditoria dos hooks e do guardião de exclusão",
+        "ru": "Показать журналы аудита хуков и защиты удаления"
+      }
+    },
+    "--help": {
+      "source": "help for audit",
+      "translations": {
+        "zh": "audit 的帮助",
+        "zh-TW": "audit 的說明",
+        "ja": "audit のヘルプ",
+        "ko": "audit 도움말",
+        "es": "Ayuda de audit",
+        "fr": "Aide pour audit",
+        "de": "Hilfe zu audit",
+        "pt-BR": "Ajuda de audit",
+        "ru": "Справка по audit"
+      }
+    },
+    "--lines": {
+      "source": "number of lines per source",
+      "translations": {
+        "zh": "每个来源显示的行数",
+        "zh-TW": "每個來源顯示的行數",
+        "ja": "ソースごとの行数",
+        "ko": "소스별 줄 수",
+        "es": "Número de líneas por origen",
+        "fr": "Nombre de lignes par source",
+        "de": "Anzahl der Zeilen pro Quelle",
+        "pt-BR": "Número de linhas por origem",
+        "ru": "Число строк для каждого источника"
+      }
+    }
+  },
+  "obit hook claude": {
+    "summary": {
+      "source": "Handle one claude hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 claude hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 claude hook 事件；發生錯誤時放行",
+        "ja": "stdin から claude のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 claude 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de claude desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook claude depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von claude von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do claude a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука claude из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for claude",
+      "translations": {
+        "zh": "claude 的帮助",
+        "zh-TW": "claude 的說明",
+        "ja": "claude のヘルプ",
+        "ko": "claude 도움말",
+        "es": "Ayuda de claude",
+        "fr": "Aide pour claude",
+        "de": "Hilfe zu claude",
+        "pt-BR": "Ajuda de claude",
+        "ru": "Справка по claude"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook cline": {
+    "summary": {
+      "source": "Handle one cline hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 cline hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 cline hook 事件；發生錯誤時放行",
+        "ja": "stdin から cline のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 cline 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de cline desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook cline depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von cline von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do cline a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука cline из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for cline",
+      "translations": {
+        "zh": "cline 的帮助",
+        "zh-TW": "cline 的說明",
+        "ja": "cline のヘルプ",
+        "ko": "cline 도움말",
+        "es": "Ayuda de cline",
+        "fr": "Aide pour cline",
+        "de": "Hilfe zu cline",
+        "pt-BR": "Ajuda de cline",
+        "ru": "Справка по cline"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook codebuddy": {
+    "summary": {
+      "source": "Handle one codebuddy hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 codebuddy hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 codebuddy hook 事件；發生錯誤時放行",
+        "ja": "stdin から codebuddy のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 codebuddy 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de codebuddy desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook codebuddy depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von codebuddy von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do codebuddy a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука codebuddy из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for codebuddy",
+      "translations": {
+        "zh": "codebuddy 的帮助",
+        "zh-TW": "codebuddy 的說明",
+        "ja": "codebuddy のヘルプ",
+        "ko": "codebuddy 도움말",
+        "es": "Ayuda de codebuddy",
+        "fr": "Aide pour codebuddy",
+        "de": "Hilfe zu codebuddy",
+        "pt-BR": "Ajuda de codebuddy",
+        "ru": "Справка по codebuddy"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook codebuddy-ide": {
+    "summary": {
+      "source": "Handle one codebuddy-ide hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 codebuddy-ide hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 codebuddy-ide hook 事件；發生錯誤時放行",
+        "ja": "stdin から codebuddy-ide のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 codebuddy-ide 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de codebuddy-ide desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook codebuddy-ide depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von codebuddy-ide von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do codebuddy-ide a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука codebuddy-ide из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for codebuddy-ide",
+      "translations": {
+        "zh": "codebuddy-ide 的帮助",
+        "zh-TW": "codebuddy-ide 的說明",
+        "ja": "codebuddy-ide のヘルプ",
+        "ko": "codebuddy-ide 도움말",
+        "es": "Ayuda de codebuddy-ide",
+        "fr": "Aide pour codebuddy-ide",
+        "de": "Hilfe zu codebuddy-ide",
+        "pt-BR": "Ajuda de codebuddy-ide",
+        "ru": "Справка по codebuddy-ide"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook codex": {
+    "summary": {
+      "source": "Handle one codex hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 codex hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 codex hook 事件；發生錯誤時放行",
+        "ja": "stdin から codex のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 codex 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de codex desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook codex depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von codex von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do codex a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука codex из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for codex",
+      "translations": {
+        "zh": "codex 的帮助",
+        "zh-TW": "codex 的說明",
+        "ja": "codex のヘルプ",
+        "ko": "codex 도움말",
+        "es": "Ayuda de codex",
+        "fr": "Aide pour codex",
+        "de": "Hilfe zu codex",
+        "pt-BR": "Ajuda de codex",
+        "ru": "Справка по codex"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook copilot": {
+    "summary": {
+      "source": "Handle one copilot hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 copilot hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 copilot hook 事件；發生錯誤時放行",
+        "ja": "stdin から copilot のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 copilot 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de copilot desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook copilot depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von copilot von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do copilot a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука copilot из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for copilot",
+      "translations": {
+        "zh": "copilot 的帮助",
+        "zh-TW": "copilot 的說明",
+        "ja": "copilot のヘルプ",
+        "ko": "copilot 도움말",
+        "es": "Ayuda de copilot",
+        "fr": "Aide pour copilot",
+        "de": "Hilfe zu copilot",
+        "pt-BR": "Ajuda de copilot",
+        "ru": "Справка по copilot"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook cursor": {
+    "summary": {
+      "source": "Handle one cursor hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 cursor hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 cursor hook 事件；發生錯誤時放行",
+        "ja": "stdin から cursor のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 cursor 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de cursor desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook cursor depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von cursor von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do cursor a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука cursor из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for cursor",
+      "translations": {
+        "zh": "cursor 的帮助",
+        "zh-TW": "cursor 的說明",
+        "ja": "cursor のヘルプ",
+        "ko": "cursor 도움말",
+        "es": "Ayuda de cursor",
+        "fr": "Aide pour cursor",
+        "de": "Hilfe zu cursor",
+        "pt-BR": "Ajuda de cursor",
+        "ru": "Справка по cursor"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook deepseek-harness": {
+    "summary": {
+      "source": "Handle one deepseek-harness hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 deepseek-harness hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 deepseek-harness hook 事件；發生錯誤時放行",
+        "ja": "stdin から deepseek-harness のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 deepseek-harness 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de deepseek-harness desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook deepseek-harness depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von deepseek-harness von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do deepseek-harness a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука deepseek-harness из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for deepseek-harness",
+      "translations": {
+        "zh": "deepseek-harness 的帮助",
+        "zh-TW": "deepseek-harness 的說明",
+        "ja": "deepseek-harness のヘルプ",
+        "ko": "deepseek-harness 도움말",
+        "es": "Ayuda de deepseek-harness",
+        "fr": "Aide pour deepseek-harness",
+        "de": "Hilfe zu deepseek-harness",
+        "pt-BR": "Ajuda de deepseek-harness",
+        "ru": "Справка по deepseek-harness"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook droid": {
+    "summary": {
+      "source": "Handle one droid hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 droid hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 droid hook 事件；發生錯誤時放行",
+        "ja": "stdin から droid のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 droid 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de droid desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook droid depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von droid von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do droid a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука droid из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for droid",
+      "translations": {
+        "zh": "droid 的帮助",
+        "zh-TW": "droid 的說明",
+        "ja": "droid のヘルプ",
+        "ko": "droid 도움말",
+        "es": "Ayuda de droid",
+        "fr": "Aide pour droid",
+        "de": "Hilfe zu droid",
+        "pt-BR": "Ajuda de droid",
+        "ru": "Справка по droid"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook gemini": {
+    "summary": {
+      "source": "Handle one gemini hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 gemini hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 gemini hook 事件；發生錯誤時放行",
+        "ja": "stdin から gemini のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 gemini 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de gemini desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook gemini depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von gemini von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do gemini a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука gemini из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for gemini",
+      "translations": {
+        "zh": "gemini 的帮助",
+        "zh-TW": "gemini 的說明",
+        "ja": "gemini のヘルプ",
+        "ko": "gemini 도움말",
+        "es": "Ayuda de gemini",
+        "fr": "Aide pour gemini",
+        "de": "Hilfe zu gemini",
+        "pt-BR": "Ajuda de gemini",
+        "ru": "Справка по gemini"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook hermes": {
+    "summary": {
+      "source": "Handle one hermes hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 hermes hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 hermes hook 事件；發生錯誤時放行",
+        "ja": "stdin から hermes のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 hermes 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de hermes desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook hermes depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von hermes von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do hermes a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука hermes из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for hermes",
+      "translations": {
+        "zh": "hermes 的帮助",
+        "zh-TW": "hermes 的說明",
+        "ja": "hermes のヘルプ",
+        "ko": "hermes 도움말",
+        "es": "Ayuda de hermes",
+        "fr": "Aide pour hermes",
+        "de": "Hilfe zu hermes",
+        "pt-BR": "Ajuda de hermes",
+        "ru": "Справка по hermes"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook kilocode": {
+    "summary": {
+      "source": "Handle one kilocode hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 kilocode hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 kilocode hook 事件；發生錯誤時放行",
+        "ja": "stdin から kilocode のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 kilocode 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de kilocode desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook kilocode depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von kilocode von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do kilocode a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука kilocode из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for kilocode",
+      "translations": {
+        "zh": "kilocode 的帮助",
+        "zh-TW": "kilocode 的說明",
+        "ja": "kilocode のヘルプ",
+        "ko": "kilocode 도움말",
+        "es": "Ayuda de kilocode",
+        "fr": "Aide pour kilocode",
+        "de": "Hilfe zu kilocode",
+        "pt-BR": "Ajuda de kilocode",
+        "ru": "Справка по kilocode"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook kimi": {
+    "summary": {
+      "source": "Handle one kimi hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 kimi hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 kimi hook 事件；發生錯誤時放行",
+        "ja": "stdin から kimi のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 kimi 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de kimi desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook kimi depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von kimi von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do kimi a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука kimi из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for kimi",
+      "translations": {
+        "zh": "kimi 的帮助",
+        "zh-TW": "kimi 的說明",
+        "ja": "kimi のヘルプ",
+        "ko": "kimi 도움말",
+        "es": "Ayuda de kimi",
+        "fr": "Aide pour kimi",
+        "de": "Hilfe zu kimi",
+        "pt-BR": "Ajuda de kimi",
+        "ru": "Справка по kimi"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook lingma": {
+    "summary": {
+      "source": "Handle one lingma hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 lingma hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 lingma hook 事件；發生錯誤時放行",
+        "ja": "stdin から lingma のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 lingma 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de lingma desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook lingma depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von lingma von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do lingma a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука lingma из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for lingma",
+      "translations": {
+        "zh": "lingma 的帮助",
+        "zh-TW": "lingma 的說明",
+        "ja": "lingma のヘルプ",
+        "ko": "lingma 도움말",
+        "es": "Ayuda de lingma",
+        "fr": "Aide pour lingma",
+        "de": "Hilfe zu lingma",
+        "pt-BR": "Ajuda de lingma",
+        "ru": "Справка по lingma"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook minimax-code": {
+    "summary": {
+      "source": "Handle one minimax-code hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 minimax-code hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 minimax-code hook 事件；發生錯誤時放行",
+        "ja": "stdin から minimax-code のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 minimax-code 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de minimax-code desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook minimax-code depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von minimax-code von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do minimax-code a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука minimax-code из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for minimax-code",
+      "translations": {
+        "zh": "minimax-code 的帮助",
+        "zh-TW": "minimax-code 的說明",
+        "ja": "minimax-code のヘルプ",
+        "ko": "minimax-code 도움말",
+        "es": "Ayuda de minimax-code",
+        "fr": "Aide pour minimax-code",
+        "de": "Hilfe zu minimax-code",
+        "pt-BR": "Ajuda de minimax-code",
+        "ru": "Справка по minimax-code"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook omp": {
+    "summary": {
+      "source": "Handle one omp hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 omp hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 omp hook 事件；發生錯誤時放行",
+        "ja": "stdin から omp のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 omp 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de omp desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook omp depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von omp von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do omp a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука omp из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for omp",
+      "translations": {
+        "zh": "omp 的帮助",
+        "zh-TW": "omp 的說明",
+        "ja": "omp のヘルプ",
+        "ko": "omp 도움말",
+        "es": "Ayuda de omp",
+        "fr": "Aide pour omp",
+        "de": "Hilfe zu omp",
+        "pt-BR": "Ajuda de omp",
+        "ru": "Справка по omp"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook openclaw": {
+    "summary": {
+      "source": "Handle one openclaw hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 openclaw hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 openclaw hook 事件；發生錯誤時放行",
+        "ja": "stdin から openclaw のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 openclaw 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de openclaw desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook openclaw depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von openclaw von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do openclaw a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука openclaw из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for openclaw",
+      "translations": {
+        "zh": "openclaw 的帮助",
+        "zh-TW": "openclaw 的說明",
+        "ja": "openclaw のヘルプ",
+        "ko": "openclaw 도움말",
+        "es": "Ayuda de openclaw",
+        "fr": "Aide pour openclaw",
+        "de": "Hilfe zu openclaw",
+        "pt-BR": "Ajuda de openclaw",
+        "ru": "Справка по openclaw"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook opencode": {
+    "summary": {
+      "source": "Handle one opencode hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 opencode hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 opencode hook 事件；發生錯誤時放行",
+        "ja": "stdin から opencode のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 opencode 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de opencode desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook opencode depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von opencode von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do opencode a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука opencode из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for opencode",
+      "translations": {
+        "zh": "opencode 的帮助",
+        "zh-TW": "opencode 的說明",
+        "ja": "opencode のヘルプ",
+        "ko": "opencode 도움말",
+        "es": "Ayuda de opencode",
+        "fr": "Aide pour opencode",
+        "de": "Hilfe zu opencode",
+        "pt-BR": "Ajuda de opencode",
+        "ru": "Справка по opencode"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook pi": {
+    "summary": {
+      "source": "Handle one pi hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 pi hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 pi hook 事件；發生錯誤時放行",
+        "ja": "stdin から pi のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 pi 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de pi desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook pi depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von pi von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do pi a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука pi из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for pi",
+      "translations": {
+        "zh": "pi 的帮助",
+        "zh-TW": "pi 的說明",
+        "ja": "pi のヘルプ",
+        "ko": "pi 도움말",
+        "es": "Ayuda de pi",
+        "fr": "Aide pour pi",
+        "de": "Hilfe zu pi",
+        "pt-BR": "Ajuda de pi",
+        "ru": "Справка по pi"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook qoder": {
+    "summary": {
+      "source": "Handle one qoder hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 qoder hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 qoder hook 事件；發生錯誤時放行",
+        "ja": "stdin から qoder のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 qoder 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de qoder desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook qoder depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von qoder von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do qoder a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука qoder из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for qoder",
+      "translations": {
+        "zh": "qoder 的帮助",
+        "zh-TW": "qoder 的說明",
+        "ja": "qoder のヘルプ",
+        "ko": "qoder 도움말",
+        "es": "Ayuda de qoder",
+        "fr": "Aide pour qoder",
+        "de": "Hilfe zu qoder",
+        "pt-BR": "Ajuda de qoder",
+        "ru": "Справка по qoder"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook qoder-cn": {
+    "summary": {
+      "source": "Handle one qoder-cn hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 qoder-cn hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 qoder-cn hook 事件；發生錯誤時放行",
+        "ja": "stdin から qoder-cn のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 qoder-cn 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de qoder-cn desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook qoder-cn depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von qoder-cn von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do qoder-cn a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука qoder-cn из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for qoder-cn",
+      "translations": {
+        "zh": "qoder-cn 的帮助",
+        "zh-TW": "qoder-cn 的說明",
+        "ja": "qoder-cn のヘルプ",
+        "ko": "qoder-cn 도움말",
+        "es": "Ayuda de qoder-cn",
+        "fr": "Aide pour qoder-cn",
+        "de": "Hilfe zu qoder-cn",
+        "pt-BR": "Ajuda de qoder-cn",
+        "ru": "Справка по qoder-cn"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook trae": {
+    "summary": {
+      "source": "Handle one trae hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 trae hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 trae hook 事件；發生錯誤時放行",
+        "ja": "stdin から trae のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 trae 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de trae desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook trae depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von trae von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do trae a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука trae из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for trae",
+      "translations": {
+        "zh": "trae 的帮助",
+        "zh-TW": "trae 的說明",
+        "ja": "trae のヘルプ",
+        "ko": "trae 도움말",
+        "es": "Ayuda de trae",
+        "fr": "Aide pour trae",
+        "de": "Hilfe zu trae",
+        "pt-BR": "Ajuda de trae",
+        "ru": "Справка по trae"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook trae-cn": {
+    "summary": {
+      "source": "Handle one trae-cn hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 trae-cn hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 trae-cn hook 事件；發生錯誤時放行",
+        "ja": "stdin から trae-cn のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 trae-cn 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de trae-cn desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook trae-cn depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von trae-cn von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do trae-cn a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука trae-cn из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for trae-cn",
+      "translations": {
+        "zh": "trae-cn 的帮助",
+        "zh-TW": "trae-cn 的說明",
+        "ja": "trae-cn のヘルプ",
+        "ko": "trae-cn 도움말",
+        "es": "Ayuda de trae-cn",
+        "fr": "Aide pour trae-cn",
+        "de": "Hilfe zu trae-cn",
+        "pt-BR": "Ajuda de trae-cn",
+        "ru": "Справка по trae-cn"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook vibe": {
+    "summary": {
+      "source": "Handle one vibe hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 vibe hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 vibe hook 事件；發生錯誤時放行",
+        "ja": "stdin から vibe のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 vibe 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de vibe desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook vibe depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von vibe von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do vibe a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука vibe из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for vibe",
+      "translations": {
+        "zh": "vibe 的帮助",
+        "zh-TW": "vibe 的說明",
+        "ja": "vibe のヘルプ",
+        "ko": "vibe 도움말",
+        "es": "Ayuda de vibe",
+        "fr": "Aide pour vibe",
+        "de": "Hilfe zu vibe",
+        "pt-BR": "Ajuda de vibe",
+        "ru": "Справка по vibe"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook zcode": {
+    "summary": {
+      "source": "Handle one zcode hook event from stdin; errors fail open",
+      "translations": {
+        "zh": "处理来自 stdin 的一个 zcode hook 事件；出错时放行",
+        "zh-TW": "處理來自 stdin 的一個 zcode hook 事件；發生錯誤時放行",
+        "ja": "stdin から zcode のフックイベントを 1 件処理する。エラー時は止めずに通す",
+        "ko": "stdin으로 들어온 zcode 훅 이벤트 하나를 처리합니다. 오류가 나도 동작을 막지 않습니다",
+        "es": "Procesar un evento de hook de zcode desde stdin; ante un error se permite la acción",
+        "fr": "Traiter un événement de hook zcode depuis stdin ; en cas d’erreur, l’action est autorisée",
+        "de": "Ein Hook-Ereignis von zcode von stdin verarbeiten; bei Fehlern wird die Aktion zugelassen",
+        "pt-BR": "Processar um evento de hook do zcode a partir de stdin; em caso de erro, a ação é permitida",
+        "ru": "Обработать одно событие хука zcode из stdin; при ошибке действие разрешается"
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": "payload 里没有事件名时使用的宿主事件名",
+        "zh-TW": "payload 中沒有事件名稱時使用的宿主事件名稱",
+        "ja": "ペイロードにイベント名がないときに使うホスト側のイベント名",
+        "ko": "페이로드에 이벤트 이름이 없을 때 사용할 호스트 이벤트 이름",
+        "es": "Nombre del evento del host cuando no figura en el payload",
+        "fr": "Nom de l’événement de l’hôte lorsqu’il est absent de la charge utile",
+        "de": "Ereignisname des Hosts, falls er im Payload fehlt",
+        "pt-BR": "Nome do evento do host quando ele não vem no payload",
+        "ru": "Имя события хоста, если его нет в payload"
+      }
+    },
+    "--help": {
+      "source": "help for zcode",
+      "translations": {
+        "zh": "zcode 的帮助",
+        "zh-TW": "zcode 的說明",
+        "ja": "zcode のヘルプ",
+        "ko": "zcode 도움말",
+        "es": "Ayuda de zcode",
+        "fr": "Aide pour zcode",
+        "de": "Hilfe zu zcode",
+        "pt-BR": "Ajuda de zcode",
+        "ru": "Справка по zcode"
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": "只传递提示性上下文，不启用删除护栏",
+        "zh-TW": "只傳遞提示性的上下文，不啟用刪除護欄",
+        "ja": "注意喚起のコンテキストだけを渡し、削除ガードは働かせない",
+        "ko": "삭제 가드 없이 참고용 컨텍스트만 전달합니다",
+        "es": "Entregar contexto informativo sin la guardia de eliminación",
+        "fr": "Fournir un contexte indicatif sans la garde de suppression",
+        "de": "Hinweiskontext ohne den Löschschutz übermitteln",
+        "pt-BR": "Entregar contexto informativo sem o guardião de exclusão",
+        "ru": "Передавать только рекомендательный контекст, без защиты удаления"
+      }
+    }
+  },
+  "obit hook finish": {
+    "summary": {
+      "source": "Compute a session's leftovers (started in the background by the hooks)",
+      "translations": {
+        "zh": "计算会话留下的文件（由 hook 在后台启动）",
+        "zh-TW": "計算工作階段留下的檔案（由 hook 在背景啟動）",
+        "ja": "セッションが残したファイルを算出する（フックがバックグラウンドで起動する）",
+        "ko": "세션이 남긴 파일을 계산합니다(훅이 백그라운드에서 시작)",
+        "es": "Calcular los archivos sobrantes de una sesión (los inician los hooks en segundo plano)",
+        "fr": "Calculer les fichiers laissés par une session (lancé en arrière-plan par les hooks)",
+        "de": "Die von einer Sitzung hinterlassenen Dateien berechnen (von den Hooks im Hintergrund gestartet)",
+        "pt-BR": "Calcular os arquivos que uma sessão deixou para trás (iniciado em segundo plano pelos hooks)",
+        "ru": "Вычислить файлы, оставшиеся после сеанса (запускается хуками в фоне)"
+      }
+    },
+    "--help": {
+      "source": "help for finish",
+      "translations": {
+        "zh": "finish 的帮助",
+        "zh-TW": "finish 的說明",
+        "ja": "finish のヘルプ",
+        "ko": "finish 도움말",
+        "es": "Ayuda de finish",
+        "fr": "Aide pour finish",
+        "de": "Hilfe zu finish",
+        "pt-BR": "Ajuda de finish",
+        "ru": "Справка по finish"
+      }
+    },
+    "--project": {
+      "source": "project root",
+      "translations": {
+        "zh": "项目根目录",
+        "zh-TW": "專案根目錄",
+        "ja": "プロジェクトのルート",
+        "ko": "프로젝트 루트",
+        "es": "Raíz del proyecto",
+        "fr": "Racine du projet",
+        "de": "Stammverzeichnis des Projekts",
+        "pt-BR": "Raiz do projeto",
+        "ru": "Корень проекта"
+      }
+    },
+    "--session": {
+      "source": "agent session id",
+      "translations": {
+        "zh": "agent 会话 ID",
+        "zh-TW": "agent 工作階段 ID",
+        "ja": "エージェントのセッション ID",
+        "ko": "에이전트 세션 ID",
+        "es": "ID de la sesión del agente",
+        "fr": "ID de la session de l’agent",
+        "de": "ID der Agent-Sitzung",
+        "pt-BR": "ID da sessão do agente",
+        "ru": "ID сеанса агента"
+      }
+    }
+  },
+  "obit init": {
+    "summary": {
+      "source": "Install (or --uninstall) Obituary's hooks and instructions for an agent",
+      "translations": {
+        "zh": "为 agent 安装（或用 --uninstall 卸载）讣告的 hook 和说明",
+        "zh-TW": "為 agent 安裝（或用 --uninstall 解除安裝）訃告的 hook 和說明",
+        "ja": "エージェント向けに Obituary のフックと指示をインストールする（--uninstall で削除）",
+        "ko": "에이전트에 Obituary의 훅과 지침을 설치합니다(--uninstall로 제거)",
+        "es": "Instalar (o desinstalar con --uninstall) los hooks y las instrucciones de Obituary para un agente",
+        "fr": "Installer (ou désinstaller avec --uninstall) les hooks et les instructions d’Obituary pour un agent",
+        "de": "Die Hooks und Anweisungen von Obituary für einen Agenten installieren (oder mit --uninstall entfernen)",
+        "pt-BR": "Instalar (ou desinstalar com --uninstall) os hooks e as instruções do Obituary para um agente",
+        "ru": "Установить (или удалить с помощью --uninstall) хуки и инструкции Obituary для агента"
+      }
+    },
+    "--agent": {
+      "source": "agents to integrate with (repeat or comma-separate; default: claude)",
+      "translations": {
+        "zh": "要接入的 agent（可重复指定，也可用逗号分隔；默认 claude）",
+        "zh-TW": "要整合的 agent（可重複指定，也可用逗號分隔；預設為 claude）",
+        "ja": "連携するエージェント（繰り返し指定するか、カンマで区切る。既定は claude）",
+        "ko": "연동할 에이전트(반복하거나 쉼표로 구분, 기본값: claude)",
+        "es": "Agentes con los que integrar (repetir la opción o separarlos con comas; predeterminado: claude)",
+        "fr": "Agents à intégrer (répéter l’option ou séparer par des virgules ; par défaut : claude)",
+        "de": "Agenten, die eingebunden werden (Option wiederholen oder mit Komma trennen; Standard: claude)",
+        "pt-BR": "Agentes a integrar (repetir a opção ou separar por vírgulas; padrão: claude)",
+        "ru": "Агенты для интеграции (параметр можно повторять или перечислить через запятую; по умолчанию: claude)"
+      }
+    },
+    "--context-menu": {
+      "source": "install classic Explorer context menus (enabled by default)",
+      "translations": {
+        "zh": "安装经典的资源管理器右键菜单（默认启用）",
+        "zh-TW": "安裝傳統的檔案總管右鍵選單（預設啟用）",
+        "ja": "クラシックなエクスプローラーのコンテキストメニューをインストールする（既定で有効）",
+        "ko": "클래식 파일 탐색기 상황에 맞는 메뉴를 설치합니다(기본적으로 활성화)",
+        "es": "Instalar los menús contextuales clásicos del Explorador (activado por defecto)",
+        "fr": "Installer les menus contextuels classiques de l’Explorateur (activé par défaut)",
+        "de": "Klassische Explorer-Kontextmenüs installieren (standardmäßig aktiviert)",
+        "pt-BR": "Instalar os menus de contexto clássicos do Explorador de Arquivos (ativado por padrão)",
+        "ru": "Установить классические контекстные меню Проводника (включено по умолчанию)"
+      }
+    },
+    "--dry-run": {
+      "source": "only print the changes",
+      "translations": {
+        "zh": "只打印改动",
+        "zh-TW": "只列印變更內容",
+        "ja": "変更内容の表示だけを行う",
+        "ko": "변경 내용만 출력합니다",
+        "es": "Solo mostrar los cambios",
+        "fr": "Afficher seulement les changements",
+        "de": "Nur die Änderungen ausgeben",
+        "pt-BR": "Apenas exibir as alterações",
+        "ru": "Только вывести изменения"
+      }
+    },
+    "--format": {
+      "source": "output format for --show: text or markdown (agent coverage)",
+      "translations": {
+        "zh": "--show 的输出格式：text 或 markdown（agent 支持范围）",
+        "zh-TW": "--show 的輸出格式：text 或 markdown（agent 支援範圍）",
+        "ja": "--show の出力形式：text または markdown（エージェントの対応範囲）",
+        "ko": "--show의 출력 형식: text 또는 markdown(에이전트 지원 범위)",
+        "es": "Formato de salida de --show: text o markdown (cobertura de agentes)",
+        "fr": "Format de sortie de --show : text ou markdown (couverture des agents)",
+        "de": "Ausgabeformat für --show: text oder markdown (Agentenabdeckung)",
+        "pt-BR": "Formato de saída de --show: text ou markdown (cobertura dos agentes)",
+        "ru": "Формат вывода для --show: text или markdown (поддержка агентов)"
+      }
+    },
+    "--global": {
+      "source": "user-wide instead of this project",
+      "translations": {
+        "zh": "对当前用户生效，而不是只对这个项目生效",
+        "zh-TW": "對目前使用者生效，而不是只對這個專案生效",
+        "ja": "このプロジェクトだけでなく、ユーザー全体に適用する",
+        "ko": "이 프로젝트가 아니라 사용자 전체에 적용",
+        "es": "Para todo el usuario, en lugar de solo este proyecto",
+        "fr": "Pour tout l’utilisateur plutôt que pour ce seul projet",
+        "de": "Für den ganzen Benutzer statt nur für dieses Projekt",
+        "pt-BR": "Para todo o usuário, em vez de só este projeto",
+        "ru": "Для всего пользователя, а не только для этого проекта"
+      }
+    },
+    "--guard-rm": {
+      "source": "deny supported deletion commands with restorable obit alternatives",
+      "translations": {
+        "zh": "拒绝受支持的删除命令，并给出可以复活的 obit 替代命令",
+        "zh-TW": "拒絕受支援的刪除指令，並提供可以復活的 obit 替代指令",
+        "ja": "対応する削除コマンドを拒否し、復元できる obit のコマンドを代わりに示す",
+        "ko": "지원되는 삭제 명령을 거부하고 복원 가능한 obit 대체 명령을 안내합니다",
+        "es": "Denegar los comandos de eliminación admitidos y sugerir alternativas de obit restaurables",
+        "fr": "Refuser les commandes de suppression prises en charge et proposer des équivalents obit restaurables",
+        "de": "Unterstützte Löschbefehle verweigern und wiederherstellbare obit-Alternativen vorschlagen",
+        "pt-BR": "Negar os comandos de exclusão compatíveis e sugerir alternativas do obit que podem ser restauradas",
+        "ru": "Отклонять поддерживаемые команды удаления и предлагать вместо них восстанавливаемые команды obit"
+      }
+    },
+    "--help": {
+      "source": "help for init",
+      "translations": {
+        "zh": "init 的帮助",
+        "zh-TW": "init 的說明",
+        "ja": "init のヘルプ",
+        "ko": "init 도움말",
+        "es": "Ayuda de init",
+        "fr": "Aide pour init",
+        "de": "Hilfe zu init",
+        "pt-BR": "Ajuda de init",
+        "ru": "Справка по init"
+      }
+    },
+    "--mcp": {
+      "source": "register the Obituary MCP stdio server",
+      "translations": {
+        "zh": "注册讣告的 MCP stdio 服务",
+        "zh-TW": "註冊訃告的 MCP stdio 伺服器",
+        "ja": "Obituary の MCP stdio サーバーを登録する",
+        "ko": "Obituary MCP stdio 서버를 등록합니다",
+        "es": "Registrar el servidor MCP stdio de Obituary",
+        "fr": "Enregistrer le serveur MCP stdio d’Obituary",
+        "de": "Den MCP-stdio-Server von Obituary registrieren",
+        "pt-BR": "Registrar o servidor MCP stdio do Obituary",
+        "ru": "Зарегистрировать MCP-сервер Obituary для stdio"
+      }
+    },
+    "--no-context-menu": {
+      "source": "skip Explorer context menus",
+      "translations": {
+        "zh": "不安装资源管理器右键菜单",
+        "zh-TW": "不安裝檔案總管右鍵選單",
+        "ja": "エクスプローラーのコンテキストメニューをインストールしない",
+        "ko": "파일 탐색기 상황에 맞는 메뉴를 설치하지 않습니다",
+        "es": "Omitir los menús contextuales del Explorador",
+        "fr": "Ne pas installer les menus contextuels de l’Explorateur",
+        "de": "Explorer-Kontextmenüs überspringen",
+        "pt-BR": "Pular os menus de contexto do Explorador de Arquivos",
+        "ru": "Не устанавливать контекстные меню Проводника"
+      }
+    },
+    "--no-shortcuts": {
+      "source": "skip Start menu and desktop shortcuts",
+      "translations": {
+        "zh": "不创建开始菜单和桌面快捷方式",
+        "zh-TW": "不建立開始功能表和桌面捷徑",
+        "ja": "スタートメニューとデスクトップのショートカットを作らない",
+        "ko": "시작 메뉴와 바탕 화면 바로 가기를 만들지 않습니다",
+        "es": "Omitir los accesos directos del menú Inicio y del escritorio",
+        "fr": "Ne pas créer les raccourcis du menu Démarrer et du Bureau",
+        "de": "Startmenü- und Desktopverknüpfungen überspringen",
+        "pt-BR": "Pular os atalhos do menu Iniciar e da área de trabalho",
+        "ru": "Не создавать ярлыки в меню «Пуск» и на рабочем столе"
+      }
+    },
+    "--no-skill": {
+      "source": "leave the Obituary Agent Skill unchanged",
+      "translations": {
+        "zh": "不改动讣告的 Agent Skill",
+        "zh-TW": "不更動訃告的 Agent Skill",
+        "ja": "Obituary の Agent Skill には手を加えない",
+        "ko": "Obituary Agent Skill을 변경하지 않습니다",
+        "es": "Dejar sin cambios la Agent Skill de Obituary",
+        "fr": "Laisser l’Agent Skill d’Obituary inchangé",
+        "de": "Den Obituary-Agent-Skill unverändert lassen",
+        "pt-BR": "Deixar o Agent Skill do Obituary inalterado",
+        "ru": "Оставить Agent Skill для Obituary без изменений"
+      }
+    },
+    "--show": {
+      "source": "show what is installed",
+      "translations": {
+        "zh": "显示已安装的内容",
+        "zh-TW": "顯示已安裝的項目",
+        "ja": "インストール済みの内容を表示する",
+        "ko": "설치된 항목을 표시합니다",
+        "es": "Mostrar lo que está instalado",
+        "fr": "Afficher ce qui est installé",
+        "de": "Anzeigen, was installiert ist",
+        "pt-BR": "Exibir o que está instalado",
+        "ru": "Показать, что установлено"
+      }
+    },
+    "--skill": {
+      "source": "install the Obituary Agent Skill (enabled by default)",
+      "translations": {
+        "zh": "安装讣告的 Agent Skill（默认启用）",
+        "zh-TW": "安裝訃告的 Agent Skill（預設啟用）",
+        "ja": "Obituary の Agent Skill をインストールする（既定で有効）",
+        "ko": "Obituary Agent Skill을 설치합니다(기본적으로 활성화)",
+        "es": "Instalar la Agent Skill de Obituary (activado por defecto)",
+        "fr": "Installer l’Agent Skill d’Obituary (activé par défaut)",
+        "de": "Den Obituary-Agent-Skill installieren (standardmäßig aktiviert)",
+        "pt-BR": "Instalar o Agent Skill do Obituary (ativado por padrão)",
+        "ru": "Установить Agent Skill для Obituary (включено по умолчанию)"
+      }
+    },
+    "--uninstall": {
+      "source": "remove what Obituary added",
+      "translations": {
+        "zh": "移除讣告添加的内容",
+        "zh-TW": "移除訃告加入的項目",
+        "ja": "Obituary が追加したものを削除する",
+        "ko": "Obituary가 추가한 항목을 제거합니다",
+        "es": "Quitar lo que Obituary ha añadido",
+        "fr": "Retirer ce qu’Obituary a ajouté",
+        "de": "Entfernen, was Obituary hinzugefügt hat",
+        "pt-BR": "Remover o que o Obituary adicionou",
+        "ru": "Удалить то, что добавил Obituary"
+      }
+    },
+    "--yes": {
+      "source": "apply without asking",
+      "translations": {
+        "zh": "不询问，直接执行",
+        "zh-TW": "不詢問，直接套用",
+        "ja": "確認せずに適用する",
+        "ko": "묻지 않고 적용합니다",
+        "es": "Aplicar sin preguntar",
+        "fr": "Appliquer sans demander",
+        "de": "Ohne Nachfrage anwenden",
+        "pt-BR": "Aplicar sem perguntar",
+        "ru": "Применить без вопросов"
+      }
+    },
+    "example: obit init -g": {
+      "source": "Claude Code, for every project (~/.claude)",
+      "translations": {
+        "zh": "Claude Code，对所有项目生效（~/.claude）",
+        "zh-TW": "Claude Code，對所有專案生效（~/.claude）",
+        "ja": "Claude Code、すべてのプロジェクト向け（~/.claude）",
+        "ko": "Claude Code, 모든 프로젝트용(~/.claude)",
+        "es": "Claude Code, para todos los proyectos (~/.claude)",
+        "fr": "Claude Code, pour tous les projets (~/.claude)",
+        "de": "Claude Code, für alle Projekte (~/.claude)",
+        "pt-BR": "Claude Code, para todos os projetos (~/.claude)",
+        "ru": "Claude Code, для всех проектов (~/.claude)"
+      }
+    },
+    "example: obit init": {
+      "source": "Claude Code, this project only (.claude/)",
+      "translations": {
+        "zh": "Claude Code，只对这个项目生效（.claude/）",
+        "zh-TW": "Claude Code，只對這個專案生效（.claude/）",
+        "ja": "Claude Code、このプロジェクトだけ（.claude/）",
+        "ko": "Claude Code, 이 프로젝트만(.claude/)",
+        "es": "Claude Code, solo este proyecto (.claude/)",
+        "fr": "Claude Code, ce projet uniquement (.claude/)",
+        "de": "Claude Code, nur dieses Projekt (.claude/)",
+        "pt-BR": "Claude Code, somente este projeto (.claude/)",
+        "ru": "Claude Code, только для этого проекта (.claude/)"
+      }
+    },
+    "example: obit init -g --agent codex": {
+      "source": "Codex (~/.codex/hooks.json + AGENTS.md)",
+      "translations": {
+        "zh": "Codex（~/.codex/hooks.json + AGENTS.md）",
+        "zh-TW": "Codex（~/.codex/hooks.json + AGENTS.md）",
+        "ja": "Codex（~/.codex/hooks.json + AGENTS.md）",
+        "ko": "Codex(~/.codex/hooks.json + AGENTS.md)",
+        "es": "Codex (~/.codex/hooks.json + AGENTS.md)",
+        "fr": "Codex (~/.codex/hooks.json + AGENTS.md)",
+        "de": "Codex (~/.codex/hooks.json + AGENTS.md)",
+        "pt-BR": "Codex (~/.codex/hooks.json + AGENTS.md)",
+        "ru": "Codex (~/.codex/hooks.json + AGENTS.md)"
+      }
+    },
+    "example: obit init -g --uninstall": {
+      "source": "remove only what Obituary added",
+      "translations": {
+        "zh": "只移除讣告添加的内容",
+        "zh-TW": "只移除訃告加入的項目",
+        "ja": "Obituary が追加したものだけを削除する",
+        "ko": "Obituary가 추가한 항목만 제거합니다",
+        "es": "Quitar solo lo que Obituary ha añadido",
+        "fr": "Retirer uniquement ce qu’Obituary a ajouté",
+        "de": "Nur entfernen, was Obituary hinzugefügt hat",
+        "pt-BR": "Remover apenas o que o Obituary adicionou",
+        "ru": "Удалить только то, что добавил Obituary"
+      }
+    },
+    "example: obit init -g --show": {
+      "source": "what is installed",
+      "translations": {
+        "zh": "已安装的内容",
+        "zh-TW": "已安裝的項目",
+        "ja": "インストール済みの内容",
+        "ko": "설치된 항목",
+        "es": "Lo que está instalado",
+        "fr": "Ce qui est installé",
+        "de": "Was installiert ist",
+        "pt-BR": "O que está instalado",
+        "ru": "Что установлено"
+      }
+    }
+  },
+  "obit list": {
+    "summary": {
+      "source": "Show tracked paths and Docker containers, soonest expiry first",
+      "translations": {
+        "zh": "显示已跟踪的路径和 Docker 容器，最先到期的排在最前",
+        "zh-TW": "顯示已追蹤的路徑和 Docker 容器，最先到期的排在最前面",
+        "ja": "追跡中のパスと Docker コンテナを、期限が近い順に表示する",
+        "ko": "추적 중인 경로와 Docker 컨테이너를 만료가 가까운 순서로 표시합니다",
+        "es": "Mostrar las rutas con seguimiento y los contenedores de Docker, empezando por la caducidad más próxima",
+        "fr": "Afficher les chemins suivis et les conteneurs Docker, du plus proche de l’échéance au plus lointain",
+        "de": "Verfolgte Pfade und Docker-Container anzeigen, der früheste Ablauf zuerst",
+        "pt-BR": "Exibir os caminhos acompanhados e os contêineres Docker, do vencimento mais próximo ao mais distante",
+        "ru": "Показать отслеживаемые пути и контейнеры Docker, сначала с ближайшим сроком истечения"
+      }
+    },
+    "--help": {
+      "source": "help for list",
+      "translations": {
+        "zh": "list 的帮助",
+        "zh-TW": "list 的說明",
+        "ja": "list のヘルプ",
+        "ko": "list 도움말",
+        "es": "Ayuda de list",
+        "fr": "Aide pour list",
+        "de": "Hilfe zu list",
+        "pt-BR": "Ajuda de list",
+        "ru": "Справка по list"
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": "输出 JSON",
+        "zh-TW": "輸出 JSON",
+        "ja": "JSON を出力する",
+        "ko": "JSON으로 출력합니다",
+        "es": "Imprimir JSON",
+        "fr": "Afficher le JSON",
+        "de": "JSON ausgeben",
+        "pt-BR": "Exibir JSON",
+        "ru": "Вывести JSON"
+      }
+    }
+  },
+  "obit log": {
+    "summary": {
+      "source": "Show the audit log of everything Obituary did",
+      "translations": {
+        "zh": "显示讣告所做的一切的审计日志",
+        "zh-TW": "顯示訃告所做的一切的稽核日誌",
+        "ja": "Obituary が行ったすべての操作の監査ログを表示する",
+        "ko": "Obituary가 수행한 모든 작업의 감사 로그를 표시합니다",
+        "es": "Mostrar el registro de auditoría de todo lo que ha hecho Obituary",
+        "fr": "Afficher le journal d’audit de tout ce qu’Obituary a fait",
+        "de": "Das Auditprotokoll von allem anzeigen, was Obituary getan hat",
+        "pt-BR": "Exibir o log de auditoria de tudo o que o Obituary fez",
+        "ru": "Показать журнал аудита всего, что сделал Obituary"
+      }
+    },
+    "--help": {
+      "source": "help for log",
+      "translations": {
+        "zh": "log 的帮助",
+        "zh-TW": "log 的說明",
+        "ja": "log のヘルプ",
+        "ko": "log 도움말",
+        "es": "Ayuda de log",
+        "fr": "Aide pour log",
+        "de": "Hilfe zu log",
+        "pt-BR": "Ajuda de log",
+        "ru": "Справка по log"
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": "输出 JSON",
+        "zh-TW": "輸出 JSON",
+        "ja": "JSON を出力する",
+        "ko": "JSON으로 출력합니다",
+        "es": "Imprimir JSON",
+        "fr": "Afficher le JSON",
+        "de": "JSON ausgeben",
+        "pt-BR": "Exibir JSON",
+        "ru": "Вывести JSON"
+      }
+    },
+    "--lines": {
+      "source": "number of events",
+      "translations": {
+        "zh": "显示的事件条数",
+        "zh-TW": "顯示的事件筆數",
+        "ja": "表示するイベント数",
+        "ko": "표시할 이벤트 수",
+        "es": "Número de eventos",
+        "fr": "Nombre d’événements",
+        "de": "Anzahl der Ereignisse",
+        "pt-BR": "Número de eventos",
+        "ru": "Число событий"
+      }
+    }
+  },
+  "obit mcp": {
+    "summary": {
+      "source": "Serve Obituary tools over MCP stdio",
+      "translations": {
+        "zh": "通过 MCP stdio 提供讣告的工具",
+        "zh-TW": "透過 MCP stdio 提供訃告的工具",
+        "ja": "MCP stdio で Obituary のツールを提供する",
+        "ko": "MCP stdio로 Obituary 도구를 제공합니다",
+        "es": "Ofrecer las herramientas de Obituary mediante MCP stdio",
+        "fr": "Exposer les outils d’Obituary via MCP stdio",
+        "de": "Die Werkzeuge von Obituary über MCP stdio bereitstellen",
+        "pt-BR": "Servir as ferramentas do Obituary por MCP stdio",
+        "ru": "Предоставлять инструменты Obituary по MCP через stdio"
+      }
+    },
+    "--help": {
+      "source": "help for mcp",
+      "translations": {
+        "zh": "mcp 的帮助",
+        "zh-TW": "mcp 的說明",
+        "ja": "mcp のヘルプ",
+        "ko": "mcp 도움말",
+        "es": "Ayuda de mcp",
+        "fr": "Aide pour mcp",
+        "de": "Hilfe zu mcp",
+        "pt-BR": "Ajuda de mcp",
+        "ru": "Справка по mcp"
+      }
+    }
+  },
+  "obit mktemp": {
+    "summary": {
+      "source": "Create a temporary directory that buries itself; prints its path",
+      "translations": {
+        "zh": "创建一个会自己下葬的临时目录，并打印它的路径",
+        "zh-TW": "建立一個會自行下葬的暫存目錄，並列印它的路徑",
+        "ja": "自分で埋葬される一時ディレクトリを作成し、そのパスを出力する",
+        "ko": "스스로 매장되는 임시 디렉터리를 만들고 그 경로를 출력합니다",
+        "es": "Crear un directorio temporal que se entierra solo e imprimir su ruta",
+        "fr": "Créer un répertoire temporaire qui s’enterre tout seul et afficher son chemin",
+        "de": "Ein temporäres Verzeichnis anlegen, das sich selbst begräbt, und seinen Pfad ausgeben",
+        "pt-BR": "Criar um diretório temporário que se enterra sozinho e exibir seu caminho",
+        "ru": "Создать временный каталог, который сам будет похоронен, и вывести его путь"
+      }
+    },
+    "--help": {
+      "source": "help for mktemp",
+      "translations": {
+        "zh": "mktemp 的帮助",
+        "zh-TW": "mktemp 的說明",
+        "ja": "mktemp のヘルプ",
+        "ko": "mktemp 도움말",
+        "es": "Ayuda de mktemp",
+        "fr": "Aide pour mktemp",
+        "de": "Hilfe zu mktemp",
+        "pt-BR": "Ajuda de mktemp",
+        "ru": "Справка по mktemp"
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": "输出 JSON",
+        "zh-TW": "輸出 JSON",
+        "ja": "JSON を出力する",
+        "ko": "JSON으로 출력합니다",
+        "es": "Imprimir JSON",
+        "fr": "Afficher le JSON",
+        "de": "JSON ausgeben",
+        "pt-BR": "Exibir JSON",
+        "ru": "Вывести JSON"
+      }
+    },
+    "--name": {
+      "source": "name prefix for the directory",
+      "translations": {
+        "zh": "目录名的前缀",
+        "zh-TW": "目錄名稱的前綴",
+        "ja": "ディレクトリ名の接頭辞",
+        "ko": "디렉터리 이름 접두사",
+        "es": "Prefijo del nombre del directorio",
+        "fr": "Préfixe du nom du répertoire",
+        "de": "Namenspräfix für das Verzeichnis",
+        "pt-BR": "Prefixo do nome do diretório",
+        "ru": "Префикс имени каталога"
+      }
+    },
+    "--session": {
+      "source": "agent session the directory belongs to",
+      "translations": {
+        "zh": "目录所属的 agent 会话",
+        "zh-TW": "目錄所屬的 agent 工作階段",
+        "ja": "ディレクトリが属するエージェントのセッション",
+        "ko": "디렉터리가 속한 에이전트 세션",
+        "es": "Sesión de agente a la que pertenece el directorio",
+        "fr": "Session d’agent à laquelle appartient le répertoire",
+        "de": "Agent-Sitzung, zu der das Verzeichnis gehört",
+        "pt-BR": "Sessão de agente a que o diretório pertence",
+        "ru": "Сеанс агента, которому принадлежит каталог"
+      }
+    }
+  },
+  "obit proposals": {
+    "summary": {
+      "source": "Registrations waiting for your approval, and those made without asking",
+      "translations": {
+        "zh": "等你批准的登记，以及没问你就已经做了的登记",
+        "zh-TW": "等你核准的登記，以及沒有詢問你就已完成的登記",
+        "ja": "承認待ちの登録と、確認なしで行われた登録",
+        "ko": "승인을 기다리는 등록과 묻지 않고 이루어진 등록",
+        "es": "Registros pendientes de tu aprobación y los hechos sin preguntar",
+        "fr": "Enregistrements en attente de votre approbation, et ceux effectués sans demander",
+        "de": "Registrierungen, die auf Genehmigung warten, und solche, die ohne Nachfrage erfolgt sind",
+        "pt-BR": "Registros aguardando a sua aprovação e os feitos sem perguntar",
+        "ru": "Регистрации, ожидающие одобрения, и те, что выполнены без вопросов"
+      }
+    },
+    "--help": {
+      "source": "help for proposals",
+      "translations": {
+        "zh": "proposals 的帮助",
+        "zh-TW": "proposals 的說明",
+        "ja": "proposals のヘルプ",
+        "ko": "proposals 도움말",
+        "es": "Ayuda de proposals",
+        "fr": "Aide pour proposals",
+        "de": "Hilfe zu proposals",
+        "pt-BR": "Ajuda de proposals",
+        "ru": "Справка по proposals"
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": "输出 JSON",
+        "zh-TW": "輸出 JSON",
+        "ja": "JSON を出力する",
+        "ko": "JSON으로 출력합니다",
+        "es": "Imprimir JSON",
+        "fr": "Afficher le JSON",
+        "de": "JSON ausgeben",
+        "pt-BR": "Exibir JSON",
+        "ru": "Вывести JSON"
+      }
+    }
+  },
+  "obit purge": {
+    "summary": {
+      "source": "Delete selected or expired file burials. --all and explicit references skip retention, so they ask first; outside a terminal they require --yes. Docker containers require elapsed [graveyard] retention_days, including with --all or an explicit ID; running containers are treated as resurrected. Docker removal preserves volumes and never forces removal. Container handling is identical in recycle mode.",
+      "translations": {
+        "zh": "火化选中的或保留期已过的已下葬文件。--all 和明确指定的编号或路径会跳过保留期，所以会先询问；不在终端里运行时必须加 --yes。Docker 容器必须等 [graveyard] retention_days 过完才能火化，用 --all 或明确指定 ID 也一样；正在运行的容器视为已复活。移除 Docker 容器时保留卷，也从不强制移除。回收站模式下对容器的处理完全相同。",
+        "zh-TW": "永久刪除選定的或保留期已過的已下葬檔案。--all 和明確指定的編號或路徑會略過保留期，因此會先詢問；不在終端機中執行時必須加上 --yes。Docker 容器必須等 [graveyard] retention_days 屆滿才能永久刪除，使用 --all 或明確指定 ID 也一樣；執行中的容器視為已復活。移除 Docker 容器時會保留磁碟區，也從不強制移除。資源回收筒模式下，容器的處理方式完全相同。",
+        "ja": "選択した、または保持期間が過ぎた埋葬済みファイルを削除する。--all と明示的に指定した対象は保持期間を飛ばすため、先に確認する。ターミナル以外では --yes が必要。Docker コンテナは、--all や ID を明示した場合も、[graveyard] retention_days が経過していなければ削除できない。実行中のコンテナは復活済みとして扱う。Docker のコンテナ削除ではボリュームを残し、強制削除は行わない。ごみ箱モードでもコンテナの扱いは同じ。",
+        "ko": "선택한 매장 파일이나 보관 기간이 지난 매장 파일을 삭제합니다. --all과 명시적으로 지정한 대상은 보관 기간을 건너뛰므로 먼저 확인을 요청하며, 터미널이 아닌 환경에서는 --yes가 필요합니다. Docker 컨테이너는 --all이나 명시적 ID를 지정해도 [graveyard] retention_days가 지나야 삭제할 수 있습니다. 실행 중인 컨테이너는 부활한 것으로 취급합니다. Docker 컨테이너를 제거할 때 볼륨은 보존하며 강제 제거는 하지 않습니다. 휴지통 모드에서도 컨테이너는 똑같이 처리합니다.",
+        "es": "Eliminar los entierros de archivos seleccionados o con la retención vencida. --all y las referencias explícitas se saltan la retención, por lo que piden confirmación antes; fuera de un terminal exigen --yes. Los contenedores de Docker requieren que haya transcurrido [graveyard] retention_days, incluso con --all o con un ID explícito; los contenedores en ejecución se consideran resucitados. La eliminación de Docker conserva los volúmenes y nunca fuerza la eliminación. El tratamiento de los contenedores es idéntico en modo papelera.",
+        "fr": "Supprimer les enterrements de fichiers sélectionnés ou dont la conservation est écoulée. --all et les références explicites ignorent le délai de conservation ; ils demandent donc confirmation d’abord, et hors d’un terminal ils exigent --yes. Les conteneurs Docker exigent que [graveyard] retention_days soit écoulé, y compris avec --all ou un ID explicite ; les conteneurs en cours d’exécution sont considérés comme ressuscités. La suppression Docker préserve les volumes et ne force jamais la suppression. Le traitement des conteneurs est identique en mode corbeille.",
+        "de": "Ausgewählte Datei-Begräbnisse oder solche mit abgelaufener Aufbewahrungsfrist löschen. --all und ausdrückliche Angaben (ID oder Pfad) überspringen die Aufbewahrungsfrist und fragen daher zuerst nach; außerhalb eines Terminals erfordern sie --yes. Bei Docker-Containern muss [graveyard] retention_days abgelaufen sein, auch mit --all oder einer ausdrücklichen ID; laufende Container gelten als wiederbelebt. Beim Entfernen von Docker-Containern bleiben Volumes erhalten, und es wird nie erzwungen. Im Papierkorbmodus werden Container genauso behandelt.",
+        "pt-BR": "Excluir enterros de arquivos selecionados ou com a retenção vencida. --all e referências explícitas ignoram a retenção, por isso pedem confirmação antes; fora de um terminal exigem --yes. Os contêineres Docker exigem que [graveyard] retention_days tenha passado, mesmo com --all ou com um ID explícito; contêineres em execução são tratados como ressuscitados. A remoção do Docker preserva os volumes e nunca força a remoção. O tratamento dos contêineres é idêntico no modo de lixeira.",
+        "ru": "Удалить выбранные или с истёкшим сроком хранения захоронения файлов. --all и явно указанные ссылки пропускают срок хранения, поэтому сначала запрашивают подтверждение; вне терминала требуют --yes. Для контейнеров Docker должен пройти срок [graveyard] retention_days, в том числе с --all или явно указанным ID; работающие контейнеры считаются воскрешёнными. При удалении контейнеров Docker тома сохраняются, а принудительное удаление не применяется. В режиме корзины контейнеры обрабатываются так же."
+      }
+    },
+    "--all": {
+      "source": "purge every burial, not only those past their retention",
+      "translations": {
+        "zh": "火化全部已下葬的内容，不只是过了保留期的",
+        "zh-TW": "永久刪除所有已下葬的項目，不只是已過保留期的",
+        "ja": "保持期間が過ぎたものだけでなく、すべての埋葬を永久削除する",
+        "ko": "보관 기간이 지난 매장만이 아니라 모든 매장을 영구 삭제합니다",
+        "es": "Eliminar definitivamente todos los entierros, no solo los que han superado su retención",
+        "fr": "Supprimer définitivement tous les enterrements, pas seulement ceux dont la conservation est écoulée",
+        "de": "Alle Begräbnisse dauerhaft löschen, nicht nur die mit abgelaufener Aufbewahrungsfrist",
+        "pt-BR": "Excluir permanentemente todos os enterros, não apenas os que passaram da retenção",
+        "ru": "Удалить навсегда все захоронения, а не только те, у которых истёк срок хранения"
+      }
+    },
+    "--dry-run": {
+      "source": "only show what would happen",
+      "translations": {
+        "zh": "只显示会发生什么",
+        "zh-TW": "只顯示會發生什麼",
+        "ja": "実行される内容を表示するだけにする",
+        "ko": "실행될 내용만 표시합니다",
+        "es": "Mostrar solo lo que ocurriría",
+        "fr": "Afficher seulement ce qui se passerait",
+        "de": "Nur anzeigen, was passieren würde",
+        "pt-BR": "Mostrar apenas o que aconteceria",
+        "ru": "Только показать, что произойдёт"
+      }
+    },
+    "--help": {
+      "source": "help for purge",
+      "translations": {
+        "zh": "purge 的帮助",
+        "zh-TW": "purge 的說明",
+        "ja": "purge のヘルプ",
+        "ko": "purge 도움말",
+        "es": "Ayuda de purge",
+        "fr": "Aide pour purge",
+        "de": "Hilfe zu purge",
+        "pt-BR": "Ajuda de purge",
+        "ru": "Справка по purge"
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": "输出 JSON",
+        "zh-TW": "輸出 JSON",
+        "ja": "JSON を出力する",
+        "ko": "JSON으로 출력합니다",
+        "es": "Imprimir JSON",
+        "fr": "Afficher le JSON",
+        "de": "JSON ausgeben",
+        "pt-BR": "Exibir JSON",
+        "ru": "Вывести JSON"
+      }
+    },
+    "--yes": {
+      "source": "purge --all or the selected burials without asking (agents: ask the user first)",
+      "translations": {
+        "zh": "不询问，直接火化 --all 或所选的已下葬内容（agent：先问用户）",
+        "zh-TW": "不詢問，直接永久刪除 --all 或所選的已下葬項目（agent：請先詢問使用者）",
+        "ja": "--all または選択した埋葬を確認せずに永久削除する（エージェントは先にユーザーへ確認する）",
+        "ko": "--all 또는 선택한 매장을 묻지 않고 영구 삭제합니다(에이전트는 먼저 사용자에게 물어야 함)",
+        "es": "Eliminar definitivamente --all o los entierros seleccionados sin preguntar (agentes: preguntar antes al usuario)",
+        "fr": "Supprimer définitivement --all ou les enterrements sélectionnés sans demander (agents : demander d’abord à l’utilisateur)",
+        "de": "--all oder die ausgewählten Begräbnisse ohne Nachfrage dauerhaft löschen (Agenten: zuerst den Benutzer fragen)",
+        "pt-BR": "Excluir permanentemente --all ou os enterros selecionados sem perguntar (agentes: perguntar antes ao usuário)",
+        "ru": "Удалить навсегда --all или выбранные захоронения без вопросов (агентам: сначала спросить пользователя)"
+      }
+    }
+  },
+  "obit reject": {
+    "summary": {
+      "source": "Reject proposals",
+      "translations": {
+        "zh": "拒绝提议",
+        "zh-TW": "拒絕提議",
+        "ja": "提案を却下する",
+        "ko": "제안을 거부합니다",
+        "es": "Rechazar propuestas",
+        "fr": "Rejeter des propositions",
+        "de": "Vorschläge ablehnen",
+        "pt-BR": "Rejeitar propostas",
+        "ru": "Отклонить предложения"
+      }
+    },
+    "--help": {
+      "source": "help for reject",
+      "translations": {
+        "zh": "reject 的帮助",
+        "zh-TW": "reject 的說明",
+        "ja": "reject のヘルプ",
+        "ko": "reject 도움말",
+        "es": "Ayuda de reject",
+        "fr": "Aide pour reject",
+        "de": "Hilfe zu reject",
+        "pt-BR": "Ajuda de reject",
+        "ru": "Справка по reject"
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": "输出 JSON",
+        "zh-TW": "輸出 JSON",
+        "ja": "JSON を出力する",
+        "ko": "JSON으로 출력합니다",
+        "es": "Imprimir JSON",
+        "fr": "Afficher le JSON",
+        "de": "JSON ausgeben",
+        "pt-BR": "Exibir JSON",
+        "ru": "Вывести JSON"
+      }
+    }
+  },
+  "obit remove-item": {
+    "summary": {
+      "source": "Bury filesystem items using a limited subset of PowerShell parameters.",
+      "translations": {
+        "zh": "用有限的一部分 PowerShell 参数下葬文件系统项目。",
+        "zh-TW": "使用有限的一部分 PowerShell 參數，把檔案系統項目下葬。",
+        "ja": "PowerShell のパラメーターの一部だけを使って、ファイルシステムの項目を埋葬する。",
+        "ko": "PowerShell 매개변수의 일부만 사용해 파일 시스템 항목을 매장합니다.",
+        "es": "Enterrar elementos del sistema de archivos con un subconjunto limitado de parámetros de PowerShell.",
+        "fr": "Enterrer des éléments du système de fichiers avec un sous-ensemble limité de paramètres PowerShell.",
+        "de": "Dateisystemelemente mit einer begrenzten Teilmenge der PowerShell-Parameter begraben.",
+        "pt-BR": "Enterrar itens do sistema de arquivos usando um subconjunto limitado de parâmetros do PowerShell.",
+        "ru": "Похоронить элементы файловой системы, используя ограниченный набор параметров PowerShell."
+      }
+    },
+    "--help": {
+      "source": "help for remove-item",
+      "translations": {
+        "zh": "remove-item 的帮助",
+        "zh-TW": "remove-item 的說明",
+        "ja": "remove-item のヘルプ",
+        "ko": "remove-item 도움말",
+        "es": "Ayuda de remove-item",
+        "fr": "Aide pour remove-item",
+        "de": "Hilfe zu remove-item",
+        "pt-BR": "Ajuda de remove-item",
+        "ru": "Справка по remove-item"
+      }
+    }
+  },
+  "obit resurrect": {
+    "summary": {
+      "source": "Restore files without overwriting; start buried Docker containers by ID",
+      "translations": {
+        "zh": "恢复文件，不覆盖已有的内容；按 ID 启动已下葬的 Docker 容器",
+        "zh-TW": "還原檔案，不覆寫既有內容；依 ID 啟動已下葬的 Docker 容器",
+        "ja": "上書きせずにファイルを復元する。埋葬された Docker コンテナは ID を指定して起動する",
+        "ko": "덮어쓰지 않고 파일을 복원합니다. 매장된 Docker 컨테이너는 ID로 시작합니다",
+        "es": "Restaurar archivos sin sobrescribir; iniciar por ID los contenedores de Docker enterrados",
+        "fr": "Restaurer des fichiers sans écraser ; démarrer par ID les conteneurs Docker enterrés",
+        "de": "Dateien wiederherstellen, ohne etwas zu überschreiben; begrabene Docker-Container per ID starten",
+        "pt-BR": "Restaurar arquivos sem sobrescrever; iniciar por ID os contêineres Docker enterrados",
+        "ru": "Восстановить файлы без перезаписи; запустить по ID похороненные контейнеры Docker"
+      }
+    },
+    "--help": {
+      "source": "help for resurrect",
+      "translations": {
+        "zh": "resurrect 的帮助",
+        "zh-TW": "resurrect 的說明",
+        "ja": "resurrect のヘルプ",
+        "ko": "resurrect 도움말",
+        "es": "Ayuda de resurrect",
+        "fr": "Aide pour resurrect",
+        "de": "Hilfe zu resurrect",
+        "pt-BR": "Ajuda de resurrect",
+        "ru": "Справка по resurrect"
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": "输出 JSON",
+        "zh-TW": "輸出 JSON",
+        "ja": "JSON を出力する",
+        "ko": "JSON으로 출력합니다",
+        "es": "Imprimir JSON",
+        "fr": "Afficher le JSON",
+        "de": "JSON ausgeben",
+        "pt-BR": "Exibir JSON",
+        "ru": "Вывести JSON"
+      }
+    },
+    "--last": {
+      "source": "restore the latest deletion batch in the current session or Git project",
+      "translations": {
+        "zh": "恢复当前会话或 Git 项目里最近一批删除的内容",
+        "zh-TW": "還原目前工作階段或 Git 專案中最近一批刪除的項目",
+        "ja": "現在のセッションまたは Git プロジェクトで最後に行った削除をまとめて復元する",
+        "ko": "현재 세션이나 Git 프로젝트에서 가장 최근에 삭제한 묶음을 복원합니다",
+        "es": "Restaurar el último lote de eliminaciones de la sesión actual o del proyecto Git",
+        "fr": "Restaurer le dernier lot de suppressions de la session en cours ou du projet Git",
+        "de": "Den letzten Löschstapel der aktuellen Sitzung oder des Git-Projekts wiederherstellen",
+        "pt-BR": "Restaurar o último lote de exclusões da sessão atual ou do projeto Git",
+        "ru": "Восстановить последнюю пачку удалений в текущем сеансе или Git-проекте"
+      }
+    }
+  },
+  "obit rm": {
+    "summary": {
+      "source": "Move paths into the graveyard now (restore with obit resurrect)",
+      "translations": {
+        "zh": "立刻把路径移入墓地（用 obit resurrect 恢复）",
+        "zh-TW": "立刻把路徑移入墓地（可用 obit resurrect 還原）",
+        "ja": "パスをすぐに墓地へ移す（obit resurrect で復元できる）",
+        "ko": "경로를 지금 바로 묘지로 옮깁니다(obit resurrect로 복원)",
+        "es": "Mover rutas al cementerio ahora (se restauran con obit resurrect)",
+        "fr": "Déplacer des chemins vers le cimetière maintenant (restauration avec obit resurrect)",
+        "de": "Pfade sofort auf den Friedhof verschieben (Wiederherstellung mit obit resurrect)",
+        "pt-BR": "Mover caminhos para o cemitério agora (restaure com obit resurrect)",
+        "ru": "Переместить пути на кладбище сейчас (восстановление — obit resurrect)"
+      }
+    },
+    "--help": {
+      "source": "help for rm",
+      "translations": {
+        "zh": "rm 的帮助",
+        "zh-TW": "rm 的說明",
+        "ja": "rm のヘルプ",
+        "ko": "rm 도움말",
+        "es": "Ayuda de rm",
+        "fr": "Aide pour rm",
+        "de": "Hilfe zu rm",
+        "pt-BR": "Ajuda de rm",
+        "ru": "Справка по rm"
+      }
+    }
+  },
+  "obit rmdir": {
+    "summary": {
+      "source": "Move paths into the graveyard now (restore with obit resurrect)",
+      "translations": {
+        "zh": "立刻把路径移入墓地（用 obit resurrect 恢复）",
+        "zh-TW": "立刻把路徑移入墓地（可用 obit resurrect 還原）",
+        "ja": "パスをすぐに墓地へ移す（obit resurrect で復元できる）",
+        "ko": "경로를 지금 바로 묘지로 옮깁니다(obit resurrect로 복원)",
+        "es": "Mover rutas al cementerio ahora (se restauran con obit resurrect)",
+        "fr": "Déplacer des chemins vers le cimetière maintenant (restauration avec obit resurrect)",
+        "de": "Pfade sofort auf den Friedhof verschieben (Wiederherstellung mit obit resurrect)",
+        "pt-BR": "Mover caminhos para o cemitério agora (restaure com obit resurrect)",
+        "ru": "Переместить пути на кладбище сейчас (восстановление — obit resurrect)"
+      }
+    },
+    "--help": {
+      "source": "help for rmdir",
+      "translations": {
+        "zh": "rmdir 的帮助",
+        "zh-TW": "rmdir 的說明",
+        "ja": "rmdir のヘルプ",
+        "ko": "rmdir 도움말",
+        "es": "Ayuda de rmdir",
+        "fr": "Aide pour rmdir",
+        "de": "Hilfe zu rmdir",
+        "pt-BR": "Ajuda de rmdir",
+        "ru": "Справка по rmdir"
+      }
+    }
+  },
+  "obit rules": {
+    "summary": {
+      "source": "Show the rules in force here: built-ins plus the project's .obitrules once trusted",
+      "translations": {
+        "zh": "显示这里生效的规则：内置规则，以及信任之后项目的 .obitrules",
+        "zh-TW": "顯示這裡生效的規則：內建規則，以及信任之後專案的 .obitrules",
+        "ja": "ここで有効なルールを表示する：組み込みルールと、信頼済みの場合はプロジェクトの .obitrules",
+        "ko": "여기에 적용되는 규칙을 표시합니다: 기본 제공 규칙과, 신뢰한 경우 프로젝트의 .obitrules",
+        "es": "Mostrar las reglas vigentes aquí: las integradas más el .obitrules del proyecto cuando se confía en él",
+        "fr": "Afficher les règles en vigueur ici : celles qui sont intégrées, plus le .obitrules du projet dès qu’on lui fait confiance",
+        "de": "Die hier geltenden Regeln anzeigen: eingebaute Regeln plus die .obitrules des Projekts, sobald ihnen vertraut wird",
+        "pt-BR": "Mostrar as regras em vigor aqui: as integradas mais o .obitrules do projeto, depois que ele for marcado como confiável",
+        "ru": "Показать действующие здесь правила: встроенные плюс .obitrules проекта, когда ему доверяют"
+      }
+    },
+    "--help": {
+      "source": "help for rules",
+      "translations": {
+        "zh": "rules 的帮助",
+        "zh-TW": "rules 的說明",
+        "ja": "rules のヘルプ",
+        "ko": "rules 도움말",
+        "es": "Ayuda de rules",
+        "fr": "Aide pour rules",
+        "de": "Hilfe zu rules",
+        "pt-BR": "Ajuda de rules",
+        "ru": "Справка по rules"
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": "输出 JSON",
+        "zh-TW": "輸出 JSON",
+        "ja": "JSON を出力する",
+        "ko": "JSON으로 출력합니다",
+        "es": "Imprimir JSON",
+        "fr": "Afficher le JSON",
+        "de": "JSON ausgeben",
+        "pt-BR": "Exibir JSON",
+        "ru": "Вывести JSON"
+      }
+    }
+  },
+  "obit rules apply": {
+    "summary": {
+      "source": "Register paths by rule (tracked files are never registered)",
+      "translations": {
+        "zh": "按规则登记路径（被 Git 跟踪的文件永远不登记）",
+        "zh-TW": "依規則登記路徑（被 Git 追蹤的檔案永遠不會登記）",
+        "ja": "ルールに従ってパスを登録する（Git で追跡されているファイルは登録されない）",
+        "ko": "규칙에 따라 경로를 등록합니다(Git으로 추적되는 파일은 등록되지 않음)",
+        "es": "Registrar rutas según las reglas (los archivos con seguimiento de Git nunca se registran)",
+        "fr": "Enregistrer des chemins selon les règles (les fichiers suivis par Git ne sont jamais enregistrés)",
+        "de": "Pfade per Regel registrieren (von Git verfolgte Dateien werden nie registriert)",
+        "pt-BR": "Registrar caminhos por regra (arquivos rastreados pelo Git nunca são registrados)",
+        "ru": "Зарегистрировать пути по правилам (файлы, отслеживаемые Git, никогда не регистрируются)"
+      }
+    },
+    "--help": {
+      "source": "help for apply",
+      "translations": {
+        "zh": "apply 的帮助",
+        "zh-TW": "apply 的說明",
+        "ja": "apply のヘルプ",
+        "ko": "apply 도움말",
+        "es": "Ayuda de apply",
+        "fr": "Aide pour apply",
+        "de": "Hilfe zu apply",
+        "pt-BR": "Ajuda de apply",
+        "ru": "Справка по apply"
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": "输出 JSON",
+        "zh-TW": "輸出 JSON",
+        "ja": "JSON を出力する",
+        "ko": "JSON으로 출력합니다",
+        "es": "Imprimir JSON",
+        "fr": "Afficher le JSON",
+        "de": "JSON ausgeben",
+        "pt-BR": "Exibir JSON",
+        "ru": "Вывести JSON"
+      }
+    },
+    "--session": {
+      "source": "agent session the paths came from",
+      "translations": {
+        "zh": "这些路径来自的 agent 会话",
+        "zh-TW": "這些路徑來自的 agent 工作階段",
+        "ja": "パスの出どころのエージェントのセッション",
+        "ko": "경로가 나온 에이전트 세션",
+        "es": "Sesión de agente de la que proceden las rutas",
+        "fr": "Session d’agent d’où viennent les chemins",
+        "de": "Agent-Sitzung, aus der die Pfade stammen",
+        "pt-BR": "Sessão de agente de onde vieram os caminhos",
+        "ru": "Сеанс агента, из которого пришли пути"
+      }
+    }
+  },
+  "obit rules check": {
+    "summary": {
+      "source": "Show what the rules would register for paths (changes nothing)",
+      "translations": {
+        "zh": "显示规则会为这些路径登记什么（不做任何改动）",
+        "zh-TW": "顯示規則會為這些路徑登記什麼（不做任何變更）",
+        "ja": "ルールがパスに対して何を登録するかを表示する（何も変更しない）",
+        "ko": "규칙이 경로에 대해 무엇을 등록할지 표시합니다(아무것도 변경하지 않음)",
+        "es": "Mostrar qué registrarían las reglas para las rutas (no cambia nada)",
+        "fr": "Afficher ce que les règles enregistreraient pour des chemins (ne modifie rien)",
+        "de": "Anzeigen, was die Regeln für Pfade registrieren würden (ändert nichts)",
+        "pt-BR": "Mostrar o que as regras registrariam para os caminhos (não altera nada)",
+        "ru": "Показать, что правила зарегистрировали бы для путей (ничего не меняет)"
+      }
+    },
+    "--help": {
+      "source": "help for check",
+      "translations": {
+        "zh": "check 的帮助",
+        "zh-TW": "check 的說明",
+        "ja": "check のヘルプ",
+        "ko": "check 도움말",
+        "es": "Ayuda de check",
+        "fr": "Aide pour check",
+        "de": "Hilfe zu check",
+        "pt-BR": "Ajuda de check",
+        "ru": "Справка по check"
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": "输出 JSON",
+        "zh-TW": "輸出 JSON",
+        "ja": "JSON を出力する",
+        "ko": "JSON으로 출력합니다",
+        "es": "Imprimir JSON",
+        "fr": "Afficher le JSON",
+        "de": "JSON ausgeben",
+        "pt-BR": "Exibir JSON",
+        "ru": "Вывести JSON"
+      }
+    },
+    "--session": {
+      "source": "agent session the paths came from",
+      "translations": {
+        "zh": "这些路径来自的 agent 会话",
+        "zh-TW": "這些路徑來自的 agent 工作階段",
+        "ja": "パスの出どころのエージェントのセッション",
+        "ko": "경로가 나온 에이전트 세션",
+        "es": "Sesión de agente de la que proceden las rutas",
+        "fr": "Session d’agent d’où viennent les chemins",
+        "de": "Agent-Sitzung, aus der die Pfade stammen",
+        "pt-BR": "Sessão de agente de onde vieram os caminhos",
+        "ru": "Сеанс агента, из которого пришли пути"
+      }
+    }
+  },
+  "obit stats": {
+    "summary": {
+      "source": "What Obituary has done: tracked, buried, space reclaimed, resurrections",
+      "translations": {
+        "zh": "讣告做过的事：跟踪了多少、下葬了多少、腾出多少空间、复活了几次",
+        "zh-TW": "訃告做過的事：追蹤了多少、下葬了多少、釋出多少空間、復活了幾次",
+        "ja": "Obituary がしたこと：追跡数、埋葬数、取り戻した容量、復活の回数",
+        "ko": "Obituary가 한 일: 추적, 매장, 확보한 공간, 부활 횟수",
+        "es": "Lo que ha hecho Obituary: elementos con seguimiento, entierros, espacio recuperado y resurrecciones",
+        "fr": "Ce qu’Obituary a fait : éléments suivis, enterrés, espace récupéré, résurrections",
+        "de": "Was Obituary getan hat: verfolgt, begraben, freigegebener Speicherplatz, Wiederbelebungen",
+        "pt-BR": "O que o Obituary fez: itens acompanhados, enterros, espaço recuperado, ressurreições",
+        "ru": "Что сделал Obituary: отслеживание, захоронения, освобождённое место, воскрешения"
+      }
+    },
+    "--help": {
+      "source": "help for stats",
+      "translations": {
+        "zh": "stats 的帮助",
+        "zh-TW": "stats 的說明",
+        "ja": "stats のヘルプ",
+        "ko": "stats 도움말",
+        "es": "Ayuda de stats",
+        "fr": "Aide pour stats",
+        "de": "Hilfe zu stats",
+        "pt-BR": "Ajuda de stats",
+        "ru": "Справка по stats"
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": "输出 JSON",
+        "zh-TW": "輸出 JSON",
+        "ja": "JSON を出力する",
+        "ko": "JSON으로 출력합니다",
+        "es": "Imprimir JSON",
+        "fr": "Afficher le JSON",
+        "de": "JSON ausgeben",
+        "pt-BR": "Exibir JSON",
+        "ru": "Вывести JSON"
+      }
+    }
+  },
+  "obit sweep": {
+    "summary": {
+      "source": "Reap now: bury everything that is due without waiting for the runner",
+      "translations": {
+        "zh": "立刻收割：不等后台进程，把所有到期的都下葬",
+        "zh-TW": "立刻收割：不等背景程式，把所有到期的項目都下葬",
+        "ja": "今すぐ刈り取る：バックグラウンド処理を待たず、期限が来たものをすべて埋葬する",
+        "ko": "지금 수확: 백그라운드 프로세스를 기다리지 않고 만료된 항목을 모두 매장합니다",
+        "es": "Recoger ahora: enterrar todo lo que ha vencido sin esperar al proceso en segundo plano",
+        "fr": "Récolter maintenant : enterrer tout ce qui est arrivé à échéance sans attendre le processus en arrière-plan",
+        "de": "Jetzt ernten: alles Fällige begraben, ohne auf den Hintergrundprozess zu warten",
+        "pt-BR": "Colher agora: enterrar tudo o que venceu, sem esperar o processo em segundo plano",
+        "ru": "Собрать сейчас: похоронить всё, срок чего истёк, не дожидаясь фонового процесса"
+      }
+    },
+    "--dry-run": {
+      "source": "only show what would happen",
+      "translations": {
+        "zh": "只显示会发生什么",
+        "zh-TW": "只顯示會發生什麼",
+        "ja": "実行される内容を表示するだけにする",
+        "ko": "실행될 내용만 표시합니다",
+        "es": "Mostrar solo lo que ocurriría",
+        "fr": "Afficher seulement ce qui se passerait",
+        "de": "Nur anzeigen, was passieren würde",
+        "pt-BR": "Mostrar apenas o que aconteceria",
+        "ru": "Только показать, что произойдёт"
+      }
+    },
+    "--help": {
+      "source": "help for sweep",
+      "translations": {
+        "zh": "sweep 的帮助",
+        "zh-TW": "sweep 的說明",
+        "ja": "sweep のヘルプ",
+        "ko": "sweep 도움말",
+        "es": "Ayuda de sweep",
+        "fr": "Aide pour sweep",
+        "de": "Hilfe zu sweep",
+        "pt-BR": "Ajuda de sweep",
+        "ru": "Справка по sweep"
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": "输出 JSON",
+        "zh-TW": "輸出 JSON",
+        "ja": "JSON を出力する",
+        "ko": "JSON으로 출력합니다",
+        "es": "Imprimir JSON",
+        "fr": "Afficher le JSON",
+        "de": "JSON ausgeben",
+        "pt-BR": "Exibir JSON",
+        "ru": "Вывести JSON"
+      }
+    }
+  },
+  "obit trust": {
+    "summary": {
+      "source": "Review and trust the project's .obitrules (edits need a new review)",
+      "translations": {
+        "zh": "审阅并信任项目的 .obitrules（修改后需要重新审阅）",
+        "zh-TW": "檢視並信任專案的 .obitrules（修改後需要重新檢視）",
+        "ja": "プロジェクトの .obitrules を確認して信頼する（編集後は再確認が必要）",
+        "ko": "프로젝트의 .obitrules를 검토하고 신뢰합니다(수정하면 다시 검토해야 함)",
+        "es": "Revisar y confiar en el .obitrules del proyecto (cada edición requiere una nueva revisión)",
+        "fr": "Examiner le .obitrules du projet et lui faire confiance (toute modification impose un nouvel examen)",
+        "de": "Die .obitrules des Projekts prüfen und ihnen vertrauen (Änderungen erfordern eine neue Prüfung)",
+        "pt-BR": "Revisar e confiar no .obitrules do projeto (edições exigem uma nova revisão)",
+        "ru": "Проверить .obitrules проекта и довериться ему (после правки нужна новая проверка)"
+      }
+    },
+    "--help": {
+      "source": "help for trust",
+      "translations": {
+        "zh": "trust 的帮助",
+        "zh-TW": "trust 的說明",
+        "ja": "trust のヘルプ",
+        "ko": "trust 도움말",
+        "es": "Ayuda de trust",
+        "fr": "Aide pour trust",
+        "de": "Hilfe zu trust",
+        "pt-BR": "Ajuda de trust",
+        "ru": "Справка по trust"
+      }
+    },
+    "--yes": {
+      "source": "trust without asking (only after reviewing the rules)",
+      "translations": {
+        "zh": "不询问，直接信任（只在审阅过规则之后使用）",
+        "zh-TW": "不詢問，直接信任（只在檢視過規則之後使用）",
+        "ja": "確認せずに信頼する（ルールを確認したあとだけ）",
+        "ko": "묻지 않고 신뢰합니다(규칙을 검토한 뒤에만 사용)",
+        "es": "Confiar sin preguntar (solo después de revisar las reglas)",
+        "fr": "Faire confiance sans demander (seulement après avoir examiné les règles)",
+        "de": "Ohne Nachfrage vertrauen (erst nach Prüfung der Regeln)",
+        "pt-BR": "Confiar sem perguntar (somente depois de revisar as regras)",
+        "ru": "Довериться без вопросов (только после проверки правил)"
+      }
+    }
+  },
+  "obit uninstall": {
+    "summary": {
+      "source": "Remove Obituary integrations and background services; keep data by default",
+      "translations": {
+        "zh": "移除讣告的集成和后台服务；默认保留数据",
+        "zh-TW": "移除訃告的整合和背景服務；預設保留資料",
+        "ja": "Obituary の連携とバックグラウンドサービスを削除する。既定ではデータを残す",
+        "ko": "Obituary 연동과 백그라운드 서비스를 제거합니다. 기본적으로 데이터는 남깁니다",
+        "es": "Quitar las integraciones y los servicios en segundo plano de Obituary; los datos se conservan por defecto",
+        "fr": "Retirer les intégrations et les services en arrière-plan d’Obituary ; les données sont conservées par défaut",
+        "de": "Die Integrationen und Hintergrunddienste von Obituary entfernen; Daten bleiben standardmäßig erhalten",
+        "pt-BR": "Remover as integrações e os serviços em segundo plano do Obituary; os dados são mantidos por padrão",
+        "ru": "Удалить интеграции и фоновые службы Obituary; данные по умолчанию остаются"
+      }
+    },
+    "--dry-run": {
+      "source": "only print the uninstall plan; do not change files or services",
+      "translations": {
+        "zh": "只打印卸载计划，不改动文件和服务",
+        "zh-TW": "只列印解除安裝計畫，不變更檔案和服務",
+        "ja": "アンインストール計画の表示だけを行い、ファイルやサービスは変更しない",
+        "ko": "제거 계획만 출력하고 파일이나 서비스는 변경하지 않습니다",
+        "es": "Solo imprimir el plan de desinstalación; no cambiar archivos ni servicios",
+        "fr": "Afficher seulement le plan de désinstallation ; ne modifier ni fichiers ni services",
+        "de": "Nur den Deinstallationsplan ausgeben; keine Dateien oder Dienste ändern",
+        "pt-BR": "Apenas exibir o plano de desinstalação; não alterar arquivos nem serviços",
+        "ru": "Только вывести план удаления; не менять файлы и службы"
+      }
+    },
+    "--help": {
+      "source": "help for uninstall",
+      "translations": {
+        "zh": "uninstall 的帮助",
+        "zh-TW": "uninstall 的說明",
+        "ja": "uninstall のヘルプ",
+        "ko": "uninstall 도움말",
+        "es": "Ayuda de uninstall",
+        "fr": "Aide pour uninstall",
+        "de": "Hilfe zu uninstall",
+        "pt-BR": "Ajuda de uninstall",
+        "ru": "Справка по uninstall"
+      }
+    },
+    "--purge-data": {
+      "source": "permanently purge listed graves and remove owned data; keep unknown files",
+      "translations": {
+        "zh": "永久火化列出的墓，并移除讣告自己的数据；不认识的文件保留",
+        "zh-TW": "永久刪除列出的墳墓，並移除訃告自己的資料；不認識的檔案保留",
+        "ja": "一覧にある墓を永久削除し、Obituary 所有のデータを削除する。不明なファイルは残す",
+        "ko": "나열된 무덤을 영구 삭제하고 Obituary가 소유한 데이터를 제거합니다. 알 수 없는 파일은 남깁니다",
+        "es": "Eliminar definitivamente las tumbas listadas y quitar los datos propios de Obituary; conservar los archivos desconocidos",
+        "fr": "Supprimer définitivement les tombes listées et retirer les données appartenant à Obituary ; conserver les fichiers inconnus",
+        "de": "Aufgelistete Gräber dauerhaft löschen und die Obituary gehörenden Daten entfernen; unbekannte Dateien behalten",
+        "pt-BR": "Excluir permanentemente os túmulos listados e remover os dados pertencentes ao Obituary; manter os arquivos desconhecidos",
+        "ru": "Удалить навсегда перечисленные могилы и убрать данные, принадлежащие Obituary; неизвестные файлы оставить"
+      }
+    },
+    "--yes": {
+      "source": "confirm the plan (and data purge only when --purge-data is also given)",
+      "translations": {
+        "zh": "确认计划（只有同时给了 --purge-data，才同时确认清除数据）",
+        "zh-TW": "確認計畫（只有同時給了 --purge-data，才會一併確認清除資料）",
+        "ja": "計画を確認する（データの削除は --purge-data も指定した場合のみ）",
+        "ko": "계획을 확인합니다(데이터 삭제는 --purge-data도 함께 지정한 경우에만)",
+        "es": "Confirmar el plan (y la eliminación definitiva de datos solo si también se indica --purge-data)",
+        "fr": "Confirmer le plan (et la suppression définitive des données seulement si --purge-data est aussi indiqué)",
+        "de": "Den Plan bestätigen (und das Löschen der Daten nur, wenn auch --purge-data angegeben ist)",
+        "pt-BR": "Confirmar o plano (e a exclusão dos dados somente se --purge-data também for informado)",
+        "ru": "Подтвердить план (а удаление данных — только если указан и --purge-data)"
+      }
+    }
+  },
+  "obit untrust": {
+    "summary": {
+      "source": "Stop applying the project's .obitrules",
+      "translations": {
+        "zh": "不再应用项目的 .obitrules",
+        "zh-TW": "不再套用專案的 .obitrules",
+        "ja": "プロジェクトの .obitrules を適用しない",
+        "ko": "프로젝트의 .obitrules 적용을 중단합니다",
+        "es": "Dejar de aplicar el .obitrules del proyecto",
+        "fr": "Cesser d’appliquer le .obitrules du projet",
+        "de": "Die .obitrules des Projekts nicht mehr anwenden",
+        "pt-BR": "Deixar de aplicar o .obitrules do projeto",
+        "ru": "Больше не применять .obitrules проекта"
+      }
+    },
+    "--help": {
+      "source": "help for untrust",
+      "translations": {
+        "zh": "untrust 的帮助",
+        "zh-TW": "untrust 的說明",
+        "ja": "untrust のヘルプ",
+        "ko": "untrust 도움말",
+        "es": "Ayuda de untrust",
+        "fr": "Aide pour untrust",
+        "de": "Hilfe zu untrust",
+        "pt-BR": "Ajuda de untrust",
+        "ru": "Справка по untrust"
+      }
+    }
+  },
+  "obit update": {
+    "summary": {
+      "source": "Check or install a stable update",
+      "translations": {
+        "zh": "检查或安装正式版更新",
+        "zh-TW": "檢查或安裝穩定版更新",
+        "ja": "安定版のアップデートを確認またはインストールする",
+        "ko": "안정 버전 업데이트를 확인하거나 설치합니다",
+        "es": "Comprobar o instalar una actualización estable",
+        "fr": "Vérifier ou installer une mise à jour stable",
+        "de": "Ein stabiles Update prüfen oder installieren",
+        "pt-BR": "Verificar ou instalar uma atualização estável",
+        "ru": "Проверить или установить стабильное обновление"
+      }
+    },
+    "--apply": {
+      "source": "download, verify and install the cached newer stable release (a manual install replaces only Obituary's own programs)",
+      "translations": {
+        "zh": "下载、校验并安装已缓存的较新正式版（手动安装只替换讣告自己的程序）",
+        "zh-TW": "下載、驗證並安裝已快取的較新穩定版（手動安裝只會取代訃告自己的程式）",
+        "ja": "キャッシュ済みの新しい安定版をダウンロードして検証し、インストールする（手動インストールでは Obituary 自身のプログラムだけを置き換える）",
+        "ko": "캐시된 최신 안정 버전을 다운로드하고 검증한 뒤 설치합니다(수동 설치는 Obituary 자체 프로그램만 교체합니다)",
+        "es": "Descargar, verificar e instalar la versión estable más reciente guardada en caché (una instalación manual solo sustituye los programas propios de Obituary)",
+        "fr": "Télécharger, vérifier et installer la version stable plus récente mise en cache (une installation manuelle ne remplace que les programmes d’Obituary)",
+        "de": "Das zwischengespeicherte neuere stabile Release herunterladen, prüfen und installieren (eine manuelle Installation ersetzt nur die eigenen Programme von Obituary)",
+        "pt-BR": "Baixar, verificar e instalar a versão estável mais recente que está em cache (uma instalação manual substitui apenas os programas do próprio Obituary)",
+        "ru": "Скачать, проверить и установить кэшированную более новую стабильную версию (при ручной установке заменяются только собственные программы Obituary)"
+      }
+    },
+    "--check": {
+      "source": "check GitHub now, including when automatic checks are disabled",
+      "translations": {
+        "zh": "立即检查 GitHub，自动检查被关闭时也会检查",
+        "zh-TW": "立即檢查 GitHub，自動檢查被關閉時也會檢查",
+        "ja": "今すぐ GitHub を確認する（自動チェックが無効でも確認する）",
+        "ko": "지금 바로 GitHub를 확인합니다(자동 확인이 꺼져 있어도 확인)",
+        "es": "Comprobar GitHub ahora, incluso si las comprobaciones automáticas están desactivadas",
+        "fr": "Vérifier GitHub maintenant, même si les vérifications automatiques sont désactivées",
+        "de": "GitHub jetzt prüfen, auch wenn automatische Prüfungen deaktiviert sind",
+        "pt-BR": "Verificar o GitHub agora, inclusive quando as verificações automáticas estão desativadas",
+        "ru": "Проверить GitHub сейчас, в том числе при отключённой автоматической проверке"
+      }
+    },
+    "--help": {
+      "source": "help for update",
+      "translations": {
+        "zh": "update 的帮助",
+        "zh-TW": "update 的說明",
+        "ja": "update のヘルプ",
+        "ko": "update 도움말",
+        "es": "Ayuda de update",
+        "fr": "Aide pour update",
+        "de": "Hilfe zu update",
+        "pt-BR": "Ajuda de update",
+        "ru": "Справка по update"
+      }
+    },
+    "--relaunch-gui": {
+      "source": "reopen the desktop window after updating (Windows)",
+      "translations": {
+        "zh": "更新后重新打开小窗口（Windows）",
+        "zh-TW": "更新後重新開啟小視窗（Windows）",
+        "ja": "更新後に小ウィンドウを開き直す（Windows）",
+        "ko": "업데이트 후 작은 창을 다시 엽니다(Windows)",
+        "es": "Reabrir la ventana tras actualizar (Windows)",
+        "fr": "Rouvrir la petite fenêtre après la mise à jour (Windows)",
+        "de": "Das kleine Fenster nach dem Update wieder öffnen (Windows)",
+        "pt-BR": "Reabrir a janela depois de atualizar (Windows)",
+        "ru": "Снова открыть небольшое окно после обновления (Windows)"
+      }
+    },
+    "--wait-pid": {
+      "source": "wait for this process to exit before updating (Windows)",
+      "translations": {
+        "zh": "等待该进程退出后再更新（Windows）",
+        "zh-TW": "等待該程序結束後再更新（Windows）",
+        "ja": "更新の前に、このプロセスが終了するのを待つ（Windows）",
+        "ko": "업데이트 전에 이 프로세스가 종료되기를 기다립니다(Windows)",
+        "es": "Esperar a que termine este proceso antes de actualizar (Windows)",
+        "fr": "Attendre la fin de ce processus avant la mise à jour (Windows)",
+        "de": "Vor dem Update warten, bis dieser Prozess beendet ist (Windows)",
+        "pt-BR": "Esperar este processo terminar antes de atualizar (Windows)",
+        "ru": "Перед обновлением дождаться завершения этого процесса (Windows)"
+      }
+    }
+  },
+  "obit watch": {
+    "summary": {
+      "source": "Give each top-level child of a folder its own lifespan",
+      "translations": {
+        "zh": "给文件夹里的每个第一层子项各自设定寿命",
+        "zh-TW": "為資料夾中的每個第一層子項目各自設定壽命",
+        "ja": "フォルダー直下の各項目に、それぞれ寿命を設定する",
+        "ko": "폴더의 최상위 하위 항목마다 각각 수명을 지정합니다",
+        "es": "Dar a cada elemento de primer nivel de una carpeta su propia vida útil",
+        "fr": "Donner à chaque élément de premier niveau d’un dossier sa propre durée de vie",
+        "de": "Jedem Element auf oberster Ebene eines Ordners eine eigene Lebensdauer geben",
+        "pt-BR": "Dar a cada item de nível superior de uma pasta a sua própria vida útil",
+        "ru": "Задать каждому элементу верхнего уровня в папке собственный срок жизни"
+      }
+    },
+    "--age": {
+      "source": "age basis: first-seen or modified (requires approval)",
+      "translations": {
+        "zh": "计龄基准：first-seen 或 modified（需要批准）",
+        "zh-TW": "計齡基準：first-seen 或 modified（需要核准）",
+        "ja": "経過時間の基準：first-seen または modified（承認が必要）",
+        "ko": "경과 시간의 기준: first-seen 또는 modified(승인 필요)",
+        "es": "Base de la antigüedad: first-seen o modified (requiere aprobación)",
+        "fr": "Base de l’âge : first-seen ou modified (nécessite une approbation)",
+        "de": "Altersbasis: first-seen oder modified (erfordert Genehmigung)",
+        "pt-BR": "Base da idade: first-seen ou modified (requer aprovação)",
+        "ru": "Основа возраста: first-seen или modified (требует одобрения)"
+      }
+    },
+    "--clear-exclusion": {
+      "source": "explicitly clear this exclusion ID (with --policy)",
+      "translations": {
+        "zh": "明确清除这个豁免 ID（与 --policy 一起使用）",
+        "zh-TW": "明確清除這個排除項 ID（須與 --policy 一起使用）",
+        "ja": "この除外 ID を明示的に解除する（--policy と併用）",
+        "ko": "이 제외 ID를 명시적으로 해제합니다(--policy와 함께 사용)",
+        "es": "Borrar de forma explícita este ID de exclusión (con --policy)",
+        "fr": "Effacer explicitement cet ID d’exclusion (avec --policy)",
+        "de": "Diese Ausschluss-ID ausdrücklich aufheben (mit --policy)",
+        "pt-BR": "Remover explicitamente a exceção com este ID (com --policy)",
+        "ru": "Явно снять исключение с этим ID (вместе с --policy)"
+      }
+    },
+    "--help": {
+      "source": "help for watch",
+      "translations": {
+        "zh": "watch 的帮助",
+        "zh-TW": "watch 的說明",
+        "ja": "watch のヘルプ",
+        "ko": "watch 도움말",
+        "es": "Ayuda de watch",
+        "fr": "Aide pour watch",
+        "de": "Hilfe zu watch",
+        "pt-BR": "Ajuda de watch",
+        "ru": "Справка по watch"
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": "输出 JSON",
+        "zh-TW": "輸出 JSON",
+        "ja": "JSON を出力する",
+        "ko": "JSON으로 출력합니다",
+        "es": "Imprimir JSON",
+        "fr": "Afficher le JSON",
+        "de": "JSON ausgeben",
+        "pt-BR": "Exibir JSON",
+        "ru": "Вывести JSON"
+      }
+    },
+    "--list": {
+      "source": "list folder policies",
+      "translations": {
+        "zh": "列出文件夹策略",
+        "zh-TW": "列出資料夾策略",
+        "ja": "フォルダーポリシーを一覧表示する",
+        "ko": "폴더 정책을 나열합니다",
+        "es": "Listar las políticas de carpeta",
+        "fr": "Lister les règles de dossier",
+        "de": "Ordnerrichtlinien auflisten",
+        "pt-BR": "Listar as políticas de pasta",
+        "ru": "Показать список правил для папок"
+      }
+    },
+    "--no-daemon": {
+      "source": "do not start the background runner",
+      "translations": {
+        "zh": "不启动后台进程",
+        "zh-TW": "不啟動背景程式",
+        "ja": "バックグラウンド処理を起動しない",
+        "ko": "백그라운드 프로세스를 시작하지 않습니다",
+        "es": "No iniciar el proceso en segundo plano",
+        "fr": "Ne pas démarrer le processus en arrière-plan",
+        "de": "Den Hintergrundprozess nicht starten",
+        "pt-BR": "Não iniciar o processo em segundo plano",
+        "ru": "Не запускать фоновый процесс"
+      }
+    },
+    "--policy": {
+      "source": "policy ID whose exclusion should be cleared",
+      "translations": {
+        "zh": "要清除豁免的策略 ID",
+        "zh-TW": "要清除排除項的策略 ID",
+        "ja": "除外を解除する対象のポリシー ID",
+        "ko": "제외를 해제할 정책 ID",
+        "es": "ID de la política cuya exclusión se debe borrar",
+        "fr": "ID de la règle dont l’exclusion doit être effacée",
+        "de": "ID der Richtlinie, deren Ausschluss aufgehoben werden soll",
+        "pt-BR": "ID da política cuja exceção deve ser removida",
+        "ru": "ID правила, исключение которого нужно снять"
+      }
+    },
+    "--remove": {
+      "source": "remove a policy and cancel its registered lifespans",
+      "translations": {
+        "zh": "移除策略，并取消它登记的寿命",
+        "zh-TW": "移除策略，並取消它登記的壽命",
+        "ja": "ポリシーを削除し、登録済みの寿命を取り消す",
+        "ko": "정책을 제거하고 그 정책이 등록한 수명을 취소합니다",
+        "es": "Quitar una política y cancelar las vidas útiles que registró",
+        "fr": "Retirer une règle et annuler les durées de vie qu’elle a enregistrées",
+        "de": "Eine Richtlinie entfernen und ihre registrierten Lebensdauern abbrechen",
+        "pt-BR": "Remover uma política e cancelar as vidas úteis que ela registrou",
+        "ru": "Удалить правило и отменить зарегистрированные им сроки жизни"
+      }
+    },
+    "--remove-id": {
+      "source": "remove a folder policy by ID, including missing paths",
+      "translations": {
+        "zh": "按 ID 移除文件夹策略，路径已不存在的也可以",
+        "zh-TW": "依 ID 移除資料夾策略，路徑已不存在的也可以",
+        "ja": "ID を指定してフォルダーポリシーを削除する。存在しないパスも対象",
+        "ko": "ID로 폴더 정책을 제거합니다. 존재하지 않는 경로도 대상에 포함됩니다",
+        "es": "Quitar una política de carpeta por ID, incluso si faltan las rutas",
+        "fr": "Retirer une règle de dossier par ID, y compris pour les chemins manquants",
+        "de": "Eine Ordnerrichtlinie per ID entfernen, auch bei fehlenden Pfaden",
+        "pt-BR": "Remover uma política de pasta por ID, inclusive para caminhos ausentes",
+        "ru": "Удалить правило для папки по ID, в том числе для отсутствующих путей"
+      }
+    }
+  }
+}

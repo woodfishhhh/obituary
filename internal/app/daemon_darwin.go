@@ -90,7 +90,7 @@ func DaemonPath() (string, error) {
 	if !info.Mode().IsRegular() || info.Mode().Perm()&0o111 == 0 {
 		return "", fmt.Errorf("%s is not executable", path)
 	}
-	return path, nil
+	return filepath.EvalSymlinks(path)
 }
 
 func daemonArgs(home string) []string {

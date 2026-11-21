@@ -5,6 +5,8 @@ package init_test
 import (
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	initcmd "github.com/woodfishhhh/obituary/internal/cli/init"
+	"github.com/woodfishhhh/obituary/internal/contextmenu"
+	"github.com/woodfishhhh/obituary/internal/regtxn"
 	"github.com/woodfishhhh/obituary/internal/shortcut"
 	"os"
 	"path/filepath"
@@ -31,6 +33,53 @@ func TestInitDefaultDesktopPlanAndOptOut(t *testing.T) {
 				t.Fatalf("%v missing/wrong %s: %s", tc.args, text, out)
 			}
 		}
+	}
+}
+
+func TestInitUninstallOptOut(t *testing.T) {
+	for _, flag := range []string{"--no-context-menu", "--no-shortcuts", "--no-skill"} {
+		t.Run(flag, func(t *testing.T) {
+			root, exe := clitest.DoctorFixture(t)
+			hive := os.Getenv("OBIT_TEST_REGISTRY_ROOT")
+			if err := regtxn.ValidateTestRoot(hive); err != nil {
+				t.Fatal(err)
+			}
+			t.Setenv("OBIT_TEST_REGISTRY_ROOT", hive+`\`+flag)
+			contextmenu.Current = nil // Use the native registry under the validated test key.
+			t.Setenv("OBIT_START_MENU_DIR", filepath.Join(root, "Programs"))
+			clitest.WriteFixture(t, filepath.Join(root, "bin", "obit-gui.exe"), "fixture")
+			run := func(args ...string) {
+				t.Helper()
+				if out, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(exe), append([]string{"-g", "--yes"}, args...)...); err != nil {
+					t.Fatal(out, err)
+				}
+			}
+			run()
+			executable, _ := exe.Path()
+			check := func(installed bool) {
+				t.Helper()
+				status, err := contextmenu.Inspect(contextmenu.UserRegistry(), executable)
+				if err != nil || status.Installed != (installed || flag == "--no-context-menu") || status.Current != status.Installed {
+					t.Errorf("menu: %+v %v", status, err)
+				}
+				files := map[string]bool{filepath.Join(root, "claude", "skills", "obituary", "SKILL.md"): installed || flag == "--no-skill"}
+				for _, place := range []shortcut.Location{shortcut.StartMenu, shortcut.Desktop} {
+					paths, err := shortcut.Paths(place)
+					if err != nil {
+						t.Fatal(err)
+					}
+					files[paths[0]] = installed || flag == "--no-shortcuts"
+				}
+				for path, want := range files {
+					if _, err := os.Stat(path); (err == nil) != want || err != nil && !os.IsNotExist(err) {
+						t.Errorf("%s: want present=%t: %v", path, want, err)
+					}
+				}
+			}
+			check(true)
+			run("--uninstall", flag)
+			check(false)
+		})
 	}
 }
 

@@ -18,9 +18,7 @@ jobs:
       snapshot: false
 
   macos-desktop:
-    uses: ./.github/workflows/macos-desktop.yml
-    with:
-      snapshot: false
+    uses: ./.github/workflows/macos-acceptance.yml
 
   build:
     runs-on: windows-latest
