@@ -76,6 +76,10 @@ jobs:
         if: matrix.trigger == 'manual' && matrix.exit-code == '1'
         shell: bash
         run: go test ./internal/app -count=1 -run "^TestUpdater(TakesPendingRestartOnce|DoesNotRestartAfterFailedStop)$" -v
+      - name: Verify exported fallback and refusal of edits
+        if: matrix.trigger == 'manual' && matrix.exit-code == '1'
+        shell: bash
+        run: OBIT_TEST_SCHEDULER=1 go test ./internal/app -count=1 -run "^Test(ScheduleRoundTrip|LegacyRunnerPreservesEditedAndDisabledDefinitions)$" -v
       - name: Kill and stop a scheduler-owned obitd
         shell: bash
         run: python -u scripts/test-windows-resident.py "${{ matrix.trigger }}" "${{ matrix.exit-code }}"

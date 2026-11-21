@@ -121,6 +121,11 @@ func TestScheduleRoundTrip(t *testing.T) {
 	if !ScheduleInstalled() {
 		t.Fatal("task not found after install")
 	}
+	actual, err := registeredTaskXML(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(actual)
 	target, err := ScheduleTarget()
 	if err != nil || !strings.Contains(target, "--once --home") {
 		t.Fatalf("target %q %v", target, err)

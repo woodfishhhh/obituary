@@ -9,6 +9,22 @@ import (
 
 type schedulerExit uint32
 
+func TestLegacyRunnerPreservesEditedAndDisabledDefinitions(t *testing.T) {
+	config := t.TempDir()
+	t.Setenv("OBIT_CONFIG_DIR", config)
+	exe, home := "C:/bin/obitd.exe", t.TempDir()
+	definition := taskXML(exe, home, "account", time.Now())
+	for _, edit := range [][2]string{
+		{"PT5M", "PT20M"}, {"PT30M", "PT1H"}, {"<Enabled>true</Enabled>", "<Enabled>false</Enabled>"},
+		{"LeastPrivilege", "HighestAvailable"}, {"</Settings>", "<RestartOnFailure><Interval>PT1M</Interval><Count>9</Count></RestartOnFailure></Settings>"},
+	} {
+		changed := strings.ReplaceAll(definition, edit[0], edit[1])
+		if changed == definition || ownedSchedule(changed, exe, home, config) {
+			t.Errorf("accepted changed definition: %s", edit[1])
+		}
+	}
+}
+
 func (e schedulerExit) Error() string { return fmt.Sprintf("HRESULT %#x", uint32(e)) }
 func (e schedulerExit) ExitCode() int { return int(e) }
 
