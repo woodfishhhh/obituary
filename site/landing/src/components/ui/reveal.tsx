@@ -2,10 +2,11 @@ import { useEffect, useRef } from "react";
 
 import { cn } from "@/lib/utils";
 
-// Content that fades up the first time it scrolls into view. The hidden state exists only once this
-// component's script has started (`html.js`, set below), so with scripts off, or before they run, the text
-// is simply there; what is already in view when the script arrives is marked shown first, so it never blinks. One shared observer; nothing here uses an animation library, and the motion is a CSS
-// transition of opacity and transform (.reveal in index.css), which reduced motion switches off.
+// Content that fades up the first time it scrolls into view. Each piece is hidden (`armed`) only when its
+// own script starts watching it, so with scripts off, before they run, or while the chunk that holds the
+// piece is still on its way, the text is simply there; what is already in view when the script arrives is
+// never hidden, so it never blinks. One shared observer; nothing here uses an animation library, and the
+// motion is a CSS transition of opacity and transform (.reveal in index.css), which reduced motion switches off.
 let observer: IntersectionObserver | undefined;
 const watch = (el: Element) => {
   observer ??= new IntersectionObserver(
@@ -21,9 +22,12 @@ export function Reveal({ children, delay = 0, className }: { children: React.Rea
     const el = ref.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    if (r.top < innerHeight && r.bottom > 0) el.classList.add("in");
-    else watch(el);
-    document.documentElement.classList.add("js");
+    // Above or inside the viewport: shown. Only what is still below it is hidden, until it comes into view.
+    if (r.top < innerHeight) el.classList.add("in");
+    else {
+      el.classList.add("armed");
+      watch(el);
+    }
   }, []);
   return <div ref={ref} className={cn("reveal", className)} style={{ transitionDelay: `${delay}s` }}>{children}</div>;
 }

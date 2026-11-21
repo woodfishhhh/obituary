@@ -149,6 +149,16 @@ button:disabled { cursor: not-allowed; }
 @keyframes rw-in { from { opacity: 0; transform: translate3d(0, 70%, 0); } }
 @keyframes rw-out { to { opacity: 0; transform: translate3d(0, -70%, 0); } }
 
+/* Content that fades up the first time it scrolls into view (components/ui/reveal.tsx). It is hidden only
+   once its own script has started watching it (.armed), so without that script it is simply there. */
+.reveal { transition: opacity 600ms var(--ease-out-soft), transform 600ms var(--ease-out-soft); }
+.reveal.armed:not(.in) { opacity: 0; transform: translate3d(0, 14px, 0); }
+
+/* The first screen comes in with a CSS animation, not a script: it starts with the HTML. */
+.rise { animation: rise 700ms var(--ease-out-soft) both; }
+@keyframes rise { from { opacity: 0; transform: translate3d(0, 14px, 0); } }
+@media (prefers-reduced-motion: reduce) { .rise { animation: none; } }
+
 /* Logo Loop (components/reactbits/LogoLoop.tsx): a band that loops sideways on one transform. */
 .logo-loop { overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
 .logo-loop-track { display: flex; width: max-content; margin: 0; padding: 0.5rem 0; list-style: none; animation: logo-loop var(--loop-duration, 70s) linear infinite; will-change: transform; }
