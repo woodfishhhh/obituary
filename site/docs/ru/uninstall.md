@@ -19,3 +19,17 @@ obit uninstall                # remove everything Obituary set up, after you con
 ## Scoop и winget
 
 Сначала выполните `obit uninstall`, затем команду удаления того менеджера пакетов, через который устанавливали программу.
+## Объём удаления и расположение данных
+
+`obit uninstall --dry-run` показывает удаляемые элементы для текущего пользователя и Git-проекта. Команда удаляет hook, MCP, Skill, трей, автозапуск и расписание, но не меняет другие проекты; там её нужно выполнить отдельно.
+
+| Элемент | Windows | macOS | Linux |
+| --- | --- | --- | --- |
+| Программа | `obit`, `obitd`, необязательный `obit-gui` | `/Applications/Obituary.app` или каталог CLI | Каталог CLI, desktop в `.deb` |
+| Hook, MCP, Skill | Конфигурация agent | Конфигурация agent | Конфигурация agent |
+| Расписание | Задача, резидентный процесс и трей | LaunchAgent и строка меню | Таймер systemd и XDG autostart |
+| Проект | Части `.claude/` и `.codex/`, добавленные Obituary | Конфигурация проекта | Конфигурация проекта |
+
+Данные по умолчанию находятся в `%LOCALAPPDATA%\obituary` и `%APPDATA%\obituary` в Windows, `~/Library/Application Support/obituary` в macOS и `$XDG_DATA_HOME/obituary` в Linux (`~/.local/share/obituary` без переменной). `OBIT_HOME`, `OBIT_CONFIG_DIR`, `OBIT_USER_HOME` перенаправляют эти каталоги; на том же томе может находиться `.obituary`.
+
+Кладбище, журнал, аудит и конфигурация сохраняются. `--purge-data` удаляет только проверенные собственные данные кладбища и оставляет неизвестные файлы. В режиме recycle восстановление выполняется из системной корзины, команда `resurrect` недоступна.
