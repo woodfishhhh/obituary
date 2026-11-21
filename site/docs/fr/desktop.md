@@ -81,3 +81,13 @@ macOS et Linux n’ont pas encore de menu contextuel. Utilisez `obit mark <path>
 À l’installation, `obit init --no-context-menu` omet le menu contextuel et `--no-shortcuts` les raccourcis du menu Démarrer et du Bureau.
 
 Les dates d’enterrement affichées dans l’Explorateur sont expliquées dans [Règles de dossier](./folder-policies#dates-in-explorer).
+## Comparaison des quatre plateformes
+
+| Plateforme | Fenêtre | Barre système ou menus | Connexion et notifications | Menu contextuel et dates | Architecture et dépendance | Après désinstallation |
+| --- | --- | --- | --- | --- | --- | --- |
+| Windows | `obit-gui.exe` | Zone de notification | Tâche planifiée et démarrage facultatif | Menu de l’Explorateur et dates | x64, WebView2 requis | Programmes et intégrations retirés, données conservées |
+| Aperçu macOS | `Obituary.app` universelle | Barre des menus | LaunchAgent et notifications facultatifs | Aucun menu contextuel ni date Finder | Intel et Apple, app non signée/non notariée | app et LaunchAgent retirés, données CLI conservées |
+| Aperçu Ubuntu 24.04 | Fenêtre du `.deb` | Barre StatusNotifierItem | XDG autostart et notifications facultatifs | Aucun menu contextuel ni date | amd64, GTK 3 et WebKitGTK 4.1 | Paquet et autostart retirés, données conservées |
+| macOS/Linux CLI | Aucune | Aucune | launchd, systemd ou crontab | Aucun menu ni date | CLI x64 et ARM64 | Programmes et services retirés, données conservées |
+
+Vérifiez SHA-256 avant d’utiliser un paquet non signé ou en aperçu. Pour macOS, suivez la [procédure de première ouverture](#première-ouverture-dune-app-non-signée). Le mode recycle ne permet pas `resurrect`.

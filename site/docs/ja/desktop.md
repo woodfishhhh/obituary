@@ -81,3 +81,13 @@ macOS と Linux にはまだコンテキストメニューがありません。�
 インストール時に `obit init --no-context-menu` を指定するとコンテキストメニューを、`--no-shortcuts` を指定するとスタートメニューとデスクトップのショートカットを作成しません。
 
 エクスプローラーに表示する埋葬日については、[フォルダーポリシー](./folder-policies#dates-in-explorer)を参照してください。
+## 4 プラットフォーム比較
+
+| プラットフォーム | ウィンドウ | トレイまたはメニューバー | ログイン起動と通知 | コンテキストメニューと日付 | 制限と依存 | アンインストール後 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Windows | `obit-gui.exe` | 通知領域 | タスクスケジューラー、任意のログイン起動 | Explorer の右クリックと日付ラベル | x64、WebView2 | プログラムと連携を削除し、データは保持 |
+| macOS デスクトッププレビュー | Universal `Obituary.app` | メニューバー | LaunchAgent と通知 | 右クリックや Finder の日付なし | Intel/Apple、未署名・未公証 | app と LaunchAgent を削除、CLI データは保持 |
+| Ubuntu 24.04 プレビュー | `.deb` のウィンドウ | StatusNotifierItem 対応トレイ | XDG 自動起動と通知 | 右クリックや日付なし | amd64、GTK 3 と WebKitGTK 4.1 | パッケージと自動起動を削除、データは保持 |
+| CLI の macOS/Linux | なし | なし | launchd、systemd、または crontab | なし | x64/ARM64 の CLI | プログラムとサービスを削除、データは保持 |
+
+未署名またはプレビュー版は SHA-256 を確認してください。macOS の初回起動は[許可手順](#未署名アプリを初めて開く)に従います。recycle モードでは `resurrect` を使えません。
