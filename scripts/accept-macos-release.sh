@@ -37,7 +37,7 @@ if [[ $LANE == gatekeeper ]]; then
   spctl --status
   spctl -a -t execute -vv "$app" || echo "assessment exit=$?"
   ui -e 'return system version of (system info)' || true
-  open "$app" || echo "first open exit=$?"
+  open "$app" > "$ev/first-open.log" 2>&1 &
   sleep 4
   pgrep -lx obit-gui || true
   snap first-open
@@ -76,6 +76,9 @@ if traypid=$(pgrep -xo obitd); then
   sleep 1
   snap tray-menu
   ui -e "${tray}click menu item \"Open Obituary\" of menu 1 of menu bar item 1 of last menu bar" || true
+  sleep 2
+  pgrep -lx obit-gui
+  snap tray-opened-window
 fi
 for style in light dark; do
   flag=false; [[ $style == light ]] || flag=true
@@ -88,7 +91,17 @@ done
 
 svc="gui/$(id -u)/site.woodfish.obituary.tray"
 plist="$HOME/Library/LaunchAgents/site.woodfish.obituary.tray.plist"
-click() { ui "$GITHUB_WORKSPACE/scripts/accept-macos-click.applescript" "$(pgrep -xo obit-gui)" "$1"; }
+swiftc "$GITHUB_WORKSPACE/scripts/accept-macos-controls.swift" -o "$RUNNER_TEMP/controls"
+click() {
+  ui "$GITHUB_WORKSPACE/scripts/accept-macos-click.applescript" "$(pgrep -xo obit-gui)" "$1" && return 0
+  for i in 1 2 3 4; do
+    snap "settings-$i"
+    "$RUNNER_TEMP/controls" "$ev/settings-$i.png" "$1" && return 0
+    [[ $1 != Settings ]] || break
+    sleep 1
+  done
+  return 1
+}
 click Settings || true
 sleep 2
 click 'Start the tray at sign-in' || true
@@ -116,14 +129,22 @@ sleep 3
 snap notification
 /usr/bin/log show --last 3m --style compact --predicate '(process == "usernoted" OR subsystem == "com.apple.UserNotifications") AND eventMessage CONTAINS[c] "obituary"' > "$ev/notification.log" || true
 
+if traypid=$(pgrep -xo obitd); then
+  tray="tell application \"System Events\" to tell (first application process whose unix id is $traypid) to "
+  ui -e "${tray}click menu bar item 1 of last menu bar" || true
+  ui -e "${tray}click menu item \"Quit\" of menu 1 of menu bar item 1 of last menu bar" || true
+  sleep 2
+fi
 "$cli" daemon stop || true
+pkill -TERM -x obitd || true
 pkill -TERM -x obit-gui || true
 sleep 2
 ! pgrep -lx obit-gui || exit 1
 ! pgrep -lx obitd || exit 1
 find "$data" -type f | sort
-payload=$(find "$data" -type f -exec grep -lFx 'grave-retention fixture' {} + | head -1)
+payload=$(find "$data/graveyard" -type f -name obit-retention.txt)
 [[ -n $payload ]]
+grep -Fx 'grave-retention fixture' "$payload"
 shasum -a 256 "$data/store.json" "$data/config.toml" "$payload" > "$ev/preserved.sha256"
 # A different ledger removes only the test installation, not the data under test.
 cp "$cli" "$RUNNER_TEMP/obit"
