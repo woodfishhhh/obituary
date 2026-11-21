@@ -64,7 +64,7 @@ dmg="$out/obituary_${version}_darwin_universal.dmg"
 (cd "$out" && /usr/bin/zip -qry "$(basename "$app_zip")" "$(basename "$bundle")")
 hdiutil create -volname Obituary -srcfolder "$bundle" -ov -format UDZO "$dmg" >/dev/null
 hdiutil verify "$dmg" >/dev/null
-(cd "$out" && shasum -a 256 "$(basename "$app_zip")" "$(basename "$dmg")" > checksums.txt)
+(cd "$out" && $app_zip=$(find . -maxdepth 1 -name '*.zip' -type f -print -quit) && $dmg=$(find . -maxdepth 1 -name '*.dmg' -type f -print -quit) && test -n "$app_zip" && test -n "$dmg" && shasum -a 256 "$app_zip" "$dmg" > checksums.txt)
 
 file "$bundle/Contents/MacOS/obit-gui" "$bundle/Contents/MacOS/obitd" "$bundle/Contents/MacOS/obit"
 printf '%s\n' "$bundle" "$app_zip" "$dmg" "$out/checksums.txt"
