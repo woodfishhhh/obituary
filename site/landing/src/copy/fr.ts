@@ -21,7 +21,7 @@ export const fr: Strings = {
     language: "Langue",
     hint: { text: "Cette page existe aussi en français.", go: "Voir en français", close: "Fermer le message" },
   },
-  nav: { why: "Pourquoi", life: "Cycle de vie", window: "La fenêtre", install: "Installer", docs: "Docs" },
+  nav: { blog: "Blog", why: "Pourquoi", life: "Cycle de vie", window: "La fenêtre", install: "Installer", docs: "Docs" },
   hero: {
     tagline: {
       before: "Obituary —",

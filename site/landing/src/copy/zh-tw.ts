@@ -21,7 +21,7 @@ export const zhTW: Strings = {
     language: "語言",
     hint: { text: "這個頁面有繁體中文版。", go: "切換到繁體中文", close: "關閉提示" },
   },
-  nav: { why: "為什麼", life: "一生", window: "小視窗", install: "安裝", docs: "文件" },
+  nav: { blog: "部落格", why: "為什麼", life: "一生", window: "小視窗", install: "安裝", docs: "文件" },
   hero: {
     tagline: { before: "讣告 · AI 的", words: ["回收站", "攔截器", "後悔藥", "清潔工"], after: "", label: "讣告 · AI 的回收站" },
     before: "給 AI 寫下的檔案一個",

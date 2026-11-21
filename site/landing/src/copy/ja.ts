@@ -21,7 +21,7 @@ export const ja: Strings = {
     language: "言語",
     hint: { text: "このページは日本語でも読めます。", go: "日本語で見る", close: "閉じる" },
   },
-  nav: { why: "なぜ", life: "ライフサイクル", window: "小さなウィンドウ", install: "インストール", docs: "ドキュメント" },
+  nav: { blog: "ブログ", why: "なぜ", life: "ライフサイクル", window: "小さなウィンドウ", install: "インストール", docs: "ドキュメント" },
   hero: {
     tagline: { before: "Obituary — AI エージェントの", words: ["ごみ箱", "門番", "元に戻すボタン", "お掃除係"], after: "", label: "Obituary — AI エージェントのごみ箱" },
     before: "AI が作ったファイルに",

@@ -6,6 +6,7 @@ import { pageLocales, pageSuffix } from '../routes';
 import sprite from './flag-symbols.svg?raw';
 
 const { page, lang, theme } = useData();
+defineProps<{ languages?: readonly Locale[] }>();
 const current = computed(() => locales.find(l => l.html === lang.value) ?? locales[0]);
 const menu = ref<HTMLDetailsElement>();
 const summary = ref<HTMLElement>();
@@ -25,7 +26,7 @@ function close(restoreFocus = false) {
       <span class="vpi-chevron-down" />
     </summary>
     <nav :aria-label="theme.langMenuLabel">
-      <a v-for="l of pageLocales(page.relativePath)" :key="l.id" :href="withBase('/' + l.path + pageSuffix(page.relativePath))" :lang="l.html" :hreflang="l.html" :aria-current="l.id === current.id ? 'page' : undefined" @click="close()">
+      <a v-for="l of languages ?? pageLocales(page.relativePath)" :key="l.id" :href="withBase('/' + l.path + pageSuffix(page.relativePath))" :lang="l.html" :hreflang="l.html" :aria-current="l.id === current.id ? 'page' : undefined" @click="close()">
         <svg :width="width(l)" height="16" aria-hidden="true"><use :href="`#flag-${l.flag}`" /></svg><span>{{ l.name }}</span>
       </a>
     </nav>

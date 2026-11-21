@@ -21,7 +21,7 @@ export const ko: Strings = {
     language: "언어",
     hint: { text: "이 페이지는 한국어로도 볼 수 있습니다.", go: "한국어로 보기", close: "닫기" },
   },
-  nav: { why: "왜 필요한가", life: "수명 주기", window: "작은 창", install: "설치", docs: "문서" },
+  nav: { blog: "블로그", why: "왜 필요한가", life: "수명 주기", window: "작은 창", install: "설치", docs: "문서" },
   hero: {
     tagline: { before: "Obituary — AI 에이전트를 위한", words: ["휴지통", "수문장", "되돌리기 버튼", "청소 도우미"], after: "", label: "Obituary — AI 에이전트를 위한 휴지통" },
     before: "AI가 만든 파일에 ",

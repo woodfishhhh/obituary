@@ -19,7 +19,7 @@ export const zh = {
     language: "语言",
     hint: { text: "这个页面有简体中文版。", go: "切换到简体中文", close: "关闭提示" },
   },
-  nav: { why: "为什么", life: "一生", window: "小窗口", install: "安装", docs: "文档" },
+  nav: { blog: "博客", why: "为什么", life: "一生", window: "小窗口", install: "安装", docs: "文档" },
   hero: {
     // The eyebrow cycles through what Obituary is to an agent; label is what screen readers get.
     tagline: { before: "讣告 · AI 的", words: ["回收站", "拦截器", "后悔药", "清洁工"], after: "", label: "讣告 · AI 的回收站" },
