@@ -3,7 +3,7 @@ import test from 'node:test';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { postIndex } from './posts.mjs';
+import { firstImage, postIndex } from './posts.mjs';
 
 const pair = (key, developmentDate, sequence) => ['', '/en'].map(dir => ({url:`${dir}/posts/${key}.html`, src:'example', frontmatter:{title:key, description:'Summary', draft:true, translationKey:key, developmentDate, ...(sequence === undefined ? {} : {sequence})}}));
 test('both lists use development date, then slug, regardless of file order', () => {
@@ -28,6 +28,20 @@ test('both translations must agree on the sequence, and it must be a whole numbe
     const [a,b] = pair('example','2026-11-01',bad);
     assert.throws(() => postIndex([a,b]), /Invalid post frontmatter/);
   }
+});
+
+test('the cover is the first picture, with its path under blog/ in both languages', () => {
+  const img = (up, name) => `Intro
+
+<figure>
+  <img src="${up}images/a/${name}" alt="What the picture shows" width="1600" height="400" loading="lazy">
+  <figcaption>The first caption.</figcaption>
+</figure>
+<figure><img src="${up}images/a/second.webp" alt="Another" width="10" height="10"><figcaption>The second caption.</figcaption></figure>`;
+  assert.deepEqual(firstImage(img('../', 'one.zh.webp')), {src:'images/a/one.zh.webp', width:1600, height:400, alt:'What the picture shows', caption:'The first caption.'});
+  assert.deepEqual(firstImage(img('../../', 'one.en.webp')), {src:'images/a/one.en.webp', width:1600, height:400, alt:'What the picture shows', caption:'The first caption.'});
+  assert.equal(firstImage('no pictures here'), null);
+  assert.equal(firstImage('<img src="../images/a/b.webp">'), null);
 });
 
 // Images: every post carries real pictures that are cheap to load and described for readers.

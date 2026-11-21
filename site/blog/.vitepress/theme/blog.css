@@ -1,0 +1,54 @@
+/* The blog takes the landing page's faces, its washes, shadows and rise-in, and the docs' colours (docs.css): cobalt and
+   sky for actions, the star's gold for the one marker. Light by default, dark when the reader's system or switch says so.
+   Geist is for screens 768px and up. On a phone the face is the system's own: the two web fonts are about 50 KB that a phone on a
+   slow connection waits for before it paints, and Lighthouse's mobile run measured them at +0.3 s on first paint and +0.3 s on LCP. */
+@import "@fontsource-variable/geist/wght.css" (min-width: 768px);
+@import "@fontsource-variable/geist-mono/wght.css" (min-width: 768px);
+
+:root {
+  --vp-font-family-base: "Geist Variable", system-ui, "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", ui-sans-serif, sans-serif;
+  --vp-font-family-mono: "Geist Mono Variable", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --b-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --b-card: #fff;
+  --b-dot: color-mix(in oklab, #0048e8 22%, transparent);
+  --b-wash-1: color-mix(in oklab, #b9d9ff 70%, transparent);
+  --b-wash-2: color-mix(in oklab, #fcef8a 70%, transparent);
+  --b-mat-1: #eaf0ff;
+  --b-mat-2: #fdf6cf;
+  --b-line-hover: color-mix(in oklab, #0048e8 40%, var(--vp-c-divider));
+  --b-shadow-nav: 0 8px 30px -12px rgb(17 21 34 / 0.18);
+  --b-shadow-node: 0 8px 24px -16px rgb(17 21 34 / 0.25);
+  --b-shadow-card: 0 12px 40px -28px rgb(17 21 34 / 0.35);
+  --b-shadow-card-hover: 0 28px 70px -34px rgb(0 72 232 / 0.5);
+  --b-shadow-shot: 0 30px 80px -36px rgb(17 21 34 / 0.4);
+  --b-shadow-shine: inset 0 -8px 10px rgb(255 255 255 / 0.12);
+}
+.dark {
+  --b-card: #0e1729;
+  --b-dot: color-mix(in oklab, #5aa6ff 18%, transparent);
+  --b-wash-1: rgb(0 120 248 / 0.22);
+  --b-wash-2: rgb(248 224 0 / 0.07);
+  --b-mat-1: #0f1b34;
+  --b-mat-2: #1b2036;
+  --b-line-hover: color-mix(in oklab, #5aa6ff 45%, var(--vp-c-divider));
+  --b-shadow-nav: 0 8px 30px -12px rgb(0 0 0 / 0.6);
+  --b-shadow-node: 0 8px 24px -16px rgb(0 0 0 / 0.6);
+  --b-shadow-card: 0 12px 40px -28px rgb(0 0 0 / 0.8);
+  --b-shadow-card-hover: 0 28px 70px -34px rgb(0 120 248 / 0.45);
+  --b-shadow-shot: 0 30px 80px -36px rgb(0 0 0 / 0.8);
+}
+
+html { scroll-padding-top: 96px; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+html, body { overflow-x: clip; }
+body { font-synthesis: none; }
+::selection { background: #fcef8a; color: #111522; }
+:focus-visible { outline: 2px solid var(--vp-c-brand-1); outline-offset: 2px; }
+code, pre, kbd { hyphens: none; }
+
+/* The first screen comes in with CSS, not script: it starts with the HTML. */
+.rise { animation: rise 600ms var(--b-ease) calc(var(--i, 0) * 70ms) both; }
+@keyframes rise { from { opacity: 0; transform: translate3d(0, 12px, 0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}

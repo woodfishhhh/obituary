@@ -1,0 +1,36 @@
+/* An article's body: the Markdown VitePress renders, set for reading. Pictures and code step out of the text column a little. */
+.post-body { font-size: 1.0625rem; line-height: 1.9; color: var(--vp-c-text-1); }
+html[lang^="en"] .post-body { line-height: 1.75; }
+@media (max-width: 639px) { .post-body { font-size: 1rem; } }
+.post-body > div > :first-child { margin-top: 0; }
+.post-body p { margin: 1.15em 0; line-height: inherit; text-wrap: pretty; }
+.post-body li { line-height: inherit; }
+.post-body li + li { margin-top: 0.35em; }
+.post-body h2 { margin: 3.5rem 0 1rem; padding: 0; border: 0; font-size: clamp(1.45rem, 3vw, 1.75rem); font-weight: 600; line-height: 1.35; letter-spacing: -0.02em; text-wrap: balance; scroll-margin-top: 6rem; }
+.post-body h2::before { content: ''; display: block; width: 2.75rem; height: 4px; margin-bottom: 0.9rem; border-radius: 4px; background: linear-gradient(90deg, #0048e8, #0078f8 55%, #f8e000); }
+.post-body h3 { margin: 2.25rem 0 0.75rem; font-size: 1.25rem; letter-spacing: -0.015em; scroll-margin-top: 6rem; }
+.post-body a { color: var(--vp-c-brand-1); font-weight: 500; text-decoration: underline; text-decoration-color: color-mix(in oklab, var(--vp-c-brand-1) 35%, transparent); text-underline-offset: 0.22em; transition: text-decoration-color 200ms; }
+.post-body a:hover { text-decoration-color: currentColor; }
+.post-body a.header-anchor { color: var(--vp-c-text-3); text-decoration: none; }
+.post-body strong { font-weight: 600; }
+.post-body :not(pre) > code { padding: 0.12em 0.4em; border: 1px solid var(--vp-c-divider); border-radius: 6px; background: var(--vp-c-bg-soft); font-size: 0.86em; color: var(--vp-c-text-1); }
+.post-body hr { margin: 3rem 0; border: 0; border-top: 1px solid var(--vp-c-divider); }
+.post-body blockquote { margin: 1.5rem 0; padding: 0.1rem 0 0.1rem 1.1rem; border-left: 3px solid var(--vp-c-brand-3); color: var(--vp-c-text-2); }
+
+/* The first picture is the article's banner (PostPage.vue): it is shown there, with its caption, and not a second time here. */
+.post-body.has-banner > div > div > figure:first-of-type { display: none; }
+.post-body figure { margin: 2.25rem calc(-1 * var(--bleed)); }
+.post-body figure img { display: block; max-width: 100%; height: auto; margin: 0 auto; border: 1px solid var(--vp-c-divider); border-radius: 18px; background: var(--vp-c-bg-soft); box-shadow: var(--b-shadow-card); }
+.post-body figcaption { max-width: 42rem; margin: 0.85rem auto 0; padding: 0 1rem; font-size: 0.875rem; line-height: 1.7; text-align: center; text-wrap: balance; color: var(--vp-c-text-2); }
+
+.post-body div[class*="language-"] { margin: 1.75rem calc(-1 * var(--bleed)); border: 1px solid var(--vp-c-divider); border-radius: 18px; background: var(--vp-code-block-bg); }
+.post-body div[class*="language-"] pre { padding: 1.1rem 0; }
+.post-body div[class*="language-"] code { font-size: 0.84rem; line-height: 1.75; }
+.post-body div[class*="language-"] > span.lang { color: var(--vp-c-text-3); }
+
+.post-body table { display: block; max-width: 100%; margin: 1.75rem 0; overflow-x: auto; border-collapse: separate; border-spacing: 0; border: 1px solid var(--vp-c-divider); border-radius: 14px; font-size: 0.9rem; line-height: 1.65; }
+.post-body th, .post-body td { padding: 0.65rem 1rem; border: 0; border-right: 1px solid var(--vp-c-divider); border-bottom: 1px solid var(--vp-c-divider); }
+.post-body th { background: var(--vp-c-bg-soft); font-weight: 600; white-space: nowrap; }
+.post-body tr, .post-body tr:nth-child(2n) { border-top: 0; background: transparent; }
+.post-body tr > :last-child { border-right: 0; }
+.post-body tbody tr:last-child td { border-bottom: 0; }

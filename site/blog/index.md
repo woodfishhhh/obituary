@@ -1,5 +1,5 @@
-# 开发博客
-
-按开发日期从近到远排列。 [订阅 RSS](./feed.xml){target="_self"}
-
-<PostList />
+---
+layout: index
+title: 开发博客
+description: '讣告是怎么做出来的：每个决定、每次返工、每个踩过的坑，按开发日期写下来，配着当时真实跑出来的终端输出和截图。'
+---
