@@ -38,7 +38,9 @@ El cask debe instalar el mismo DMG universal, copiar Obituary.app a Aplicaciones
 
 ### Actualizaciones
 
-Instala una versión estable más reciente desde Settings → About and updates. Obituary cierra la ventana y la bandeja, actualiza por el canal de instalación original (Scoop, WinGet o script) y luego intenta restaurar la bandeja y volver a abrir la ventana. Si falla, la misma página muestra el error y la ruta del log. Si descomprimiste el programa a mano, descarga la nueva copia desde la página de versiones.
+Instala una versión estable más reciente desde Settings → About and updates. Obituary cierra la ventana y la bandeja, actualiza por el canal de instalación original (Scoop, WinGet o script) y luego intenta restaurar la bandeja y volver a abrir la ventana. Si falla, la misma página muestra el error y la ruta del log.
+
+Una copia que descomprimiste tú mismo también se actualiza en su sitio; su botón dice «Download and restart to update». Obituary descarga la versión desde GitHub (desde el espejo de China continental si GitHub no responde en diez segundos), comprueba su SHA-256 y solo entonces cierra la ventana y reemplaza los programas propios de Obituary en esa carpeta (`obit`, `obitd` y `obit-gui`). Los demás archivos de la carpeta no se tocan, y tampoco PATH ni el menú Inicio. Los programas anteriores esperan un día en una carpeta oculta `.obituary-update-…` del mismo lugar y luego pasan al cementerio, donde aún se pueden resucitar; si falla cualquier paso, incluido un `obit` nuevo que no arranca, se restaura la versión anterior. Hace falta una versión estable (no una compilación de desarrollo), todos los programas de la versión en la carpeta como archivos normales y una carpeta donde el usuario actual pueda escribir sin permisos de administrador. Si algo de esto no se cumple, la página indica qué y puedes descargar la copia nueva desde la página de versiones. Desde un terminal, `obit update --apply` hace lo mismo. «What changed» muestra las notas en el idioma de la ventana, o en inglés si no hay traducción.
 
 ### Ocho estilos
 

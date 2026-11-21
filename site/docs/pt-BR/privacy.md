@@ -27,6 +27,7 @@ Desativar o envio apaga o identificador de instalação local e qualquer relató
 
 - O Scoop, o winget e o script de instalação baixam os arquivos compactados do [GitHub Releases](https://github.com/woodfishhhh/obituary/releases). Aplica-se a [declaração de privacidade do GitHub](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement).
 - Com o espelho (`-Mirror cn`), os arquivos vêm de `cn.obituary.woodfish.site`. O servidor mantém logs de acesso comuns (horário, IP e URL solicitada) para diagnosticar problemas.
+- As atualizações pelo aplicativo («Update now» ou «Download and restart to update» na janela, e `obit update --apply`) baixam o arquivo da versão e o `checksums.txt` do GitHub Releases, ou de `cn.obituary.woodfish.site` quando o GitHub não responde em dez segundos. As requisições levam apenas o endereço IP e um User-Agent com a versão do Obituary, e nenhum dado de uso é enviado.
 - A cada lançamento, o GitHub Actions envia os arquivos ao espelho. O espelho verifica e distribui os arquivos localmente, sem encaminhar sua solicitação de download ao GitHub.
 
 ## Conexão de agentes

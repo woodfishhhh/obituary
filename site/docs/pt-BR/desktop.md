@@ -38,7 +38,9 @@ O cask deve instalar o mesmo DMG universal, copiar Obituary.app para Aplicativos
 
 ### Actualizações
 
-Para instalar uma versão estável mais recente, abra Settings → About and updates. O Obituary fecha a janela e a bandeja, atualiza pelo mesmo canal usado na instalação (Scoop, WinGet ou script) e tenta abrir a bandeja e a janela novamente. A mesma página exibe eventuais falhas e os caminhos dos logs. Se você extraiu o programa manualmente, baixe a nova cópia na página de versões.
+Para instalar uma versão estável mais recente, abra Settings → About and updates. O Obituary fecha a janela e a bandeja, atualiza pelo mesmo canal usado na instalação (Scoop, WinGet ou script) e tenta abrir a bandeja e a janela novamente. A mesma página exibe eventuais falhas e os caminhos dos logs.
+
+Uma cópia que você extraiu manualmente também é atualizada no lugar; o botão diz “Download and restart to update”. O Obituary baixa a versão do GitHub (do espelho da China continental se o GitHub não responder em dez segundos), confere o SHA-256 e só então fecha a janela e substitui os programas do próprio Obituary nessa pasta (`obit`, `obitd` e `obit-gui`). Os demais arquivos da pasta ficam como estão, e PATH e o menu Iniciar não são alterados. Os programas anteriores ficam um dia em uma pasta oculta `.obituary-update-…` no mesmo lugar e depois vão para o cemitério, de onde ainda podem ser ressuscitados; se qualquer etapa falhar, inclusive um novo `obit` que não inicia, a versão anterior é restaurada. É preciso uma versão estável (não uma compilação de desenvolvimento), todos os programas da versão na pasta como arquivos comuns e uma pasta em que o usuário atual possa gravar sem permissões de administrador. Se alguma condição não for atendida, a página informa qual, e você ainda pode baixar a nova cópia na página de versões. No terminal, `obit update --apply` faz o mesmo. “What changed” mostra as notas no idioma da janela, ou em inglês quando não há tradução.
 
 ### Oito temas
 
