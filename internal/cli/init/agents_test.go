@@ -42,8 +42,8 @@ func TestShowRegisteredCapabilitiesWithoutInstalling(t *testing.T) {
 	if err != nil {
 		t.Fatal(out, err)
 	}
-	summary, details, ok := strings.Cut(out, "能力明细 (capability details):")
-	if !ok || !strings.HasPrefix(summary, "安装摘要 (installation summary):") || strings.Contains(summary, "delete guard:") || details == "" {
+	summary, details, ok := strings.Cut(out, "Capability details:")
+	if !ok || !strings.HasPrefix(summary, "Installation summary:") || strings.Contains(summary, "delete guard:") || details == "" {
 		t.Fatalf("summary missing or mixed with capabilities: %s", out)
 	}
 	for _, name := range initcmd.AgentNames() {
@@ -51,7 +51,7 @@ func TestShowRegisteredCapabilitiesWithoutInstalling(t *testing.T) {
 			t.Errorf("summary must have one line for %s: %s", name, summary)
 		}
 	}
-	for _, want := range []string{"claude: 已安装，最新", "codex: 已安装，需要刷新", "windsurf: 未安装"} {
+	for _, want := range []string{"claude: installed, current", "codex: installed, outdated or incomplete", "windsurf: not installed"} {
 		if !strings.Contains(summary, want) {
 			t.Errorf("summary missing %q: %s", want, summary)
 		}
@@ -65,20 +65,20 @@ func TestShowRegisteredCapabilitiesWithoutInstalling(t *testing.T) {
 			t.Fatalf("missing registered capabilities: %s\n%s", name, out)
 		}
 		if _, ok := integrate.LookupAgent(name); !ok {
-			if !strings.Contains(out, name+": 安装尚未提供") {
+			if !strings.Contains(out, name+": installer not available") {
 				t.Fatalf("missing installer mistaken for failure: %s", out)
 			}
 			one, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "-g", "--show", "--agent", name)
-			if err != nil || !strings.Contains(one, "安装尚未提供") {
+			if err != nil || !strings.Contains(one, "installer not available") {
 				t.Fatalf("cannot inspect adapter without installer: %s %v", one, err)
 			}
-			if strings.Contains(one, "安装摘要") {
+			if strings.Contains(one, "Installation summary") {
 				t.Fatal("filtered show unexpectedly included the inventory summary")
 			}
 		}
 	}
 	// A manual-only target remains missing until installation evidence exists.
-	if !strings.Contains(out, "windsurf: 未安装；接入需要手动步骤") || !strings.Contains(out, "qoderwork: 未安装；接入需要手动步骤") {
+	if !strings.Contains(out, "windsurf: not installed; manual setup required") || !strings.Contains(out, "qoderwork: not installed; manual setup required") {
 		t.Fatalf("manual steps reported as failure: %s", out)
 	}
 	if !reflect.DeepEqual(before, clitest.TreeSnapshot(t, root)) {
@@ -117,7 +117,7 @@ func TestRegisteredAgentCLILifecycle(t *testing.T) {
 				check := func(out string, err error) {
 					t.Helper()
 					if manual {
-						if !errors.Is(err, cmdutil.ErrReported) || !strings.Contains(out, "未完成，需要手动步骤") || strings.Contains(out, "already installed") || strings.Contains(out, "installed; restart") {
+						if !errors.Is(err, cmdutil.ErrReported) || !strings.Contains(out, "incomplete; manual steps required") || strings.Contains(out, "already installed") || strings.Contains(out, "installed; restart") {
 							t.Fatalf("manual result: %s\n%v", out, err)
 						}
 					} else if err != nil {
@@ -148,7 +148,7 @@ func TestRegisteredAgentCLILifecycle(t *testing.T) {
 					t.Fatal("repeated installation rewrote files")
 				}
 				out, _, err = clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), append(args, "--show")...)
-				if err != nil || manual && !strings.Contains(out, "需要手动步骤") {
+				if err != nil || manual && !strings.Contains(out, "manual steps required") {
 					t.Fatalf("show: %s %v", out, err)
 				}
 				if !reflect.DeepEqual(installedRoot, clitest.TreeSnapshot(t, root)) || !reflect.DeepEqual(installedRepo, clitest.TreeSnapshot(t, repo)) {
@@ -227,17 +227,17 @@ func TestCapabilityTextKeepsQualificationAndVerificationSeparate(t *testing.T) {
 	t.Parallel()
 	c := hook.Capabilities{Target: hook.Target{Host: "Host CLI", Distribution: "CN", Version: "v1", Scope: "user/project"}, DeleteGuard: hook.Support{Level: hook.Supported}, MCP: hook.Support{Level: hook.Limited, Target: hook.Target{Host: "Host IDE", Distribution: "global", Version: "v2", Scope: "explicit file"}}}
 	text := initcmd.CapabilityText(c)
-	for _, want := range []string{"delete guard: 支持", "宿主=Host CLI", "发行版=CN", "版本=v1", "作用域=user/project", "MCP: 有限", "宿主=Host IDE"} {
+	for _, want := range []string{"delete guard: supported", "宿主=Host CLI", "发行版=CN", "版本=v1", "作用域=user/project", "MCP: limited", "宿主=Host IDE"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("missing %q: %s", want, text)
 		}
 	}
-	if strings.Contains(text, "实际验证") {
+	if strings.Contains(text, "verified on") {
 		t.Fatalf("unverified capability includes verification detail: %s", text)
 	}
 	c.DeleteGuard.Verification = hook.Verification{Target: hook.Target{Host: "Host CLI", Version: "v1.1", Scope: "project"}, Evidence: "receipt example"}
 	verified := initcmd.CapabilityText(c)
-	if !strings.Contains(verified, "实际验证: 宿主=Host CLI, 版本=v1.1, 作用域=project; receipt example") || strings.Contains(verified, "未限定") {
+	if !strings.Contains(verified, "verified on: 宿主=Host CLI, 版本=v1.1, 作用域=project; receipt example") || strings.Contains(verified, "未限定") {
 		t.Fatal("verification evidence omitted or noisy", verified)
 	}
 }
@@ -249,11 +249,11 @@ func TestCapabilityTextOmitsUnspecifiedFields(t *testing.T) {
 		target hook.Target
 		want   string
 	}{
-		{"empty", hook.Target{}, "delete guard: 支持 (supported)"},
-		{"host", hook.Target{Host: "CLI"}, "delete guard: 支持 (supported); 宿主=CLI"},
-		{"distribution", hook.Target{Distribution: "CN"}, "delete guard: 支持 (supported); 发行版=CN"},
-		{"version", hook.Target{Version: "v2"}, "delete guard: 支持 (supported); 版本=v2"},
-		{"scope", hook.Target{Scope: "user"}, "delete guard: 支持 (supported); 作用域=user"},
+		{"empty", hook.Target{}, "delete guard: supported"},
+		{"host", hook.Target{Host: "CLI"}, "delete guard: supported; 宿主=CLI"},
+		{"distribution", hook.Target{Distribution: "CN"}, "delete guard: supported; 发行版=CN"},
+		{"version", hook.Target{Version: "v2"}, "delete guard: supported; 版本=v2"},
+		{"scope", hook.Target{Scope: "user"}, "delete guard: supported; 作用域=user"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -262,7 +262,7 @@ func TestCapabilityTextOmitsUnspecifiedFields(t *testing.T) {
 			c.DeleteGuard.Verification = hook.Verification{Evidence: "incomplete"}
 			text := initcmd.CapabilityText(c)
 			first, _, _ := strings.Cut(text, "\n")
-			if first != tc.want || strings.Contains(text, "未限定") || strings.Contains(text, "实际验证") {
+			if first != tc.want || strings.Contains(text, "未限定") || strings.Contains(text, "verified on") {
 				t.Fatalf("capability text: %s", text)
 			}
 		})
@@ -278,7 +278,7 @@ func TestManualStepsDoNotClaimInstallation(t *testing.T) {
 			root, _, executable := agentFixture(t)
 			before := clitest.TreeSnapshot(t, root)
 			status, err := (initcmd.Planner{Executable: executable}).InspectAgent(name, integrate.Scope{Global: true})
-			if err != nil || status.Installation != "missing" || !strings.Contains(status.Detail, "未安装；接入需要手动步骤") || strings.Contains(status.Detail, "已安装") {
+			if err != nil || status.Installation != "missing" || !strings.Contains(status.Detail, "not installed; manual setup required") || strings.HasPrefix(status.Detail, "installed") {
 				t.Fatalf("uninstalled manual target: %+v %v", status, err)
 			}
 			if name == "cursor" && (status.Capabilities.MCP.Level != hook.Supported || !strings.Contains(status.Detail, "Customize > Rules > User Rules")) {
@@ -307,10 +307,10 @@ func TestManualStatusFollowsInstallationEvidence(t *testing.T) {
 			if name == "windsurf" {
 				want = "missing"
 			}
-			if err != nil || status.Installation != want || strings.Contains(status.Detail, "已安装") {
+			if err != nil || status.Installation != want || strings.HasPrefix(status.Detail, "installed") {
 				t.Fatalf("manual status after init: %+v %v\n%s", status, err, out)
 			}
-			if want == "manual" && (!strings.HasPrefix(status.Detail, "需要手动步骤") || !strings.Contains(status.Detail, "Next:")) {
+			if want == "manual" && (!strings.HasPrefix(status.Detail, "manual steps required") || !strings.Contains(status.Detail, "Next:")) {
 				t.Fatalf("remaining manual steps missing: %+v", status)
 			}
 			out, _, err = clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "-g", "--show", "--agent", name)

@@ -92,7 +92,7 @@ func TestDoctorSummarizesUninstalledAgents(t *testing.T) {
 			}
 		}
 	}
-	want := fmt.Sprintf("另有 %d 家 agent 可接入：obit init --show 查看", len(initcmd.AgentNames())-2)
+	want := fmt.Sprintf("%d more agents can be set up: see obit init --show", len(initcmd.AgentNames())-2)
 	rows := english.diagnose(time.Now(), executable)
 	last := rows[len(rows)-1]
 	wantRows := 33
@@ -106,7 +106,7 @@ func TestDoctorSummarizesUninstalledAgents(t *testing.T) {
 		t.Fatalf("fresh identity diagnostic: %+v", check)
 	}
 	out, _, err := clitest.Execute(t, NewCmdWithExecutable(executable))
-	if err != nil || !strings.HasSuffix(strings.TrimSpace(out), want) || strings.Contains(out, "delete guard:") || strings.Contains(out, "实际验证:") {
+	if err != nil || !strings.HasSuffix(strings.TrimSpace(out), want) || strings.Contains(out, "delete guard:") || strings.Contains(out, "verified on:") {
 		t.Fatalf("default text is noisy: %s %v", out, err)
 	}
 	if !reflect.DeepEqual(before, clitest.TreeSnapshot(t, root)) {
@@ -131,7 +131,7 @@ func TestDoctorExtraAgentLifecycle(t *testing.T) {
 		if err != nil || checks["gemini"].Status != status || checks["gemini"].Installation != installation {
 			t.Fatalf("gemini: %+v %v", checks["gemini"], err)
 		}
-		want := fmt.Sprintf("另有 %d 家 agent 可接入：obit init --show 查看", len(initcmd.AgentNames())-3)
+		want := fmt.Sprintf("%d more agents can be set up: see obit init --show", len(initcmd.AgentNames())-3)
 		if checks["agents"].Detail != want {
 			t.Fatalf("installed agent counted as available: %+v", checks["agents"])
 		}
@@ -238,13 +238,13 @@ func TestDoctorFindsExtraAgentInstallationTraces(t *testing.T) {
 		}, "WARN"},
 		{"manual activation", "openclaw", func(t *testing.T, root string, executable cmdutil.Executable) {
 			out, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "-g", "--agent", "openclaw", "--yes")
-			if !errors.Is(err, cmdutil.ErrReported) || !strings.Contains(out, "需要手动步骤") {
+			if !errors.Is(err, cmdutil.ErrReported) || !strings.Contains(out, "manual steps required") {
 				t.Fatal(out, err)
 			}
 		}, "WARN"},
 		{"manual rules", "cursor", func(t *testing.T, root string, executable cmdutil.Executable) {
 			out, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "-g", "--agent", "cursor", "--yes")
-			if !errors.Is(err, cmdutil.ErrReported) || !strings.Contains(out, "需要手动步骤") {
+			if !errors.Is(err, cmdutil.ErrReported) || !strings.Contains(out, "manual steps required") {
 				t.Fatal(out, err)
 			}
 		}, "WARN"},
@@ -271,7 +271,7 @@ func TestDoctorVerboseCapabilities(t *testing.T) {
 
 	_, executable := doctorAgentFixture(t)
 	out, _, err := clitest.Execute(t, NewCmdWithExecutable(executable, "claude", "codex"), "--verbose")
-	if err != nil || !strings.Contains(out, "delete guard:") || strings.Contains(out, "未限定") || strings.Contains(out, "实际验证: 未实机验证") {
+	if err != nil || !strings.Contains(out, "delete guard:") || strings.Contains(out, "未限定") || strings.Contains(out, "verified on: 未实机验证") {
 		t.Fatalf("verbose capabilities: %s %v", out, err)
 	}
 	out, _, err = clitest.Execute(t, NewCmdWithExecutable(executable, "claude", "codex"), "--verbose", "--json")
