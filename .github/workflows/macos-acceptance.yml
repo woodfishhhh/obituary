@@ -1,0 +1,59 @@
+name: macOS DMG acceptance
+
+on:
+  push:
+    branches: [woodfishhhh/mac-fixes]
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Published tag to check instead of building a candidate
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    if: ${{ !inputs.release_tag }}
+    uses: ./.github/workflows/macos-desktop.yml
+  release:
+    needs: candidate
+    if: ${{ !cancelled() && (needs.candidate.result == 'success' || inputs.release_tag) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15, macos-15-intel, macos-26, macos-26-intel]
+        lane: [gatekeeper, desktop]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - if: ${{ !inputs.release_tag }}
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: macos-desktop-package
+          path: ${{ runner.temp }}/release
+      - name: Download published release (no rebuild)
+        if: inputs.release_tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.release_tag }}
+        run: gh release download --repo "$GITHUB_REPOSITORY" -p '*.dmg' -p checksums.txt -D "$RUNNER_TEMP/release" -- "$TAG"
+      - name: Exercise packaged app
+        env:
+          LANE: ${{ matrix.lane }}
+          EXPECTED_ARCH: ${{ endsWith(matrix.runner, '-intel') && 'x86_64' || 'arm64' }}
+          EXPECTED_MAJOR: ${{ startsWith(matrix.runner, 'macos-15') && '15' || '26' }}
+          OBIT_TELEMETRY: '0'
+        run: bash scripts/accept-macos-release.sh
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: acceptance-${{ matrix.runner }}-${{ matrix.lane }}
+          path: ${{ runner.temp }}/evidence/
+          retention-days: 7
+          if-no-files-found: error
