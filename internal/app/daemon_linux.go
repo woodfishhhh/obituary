@@ -19,6 +19,8 @@ import (
 
 const daemonName = "obitd"
 
+func DesktopSession() bool { return graphicalLogin() }
+
 func stopPath(home string) string { return filepath.Join(home, "obitd.stop") }
 
 func Running(home string) bool {
@@ -31,6 +33,9 @@ func Running(home string) bool {
 }
 
 func Start(home string) error {
+	if !graphicalLogin() {
+		return errors.New("no local graphical session; tray not started")
+	}
 	if Running(home) {
 		return nil
 	}
@@ -45,6 +50,9 @@ func Start(home string) error {
 }
 
 func startAt(home, path string) error {
+	if managed, err := startManagedUnit(path, home); managed || err != nil {
+		return err
+	}
 	cmd := exec.Command(path, append([]string{"--tray"}, daemonArgs(home)...)...)
 	detach(cmd)
 	if err := cmd.Start(); err != nil {
@@ -145,11 +153,15 @@ type AutostartPlan struct {
 	path                string
 	content             string
 	enabled             bool
+	unit                bool
 }
 
 func (p *AutostartPlan) Pending() bool { return p.Before != p.After }
 
 func (p *AutostartPlan) Apply() error {
+	if p.unit {
+		return p.applyTrayUnit()
+	}
 	current, err := readAutostart(p.path)
 	if err != nil {
 		return err
@@ -163,6 +175,10 @@ func (p *AutostartPlan) Apply() error {
 	if !p.enabled {
 		return os.Remove(p.path)
 	}
+	return p.writeNewEntry()
+}
+
+func (p *AutostartPlan) writeNewEntry() error {
 	if err := os.MkdirAll(filepath.Dir(p.path), 0o700); err != nil {
 		return err
 	}
@@ -209,6 +225,16 @@ func PlanAutostart(_ RunRegistry, daemon, home, config string, enabled bool) (*A
 	}
 	if before != "" && before != content {
 		return nil, fmt.Errorf("preserving edited or foreign autostart entry: %s", path)
+	}
+	unit, want, have, err := readTrayUnit(daemon, home, config)
+	if err != nil {
+		return nil, err
+	}
+	if have != "" || enabled && graphicalManager() && before == "" {
+		if !enabled {
+			want = ""
+		}
+		return &AutostartPlan{Name: unit, Before: have, After: want, path: unit, content: want, enabled: enabled, unit: true}, nil
 	}
 	return &AutostartPlan{Name: path, Before: before, After: after, path: path, content: content, enabled: enabled}, nil
 }

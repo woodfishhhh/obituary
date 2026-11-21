@@ -93,6 +93,32 @@ func TestLinuxAutostartEscapesDesktopArgumentsOnce(t *testing.T) {
 	}
 }
 
+func TestTrayUsesGraphicalSystemdWhenAvailable(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", root)
+	t.Setenv("DISPLAY", ":97")
+	t.Setenv("SSH_CONNECTION", "")
+	t.Setenv("SSH_TTY", "")
+	t.Setenv("SSH_CLIENT", "")
+	t.Setenv("PATH", root)
+	if err := os.WriteFile(filepath.Join(root, "systemctl"), []byte("#!/bin/sh\nexit 0\n"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	plan, err := PlanAutostart(nil, "/bin/obitd", "/data", "/config", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, part := range []string{"Restart=on-failure", "RestartSec=60", "StartLimitIntervalSec=900", "StartLimitBurst=4", "WantedBy=graphical-session.target", "--managed"} {
+		if !strings.Contains(plan.After, part) {
+			t.Fatalf("missing %s in: %s", part, plan.After)
+		}
+	}
+	t.Setenv("SSH_CONNECTION", "test")
+	if err := Start(filepath.Join(root, "unused")); err == nil || !strings.Contains(err.Error(), "graphical") {
+		t.Fatalf("SSH start: %v", err)
+	}
+}
+
 func TestLinuxAutostartPreservesEditedManagedEntry(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", dir)

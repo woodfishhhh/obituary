@@ -21,6 +21,8 @@ const (
 
 func stopPath(home string) string { return filepath.Join(home, "obitd.stop") }
 
+func DesktopSession() bool { return true }
+
 // Running reports whether a daemon is serving home.
 func Running(home string) bool {
 	name, err := daemonMutexName(home)

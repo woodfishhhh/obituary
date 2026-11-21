@@ -18,6 +18,8 @@ import (
 
 const daemonName = "obitd"
 
+func DesktopSession() bool { return false }
+
 func Running(string) bool { return false }
 func Start(string) error {
 	return fmt.Errorf("resident mode is unavailable; use obit daemon enable for a user timer: %w", core.ErrUnsupported)
