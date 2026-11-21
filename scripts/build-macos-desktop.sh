@@ -61,7 +61,7 @@ codesign --verify --deep --strict "$bundle"
 
 app_zip="$out/obituary_${version}_darwin_universal.app.zip"
 dmg="$out/obituary_${version}_darwin_universal.dmg"
-(cd "$out" && ditto -c -k --sequesterRsrc --keepParent "$(basename "$bundle")" "$(basename "$app_zip")")
+(cd "$out" && /usr/bin/zip -qry "$(basename "$app_zip")" "$(basename "$bundle")")
 hdiutil create -volname Obituary -srcfolder "$bundle" -ov -format UDZO "$dmg" >/dev/null
 hdiutil verify "$dmg" >/dev/null
 (cd "$out" && shasum -a 256 "$(basename "$app_zip")" "$(basename "$dmg")" > checksums.txt)
