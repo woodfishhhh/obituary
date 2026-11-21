@@ -1,6 +1,6 @@
 import { Rise } from "@/components/ui/rise";
 import { BorderBeam } from "@/components/ui/border-beam";
-import { RotatingWord } from "@/components/ui/rotating-word";
+import { RotatingTagline } from "@/components/ui/rotating-word";
 import { ShimmerLink } from "@/components/ui/shimmer-link";
 import { SparklesText } from "@/components/ui/sparkles-text";
 import { Window } from "@/components/window";
@@ -39,14 +39,7 @@ export function Hero({ c }: { c: Copy }) {
 
       <div className="mx-auto flex max-w-[1240px] flex-col items-center px-6 pt-12 text-center md:px-10 md:pt-16 lg:pt-20">
         <div>
-          <p className="inline-flex max-w-full items-center rounded-[1.75rem] border border-line-2 bg-paper/70 px-5 py-2 text-[clamp(1.1rem,2.3vw,1.65rem)] leading-snug font-medium text-ink-2 shadow-sm backdrop-blur max-md:min-h-[calc(2.75em+1rem+2px)] md:px-7 md:py-2.5">
-            <span className="sr-only">{h.tagline.label}</span>
-            <span aria-hidden="true" className="inline-flex flex-wrap items-center justify-center gap-x-[0.4em]">
-              {h.tagline.before}
-              <RotatingWord words={words} className="font-semibold" />
-              {h.tagline.after}
-            </span>
-          </p>
+          <RotatingTagline label={h.tagline.label} before={h.tagline.before} words={words} after={h.tagline.after} />
         </div>
 
         <div>

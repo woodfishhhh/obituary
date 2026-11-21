@@ -144,6 +144,12 @@ button:disabled { cursor: not-allowed; }
   color: transparent;
 }
 
+/* The rotating word on the first screen (components/ui/rotating-word.tsx). */
+.rw-in { animation: rw-in 620ms cubic-bezier(0.2, 0.9, 0.3, 1.15) both; }
+.rw-out { animation: rw-out 220ms cubic-bezier(0.3, 0, 0.7, 0.4) both; }
+@keyframes rw-in { from { opacity: 0; transform: translate3d(0, 70%, 0); } }
+@keyframes rw-out { to { opacity: 0; transform: translate3d(0, -70%, 0); } }
+
 /* Logo Loop (components/reactbits/LogoLoop.tsx): a band that loops sideways on one transform. */
 .logo-loop { overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
 .logo-loop-track { display: flex; width: max-content; margin: 0; padding: 0.5rem 0; list-style: none; animation: logo-loop var(--loop-duration, 70s) linear infinite; will-change: transform; }
