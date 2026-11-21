@@ -6,7 +6,7 @@
   "packageManager": "pnpm@11.11.0",
   "scripts": {
     "dev": "vite",
-    "test": "node --test src/bytes.test.ts src/i18n.test.ts scripts/squircle-corners.test.mjs",
+    "test": "node --test src/bytes.test.ts src/i18n.test.ts src/variants/calendar/columns.test.ts scripts/squircle-corners.test.mjs",
     "build": "pnpm test && tsc --noEmit && vite build",
     "playground": "vite --open /playground.html"
   },
