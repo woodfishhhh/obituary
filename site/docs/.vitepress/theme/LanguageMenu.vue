@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import { useData, withBase } from 'vitepress';
 import { locales, type Locale } from '../../../landing/src/locales';
-import { pageSuffix } from '../routes';
+import { pageLocales, pageSuffix } from '../routes';
 import sprite from './flag-symbols.svg?raw';
 
 const { page, lang, theme } = useData();
@@ -25,7 +25,7 @@ function close(restoreFocus = false) {
       <span class="vpi-chevron-down" />
     </summary>
     <nav :aria-label="theme.langMenuLabel">
-      <a v-for="l of locales" :key="l.id" :href="withBase('/' + l.path + pageSuffix(page.relativePath))" :lang="l.html" :hreflang="l.html" :aria-current="l.id === current.id ? 'page' : undefined" @click="close()">
+      <a v-for="l of pageLocales(page.relativePath)" :key="l.id" :href="withBase('/' + l.path + pageSuffix(page.relativePath))" :lang="l.html" :hreflang="l.html" :aria-current="l.id === current.id ? 'page' : undefined" @click="close()">
         <svg :width="width(l)" height="16" aria-hidden="true"><use :href="`#flag-${l.flag}`" /></svg><span>{{ l.name }}</span>
       </a>
     </nav>

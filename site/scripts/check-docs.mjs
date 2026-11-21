@@ -16,6 +16,24 @@ const withoutCodeBlocks = s => s.replace(new RegExp(fence + anyText + fence, 'g'
 const han = /[㐀-䶿一-鿿]/u;
 const simplified = /[为这们让从后还过发进开关与业专门问无现备复机连统传图录仅级译术览归盘线产带别认时该应证说读设计变网处广汉听启类页节块输编样欢标键锁扫预边层导态优严确际]/u;
 const sitemap = await read(new URL('sitemap.xml', output));
+// User pages and generated agent guides retain their ten-language contract below.
+const devPages = await pageNames(new URL('dev/', root));
+assert.ok(devPages.includes('index.md'));
+assert.deepEqual(await pageNames(new URL('en/dev/', root)), devPages);
+for (const l of locales) {
+  if (l.id !== 'zh' && l.id !== 'en') {
+    assert.ok(!(await readdir(new URL(l.path, root))).includes('dev'), `unexpected development tree: ${l.path}`);
+    continue;
+  }
+  for (const page of devPages) {
+    const path = `${l.path}dev/${page}`;
+    const src = await read(new URL(path, root));
+    assert.equal((src.match(/^ *```/gm) ?? []).length, blocks(src).length * 2, `unclosed code fence: ${path}`);
+    const html = await read(new URL(path.replace(/\.md$/, '.html'), output));
+    assert.equal((html.match(/<link rel="alternate" hreflang=/g) ?? []).length, 2, `dev alternates: ${path}`);
+    assert.ok(sitemap.includes(`/docs/${path.replace(/index\.md$/, '').replace(/\.md$/, '.html')}</loc>`), `dev sitemap: ${path}`);
+  }
+}
 for (const l of locales) {
   assert.deepEqual(await pageNames(new URL(l.path || '.', root)), pages, l.html);
   const agentPages = agentData.map(a => `agents/${a.id}.md`);

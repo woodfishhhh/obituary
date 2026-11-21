@@ -1,9 +1,8 @@
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitepress";
 
-import { locales } from '../../landing/src/locales';
 import { docLocales, searchLocales } from './navigation.mts';
-import { pageSuffix } from './routes';
+import { pageLocales, pageSuffix } from './routes';
 import squircleCorners from "../../../cmd/obit-gui/frontend/scripts/squircle-corners.mjs";
 
 // Both builds serve the landing page at the root of obituary.woodfish.site
@@ -57,7 +56,7 @@ export default defineConfig({
   transformHead({ pageData }) {
     if (pageData.isNotFound) return [];
     const suffix = pageSuffix(pageData.relativePath);
-    return locales.map(l => ['link', {rel:'alternate', hreflang:l.html, href:`${siteUrl}${base}${l.path}${suffix}`}]);
+    return pageLocales(pageData.relativePath).map(l => ['link', {rel:'alternate', hreflang:l.html, href:`${siteUrl}${base}${l.path}${suffix}`}]);
   },
   themeConfig: {
     logo: { src: "/icon-128.png", alt: "" },

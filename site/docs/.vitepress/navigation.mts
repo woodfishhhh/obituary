@@ -21,6 +21,9 @@ const labels: Record<Lang, string[]> = {
   ru: ['Главная','Документация','Скачать','Начало работы','Работа с агентами','Другие возможности','Справочник','На этой странице','Назад','Далее','Поиск','Язык','Меню','Наверх','Редактировать на GitHub'],
 };
 
+const devLabels: Record<Lang, string> = {zh:'开发', en:'Development', 'zh-TW':'開發', ja:'開発', ko:'개발', es:'Desarrollo', fr:'Développement', de:'Entwicklung', 'pt-BR':'Desenvolvimento', ru:'Разработка'};
+const devPages = ['index','architecture','repository','build-test','gui','safety','agent-integration','i18n','release','docs-and-blog'];
+
 export function docLocales(site: string, repo: string): LocaleConfig<DefaultTheme.Config> {
   return Object.fromEntries(locales.map(({ id, path, html, name }) => {
     const [home,docs,download,start,agents,more,reference,outline,prev,next,,language,menu,top,edit] = labels[id];
@@ -30,11 +33,16 @@ export function docLocales(site: string, repo: string): LocaleConfig<DefaultThem
       return page === 'agents' ? { text, link, collapsed: true, items: guides.map(a => ({ text: a.name, link: `${link}/${a.id}` })) } : { text, link };
     }) }));
     const brand = id === 'zh' ? '讣告' : id === 'zh-TW' ? '訃告' : 'Obituary';
+    const dev = id === 'zh' ? '/dev/' : '/en/dev/';
+    const section = id === 'zh' || id === 'en' ? { [dev]: [{ text: devLabels[id], items: devPages.map(page => ({
+      text: readFileSync(new URL(`..${dev}${page}.md`, import.meta.url), 'utf8').match(/^# (.+)$/m)![1].trim(),
+      link: dev + (page === 'index' ? '' : page),
+    })) }] } : {};
     return [id === 'zh' ? 'root' : id, {
       label: name, lang: html, title: `${brand} · ${docs}`, titleTemplate: `:title · ${brand}`,
       description: `${docs} · ${brand}: ${sidebar[0].items.map(p => p.text).join(' · ')}`,
-      themeConfig: { siteTitle: brand, logoLink: site+path, sidebar,
-        nav: [{text:home,link:site+path,target:'_self',noIcon:true}, sidebar[0].items[0], {text:docs,link:`/${path}how-it-works`}, {text:download,link:`${repo}/releases`}],
+      themeConfig: { siteTitle: brand, logoLink: site+path, sidebar: { [`/${path}`]: sidebar, ...section },
+        nav: [{text:home,link:site+path,target:'_self',noIcon:true}, sidebar[0].items[0], {text:docs,link:`/${path}how-it-works`}, {text:devLabels[id],link:dev}, {text:download,link:`${repo}/releases`}],
         outline: {label:outline,level:[2,3]}, docFooter:{prev,next}, langMenuLabel:language, sidebarMenuLabel:menu, returnToTopLabel:top,
         editLink:{pattern:`${repo}/edit/main/site/docs/:path`, text:edit},
         footer: {message:'MIT', copyright:brand},
