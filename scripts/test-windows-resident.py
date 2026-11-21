@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import xml.etree.ElementTree as ET
 from ctypes import wintypes
 from pathlib import Path
 from xml.sax.saxutils import escape
@@ -78,11 +79,18 @@ def probe(root, name, daemon, cli, trigger, code):
         except (FileNotFoundError, json.JSONDecodeError):
             return {}
 
-    command("schtasks", "/create", "/tn", name, "/xml", definition)
+    if trigger == "manual":
+        command(cli, "daemon", "enable", "--resident")
+        installed = ET.fromstring((home / "obitd.login-task.xml").read_text(encoding="utf-8"))
+        name = installed.findtext("{*}RegistrationInfo/{*}URI")
+        assert name and installed.findtext("{*}Settings/{*}ExecutionTimeLimit") == "PT0S"
+        assert installed.findtext("{*}Actions/{*}Exec/{*}Command") == str(daemon)
+        command(cli, "daemon", "stop")
+        command(cli, "daemon", "start")
+    else:
+        command("schtasks", "/create", "/tn", name, "/xml", definition)
     try:
         print(command("schtasks", "/query", "/tn", name, "/xml"), flush=True)
-        if trigger == "manual":
-            command("schtasks", "/run", "/tn", name)
         first = wait(read, 60)
         parent = json.loads((home / "obitd.supervisor.json").read_bytes())
         assert not parent["closed"] and first["pid"] != parent["pid"], (first, parent)
@@ -106,7 +114,12 @@ def probe(root, name, daemon, cli, trigger, code):
         print(command("schtasks", "/query", "/tn", name, "/v", "/fo", "list"), flush=True)
         if (home / "obitd.log").exists():
             print((home / "obitd.log").read_text(encoding="utf-8"))
-        command("schtasks", "/delete", "/tn", name, "/f")
+        if trigger == "manual":
+            command(cli, "daemon", "disable")
+            result = subprocess.run(["schtasks", "/query", "/tn", name, "/HRESULT"], capture_output=True)
+            assert result.returncode & 0xffffffff == 0x80070002, result
+        else:
+            command("schtasks", "/delete", "/tn", name, "/f")
 
 
 if __name__ == "__main__":

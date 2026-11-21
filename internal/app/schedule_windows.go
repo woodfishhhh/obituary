@@ -122,6 +122,10 @@ func installScheduleFor(daemon, home string) error {
 		return err
 	}
 	text := taskXML(daemon, home, u.Username, time.Now().Add(time.Minute))
+	return registerTask(TaskName, text, true)
+}
+
+func registerTask(name, text string, replace bool) error {
 	// Task Scheduler wants the file in UTF-16 with a byte order mark.
 	units := utf16.Encode([]rune(text))
 	buf := make([]byte, 2+2*len(units))
@@ -142,7 +146,11 @@ func installScheduleFor(daemon, home string) error {
 	if err := tmp.Close(); err != nil {
 		return err
 	}
-	if out, err := schtasks("/Create", "/TN", TaskName, "/XML", tmpPath, "/F"); err != nil {
+	args := []string{"/Create", "/TN", name, "/XML", tmpPath}
+	if replace {
+		args = append(args, "/F")
+	}
+	if out, err := schtasks(args...); err != nil {
 		return fmt.Errorf("schtasks /Create: %v: %s", err, out) //nolint:errorlint // schtasks exit errors are diagnostics, not the scheduler API's error types.
 	}
 	return nil

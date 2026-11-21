@@ -63,6 +63,20 @@ func Start(home string) error {
 }
 
 func startAt(home, path string) error {
+	config, err := userdirs.Config()
+	if err != nil {
+		return err
+	}
+	registration, err := installedLoginTask(home, path, config)
+	if err != nil {
+		return err
+	}
+	if registration != "" {
+		if out, err := schtasks("/Run", "/TN", loginTaskName(home), "/HRESULT"); err != nil {
+			return fmt.Errorf("start supervised login task: %w: %s", err, out)
+		}
+		return waitFor(func() bool { return Running(home) }, 5*time.Second, "supervised daemon did not start")
+	}
 	cmd := exec.Command(path, daemonArgs(home)...)
 	detach(cmd)
 	if err := cmd.Start(); err != nil {
