@@ -236,7 +236,9 @@ func TestUninstallRemovesLabelsAndPoliciesWithoutMovingFiles(t *testing.T) {
 func TestUninstallStopFailureKeepsData(t *testing.T) {
 	d, root, _ := fixture(t)
 	path := filepath.Join(root, "OBIT_HOME", "store.json")
-	write(t, path, `{"version":11,"nextId":1}`)
+	if err := (core.Store{Home: filepath.Dir(path)}).Update(func(*core.State) error { return nil }); err != nil {
+		t.Fatal(err)
+	}
 	d.stop = func(string) error { return errors.New("fake tray would not stop") }
 	out, err := execute(t, d, "", "--yes", "--purge-data")
 	if err == nil || !strings.Contains(err.Error(), "would not stop") {

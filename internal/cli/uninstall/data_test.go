@@ -178,12 +178,14 @@ func TestUninstallPurgeRefusesReplacedGrave(t *testing.T) {
 	}
 	svc.AfterChange = nil
 	path := filepath.Join(root, "payload.txt")
+	other := filepath.Join(root, "first.txt")
+	write(t, other, "OTHER GRAVE")
 	write(t, path, "ORIGINAL")
-	results, err := svc.Bury([]string{path}, false, "fixture")
+	results, err := svc.Bury([]string{other, path}, false, "fixture")
 	if err != nil || core.GraveFailed(results) {
 		t.Fatal(results, err)
 	}
-	grave := results[0].Burial.Grave
+	grave := results[1].Burial.Grave
 	if err := os.Rename(grave, filepath.Join(root, "saved.txt")); err != nil {
 		t.Fatal(err)
 	}
@@ -192,11 +194,80 @@ func TestUninstallPurgeRefusesReplacedGrave(t *testing.T) {
 	if err == nil {
 		t.Fatal("accepted replaced grave", out)
 	}
+	if got, err := os.ReadFile(results[0].Burial.Grave); err != nil || string(got) != "OTHER GRAVE" {
+		t.Fatal("purged another grave before checking the replaced one", err)
+	}
 	if data, err := os.ReadFile(grave); err != nil || string(data) != "REPLACEMENT USER FILE" {
 		t.Fatal(string(data), err)
 	}
 	if _, err := os.Stat(filepath.Join(svc.Store.Home, "store.json")); err != nil {
 		t.Fatal("lost recovery ledger", err)
+	}
+}
+
+func TestUninstallPurgeConfigLayouts(t *testing.T) {
+	for _, tc := range []struct {
+		name, unknown string
+		shared        bool
+	}{
+		{"separate", "", false}, {"shared", "", true},
+		{"shared unknown", "notes.txt", true}, {"unknown in graveyard", "graveyard/notes.txt", true},
+		{"config outside configured directory", "config.toml", false},
+		{"created while stopping", "late.txt", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			d, root, calls := fixture(t)
+			home := os.Getenv("OBIT_HOME")
+			if tc.shared {
+				t.Setenv("OBIT_CONFIG_DIR", home)
+			}
+			cfg := filepath.Join(os.Getenv("OBIT_CONFIG_DIR"), "config.toml")
+			write(t, cfg, "# keep my settings\n")
+			svc, err := app.Open()
+			if err != nil {
+				t.Fatal(err)
+			}
+			svc.AfterChange = nil
+			path := filepath.Join(root, "payload.txt")
+			write(t, path, "BURIED USER CONTENT")
+			results, err := svc.Bury([]string{path}, false, "fixture")
+			if err != nil || core.GraveFailed(results) {
+				t.Fatal(results, err)
+			}
+			if tc.unknown != "" {
+				late := tc.unknown == "late.txt"
+				addUnknown := func() { write(t, filepath.Join(home, tc.unknown), "USER CONTENT") }
+				if late {
+					d.stop = func(string) error { addUnknown(); return nil }
+				} else {
+					addUnknown()
+				}
+				before := snapshot(t, home)
+				before[filepath.Join(home, tc.unknown)] = "USER CONTENT"
+				out, err := execute(t, d, "", "--yes", "--purge-data")
+				if err == nil || !strings.Contains(err.Error(), filepath.FromSlash(tc.unknown)) {
+					t.Errorf("missing reason: %v\n%s", err, out)
+				}
+				if !reflect.DeepEqual(before, snapshot(t, home)) || !late && len(*calls) != 0 {
+					t.Fatal("uninstall changed the graveyard, ledger or services before refusing")
+				}
+				return
+			}
+			if out, err := execute(t, d, "", "--yes", "--purge-data"); err != nil {
+				t.Fatal(out, err)
+			}
+			if got, err := os.ReadFile(cfg); err != nil || string(got) != "# keep my settings\n" {
+				t.Fatal("configuration changed", string(got), err)
+			}
+			if tc.shared {
+				entries, err := os.ReadDir(home)
+				if err != nil || len(entries) != 1 || entries[0].Name() != "config.toml" {
+					t.Fatal(entries, err)
+				}
+			} else if _, err := os.Stat(home); !errors.Is(err, os.ErrNotExist) {
+				t.Fatal("data directory remains", err)
+			}
+		})
 	}
 }
 
