@@ -1,16 +1,26 @@
 # Changelog / 更新日志
 
-## Unreleased
+## 1.6.1 - 2026-11-21
 
-- `obit uninstall --purge-data` 会先检查墓地和数据目录，遇到未知文件不会先删掉坟墓。macOS 默认与账本同目录的 `config.toml` 留在原处，不必移走。`obit init --uninstall` 会保留 `--no-context-menu`、`--no-shortcuts` 或 `--no-skill` 指定跳过的项目。
-- `obit uninstall --purge-data` now checks the graveyard and data directory before purging any graves. It keeps `config.toml` in place even when it shares the ledger directory, as on macOS. `obit init --uninstall` leaves components selected with `--no-context-menu`, `--no-shortcuts` or `--no-skill` untouched.
+# 讣告 1.6.1
 
-- 手动解压的版本也能在「关于与更新」里一键升级，按钮是「下载并重启更新」；终端里用 `obit update --apply`。讣告先从 GitHub 下载（不通就改用国内镜像），核对 SHA-256 之后才关闭窗口，只替换自己的程序（`obit`、`obitd`、`obit-gui`），文件夹里的其他文件一概不动；旧程序留一天后进墓地，仍可复活，任何一步失败都会整体回滚。运行的是开发版、文件夹里缺程序或需要管理员权限时，页面会写明是哪一条不满足。
-- A copy you unpacked yourself can now update from About and updates with one button, "Download and restart to update", or with `obit update --apply`. Obituary downloads from GitHub (from the mirror in mainland China when GitHub does not answer), checks the SHA-256, and only then closes the window and replaces its own programs (`obit`, `obitd`, `obit-gui`); every other file in the folder stays as it is. The previous programs wait for a day before going to the graveyard, where they can be resurrected, and any failed step rolls everything back. When it cannot update itself (a development build, a missing program, a folder that needs administrator rights), the page says which condition fails.
-- 更新窗口在下载时保持打开并显示进度，下载并核对完成后才关闭；下载失败时窗口留在原处并显示原因。
-- The window stays open and shows progress while the update downloads, and closes only once the download is checked; when the download fails it stays and shows why.
-- 「这一版改了什么」只显示窗口所用语言的那一段发布说明，没有对应语言时显示英文，不再把两种语言和中间的分隔线一起显示。
-- "What changed" now shows only the release notes in the window's language, in English when there is no translation, instead of both languages and the rule between them.
+- **手动安装也能一键升级**：直接解压使用的讣告，现在也能在小窗口设置页里点"下载并重启更新"。升级只替换讣告自己的程序，同一目录里的其他文件不受影响；下载的安装包先核对 SHA-256，任何一步失败都会把原来的程序换回去，万一换回也失败，旧程序会原样留着，并告诉你它们在哪里。命令行用 `obit update --apply` 走同一套流程。更新说明只显示当前界面语言的那一段。
+- **macOS 小窗口在 macOS 15 上也能打开了**：1.6.0 的 DMG 实际要求 macOS 26，在 macOS 15 及更早的系统上打不开。这一版把最低系统版本改成 macOS 12，并在 macOS 15 和 26 的 Apple 芯片、Intel 机器上都验证过。第一次打开 app，菜单栏图标会一起出现；通知改由单独的菜单栏辅助程序发出，系统会正常向你请求通知权限。app 仍未经 Developer ID 签名或公证，第一次打开请照[文档](https://obituary.woodfish.site/docs/desktop.html#第一次打开未签名-app)放行。
+- **托盘菜单刷新时不会再误触发复活**：最近下葬的列表刷新、移除旧菜单行的时候，旧行可能被当成一次点击，复活一个你没有选的条目。Windows、macOS 和 Linux 的托盘都修好了。
+- **卸载更稳妥**：`obit uninstall --purge-data` 现在先确认能完整清除才动手，不会再删空墓地以后又因为配置文件停下（macOS 的默认目录布局会碰到这个问题）；`obit init --uninstall` 也会照 `--no-context-menu`、`--no-shortcuts`、`--no-skill` 保留对应的部分。
+- **日历每天一列，宽度相同**：卡片多的日子不会再把其他日子挤得看不清，窗口太窄时日历改为横向滚动。
+- 小窗口的圆角换成了连续曲率的平滑圆角。
+
+---
+
+# Obituary 1.6.1
+
+- **One-click updates for manual installs**: if you unpacked Obituary by hand, the window's settings page now offers "Download and restart to update" as well. The update replaces only Obituary's own programs and leaves every other file in that folder alone; the download is checked against its SHA-256 first, and if any step fails the previous programs are put back. If putting them back also fails, the old programs are kept as they were and you are told where they are. On the command line, `obit update --apply` follows the same steps. Release notes now show only the section in the window's language.
+- **The macOS window opens on macOS 15 again**: the 1.6.0 DMG actually required macOS 26 and would not open on macOS 15 or earlier. This release sets the minimum system to macOS 12 and was checked on macOS 15 and 26, on both Apple silicon and Intel. The menu bar icon now appears the first time you open the app, and notifications come from a separate menu bar helper, so the system asks for notification permission as it should. The app is still not Developer ID signed or notarized; follow the [first-open instructions](https://obituary.woodfish.site/docs/en/desktop.html#first-opening-an-unsigned-app) the first time you open it.
+- **Refreshing the tray menu no longer triggers a resurrect by itself**: when the recently buried list refreshed and old menu rows were removed, a removed row could be taken as a click and resurrect an item you had not chosen. Fixed for the tray on Windows, macOS and Linux.
+- **Safer uninstall**: `obit uninstall --purge-data` now checks that it can finish before it deletes anything, so it no longer empties the graveyard and then stops over the settings file (the default macOS folder layout ran into this). `obit init --uninstall` also keeps whatever `--no-context-menu`, `--no-shortcuts` or `--no-skill` asks it to keep.
+- **One column per day, all the same width**: a busy day no longer squeezes the other days until they cannot be read; when the window is too narrow, the calendar scrolls sideways.
+- The window's rounded corners now use continuous-curvature (squircle) corners.
 
 ## 1.6.0 - 2026-11-21
 
