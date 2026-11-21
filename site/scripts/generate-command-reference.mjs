@@ -49,10 +49,11 @@ const common = {
   yes: { zh: '确认执行，不再询问。', 'zh-TW': '確認執行，不再詢問。', ja: '確認して実行し、再確認しません。', ko: '확인하고 실행하며 다시 묻지 않습니다.', es: 'Confirma la operación sin volver a preguntar.', fr: 'Confirme l’opération sans demander à nouveau.', de: 'Bestätigt den Vorgang ohne weitere Nachfrage.', 'pt-BR': 'Confirma a operação sem perguntar novamente.', ru: 'Подтвердить действие без дополнительного вопроса.' },
   version: { zh: '显示版本。', 'zh-TW': '顯示版本。', ja: 'バージョンを表示します。', ko: '버전을 표시합니다.', es: 'Muestra la versión.', fr: 'Affiche la version.', de: 'Zeigt die Version an.', 'pt-BR': 'Mostra a versão.', ru: 'Показать версию.' },
 };
+const removeItemUsage = readFileSync(join(repo, 'internal', 'cli', 'removeitem', 'remove-item.go'), 'utf8').split('\n').find(line => line.includes('Use:'))?.split('"')[1];
 const exampleLabels = { zh: '示例：', 'zh-TW': '範例：', ja: '例：', ko: '예시:', es: 'Ejemplos:', fr: 'Exemples :', de: 'Beispiele:', 'pt-BR': 'Exemplos:', ru: 'Примеры:' };
 
 function run(exe, args) {
-  return execFileSync(exe, args, { cwd: repo, encoding: 'utf8', env: { ...process.env, OBIT_HOME: join(tmpdir(), 'obit-docs-home'), OBIT_CONFIG_DIR: join(tmpdir(), 'obit-docs-config'), OBIT_USER_HOME: join(tmpdir(), 'obit-docs-user') } });
+  return execFileSync(exe, args, { cwd: repo, encoding: 'utf8', env: { ...process.env, OBIT_HOME: join(tmpdir(), 'obit-docs-home'), OBIT_CONFIG_DIR: join(tmpdir(), 'obit-docs-config'), OBIT_USER_HOME: join(tmpdir(), 'obit-docs-user'), OBIT_LANG: 'en' } });
 }
 function build() {
   const dir = mkdtempSync(join(tmpdir(), 'obit-docs-build-'));
@@ -94,6 +95,7 @@ function collect(exe) {
   const visit = path => {
     const text = run(exe, path.length ? ['help', ...path] : ['help']);
     const command = parseHelp(text, path);
+    if (path.length === 1 && path[0] === 'remove-item' && removeItemUsage) command.usage = 'obit ' + removeItemUsage + ' [flags]';
     result.push(command);
     for (const child of command.children) visit([...path, child]);
   };

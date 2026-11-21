@@ -146,10 +146,10 @@ Usage: `obit bury <path>... [flags]`
 
 | Option | Short | Default | Description |
 | --- | --- | --- | --- |
-| `--force` | none | `false` | 允许包含 .git 仓库的文件夹 |
+| `--force` | none | `false` | allow folders that contain a .git repository |
 | `--help` | `-h` | `false` | help for bury |
-| `--json` | none | `false` | 输出 JSON |
-| `--note` | none | `""` | 随下葬保存的自由文本备注 |
+| `--json` | none | `false` | print JSON |
+| `--note` | none | `""` | free-text note kept with the burial |
 
 ### `obit cancel`
 Aliases: `cancel`, `spare`
@@ -611,7 +611,7 @@ Usage: `obit list [flags]`
 | Option | Short | Default | Description |
 | --- | --- | --- | --- |
 | `--help` | `-h` | `false` | help for list |
-| `--json` | none | `false` | 输出 JSON |
+| `--json` | none | `false` | print JSON |
 
 ### `obit log`
 Usage: `obit log [flags]`
@@ -687,8 +687,8 @@ Usage: `obit resurrect <id\|original path>... \| --last [flags]`
 | Option | Short | Default | Description |
 | --- | --- | --- | --- |
 | `--help` | `-h` | `false` | help for resurrect |
-| `--json` | none | `false` | 输出 JSON |
-| `--last` | none | `false` | 复活当前会话或 Git 项目中最近一批删除的内容 |
+| `--json` | none | `false` | print JSON |
+| `--last` | none | `false` | restore the latest deletion batch in the current session or Git project |
 
 ### `obit rm`
 Usage: `obit rm [options] <path>... [flags]`
