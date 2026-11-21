@@ -4057,17 +4057,17 @@
       }
     },
     "--apply": {
-      "source": "install the cached newer stable release",
+      "source": "download, verify and install the cached newer stable release (a manual install replaces only Obituary's own programs)",
       "translations": {
-        "zh": "安装已缓存的较新正式版",
-        "zh-TW": "安裝已快取的較新穩定版",
-        "ja": "キャッシュ済みの新しい安定版をインストールする",
-        "ko": "캐시된 최신 안정 버전을 설치합니다",
-        "es": "Instalar la versión estable más reciente guardada en caché",
-        "fr": "Installer la version stable plus récente mise en cache",
-        "de": "Das zwischengespeicherte neuere stabile Release installieren",
-        "pt-BR": "Instalar a versão estável mais recente que está em cache",
-        "ru": "Установить кэшированную более новую стабильную версию"
+        "zh": "下载、校验并安装已缓存的较新正式版（手动安装只替换讣告自己的程序）",
+        "zh-TW": "下載、驗證並安裝已快取的較新穩定版（手動安裝只會取代訃告自己的程式）",
+        "ja": "キャッシュ済みの新しい安定版をダウンロードして検証し、インストールする（手動インストールでは Obituary 自身のプログラムだけを置き換える）",
+        "ko": "캐시된 최신 안정 버전을 다운로드하고 검증한 뒤 설치합니다(수동 설치는 Obituary 자체 프로그램만 교체합니다)",
+        "es": "Descargar, verificar e instalar la versión estable más reciente guardada en caché (una instalación manual solo sustituye los programas propios de Obituary)",
+        "fr": "Télécharger, vérifier et installer la version stable plus récente mise en cache (une installation manuelle ne remplace que les programmes d’Obituary)",
+        "de": "Das zwischengespeicherte neuere stabile Release herunterladen, prüfen und installieren (eine manuelle Installation ersetzt nur die eigenen Programme von Obituary)",
+        "pt-BR": "Baixar, verificar e instalar a versão estável mais recente que está em cache (uma instalação manual substitui apenas os programas do próprio Obituary)",
+        "ru": "Скачать, проверить и установить кэшированную более новую стабильную версию (при ручной установке заменяются только собственные программы Obituary)"
       }
     },
     "--check": {

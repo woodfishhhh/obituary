@@ -1032,7 +1032,7 @@ obit mktemp 2h --name screenshots
 
 | 參數 | 簡寫 | 預設值 | 說明 |
 | --- | --- | --- | --- |
-| `--apply` | 無 | `false` | 安裝已快取的較新穩定版 |
+| `--apply` | 無 | `false` | 下載、驗證並安裝已快取的較新穩定版（手動安裝只會取代訃告自己的程式） |
 | `--check` | 無 | `false` | 立即檢查 GitHub，自動檢查被關閉時也會檢查 |
 | `--help` | `-h` | `false` | update 的說明 |
 | `--relaunch-gui` | 無 | `false` | 更新後重新開啟小視窗（Windows） |

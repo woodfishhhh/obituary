@@ -1032,7 +1032,7 @@ obit mktemp 2h --name screenshots
 
 | 参数 | 简写 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `--apply` | 无 | `false` | 安装已缓存的较新正式版 |
+| `--apply` | 无 | `false` | 下载、校验并安装已缓存的较新正式版（手动安装只替换讣告自己的程序） |
 | `--check` | 无 | `false` | 立即检查 GitHub，自动检查被关闭时也会检查 |
 | `--help` | `-h` | `false` | update 的帮助 |
 | `--relaunch-gui` | 无 | `false` | 更新后重新打开小窗口（Windows） |

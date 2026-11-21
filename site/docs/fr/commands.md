@@ -1032,7 +1032,7 @@ Usage: `obit update [flags]`
 
 | Paramètre | Court | Valeur par défaut | Description |
 | --- | --- | --- | --- |
-| `--apply` | aucun | `false` | Installer la version stable plus récente mise en cache |
+| `--apply` | aucun | `false` | Télécharger, vérifier et installer la version stable plus récente mise en cache (une installation manuelle ne remplace que les programmes d’Obituary) |
 | `--check` | aucun | `false` | Vérifier GitHub maintenant, même si les vérifications automatiques sont désactivées |
 | `--help` | `-h` | `false` | Aide pour update |
 | `--relaunch-gui` | aucun | `false` | Rouvrir la petite fenêtre après la mise à jour (Windows) |

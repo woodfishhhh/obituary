@@ -1032,7 +1032,7 @@ Usage: `obit update [flags]`
 
 | Option | Short | Default | Description |
 | --- | --- | --- | --- |
-| `--apply` | none | `false` | install the cached newer stable release |
+| `--apply` | none | `false` | download, verify and install the cached newer stable release (a manual install replaces only Obituary's own programs) |
 | `--check` | none | `false` | check GitHub now, including when automatic checks are disabled |
 | `--help` | `-h` | `false` | help for update |
 | `--relaunch-gui` | none | `false` | reopen the desktop window after updating (Windows) |

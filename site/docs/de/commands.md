@@ -1032,7 +1032,7 @@ Verwendung: `obit update [flags]`
 
 | Parameter | Kurz | Standardwert | Beschreibung |
 | --- | --- | --- | --- |
-| `--apply` | keiner | `false` | Das zwischengespeicherte neuere stabile Release installieren |
+| `--apply` | keiner | `false` | Das zwischengespeicherte neuere stabile Release herunterladen, prüfen und installieren (eine manuelle Installation ersetzt nur die eigenen Programme von Obituary) |
 | `--check` | keiner | `false` | GitHub jetzt prüfen, auch wenn automatische Prüfungen deaktiviert sind |
 | `--help` | `-h` | `false` | Hilfe zu update |
 | `--relaunch-gui` | keiner | `false` | Das kleine Fenster nach dem Update wieder öffnen (Windows) |
