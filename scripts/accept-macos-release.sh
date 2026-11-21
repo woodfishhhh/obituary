@@ -93,6 +93,12 @@ done
 
 svc="gui/$(id -u)/site.woodfish.obituary.tray"
 plist="$HOME/Library/LaunchAgents/site.woodfish.obituary.tray.plist"
+launchctl print "$svc" >/dev/null || echo "initial launchctl exit=$?"
+pkill -TERM -x obit-gui
+sleep 2
+open "$app"
+sleep 5
+ui -e "tell application \"System Events\" to set frontmost of (first application process whose unix id is $(pgrep -xo obit-gui)) to true" || true
 swiftc "$GITHUB_WORKSPACE/scripts/accept-macos-controls.swift" -o "$RUNNER_TEMP/controls"
 click() {
   if [[ $1 == Settings ]]; then
@@ -118,7 +124,10 @@ if [[ -f $plist ]]; then
   sleep 2
   [[ ! -e $plist ]] || echo 'FAIL: plist still present'
   launchctl print "$svc" >/dev/null || echo "after toggle off: launchctl exit=$?"
-else echo 'No login plist after attempted UI toggle'; fi
+else
+  echo 'No login plist after attempted UI toggle'
+  launchctl print "$svc" >/dev/null || echo "after attempted enable: launchctl exit=$?"
+fi
 snap login-off
 if ! pgrep -x obitd; then "$app/Contents/MacOS/obitd" --tray >> "$ev/tray.log" 2>&1 & sleep 3; fi
 if traypid=$(pgrep -xo obitd); then

@@ -4,9 +4,10 @@ import AppKit
 import Vision
 
 let args = CommandLine.arguments
-guard NSWorkspace.shared.frontmostApplication?.bundleIdentifier == "site.woodfish.obituary.gui",
-      let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]],
-      let win = windows.first(where: { ($0[kCGWindowOwnerPID as String] as? pid_t) == NSWorkspace.shared.frontmostApplication?.processIdentifier && ($0[kCGWindowLayer as String] as? Int) == 0 }),
+guard let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]],
+      let win = windows.first(where: { ($0[kCGWindowLayer as String] as? Int) == 0 }),
+      let pid = win[kCGWindowOwnerPID as String] as? pid_t,
+      NSRunningApplication(processIdentifier: pid)?.bundleIdentifier == "site.woodfish.obituary.gui",
       let bounds = win[kCGWindowBounds as String] as? NSDictionary,
       let box = CGRect(dictionaryRepresentation: bounds) else { exit(2) }
 let screen = CGDisplayBounds(CGMainDisplayID())
@@ -24,9 +25,11 @@ for line in req.results ?? [] {
             pt.x = box.maxX - 82
         }
         print("click \(text) at \(pt) in \(box)")
-        for kind in [CGEventType.leftMouseDown, .leftMouseUp] {
-            CGEvent(mouseEventSource: nil, mouseType: kind, mouseCursorPosition: pt, mouseButton: .left)?.post(tap: .cghidEventTap)
-        }
+        let press = Process()
+        press.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        press.arguments = ["-e", "tell application \"System Events\" to click at {\(Int(pt.x)), \(Int(pt.y))}"]
+        try press.run(); press.waitUntilExit()
+        guard press.terminationStatus == 0 else { exit(1) }
         exit(0)
     }
 }
