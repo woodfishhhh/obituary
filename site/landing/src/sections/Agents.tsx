@@ -18,9 +18,9 @@ export function Agents({ c }: { c: Copy }) {
         </div>
       </div>
       <div className="relative flex flex-col gap-4">
-        <LogoLoop items={rows[0]} duration={80} label={a.head} />
-        <LogoLoop items={rows[1]} duration={92} reverse label={a.head} />
-        <LogoLoop items={rows[2]} duration={86} label={a.head} />
+        <LogoLoop items={rows[0]} duration={44} label={a.head} />
+        <LogoLoop items={rows[1]} duration={51} reverse label={a.head} />
+        <LogoLoop items={rows[2]} duration={47} label={a.head} />
       </div>
     </section>
   );
