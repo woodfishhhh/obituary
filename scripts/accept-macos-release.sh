@@ -28,6 +28,8 @@ hdiutil detach "$mnt"
 ! mount | grep -F " on $mnt " || exit 1
 codesign --verify --deep --strict "$app"
 codesign -dv "$app"
+plutil -extract LSMinimumSystemVersion raw "$app/Contents/Info.plist"
+for exe in "$app"/Contents/MacOS/*; do xcrun vtool -show-build "$exe"; done
 snap installed
 if [[ $LANE == gatekeeper ]]; then
   xattr -w com.apple.quarantine "0083;$(printf '%x' "$(date +%s)");Safari;$(uuidgen)" "$app"

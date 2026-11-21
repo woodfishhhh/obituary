@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [macos-15, macos-15-intel]
+        runner: [macos-26, macos-26-intel]
         lane: [gatekeeper, desktop]
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 15
@@ -29,7 +29,7 @@ jobs:
       - name: Exercise released app
         env:
           LANE: ${{ matrix.lane }}
-          EXPECTED_ARCH: ${{ matrix.runner == 'macos-15' && 'arm64' || 'x86_64' }}
+          EXPECTED_ARCH: ${{ matrix.runner == 'macos-26' && 'arm64' || 'x86_64' }}
           OBIT_TELEMETRY: '0'
         run: bash scripts/accept-macos-release.sh
       - if: always()
