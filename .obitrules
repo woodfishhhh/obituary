@@ -1,0 +1,5 @@
+# Temporary test and profiling outputs; tracked source files remain protected.
+coverage.out             7d
+*.coverprofile           7d
+*.pprof                  3d
+*.trace                  3d

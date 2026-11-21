@@ -14,6 +14,7 @@
 ## 改代码
 
 - 先读 [AGENTS.md](AGENTS.md)。平台要求、构建与测试、文件安全和文档规范见[开发文档](https://obituary.woodfish.site/docs/dev/)。
+- 仓库自带一份审过的 .obitrules 项目规则；信任前先读一遍，确认它只覆盖临时产物。
 - 提交信息用英文，一句话说清改了什么，例如 `fix: resurrect keeps the original name when the folder is empty`。
 
 ## 许可
@@ -36,6 +37,7 @@ Issues and pull requests are welcome. The most welcome is an issue that comes wi
 ## Code
 
 - Read [AGENTS.md](AGENTS.md) first. See the [developer guide](https://obituary.woodfish.site/docs/en/dev/) for supported platforms, builds, tests, filesystem safety and documentation conventions.
+- The repository includes a reviewed .obitrules; read it before trusting the project rules and confirm it only covers temporary artifacts.
 - Commit messages in English, one line saying what changed, e.g. `fix: resurrect keeps the original name when the folder is empty`.
 
 ## Licence
