@@ -13,12 +13,12 @@ import { t } from "../../i18n";
 import Notices from "../../notices";
 import { pageTitle, type ShellProps } from "../../shell";
 import { DAY, extendSpans, hm, md, nameOf, remaining, sourceLabel, span, Star, useGraves, useItems, weekday } from "../shared";
+import { columnTemplate } from "./columns";
 import "./calendar.css";
 
 const startOfDay = (t: number) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return +d; };
 const dayIndex = (iso: string) => Math.max(0, Math.round((startOfDay(+new Date(iso)) - startOfDay(Date.now())) / DAY));
 const DAYS = 8;
-const PER_COLUMN = 5; // cards a day shows in one column before it widens
 
 export default function CalendarShell({ page, nav, setPage, summary: s, refresh }: ShellProps) {
   const today = new Date();
@@ -67,14 +67,9 @@ function Board({ entries, has, toggle, onMove, empty }: {
     onDrop: (e: DragEvent) => { e.preventDefault(); setOver(null); if (drag && i > drag.from) onMove(drag.id, drag.from, i); setDrag(null); },
   } : {});
 
-  // Empty days stay as narrow drop targets; days with files get the room,
-  // and a crowded day (a whole cleanup buried at once) widens so its cards
-  // sit side by side instead of in one long scrolling strip.
-  const count = (i: number) => entries.filter((e) => Math.min(DAYS, dayIndex(e.at)) === i).length;
-  const share = (i: number) => (count(i) ? Math.min(4, Math.ceil(count(i) / PER_COLUMN)) : i === 0 || i === DAYS ? 1 : 0.5);
-  const widths = entries.length ? Array.from({ length: cols }, (_, i) => `minmax(0, ${share(i)}fr)`).join(" ") : `repeat(${cols}, minmax(0, 1fr))`;
   return (
-    <div className="cal-board" style={{ gridTemplateColumns: widths }}>
+    <div className="cal-board">
+      <div className="cal-cols" style={{ gridTemplateColumns: columnTemplate(cols) }}>
       {Array.from({ length: cols }, (_, i) => {
         const date = new Date(startOfDay(now) + i * DAY);
         const isLater = i === DAYS;
@@ -105,7 +100,8 @@ function Board({ entries, has, toggle, onMove, empty }: {
             </div>
           </section>
         );
-      })}
+        })}
+      </div>
       {entries.length === 0 ? <div className="cal-empty">{empty}</div> : null}
     </div>
   );
@@ -129,7 +125,7 @@ function Head({ title, deck, children }: { title: string; deck: ReactNode; child
   );
 }
 
-const Loading = () => <div className="cal-board loading" aria-busy="true" aria-label={t("loading")}>{Array.from({ length: DAYS }, (_, i) => <section key={i} className="cal-day"><header className="cal-day-head"><b>&nbsp;</b><span>&nbsp;</span></header><div className="cal-day-body"><i /><i /></div></section>)}</div>;
+const Loading = () => <div className="cal-board loading" aria-busy="true" aria-label={t("loading")}><div className="cal-cols" style={{ gridTemplateColumns: columnTemplate(DAYS) }}>{Array.from({ length: DAYS }, (_, i) => <section key={i} className="cal-day"><header className="cal-day-head"><b>&nbsp;</b><span>&nbsp;</span></header><div className="cal-day-body"><i /><i /></div></section>)}</div></div>;
 
 // When it was buried, as people remember it: today, yesterday, or a date.
 function buriedDay(iso: string) {
