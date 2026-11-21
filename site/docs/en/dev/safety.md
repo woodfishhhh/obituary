@@ -2,6 +2,8 @@
 
 A path tells Obituary where to look; identity tells it whether it found the same object. A file can be renamed before expiry and a different file can take its old name. The replacement does not inherit the deadline.
 
+When changing code that moves, buries or deletes files, first write a failing test that checks the file that should survive is still there. Then fix the code. Temporarily restore the faulty implementation, keeping it compilable, and confirm the test fails before reinstating the fix.
+
 | Stage | Required invariant |
 | --- | --- |
 | Registration and lookup | The guard checks protected paths. Automatic registration also checks Git state; uncertainty is not permission to proceed. |
