@@ -2,6 +2,7 @@ import DefaultTheme from "vitepress/theme";
 import type { Theme } from "vitepress";
 import { h } from "vue";
 import LanguageMenu from './LanguageMenu.vue';
+import "../../../../cmd/obit-gui/frontend/src/squircle.css";
 import "./styles/docs.css";
 
 export default {

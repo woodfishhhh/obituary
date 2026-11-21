@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
+import squircleCorners from "./scripts/squircle-corners.mjs";
 
 // The built app runs under a CSP: scripts only from the app itself. Inline
 // styles stay allowed (React style props, Radix's scroll lock); paths and
@@ -17,6 +18,7 @@ const csp: Plugin = {
 // never built into dist.
 export default defineConfig({
   plugins: [react(), csp],
+  css: { postcss: { plugins: [squircleCorners()] } },
   base: "./",
   build: {
     outDir: "dist",

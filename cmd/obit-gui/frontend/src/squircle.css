@@ -1,0 +1,23 @@
+/* Continuous corners ("squircle"), where the engine draws them: Chromium and WebView2 139 and up. The build
+   (scripts/squircle-corners.mjs) writes every rounded rectangle's border-radius as
+     calc(<radius> * var(--squircle-k, 1))   and   corner-shape: var(--squircle-shape, round)
+   so these two variables are the whole switch. An engine without `corner-shape: squircle` (Safari / WKWebView
+   before 27.3, WebKitGTK, Firefox) skips this block, computes the radius it always had and draws the circular
+   corner it always drew. Imported once per app: the window, the landing page, the docs.
+
+   The keyword alone is detected, not `superellipse()`, which Safari still ships as a preview.
+
+   --squircle-k: at the same radius `squircle` cuts far less of the corner than a circle (a diagonal depth of
+   0.23 radius against 0.41), so it reads as squarer. Fitted against the iOS corner (Figma corner smoothing 60%,
+   the outline drawn by figma-squircle) by overlaying both at 2 to 8x on 13 sizes, a 60x20 tag to a 600x360 frame, radii
+   5 to 32px, the best ratio was 1.77 to 1.79 on every one that the box does not clamp (1.73 to 1.81 on the
+   20px-high tag); 1.78 leaves 0.18px of outline difference at an 8px radius and 0.67px at 32px, and gives the squircle the same diagonal depth
+   (0.40 radius) and nearly the same run-in along the edge (1.78 radius against 1.6) as the iOS corner.
+   Rounded shapes drawn by other means (canvas, offset-path) keep the nominal circle, which this outline
+   follows within about 2% of the radius. */
+@supports (corner-shape: squircle) {
+  :root {
+    --squircle-shape: squircle;
+    --squircle-k: 1.78;
+  }
+}

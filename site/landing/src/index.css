@@ -4,6 +4,7 @@
 @import "tailwindcss";
 @import "@fontsource-variable/geist/wght.css";
 @import "@fontsource-variable/geist-mono/wght.css";
+@import "@gui/squircle.css";
 
 @font-face {
   font-family: "Obit Sans SC";

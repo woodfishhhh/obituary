@@ -2,6 +2,7 @@ import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import squircleCorners from "../../cmd/obit-gui/frontend/scripts/squircle-corners.mjs";
 
 // Both builds serve from the root of obituary.woodfish.site (GitHub Pages
 // with a custom domain, and the mainland China mirror); the docs live under
@@ -47,7 +48,8 @@ const fontsOptional = {
 export default defineConfig(({ isSsrBuild }) => ({
   base,
   plugins: [guiStyles(), react(), tailwindcss()],
-  css: { postcss: { plugins: [fontsOptional] } },
+  // Rounded rectangles become squircles where the engine can draw them (the window's own styles pass through here too).
+  css: { postcss: { plugins: [fontsOptional, squircleCorners()] } },
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)), "@gui": `${guiRoot}/src` },
     // The front end sits outside this package: its imports resolve to the copies installed here.

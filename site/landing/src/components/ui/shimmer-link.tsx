@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 interface ShimmerLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   shimmerColor?: string;
   shimmerSize?: string;
-  borderRadius?: string;
   shimmerDuration?: string;
   background?: string;
 }
@@ -15,7 +14,6 @@ export function ShimmerLink({
   shimmerColor = "#ffffff",
   shimmerSize = "0.05em",
   shimmerDuration = "3s",
-  borderRadius = "100px",
   background = "rgba(0, 0, 0, 1)",
   className,
   children,
@@ -27,14 +25,13 @@ export function ShimmerLink({
         {
           "--spread": "90deg",
           "--shimmer-color": shimmerColor,
-          "--radius": borderRadius,
           "--speed": shimmerDuration,
           "--cut": shimmerSize,
           "--bg": background,
         } as CSSProperties
       }
       className={cn(
-        "group relative z-0 flex cursor-pointer items-center justify-center overflow-hidden [border-radius:var(--radius)] border border-white/10 px-6 py-3 whitespace-nowrap text-white [background:var(--bg)]",
+        "group relative z-0 flex cursor-pointer items-center justify-center overflow-hidden rounded-full border border-white/10 px-6 py-3 whitespace-nowrap text-white [background:var(--bg)]",
         "transform-gpu transition-transform duration-300 ease-in-out active:translate-y-px",
         className,
       )}
@@ -50,7 +47,7 @@ export function ShimmerLink({
         aria-hidden="true"
         className="absolute inset-0 size-full rounded-2xl shadow-shine transition-shadow duration-300 ease-in-out group-hover:shadow-shine-hover group-active:shadow-shine-active"
       />
-      <span aria-hidden="true" className="absolute inset-(--cut) -z-20 [border-radius:var(--radius)] [background:var(--bg)]" />
+      <span aria-hidden="true" className="absolute inset-(--cut) -z-20 rounded-full [background:var(--bg)]" />
     </a>
   );
 }

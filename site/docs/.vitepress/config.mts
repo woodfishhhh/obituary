@@ -1,8 +1,10 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitepress";
 
 import { locales } from '../../landing/src/locales';
 import { docLocales, searchLocales } from './navigation.mts';
 import { pageSuffix } from './routes';
+import squircleCorners from "../../../cmd/obit-gui/frontend/scripts/squircle-corners.mjs";
 
 // Both builds serve the landing page at the root of obituary.woodfish.site
 // (GitHub Pages abroad, the mainland China mirror built with VITE_SITE=cn at
@@ -37,6 +39,13 @@ export default defineConfig({
   },
   cleanUrls: false,
   lastUpdated: false,
+  vite: {
+    // The default theme's own rounded rectangles become squircles too; its pills (the buttons, badges and the
+    // theme switch are written with a small radius) keep circular ends.
+    css: { postcss: { plugins: [squircleCorners({ roundSelectors: /\.(VPButton|VPBadge|VPSwitch)/ })] } },
+    // The dev server may read the stylesheet the window shares (src/squircle.css, imported by the theme).
+    server: { fs: { allow: [fileURLToPath(new URL("../../..", import.meta.url))] } },
+  },
   sitemap: { hostname: `${siteUrl}${base}` },
   head: [
     ["link", { rel: "icon", type: "image/png", sizes: "32x32", href: `${base}icon-32.png` }],

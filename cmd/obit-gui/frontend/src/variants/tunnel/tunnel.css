@@ -29,7 +29,7 @@
 .tn-nav button { display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 13px; border: 0; border-radius: 8px; background: none; color: var(--on-dark-2); font-size: 13px; cursor: pointer; transition: background-color 140ms, color 140ms; }
 .tn-nav button:hover { color: var(--on-dark); background: var(--glass-dark); }
 .tn-nav button[aria-current="page"] { background: var(--on-dark); color: var(--cobalt); font-weight: 700; }
-.tn-count { min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--gold); color: var(--on-gold); font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
+.tn-count { min-width: 18px; padding: 0 5px; border-radius: 999px; background: var(--gold); color: var(--on-gold); font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
 .tn-grow { flex: 1; }
 .tn-sum { color: var(--on-dark-2); font-size: 12.5px; font-variant-numeric: tabular-nums; }
 .tn-icon { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 8px; background: none; color: var(--on-dark-2); cursor: pointer; }

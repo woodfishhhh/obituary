@@ -49,7 +49,7 @@
 .pl-scopes button { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 11px; border: 1px solid transparent; border-radius: 999px; background: none; color: var(--text-2); font-size: 12.5px; cursor: pointer; transition: background-color 120ms, color 120ms, border-color 120ms; }
 .pl-scopes button:hover { background: var(--hover); color: var(--text); }
 .pl-scopes button[aria-current="page"] { border-color: var(--accent-line); background: var(--accent-soft); color: var(--cobalt); font-weight: 600; }
-.pl-count { min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--chip); color: var(--text-2); font-size: 11px; font-weight: 600; line-height: 18px; text-align: center; font-variant-numeric: tabular-nums; }
+.pl-count { min-width: 18px; padding: 0 5px; border-radius: 999px; background: var(--chip); color: var(--text-2); font-size: 11px; font-weight: 600; line-height: 18px; text-align: center; font-variant-numeric: tabular-nums; }
 .pl-count.gold { background: var(--gold); color: var(--on-gold); }
 .pl-grow { flex: 1; }
 .pl-scopes .pl-refresh { width: 28px; padding: 0; justify-content: center; color: var(--muted); }
