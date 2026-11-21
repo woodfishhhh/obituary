@@ -46,6 +46,18 @@ func TestMessageFilesMatchEnglish(t *testing.T) {
 	}
 }
 
+func TestEveryCLILanguageHasNonemptyMessages(t *testing.T) {
+	for _, tag := range supportedTags {
+		lang := tag.String()
+		catalog := readMessageFile(t, "messages/active."+lang+".json")
+		for id := range defaultMessages {
+			if strings.TrimSpace(catalog[id]) == "" {
+				t.Errorf("%s: missing or blank message %s", lang, id)
+			}
+		}
+	}
+}
+
 func TestMessageCatalogValidationRejectsMissingDirectory(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join("testdata", "missing", "active.zh-CN.json"))
 	if err != nil {
@@ -74,7 +86,7 @@ func validateMessageCatalog(english, catalog map[string]string) error {
 			problems = append(problems, "extra key "+key)
 		}
 	}
-	placeholders := regexp.MustCompile("%[ds]|[{][{][^}]+[}][}]")
+	placeholders := regexp.MustCompile(`%[-+#0-9.]*[dsqtwv]|\{\{[^}]+\}\}`)
 	for key, value := range english {
 		translated, ok := catalog[key]
 		if !ok {

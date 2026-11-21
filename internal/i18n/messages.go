@@ -521,6 +521,7 @@ var defaultMessages = map[string]*goi18n.Message{
 // Localizer is the application-facing wrapper around go-i18n. Keeping the
 // message lookup here makes CLI and native UI use the same embedded catalogs.
 type Localizer struct {
+	protocol  bool
 	language  Language
 	localizer *goi18n.Localizer
 }
@@ -556,6 +557,11 @@ func (l *Localizer) Label(value string) string {
 func (l *Localizer) Language() Language { return l.language }
 
 func (l *Localizer) Text(id string, data any) string {
+	if l.protocol {
+		if text, ok := diagnosticJSON[id]; ok {
+			return text
+		}
+	}
 	defaultMessage, ok := defaultMessages[id]
 	if !ok {
 		panic("missing default message: " + id)

@@ -41,6 +41,10 @@ func printGraveResult(r core.GraveResult, describe func(core.GraveResult) string
 		fmt.Println(describe(r))
 		return
 	}
+	if _, ok := errors.AsType[*core.ReferenceError](r.Err); ok && r.Burial == nil && r.Action == "" {
+		fmt.Fprintln(os.Stderr, language.Text("cli.error_prefix", nil), r.Error)
+		return
+	}
 	label := fmt.Sprintf(language.Text("cli.error_ref", nil), r.Ref)
 	if r.Burial != nil {
 		label += fmt.Sprintf(language.Text("cli.error_identity", nil), r.Burial.ID, r.Burial.Path)
