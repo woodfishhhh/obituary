@@ -16,9 +16,11 @@ type plan struct {
 }
 
 // CanApply reports channel support, independently of whether a release is newer.
+// "manual" is not a detected channel: resolve gives it to a manual install that
+// meets every condition of manualBlocker.
 func CanApply(channel string) bool {
 	switch channel {
-	case "scoop", "winget", "homebrew", "script":
+	case "scoop", "winget", "homebrew", "script", "manual":
 		return true
 	}
 	return false
@@ -26,9 +28,9 @@ func CanApply(channel string) bool {
 
 // Target validates the cached release before starting an update process.
 func Target(home, exe, current string) (string, error) {
-	exe, channel := installation(exe)
-	if !CanApply(channel) {
-		return "", errors.New("in-app update is not supported for this installation; see the release page")
+	exe, channel, err := resolve(exe, current)
+	if err != nil {
+		return "", err
 	}
 	state, err := Read(home)
 	if err != nil {

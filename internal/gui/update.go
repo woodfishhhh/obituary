@@ -12,24 +12,35 @@ import (
 	"github.com/woodfishhhh/obituary/internal/update"
 )
 
+// UpdateInfo is the release check. ApplyBlocked and ApplyDetail say, for a
+// manual install that cannot update itself, which update.Blocked* condition
+// fails and its detail, such as the missing file names.
 type UpdateInfo struct {
-	Current   string            `json:"current"`
-	Latest    string            `json:"latest,omitempty"`
-	Newer     bool              `json:"newer"`
-	Name      string            `json:"name,omitempty"`
-	Notes     string            `json:"notes,omitempty"`
-	URL       string            `json:"url,omitempty"`
-	Published time.Time         `json:"published,omitzero"`
-	CheckedAt time.Time         `json:"checkedAt,omitzero"`
-	Error     string            `json:"error,omitempty"`
-	Enabled   bool              `json:"enabled"`
-	Channel   string            `json:"channel"`
-	Command   string            `json:"command,omitempty"`
-	CanApply  bool              `json:"canApply"`
-	LastApply *update.LastApply `json:"lastApply,omitempty"`
+	Current      string            `json:"current"`
+	Latest       string            `json:"latest,omitempty"`
+	Newer        bool              `json:"newer"`
+	Name         string            `json:"name,omitempty"`
+	Notes        string            `json:"notes,omitempty"`
+	URL          string            `json:"url,omitempty"`
+	Published    time.Time         `json:"published,omitzero"`
+	CheckedAt    time.Time         `json:"checkedAt,omitzero"`
+	Error        string            `json:"error,omitempty"`
+	Enabled      bool              `json:"enabled"`
+	Channel      string            `json:"channel"`
+	Command      string            `json:"command,omitempty"`
+	CanApply     bool              `json:"canApply"`
+	ApplyBlocked string            `json:"applyBlocked,omitempty"`
+	ApplyDetail  string            `json:"applyDetail,omitempty"`
+	LastApply    *update.LastApply `json:"lastApply,omitempty"`
 }
 
 type ApplyResult = update.ApplyResult
+
+// UpdateProgress is what the update helper reports. The window stays open
+// through the download and closes itself once the phase is "ready".
+func (a *API) UpdateProgress() (update.Progress, error) {
+	return update.ReadProgress(a.deps.Service.Store.Home)
+}
 
 func (a *API) Update() (UpdateInfo, error)      { return a.updateInfo(false) }
 func (a *API) CheckUpdate() (UpdateInfo, error) { return a.updateInfo(true) }
@@ -64,17 +75,18 @@ func (a *API) updateInfo(check bool) (UpdateInfo, error) {
 			return UpdateInfo{}, err
 		}
 	}
-	channel := update.DetectChannel(a.deps.Executable)
 	last, err := update.ReadLastApply(checker.Home)
 	if err != nil {
 		return UpdateInfo{}, err
 	}
+	ap := update.Review(a.deps.Executable, buildinfo.Version, state.Latest.Version)
+	newer := update.Newer(buildinfo.Version, state.Latest.Version)
 	return UpdateInfo{Current: buildinfo.Version, Latest: state.Latest.Version,
-		Newer: update.Newer(buildinfo.Version, state.Latest.Version), Name: state.Latest.Name,
+		Newer: newer, Name: state.Latest.Name,
 		Notes: state.Latest.Notes, URL: state.Latest.URL, Published: state.Latest.PublishedAt,
 		CheckedAt: state.CheckedAt, Error: state.LastError, Enabled: cfg.Update.Check,
-		Channel: channel, Command: update.Command(channel, state.Latest.Version, a.deps.Executable),
-		CanApply: update.CanApply(channel), LastApply: last}, nil
+		Channel: ap.Channel, Command: update.Command(ap.Channel, state.Latest.Version, a.deps.Executable),
+		CanApply: ap.Can, ApplyBlocked: ap.Blocked, ApplyDetail: ap.Detail, LastApply: last}, nil
 }
 
 func (a *API) PlanUpdateCheck(enabled bool) (Plan, error) {
