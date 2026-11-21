@@ -8,7 +8,8 @@ export { locales, siteOrigin };
 // The page as HTML, for scripts/prerender.mjs; the browser then hydrates it (main.tsx). Unlike
 // renderToString this waits for the lazily loaded sections, so their text is in the HTML too.
 export async function render(lang: Lang): Promise<string> {
-  const { prelude } = await prerenderToNodeStream(<StrictMode><App c={await loadCopy(lang)} /></StrictMode>);
+  // A static page needs completed sections inline so native fragment navigation can see their layout.
+  const { prelude } = await prerenderToNodeStream(<StrictMode><App c={await loadCopy(lang)} /></StrictMode>, { progressiveChunkSize: Infinity });
   const chunks: Buffer[] = [];
   for await (const chunk of prelude) chunks.push(Buffer.from(chunk));
   return Buffer.concat(chunks).toString("utf8");

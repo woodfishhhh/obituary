@@ -105,7 +105,11 @@ html:lang(ko) { word-break: keep-all; }
 code, pre, kbd, .font-mono { hyphens: none; }
 
 html, body { overflow-x: clip; }
-html { scroll-behavior: smooth; scroll-padding-top: 96px; scrollbar-color: var(--color-line-2) var(--color-paper); }
+html { scroll-padding-top: 96px; scrollbar-color: var(--color-line-2) var(--color-paper); }
+/* Animate an activated in-page link, not a fresh visit to a fragment URL. */
+@media (prefers-reduced-motion: no-preference) {
+  html:has(a[href^="#"]:is(:focus, :active)) { scroll-behavior: smooth; }
+}
 body {
   margin: 0;
   background: var(--color-paper);
@@ -218,7 +222,6 @@ button:disabled { cursor: not-allowed; }
   .beam-ring { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
