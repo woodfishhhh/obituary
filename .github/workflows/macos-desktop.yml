@@ -73,10 +73,8 @@ jobs:
             sleep 1
           done
           {
-            printf 'daemon_pid=%s
-' "$daemon_pid"
-            printf 'ready=%s
-' "$ready"
+            printf 'daemon_pid=%s\n' "$daemon_pid"
+            printf 'ready=%s\n' "$ready"
             ps -p "$daemon_pid" -o pid=,stat=,command= 2>&1 || true
             if [ -f "$OBIT_HOME/obitd.log" ]; then cat "$OBIT_HOME/obitd.log"; fi
             if [ -f "$RUNNER_TEMP/macos-evidence/tray-stdout.log" ]; then cat "$RUNNER_TEMP/macos-evidence/tray-stdout.log"; fi
