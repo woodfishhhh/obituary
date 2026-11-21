@@ -97,3 +97,6 @@ obit uninstall           # remove everything Obituary set up (try --dry-run firs
 | `OBIT_HOOK_AUDIT=1` | 各フックが受け取った内容と実行した処理を記録する |
 | `OBIT_TRUST_PROJECT_RULES=1` | CI でプロジェクトの `.obitrules` を信頼する |
 | `OBIT_HOME`、`OBIT_CONFIG_DIR`、`OBIT_USER_HOME` | データ、設定、ユーザーのホームディレクトリの場所をそれぞれ変更する |
+
+<!-- generated-command-reference:start -->
+<!-- generated-command-reference:end -->

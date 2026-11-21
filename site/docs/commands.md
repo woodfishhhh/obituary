@@ -97,3 +97,15 @@ obit uninstall           # 撤掉讣告装过的所有东西（先 --dry-run 看
 | `OBIT_HOOK_AUDIT=1` | 记下每次 hook 收到了什么、做了什么 |
 | `OBIT_TRUST_PROJECT_RULES=1` | CI 里信任项目的 `.obitrules` |
 | `OBIT_HOME`、`OBIT_CONFIG_DIR`、`OBIT_USER_HOME` | 换数据目录、配置目录、用户主目录 |
+
+
+
+## 删除兼容参数
+
+- git-clean 接受 Git clean 的 -d、-f、-n、-q、-x、-X、-e pattern、--exclude pattern 和 --；也接受 --dry-run、--force、--quiet。
+- rm 接受常用的 -r、-R、-f、-d、-v、--recursive、--force、--dir、--verbose、--preserve-root、--，以及其后的路径。
+- rmdir 只接受 -v 或 --verbose 及路径；不接受 rmdir -p 等其他参数。
+- Windows 的 remove-item 只接受 -Recurse、-Force、-Path 或 -LiteralPath，并且只能有一个字面路径。需要通配符时在 Bash 中使用 obit rm。
+
+<!-- generated-command-reference:start -->
+<!-- generated-command-reference:end -->

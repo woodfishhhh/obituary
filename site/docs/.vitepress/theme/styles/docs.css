@@ -44,5 +44,10 @@
   font-size: 0.9375rem;
 }
 
+/* On a phone a table scrolls sideways; keep its row labels on one line instead of one CJK character per line. */
+@media (max-width: 640px) {
+  .vp-doc td:first-child { white-space: nowrap; }
+}
+
 /* One language menu at all widths, including the mobile header. */
 .VPNavBar .VPNavBarTranslations, .VPNavBarExtra .translations, .VPNavScreenTranslations { display:none }

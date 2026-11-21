@@ -97,3 +97,15 @@ Les commandes de consultation ou de compte rendu (`list`, `graveyard`, `proposal
 | `OBIT_HOOK_AUDIT=1` | Consigne ce que chaque hook a reçu et ce qu’il a fait |
 | `OBIT_TRUST_PROJECT_RULES=1` | Fait confiance au fichier `.obitrules` du projet en CI |
 | `OBIT_HOME`, `OBIT_CONFIG_DIR`, `OBIT_USER_HOME` | Modifient respectivement l’emplacement des données, de la configuration et du répertoire personnel |
+
+
+
+## Paramètres compatibles des wrappers
+
+- git-clean accepte les options Git clean -d, -f, -n, -q, -x, -X, -e pattern, --exclude pattern et --, ainsi que --dry-run, --force et --quiet.
+- rm accepte -r, -R, -f, -d, -v, --recursive, --force, --dir, --verbose, --preserve-root et --, suivis des chemins.
+- rmdir n’accepte que -v ou --verbose et les chemins ; rmdir -p est refusé.
+- Sous Windows, remove-item n’accepte que -Recurse, -Force, -Path ou -LiteralPath et un seul chemin littéral. Pour les jokers Bash, utilisez obit rm.
+
+<!-- generated-command-reference:start -->
+<!-- generated-command-reference:end -->

@@ -2,33 +2,52 @@
 
 Resurrect files, approve proposals and change settings without the command line.
 
+## What each of the three platforms has
+
+The window, the tray and desktop notifications exist on Windows, macOS and Ubuntu 24.04; the context menu, the date labels in Explorer and Recycle Bin mode exist only on Windows. The desktop editions for macOS and Ubuntu are previews for now. Other Linux distributions have no desktop edition and use the command line.
+
+| | Windows | macOS | Ubuntu 24.04 |
+| --- | --- | --- | --- |
+| Window | `obit-gui.exe`, x64 only | `Obituary.app`, universal for Intel and Apple silicon | a `.deb` package, amd64 only |
+| Tray | notification area | menu bar | tray, needs a desktop that provides StatusNotifierItem |
+| Tray at login | on by default after `obit init` | switch in Settings | switch in Settings |
+| Expiry check | resident tray process, Task Scheduler as a fallback | launchd user agent, every 5 minutes | systemd user timer, every 5 minutes |
+| Desktop notifications | yes | yes | yes |
+| Context menu | in Explorer | no | no |
+| Date labels in Explorer | yes | no | no |
+| Recycle Bin mode | yes | no, graveyard only | no, graveyard only |
+| Installed with | the install script, Scoop, winget or the archive | the DMG | the `.deb` |
+| First opening | an archive downloaded by hand may meet a SmartScreen warning | needs manual approval, see [below](#first-opening-an-unsigned-app) | opens directly |
+| Requirements | the WebView2 runtime | 1.6.0 needs macOS 26, fixed in 1.6.1 | GTK 3 and WebKitGTK 4.1, installed by apt |
+
 ## macOS app and menu bar icon
 
-Download the universal macOS DMG and checksums file from the same release. Verify the SHA-256, open the DMG, and drag Obituary.app to Applications or the user's Applications folder; eject the DMG before enabling login startup.
+Download the universal DMG (`obituary_<version>_darwin_universal.dmg`) and `checksums.txt` from the release page, check the SHA-256, open the DMG, drag Obituary.app into Applications, eject the DMG, and open the app from Applications. Drag it out first because the login startup entry records where the app is, and an app run straight from the DMG is no longer there once the DMG is ejected.
 
-The app contains the Wails small window, the menu bar icon, and matching obit and obitd helpers. The five-minute launchd user agent remains a separate fallback. In Settings, enable Start the tray at sign-in to install Obituary's own user LaunchAgent; disable it there to remove only that entry.
+The app contains the window, the menu bar icon, and matching `obit` and `obitd` programs. Expiry is handled by a separate launchd user agent that runs every 5 minutes; you install it with `obit daemon enable`, and closing the window or the menu bar icon does not affect it. Turning on "Start the tray at sign-in" in Settings installs Obituary's own user LaunchAgent so that the menu bar icon appears when you sign in; turning it off removes only that entry.
 
 Removing `Obituary.app` leaves your data in `~/Library/Application Support/obituary/` by default: `store.json` is the ledger, `config.toml` holds your settings, and `graveyard/` holds files buried on that volume.
 
 ### First opening an unsigned app
 
-The release is not Developer ID signed or notarized. After checking the SHA-256 from a trusted release, try opening the app once. If macOS says it cannot verify the developer, open System Settings, Privacy and Security, choose Open Anyway for Obituary, confirm the prompt, and open it again. Do not disable Gatekeeper globally or clear quarantine recursively. Stop if macOS reports a damaged app, malware, or an organisation policy that forbids opening it.
+The release has no Developer ID signature and is not notarized, so macOS stops it the first time. After making sure the download came from a trusted release page and checking the SHA-256, open it normally once. If the system says it cannot verify the developer, open System Settings, then Privacy & Security, find Obituary at the bottom of the page, choose Open Anyway, confirm once more, and open the app again. Do not turn off Gatekeeper globally for this, and do not clear the quarantine attribute recursively. If the system reports that the app is damaged or contains malware, or a company policy forbids opening it, stop there.
 
-### Homebrew Cask proposal
+### 1.6.0 needs macOS 26
 
-The cask should install the same universal DMG, copy Obituary.app to Applications, and expose obit and obitd from the app bundle. Keep the existing CLI archive cask separate until the desktop DMG has a stable release URL and a reviewed uninstall receipt.
+The macOS window in 1.6.0 needs macOS 26. On macOS 15 and earlier the system says the app is not compatible with this version, and it does not open. This is fixed in 1.6.1.
+
 ## Ubuntu 24.04 (amd64)
 
-Download the `obituary_<version>_linux_amd64.deb` desktop package and `checksums.txt` from the same release. From the download directory, install the verified package (replace `VERSION` with the version you downloaded):
+Download the desktop package `obituary_<version>_linux_amd64.deb` and `checksums.txt` from the release page. From the download directory, run the commands below, replacing `VERSION` with the version you downloaded; the package is installed only if the check succeeds:
 
 ```bash
 file=obituary_VERSION_linux_amd64.deb
 grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt install "./$file"
 ```
 
-Open **Obituary** from Applications. The window uses GTK 3 and WebKitGTK 4.1; apt installs the required libraries. To start the tray at your next desktop login, enable **Settings → Start the tray at sign-in**. Turn it off there to remove Obituary's XDG autostart entry.
+Afterwards open Obituary from the application list. The window uses GTK 3 and WebKitGTK 4.1, and apt installs them with the package. The programs live in `/usr/libexec/obituary/`, which is not on your PATH; to use `obit` in a terminal, install the command line separately with the install script.
 
-The tray needs a StatusNotifierItem host. On GNOME without one, open the same window from Applications; no shell extension is required. To remove the package, turn off tray autostart, quit the tray and run `sudo apt remove obituary-desktop`. Your graveyard, settings, existing CLI and user timer stay in place.
+The tray needs a desktop that provides StatusNotifierItem, and GNOME does not by default. There you open the same window from the application list, with no extension, but there is no tray icon. To have the tray appear at your next login, turn on "Start the tray at sign-in" in Settings; turning it off deletes the startup entry Obituary wrote. For uninstalling, see [Uninstall](./uninstall).
 
 ## The Windows tray
 
@@ -42,10 +61,10 @@ The tray needs a StatusNotifierItem host. On GNOME without one, open the same wi
 
 ## The Windows window
 
-`obit-gui.exe` has five pages: Upcoming, Graveyard, Decisions, Settings and Logs. "Obituary" in Start, the desktop shortcut and "Open Obituary" in the tray menu all open it.
+`obit-gui.exe` has five pages: Expiring, Graveyard, For you, Settings and Logs. "Obituary" in Start, the desktop shortcut and "Open Obituary" in the tray menu all open it.
 
-- The home page's top bar says "Auto registration: off" or "on"; click it to open Settings. Both the top of Decisions and Settings switch it: Off (the default: only what agents and you register goes in), Tiered, Fully automatic and Ask about everything; see [What goes in](./auto-register). What went in without asking is listed further down under Handled automatically, each with one-click Undo (the countdown stops, it stays where it is) and Keep longer.
-- Items that were due but could not be buried (another program holding a file open, say) are listed under "Burials that failed" on Decisions, with the reason and when it is tried next. Obituary tries again after a while, waiting longer each time, and after repeated failures it stops and waits for you: Retry buries it again now, Stop tracking leaves it where it is.
+- The home page's top bar says "Auto registration: off" or "on"; click it to open Settings. Both the top of For you and Settings switch it: Off (the default: only what agents and you register goes in), Tiered, Fully automatic and Ask about everything; see [What goes in](./auto-register). What went in without asking is listed further down under Handled automatically, each with one-click Undo (the countdown stops, it stays where it is) and Keep longer.
+- Items that were due but could not be buried (another program holding a file open, say) are listed under "Burials that failed" on For you, with the reason and when it is tried next. Obituary tries again after a while, waiting longer each time, and after repeated failures it stops and waits for you: Retry buries it again now, Stop tracking leaves it where it is.
 - While Docker is not running, a container proposal's Approve is unavailable and the card says why; approve it once Docker is up.
 - Trusting a `.obitrules` file trusts exactly the version shown in the window.
 - The window, tray and context menu follow `[ui] language` in `config.toml` (`auto`, `zh-CN` or `en`; `auto` follows Windows). You can switch it in Settings.

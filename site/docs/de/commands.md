@@ -97,3 +97,15 @@ Abfragen und Befehle mit Ergebnis (`list`, `graveyard`, `proposals`, `stats`, `m
 | `OBIT_HOOK_AUDIT=1` | Aufzeichnen, was jeder Hook empfangen und getan hat |
 | `OBIT_TRUST_PROJECT_RULES=1` | Der Datei `.obitrules` des Projekts in CI vertrauen |
 | `OBIT_HOME`, `OBIT_CONFIG_DIR`, `OBIT_USER_HOME` | Die Verzeichnisse für Daten, Konfiguration und das Benutzer-Home umstellen |
+
+
+
+## Kompatible Parameter der Löschwrapper
+
+- git-clean akzeptiert die Git-clean-Optionen -d, -f, -n, -q, -x, -X, -e pattern, --exclude pattern und -- sowie --dry-run, --force und --quiet.
+- rm akzeptiert -r, -R, -f, -d, -v, --recursive, --force, --dir, --verbose, --preserve-root und -- mit Pfaden.
+- rmdir akzeptiert nur -v oder --verbose und Pfade; rmdir -p wird abgelehnt.
+- Windows remove-item akzeptiert nur -Recurse, -Force, -Path oder -LiteralPath und genau einen literalen Pfad. Für Wildcards in Bash obit rm verwenden.
+
+<!-- generated-command-reference:start -->
+<!-- generated-command-reference:end -->

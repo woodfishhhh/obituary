@@ -97,3 +97,15 @@ obit uninstall           # remove everything Obituary set up (try --dry-run firs
 | `OBIT_HOOK_AUDIT=1` | Записывать, что получил и сделал каждый хук |
 | `OBIT_TRUST_PROJECT_RULES=1` | доверять `.obitrules` проекта в CI |
 | `OBIT_HOME`, `OBIT_CONFIG_DIR`, `OBIT_USER_HOME` | Изменить расположение каталогов данных, конфигурации и домашнего каталога пользователя |
+
+
+
+## Совместимые параметры оболочек удаления
+
+- git-clean принимает параметры Git clean -d, -f, -n, -q, -x, -X, -e pattern, --exclude pattern и --, а также --dry-run, --force и --quiet.
+- rm принимает -r, -R, -f, -d, -v, --recursive, --force, --dir, --verbose, --preserve-root и -- с путями.
+- rmdir принимает только -v или --verbose и пути; rmdir -p отклоняется.
+- Windows remove-item принимает только -Recurse, -Force, -Path или -LiteralPath и ровно один буквальный путь. Для масок в Bash используйте obit rm.
+
+<!-- generated-command-reference:start -->
+<!-- generated-command-reference:end -->

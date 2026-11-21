@@ -97,3 +97,15 @@ Os comandos que retornam informações ou resultados (`list`, `graveyard`, `prop
 | `OBIT_HOOK_AUDIT=1` | Registra o que cada hook recebeu e fez |
 | `OBIT_TRUST_PROJECT_RULES=1` | Confia no arquivo `.obitrules` do projeto em CI |
 | `OBIT_HOME`, `OBIT_CONFIG_DIR`, `OBIT_USER_HOME` | Alteram os locais dos diretórios de dados, de configuração e da pasta pessoal do usuário |
+
+
+
+## Parâmetros compatíveis dos wrappers
+
+- git-clean aceita as opções do Git clean -d, -f, -n, -q, -x, -X, -e pattern, --exclude pattern e --, além de --dry-run, --force e --quiet.
+- rm aceita -r, -R, -f, -d, -v, --recursive, --force, --dir, --verbose, --preserve-root e --, seguidos pelos caminhos.
+- rmdir aceita apenas -v ou --verbose e caminhos; rmdir -p é rejeitado.
+- No Windows, remove-item aceita somente -Recurse, -Force, -Path ou -LiteralPath e exatamente um caminho literal. Para curingas no Bash, use obit rm.
+
+<!-- generated-command-reference:start -->
+<!-- generated-command-reference:end -->

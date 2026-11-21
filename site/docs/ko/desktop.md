@@ -2,21 +2,53 @@
 
 명령줄 없이 파일을 부활시키고 제안을 승인하거나 설정을 바꿀 수 있습니다.
 
+## 세 플랫폼에서 되는 것
+
+작은 창, 트레이, 데스크톱 알림은 Windows, macOS, Ubuntu 24.04 모두에 있습니다. 컨텍스트 메뉴, 탐색기의 날짜 레이블, 휴지통 모드는 Windows에만 있습니다. macOS와 Ubuntu의 데스크톱 버전은 아직 미리 보기입니다. 다른 Linux 배포판에는 데스크톱 버전이 없으므로 명령줄을 쓰세요.
+
+| | Windows | macOS | Ubuntu 24.04 |
+| --- | --- | --- | --- |
+| 작은 창 | `obit-gui.exe`, x64 전용 | `Obituary.app`, Intel과 Apple 실리콘 공용 | `.deb` 패키지, amd64 전용 |
+| 트레이 | 작업 표시줄 알림 영역 | 메뉴 막대 | 트레이. 데스크톱이 StatusNotifierItem을 제공해야 함 |
+| 로그인 시 트레이 시작 | `obit init`에서 기본으로 켜짐 | 설정에서 전환 | 설정에서 전환 |
+| 만료 처리 | 상주하는 트레이, 작업 스케줄러는 보조 | launchd 사용자 에이전트(5분마다) | systemd 사용자 타이머(5분마다) |
+| 데스크톱 알림 | 있음 | 있음 | 있음 |
+| 컨텍스트 메뉴 | 탐색기 | 없음 | 없음 |
+| 탐색기의 날짜 레이블 | 있음 | 없음 | 없음 |
+| 휴지통 모드 | 있음 | 없음(묘지만) | 없음(묘지만) |
+| 설치 방법 | 설치 스크립트, Scoop, winget, 압축 파일 | DMG | `.deb` |
+| 처음 열 때 | 직접 내려받은 압축 파일은 SmartScreen 경고가 나올 수 있음 | 수동 허용이 필요함. [아래](#서명되지-않은-app을-처음-열기) 참고 | 바로 열림 |
+| 요구 사항 | WebView2 런타임 | 1.6.0은 macOS 26 필요(1.6.1에서 수정) | GTK 3, WebKitGTK 4.1(apt가 자동 설치) |
+
 ## macOS 작은 창과 메뉴 막대 아이콘
 
-같은 릴리스에서 universal macOS DMG와 checksums.txt를 내려받습니다. SHA-256을 확인한 뒤 DMG를 열고 Obituary.app을 응용 프로그램 또는 사용자의 Applications 폴더로 드래그합니다. 로그인 시작을 켜기 전에 DMG를 추출하세요.
+릴리스 페이지에서 universal DMG(`obituary_<버전>_darwin_universal.dmg`)와 `checksums.txt`를 내려받고, SHA-256을 확인한 뒤 DMG를 엽니다. Obituary.app을 응용 프로그램 폴더로 드래그하고 DMG를 추출한 다음, 응용 프로그램 폴더에서 app을 여세요. 먼저 드래그해 두는 것은 로그인 시 시작 항목이 app의 위치를 기록하기 때문입니다. DMG 안에서 바로 실행하면 DMG를 추출하는 순간 그 위치가 사라집니다.
 
-app에는 Wails 작은 창, 메뉴 막대 아이콘, 함께 제공되는 obit과 obitd가 들어 있습니다. 5분마다 실행되는 launchd 사용자 에이전트는 별도의 대체 경로입니다. 설정에서 로그인 시 트레이 시작을 켜면 Obituary 전용 LaunchAgent가 설치되고, 끄면 해당 항목만 제거됩니다.
+app에는 작은 창, 메뉴 막대 아이콘, 함께 쓰는 `obit`과 `obitd`가 들어 있습니다. 만료 처리는 별도의 launchd 사용자 에이전트가 맡아 5분마다 실행되며, `obit daemon enable`로 설치합니다. 창이나 메뉴 막대 아이콘을 닫아도 영향을 받지 않습니다. 작은 창의 Settings에서 ‘Start the tray at sign-in’을 켜면 Obituary 전용 사용자 LaunchAgent가 설치되어 로그인할 때 메뉴 막대 아이콘이 나타납니다. 끄면 이 항목만 제거됩니다.
 
 `Obituary.app`을 삭제해도 사용자 데이터는 기본 경로인 `~/Library/Application Support/obituary/`에 남습니다. `store.json`은 장부, `config.toml`은 설정 파일이며, 이 볼륨에서 매장한 파일은 `graveyard/`에 보관됩니다.
 
 ### 서명되지 않은 app을 처음 열기
 
-이 릴리스에는 Developer ID 서명이나 공증이 없습니다. 신뢰할 수 있는 릴리스인지 확인하고 SHA-256을 검증한 뒤 한 번 열어 보세요. macOS가 개발자를 확인할 수 없다고 하면 「시스템 설정 → 개인정보 보호 및 보안」에서 Obituary의 「그래도 열기」를 선택하고 확인한 다음 다시 엽니다. Gatekeeper를 전역으로 끄거나 격리 속성을 재귀적으로 지우지 마세요. 손상, 악성 코드 또는 회사 정책 거부가 표시되면 중단합니다.
+이 릴리스에는 Developer ID 서명도 공증도 없어서 macOS가 처음에 한 번 막습니다. 신뢰할 수 있는 릴리스 페이지에서 내려받았는지, SHA-256이 맞는지 확인한 뒤 먼저 평소처럼 한 번 여세요. 개발자를 확인할 수 없다는 메시지가 나오면 ‘시스템 설정 → 개인정보 보호 및 보안’에서 페이지 아래쪽의 Obituary를 찾아 ‘그래도 열기’를 누르고, 한 번 더 확인한 뒤 다시 엽니다. 이를 위해 Gatekeeper를 전체적으로 끄거나 격리 속성을 재귀적으로 지우지 마세요. app이 손상되었다거나 악성 코드를 포함한다고 나오거나, 회사 정책이 열기를 막는다면 거기서 멈추세요.
 
-### Homebrew Cask 제안
+### 1.6.0은 macOS 26이 필요함
 
-Cask는 같은 universal DMG를 설치하고 Obituary.app을 응용 프로그램에 복사하며 app bundle의 obit과 obitd를 제공합니다. 데스크톱 DMG의 안정적인 공개 URL과 제거 확인이 준비될 때까지 기존 CLI cask와 분리합니다.
+1.6.0의 macOS 작은 창에는 macOS 26이 필요합니다. macOS 15 이하에서는 이 app이 현재 버전과 호환되지 않는다고 나오며 열리지 않습니다. 이 문제는 1.6.1에서 수정됩니다.
+
+## Ubuntu 24.04(amd64)
+
+릴리스 페이지에서 데스크톱 패키지 `obituary_<버전>_linux_amd64.deb`와 `checksums.txt`를 내려받습니다. 내려받은 디렉터리에서 아래 명령을 실행하세요. `VERSION`은 실제 버전 번호로 바꾸며, 확인에 성공한 경우에만 설치됩니다.
+
+```bash
+file=obituary_VERSION_linux_amd64.deb
+grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt install "./$file"
+```
+
+설치한 뒤에는 앱 목록에서 Obituary를 엽니다. 작은 창은 GTK 3와 WebKitGTK 4.1을 쓰며, 둘 다 apt가 패키지와 함께 설치합니다. 프로그램은 `/usr/libexec/obituary/`에 놓이고 PATH에는 들어가지 않습니다. 터미널에서 `obit`을 쓰려면 설치 스크립트로 명령줄을 따로 설치하세요.
+
+트레이는 데스크톱이 StatusNotifierItem을 제공해야 하는데, GNOME은 기본으로 제공하지 않습니다. 그럴 때도 확장 기능 없이 앱 목록에서 같은 창을 열 수 있지만, 트레이 아이콘은 없습니다. 다음 로그인 때 트레이가 자동으로 나타나게 하려면 Settings에서 ‘Start the tray at sign-in’을 켜세요. 끄면 Obituary가 쓴 자동 시작 항목이 삭제됩니다. 제거는 [제거](./uninstall)를 참고하세요.
+
 ## 트레이
 
 `obit init`을 실행하면 로그인할 때 트레이 아이콘이 나타납니다. 메뉴에는 다음 항목이 있습니다.
@@ -29,10 +61,10 @@ Cask는 같은 universal DMG를 설치하고 Obituary.app을 응용 프로그램
 
 ## 작은 창
 
-`obit-gui.exe`에는 Upcoming, Graveyard, Decisions, Settings, Logs의 다섯 페이지가 있습니다. 시작 메뉴의 ‘Obituary’, 바탕 화면 바로 가기, 트레이 메뉴의 ‘Open Obituary’ 중 어느 것으로든 열 수 있습니다.
+`obit-gui.exe`에는 Expiring, Graveyard, For you, Settings, Logs의 다섯 페이지가 있습니다. 시작 메뉴의 ‘Obituary’, 바탕 화면 바로 가기, 트레이 메뉴의 ‘Open Obituary’ 중 어느 것으로든 열 수 있습니다.
 
-- 홈 화면 위쪽에 ‘Auto registration: off’ 또는 ‘on’이 표시되며 클릭하면 설정이 열립니다. Decisions 상단이나 Settings에서 끄기(기본값으로 사용자와 에이전트가 등록한 항목만 포함), 단계별, 완전 자동, 매번 확인 중 하나를 선택합니다. [등록 대상](./auto-register)을 참고하세요. 승인 없이 등록된 항목은 아래의 ‘Handled automatically’에 표시됩니다. 항목마다 한 번의 클릭으로 등록을 취소해 카운트다운을 멈추고 제자리에 두거나 수명을 연장할 수 있습니다.
-- 만료 후에도 다른 프로그램이 파일을 열고 있는 등의 이유로 매장하지 못한 항목은 Decisions의 ‘Burials that failed’에 사유 및 다음 재시도 시각과 함께 표시됩니다. 재시도 간격은 점차 길어지며 실패가 반복되면 멈추고 사용자의 결정을 기다립니다. ‘Retry’는 즉시 다시 시도하고 ‘Stop tracking’은 추적을 끝내고 항목을 제자리에 둡니다.
+- 홈 화면 위쪽에 ‘Auto registration: off’ 또는 ‘on’이 표시되며 클릭하면 설정이 열립니다. For you 상단이나 Settings에서 끄기(기본값으로 사용자와 에이전트가 등록한 항목만 포함), 단계별, 완전 자동, 매번 확인 중 하나를 선택합니다. [등록 대상](./auto-register)을 참고하세요. 승인 없이 등록된 항목은 아래의 ‘Handled automatically’에 표시됩니다. 항목마다 한 번의 클릭으로 등록을 취소해 카운트다운을 멈추고 제자리에 두거나 수명을 연장할 수 있습니다.
+- 만료 후에도 다른 프로그램이 파일을 열고 있는 등의 이유로 매장하지 못한 항목은 For you의 ‘Burials that failed’에 사유 및 다음 재시도 시각과 함께 표시됩니다. 재시도 간격은 점차 길어지며 실패가 반복되면 멈추고 사용자의 결정을 기다립니다. ‘Retry’는 즉시 다시 시도하고 ‘Stop tracking’은 추적을 끝내고 항목을 제자리에 둡니다.
 - Docker가 실행 중이 아니면 컨테이너 제안의 승인 버튼은 비활성화되며 카드에 사유가 표시됩니다. Docker를 시작한 뒤 승인하세요.
 - `.obitrules` 파일을 신뢰하면 창에 나타난 정확한 버전만이 신뢰됩니다.
 - 창, 트레이, 상황에 맞는 메뉴의 언어는 `config.toml`의 `[ui] language` 설정을 따릅니다. `auto`, `zh-CN`, `en` 중에서 선택할 수 있고 `auto`는 Windows 언어를 따릅니다. Settings에서도 바꿀 수 있습니다.
