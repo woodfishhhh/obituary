@@ -158,7 +158,9 @@ sleep 3
 [[ ! -e $selected && $(hash "$restore") == "$restore_hash" ]]
 jq -e --arg p "$restore" 'all(.burials[]; .path != $p)' "$ev/after.json"
 snap notification
-/usr/bin/log show --last 3m --info --style compact --predicate '(process == "usernoted" OR process == "obitd" OR subsystem == "com.apple.UserNotifications") AND eventMessage CONTAINS[c] "obituary"' > "$ev/notification.log"
+/usr/bin/log show --last 3m --info --style compact --predicate '(subsystem == "com.apple.UserNotifications" OR process == "usernoted" OR eventMessage BEGINSWITH "obituary notification") AND eventMessage CONTAINS[c] "obituary"' > "$ev/notification.log"
+grep -F '[site.woodfish.obituary.tray] Requesting authorization' "$ev/notification.log"
+if grep -Eq 'hasError: 1|obituary notification (authorization|delivery):' "$ev/notification.log"; then exit 1; fi
 
 if traypid=$(pgrep -xo obitd); then
   tray="tell application \"System Events\" to tell (first application process whose unix id is $traypid) to "

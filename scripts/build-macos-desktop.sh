@@ -8,13 +8,14 @@ version=${version//\//-}
 out=${2:-$root/bin/macos-desktop}
 work=$out/.work
 bundle=$out/Obituary.app
+tray="$bundle/Contents/Helpers/Obituary Menu.app"
 export MACOSX_DEPLOYMENT_TARGET=12.0
 minflag="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET"
 export CGO_CFLAGS="${CGO_CFLAGS:--O2 -g} $minflag"
 export CGO_CXXFLAGS="${CGO_CXXFLAGS:--O2 -g} $minflag"
 export CGO_LDFLAGS="${CGO_LDFLAGS:--O2 -g} $minflag"
 
-mkdir -p "$work" "$bundle/Contents/MacOS" "$bundle/Contents/Resources"
+mkdir -p "$work" "$bundle/Contents/MacOS" "$bundle/Contents/Resources" "$tray/Contents/MacOS" "$tray/Contents/Resources"
 
 ldflags="-s -w -X github.com/woodfishhhh/obituary/internal/buildinfo.Version=$version"
 for arch in amd64 arm64; do
@@ -25,9 +26,12 @@ for arch in amd64 arm64; do
 done
 
 for name in obit obitd obit-gui; do
-    lipo -create "$work/amd64/$name" "$work/arm64/$name" -output "$bundle/Contents/MacOS/$name"
-    chmod 755 "$bundle/Contents/MacOS/$name"
+    destination="$bundle/Contents/MacOS/$name"
+    if [[ $name == obitd ]]; then destination="$tray/Contents/MacOS/$name"; fi
+    lipo -create "$work/amd64/$name" "$work/arm64/$name" -output "$destination"
+    chmod 755 "$destination"
 done
+ln -sfn '../Helpers/Obituary Menu.app/Contents/MacOS/obitd' "$bundle/Contents/MacOS/obitd"
 
 iconset="$work/Obituary.iconset"
 mkdir -p "$iconset"
@@ -58,11 +62,17 @@ cat > "$bundle/Contents/Info.plist" <<PLIST
 PLIST
 
 plutil -lint "$bundle/Contents/Info.plist"
+# Notification Center authorizes the bundle's main executable, not a sibling tool.
+cp "$bundle/Contents/Resources/icon.icns" "$tray/Contents/Resources/"
+plist="$tray/Contents/Info.plist"
+cp "$bundle/Contents/Info.plist" "$plist"
+plutil -replace CFBundleExecutable -string obitd "$plist"
+plutil -replace CFBundleIdentifier -string site.woodfish.obituary.tray "$plist"
+plutil -insert LSUIElement -bool true "$plist"
 bash "$root/scripts/check-macos-target.sh" "$bundle"
-for name in obit obitd obit-gui; do
-    codesign --force --sign - "$bundle/Contents/MacOS/$name"
-done
-codesign --force --deep --sign - "$bundle"
+codesign --force --sign - "$tray"
+codesign --force --sign - "$bundle/Contents/MacOS/obit"
+codesign --force --sign - "$bundle"
 codesign --verify --deep --strict "$bundle"
 
 dmg="$out/obituary_${version}_darwin_universal.dmg"

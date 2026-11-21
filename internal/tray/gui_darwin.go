@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/woodfishhhh/obituary/internal/i18n"
 )
@@ -22,7 +23,11 @@ type guiAction struct {
 
 // The launcher is injected so tray tests never create a desktop process.
 func newGUIAction(daemon string, start func(string) error) guiAction {
-	path := filepath.Join(filepath.Dir(daemon), "obit-gui")
+	dir := filepath.Dir(daemon)
+	if outer, ok := strings.CutSuffix(dir, "/Helpers/Obituary Menu.app/Contents/MacOS"); ok {
+		dir = filepath.Join(outer, "MacOS")
+	}
+	path := filepath.Join(dir, "obit-gui")
 	action := guiAction{path: path, enabled: true, start: start}
 	info, err := os.Stat(path)
 	if err != nil || info.IsDir() {
@@ -53,6 +58,9 @@ func (a guiAction) open() error {
 
 func startGUI(path string) error {
 	cmd := exec.Command(path)
+	if bundle, ok := strings.CutSuffix(path, "/Contents/MacOS/obit-gui"); ok && filepath.Ext(bundle) == ".app" {
+		cmd = exec.Command("/usr/bin/open", bundle)
+	}
 	if err := cmd.Start(); err != nil {
 		return err
 	}
