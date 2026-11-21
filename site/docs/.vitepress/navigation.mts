@@ -6,7 +6,7 @@ import { guides } from './agents/catalog';
 // Navigation titles come from the translated page itself.
 const groups = [
   ['index', 'how-it-works'], ['agents', 'auto-register', 'delete-guard', 'grave-notices'],
-  ['folder-policies', 'docker', 'desktop'], ['commands', 'uninstall', 'faq', 'code-signing', 'privacy'],
+  ['folder-policies', 'docker', 'desktop'], ['commands', 'config', 'uninstall', 'troubleshooting', 'faq', 'code-signing', 'privacy'],
 ];
 const labels: Record<Lang, string[]> = {
   zh: ['首页','文档','下载','开始','和 agent 一起用','更多','参考','本页内容','上一篇','下一篇','搜索','语言','目录','回到顶部','在 GitHub 上修改这一页'],
