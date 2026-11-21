@@ -207,8 +207,8 @@ func PlanAutostart(_ RunRegistry, daemon, home, config string, enabled bool) (*A
 	if enabled {
 		after = content
 	}
-	if before != "" && !managedDesktopEntry(before) {
-		return nil, fmt.Errorf("autostart entry is not managed by Obituary: %s", path)
+	if before != "" && before != content {
+		return nil, fmt.Errorf("preserving edited or foreign autostart entry: %s", path)
 	}
 	return &AutostartPlan{Name: path, Before: before, After: after, path: path, content: content, enabled: enabled}, nil
 }
@@ -226,10 +226,6 @@ func readAutostart(path string) (string, error) {
 	}
 	data, err := os.ReadFile(path)
 	return string(data), err
-}
-
-func managedDesktopEntry(content string) bool {
-	return strings.Contains(content, "\nX-Obituary-Managed=true\n") || strings.HasPrefix(content, "X-Obituary-Managed=true\n")
 }
 
 func desktopEntry(daemon, home, config string) string {
@@ -259,14 +255,21 @@ func SetAutostart(home string, enabled bool) error {
 }
 
 func Autostart() string {
-	dir, err := userdirs.Autostart()
+	home, err := userdirs.Data()
 	if err != nil {
 		return ""
 	}
-	path := filepath.Join(dir, "obituary.desktop")
-	content, err := readAutostart(path)
-	if err != nil || !managedDesktopEntry(content) {
+	config, err := userdirs.Config()
+	if err != nil {
 		return ""
 	}
-	return path
+	daemon, err := DaemonPath()
+	if err != nil {
+		return ""
+	}
+	p, err := PlanAutostart(nil, daemon, home, config, false)
+	if err != nil || p.Before == "" {
+		return ""
+	}
+	return p.Name
 }

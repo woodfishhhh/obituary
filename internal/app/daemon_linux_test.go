@@ -79,12 +79,8 @@ func TestLinuxAutostartRejectsForeignEntry(t *testing.T) {
 	if err := os.WriteFile(path, []byte(desktopEntry("/other/obitd", "/data", "/config")), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	plan, err := PlanAutostart(nil, "/opt/obitd", "/data", "/config", false)
-	if err != nil || !plan.Pending() {
-		t.Fatalf("relocated managed entry: %+v %v", plan, err)
-	}
-	if err := plan.Apply(); err != nil {
-		t.Fatal(err)
+	if _, err := PlanAutostart(nil, "/opt/obitd", "/data", "/config", false); err == nil {
+		t.Fatal("accepted removal of an entry bound to a different executable")
 	}
 }
 
@@ -93,6 +89,30 @@ func TestLinuxAutostartEscapesDesktopArgumentsOnce(t *testing.T) {
 	for _, want := range []string{`Exec="/opt/a b/obitd"`, `--home "/tmp/a\\b"`, `--config-dir "/tmp/100%%/config"`} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("desktop entry missing %q: %s", want, text)
+		}
+	}
+}
+
+func TestLinuxAutostartPreservesEditedManagedEntry(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", dir)
+	entry := filepath.Join(dir, "autostart", "obituary.desktop")
+	if err := os.Mkdir(filepath.Dir(entry), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	original := desktopEntry("/opt/obitd", "/data", "/config")
+	for _, changed := range []string{
+		strings.Replace(original, "enabled=true", "enabled=false", 1),
+		original + "Hidden=true\n",
+		strings.Replace(original, "--tray", "--once", 1),
+	} {
+		if err := os.WriteFile(entry, []byte(changed), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		for _, enable := range []bool{true, false} {
+			if _, err := PlanAutostart(nil, "/opt/obitd", "/data", "/config", enable); err == nil {
+				t.Fatalf("accepted edited entry (enable=%v): %s", enable, changed)
+			}
 		}
 	}
 }
