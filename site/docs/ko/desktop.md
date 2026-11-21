@@ -81,3 +81,13 @@ macOS와 Linux에는 아직 상황에 맞는 메뉴가 없습니다. 등록할 �
 설치 시 `obit init --no-context-menu`은 상황에 맞는 메뉴를 생략하고 `--no-shortcuts`은 시작 메뉴와 바탕 화면 바로 가기를 생략합니다.
 
 탐색기에 표시되는 매장 날짜는 [폴더 정책](./folder-policies#dates-in-explorer)을 참고하세요.
+## 네 플랫폼 비교
+
+| 플랫폼 | 창 | 트레이 또는 메뉴 막대 | 로그인 시작과 알림 | 컨텍스트 메뉴와 날짜 | 아키텍처와 의존성 | 제거 후 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Windows | `obit-gui.exe` | 알림 영역 | 작업 스케줄러와 선택적 로그인 시작 | Explorer 오른쪽 클릭과 날짜 레이블 | x64, WebView2 필요 | 프로그램과 통합을 제거하고 데이터는 기본 보존 |
+| macOS 데스크톱 미리보기 | 범용 `Obituary.app` | 메뉴 막대 | 선택적 LaunchAgent와 알림 | 오른쪽 클릭/Finder 날짜 없음 | Intel 및 Apple, 미서명·미공증 | app와 LaunchAgent 제거, CLI 데이터 보존 |
+| Ubuntu 24.04 미리보기 | `.deb` 창 | StatusNotifierItem 트레이 | 선택적 XDG 자동 시작과 알림 | 오른쪽 클릭/날짜 없음 | amd64, GTK 3와 WebKitGTK 4.1 | 패키지와 자동 시작 제거, 데이터 보존 |
+| CLI 전용 macOS/Linux | 없음 | 없음 | launchd, systemd 또는 crontab | 없음 | x64 및 ARM64 CLI | 프로그램과 서비스 제거, 데이터 보존 |
+
+미서명 또는 미리보기 패키지는 SHA-256을 먼저 확인하세요. macOS 첫 실행은 [허용 절차](#미서명-app-첫-실행)를 따르며 recycle 모드에서는 `resurrect`를 사용할 수 없습니다.

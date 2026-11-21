@@ -81,3 +81,13 @@ macOS y Linux todavía no tienen menú contextual. Usa `obit mark <path> 7d` par
 Para omitirlos durante la instalación, usa `obit init --no-context-menu` para el menú contextual y `--no-shortcuts` para los accesos directos de Inicio y del escritorio.
 
 Las fechas de entierro del Explorador se explican en [Políticas de carpetas](./folder-policies#dates-in-explorer).
+## Comparación de cuatro plataformas
+
+| Plataforma | Ventana | Bandeja o barra de menús | Inicio y notificaciones | Menú contextual y fechas | Arquitectura y dependencia | Tras desinstalar |
+| --- | --- | --- | --- | --- | --- | --- |
+| Windows | `obit-gui.exe` | Área de notificación | Tarea programada y opción de iniciar sesión | Menú contextual y fechas del Explorador | x64; requiere WebView2 | Se quitan programas e integraciones; los datos quedan |
+| Vista previa de escritorio macOS | `Obituary.app` universal | Barra de menús | LaunchAgent y notificaciones opcionales | Sin menú contextual ni fechas de Finder | Intel y Apple; app sin firma ni notarización | Se quitan app y LaunchAgent; los datos CLI quedan |
+| Vista previa Ubuntu 24.04 | Ventana del `.deb` | Bandeja StatusNotifierItem | XDG autostart y notificaciones opcionales | Sin menú contextual ni fechas | Solo amd64; GTK 3 y WebKitGTK 4.1 | Se quitan paquete y autostart; los datos quedan |
+| macOS/Linux solo CLI | No hay ventana | No hay bandeja | launchd, systemd o crontab | Sin menú contextual ni fechas | CLI x64 y ARM64 | Se quitan programas y servicios; los datos quedan |
+
+Verifica SHA-256 antes de usar paquetes sin firma o de vista previa. En macOS sigue el [procedimiento de primer inicio](#abrir-una-app-sin-firma-por-primera-vez). El modo recycle no admite `resurrect`.

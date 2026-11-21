@@ -81,3 +81,13 @@ O macOS e o Linux ainda não têm menu de contexto. Use `obit mark <path> 7d` pa
 Para omitir esses itens na instalação, use `obit init --no-context-menu` para o menu de contexto e `--no-shortcuts` para os atalhos do menu Iniciar e da área de trabalho.
 
 Veja [Políticas de pastas](./folder-policies#dates-in-explorer) para saber como as datas de enterro aparecem no Explorador.
+## Comparação entre quatro plataformas
+
+| Plataforma | Janela | Bandeja ou barra de menus | Login e notificações | Menu de contexto e datas | Arquitetura e dependência | Depois da desinstalação |
+| --- | --- | --- | --- | --- | --- | --- |
+| Windows | `obit-gui.exe` | Área de notificação | Tarefa agendada e início opcional no login | Menu de contexto e datas do Explorer | x64; requer WebView2 | Programas e integrações removidos; dados preservados |
+| Prévia desktop do macOS | `Obituary.app` universal | Barra de menus | LaunchAgent e notificações opcionais | Sem menu de contexto ou datas do Finder | Intel e Apple; app sem assinatura/notarização | app e LaunchAgent removidos; dados CLI preservados |
+| Prévia Ubuntu 24.04 | Janela do `.deb` | Bandeja StatusNotifierItem | XDG autostart e notificações opcionais | Sem menu de contexto ou datas | Apenas amd64; GTK 3 e WebKitGTK 4.1 | Pacote e autostart removidos; dados preservados |
+| macOS/Linux somente CLI | Sem janela | Sem bandeja | launchd, systemd ou crontab | Sem menu de contexto ou datas | CLI x64 e ARM64 | Programas e serviços removidos; dados preservados |
+
+Verifique SHA-256 antes de usar pacotes sem assinatura ou de prévia. No macOS siga o [procedimento de primeira abertura](#abrir-um-app-sem-assinatura-pela-primeira-vez). O modo recycle não permite `resurrect`.
