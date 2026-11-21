@@ -27,8 +27,7 @@ func guardDelete(home string, ev Event) (string, error) {
 		var context guardrm.Context
 		context, why = deleteGuardContext(ev)
 		if why == "" {
-			equivalent, summary, why = guardrm.SuggestWithSummary(ev.Command, context)
-			guidance = deletionGuidance(ev, why, context.Executable)
+			equivalent, summary, why, guidance = suggestDeletion(ev, context)
 		}
 	}
 	if why == "" || guidance != "" {
@@ -64,7 +63,7 @@ func codexWindowsEmbeddedDeletion(ev Event) string {
 
 // deletionGuidance denies a literal deletion that has no exact equivalent:
 // denying runs nothing, so it cannot select more than the command would.
-func deletionGuidance(ev Event, why, executable string) string {
+func deletionGuidance(ev Event, why string, resolve func() string) string {
 	if why == "" {
 		return ""
 	}
@@ -76,6 +75,7 @@ func deletionGuidance(ev Event, why, executable string) string {
 	if deletion == "" {
 		return ""
 	}
+	executable := resolve()
 	// Statements, not instructions: the agent reads this as tool context.
 	const discovered = " For targets selected at runtime, the safe alternative is to list and review the paths first, then give them as explicit operands to `%s rm -- <path>...`."
 	reason := fmt.Sprintf("Obituary's delete guard is on: `%s` deletes permanently and no exact obit equivalent applies to this command (%s). `%s bury <path>...` provides restorable deletion for literal paths, `%s git-clean` for git clean; `obit resurrect` restores graveyard entries."+discovered, deletion, why, executable, executable, executable)
@@ -96,11 +96,26 @@ func deleteGuardContext(ev Event) (guardrm.Context, string) {
 		why = "WSL requires bash in a mounted Windows directory"
 	} else if context.Shell == guardrm.PowerShell && !windowsCwd(ev.Cwd) {
 		why = "PowerShell deletion requires a Windows working directory"
-	} else {
-		context.Executable, why = deleteGuardExecutable(context)
 	}
 	return context, why
 }
+
+func suggestDeletion(ev Event, context guardrm.Context) (equivalent, summary, why, guidance string) {
+	var unavailable string
+	context.ResolveExecutable = func() string {
+		executable, reason := resolveDeleteExecutable(context)
+		unavailable = reason
+		return executable
+	}
+	equivalent, summary, why = guardrm.SuggestWithSummary(ev.Command, context)
+	guidance = deletionGuidance(ev, why, context.ResolveExecutable)
+	if unavailable != "" {
+		return ev.Command, "", unavailable, ""
+	}
+	return
+}
+
+var resolveDeleteExecutable = deleteGuardExecutable
 
 func deleteGuardExecutable(context guardrm.Context) (string, string) {
 	self, err := os.Executable()
@@ -110,6 +125,10 @@ func deleteGuardExecutable(context guardrm.Context) (string, string) {
 	if real, err := filepath.EvalSymlinks(self); err == nil {
 		self = real
 	}
+	return deleteGuardPath(context, self)
+}
+
+func deleteGuardPath(context guardrm.Context, self string) (string, string) {
 	if context.WSL {
 		executable := WSLExecutable(self)
 		if executable == "" {
