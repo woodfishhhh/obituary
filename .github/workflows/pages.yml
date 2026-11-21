@@ -83,7 +83,7 @@ jobs:
       group: cn-deploy
       cancel-in-progress: false
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     permissions: {}
     steps:
       - id: key
@@ -113,7 +113,7 @@ jobs:
           # The server lets one upload through at a time (rrsync); the release
           # archives, latest.json and the site can overlap, so wait and retry.
           for attempt in $(seq 1 10); do
-            if rsync -rlt --delete --chmod=D755,F644 -e "$ssh_cmd" site-cn/ "obit-deploy@$CN_DEPLOY_HOST:site/"; then break; fi
+            if rsync -rlt --delete --timeout=120 --chmod=D755,F644 -e "$ssh_cmd" site-cn/ "obit-deploy@$CN_DEPLOY_HOST:site/"; then break; fi
             if [[ $attempt == 10 ]]; then exit 1; fi
             echo "upload attempt $attempt failed; retrying in 30 s"
             sleep 30

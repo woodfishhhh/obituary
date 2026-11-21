@@ -21,7 +21,7 @@ jobs:
     concurrency:
       group: cn-deploy
       cancel-in-progress: false
-    timeout-minutes: 20
+    timeout-minutes: 60
     permissions:
       contents: read
     env:
@@ -71,7 +71,7 @@ jobs:
             '  IdentitiesOnly yes' '  StrictHostKeyChecking yes' '  BatchMode yes' \
             '  ConnectTimeout 15' '  ServerAliveInterval 30' > config
       - name: Upload to private staging
-        run: rsync -rc --delete -e "ssh -F $RUNNER_TEMP/mirror-ssh/config" "$RUNNER_TEMP/incoming/" cn-release:incoming/
+        run: rsync -rc --delete --timeout=120 --partial -e "ssh -F $RUNNER_TEMP/mirror-ssh/config" "$RUNNER_TEMP/incoming/" cn-release:incoming/
       - name: Publish verified staging
         run: ssh -F "$RUNNER_TEMP/mirror-ssh/config" cn-release "publish $TAG"
       - name: Remove runner SSH credentials

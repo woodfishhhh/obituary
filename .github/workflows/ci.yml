@@ -243,6 +243,8 @@ jobs:
         run: python3 scripts/cn-mirror-pull.test.py
       - name: Verify offline CN mirror publishing and atomic rejection
         run: bash scripts/cn-mirror-publish.test.sh
+      - name: Verify interrupted CN mirror uploads resume through write-only rrsync
+        run: bash scripts/cn-mirror-resume.test.sh
       - name: Cross-build Linux ARM64
         run: GOOS=linux GOARCH=arm64 go build ./cmd/...
       # The race detector runs here only: Linux has cgo and a C compiler on the

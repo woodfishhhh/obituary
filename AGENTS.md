@@ -61,7 +61,11 @@
 
 专用仓库 Secret 是 `CN_RELEASE_DEPLOY_KEY`，ed25519 指纹 `SHA256:XDh6ylMRs/gpoyCC1T2TXzwFlHlIUOLIpmPzVpdoQ2E`。非 root 用户 `obit-deploy` 的 `authorized_keys` 只为这把钥匙增加 `restrict,command="/usr/local/bin/obituary-mirror-publish"`。该入口来自 `scripts/cn-mirror-pull.sh`，只接受以 `/home/obit-deploy/release-staging`（0700）为根的只写 rrsync，或 `publish vX.Y.Z`。两者都拿 `download/.pull.lock`；服务端从 `incoming/` 复核文件和哈希，在同一文件系统上改名发布完整版本，再按 runner 核对的最新正式版原子更新 `latest.json`。同标签内容不同则拒绝覆盖，相同则保留原文件。日志用 `journalctl -t obituary-mirror` 查。
 
-人工备用仍是原来的 `pull vX.Y.Z`（`CN_MIRROR_TRIGGER_KEY`、`/usr/local/bin/obituary-mirror-pull`，源码 `scripts/cn-mirror-pull-legacy.sh`）；只有这条备用路径从服务器访问 GitHub。回滚时先等 `cn-deploy` 空闲，回退本次工作流，再只移除上述指纹对应的新增授权行并撤销 `CN_RELEASE_DEPLOY_KEY`。核对原授权行和旧脚本与服务器 `/root/obituary-cn-mirror-<日期时间>-<后缀>/` 中的备份一致，不覆盖后续新增授权。需要恢复索引时，先核对备份的 `download.inventory` 和最新版本，持 `.pull.lock` 将备份的 `latest.json` 通过同目录临时文件改名恢复；不要删除任何已发布版本。最后停用新增入口和 staging，保留备份及旧 `pull` 入口。回滚不改 `CN_DEPLOY_KEY`、原站点钥匙或 `deploy-cn`。
+两个上传任务的 `rsync --timeout=120` 是双向 I/O 超时，不能保证服务器发现消失的 runner。国内服务器的 `/etc/ssh/sshd_config.d/00-obit-client-alive.conf` 在账号 `Match` 之前全局设置 `ClientAliveInterval 30` 和 `ClientAliveCountMax 4`，让 sshd 断开不再回应探测的连接，接收端随之退出并放锁；能回应保活的慢连接不会因此断开。镜像任务给 60 分钟，国内站部署给 40 分钟，给慢链路留出传输时间。只有非公开的镜像 `incoming/` 用 `--partial`：重跑时利用已有数据，发布前仍须完整校验；不要把半成品留在公开站点。用 `bash scripts/cn-mirror-resume.test.sh` 验证只写 rrsync 确实复用了部分数据。
+
+只回滚保活和超时：等 `cn-deploy` 空闲再回退相应工作流；服务器保留一条管理连接，核对 `/root/obit-sshd-<日期时间>-<后缀>/` 的主配置、drop-in 目录及 `before/` 基线。确认新增文件仍是上述两行且原来不存在后，只将它移出 Include 目录，不覆盖其他文件。`sshd -t` 通过，并按原连接条件逐账号比对 `sshd -T -C`，确认仅保活两项还原后 `systemctl reload ssh.service`；另开管理连接验证成功才关闭旧连接。不动钥匙、发布入口或已发布文件。
+
+人工备用仍是原来的 `pull vX.Y.Z`（`CN_MIRROR_TRIGGER_KEY`、`/usr/local/bin/obituary-mirror-pull`，源码 `scripts/cn-mirror-pull-legacy.sh`）；只有这条备用路径从服务器直连 GitHub。若要回滚整个 runner 发布入口，先等 `cn-deploy` 空闲，回退发布工作流，再只移除上述指纹对应的新增授权行并撤销 `CN_RELEASE_DEPLOY_KEY`。核对原授权行和旧脚本与服务器 `/root/obituary-cn-mirror-<日期时间>-<后缀>/` 中的备份一致，不覆盖后续新增授权。需要恢复索引时，先核对备份的 `download.inventory` 和最新版本，持 `.pull.lock` 将备份的 `latest.json` 通过同目录临时文件改名恢复；不要删除任何已发布版本。最后停用新增入口和 staging，保留备份及旧 `pull` 入口。回滚不改 `CN_DEPLOY_KEY`、原站点钥匙或 `deploy-cn`。
 
 ## 命令
 
