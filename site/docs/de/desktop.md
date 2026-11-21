@@ -114,6 +114,6 @@ Unter macOS und Linux gibt es noch kein Kontextmenü. Nutze `obit mark <path> 7d
 | Desktop-Verknüpfung | "Obituary" auf dem Desktop |
 | Kontextmenü | Das Menü „Add to Obituary“ im Explorer. |
 
-Mit `obit init --no-context-menu` lässt du das Kontextmenü bei der Installation aus, mit `--no-shortcuts` die Verknüpfungen im Startmenü und auf dem Desktop.
+Willst du sie schon bei der Installation nicht haben, gib `obit init --no-context-menu` an, um das Kontextmenü wegzulassen, oder `--no-shortcuts`, um die Verknüpfungen im Startmenü und auf dem Desktop wegzulassen. Dieselben Optionen gelten beim Deinstallieren: `obit init --uninstall --no-shortcuts` lässt die vorhandenen Verknüpfungen stehen und entfernt den Rest wie gewohnt, und `--no-context-menu` verhält sich beim Kontextmenü genauso.
 
 Wie der Explorer die Begräbnisdaten anzeigt, steht unter [Ordnerrichtlinien](./folder-policies#dates-in-explorer).

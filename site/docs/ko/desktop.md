@@ -114,6 +114,6 @@ macOS와 Linux에는 아직 상황에 맞는 메뉴가 없습니다. 등록할 �
 | 바탕 화면 바로 가기 | 바탕 화면의 ‘Obituary’ 바로 가기입니다. |
 | 상황에 맞는 메뉴 | 파일 탐색기의 ‘Add to Obituary’ 메뉴입니다. |
 
-설치 시 `obit init --no-context-menu`은 상황에 맞는 메뉴를 생략하고 `--no-shortcuts`은 시작 메뉴와 바탕 화면 바로 가기를 생략합니다.
+설치할 때 원하지 않으면 `obit init --no-context-menu`로 컨텍스트 메뉴를, `--no-shortcuts`로 시작 메뉴와 바탕 화면 바로 가기를 만들지 않습니다. 두 옵션은 제거할 때도 같은 방식으로 작동합니다. `obit init --uninstall --no-shortcuts`는 기존 바로 가기를 남기고 나머지를 평소대로 걷어 내며, `--no-context-menu`는 컨텍스트 메뉴에 대해 똑같이 동작합니다.
 
 탐색기에 표시되는 매장 날짜는 [폴더 정책](./folder-policies#dates-in-explorer)을 참고하세요.

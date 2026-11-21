@@ -67,6 +67,7 @@ obit init -g --agent codex      # Codex
 obit init -g --guard-rm         # 删除护栏
 obit init -g --mcp              # 加装 MCP 服务
 obit init --no-context-menu --no-shortcuts --no-skill   # 不装右键菜单、快捷方式或 Skill
+obit init -g --uninstall --no-context-menu   # 解除安裝時留下右鍵選單，其餘照常撤掉；--no-shortcuts、--no-skill 同理
 obit init -g --show             # 装了什么
 obit daemon enable              # 托盘随登录启动，并装兜底的定时任务
 obit daemon status

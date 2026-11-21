@@ -116,6 +116,6 @@ macOS 和 Linux 目前沒有右鍵選單。請用 `obit mark <路径> 7d` 登記
 | 桌面捷徑 | 是否在桌面顯示「訃告」 |
 | 右鍵選單 | 是否在檔案總管中顯示「放進訃告」選單 |
 
-安裝時可用 `obit init --no-context-menu` 略過右鍵選單，用 `--no-shortcuts` 略過開始功能表和桌面捷徑。
+安裝時就不想要的話，加上 `obit init --no-context-menu` 不安裝右鍵選單，加上 `--no-shortcuts` 不建立開始功能表和桌面捷徑。這兩個選項在解除安裝時同樣有效：`obit init --uninstall --no-shortcuts` 會留下既有的捷徑，其餘照常撤掉，`--no-context-menu` 對右鍵選單也是如此。
 
 檔案總管中顯示的下葬日期，詳見[資料夾策略](./folder-policies#explorer-dates)。

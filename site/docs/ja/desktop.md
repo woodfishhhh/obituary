@@ -114,6 +114,6 @@ macOS と Linux にはまだコンテキストメニューがありません。�
 | デスクトップショートカット | デスクトップに Obituary を表示 |
 | コンテキストメニュー | エクスプローラーの「Add to Obituary」メニュー。 |
 
-インストール時に `obit init --no-context-menu` を指定するとコンテキストメニューを、`--no-shortcuts` を指定するとスタートメニューとデスクトップのショートカットを作成しません。
+インストール時に不要なら、`obit init --no-context-menu` でコンテキストメニューを、`--no-shortcuts` でスタートメニューとデスクトップのショートカットを作成しません。この 2 つはアンインストール時にも使えます。`obit init --uninstall --no-shortcuts` は既存のショートカットを残してそれ以外を通常どおり取り除き、`--no-context-menu` はコンテキストメニューについて同じ動作をします。
 
 エクスプローラーに表示する埋葬日については、[フォルダーポリシー](./folder-policies#dates-in-explorer)を参照してください。

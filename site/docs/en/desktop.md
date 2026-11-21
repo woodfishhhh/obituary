@@ -114,6 +114,6 @@ macOS and Linux have no context menu yet; use the commands: `obit mark <path> 7d
 | Desktop shortcut | "Obituary" on the desktop |
 | Context menu | The "Add to Obituary" menu in Explorer |
 
-Use `obit init --no-context-menu` to skip the context menu and `--no-shortcuts` to skip the Start menu and desktop shortcuts. Each flag works independently: installation skips that component, and `obit init --uninstall` leaves it in place.
+To skip them at install time, add `obit init --no-context-menu` to leave out the context menu or `--no-shortcuts` to leave out the Start menu and desktop shortcuts. The same options apply when you uninstall: `obit init --uninstall --no-shortcuts` leaves the existing shortcuts in place and removes the rest as usual, and `--no-context-menu` does the same for the context menu.
 
 Burial dates shown in Explorer are covered in [Folder policies](./folder-policies#dates-in-explorer).

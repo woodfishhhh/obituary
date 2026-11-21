@@ -117,6 +117,6 @@ macOS 和 Linux 还没有右键菜单，先用命令：`obit mark <路径> 7d` �
 | 桌面快捷方式 | 桌面上的「讣告」 |
 | 右键菜单 | 资源管理器里的「放进讣告」菜单 |
 
-`obit init --no-context-menu` 跳过右键菜单，`--no-shortcuts` 跳过开始菜单和桌面快捷方式。两个选项可以分别使用：安装时不创建，`obit init --uninstall` 时保留已有的对应项。
+安装时就不想要，加 `obit init --no-context-menu` 不装右键菜单，加 `--no-shortcuts` 不建开始菜单和桌面快捷方式。这两个选项卸载时同样管用：`obit init --uninstall --no-shortcuts` 会留下已有的快捷方式，其余照常撤掉，`--no-context-menu` 对右键菜单也是这样。
 
 资源管理器里显示下葬日期的做法见[文件夹策略](./folder-policies#资源管理器里的日期)。

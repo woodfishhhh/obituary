@@ -67,7 +67,7 @@ obit init -g --agent codex      # Codex
 obit init -g --guard-rm         # delete guard
 obit init -g --mcp              # add the MCP server
 obit init --no-context-menu --no-shortcuts --no-skill   # skip the context menu, shortcuts or Skill
-obit init -g --uninstall --no-context-menu   # keep the context menu; use --no-shortcuts or --no-skill to keep those too
+obit init -g --uninstall --no-context-menu   # on uninstall keep the context menu and remove the rest; --no-shortcuts and --no-skill work the same way
 obit init -g --show             # what is installed
 obit daemon enable              # tray at login plus the fallback scheduled task
 obit daemon status

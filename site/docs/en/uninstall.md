@@ -19,7 +19,7 @@ If you installed with the script on Windows, one command is enough:
 
 It touches only what Obituary itself wrote. An entry you edited, or one left by another installation, is kept as it is, and the plan says which one and why. Where there is no terminal (a script, an agent's command line) add `--yes`; without it the command stops and tells you it needs a terminal.
 
-Three things it does not do for you. The program files go the way you installed them (see below). If you installed project-level hooks in other projects, run `obit uninstall` in each of those projects before you remove the programs, or the hooks there will fail because `obit` is gone. And on macOS and Linux the tray's startup entry is not on the list: before uninstalling, turn off "Start the tray at sign-in" in the window's Settings, which removes the entry Obituary wrote. On Windows `obit uninstall` handles the tray's startup itself, but the Start menu and desktop shortcuts that `obit init` created are not on its list; `obit init --uninstall` removes them.
+Three things it does not do for you. The program files go the way you installed them (see below). If you installed project-level hooks in other projects, run `obit uninstall` in each of those projects before you remove the programs, or the hooks there will fail because `obit` is gone. And on macOS and Linux the tray's startup entry is not on the list: before uninstalling, turn off "Start the tray at sign-in" in the window's Settings, which removes the entry Obituary wrote. On Windows `obit uninstall` handles the tray's startup itself, but the Start menu and desktop shortcuts that `obit init` created are not on its list; `obit init --uninstall` removes them, unless you add `--no-shortcuts`.
 
 ## The graveyard, the ledger and your configuration
 
@@ -31,7 +31,9 @@ When you really want everything gone, add `--purge-data`:
 obit uninstall --purge-data
 ```
 
-It lists every item in the graveyard first and asks once more after you confirm the uninstall plan. Then it deletes those files permanently, along with the ledger, the audit log and the other files Obituary keeps, and finally the data directory. In a script, `--yes --purge-data` together skip both questions. It deletes only files it recognises: if the data directory holds other files, or a subfolder Obituary does not know, the purge stops there, leaves the directory as it is and tells you which one. `config.toml` is never part of the purge. On macOS it sits in the same folder as the ledger, so move it out before purging; otherwise the purge stops on it.
+It lists every item in the graveyard first and asks once more after you confirm the uninstall plan. After that, and before it removes anything, it checks everything it is about to touch: that the data directory is Obituary's own, that every file in it is one it recognises, and that the graveyard folder and each grave to be purged can be verified. If a check fails, it stops there and says which, and the graveyard, the ledger and the services are all left as they were, so a purge is never half done. Only when everything passes does it delete those files permanently, then the ledger, the audit log and the other files Obituary keeps. In a script, `--yes --purge-data` together skip both questions.
+
+It deletes only files it recognises. Other files, links or a subfolder Obituary does not know make the check stop, and it names the one it found. `config.toml` is never part of the purge, and you do not need to move it, even when it sits in the same folder as the ledger (the default on macOS): after the purge that folder holds only `config.toml`. When the configuration is somewhere else, the whole data directory is deleted.
 
 ## Removing the programs
 

@@ -114,6 +114,6 @@ macOS y Linux todavía no tienen menú contextual. Usa `obit mark <path> 7d` par
 | Acceso directo del escritorio | «Obituary» en el escritorio. |
 | Menú contextual | La entrada «Add to Obituary» del Explorador. |
 
-Para omitirlos durante la instalación, usa `obit init --no-context-menu` para el menú contextual y `--no-shortcuts` para los accesos directos de Inicio y del escritorio.
+Si no los quieres al instalar, añade `obit init --no-context-menu` para omitir el menú contextual o `--no-shortcuts` para omitir los accesos directos del menú Inicio y del escritorio. Las mismas opciones valen al desinstalar: `obit init --uninstall --no-shortcuts` deja los accesos directos existentes y retira lo demás como de costumbre, y `--no-context-menu` hace lo mismo con el menú contextual.
 
 Las fechas de entierro del Explorador se explican en [Políticas de carpetas](./folder-policies#dates-in-explorer).

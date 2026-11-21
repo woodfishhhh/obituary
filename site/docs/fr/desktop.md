@@ -114,6 +114,6 @@ macOS et Linux n’ont pas encore de menu contextuel. Utilisez `obit mark <path>
 | Raccourci du bureau | "Obituary" sur le bureau |
 | Menu contextuel | Entrée « Add to Obituary » dans l’Explorateur. |
 
-À l’installation, `obit init --no-context-menu` omet le menu contextuel et `--no-shortcuts` les raccourcis du menu Démarrer et du Bureau.
+Si vous n’en voulez pas dès l’installation, ajoutez `obit init --no-context-menu` pour omettre le menu contextuel ou `--no-shortcuts` pour omettre les raccourcis du menu Démarrer et du Bureau. Les mêmes options valent à la désinstallation : `obit init --uninstall --no-shortcuts` laisse en place les raccourcis existants et retire le reste comme d’habitude, et `--no-context-menu` fait de même pour le menu contextuel.
 
 Les dates d’enterrement affichées dans l’Explorateur sont expliquées dans [Règles de dossier](./folder-policies#dates-in-explorer).

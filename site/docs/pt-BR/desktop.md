@@ -114,6 +114,6 @@ O macOS e o Linux ainda não têm menu de contexto. Use `obit mark <path> 7d` pa
 | Atalho da área de trabalho | “Obituary” na área de trabalho. |
 | Menu de contexto | Entrada “Add to Obituary” no Explorador de Arquivos. |
 
-Para omitir esses itens na instalação, use `obit init --no-context-menu` para o menu de contexto e `--no-shortcuts` para os atalhos do menu Iniciar e da área de trabalho.
+Se você não os quiser na instalação, acrescente `obit init --no-context-menu` para omitir o menu de contexto ou `--no-shortcuts` para omitir os atalhos do menu Iniciar e da área de trabalho. As mesmas opções valem na desinstalação: `obit init --uninstall --no-shortcuts` mantém os atalhos existentes e remove o restante como de costume, e `--no-context-menu` faz o mesmo com o menu de contexto.
 
 Veja [Políticas de pastas](./folder-policies#dates-in-explorer) para saber como as datas de enterro aparecem no Explorador.
