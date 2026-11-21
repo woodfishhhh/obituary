@@ -21,7 +21,7 @@ func Localizer() *i18n.Localizer { return i18n.NewLocalizer(Language()) }
 // OutputLocalizer keeps diagnostics accompanying machine output byte-stable.
 func OutputLocalizer(asJSON bool) *i18n.Localizer {
 	if asJSON {
-return i18n.NewProtocolLocalizer()
+		return i18n.NewProtocolLocalizer()
 	}
 	return Localizer()
 }
