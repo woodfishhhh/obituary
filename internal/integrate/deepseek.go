@@ -180,16 +180,16 @@ func deepseekActivation(changes []Change, dir, name string, uninstall bool) {
 		return
 	}
 	quote := func(path string) string { return "'" + strings.ReplaceAll(path, "'", "''") + "'" }
-	detail := fmt.Sprintf("Export only; activation unverified. For DSH 0.2.2-rc.1 install the matching official bridge with dsh plugin --profile NAME add @deepseek-ai/dsh-hooks-claude-code@0.2.2-rc.1, then dsh --profile NAME --patch %s (before app arguments), or dsh plugin --profile NAME add %s and restart. Select one bundle per process. Bundle < profile < home < CLI patch precedence; later rows replace the entire config. Keep obituary row IDs unique. Verify all observed tools use the local Windows filesystem and ctx.shell uses PowerShell, then set $env:OBIT_DEEPSEEK_LOCAL='1' and $env:OBIT_DEEPSEEK_SHELL='powershell'. Exported hook commands require PowerShell; custom bash compositions need manually reviewed hook launcher commands and OBIT_DEEPSEEK_SHELL=bash.", quote(filepath.Join(dir, "cordis.patch.yml")), quote(dir))
+	detail := describe("Export only; activation unverified. For DSH 0.2.2-rc.1 install the matching official bridge with dsh plugin --profile NAME add @deepseek-ai/dsh-hooks-claude-code@0.2.2-rc.1, then dsh --profile NAME --patch %s (before app arguments), or dsh plugin --profile NAME add %s and restart. Select one bundle per process. Bundle < profile < home < CLI patch precedence; later rows replace the entire config. Keep obituary row IDs unique. Verify all observed tools use the local Windows filesystem and ctx.shell uses PowerShell, then set $env:OBIT_DEEPSEEK_LOCAL='1' and $env:OBIT_DEEPSEEK_SHELL='powershell'. Exported hook commands require PowerShell; custom bash compositions need manually reviewed hook launcher commands and OBIT_DEEPSEEK_SHELL=bash.", quote(filepath.Join(dir, "cordis.patch.yml")), quote(dir))
 	if name == "obituary-deepseek-mcp" {
-		detail = fmt.Sprintf("Export only; activation unverified. dsh --profile NAME --patch %s (before app arguments), or dsh plugin --profile NAME add %s and restart; select one obituary MCP bundle per process. dsh-mcp-client uses native stdio. Profile/home patches replace entire row configs; keep the obituary server name unique.", quote(filepath.Join(dir, "cordis.patch.yml")), quote(dir))
+		detail = describe("Export only; activation unverified. dsh --profile NAME --patch %s (before app arguments), or dsh plugin --profile NAME add %s and restart; select one obituary MCP bundle per process. dsh-mcp-client uses native stdio. Profile/home patches replace entire row configs; keep the obituary server name unique.", quote(filepath.Join(dir, "cordis.patch.yml")), quote(dir))
 	}
 	if uninstall {
-		detail = fmt.Sprintf("Managed files only; external activation remains manual. Before removal stop the affected host, remove this --patch argument, or run dsh plugin --profile NAME remove %s for every profile that registered it. Keep provider rows and other plugins unchanged.", name)
+		detail = describe("Managed files only; external activation remains manual. Before removal stop the affected host, remove this --patch argument, or run dsh plugin --profile NAME remove %s for every profile that registered it. Keep provider rows and other plugins unchanged.", name)
 	}
 	for i := range changes {
 		if changes[i].Action != "preserve" {
-			changes[i].Detail = detail
+			changes[i] = changes[i].described(detail)
 		}
 	}
 }

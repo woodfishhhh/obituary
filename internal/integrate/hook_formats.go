@@ -304,7 +304,7 @@ func planHookEdits(ch Change, spec HookConfig, edits []ConfigEdit, uninstall boo
 		ch.Action, ch.delete = "remove", true
 		return ch, nil
 	}
-	ch.Detail = "Obituary hooks: " + spec.Agent
+	ch = ch.described(describe("Obituary hooks: %s", spec.Agent))
 	return setIntegrationData(ch, out), nil
 }
 

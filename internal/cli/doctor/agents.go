@@ -12,7 +12,7 @@ func (lang diagnostics) diagnoseIntegration(agent string, inspector *initcmd.Age
 		c.Status, c.Detail = "FAIL", err.Error()
 		return c
 	}
-	detail, warning, err := integrate.AgentWindowsShellStatus(agent)
+	detail, warning, err := integrate.AgentWindowsShellStatus(lang.Localizer, agent)
 	if err != nil {
 		c.Status, c.Detail = "FAIL", err.Error()
 		return c

@@ -92,7 +92,11 @@ func planHooks(s Scope, path string, spec hookSpec, uninstall bool) (ch Change, 
 	preserveNote := ""
 	defer func() {
 		if preserveNote != "" {
-			ch.Detail = strings.TrimSpace(ch.Detail + " " + preserveNote)
+			if ch.Detail == "" {
+				ch.Detail = preserveNote
+			} else {
+				ch = ch.appended(describe(" %s", describe(preserveNote)))
+			}
 		}
 	}()
 	ch, err = readIntegrationChange(s, path)
@@ -111,7 +115,7 @@ func planHooks(s Scope, path string, spec hookSpec, uninstall bool) (ch Change, 
 		}
 	}
 	changed := false
-	var notes []string
+	var notes *description
 	for _, ev := range spec.Events {
 		var groups []json.RawMessage
 		if raw, ok := hooks.get(ev.Event); ok {
@@ -166,7 +170,7 @@ func planHooks(s Scope, path string, spec hookSpec, uninstall bool) (ch Change, 
 					// ours, but stale (moved binary, new timeout): refresh in place
 					h = want
 					eventChanged, groupChanged = true, true
-					notes = append(notes, "refresh "+ev.Event)
+					notes = hookNote(notes, describe("refresh %s", ev.Event))
 				}
 				keepHandlers = append(keepHandlers, h)
 			}
@@ -191,7 +195,7 @@ func planHooks(s Scope, path string, spec hookSpec, uninstall bool) (ch Change, 
 			gb, _ := group.MarshalJSON()
 			kept = append(kept, gb)
 			eventChanged = true
-			notes = append(notes, "add "+ev.Event)
+			notes = hookNote(notes, describe("add %s", ev.Event))
 		}
 		if !eventChanged {
 			continue
@@ -233,9 +237,11 @@ func planHooks(s Scope, path string, spec hookSpec, uninstall bool) (ch Change, 
 	case uninstall:
 		ch.Action, ch.Detail = "update", "remove Obituary's hooks"
 	case exists:
-		ch.Action, ch.Detail = "update", "hooks: "+strings.Join(notes, ", ")
+		ch.Action = "update"
+		ch = ch.described(describe("hooks: %s", notes))
 	default:
-		ch.Action, ch.Detail = "create", "hooks: "+strings.Join(notes, ", ")
+		ch.Action = "create"
+		ch = ch.described(describe("hooks: %s", notes))
 	}
 	return ch, nil
 }
@@ -321,4 +327,11 @@ func GuardRMStatus(changes []Change, agent string) (registered, effective bool) 
 		}
 	}
 	return registered, len(covered) == len(tools)
+}
+
+func hookNote(previous, next *description) *description {
+	if previous == nil {
+		return next
+	}
+	return describe("%s, %s", previous, next)
 }

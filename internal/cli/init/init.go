@@ -239,7 +239,7 @@ func printChanges(changes []integrate.Change) {
 	for _, c := range changes {
 		detail := ""
 		if c.Detail != "" && c.Detail != "Agent Skill → "+c.Path {
-			detail = "  (" + c.Detail + ")"
+			detail = "  (" + c.DisplayDetail(cmdutil.Localizer()) + ")"
 		}
 		if c.Extension == "skill" && strings.HasSuffix(c.Path, "SKILL.md") {
 			fmt.Printf("  Agent Skill → %s%s\n", c.Path, detail)

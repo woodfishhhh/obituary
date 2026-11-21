@@ -85,10 +85,10 @@ func PlanZCode(s Scope, commands Commands, uninstall bool) ([]Change, error) {
 	if err != nil {
 		return nil, err
 	}
-	trustSteps := ""
+	var trustSteps *description
 	if !s.Global && !uninstall {
 		workspace := "'" + strings.ReplaceAll(s.Project, "'", "'\"'\"'") + "'"
-		trustSteps = fmt.Sprintf("Project hooks require trust review (Bash): zcode hooks trust review --workspace %s --json; review the commands, then zcode hooks trust grant --workspace %s --hook-digest <digest-from-review>; zcode hooks trust status --workspace %s --json; repeat after declaration/executable changes and create a new session (skipped SessionStart is not replayed)", workspace, workspace, workspace)
+		trustSteps = describe("Project hooks require trust review (Bash): zcode hooks trust review --workspace %s --json; review the commands, then zcode hooks trust grant --workspace %s --hook-digest <digest-from-review>; zcode hooks trust status --workspace %s --json; repeat after declaration/executable changes and create a new session (skipped SessionStart is not replayed)", workspace, workspace, workspace)
 	}
 	var changes []Change
 	for _, path := range paths {
@@ -104,8 +104,8 @@ func PlanZCode(s Scope, commands Commands, uninstall bool) ([]Change, error) {
 			return nil, err
 		}
 		ch.Detail = "ZCode CLI process hooks; timeoutMs=5000; Stop silent; no SessionEnd or verified delete guard"
-		if trustSteps != "" {
-			ch.Detail += "; " + trustSteps
+		if trustSteps != nil {
+			ch = ch.appended(describe("; %s", trustSteps))
 		}
 		ch.phase = 1
 		if uninstall {
@@ -172,9 +172,9 @@ func PlanZCodeMCP(s Scope, executable string, uninstall bool) ([]Change, error) 
 		if !uninstall {
 			ch.Detail = "ZCode CLI stdio MCP; hooks.enabled unchanged; existing enabled:false is preserved (set mcp.servers.obituary.enabled=true to activate); user servers override same-name project servers"
 			if s.MCP {
-				ch.Detail += "; features.mcp enabled by explicit --mcp"
+				ch = ch.appended(describe("; features.mcp enabled by explicit --mcp"))
 			} else {
-				ch.Detail += "; features.mcp unchanged during implicit refresh; use explicit --mcp to enable it"
+				ch = ch.appended(describe("; features.mcp unchanged during implicit refresh; use explicit --mcp to enable it"))
 			}
 		}
 		changes = append(changes, ch)
@@ -223,7 +223,7 @@ var zcodeAdapter = hookAdapter{
 	},
 }
 
-func planZCodeRules(s Scope, changes []Change, trustSteps string, uninstall bool) ([]Change, error) {
+func planZCodeRules(s Scope, changes []Change, trustSteps *description, uninstall bool) ([]Change, error) {
 	rulesPath := filepath.Join(s.Project, "AGENTS.md")
 	if s.Global {
 		root, err := userdirs.ZCodeDir()
@@ -236,10 +236,10 @@ func planZCodeRules(s Scope, changes []Change, trustSteps string, uninstall bool
 	if err != nil {
 		return nil, err
 	}
-	if trustSteps != "" {
+	if trustSteps != nil {
 		// Config composition replaces that Change's detail. Keep the trust
 		// instructions on the independent rules change as well.
-		rules.Detail = trustSteps
+		rules = rules.described(trustSteps)
 	}
 	return append(changes, rules), nil
 }

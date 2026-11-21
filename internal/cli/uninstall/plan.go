@@ -140,7 +140,7 @@ func (p *plan) print(out io.Writer, purge bool) {
 		fmt.Fprintf(out, cmdutil.Text("cli.uninstall.agents_hooks_mcp_skill"), entry.scope, entry.agents)
 		for _, c := range entry.changes {
 			if c.Action != "unchanged" {
-				fmt.Fprintf(out, "    %s %s (%s)\n", cmdutil.Localizer().Label(c.Action), c.Path, c.Detail)
+				fmt.Fprintf(out, "    %s %s (%s)\n", cmdutil.Localizer().Label(c.Action), c.Path, c.DisplayDetail(cmdutil.Localizer()))
 			}
 		}
 	}

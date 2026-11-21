@@ -10,6 +10,7 @@ import (
 
 // Change is one file Obituary would create, modify or remove.
 type Change struct {
+	display   *description
 	Path      string     `json:"path"`
 	Action    string     `json:"action"` // create, update, remove, unchanged
 	Detail    string     `json:"detail,omitempty"`

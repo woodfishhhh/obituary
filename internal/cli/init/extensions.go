@@ -44,7 +44,7 @@ func (p Planner) planExtensions(changes []integrate.Change, scope integrate.Scop
 				continue
 			}
 			if explicit {
-				return nil, fmt.Errorf(cmdutil.Text("cli.init.is_unsupported"), agent, kind, support.Detail)
+				return nil, fmt.Errorf(cmdutil.Text("cli.init.is_unsupported"), agent, kind, cmdutil.Localizer().HostText(support.Detail))
 			}
 			continue
 		}
@@ -75,7 +75,7 @@ func (p Planner) planExtensions(changes []integrate.Change, scope integrate.Scop
 		extension, err := plan(uninstall)
 		var manual *integrate.ManualSteps
 		if errors.As(err, &manual) {
-			changes = append(changes, integrate.Change{Path: agent + " " + kind, Extension: kind, Action: "preserve", Manual: true, Detail: manual.Steps})
+			changes = append(changes, manual.Change(integrate.Change{Path: agent + " " + kind, Extension: kind, Action: "preserve", Manual: true}))
 			continue
 		}
 		if err != nil {
@@ -195,7 +195,7 @@ func (p Planner) showExtensions(scope integrate.Scope, agent string) error {
 				continue
 			}
 		}
-		status, err := integrate.InspectExtension(scope, agent, kind, executable)
+		status, err := integrate.InspectExtensionFor(cmdutil.Localizer(), scope, agent, kind, executable)
 		if err != nil {
 			fmt.Printf("%s: %v\n", kind, err)
 			continue

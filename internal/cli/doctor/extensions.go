@@ -16,7 +16,7 @@ func (lang diagnostics) diagnoseExtension(kind string, current cmdutil.Executabl
 	}
 	var details []string
 	for _, agent := range []string{"claude", "codex"} {
-		st, err := integrate.InspectExtension(integrate.Scope{Global: true}, agent, kind, executable)
+		st, err := integrate.InspectExtensionFor(lang.Localizer, integrate.Scope{Global: true}, agent, kind, executable)
 		if err != nil {
 			c.Status = "FAIL"
 			details = append(details, agent+": "+err.Error())

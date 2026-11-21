@@ -72,7 +72,7 @@ func (in *AgentInspector) Inspect(name string) (AgentStatus, error) {
 	changes, err := installer.Plan(scope, commands, false)
 	var manual *integrate.ManualSteps
 	if errors.As(err, &manual) {
-		return in.inspectManualAgent(status, name, manual.Steps)
+		return in.inspectManualAgent(status, name, manual.DisplaySteps(in.language))
 	}
 	if err != nil {
 		return status, err
@@ -91,7 +91,7 @@ func (in *AgentInspector) Inspect(name string) (AgentStatus, error) {
 	automatic := false
 	for _, change := range changes {
 		if change.Manual && !change.Implicit {
-			steps = append(steps, change.Path+": "+change.Detail)
+			steps = append(steps, change.Path+": "+change.DisplayDetail(in.language))
 		}
 		if !change.Manual && !change.Implicit && change.Action != "preserve" {
 			automatic = true
@@ -100,7 +100,7 @@ func (in *AgentInspector) Inspect(name string) (AgentStatus, error) {
 	if !automatic && len(steps) == 0 {
 		for _, change := range changes {
 			if !change.Implicit && change.Detail != "" {
-				steps = append(steps, change.Path+": "+change.Detail)
+				steps = append(steps, change.Path+": "+change.DisplayDetail(in.language))
 			}
 		}
 	}
@@ -250,7 +250,7 @@ func CapabilityText(c hook.Capabilities) string {
 		}
 		line := field.name + ": " + level
 		if field.Detail != "" {
-			line += "; " + field.Detail
+			line += "; " + language.HostText(field.Detail)
 		}
 		target := field.Target
 		if target == (hook.Target{}) {
@@ -261,7 +261,7 @@ func CapabilityText(c hook.Capabilities) string {
 		}
 		if field.ActuallyVerified() {
 			v := field.Verification
-			line += language.Text("cli.init.verified_target", nil) + targetText(v.Target) + "; " + v.Evidence
+			line += language.Text("cli.init.verified_target", nil) + targetText(v.Target) + "; " + language.HostText(v.Evidence)
 		}
 		parts = append(parts, line)
 	}
@@ -288,7 +288,7 @@ func (p Planner) showAgents(scope integrate.Scope, names []string, summary bool)
 		status, err := inspector.Inspect(name)
 		if err == nil {
 			var detail string
-			detail, _, err = integrate.AgentWindowsShellStatus(name)
+			detail, _, err = integrate.AgentWindowsShellStatus(inspector.language, name)
 			if detail != "" {
 				status.Detail += "; " + detail
 			}

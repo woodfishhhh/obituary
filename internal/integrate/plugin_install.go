@@ -60,17 +60,17 @@ func planPlugin(s Scope, dir, agent, id, template, destination, executable strin
 	}
 	for i := range changes {
 		if changes[i].Path == path && changes[i].Action != "preserve" && !uninstall {
-			changes[i].Detail = pluginActivationDetail(agent)
+			changes[i] = changes[i].described(pluginActivationDetail(agent))
 		}
 	}
 	return changes, nil
 }
 
-func pluginActivationDetail(agent string) string {
+func pluginActivationDetail(agent string) *description {
 	prefix := "OBIT_" + strings.ToUpper(agent) + "_"
-	detail := "after verifying all observed tools use the local Windows filesystem, launch the host with " + prefix + "LOCAL=1; guard also requires " + prefix + "SHELL=bash or powershell matching the actual shell; unknown/remote backends remain skipped"
+	detail := describe("after verifying all observed tools use the local Windows filesystem, launch the host with %sLOCAL=1; guard also requires %sSHELL=bash or powershell matching the actual shell; unknown/remote backends remain skipped", prefix, prefix)
 	if agent == "openclaw" {
-		detail += "; set OBIT_OPENCLAW_CWD to the verified workspace when hook context has no directory"
+		detail = describe("%s%s", detail, describe("; set OBIT_OPENCLAW_CWD to the verified workspace when hook context has no directory"))
 	}
 	return detail
 }

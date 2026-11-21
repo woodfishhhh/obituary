@@ -52,7 +52,7 @@ func (p Planner) integrationPlan(agent string, scope integrate.Scope, uninstall 
 		return nil, fmt.Errorf(cmdutil.Text("cli.init.agent_has_no_installer"), agent)
 	}
 	if scope.GuardRM && !uninstall && installer.Capabilities.DeleteGuard.Level == hook.Unsupported {
-		return nil, fmt.Errorf(cmdutil.Text("cli.init.guard_rm_is_unsupported"), installer.Capabilities.DeleteGuard.Detail)
+		return nil, fmt.Errorf(cmdutil.Text("cli.init.guard_rm_is_unsupported"), cmdutil.Localizer().HostText(installer.Capabilities.DeleteGuard.Detail))
 	}
 	executable, err := p.Executable.Path()
 	if err != nil {

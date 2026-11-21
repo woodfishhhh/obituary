@@ -126,7 +126,7 @@ func planTraeHooks(s Scope, dir, name, command string, uninstall bool) (Change, 
 	if err := nativeSpecialOriginal(ch, before); err != nil {
 		return Change{}, err
 	}
-	ch.Detail = name + ": SessionStart context/snapshot and silent Stop; write observation and delete guard unavailable"
+	ch = ch.described(describe("%s: SessionStart context/snapshot and silent Stop; write observation and delete guard unavailable", name))
 	return ch, nil
 }
 

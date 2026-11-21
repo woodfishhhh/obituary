@@ -38,11 +38,11 @@ func PlanCursor(s Scope, commands Commands, uninstall bool) ([]Change, error) {
 
 func planCursorRules(s Scope, dir string, hooks Change, uninstall bool) ([]Change, error) {
 	if s.Global {
-		detail := "Manual step in Cursor Customize > Rules > User Rules: append this block without replacing other rules:\n" + blockBegin + "\n" + Awareness + blockEnd
+		detail := describe("Manual step in Cursor Customize > Rules > User Rules: append this block without replacing other rules:\n%s\n%s%s", blockBegin, Awareness, blockEnd)
 		if uninstall {
-			detail = "Manual step in Cursor Customize > Rules > User Rules: if previously added, remove only the Obituary block between " + blockBegin + " and " + blockEnd + "; keep all other rules"
+			detail = describe("Manual step in Cursor Customize > Rules > User Rules: if previously added, remove only the Obituary block between %s and %s; keep all other rules", blockBegin, blockEnd)
 		}
-		return []Change{hooks, {Path: "Cursor User Rules (UI)", Action: "preserve", Manual: true, Detail: detail}}, nil
+		return []Change{hooks, Change{Path: "Cursor User Rules (UI)", Action: "preserve", Manual: true}.described(detail)}, nil
 	}
 	rules, err := PlanManagedAssets(s, []ManagedAsset{{Path: filepath.Join(dir, "rules", "obituary.mdc"), ID: "cursor-obituary-rule", Owner: "cursor", Version: "1",
 		Content: []byte("---\ndescription: Obituary, the trash bin for AI agents — restorable deletion and file lifespans\nalwaysApply: true\n---\n\n" + Awareness)}}, uninstall)

@@ -14,12 +14,16 @@ import (
 // ManualSteps reports a target obit cannot write safely. The plan stops and
 // returns the exact steps the user must take; nothing was installed. Callers
 // that only inspect status show the steps instead of treating them as a failure.
-type ManualSteps struct{ Steps string }
+type ManualSteps struct {
+	Steps   string
+	display *description
+}
 
 func (m *ManualSteps) Error() string { return m.Steps }
 
 func manualf(format string, args ...any) error {
-	return &ManualSteps{Steps: fmt.Sprintf(format, args...)}
+	d := describe(format, args...)
+	return &ManualSteps{Steps: d.text(nil), display: d}
 }
 
 func boundedAgentScope(s Scope, root string) (Scope, error) {
