@@ -55,6 +55,23 @@ func TestRelShortAndLongPaths(t *testing.T) {
 	}
 }
 
+func TestReservedFileInsideGitWorktree(t *testing.T) {
+	root := t.TempDir()
+	testenv.InitRepo(t, root)
+	path := `\\?\` + filepath.Join(root, "NUL")
+	if err := os.WriteFile(path, nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Remove(path) })
+	p, ok, err := Find(path)
+	if !ok || err != nil {
+		t.Fatal("discover reserved file", p, err)
+	}
+	if rel, err := p.Rel(path); err != nil || rel != "NUL" {
+		t.Fatalf("Git relative path = %q, %v", rel, err)
+	}
+}
+
 func TestFindContextHonorsCancellation(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithCancel(t.Context())

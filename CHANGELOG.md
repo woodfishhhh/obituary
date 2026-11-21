@@ -1,5 +1,10 @@
 # Changelog / 更新日志
 
+## Unreleased
+
+- 修复：Windows 本地盘上名叫 `NUL`、`con.txt`、`COM1` 等的文件可以正常登记、下葬、复活和火化；`obit rm ./NUL` 只处理当前目录的真实文件，不访问同名设备。
+- Fix: files named `NUL`, `con.txt`, `COM1`, and other DOS-reserved names on local Windows drives can be marked, buried, restored, and purged. `obit rm ./NUL` addresses the file in the current directory, never the device.
+
 ## 1.6.1 - 2026-11-21
 
 # 讣告 1.6.1

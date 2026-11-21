@@ -12,9 +12,9 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-func TestLongPathRejectsExtendedDeviceNames(t *testing.T) {
+func TestLongPathRejectsDeviceNamespace(t *testing.T) {
 	t.Parallel()
-	path := `\\?\` + filepath.Join(t.TempDir(), "nul")
+	path := `\\.\NUL`
 	if got, _, err := (FS{}).LongPath(path); err == nil {
 		t.Fatalf("extended device name accepted: %q", got)
 	}

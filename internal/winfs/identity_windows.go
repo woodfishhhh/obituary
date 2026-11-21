@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"unsafe"
 
@@ -231,7 +232,11 @@ func finalPath(h windows.Handle) (string, error) {
 			return "", err
 		}
 		if int(n) < len(buf) {
-			return trimLongPrefix(windows.UTF16ToString(buf[:n])), nil
+			name := windows.UTF16ToString(buf[:n])
+			if pathutil.IsReservedLeaf(filepath.Base(name)) {
+				return pathutil.Abs(name)
+			}
+			return trimLongPrefix(name), nil
 		}
 		buf = make([]uint16, n+1)
 	}

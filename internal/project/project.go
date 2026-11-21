@@ -264,7 +264,7 @@ func (p Project) relLongRoot(path string) (string, error) {
 }
 
 func (p Project) relLongPath(path string) (string, error) {
-	rel, err := filepath.Rel(p.Root, path)
+	rel, err := filepath.Rel(pathutil.ComparisonPath(p.Root), pathutil.ComparisonPath(path))
 	if err != nil || rel == "." || strings.HasPrefix(rel, "..") {
 		return "", fmt.Errorf("%s is not inside %s", path, p.Root)
 	}

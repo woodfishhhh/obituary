@@ -41,6 +41,38 @@ func TestPOSIXRemoveAbsoluteAndRestore(t *testing.T) {
 	}
 }
 
+func TestRemoveReservedFile(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("DOS device names are Windows-specific")
+	}
+	for _, tc := range []struct{ command, ref string }{{"rm", "NUL"}, {"rm", "./NUL"}, {"remove-item", "NUL"}} {
+		t.Run(tc.command+"/"+tc.ref, func(t *testing.T) {
+			clitest.IsolateRunner(t)
+			repo, store := clitest.CommandRepo(t)
+			path := `\\?\` + filepath.Join(repo, "NUL")
+			clitest.WriteFixture(t, path, "literal file")
+			t.Cleanup(func() { _ = os.Remove(path) })
+			cmd := rmcmd.NewCmd()
+			if tc.command == "remove-item" {
+				cmd = itemCommand()
+			}
+			if _, stderr, err := clitest.Execute(t, cmd, tc.ref); err != nil || stderr != "" {
+				t.Fatalf("%s: %s %v", tc.command, stderr, err)
+			}
+			st, err := store.ReadSnapshot()
+			if err != nil || len(st.Burials) != 1 || st.Burials[0].Path != path {
+				t.Fatalf("wrong burial: %+v %v", st.Burials, err)
+			}
+			if _, stderr, err := clitest.Execute(t, resurrectcmd.NewCmd(), tc.ref); err != nil || stderr != "" {
+				t.Fatalf("restore by name: %s %v", stderr, err)
+			}
+			if data, err := os.ReadFile(path); err != nil || string(data) != "literal file" {
+				t.Fatalf("restored content: %q %v", data, err)
+			}
+		})
+	}
+}
+
 func TestRemoveRejectsTerminalDotOperands(t *testing.T) {
 	if testing.Short() {
 		t.Skip("too slow for testing.Short")

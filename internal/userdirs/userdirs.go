@@ -71,7 +71,9 @@ func directoryAbs(dir string) (string, error) {
 		return "", err
 	}
 	abs = filepath.Clean(abs)
-	for prefix := abs; ; prefix = pathutil.Parent(prefix) {
+	// Hosts reopen their config directories by ordinary names, even when
+	// Obituary could address a reserved leaf through its literal drive path.
+	for prefix := pathutil.ComparisonPath(abs); ; prefix = pathutil.Parent(prefix) {
 		if err := pathutil.Unchanged(prefix); err != nil {
 			return "", err
 		}
