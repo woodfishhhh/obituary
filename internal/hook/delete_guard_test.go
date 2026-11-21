@@ -21,6 +21,63 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+func TestDeleteGuardExecutableResolution(t *testing.T) {
+	resolve := resolveDeleteExecutable
+	t.Cleanup(func() { resolveDeleteExecutable = resolve })
+	calls := 0
+	resolveDeleteExecutable = func(context guardrm.Context) (string, string) {
+		calls++
+		return resolve(context)
+	}
+	t.Setenv("OBIT_DISABLED", "0")
+	for _, tc := range []struct {
+		command, enabled string
+		wantCalls        int
+	}{
+		{"git status --short", "1", 0},
+		{"git clean -n", "1", 0},
+		{"rm -rf build", "0", 0},
+		{"rm -rf build", "1", 1},
+		{"rm -rf build && npm run build", "1", 1},
+	} {
+		t.Run(tc.command+"/guard="+tc.enabled, func(t *testing.T) {
+			t.Setenv("OBIT_GUARD_RM", tc.enabled)
+			calls = 0
+			dir := t.TempDir()
+			got, err := guardDelete(dir, Event{Shell: guardrm.Bash, Cwd: dir, Command: tc.command})
+			if err != nil || calls != tc.wantCalls || (got != "") != (tc.wantCalls == 1) {
+				t.Fatalf("resolver calls=%d, want %d; decision=%q, err=%v", calls, tc.wantCalls, got, err)
+			}
+		})
+	}
+}
+
+func TestDeleteGuardWSLInaccessibleExecutable(t *testing.T) {
+	resolve := resolveDeleteExecutable
+	t.Cleanup(func() { resolveDeleteExecutable = resolve })
+	calls := 0
+	resolveDeleteExecutable = func(context guardrm.Context) (string, string) {
+		calls++
+		return deleteGuardPath(context, filepath.FromSlash("//server/share/obit.exe"))
+	}
+	t.Setenv("OBIT_GUARD_RM", "1")
+	t.Setenv("OBIT_DISABLED", "0")
+	t.Setenv("OBIT_HOOK_AUDIT", "1")
+	for _, cmd := range []string{"rm -rf build", "rm -rf build && npm run build"} {
+		home := t.TempDir()
+		calls = 0
+		got, err := guardDelete(home, Event{Shell: guardrm.Bash, Cwd: "/mnt/c/repo", Command: cmd})
+		if err != nil || got != "" || calls != 1 {
+			t.Fatalf("%q: decision=%q err=%v calls=%d", cmd, got, err, calls)
+		}
+		data, err := os.ReadFile(filepath.Join(home, "delete-guard.jsonl"))
+		var event guardrm.AuditEvent
+		if err != nil || json.Unmarshal(data, &event) != nil || event.Kind != "skipped" || event.Reason != "executable is not accessible through WSL interop" {
+			t.Fatalf("%q: receipt=%s err=%v", cmd, data, err)
+		}
+	}
+}
+
 func TestDeleteGuardExecutablePATH(t *testing.T) {
 	if testing.Short() {
 		t.Skip("runs the hook test binary under the obit executable name")
@@ -899,7 +956,7 @@ func TestDeleteReasonStaysWithinByteBudget(t *testing.T) {
 		{strings.Repeat("字", maxContext), "obit"},
 		{"short", "'" + strings.Repeat("字", maxContext) + "'"},
 	} {
-		reason := deletionGuidance(ev, tc.why, tc.executable)
+		reason := deletionGuidance(ev, tc.why, func() string { return tc.executable })
 		if len(reason) > maxContext || !strings.Contains(reason, "`rm` deletes permanently") || !strings.Contains(reason, "bury") {
 			t.Errorf("oversized guidance: %q", reason)
 		}

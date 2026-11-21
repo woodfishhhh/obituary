@@ -10,7 +10,7 @@ import (
 
 type replacement struct {
 	start, end int
-	text, name string
+	name       string
 }
 
 type Shell string
@@ -24,11 +24,12 @@ const (
 // Context comes from the tool envelope or the owner's shell declaration,
 // never from guessing the shell from its arguments.
 type Context struct {
-	Shell         Shell
-	DeclaredShell bool   // owner declaration when the host omitted per-call shell evidence
-	Executable    string // already shell-quoted; empty uses obit
-	WSL           bool
-	Cwd           string // native path, used only for the optional glob ambiguity read
+	Shell             Shell
+	DeclaredShell     bool          // owner declaration when the host omitted per-call shell evidence
+	Executable        string        // already shell-quoted; empty uses obit
+	ResolveExecutable func() string // called only to render an exact equivalent
+	WSL               bool
+	Cwd               string // native path, used only for the optional glob ambiguity read
 }
 
 // Suggest returns a copyable alternative for a denied command, never tool input.
@@ -82,15 +83,14 @@ func suggest(command string, context Context, summary *string) (string, string) 
 			return command, why
 		}
 	}
-	return applyReplacements(command, changes)
-}
-
-func deletionReplacement(context Context, start, end int, name string) replacement {
 	executable := context.Executable
+	if context.ResolveExecutable != nil {
+		executable = context.ResolveExecutable()
+	}
 	if executable == "" {
 		executable = "obit"
 	}
-	return replacement{start: start, end: end, text: executable + " " + name, name: name}
+	return applyReplacements(command, changes, executable)
 }
 
 func replacementSummary(name string) string {
@@ -104,12 +104,14 @@ func replacementSummary(name string) string {
 	return fmt.Sprintf("the same command with `%s` replaced by `obit %s` via the installed executable (all other arguments unchanged)", original, name)
 }
 
-func applyReplacements(command string, changes []replacement) (string, string) {
+func applyReplacements(command string, changes []replacement, executable string) (string, string) {
 	var out strings.Builder
 	last := 0
 	for _, change := range changes {
 		out.WriteString(command[last:change.start])
-		out.WriteString(change.text)
+		out.WriteString(executable)
+		out.WriteString(" ")
+		out.WriteString(change.name)
 		last = change.end
 	}
 	out.WriteString(command[last:])

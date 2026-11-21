@@ -230,5 +230,5 @@ func translateDeletion(command string, context Context, segments [][]word, segme
 	if d.ps {
 		d.name = "remove-item"
 	}
-	return deletionReplacement(context, words[0].start, d.end, d.name), glob, ""
+	return replacement{start: words[0].start, end: d.end, name: d.name}, glob, ""
 }

@@ -437,7 +437,7 @@ func TestDeleteGuardMutations(t *testing.T) {
 		// A literal deletion without an exact equivalent is still denied: each
 		// gate restores one way such a command used to pass.
 		{"deny-without-equivalent", "internal/hook/delete_guard.go",
-			"guidance = deletionGuidance(ev, why, context.Executable)", `guidance = ""`,
+			"guidance = deletionGuidance(ev, why, context.ResolveExecutable)", `guidance = ""`,
 			"./internal/hook", "TestDeleteGuardDeniesDeletionWithoutEquivalent"},
 		{"codex-windows-embedded-deletion", "internal/hook/delete_guard.go",
 			"why = codexWindowsEmbeddedDeletion(ev)", `why = ""`,
