@@ -30,12 +30,12 @@ func NewCmd() *cobra.Command {
 			}
 			for _, r := range results {
 				if r.Error != "" {
-					fmt.Fprintln(os.Stderr, "error:", r.Error)
+					fmt.Fprintln(os.Stderr, cmdutil.Text("cli.error_prefix"), r.Error)
 				} else {
 					if r.Item.Kind == core.KindContainer {
-						fmt.Printf("#%d canceled %s (container kept)\n", r.Item.ID, r.Item.Path)
+						fmt.Printf(cmdutil.Text("cli.cancel.canceled_container_kept"), r.Item.ID, r.Item.Path)
 					} else {
-						fmt.Printf("#%d canceled %s (kept on disk)\n", r.Item.ID, r.Item.Path)
+						fmt.Printf(cmdutil.Text("cli.cancel.canceled_kept_on_disk"), r.Item.ID, r.Item.Path)
 					}
 				}
 			}

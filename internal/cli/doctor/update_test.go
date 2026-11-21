@@ -16,7 +16,7 @@ func TestDoctorUpdateIsInfoAndReadOnly(t *testing.T) {
 	home := filepath.Join(root, "data")
 	clitest.WriteFixture(t, filepath.Join(home, "update.json"), `{"checkedAt":"2026-11-11T00:00:00Z","latest":{"version":"9.0.0"},"lastError":"offline"}`)
 	before := clitest.TreeSnapshot(t, root)
-	got := diagnoseUpdate(home)
+	got := english.diagnoseUpdate(home)
 	if got.Status != "INFO" || !strings.Contains(got.Detail, "check=false") || !strings.Contains(got.Detail, "2026-11-11") || !strings.Contains(got.Detail, "newer=true") || !strings.Contains(got.Detail, "lastError=offline") {
 		t.Fatalf("%+v", got)
 	}
@@ -24,7 +24,7 @@ func TestDoctorUpdateIsInfoAndReadOnly(t *testing.T) {
 	if !reflect.DeepEqual(before, after) {
 		t.Fatal("doctor wrote metadata")
 	}
-	got = diagnoseUpdate(filepath.Join(root, "missing"))
+	got = english.diagnoseUpdate(filepath.Join(root, "missing"))
 	if got.Status != "INFO" || !strings.Contains(got.Detail, "last checked=never") {
 		t.Fatalf("%+v", got)
 	}

@@ -29,7 +29,7 @@ func TestDoctorSlowGit(t *testing.T) {
 		if err := os.WriteFile(path, lines, 0600); err != nil {
 			t.Fatal(err)
 		}
-		got := diagnoseSlowGit(home, now)
+		got := english.diagnoseSlowGit(home, now)
 		if got.Errors != count || (got.Status == "WARN") != (count >= 3) {
 			t.Fatalf("doctor hid repeated slow Git: count=%d %+v", count, got)
 		}
@@ -77,7 +77,7 @@ func TestDoctorSlowGitDeduplicatesEventsAcrossRotation(t *testing.T) {
 			if distinct == "none" {
 				want = 1
 			}
-			if got := diagnoseSlowGit(home, now); got.Errors != want || got.Status != "PASS" {
+			if got := english.diagnoseSlowGit(home, now); got.Errors != want || got.Status != "PASS" {
 				t.Fatalf("duplicate audit deliveries inflated timeouts: want=%d %+v", want, got)
 			}
 		})

@@ -32,40 +32,40 @@ func preview(out io.Writer, self cmdutil.Executable, home string, enabled, resid
 		return err
 	}
 	previewSchedule(out, daemon, home, config, enabled, resident)
-	action, command := "set", plan.After
+	action, command := cmdutil.Text("cli.daemon.set"), plan.After
 	if !enabled {
-		action, command = "remove", plan.Before
+		action, command = cmdutil.Text("cli.daemon.remove"), plan.Before
 	}
 	if plan.Pending() {
-		fmt.Fprintf(out, "  %-9s HKCU Run %s\n    %s\n", action, plan.Name, command)
+		fmt.Fprintf(out, cmdutil.Text("cli.daemon.hkcu_run"), action, plan.Name, command)
 	} else {
-		fmt.Fprintf(out, "  unchanged HKCU Run %s\n", plan.Name)
+		fmt.Fprintf(out, cmdutil.Text("cli.daemon.unchanged_hkcu_run"), plan.Name)
 	}
-	action = "start"
+	action = cmdutil.Text("cli.daemon.start")
 	if !enabled {
-		action = "stop"
+		action = cmdutil.Text("cli.daemon.stop")
 	}
 	if cmdutil.RunnerRunning(home) == enabled {
-		action = "unchanged"
+		action = cmdutil.Text("cli.daemon.unchanged")
 	}
-	fmt.Fprintf(out, "  %-9s resident obitd for %s\n", action, home)
+	fmt.Fprintf(out, cmdutil.Text("cli.daemon.resident_obitd_for"), action, home)
 	return nil
 }
 
 func previewSchedule(out io.Writer, daemon, home, config string, enabled, resident bool) {
 	if resident {
-		fmt.Fprintf(out, "  preserve  scheduled task %q\n", app.TaskName)
+		fmt.Fprintf(out, cmdutil.Text("cli.daemon.preserve_scheduled_task"), app.TaskName)
 		return
 	}
 	if !enabled {
 		fmt.Fprintln(out, "  "+scheduleRemovalPreview(daemon, home, config))
 		return
 	}
-	action := "create"
+	action := cmdutil.Text("cli.daemon.create")
 	installed := cmdutil.RunnerInstalled()
 	if installed {
-		action = "update"
+		action = cmdutil.Text("cli.daemon.update")
 	}
-	fmt.Fprintf(out, "  %-9s scheduled task %q (every %d minutes and at sign-in)\n", action, app.TaskName, int(app.Interval.Minutes()))
+	fmt.Fprintf(out, cmdutil.Text("cli.daemon.scheduled_task_every_minutes_and_at_sign"), action, app.TaskName, int(app.Interval.Minutes()))
 	fmt.Fprintln(out, "    "+windows.ComposeCommandLine([]string{daemon, "--once", "--home", home, "--config-dir", config}))
 }

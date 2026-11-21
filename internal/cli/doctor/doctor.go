@@ -3,6 +3,7 @@ package doctor
 import (
 	"errors"
 	"fmt"
+	"github.com/woodfishhhh/obituary/internal/i18n"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -23,6 +24,9 @@ import (
 	"github.com/woodfishhhh/obituary/internal/userdirs"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
+
+// JSON diagnostics use the historical English text, regardless of the interface language.
+type diagnostics struct{ *i18n.Localizer }
 
 type DoctorCheck struct {
 	Name         string                         `json:"name"`
@@ -49,7 +53,8 @@ func newCmdWithAgents(executable cmdutil.Executable, agents []string) *cobra.Com
 	cmd := &cobra.Command{
 		Use: "doctor", Short: "Check installation, integrations and data without changing anything", Args: cobra.NoArgs,
 		RunE: func(*cobra.Command, []string) error {
-			checks := diagnose(time.Now(), executable, agents...)
+			lang := diagnostics{cmdutil.OutputLocalizer(asJSON)}
+			checks := lang.diagnose(time.Now(), executable, agents...)
 			if verbose {
 				for i := range checks {
 					if installer, ok := integrate.LookupAgent(checks[i].Name); ok {
@@ -63,7 +68,7 @@ func newCmdWithAgents(executable cmdutil.Executable, agents []string) *cobra.Com
 				}
 			} else {
 				for _, c := range checks {
-					fmt.Printf("%-4s %-12s %s\n", c.Status, c.Name, c.Detail)
+					fmt.Printf("%-4s %-12s %s\n", lang.Label(c.Status), c.Name, c.Detail)
 					if c.Capabilities != nil {
 						fmt.Printf("  %s\n", initcmd.CapabilityText(*c.Capabilities))
 					}
@@ -83,7 +88,7 @@ func newCmdWithAgents(executable cmdutil.Executable, agents []string) *cobra.Com
 }
 
 //nolint:funlen // Retain the diagnostic flow while injecting executable discovery and the agent list.
-func diagnose(now time.Time, executable cmdutil.Executable, agents ...string) []DoctorCheck {
+func (lang diagnostics) diagnose(now time.Time, executable cmdutil.Executable, agents ...string) []DoctorCheck {
 	planner := initcmd.Planner{Executable: executable}
 	var checks []DoctorCheck
 	check := func(name, detail string, err error) {
@@ -95,13 +100,13 @@ func diagnose(now time.Time, executable cmdutil.Executable, agents ...string) []
 	}
 	self, selfErr := executable.Path()
 	path, pathErr := exec.LookPath("obit")
-	pathCheck := DoctorCheck{Name: "path", Status: "PASS", Detail: "PATH resolves to the current executable: " + path}
+	pathCheck := DoctorCheck{Name: "path", Status: "PASS", Detail: lang.Text("cli.doctor.path_resolves_to_the_current_executable", nil) + path}
 	switch {
 	case selfErr != nil:
 		pathCheck.Status, pathCheck.Detail = "FAIL", selfErr.Error()
 	case pathErr != nil:
 		pathCheck.Status = "WARN"
-		pathCheck.Detail = fmt.Sprintf("obit is not found on PATH; hooks use an absolute path (%s); typing obit will fail: %v", self, pathErr)
+		pathCheck.Detail = fmt.Sprintf(lang.Text("cli.doctor.obit_is_not_found_on_path_hooks", nil), self, pathErr)
 	default:
 		a, err := os.Stat(self)
 		if err == nil {
@@ -109,7 +114,7 @@ func diagnose(now time.Time, executable cmdutil.Executable, agents ...string) []
 			b, err = os.Stat(path)
 			if err == nil && !os.SameFile(a, b) {
 				pathCheck.Status = "WARN"
-				pathCheck.Detail = fmt.Sprintf("PATH resolves to %s; hooks use an absolute path (%s); typing obit runs another executable", path, self)
+				pathCheck.Detail = fmt.Sprintf(lang.Text("cli.doctor.path_resolves_to_hooks_use_an_absolute", nil), path, self)
 			}
 		}
 		if err != nil {
@@ -120,29 +125,29 @@ func diagnose(now time.Time, executable cmdutil.Executable, agents ...string) []
 	daemon := filepath.Join(filepath.Dir(self), "obitd.exe")
 	if runtime.GOOS != "windows" {
 		daemon = filepath.Join(filepath.Dir(self), "obitd")
-		checks = append(checks, DoctorCheck{Name: "automatic-burial", Status: "INFO", Detail: "graveyard burial and resurrection use a no-replace rename, then verify the moved object; mismatches are kept for manual recovery and never purged; recycle mode is Windows-only"})
+		checks = append(checks, DoctorCheck{Name: "automatic-burial", Status: "INFO", Detail: lang.Text("cli.doctor.graveyard_burial_and_resurrection_use_a_no", nil)})
 	}
 	daemonErr := selfErr
 	if daemonErr == nil {
-		daemonErr = regularFile(daemon)
+		daemonErr = lang.regularFile(daemon)
 	}
-	check("obitd", "companion executable exists: "+daemon, daemonErr)
-	checks = append(checks, diagnoseGUI(daemon, daemonErr, binaryVersion), diagnoseRegistryTransactions(regtxnProbe))
-	checks = append(checks, diagnoseShortcut(self, shortcutTarget), diagnoseDesktop(self, shortcutTarget))
-	checks = append(checks, diagnoseIcons()...)
+	check("obitd", lang.Text("cli.doctor.companion_executable_exists", nil)+daemon, daemonErr)
+	checks = append(checks, lang.diagnoseGUI(daemon, daemonErr, binaryVersion), lang.diagnoseRegistryTransactions(regtxnProbe))
+	checks = append(checks, lang.diagnoseShortcut(self, shortcutTarget), lang.diagnoseDesktop(self, shortcutTarget))
+	checks = append(checks, lang.diagnoseIcons()...)
 	home, homeErr := userdirs.Data()
 	if homeErr != nil {
 		checks = append(checks, DoctorCheck{Name: "update", Status: "INFO", Detail: homeErr.Error()})
 		check("runner", "", homeErr)
 		check("tray-startup", "", homeErr)
 	} else {
-		checks = append(checks, diagnoseUpdate(home))
-		checks = append(checks, diagnoseRunner(home))
-		checks = append(checks, diagnoseStartup(daemon, home))
+		checks = append(checks, lang.diagnoseUpdate(home))
+		checks = append(checks, lang.diagnoseRunner(home))
+		checks = append(checks, lang.diagnoseStartup(daemon, home))
 	}
 	available := 0
 	scope := (integrate.Scope{Global: true}).ForInspection()
-	inspector := initcmd.NewAgentInspector(scope, executable)
+	inspector := initcmd.NewAgentInspector(scope, executable, lang.Localizer)
 	if agents == nil {
 		agents = initcmd.AgentNames()
 	}
@@ -160,53 +165,53 @@ func diagnose(now time.Time, executable cmdutil.Executable, agents ...string) []
 				continue
 			}
 		}
-		checks = append(checks, diagnoseIntegration(agent, inspector))
+		checks = append(checks, lang.diagnoseIntegration(agent, inspector))
 		if agent != "claude" && agent != "codex" {
 			continue // shared installer/guard wiring follows in the next phase
 		}
 		changes, err := planner.IntegrationPlan(agent, scope, false)
 		registered, effective := integrate.GuardRMStatus(changes, agent)
-		status, warning := initcmd.DeleteGuardStatus(registered, effective)
+		status, warning := initcmd.DeleteGuardStatus(lang.Localizer, registered, effective)
 		check(agent+"-guard-rm", status, err)
 		if err == nil && warning {
 			checks[len(checks)-1].Status = "WARN"
 		}
 	}
-	checks = append(checks, diagnoseExtension("mcp", executable), diagnoseExtension("skill", executable), diagnoseContextMenu(executable))
+	checks = append(checks, lang.diagnoseExtension("mcp", executable), lang.diagnoseExtension("skill", executable), lang.diagnoseContextMenu(executable))
 	if homeErr != nil {
 		for _, name := range []string{"data", "store", "trust", "hook-log", "hook-queue", "graveyard-recovery", "slow-git", "watch", "explorer", "registration-identities", "docker-targets"} {
 			check(name, "", homeErr)
 		}
 	} else {
-		checks = append(checks, diagnoseData(home))
+		checks = append(checks, lang.diagnoseData(home))
 		state, err := (ledger.Store{Home: home}).Inspect()
-		check("store", "store.json and its referenced graveyard snapshot are readable (absent store means empty)", err)
-		checks = append(checks, diagnoseWatches(state, err, now, (&core.Service{FS: winfs.FS{}}).WatchPath))
+		check("store", lang.Text("cli.doctor.store_json_and_its_referenced_graveyard_snapshot", nil), err)
+		checks = append(checks, lang.diagnoseWatches(state, err, now, (&core.Service{FS: winfs.FS{}}).WatchPath))
 		if err == nil {
-			checks = append(checks, diagnoseDockerTargets(state))
+			checks = append(checks, lang.diagnoseDockerTargets(state))
 		} else {
 			checks = append(checks, DoctorCheck{Name: "docker-targets", Status: "WARN", Detail: err.Error()})
 		}
-		checks = append(checks, diagnoseExplorer(home))
-		checks = append(checks, diagnoseRecovery(home))
-		check("trust", "trusted_rules.json is readable (absence means no trusted rules)",
+		checks = append(checks, lang.diagnoseExplorer(home))
+		checks = append(checks, lang.diagnoseRecovery(home))
+		check("trust", lang.Text("cli.doctor.trusted_rules_json_is_readable_absence_means", nil),
 			(rules.TrustStore{Path: filepath.Join(home, "trusted_rules.json")}).Inspect())
-		checks = append(checks, diagnoseProjectRules(home)...)
-		checks = append(checks, diagnoseHookLog(home, now))
-		checks = append(checks, diagnoseHookQueue(home, now))
-		checks = append(checks, diagnoseSlowGit(home, now))
-		checks = append(checks, diagnoseIdentities(home))
+		checks = append(checks, lang.diagnoseProjectRules(home)...)
+		checks = append(checks, lang.diagnoseHookLog(home, now))
+		checks = append(checks, lang.diagnoseHookQueue(home, now))
+		checks = append(checks, lang.diagnoseSlowGit(home, now))
+		checks = append(checks, lang.diagnoseIdentities(home))
 	}
 	_, err := config.Load()
-	check("config", "config.toml is valid (defaults apply when absent)", err)
-	checks = append(checks, diagnoseCodexWindowsShell(), diagnoseDocker())
+	check("config", lang.Text("cli.doctor.config_toml_is_valid_defaults_apply_when", nil), err)
+	checks = append(checks, lang.diagnoseCodexWindowsShell(), lang.diagnoseDocker())
 	if available > 0 {
-		checks = append(checks, DoctorCheck{Name: "agents", Status: "INFO", Detail: fmt.Sprintf("另有 %d 家 agent 可接入：obit init --show 查看", available)})
+		checks = append(checks, DoctorCheck{Name: "agents", Status: "INFO", Detail: fmt.Sprintf(lang.Text("cli.doctor.additional_agents", nil), available)})
 	}
 	return checks
 }
 
-func diagnoseProjectRules(home string) []DoctorCheck {
+func (lang diagnostics) diagnoseProjectRules(home string) []DoctorCheck {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return []DoctorCheck{{Name: "project-rules", Status: "FAIL", Detail: err.Error()}}
@@ -225,31 +230,31 @@ func diagnoseProjectRules(home string) []DoctorCheck {
 	if err != nil {
 		return []DoctorCheck{{Name: "project-rules", Status: "WARN", Detail: err.Error()}}
 	}
-	return []DoctorCheck{{Name: "project-rules", Status: "PASS", Detail: "project rules permit automatic registration"}}
+	return []DoctorCheck{{Name: "project-rules", Status: "PASS", Detail: lang.Text("cli.doctor.project_rules_permit_automatic_registration", nil)}}
 }
 
-func diagnoseCodexWindowsShell() DoctorCheck {
+func (lang diagnostics) diagnoseCodexWindowsShell() DoctorCheck {
 	c := DoctorCheck{Name: "codex-windows-shell", Status: "WARN"}
 	if runtime.GOOS != "windows" {
-		c.Status, c.Detail = "INFO", "native POSIX shell; no Windows shell declaration needed"
+		c.Status, c.Detail = "INFO", lang.Text("cli.doctor.native_posix_shell_no_windows_shell_declaration", nil)
 		return c
 	}
 	cfg, err := config.Load()
 	if err != nil {
 		c.Status, c.Detail = "FAIL", err.Error()
 	} else if cfg.WindowsShell("codex") == "" {
-		c.Detail = "codex_windows_shell is unset; ambiguous Windows shell commands pass through; obit init --agent codex --guard-rm can infer a declaration, or set bash/powershell in Obituary config.toml"
+		c.Detail = lang.Text("cli.doctor.codex_windows_shell_is_unset_ambiguous_windows", nil)
 	} else {
 		c.Status = "PASS"
-		c.Detail = "Codex Windows shell = " + cfg.WindowsShell("codex") + " (agent_shells.codex or codex_windows_shell); declaration used for ambiguous native Windows commands; actual per-call shell is not reported by Codex"
+		c.Detail = lang.Text("cli.doctor.codex_windows_shell", nil) + cfg.WindowsShell("codex") + lang.Text("cli.doctor.agent_shells_codex_or_codex_windows_shell", nil)
 	}
 	return c
 }
 
-func diagnoseRecovery(home string) DoctorCheck {
+func (lang diagnostics) diagnoseRecovery(home string) DoctorCheck {
 	c := DoctorCheck{Name: "graveyard-recovery", Status: "PASS"}
 	pending, err := (&core.Service{Store: ledger.Store{Home: home}, FS: winfs.FS{}}).PendingGraves()
-	c.Detail = fmt.Sprintf("%d graveyard records need attention", len(pending))
+	c.Detail = fmt.Sprintf(lang.Text("cli.doctor.graveyard_records_need_attention", nil), len(pending))
 	if len(pending) > 0 || err != nil {
 		c.Status = "WARN"
 	}
@@ -265,15 +270,15 @@ func diagnoseRecovery(home string) DoctorCheck {
 	return c
 }
 
-func regularFile(path string) error {
+func (lang diagnostics) regularFile(path string) error {
 	info, err := os.Stat(path)
 	if err == nil && !info.Mode().IsRegular() {
-		return fmt.Errorf("%s is not a regular file", path)
+		return fmt.Errorf(lang.Text("cli.doctor.is_not_a_regular_file", nil), path)
 	}
 	return err
 }
 
-func diagnoseHookLog(home string, now time.Time, protectedRoots ...string) DoctorCheck {
+func (lang diagnostics) diagnoseHookLog(home string, now time.Time, protectedRoots ...string) DoctorCheck {
 	c := DoctorCheck{Name: "hook-log", Status: "PASS"}
 	var permissionAt time.Time
 	permission := ""
@@ -304,10 +309,10 @@ func diagnoseHookLog(home string, now time.Time, protectedRoots ...string) Docto
 	if c.Errors > 0 {
 		c.Status = "WARN"
 	}
-	c.Detail = fmt.Sprintf("%d error lines in the last 24 hours (including rotated hook.log)", c.Errors)
+	c.Detail = fmt.Sprintf(lang.Text("cli.doctor.error_lines_in_the_last_hours_including", nil), c.Errors)
 	if permission != "" {
-		c.Detail += "; a hook account reported denied access. " + hook.PermissionHint
-		c.Detail += fmt.Sprintf("; latest denied access at %s: %s; %s", permissionAt.Format(time.RFC3339), permission, hook.PermissionReportHint)
+		c.Detail += lang.Text("cli.doctor.a_hook_account_reported_denied_access", nil) + hook.PermissionHint
+		c.Detail += fmt.Sprintf(lang.Text("cli.doctor.latest_denied_access_at", nil), permissionAt.Format(time.RFC3339), permission, hook.PermissionReportHint)
 	}
 	return c
 }

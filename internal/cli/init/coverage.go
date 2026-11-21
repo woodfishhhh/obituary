@@ -3,6 +3,7 @@ package init
 import (
 	"errors"
 	"fmt"
+	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"html"
 	"slices"
 	"strings"
@@ -14,10 +15,10 @@ import (
 
 func validateShowFormat(cmd *cobra.Command, format string, show bool) error {
 	if format != "text" && format != "markdown" {
-		return fmt.Errorf("unknown format %q (supported: text, markdown)", format)
+		return fmt.Errorf(cmdutil.Text("cli.init.unknown_format_supported_text_markdown"), format)
 	}
 	if cmd.Flags().Changed("format") && !show {
-		return errors.New("--format requires --show")
+		return errors.New(cmdutil.Text("cli.init.format_requires_show"))
 	}
 	return nil
 }

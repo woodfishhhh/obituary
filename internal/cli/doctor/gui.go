@@ -15,41 +15,41 @@ type GUICheck struct {
 	DaemonVersion string `json:"daemonVersion,omitempty"`
 }
 
-func diagnoseGUI(daemon string, daemonErr error, version func(string) string) DoctorCheck {
+func (lang diagnostics) diagnoseGUI(daemon string, daemonErr error, version func(string) string) DoctorCheck {
 	if runtime.GOOS == "linux" && runtime.GOARCH == "amd64" {
 		if daemonErr == nil {
 			path := filepath.Join(filepath.Dir(daemon), "obit-gui")
-			if regularFile(path) == nil {
-				return DoctorCheck{Name: "gui", Status: "PASS", Detail: "desktop companion: " + path}
+			if lang.regularFile(path) == nil {
+				return DoctorCheck{Name: "gui", Status: "PASS", Detail: lang.Text("cli.doctor.desktop_companion", nil) + path}
 			}
 		}
-		return DoctorCheck{Name: "gui", Status: "INFO", Detail: "the optional Ubuntu 24.04 desktop package provides the window and tray"}
+		return DoctorCheck{Name: "gui", Status: "INFO", Detail: lang.Text("cli.doctor.the_optional_ubuntu_desktop_package_provides_the", nil)}
 	}
 	if runtime.GOOS != "windows" {
-		return DoctorCheck{Name: "gui", Status: "INFO", Detail: "use the CLI on this platform"}
+		return DoctorCheck{Name: "gui", Status: "INFO", Detail: lang.Text("cli.doctor.use_the_cli_on_this_platform", nil)}
 	}
 	g := &GUICheck{Path: filepath.Join(filepath.Dir(daemon), "obit-gui.exe"), DaemonPath: daemon}
 	c := DoctorCheck{Name: "gui", Status: "WARN", GUI: g}
 	if daemonErr != nil {
-		c.Detail = "cannot verify GUI companion: " + daemonErr.Error() + "; reinstall obit-gui.exe alongside obitd.exe"
+		c.Detail = lang.Text("cli.doctor.cannot_verify_gui_companion", nil) + daemonErr.Error() + lang.Text("cli.doctor.reinstall_obit_gui_exe_alongside_obitd_exe", nil)
 		return c
 	}
-	if err := regularFile(g.Path); err != nil {
-		c.Detail = err.Error() + "; place obit-gui.exe in the same directory as obitd.exe: " + filepath.Dir(daemon)
+	if err := lang.regularFile(g.Path); err != nil {
+		c.Detail = err.Error() + lang.Text("cli.doctor.place_obit_gui_exe_in_the_same", nil) + filepath.Dir(daemon)
 		return c
 	}
 	g.Version, g.DaemonVersion = version(g.Path), version(daemon)
 	if g.Version != "" && g.DaemonVersion != "" && g.Version != g.DaemonVersion {
-		c.Detail = fmt.Sprintf("GUI version %s differs from obitd %s; reinstall both executables from the same release", g.Version, g.DaemonVersion)
+		c.Detail = fmt.Sprintf(lang.Text("cli.doctor.gui_version_differs_from_obitd_reinstall_both", nil), g.Version, g.DaemonVersion)
 		return c
 	}
-	c.Status, c.Detail = "PASS", "GUI companion exists alongside obitd: "+g.Path
+	c.Status, c.Detail = "PASS", lang.Text("cli.doctor.gui_companion_exists_alongside_obitd", nil)+g.Path
 	if g.Version == "" || g.DaemonVersion == "" {
-		c.Detail += "; comparable version metadata unavailable (path check only)"
+		c.Detail += lang.Text("cli.doctor.comparable_version_metadata_unavailable_path_check_only", nil)
 	} else {
-		c.Detail += "; matching version " + g.Version
+		c.Detail += lang.Text("cli.doctor.matching_version", nil) + g.Version
 	}
-	c.Detail += "; keep both executables together when upgrading"
+	c.Detail += lang.Text("cli.doctor.keep_both_executables_together_when_upgrading", nil)
 	return c
 }
 

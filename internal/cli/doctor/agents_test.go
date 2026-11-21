@@ -40,7 +40,7 @@ func TestDoctorAgentShellDeclaration(t *testing.T) {
 				}
 				clitest.WriteFixture(t, path, data)
 				before := clitest.TreeSnapshot(t, root)
-				got := diagnoseIntegration(agent, initcmd.NewAgentInspector(integrate.Scope{Global: true}, executable))
+				got := english.diagnoseIntegration(agent, initcmd.NewAgentInspector(integrate.Scope{Global: true}, executable, english.Localizer))
 				want := "agent_shells." + agent + " = \"" + shell + "\""
 				if shell == "" {
 					want = "agent_shells." + agent + " is unset"
@@ -93,7 +93,7 @@ func TestDoctorSummarizesUninstalledAgents(t *testing.T) {
 		}
 	}
 	want := fmt.Sprintf("另有 %d 家 agent 可接入：obit init --show 查看", len(initcmd.AgentNames())-2)
-	rows := diagnose(time.Now(), executable)
+	rows := english.diagnose(time.Now(), executable)
 	last := rows[len(rows)-1]
 	wantRows := 33
 	if runtime.GOOS != "windows" {

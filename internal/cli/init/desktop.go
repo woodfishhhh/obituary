@@ -45,10 +45,10 @@ func planDesktop(out io.Writer, self cmdutil.Executable, uninstall, noMenu, noSh
 }
 
 func planDesktopMenu(out io.Writer, reg contextmenu.Registry, exe string, uninstall bool) ([]contextmenu.Change, error) {
-	fmt.Fprintln(out, "context-menu:")
+	fmt.Fprintln(out, cmdutil.Text("cli.init.context_menu"))
 	if !uninstall {
 		if err := checkMenuDaemon(exe); errors.Is(err, os.ErrNotExist) {
-			fmt.Fprintln(out, "  unavailable: obitd.exe is missing")
+			fmt.Fprintln(out, cmdutil.Text("cli.init.unavailable_obitd_exe_is_missing"))
 			return nil, nil
 		} else if err != nil {
 			return nil, err
@@ -70,7 +70,7 @@ func planShortcuts(out io.Writer, exe string, uninstall bool) ([]integrate.Chang
 		fmt.Fprintf(out, "%s:\n", place)
 		plan, err := shortcut.Plan(ShortcutCodec, exe, place, !uninstall)
 		if !uninstall && errors.Is(err, os.ErrNotExist) {
-			fmt.Fprintln(out, "  unavailable: obit-gui.exe is missing")
+			fmt.Fprintln(out, cmdutil.Text("cli.init.unavailable_obit_gui_exe_is_missing"))
 			continue
 		}
 		if err != nil {
@@ -92,7 +92,7 @@ func (p desktopPlan) apply(out io.Writer) error {
 		if err := contextmenu.Apply(p.registry, p.menu); err != nil {
 			return err
 		}
-		fmt.Fprintln(out, "classic context menu updated; Windows 11: 显示更多选项 (Show more options)")
+		fmt.Fprintln(out, cmdutil.Text("cli.init.classic_context_menu_updated_windows_show_more"))
 	}
 	return integrate.Apply(p.shortcuts)
 }
@@ -109,22 +109,22 @@ func showDesktop(out io.Writer, self cmdutil.Executable) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(out, "context-menu: %s\n", menu.Detail)
+	fmt.Fprintf(out, cmdutil.Text("cli.init.context_menu_showdesktop"), menu.Detail)
 	for _, place := range []shortcut.Location{shortcut.StartMenu, shortcut.Desktop} {
 		path, err := shortcut.Inspect(ShortcutCodec, exe, place)
 		if err != nil {
 			return err
 		}
-		fmt.Fprintf(out, "%s: installed=%t %s\n", place, path != "", path)
+		fmt.Fprintf(out, cmdutil.Text("cli.init.installed"), place, path != "", path)
 	}
 	cfg, err := config.Load()
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(out, "tray-icon: %t; taskbar: %t\n", cfg.UI.Tray, cfg.UI.Taskbar)
+	fmt.Fprintf(out, cmdutil.Text("cli.init.tray_icon_taskbar"), cfg.UI.Tray, cfg.UI.Taskbar)
 	startup, err := readStartupPlan(self, false)
 	if err == nil && startup != nil {
-		fmt.Fprintf(out, "tray-startup: %t\n", startup.Before != "")
+		fmt.Fprintf(out, cmdutil.Text("cli.init.tray_startup"), startup.Before != "")
 	}
 	return err
 }

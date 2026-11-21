@@ -26,13 +26,13 @@ func TestDiagnoseIdentitiesReportsUnrelatedUnsafeObject(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		want, detail = "WARN", "not supported"
 	}
-	if got := diagnoseIdentities(svc.Store.Home); got.Status != want {
+	if got := english.diagnoseIdentities(svc.Store.Home); got.Status != want {
 		t.Fatalf("healthy identity: %+v", got)
 	}
 	if err := os.Link(path, path+".alias"); err != nil {
 		t.Fatal(err)
 	}
-	if got := diagnoseIdentities(svc.Store.Home); got.Status != "WARN" || got.Errors != 1 || !strings.Contains(got.Detail, detail) {
+	if got := english.diagnoseIdentities(svc.Store.Home); got.Status != "WARN" || got.Errors != 1 || !strings.Contains(got.Detail, detail) {
 		t.Fatalf("doctor hid an unrelated unsafe identity: %+v", got)
 	}
 	history, err := svc.Store.History(10)

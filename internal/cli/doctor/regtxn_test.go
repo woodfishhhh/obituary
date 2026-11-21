@@ -11,7 +11,7 @@ import (
 func TestDoctorRegistryTransactions(t *testing.T) {
 	for _, unavailable := range []bool{false, true} {
 		calls := 0
-		got := diagnoseRegistryTransactions(func() error {
+		got := english.diagnoseRegistryTransactions(func() error {
 			calls++
 			if unavailable {
 				return errors.New("KTM disabled")

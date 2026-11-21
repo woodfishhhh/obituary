@@ -3,6 +3,7 @@ package uninstall
 import (
 	"errors"
 	"fmt"
+	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"io"
 	"os"
 	"path/filepath"
@@ -118,7 +119,7 @@ func scopePlan(planner initcmd.Planner, scope integrate.Scope) (integration, err
 	if scope.Global {
 		entry.scope = "global"
 	}
-	inspector := initcmd.NewAgentInspector(scope, planner.Executable)
+	inspector := initcmd.NewAgentInspector(scope, planner.Executable, cmdutil.Localizer())
 	for _, agent := range initcmd.AgentNames() {
 		present, err := inspector.Present(agent)
 		if err != nil {
@@ -134,27 +135,27 @@ func scopePlan(planner initcmd.Planner, scope integrate.Scope) (integration, err
 }
 
 func (p *plan) print(out io.Writer, purge bool) {
-	fmt.Fprintln(out, "Uninstall plan (current data directory; global agents and current Git project):")
+	fmt.Fprintln(out, cmdutil.Text("cli.uninstall.uninstall_plan_current_data_directory_global_agents"))
 	for _, entry := range p.integrations {
-		fmt.Fprintf(out, "  agents %s: %v (hooks / MCP / Skill)\n", entry.scope, entry.agents)
+		fmt.Fprintf(out, cmdutil.Text("cli.uninstall.agents_hooks_mcp_skill"), entry.scope, entry.agents)
 		for _, c := range entry.changes {
 			if c.Action != "unchanged" {
-				fmt.Fprintf(out, "    %s %s (%s)\n", c.Action, c.Path, c.Detail)
+				fmt.Fprintf(out, "    %s %s (%s)\n", cmdutil.Localizer().Label(c.Action), c.Path, c.Detail)
 			}
 		}
 	}
-	fmt.Fprintf(out, "  %s\n  stop resident/tray for %s\n", p.schedule, p.svc.Store.Home)
+	fmt.Fprintf(out, cmdutil.Text("cli.uninstall.stop_resident_tray_for"), p.schedule, p.svc.Store.Home)
 	if p.startup != nil && p.startup.Pending() {
-		fmt.Fprintf(out, "  remove HKCU Run %s\n", p.startup.Name)
+		fmt.Fprintf(out, cmdutil.Text("cli.uninstall.remove_hkcu_run"), p.startup.Name)
 	}
 	for _, menu := range p.menus {
-		fmt.Fprintln(out, "  remove context menu", menu.Path)
+		fmt.Fprintln(out, cmdutil.Text("cli.uninstall.remove_context_menu"), menu.Path)
 	}
 	for _, dir := range p.labels {
-		fmt.Fprintln(out, "  remove Explorer desktop.ini labels", dir)
+		fmt.Fprintln(out, cmdutil.Text("cli.uninstall.remove_explorer_desktop_ini_labels"), dir)
 	}
 	for _, watch := range p.state.Watches {
-		fmt.Fprintf(out, "  remove folder policy #%d %s (files stay in place)\n", watch.ID, watch.Path)
+		fmt.Fprintf(out, cmdutil.Text("cli.uninstall.remove_folder_policy_files_stay_in_place"), watch.ID, watch.Path)
 	}
 	p.printData(out, purge)
 }

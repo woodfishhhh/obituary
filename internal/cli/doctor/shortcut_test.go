@@ -23,7 +23,7 @@ func TestPOSIXDesktopDiagnostics(t *testing.T) {
 		t.Fatal("POSIX diagnosis tried to inspect a Windows shortcut")
 		return "", nil
 	}
-	checks := append(diagnoseIcons(), diagnoseShortcut("/tmp/obit", target), diagnoseDesktop("/tmp/obit", target))
+	checks := append(english.diagnoseIcons(), english.diagnoseShortcut("/tmp/obit", target), english.diagnoseDesktop("/tmp/obit", target))
 	for _, check := range checks {
 		if check.Status != "INFO" {
 			t.Fatalf("Windows-only feature reported as an installation failure: %+v", check)
@@ -42,7 +42,7 @@ func TestStartMenuShortcutDiagnosis(t *testing.T) {
 		{"different", filepath.Join(menu, "other.exe"), "WARN"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			check := diagnoseShortcut(exe, func(path string) (string, error) {
+			check := english.diagnoseShortcut(exe, func(path string) (string, error) {
 				if !strings.HasPrefix(path, menu) {
 					t.Fatal("diagnostic escaped Programs", path)
 				}
@@ -87,13 +87,13 @@ func TestShortcutDiagnosisUsesRelocatedAndLegacyReceipts(t *testing.T) {
 					receipt = old
 				}
 				before := clitest.TreeSnapshot(t, root)
-				check := diagnoseShortcutAt(exe, place, target)
+				check := english.diagnoseShortcutAt(exe, place, target)
 				if check.Status != "PASS" || !reflect.DeepEqual(before, clitest.TreeSnapshot(t, root)) {
 					t.Fatal("diagnosis failed or changed files", check)
 				}
 			}
 			clitest.WriteFixture(t, receipt, "edited receipt")
-			if check := diagnoseShortcutAt(exe, place, target); check.Status != "WARN" {
+			if check := english.diagnoseShortcutAt(exe, place, target); check.Status != "WARN" {
 				t.Fatal("edited receipt accepted", check)
 			}
 		})
@@ -106,7 +106,7 @@ func TestDesktopShortcutDiagnosis(t *testing.T) {
 	t.Setenv("OBIT_USER_HOME", home)
 	exe := filepath.Join(home, "obit.exe")
 	for _, installed := range []bool{false, true} {
-		check := diagnoseDesktop(exe, func(path string) (string, error) {
+		check := english.diagnoseDesktop(exe, func(path string) (string, error) {
 			if path != filepath.Join(home, "Desktop", "讣告 Obituary.lnk") {
 				t.Fatal("escaped test desktop", path)
 			}

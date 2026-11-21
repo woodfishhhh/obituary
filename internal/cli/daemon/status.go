@@ -84,23 +84,23 @@ func readStatus(home string) (DaemonStatus, error) {
 
 func printStatus(st DaemonStatus) {
 	mode := map[string]string{
-		"scheduled": fmt.Sprintf("scheduled task every %d minutes (%s)", int(app.Interval.Minutes()), app.TaskName),
-		"resident":  "resident tray daemon (scheduled fallback is reported separately)",
-		"off":       "off (run `obit daemon enable`)",
+		"scheduled": fmt.Sprintf(cmdutil.Text("cli.daemon.scheduled_task_every_minutes"), int(app.Interval.Minutes()), app.TaskName),
+		"resident":  cmdutil.Text("cli.daemon.resident_tray_daemon_scheduled_fallback_is_reported"),
+		"off":       cmdutil.Text("cli.daemon.off_run_obit_daemon_enable"),
 	}[st.Mode]
-	running := "not running"
+	running := cmdutil.Text("cli.daemon.not_running")
 	if st.Running {
-		running = "running"
+		running = cmdutil.Text("cli.daemon.running")
 	}
-	fmt.Printf("runner:    %s\ndaemon:    %s\ndata:      %s\ntracked:   %d\n", mode, running, st.Home, st.Tracked)
-	fmt.Printf("pending recovery: %d\n", st.PendingRecovery)
+	fmt.Printf(cmdutil.Text("cli.daemon.status"), mode, running, st.Home, st.Tracked)
+	fmt.Printf(cmdutil.Text("cli.daemon.pending_recovery"), st.PendingRecovery)
 	if st.RecoveryWarning != "" {
-		fmt.Fprintln(os.Stderr, "warning:", st.RecoveryWarning)
+		fmt.Fprintln(os.Stderr, cmdutil.Text("cli.warning_prefix"), st.RecoveryWarning)
 	}
 	if st.ScheduleInstalled && !st.ScheduleServesHome {
-		fmt.Printf("schedule:  installed but does not serve this data directory: %s\n", st.ScheduleTarget)
+		fmt.Printf(cmdutil.Text("cli.daemon.schedule_installed_but_does_not_serve_this"), st.ScheduleTarget)
 	}
 	if st.NextDue != nil {
-		fmt.Printf("next:      %s\n", cmdutil.When(*st.NextDue))
+		fmt.Printf(cmdutil.Text("cli.daemon.next"), cmdutil.When(*st.NextDue))
 	}
 }

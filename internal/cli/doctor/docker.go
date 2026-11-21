@@ -7,7 +7,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/docker"
 )
 
-func diagnoseDockerTargets(st ledger.State) DoctorCheck {
+func (lang diagnostics) diagnoseDockerTargets(st ledger.State) DoctorCheck {
 	count := 0
 	check := func(id *docker.Identity) {
 		if id != nil && id.Target == nil {
@@ -33,20 +33,20 @@ func diagnoseDockerTargets(st ledger.State) DoctorCheck {
 			check(p.Burial.Container)
 		}
 	}
-	status, detail := "PASS", "container Docker endpoints and daemon identities are pinned"
+	status, detail := "PASS", lang.Text("cli.doctor.container_docker_endpoints_and_daemon_identities_are", nil)
 	if count > 0 {
 		status = "WARN"
-		detail = fmt.Sprintf("%d legacy v14 container references have no Docker target; select their original daemon before first operation to bind matching identities; absent containers remain pending", count)
+		detail = fmt.Sprintf(lang.Text("cli.doctor.legacy_v14_container_references_have_no_docker", nil), count)
 	}
 	return DoctorCheck{Name: "docker-targets", Status: status, Detail: detail}
 }
 
-func diagnoseDocker() DoctorCheck {
+func (lang diagnostics) diagnoseDocker() DoctorCheck {
 	err := (docker.CLI{}).Available(context.Background())
-	detail := "containers stop at expiry and retain their writable layer; after graveyard retention, stopped containers may be removed; recycle mode uses the same policy; images, volumes and networks are preserved"
+	detail := lang.Text("cli.doctor.containers_stop_at_expiry_and_retain_their", nil)
 	status := "PASS"
 	if err != nil {
-		status, detail = "INFO", "Docker unavailable; container discovery skipped: "+docker.Diagnostic(err)
+		status, detail = "INFO", lang.Text("cli.doctor.docker_unavailable_container_discovery_skipped", nil)+docker.Diagnostic(err)
 	}
 	return DoctorCheck{Name: "docker", Status: status, Detail: detail}
 }

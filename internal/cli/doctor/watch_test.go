@@ -34,7 +34,7 @@ func TestDoctorWatches(t *testing.T) {
 				Exclusions: []core.WatchExclusion{{ID: 2}}}}, WatchExemptions: []ledger.WatchExemption{{WatchID: 1}}}
 			calls := 0
 			folder := t.TempDir()
-			got := diagnoseWatches(state, nil, now, func(policy ledger.WatchPolicy) (string, error) {
+			got := english.diagnoseWatches(state, nil, now, func(policy ledger.WatchPolicy) (string, error) {
 				calls++
 				return folder, tc.pathErr
 			})
@@ -53,7 +53,7 @@ func TestDoctorWatches(t *testing.T) {
 			}
 		})
 	}
-	got := diagnoseWatches(ledger.State{}, errors.New("bad store"), now, nil)
+	got := english.diagnoseWatches(ledger.State{}, errors.New("bad store"), now, nil)
 	if got.Status != "FAIL" || !strings.Contains(got.Detail, "bad store") {
 		t.Fatal(got)
 	}
@@ -84,7 +84,7 @@ func TestDoctorWatchStability(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			it := ledger.Item{ID: 1, Path: testenv.NativeFixture(`C:\downloads\file.zip`), CreatedAt: now.Add(-tc.age), Source: tc.source,
 				LastError: tc.lastErr, Watch: &ledger.WatchTiming{StableSince: tc.stable}}
-			got := diagnoseWatches(ledger.State{Items: []ledger.Item{it}}, nil, now, nil)
+			got := english.diagnoseWatches(ledger.State{Items: []ledger.Item{it}}, nil, now, nil)
 			if (got.Status == "WARN") != tc.unstable || (got.Watch.Unstable == 1) != tc.unstable {
 				t.Fatalf("stability diagnosis: %+v %+v", got, got.Watch)
 			}
@@ -110,7 +110,7 @@ func TestDoctorWatchIdentityReadOnly(t *testing.T) {
 	svc := &core.Service{FS: fs}
 	for _, status := range []string{"PASS", "WARN"} {
 		before := clitest.TreeSnapshot(t, root)
-		got := diagnoseWatches(state, nil, time.Now(), svc.WatchPath)
+		got := english.diagnoseWatches(state, nil, time.Now(), svc.WatchPath)
 		if got.Status != status || !reflect.DeepEqual(before, clitest.TreeSnapshot(t, root)) {
 			t.Fatalf("identity check changed files or missed replacement: %+v", got)
 		}
@@ -134,7 +134,7 @@ func TestDoctorExplainsDownloadSkips(t *testing.T) {
 	}
 	st := ledger.State{Watches: []ledger.WatchPolicy{{ID: 1, Path: path, Identity: id, Consent: core.ConsentApproved}}}
 	svc := &core.Service{FS: winfs.FS{}}
-	got := diagnoseWatches(st, nil, time.Now(), svc.WatchPath)
+	got := english.diagnoseWatches(st, nil, time.Now(), svc.WatchPath)
 	if !strings.Contains(got.Detail, "archive.tmp") || !strings.Contains(got.Detail, "obit add") || !strings.Contains(got.Detail, "download") {
 		t.Fatalf("doctor omitted download skip explanation: %+v", got)
 	}

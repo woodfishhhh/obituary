@@ -2,6 +2,7 @@ package init
 
 import (
 	"fmt"
+	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"io"
 	"maps"
 	"os"
@@ -43,13 +44,13 @@ func printContextMenuChange(out io.Writer, change contextmenu.Change) {
 			dropKey = key + `\DropTarget`
 		}
 		if submenu := values["ExtendedSubCommandsKey"]; submenu != "" {
-			command = "shared submenu: " + submenu
+			command = cmdutil.Text("cli.init.shared_submenu") + submenu
 		} else if clsid := tree[dropKey]["CLSID"]; clsid != "" {
-			command = "COM selection handler: " + clsid
+			command = cmdutil.Text("cli.init.com_selection_handler") + clsid
 		} else if server := tree["LocalServer32"][""]; server != "" {
 			command = server
 		} else if command == "" {
-			command = "application identity (no command)"
+			command = cmdutil.Text("cli.init.application_identity_no_command")
 		}
 		fmt.Fprintf(out, "    %s\n      %s\n", label, command)
 	}
@@ -59,10 +60,10 @@ func checkMenuDaemon(executable string) error {
 	path := filepath.Join(filepath.Dir(executable), "obitd.exe")
 	info, err := os.Stat(path)
 	if err != nil {
-		return fmt.Errorf("context menu needs GUI companion %s: %w", path, err)
+		return fmt.Errorf(cmdutil.Text("cli.init.context_menu_needs_gui_companion"), path, err)
 	}
 	if !info.Mode().IsRegular() {
-		return fmt.Errorf("context menu companion is not a regular file: %s", path)
+		return fmt.Errorf(cmdutil.Text("cli.init.context_menu_companion_is_not_a_regular"), path)
 	}
 	return nil
 }

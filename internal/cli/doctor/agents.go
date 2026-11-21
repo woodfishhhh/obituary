@@ -5,7 +5,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/integrate"
 )
 
-func diagnoseIntegration(agent string, inspector *initcmd.AgentInspector) DoctorCheck {
+func (lang diagnostics) diagnoseIntegration(agent string, inspector *initcmd.AgentInspector) DoctorCheck {
 	state, err := inspector.Inspect(agent)
 	c := DoctorCheck{Name: agent, Status: "PASS", Detail: state.Detail, Installation: state.Installation}
 	if err != nil {

@@ -60,27 +60,27 @@ func NewDecideCmd(use, short string, approve bool) *cobra.Command {
 func printDecisions(results []core.ProposalResult, approve bool) {
 	for _, r := range results {
 		if r.Error != "" {
-			fmt.Fprintln(os.Stderr, "error:", r.Error)
+			fmt.Fprintln(os.Stderr, cmdutil.Text("cli.error_prefix"), r.Error)
 			if len(r.Results) == 0 {
 				continue
 			}
 		}
 		if !approve {
-			fmt.Printf("#%d rejected", r.Proposal.ID)
+			fmt.Printf(cmdutil.Text("cli.proposals.rejected"), r.Proposal.ID)
 			if r.Proposal.Kind == core.ProposalOnboard {
-				fmt.Print(" (Obituary will not propose automatic registration in this project again)")
+				fmt.Print(cmdutil.Text("cli.proposals.obituary_will_not_propose_automatic_registration_in"))
 			}
 			fmt.Println()
 			continue
 		}
-		fmt.Printf("#%d approved\n", r.Proposal.ID)
+		fmt.Printf(cmdutil.Text("cli.proposals.approved"), r.Proposal.ID)
 		for _, res := range r.Results {
 			if res.Error != "" {
-				fmt.Printf("    skipped  %s  (%s)\n", res.Ref, res.Error)
+				fmt.Printf(cmdutil.Text("cli.proposals.skipped"), res.Ref, res.Error)
 			} else if r.Proposal.Kind == core.ProposalWatchBurial {
-				fmt.Printf("    #%d buried  %s\n", res.Item.ID, res.Item.Path)
+				fmt.Printf(cmdutil.Text("cli.proposals.buried"), res.Item.ID, res.Item.Path)
 			} else {
-				fmt.Printf("    #%d %s  expires %s\n", res.Item.ID, res.Item.Path, cmdutil.When(res.Item.ExpiresAt))
+				fmt.Printf(cmdutil.Text("cli.proposals.expires"), res.Item.ID, res.Item.Path, cmdutil.When(res.Item.ExpiresAt))
 			}
 		}
 	}

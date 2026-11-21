@@ -10,7 +10,21 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
+	"golang.org/x/text/language"
 )
+
+func TestMissingTranslationRendersEnglishDefault(t *testing.T) {
+	bundle := goi18n.NewBundle(language.English)
+	if err := bundle.AddMessages(language.SimplifiedChinese, &goi18n.Message{ID: "other", Other: "other"}); err != nil {
+		t.Fatal(err)
+	}
+	l := &Localizer{language: Chinese, localizer: goi18n.NewLocalizer(bundle, string(Chinese))}
+	if got := l.Text("cli.warning", map[string]any{"Text": "sample"}); got != "warning: sample" {
+		t.Fatalf("got %q", got)
+	}
+}
 
 func TestMessageFilesMatchEnglish(t *testing.T) {
 	english := readMessageFile(t, "messages/active.en.json")

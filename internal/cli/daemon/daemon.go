@@ -31,14 +31,14 @@ func NewCmdWithExecutable(self cmdutil.Executable) *cobra.Command {
 			if err := app.Start(h); err != nil {
 				return err
 			}
-			fmt.Println("daemon running")
+			fmt.Println(cmdutil.Text("cli.daemon.daemon_running"))
 			return nil
 		}),
 		simple("stop", "Stop the daemon", func(h string) error {
 			if err := app.Stop(h); err != nil {
 				return err
 			}
-			fmt.Println("daemon stopped")
+			fmt.Println(cmdutil.Text("cli.daemon.daemon_stopped"))
 			return nil
 		}),
 		enableCmd(home, self),
@@ -78,7 +78,7 @@ func enable(home string, resident bool) error {
 		if err := app.InstallSchedule(home); err != nil {
 			return err
 		}
-		fmt.Printf("user scheduler enabled; checks expiries every %d minutes\n", int(app.Interval.Minutes()))
+		fmt.Printf(cmdutil.Text("cli.daemon.user_scheduler_enabled_checks_expiries_every_minutes"), int(app.Interval.Minutes()))
 		return nil
 	}
 	if !resident {
@@ -93,9 +93,9 @@ func enable(home string, resident bool) error {
 		return err
 	}
 	if resident {
-		fmt.Println("tray daemon running; it also starts when you sign in; any scheduled fallback is preserved")
+		fmt.Println(cmdutil.Text("cli.daemon.tray_daemon_running_it_also_starts_when"))
 	} else {
-		fmt.Printf("tray running and enabled at sign-in; hidden fallback (%q) runs every %d minutes\n", app.TaskName, int(app.Interval.Minutes()))
+		fmt.Printf(cmdutil.Text("cli.daemon.tray_running_and_enabled_at_sign_in"), app.TaskName, int(app.Interval.Minutes()))
 	}
 	return nil
 }
@@ -120,7 +120,7 @@ func disableCmd(home func() (string, error), self cmdutil.Executable) *cobra.Com
 			if err := app.Stop(h); err != nil {
 				return err
 			}
-			fmt.Println("background runner removed; expiries now wait for obit reap or an agent hook")
+			fmt.Println(cmdutil.Text("cli.daemon.background_runner_removed_expiries_now_wait_for"))
 			return nil
 		},
 	}

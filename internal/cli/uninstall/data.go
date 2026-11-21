@@ -12,29 +12,28 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/regtxn"
-	"github.com/woodfishhhh/obituary/internal/textutil"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
 )
 
 func (p *plan) printData(out io.Writer, purge bool) {
-	action := "KEEP"
+	action := cmdutil.Text("cli.uninstall.keep")
 	if purge {
-		action = "PURGE (permanent; requires confirmation)"
+		action = cmdutil.Text("cli.uninstall.purge_permanent_requires_confirmation")
 	}
-	fmt.Fprintf(out, "  %s data %s\n  keep user configuration %s\n", action, p.svc.Store.Home, p.config)
-	fmt.Fprintf(out, "  graveyard: %s; %s; local root %s\n",
-		textutil.Count(len(p.state.Burials), "recorded entry", "recorded entries"), textutil.Count(len(p.pending), "pending record"), filepath.Join(p.svc.Store.Home, "graveyard"))
+	fmt.Fprintf(out, cmdutil.Text("cli.uninstall.data_plan"), action, p.svc.Store.Home, p.config)
+	fmt.Fprintf(out, cmdutil.Text("cli.uninstall.graveyard_local_root"),
+		cmdutil.Localizer().Count("cli.count.recorded_entry", len(p.state.Burials)), cmdutil.Localizer().Count("cli.count.pending_record", len(p.pending)), filepath.Join(p.svc.Store.Home, "graveyard"))
 	for _, b := range p.state.Burials {
 		fmt.Fprintf(out, "    #%d %s -> %s\n", b.ID, b.Path, b.Grave)
 	}
 	for _, pending := range p.pending {
-		fmt.Fprintf(out, "    pending #%d %s (%s)\n", pending.Number(), pending.Manifest, pending.Status)
+		fmt.Fprintf(out, cmdutil.Text("cli.uninstall.pending"), pending.Number(), pending.Manifest, cmdutil.Localizer().Label(pending.Status))
 	}
 }
 
 func (p *plan) preflightData(out io.Writer) error {
 	if len(p.pending) != 0 {
-		return errors.New("data retained: pending graveyard recovery requires attention before --purge-data")
+		return errors.New(cmdutil.Text("cli.uninstall.data_retained_pending_graveyard_recovery_requires_attention"))
 	}
 	if err := p.cleanMetadata(false); err != nil {
 		return err
@@ -48,7 +47,7 @@ func (p *plan) purgeGraves(out io.Writer, preview bool) error {
 		return err
 	}
 	if !reflect.DeepEqual(st.Burials, p.state.Burials) {
-		return errors.New("graveyard changed since the plan; review --dry-run again")
+		return errors.New(cmdutil.Text("cli.uninstall.graveyard_changed_since_the_plan_review_dry"))
 	}
 	refs := make([]string, 0, len(st.Burials))
 	for _, b := range st.Burials {
@@ -60,12 +59,12 @@ func (p *plan) purgeGraves(out io.Writer, preview bool) error {
 			if preview && r.Error == "" {
 				continue
 			}
-			fmt.Fprintf(out, "  %s %s %s\n", r.Ref, r.Action, r.Detail)
+			fmt.Fprintf(out, "  %s %s %s\n", r.Ref, cmdutil.Localizer().Label(r.Action), r.Detail)
 			if r.Error != "" {
-				fmt.Fprintln(out, "    error:", r.Error)
+				fmt.Fprintln(out, cmdutil.Text("cli.uninstall.error"), r.Error)
 			}
 			if r.Warning != "" {
-				fmt.Fprintln(out, "    warning:", r.Warning)
+				fmt.Fprintln(out, cmdutil.Text("cli.uninstall.warning"), r.Warning)
 			}
 		}
 		if err != nil || core.GraveFailed(results) {
@@ -91,7 +90,7 @@ func (p *plan) purgeData(out io.Writer) error {
 	if err := p.cleanMetadata(true); err != nil {
 		return err
 	}
-	fmt.Fprintln(out, "Removed owned data:", p.svc.Store.Home)
+	fmt.Fprintln(out, cmdutil.Text("cli.uninstall.removed_owned_data"), p.svc.Store.Home)
 	return nil
 }
 
@@ -105,7 +104,7 @@ func (p *plan) requireEmptyGraveyard() error {
 		return err
 	}
 	if len(st.Burials) != 0 || len(pending) != 0 {
-		return errors.New("graveyard still contains entries; retaining data for recovery")
+		return errors.New(cmdutil.Text("cli.uninstall.graveyard_still_contains_entries_retaining_data_for"))
 	}
 	return nil
 }
@@ -138,7 +137,7 @@ func (p *plan) cleanMetadata(remove bool) error {
 		return err
 	}
 	if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
-		return fmt.Errorf("data path is not an ordinary directory: %s", home)
+		return fmt.Errorf(cmdutil.Text("cli.uninstall.data_path_is_not_an_ordinary_directory"), home)
 	}
 	parent, err := os.OpenRoot(filepath.Dir(home))
 	if err != nil {
@@ -152,7 +151,7 @@ func (p *plan) cleanMetadata(remove bool) error {
 	defer root.Close()
 	opened, err := root.Stat(".")
 	if err != nil || !os.SameFile(info, opened) {
-		return errors.Join(err, errors.New("data directory changed before cleanup"))
+		return errors.Join(err, errors.New(cmdutil.Text("cli.uninstall.data_directory_changed_before_cleanup")))
 	}
 	entries, keepConfig, err := p.metadataEntries(root, opened, remove)
 	if err != nil || !remove {
@@ -166,7 +165,7 @@ func (p *plan) cleanMetadata(remove bool) error {
 		return err
 	}
 	if !os.SameFile(info, current) {
-		return errors.New("data directory changed during cleanup")
+		return errors.New(cmdutil.Text("cli.uninstall.data_directory_changed_during_cleanup"))
 	}
 	if keepConfig {
 		return nil
@@ -250,7 +249,7 @@ func checkMetadata(root *os.Root, name string, burials []core.Burial) error {
 	if info.Mode().IsRegular() && (slices.Contains(metadataNames, name) || core.OwnedLedgerFile(root, name)) {
 		return nil
 	}
-	return fmt.Errorf("data retained: unknown file, link or nonempty directory %s", filepath.Join(root.Name(), name))
+	return fmt.Errorf(cmdutil.Text("cli.uninstall.data_retained_unknown_file_link_or_nonempty"), filepath.Join(root.Name(), name))
 }
 
 // Core verifies each listed grave and its manifest. Anything else in this
@@ -276,7 +275,7 @@ func checkLocalGraves(root *os.Root, burials []core.Burial) error {
 	for _, entry := range entries {
 		path := filepath.Join(root.Name(), "graveyard", entry.Name())
 		if !known[path] {
-			return fmt.Errorf("data retained: unknown graveyard entry %s", path)
+			return fmt.Errorf(cmdutil.Text("cli.uninstall.data_retained_unknown_graveyard_entry"), path)
 		}
 	}
 	return nil
@@ -288,7 +287,7 @@ const registryLocks = "registry-locks"
 // (userdirs.RegistryLocks). It is owned only there, and only while it holds
 // nothing but their empty lock files.
 func registryLockFiles(root *os.Root) ([]string, error) {
-	retained := fmt.Errorf("data retained: unrecognized registry lock directory %s", filepath.Join(root.Name(), registryLocks))
+	retained := fmt.Errorf(cmdutil.Text("cli.uninstall.data_retained_unrecognized_registry_lock_directory"), filepath.Join(root.Name(), registryLocks))
 	path, err := userdirs.RegistryLocks()
 	if err != nil {
 		return nil, errors.Join(retained, err)
@@ -317,7 +316,7 @@ func registryLockFiles(root *os.Root) ([]string, error) {
 			return nil, err
 		}
 		if !info.Mode().IsRegular() || info.Size() != 0 || !regtxn.IsLockName(entry.Name()) {
-			return nil, fmt.Errorf("data retained: unrecognized registry lock %s", filepath.Join(root.Name(), name))
+			return nil, fmt.Errorf(cmdutil.Text("cli.uninstall.data_retained_unrecognized_registry_lock"), filepath.Join(root.Name(), name))
 		}
 		names = append(names, name)
 	}

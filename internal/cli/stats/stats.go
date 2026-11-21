@@ -38,20 +38,20 @@ func NewCmd() *cobra.Command {
 				}{sum, guardCounts})
 			}
 			l := sum.Lifetime
-			fmt.Printf("tracked      %d", sum.Tracked)
+			fmt.Printf(cmdutil.Text("cli.stats.tracked"), sum.Tracked)
 			if sum.NextDue != nil {
-				fmt.Printf("  (next due %s)", cmdutil.When(*sum.NextDue))
+				fmt.Printf(cmdutil.Text("cli.stats.next_due"), cmdutil.When(*sum.NextDue))
 			}
-			fmt.Printf("\ngraveyard    %d  %s", sum.Graves, textutil.Bytes(sum.GraveBytes))
+			fmt.Printf(cmdutil.Text("cli.stats.graveyard"), sum.Graves, textutil.Bytes(sum.GraveBytes))
 			if sum.NextPurge != nil {
-				fmt.Printf("  (next purge %s)", cmdutil.When(*sum.NextPurge))
+				fmt.Printf(cmdutil.Text("cli.stats.next_purge"), cmdutil.When(*sum.NextPurge))
 			}
-			fmt.Printf("\n\nburied       %d  %s\n", l.Buried, textutil.Bytes(l.BuriedBytes))
-			fmt.Printf("reclaimed    %d  %s\n", l.Purged, textutil.Bytes(l.PurgedBytes))
-			fmt.Printf("resurrected  %d  %s\n", l.Resurrected, textutil.Bytes(l.ResurrectedBytes))
-			fmt.Printf("delete commands denied  %d\ndelete command burials  %d\n", guardCounts.Denied, guardCounts.Buried)
+			fmt.Printf(cmdutil.Text("cli.stats.buried"), l.Buried, textutil.Bytes(l.BuriedBytes))
+			fmt.Printf(cmdutil.Text("cli.stats.reclaimed"), l.Purged, textutil.Bytes(l.PurgedBytes))
+			fmt.Printf(cmdutil.Text("cli.stats.resurrected"), l.Resurrected, textutil.Bytes(l.ResurrectedBytes))
+			fmt.Printf(cmdutil.Text("cli.stats.delete_commands_denied_delete_command_burials"), guardCounts.Denied, guardCounts.Buried)
 			if guardCounts.Oversized > 0 {
-				fmt.Printf("delete audit lines skipped (too long)  %d\n", guardCounts.Oversized)
+				fmt.Printf(cmdutil.Text("cli.stats.delete_audit_lines_skipped_too_long"), guardCounts.Oversized)
 			}
 			return nil
 		},

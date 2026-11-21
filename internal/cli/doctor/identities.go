@@ -8,10 +8,10 @@ import (
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
-func diagnoseIdentities(home string) DoctorCheck {
+func (lang diagnostics) diagnoseIdentities(home string) DoctorCheck {
 	svc := &core.Service{Store: core.Store{Home: home}, FS: winfs.FS{}}
 	events, err := svc.RegistrationLocationDiagnostics()
-	c := DoctorCheck{Name: "registration-identities", Status: "PASS", Detail: "recorded identities have no location errors", Errors: len(events)}
+	c := DoctorCheck{Name: "registration-identities", Status: "PASS", Detail: lang.Text("cli.doctor.recorded_identities_have_no_location_errors", nil), Errors: len(events)}
 	if err != nil {
 		c.Status, c.Detail = "WARN", err.Error()
 	} else if len(events) > 0 {

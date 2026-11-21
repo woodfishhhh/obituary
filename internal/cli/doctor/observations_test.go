@@ -24,7 +24,7 @@ func TestDoctorObservationQueueIsReadOnly(t *testing.T) {
 	clitest.WriteFixture(t, filepath.Join(home, "observations", "dead", "failed.json"), "{}")
 	clitest.WriteFixture(t, filepath.Join(home, "observations", "half.tmp"), "{")
 	before := clitest.TreeSnapshot(t, home)
-	check := diagnoseHookQueue(home, now)
+	check := english.diagnoseHookQueue(home, now)
 	if check.Status != "WARN" || check.Queue.Pending != 1 || check.Queue.Dead != 1 || check.Queue.Partial != 1 || !strings.Contains(check.Detail, "oldest 2h0m0s") {
 		t.Fatalf("queue diagnosis: %+v", check)
 	}
@@ -35,7 +35,7 @@ func TestDoctorObservationQueueIsReadOnly(t *testing.T) {
 		t.Fatal("doctor changed queue")
 	}
 	absent := filepath.Join(t.TempDir(), "absent")
-	if check := diagnoseHookQueue(absent, now); check.Status != "PASS" || check.Queue.Pending != 0 {
+	if check := english.diagnoseHookQueue(absent, now); check.Status != "PASS" || check.Queue.Pending != 0 {
 		t.Fatal(check)
 	}
 	if _, err := os.Stat(absent); !os.IsNotExist(err) {

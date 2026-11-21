@@ -29,14 +29,14 @@ func EnsureDaemon(home string, quiet bool) error {
 		switch {
 		case quiet:
 		case errors.Is(err, core.ErrUnsupported): // macOS / Linux: no resident daemon, only the user timer
-			fmt.Fprintln(os.Stderr, "note: no background timer serves this data directory, so lifespans run out at the next `obit reap` or agent hook; `obit daemon enable` installs a 5-minute user timer")
+			fmt.Fprintln(os.Stderr, Text("cli.daemon.no_timer"))
 		default:
-			fmt.Fprintf(os.Stderr, "warning: could not start the daemon (%v); run `obit reap` or `obit daemon enable`\n", err)
+			fmt.Fprintf(os.Stderr, Text("cli.daemon.start_failed"), err)
 		}
 		return err
 	}
 	if !quiet && RunnerAutostart() == "" {
-		fmt.Fprintln(os.Stderr, "started a daemon for now; `obit daemon enable` sets up the hidden 5-minute runner that survives restarts")
+		fmt.Fprintln(os.Stderr, Text("cli.daemon.started_temporarily"))
 	}
 	return nil
 }

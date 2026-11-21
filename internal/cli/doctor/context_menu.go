@@ -7,7 +7,7 @@ import (
 
 var ContextMenuRegistry = contextmenu.UserRegistry
 
-func diagnoseContextMenu(executable cmdutil.Executable) DoctorCheck {
+func (lang diagnostics) diagnoseContextMenu(executable cmdutil.Executable) DoctorCheck {
 	c := DoctorCheck{Name: "context-menu", Status: "PASS"}
 	exe, err := executable.Path()
 	if err != nil {

@@ -27,9 +27,9 @@ func NewCmd() *cobra.Command {
 				return err
 			}
 			if was {
-				fmt.Println("no longer trusted:", path)
+				fmt.Println(cmdutil.Text("cli.untrust.no_longer_trusted"), path)
 			} else {
-				fmt.Println("was not trusted:", path)
+				fmt.Println(cmdutil.Text("cli.untrust.was_not_trusted"), path)
 			}
 			return nil
 		},

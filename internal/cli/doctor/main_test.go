@@ -1,6 +1,7 @@
 package doctor
 
 import (
+	"github.com/woodfishhhh/obituary/internal/i18n"
 	"os"
 	"testing"
 
@@ -29,3 +30,5 @@ func TestMain(m *testing.M) {
 	_ = os.RemoveAll(cwd)
 	os.Exit(code)
 }
+
+var english = diagnostics{i18n.NewLocalizer(i18n.English)}

@@ -21,7 +21,7 @@ func NewCmd() *cobra.Command {
 			case "resurrect":
 				return resurrectLatest(cmd)
 			default:
-				return fmt.Errorf("unknown context menu action %q", args[0])
+				return fmt.Errorf(cmdutil.Text("cli.context_menu.unknown_context_menu_action"), args[0])
 			}
 		},
 	}
@@ -42,10 +42,10 @@ func proposePolicies(cmd *cobra.Command, paths []string) error {
 		if err != nil {
 			return err
 		}
-		fmt.Fprintf(cmd.OutOrStdout(), "文件夹策略 #%d：%s，%s，age=%s，%s。\n", p.ID, p.Path, p.Lifespan, p.Age, p.Consent)
+		fmt.Fprintf(cmd.OutOrStdout(), cmdutil.Text("cli.context_menu.folder_policy"), p.ID, p.Path, p.Lifespan, p.Age, p.Consent)
 		for _, proposal := range st.Proposals {
 			if proposal.WatchID == p.ID {
-				fmt.Fprintf(cmd.OutOrStdout(), "已提议，用 obit approve %d 批准。\n", proposal.ID)
+				fmt.Fprintf(cmd.OutOrStdout(), cmdutil.Text("cli.watch.proposed"), proposal.ID)
 			}
 		}
 	}
@@ -75,14 +75,14 @@ func resurrectLatest(cmd *cobra.Command) error {
 }
 
 func restoredText(r core.GraveResult) string {
-	return fmt.Sprintf("已复活 #%d  %s", r.Burial.ID, r.Path)
+	return fmt.Sprintf(cmdutil.Text("cli.context_menu.resurrected"), r.Burial.ID, r.Path)
 }
 
 func latest(view *core.GraveyardView) (string, *core.GraveResult, error) {
 	// A scan/recovery problem must not silently select an older deletion.
 	for _, pending := range view.Pending {
 		if pending.Burial == nil || !slices.ContainsFunc(view.Restored, func(r core.GraveResult) bool { return r.Burial.ID == pending.Burial.ID }) {
-			return "", nil, errors.New("墓地仍有待恢复记录，请先运行 obit graveyard 和 obit reap")
+			return "", nil, errors.New(cmdutil.Text("cli.context_menu.recovery_needed"))
 		}
 	}
 	var best *core.Burial
@@ -100,7 +100,7 @@ func latest(view *core.GraveyardView) (string, *core.GraveResult, error) {
 		}
 	}
 	if best == nil {
-		return "", nil, errors.New("墓地为空；回收站模式下的文件请从系统回收站还原")
+		return "", nil, errors.New(cmdutil.Text("cli.context_menu.empty"))
 	}
 	return strconv.FormatInt(best.ID, 10), receipt, nil
 }

@@ -3,6 +3,7 @@ package update
 import (
 	"errors"
 	"fmt"
+	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"io"
 	"os"
 
@@ -22,10 +23,10 @@ func newCmd(checker *update.Checker) *cobra.Command {
 	cmd := &cobra.Command{Use: "update", Short: "Check or install a stable update", Args: cobra.NoArgs}
 	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
 		if waitPID < 0 || cmd.Flags().Changed("wait-pid") && waitPID == 0 {
-			return errors.New("--wait-pid must be a positive process ID")
+			return errors.New(cmdutil.Text("cli.update.wait_pid_must_be_a_positive_process"))
 		}
 		if !apply && (waitPID != 0 || relaunch) {
-			return errors.New("--wait-pid and --relaunch-gui require --apply")
+			return errors.New(cmdutil.Text("cli.update.wait_pid_and_relaunch_gui_require_apply"))
 		}
 		home, err := userdirs.Data()
 		if err != nil {
@@ -52,7 +53,7 @@ func newCmd(checker *update.Checker) *cobra.Command {
 				return err
 			}
 			if state.LastError != "" {
-				return fmt.Errorf("check update: %s", state.LastError)
+				return fmt.Errorf(cmdutil.Text("cli.update.check_update"), state.LastError)
 			}
 			return applyUpdate(cmd, home, waitPID, relaunch)
 		}
@@ -82,9 +83,9 @@ func applyUpdate(cmd *cobra.Command, home string, waitPID int, relaunch bool) er
 func showHowToUpdate(out io.Writer, ap update.Applicability, command string, newer bool) {
 	switch {
 	case command != "":
-		fmt.Fprintln(out, "Update:", command)
+		fmt.Fprintln(out, cmdutil.Text("cli.update.update"), command)
 	case newer && ap.Can:
-		fmt.Fprintln(out, "Update: run obit update --apply (replaces only Obituary's own programs in this folder)")
+		fmt.Fprintln(out, cmdutil.Text("cli.update.update_run_obit_update_apply_replaces_only"))
 	case newer && ap.Blocked != "":
 		fmt.Fprintln(out, (&update.BlockedError{Reason: ap.Blocked, Detail: ap.Detail}).Error())
 	}
@@ -95,20 +96,20 @@ func showUpdate(cmd *cobra.Command, home string, state update.Cache, automatic b
 	ap := update.Review(exe, buildinfo.Version, state.Latest.Version)
 	newer := update.Newer(buildinfo.Version, state.Latest.Version)
 	out := cmd.OutOrStdout()
-	fmt.Fprintf(out, "Current: %s\nLatest: %s\nNewer: %t\nAutomatic checks: %t\nChannel: %s\n", buildinfo.Version, state.Latest.Version, newer, automatic, ap.Channel)
+	fmt.Fprintf(out, cmdutil.Text("cli.update.status"), buildinfo.Version, state.Latest.Version, newer, automatic, ap.Channel)
 	showHowToUpdate(out, ap, update.Command(ap.Channel, state.Latest.Version, exe), newer)
 	if state.Latest.URL != "" {
-		fmt.Fprintln(out, "Release:", state.Latest.URL)
+		fmt.Fprintln(out, cmdutil.Text("cli.update.release"), state.Latest.URL)
 	}
 	if state.LastError != "" {
-		fmt.Fprintln(out, "Last check:", state.LastError)
+		fmt.Fprintln(out, cmdutil.Text("cli.update.last_check"), state.LastError)
 	}
 	if state.CheckedAt.IsZero() {
-		fmt.Fprintln(out, "No cached check; run obit update --check.")
+		fmt.Fprintln(out, cmdutil.Text("cli.update.no_cached_check_run_obit_update_check"))
 	}
 	last, err := update.ReadLastApply(home)
 	if last != nil {
-		fmt.Fprintf(out, "Last update to %s: success=%t; installed=%s; log: %s\n", last.TargetVersion, last.Success, last.Version, last.LogPath)
+		fmt.Fprintf(out, cmdutil.Text("cli.update.last_update_to_success_installed_log"), last.TargetVersion, last.Success, last.Version, last.LogPath)
 		if last.Error != "" {
 			fmt.Fprintln(out, last.Error)
 		}

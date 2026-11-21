@@ -65,59 +65,59 @@ func NewCmd() *cobra.Command {
 
 func printListing(listing GraveyardListing, scanErr error) error {
 	for _, r := range listing.Restored {
-		fmt.Printf("#%d resurrected  %s (recovered)\n", r.Burial.ID, r.Path)
+		fmt.Printf(cmdutil.Text("cli.graveyard.resurrected_recovered"), r.Burial.ID, r.Path)
 	}
 	if len(listing.Burials) == 0 && len(listing.Pending) == 0 && scanErr == nil {
-		fmt.Println("the graveyard is empty")
+		fmt.Println(cmdutil.Text("cli.graveyard.empty"))
 		return nil
 	}
 	w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(w, "ID\tBURIED\tPURGE\tSIZE\tPATH")
+	fmt.Fprintln(w, cmdutil.Text("cli.graveyard.header"))
 	for _, b := range listing.Burials {
 		printBurial(w, b)
 	}
 	if err := w.Flush(); err != nil {
 		return err
 	}
-	fmt.Printf("pending recovery: %d\n", len(listing.Pending))
+	fmt.Printf(cmdutil.Text("cli.daemon.pending_recovery"), len(listing.Pending))
 	for _, p := range listing.Pending {
-		fmt.Printf("%s  %s", p.Status, p.Manifest)
+		fmt.Printf("%s  %s", cmdutil.Localizer().Label(p.Status), p.Manifest)
 		if p.Error != "" {
-			fmt.Printf("  WARN: %s", p.Error)
+			fmt.Printf(cmdutil.Text("cli.graveyard.warn"), p.Error)
 		}
 		fmt.Println()
 	}
 	if scanErr != nil {
-		fmt.Fprintln(os.Stderr, "warning:", scanErr)
+		fmt.Fprintln(os.Stderr, cmdutil.Text("cli.warning_prefix"), scanErr)
 	}
 	return nil
 }
 
 func printBurial(w io.Writer, b ledger.Burial) {
-	purge := "in " + lifespan.FormatRemaining(time.Until(b.PurgeAt))
+	purge := cmdutil.Text("cli.time.in_prefix") + lifespan.FormatRemaining(time.Until(b.PurgeAt))
 	if b.PurgeIntent != nil {
 		retry := b.NextPurgeAttempt
 		if retry.IsZero() {
 			retry = b.PurgeIntent.VerifiedAt
 		}
-		purge = "purging (retry at " + retry.Local().Format(cmdutil.TimeLayout) + ")"
+		purge = cmdutil.Text("cli.graveyard.purging_retry_at") + retry.Local().Format(cmdutil.TimeLayout) + ")"
 	}
 	if b.IdentityMismatch != "" {
-		purge = "never (identity mismatch)"
+		purge = cmdutil.Text("cli.graveyard.never_identity_mismatch")
 	}
 	fmt.Fprintf(w, "#%d\t%s\t%s\t%s\t%s", b.ID, b.BuriedAt.Local().Format(cmdutil.TimeLayout),
 		purge, textutil.Bytes(b.Size), b.Path)
 	if len(b.Contains) > 0 {
-		fmt.Fprint(w, "  contains")
+		fmt.Fprint(w, cmdutil.Text("cli.graveyard.contains"))
 		for _, id := range b.Contains {
 			fmt.Fprintf(w, " #%d", id)
 		}
 	}
 	if b.PurgeIntent != nil && b.LastPurgeError != "" {
-		fmt.Fprint(w, "  WARN: ", b.LastPurgeError)
+		fmt.Fprint(w, cmdutil.Text("cli.graveyard.warn_printburial"), b.LastPurgeError)
 	}
 	if b.IdentityMismatch != "" {
-		fmt.Fprint(w, "  WARN: ", b.IdentityMismatch)
+		fmt.Fprint(w, cmdutil.Text("cli.graveyard.warn_printburial"), b.IdentityMismatch)
 	}
 	fmt.Fprintln(w)
 }

@@ -38,13 +38,13 @@ func NewCmd() *cobra.Command {
 			language := cmdutil.Localizer()
 			reportErr := cmdutil.ReportBury(results, asJSON, func(r core.GraveResult) string {
 				if r.Action == core.ActionRecycled {
-					return language.Text("cli.bury.recycled", map[string]any{"Action": r.Action, "Ref": r.Ref})
+					return language.Text("cli.bury.recycled", map[string]any{"Action": language.Label(r.Action), "Ref": r.Ref})
 				}
 				if r.Action == core.ActionResurrected && r.Burial != nil {
 					return language.Text("cli.bury.resurrected", map[string]any{"ID": r.Burial.ID, "Path": r.Path})
 				}
 				if r.Burial == nil {
-					return fmt.Sprintf("%-8s %s", r.Action, r.Ref)
+					return fmt.Sprintf("%-8s %s", language.Label(r.Action), r.Ref)
 				}
 				return language.Text("cli.bury.buried", map[string]any{
 					"ID": r.Burial.ID, "Path": r.Burial.Path, "Size": textutil.Bytes(r.Burial.Size),

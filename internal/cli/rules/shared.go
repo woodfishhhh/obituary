@@ -2,6 +2,7 @@ package rules
 
 import (
 	"errors"
+	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"os"
 	"path/filepath"
 
@@ -10,7 +11,9 @@ import (
 	"github.com/woodfishhhh/obituary/internal/rules"
 )
 
-func CurrentProject() (project.Project, error) {
+func CurrentProject() (project.Project, error) { return currentProject(false) }
+
+func currentProject(asJSON bool) (project.Project, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return project.Project{}, err
@@ -20,7 +23,7 @@ func CurrentProject() (project.Project, error) {
 		return p, err
 	}
 	if !ok {
-		return p, errors.New("not inside a Git work tree")
+		return p, errors.New(cmdutil.OutputLocalizer(asJSON).Text("cli.rules.not_inside_a_git_work_tree", nil))
 	}
 	return p, nil
 }

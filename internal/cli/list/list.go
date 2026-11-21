@@ -80,7 +80,7 @@ func printItems(svc *core.Service, items []ledger.Item, now time.Time, language 
 		}
 		if status := svc.WatchStatus(item, now); status != nil {
 			if strings.HasPrefix(item.LastError, "folder child is still active") {
-				note = fmt.Sprintf("retry %d", item.Attempts)
+				note = fmt.Sprintf(language.Text("cli.list.retry_count", nil), item.Attempts)
 			}
 			note += "; " + language.Text("cli.list.quiet", map[string]any{"QuietFor": status.QuietFor, "StableWindow": status.StableWindow, "NextCheck": status.NextCheck.Format(time.RFC3339)})
 		}

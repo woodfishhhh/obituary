@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/core"
-	"github.com/woodfishhhh/obituary/internal/textutil"
+	"github.com/woodfishhhh/obituary/internal/core/lifespan"
 )
 
 func OnlyAuditErrors(err error) bool {
@@ -40,9 +40,9 @@ func printGraveResult(r core.GraveResult, describe func(core.GraveResult) string
 		fmt.Println(describe(r))
 		return
 	}
-	label := fmt.Sprintf("ref=%q", r.Ref)
+	label := fmt.Sprintf(language.Text("cli.error_ref", nil), r.Ref)
 	if r.Burial != nil {
-		label += fmt.Sprintf(" id=%d path=%s", r.Burial.ID, r.Burial.Path)
+		label += fmt.Sprintf(language.Text("cli.error_identity", nil), r.Burial.ID, r.Burial.Path)
 	}
 	if r.Action == core.ActionResurrected && r.Path != "" {
 		fmt.Println(describe(r))
@@ -88,7 +88,7 @@ func printBuryResult(r core.GraveResult, describe func(core.GraveResult) string)
 	if r.Detail != "" {
 		detail = r.Detail
 	}
-	fmt.Println(language.Text("cli.bury.error", map[string]any{"Action": r.Action, "Ref": r.Ref, "Text": detail}))
+	fmt.Println(language.Text("cli.bury.error", map[string]any{"Action": language.Label(r.Action), "Ref": r.Ref, "Text": detail}))
 }
 
 // errReported marks failures whose details were already printed.
@@ -112,7 +112,14 @@ func PrintJSON(v any) error {
 }
 
 func When(t time.Time) string {
-	return fmt.Sprintf("%s (%s)", t.Local().Format(TimeLayout), textutil.DueIn(time.Until(t)))
+	return fmt.Sprintf("%s (%s)", t.Local().Format(TimeLayout), DueIn(time.Until(t)))
+}
+
+func DueIn(left time.Duration) string {
+	if left <= 0 {
+		return Text("cli.time.due")
+	}
+	return fmt.Sprintf(Text("cli.time.remaining"), lifespan.FormatRemaining(left))
 }
 
 func Report(results []core.Result, asJSON bool) error {
@@ -123,10 +130,10 @@ func Report(results []core.Result, asJSON bool) error {
 	} else {
 		for _, r := range results {
 			if r.Error != "" {
-				fmt.Fprintln(os.Stderr, "error:", r.Error)
+				fmt.Fprintln(os.Stderr, Text("cli.error_prefix"), r.Error)
 				continue
 			}
-			fmt.Printf("#%d %-8s %s  expires %s\n", r.Item.ID, r.Action, r.Item.Path, When(r.Item.ExpiresAt))
+			fmt.Printf(Text("cli.mark.receipt"), r.Item.ID, Localizer().Label(r.Action), r.Item.Path, When(r.Item.ExpiresAt))
 		}
 	}
 	if core.Failed(results) {

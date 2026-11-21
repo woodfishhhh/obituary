@@ -50,18 +50,18 @@ func newCmd(d dependencies) *cobra.Command {
 				return nil
 			}
 			input := bufio.NewReader(cmd.InOrStdin())
-			if err := confirm(cmd, input, d.terminal(), yes, "Apply this uninstall plan? [y/N] "); err != nil {
+			if err := confirm(cmd, input, d.terminal(), yes, cmdutil.Text("cli.uninstall.apply_this_uninstall_plan_y_n")); err != nil {
 				return err
 			}
 			if purgeData {
-				if err := confirm(cmd, input, d.terminal(), yes, "Permanently purge the listed graves and remove Obituary data? [y/N] "); err != nil {
+				if err := confirm(cmd, input, d.terminal(), yes, cmdutil.Text("cli.uninstall.permanently_purge_the_listed_graves_and_remove")); err != nil {
 					return err
 				}
 			}
 			if err := p.apply(d, cmd.OutOrStdout(), purgeData); err != nil {
 				return err
 			}
-			fmt.Fprintln(cmd.OutOrStdout(), "Uninstalled integrations and background services. Remove binaries with your installer or package manager.")
+			fmt.Fprintln(cmd.OutOrStdout(), cmdutil.Text("cli.uninstall.uninstalled_integrations_and_background_services_remove_binaries"))
 			return nil
 		},
 	}
@@ -76,15 +76,15 @@ func confirm(cmd *cobra.Command, input *bufio.Reader, terminal, yes bool, prompt
 		return nil
 	}
 	if !terminal {
-		return errors.New("not a terminal: re-run with --yes; deleting data also requires --purge-data")
+		return errors.New(cmdutil.Text("cli.uninstall.not_a_terminal_re_run_with_yes"))
 	}
 	fmt.Fprint(cmd.OutOrStdout(), prompt)
 	answer, err := input.ReadString('\n')
 	if err != nil {
-		return fmt.Errorf("confirmation not read; nothing changed: %w", err)
+		return fmt.Errorf(cmdutil.Text("cli.uninstall.confirmation_not_read_nothing_changed"), err)
 	}
 	if a := strings.ToLower(strings.TrimSpace(answer)); a != "y" && a != "yes" {
-		return errors.New("nothing changed")
+		return errors.New(cmdutil.Text("cli.init.nothing_changed"))
 	}
 	return nil
 }
