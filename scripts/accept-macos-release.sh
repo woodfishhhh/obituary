@@ -68,6 +68,8 @@ printf 'notification fixture\n' > "$HOME/obit-notify.txt"
 "$cli" mark "$HOME/obit-calendar.txt" 2d
 "$cli" bury "$HOME/obit-retention.txt" "$HOME/obit-notify.txt"
 "$cli" graveyard --json
+pkill -TERM -x obit-gui
+sleep 2
 if ! pgrep -x obitd; then "$app/Contents/MacOS/obitd" --tray > "$ev/tray.log" 2>&1 & sleep 3; fi
 tray='tell application "System Events" to tell (first application process whose unix id is '
 if traypid=$(pgrep -xo obitd); then
@@ -77,7 +79,7 @@ if traypid=$(pgrep -xo obitd); then
   snap tray-menu
   ui -e "${tray}click menu item \"Open Obituary\" of menu 1 of menu bar item 1 of last menu bar" || true
   sleep 2
-  pgrep -lx obit-gui
+  pgrep -lx obit-gui || echo 'No window process after tray menu action'
   snap tray-opened-window
 fi
 for style in light dark; do
@@ -93,7 +95,9 @@ svc="gui/$(id -u)/site.woodfish.obituary.tray"
 plist="$HOME/Library/LaunchAgents/site.woodfish.obituary.tray.plist"
 swiftc "$GITHUB_WORKSPACE/scripts/accept-macos-controls.swift" -o "$RUNNER_TEMP/controls"
 click() {
-  ui "$GITHUB_WORKSPACE/scripts/accept-macos-click.applescript" "$(pgrep -xo obit-gui)" "$1" && return 0
+  if [[ $1 == Settings ]]; then
+    ui "$GITHUB_WORKSPACE/scripts/accept-macos-click.applescript" "$(pgrep -xo obit-gui)" "$1" && return 0
+  fi
   for i in 1 2 3 4; do
     snap "settings-$i"
     "$RUNNER_TEMP/controls" "$ev/settings-$i.png" "$1" && return 0
@@ -116,6 +120,7 @@ if [[ -f $plist ]]; then
   launchctl print "$svc" >/dev/null || echo "after toggle off: launchctl exit=$?"
 else echo 'No login plist after attempted UI toggle'; fi
 snap login-off
+if ! pgrep -x obitd; then "$app/Contents/MacOS/obitd" --tray >> "$ev/tray.log" 2>&1 & sleep 3; fi
 if traypid=$(pgrep -xo obitd); then
   path="of menu 1 of menu bar item 1 of last menu bar"
   tray="tell application \"System Events\" to tell (first application process whose unix id is $traypid) to "

@@ -18,8 +18,11 @@ for line in req.results ?? [] {
     let rect = line.boundingBox
     var pt = CGPoint(x: rect.midX * screen.width, y: (1 - rect.midY) * screen.height)
     guard box.contains(pt) else { continue }
-    if settings ? text == "Settings" : text.hasPrefix("Start the tray at sign") || text.hasPrefix("Start the tray when you sign") {
-        if !settings { pt.x = box.maxX - 65 }
+    if settings ? text == "Settings" : text.hasPrefix("Start the tray when you sign") {
+        if !settings {
+            if pt.y > box.maxY - 32 { continue }
+            pt.x = box.maxX - 82
+        }
         print("click \(text) at \(pt) in \(box)")
         for kind in [CGEventType.leftMouseDown, .leftMouseUp] {
             CGEvent(mouseEventSource: nil, mouseType: kind, mouseCursorPosition: pt, mouseButton: .left)?.post(tap: .cghidEventTap)
