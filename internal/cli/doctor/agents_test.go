@@ -131,7 +131,7 @@ func TestDoctorExtraAgentLifecycle(t *testing.T) {
 		if err != nil || checks["gemini"].Status != status || checks["gemini"].Installation != installation {
 			t.Fatalf("gemini: %+v %v", checks["gemini"], err)
 		}
-want := fmt.Sprintf("另有 %d 家 agent 可接入：obit init --show 查看", len(initcmd.AgentNames())-3)
+		want := fmt.Sprintf("另有 %d 家 agent 可接入：obit init --show 查看", len(initcmd.AgentNames())-3)
 		if checks["agents"].Detail != want {
 			t.Fatalf("installed agent counted as available: %+v", checks["agents"])
 		}
