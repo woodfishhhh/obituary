@@ -71,11 +71,23 @@ func BurialReferenceID(ref string) (id int64, numeric bool, err error) {
 	return ledger.BurialReferenceID(ref)
 }
 
+// ReferenceError preserves the original diagnostic and cause for protocol
+// consumers while allowing the CLI to explain common lookup failures.
+type ReferenceError struct {
+	Kind     string
+	Ref      string
+	BurialID string
+	cause    error
+}
+
+func (e *ReferenceError) Error() string { return e.cause.Error() }
+func (e *ReferenceError) Unwrap() error { return e.cause }
+
 func missingBurial(ref string) error {
 	if id, err := strconv.ParseInt(strings.TrimPrefix(ref, "#"), 10, 64); err == nil {
-		return fmt.Errorf("burial %d was not found; for a filename use ./%s or an absolute path", id, strings.TrimPrefix(ref, "#"))
+		return &ReferenceError{Kind: "burial_id", Ref: ref, cause: fmt.Errorf("burial %d was not found; for a filename use ./%s or an absolute path", id, strings.TrimPrefix(ref, "#"))}
 	}
-	return fmt.Errorf("%s is not in the graveyard; if an alias cannot be resolved, use an ID", ref)
+	return &ReferenceError{Kind: "burial_path", Ref: ref, cause: fmt.Errorf("%s is not in the graveyard; if an alias cannot be resolved, use an ID", ref)}
 }
 
 func matchingPaths(paths []string, path string) ([]int, bool) {

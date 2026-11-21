@@ -89,7 +89,8 @@ func applyCmd(use, short string, dryRun bool) *cobra.Command {
 				case auto.Skipped:
 					fmt.Printf(cmdutil.Text("cli.rules.skipped"), d.Path, d.Reason)
 				default:
-					fmt.Printf(cmdutil.Text("cli.rules.by"), cmdutil.Localizer().Label(d.Action), d.Unit, d.Lifespan, d.Rule)
+					l := cmdutil.Localizer()
+					fmt.Printf(l.Text("cli.rules.by", nil), cmdutil.Column(l, l.Label(d.Action)), d.Unit, d.Lifespan, d.Rule)
 				}
 			}
 			return nil

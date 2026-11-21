@@ -87,6 +87,7 @@ const ReasonExpired = lifecycle.ReasonExpired
 const ReasonBury = lifecycle.ReasonBury
 
 type GraveResult = lifecycle.GraveResult
+type ReferenceError = lifecycle.ReferenceError
 
 func GraveFailed(results []GraveResult) bool {
 	return lifecycle.GraveFailed(results)

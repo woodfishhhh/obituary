@@ -137,7 +137,7 @@ func (s *Service) checkBuried(st *State, path string, identity *Identity, roots 
 		}
 	}
 	refuse := func(id string) error {
-		return &RefusedError{Path: path, Reason: "already in the graveyard; first use obit resurrect " + id}
+		return &ReferenceError{Kind: "already_buried", Ref: path, BurialID: id, cause: &RefusedError{Path: path, Reason: "already in the graveyard; first use obit resurrect " + id}}
 	}
 	for _, b := range st.Burials {
 		sameObject := identity != nil && b.Identity != nil && *identity == *b.Identity

@@ -248,7 +248,7 @@ func CapabilityText(c hook.Capabilities) string {
 		case hook.Limited:
 			level = language.Text("cli.init.limited", nil)
 		}
-		line := field.name + ": " + level
+		line := language.HostText(field.name) + ": " + level
 		if field.Detail != "" {
 			line += "; " + language.HostText(field.Detail)
 		}
@@ -256,25 +256,32 @@ func CapabilityText(c hook.Capabilities) string {
 		if target == (hook.Target{}) {
 			target = c.Target
 		}
-		if text := targetText(target); text != "" {
+		if text := targetTextFor(language, target); text != "" {
 			line += "; " + text
 		}
 		if field.ActuallyVerified() {
 			v := field.Verification
-			line += language.Text("cli.init.verified_target", nil) + targetText(v.Target) + "; " + language.HostText(v.Evidence)
+			line += language.Text("cli.init.verified_target", nil) + targetTextFor(language, v.Target) + "; " + language.HostText(v.Evidence)
 		}
 		parts = append(parts, line)
 	}
 	return strings.Join(parts, "\n  ")
 }
 
-func targetText(t hook.Target) string {
+var targetKeys = map[string]string{"宿主": "cli.target.host", "发行版": "cli.target.distribution", "版本": "cli.target.version", "作用域": "cli.target.scope"}
+
+func targetText(t hook.Target) string { return targetTextFor(nil, t) }
+func targetTextFor(l *i18n.Localizer, t hook.Target) string {
 	var parts []string
 	for _, field := range []struct{ name, value string }{
 		{"宿主", t.Host}, {"发行版", t.Distribution}, {"版本", t.Version}, {"作用域", t.Scope},
 	} {
 		if field.value != "" {
-			parts = append(parts, field.name+"="+field.value)
+			name := field.name
+			if l != nil {
+				name = l.Text(targetKeys[name], nil)
+			}
+			parts = append(parts, name+"="+field.value)
 		}
 	}
 	return strings.Join(parts, ", ")

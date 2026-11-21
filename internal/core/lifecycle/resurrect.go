@@ -57,7 +57,7 @@ func (s *Service) resurrectLocked(ref string) (GraveResult, error) {
 	b, pending, lookupErr := s.findResurrection(state, ref)
 	result.Burial = b
 	if lookupErr != nil {
-		result.Error = lookupErr.Error()
+		result.Error, result.Err = lookupErr.Error(), lookupErr
 		return result, nil
 	}
 	if pending != nil {

@@ -24,7 +24,7 @@ func printContextMenuChange(out io.Writer, change contextmenu.Change) {
 	if change.After == nil {
 		action, tree = "remove", change.Before
 	}
-	fmt.Fprintf(out, "  %-9s HKCU\\Software\\Classes\\%s\n", action, change.Path)
+	fmt.Fprintf(out, "  %-9s HKCU\\Software\\Classes\\%s\n", cmdutil.Column(cmdutil.Localizer(), cmdutil.Localizer().Label(action)), change.Path)
 	for _, key := range slices.Sorted(maps.Keys(tree)) {
 		values := tree[key]
 		label := values["MUIVerb"]

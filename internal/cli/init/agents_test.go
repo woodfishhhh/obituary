@@ -148,7 +148,7 @@ func TestRegisteredAgentCLILifecycle(t *testing.T) {
 					t.Fatal("repeated installation rewrote files")
 				}
 				out, _, err = clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), append(args, "--show")...)
-				if err != nil || manual && !strings.Contains(out, "manual steps required") {
+				if err != nil || manual && !strings.Contains(strings.ToLower(out), "manual steps required") {
 					t.Fatalf("show: %s %v", out, err)
 				}
 				if !reflect.DeepEqual(installedRoot, clitest.TreeSnapshot(t, root)) || !reflect.DeepEqual(installedRepo, clitest.TreeSnapshot(t, repo)) {
@@ -227,7 +227,7 @@ func TestCapabilityTextKeepsQualificationAndVerificationSeparate(t *testing.T) {
 	t.Parallel()
 	c := hook.Capabilities{Target: hook.Target{Host: "Host CLI", Distribution: "CN", Version: "v1", Scope: "user/project"}, DeleteGuard: hook.Support{Level: hook.Supported}, MCP: hook.Support{Level: hook.Limited, Target: hook.Target{Host: "Host IDE", Distribution: "global", Version: "v2", Scope: "explicit file"}}}
 	text := initcmd.CapabilityText(c)
-	for _, want := range []string{"delete guard: supported", "宿主=Host CLI", "发行版=CN", "版本=v1", "作用域=user/project", "MCP: limited", "宿主=Host IDE"} {
+	for _, want := range []string{"delete guard: supported", "Host=Host CLI", "Distribution=CN", "Version=v1", "Scope=user/project", "MCP: limited", "Host=Host IDE"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("missing %q: %s", want, text)
 		}
@@ -237,7 +237,7 @@ func TestCapabilityTextKeepsQualificationAndVerificationSeparate(t *testing.T) {
 	}
 	c.DeleteGuard.Verification = hook.Verification{Target: hook.Target{Host: "Host CLI", Version: "v1.1", Scope: "project"}, Evidence: "receipt example"}
 	verified := initcmd.CapabilityText(c)
-	if !strings.Contains(verified, "verified on: 宿主=Host CLI, 版本=v1.1, 作用域=project; receipt example") || strings.Contains(verified, "未限定") {
+	if !strings.Contains(verified, "verified on: Host=Host CLI, Version=v1.1, Scope=project; receipt example") || strings.Contains(verified, "未限定") {
 		t.Fatal("verification evidence omitted or noisy", verified)
 	}
 }
@@ -250,10 +250,10 @@ func TestCapabilityTextOmitsUnspecifiedFields(t *testing.T) {
 		want   string
 	}{
 		{"empty", hook.Target{}, "delete guard: supported"},
-		{"host", hook.Target{Host: "CLI"}, "delete guard: supported; 宿主=CLI"},
-		{"distribution", hook.Target{Distribution: "CN"}, "delete guard: supported; 发行版=CN"},
-		{"version", hook.Target{Version: "v2"}, "delete guard: supported; 版本=v2"},
-		{"scope", hook.Target{Scope: "user"}, "delete guard: supported; 作用域=user"},
+		{"host", hook.Target{Host: "CLI"}, "delete guard: supported; Host=CLI"},
+		{"distribution", hook.Target{Distribution: "CN"}, "delete guard: supported; Distribution=CN"},
+		{"version", hook.Target{Version: "v2"}, "delete guard: supported; Version=v2"},
+		{"scope", hook.Target{Scope: "user"}, "delete guard: supported; Scope=user"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()

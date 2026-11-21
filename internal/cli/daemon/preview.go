@@ -14,7 +14,9 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-var scheduleRemovalPreview = app.PreviewScheduleRemoval
+var scheduleRemovalPreview = func(daemon, home, config string) string {
+	return app.PreviewScheduleRemovalFor(cmdutil.Localizer(), daemon, home, config)
+}
 
 // Reuse init's read-only autostart plan and action/path/command presentation.
 func preview(out io.Writer, self cmdutil.Executable, home string, enabled, resident bool) error {
@@ -37,7 +39,7 @@ func preview(out io.Writer, self cmdutil.Executable, home string, enabled, resid
 		action, command = cmdutil.Text("cli.daemon.remove"), plan.Before
 	}
 	if plan.Pending() {
-		fmt.Fprintf(out, cmdutil.Text("cli.daemon.hkcu_run"), action, plan.Name, command)
+		fmt.Fprintf(out, cmdutil.Text("cli.daemon.hkcu_run"), cmdutil.Column(cmdutil.Localizer(), action), plan.Name, command)
 	} else {
 		fmt.Fprintf(out, cmdutil.Text("cli.daemon.unchanged_hkcu_run"), plan.Name)
 	}
@@ -48,7 +50,7 @@ func preview(out io.Writer, self cmdutil.Executable, home string, enabled, resid
 	if cmdutil.RunnerRunning(home) == enabled {
 		action = cmdutil.Text("cli.daemon.unchanged")
 	}
-	fmt.Fprintf(out, cmdutil.Text("cli.daemon.resident_obitd_for"), action, home)
+	fmt.Fprintf(out, cmdutil.Text("cli.daemon.resident_obitd_for"), cmdutil.Column(cmdutil.Localizer(), action), home)
 	return nil
 }
 
@@ -66,6 +68,6 @@ func previewSchedule(out io.Writer, daemon, home, config string, enabled, reside
 	if installed {
 		action = cmdutil.Text("cli.daemon.update")
 	}
-	fmt.Fprintf(out, cmdutil.Text("cli.daemon.scheduled_task_every_minutes_and_at_sign"), action, app.TaskName, int(app.Interval.Minutes()))
+	fmt.Fprintf(out, cmdutil.Text("cli.daemon.scheduled_task_every_minutes_and_at_sign"), cmdutil.Column(cmdutil.Localizer(), action), app.TaskName, int(app.Interval.Minutes()))
 	fmt.Fprintln(out, "    "+windows.ComposeCommandLine([]string{daemon, "--once", "--home", home, "--config-dir", config}))
 }

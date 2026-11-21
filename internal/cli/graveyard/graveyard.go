@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"text/tabwriter"
+
 	"time"
 
 	"github.com/spf13/cobra"
@@ -71,7 +71,7 @@ func printListing(listing GraveyardListing, scanErr error) error {
 		fmt.Println(cmdutil.Text("cli.graveyard.empty"))
 		return nil
 	}
-	w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
+	w := cmdutil.Table(os.Stdout, cmdutil.Language())
 	fmt.Fprintln(w, cmdutil.Text("cli.graveyard.header"))
 	for _, b := range listing.Burials {
 		printBurial(w, b)

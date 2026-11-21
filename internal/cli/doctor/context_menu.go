@@ -14,7 +14,11 @@ func (lang diagnostics) diagnoseContextMenu(executable cmdutil.Executable) Docto
 		c.Status, c.Detail = "FAIL", err.Error()
 		return c
 	}
-	st, err := contextmenu.Inspect(ContextMenuRegistry(), exe)
+	display := lang.Localizer
+	if lang.machine {
+		display = nil
+	}
+	st, err := contextmenu.InspectDisplay(ContextMenuRegistry(), exe, cmdutil.Language(), display)
 	if err != nil {
 		c.Status, c.Detail = "FAIL", err.Error()
 		return c

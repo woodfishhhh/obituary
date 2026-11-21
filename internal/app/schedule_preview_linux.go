@@ -3,6 +3,7 @@ package app
 import (
 	"errors"
 	"fmt"
+	"github.com/woodfishhhh/obituary/internal/i18n"
 	"os"
 	"path/filepath"
 	"strings"
@@ -35,13 +36,16 @@ func PreviewSchedule(daemon, home, config string, enabled bool) ([]ScheduleUnit,
 }
 
 func PreviewScheduleRemoval(daemon, home, config string) string {
+	return PreviewScheduleRemovalFor(nil, daemon, home, config)
+}
+func PreviewScheduleRemovalFor(l *i18n.Localizer, daemon, home, config string) string {
 	units, err := PreviewSchedule(daemon, home, config, false)
 	if err != nil {
-		return fmt.Sprintf("query failed for scheduled task %q: %v", TaskName, err)
+		return fmt.Sprintf(l.HostText("query failed for scheduled task %q: %v"), TaskName, err)
 	}
 	var lines []string
 	for _, unit := range units {
-		lines = append(lines, unit.Action+" "+unit.Path)
+		lines = append(lines, l.HostText(unit.Action)+" "+unit.Path)
 	}
 	return strings.Join(lines, "\n  ")
 }

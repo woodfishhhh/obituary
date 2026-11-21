@@ -30,7 +30,9 @@ type dependencies struct {
 func NewCmd() *cobra.Command {
 	return newCmd(dependencies{
 		runRegistry: runkey.Current, menuRegistry: contextmenu.UserRegistry(),
-		previewSchedule: app.PreviewScheduleRemoval, removeSchedule: app.RemoveSchedule, stop: app.Stop,
+		previewSchedule: func(daemon, home, config string) string {
+			return app.PreviewScheduleRemovalFor(cmdutil.Localizer(), daemon, home, config)
+		}, removeSchedule: app.RemoveSchedule, stop: app.Stop,
 		terminal: func() bool { return cmdutil.IsTerminal(os.Stdin) },
 	})
 }

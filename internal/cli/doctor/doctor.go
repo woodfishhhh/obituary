@@ -26,7 +26,10 @@ import (
 )
 
 // JSON diagnostics use the historical English text, regardless of the interface language.
-type diagnostics struct{ *i18n.Localizer }
+type diagnostics struct {
+	*i18n.Localizer
+	machine bool
+}
 
 type DoctorCheck struct {
 	Name         string                         `json:"name"`
@@ -53,7 +56,7 @@ func newCmdWithAgents(executable cmdutil.Executable, agents []string) *cobra.Com
 	cmd := &cobra.Command{
 		Use: "doctor", Short: "Check installation, integrations and data without changing anything", Args: cobra.NoArgs,
 		RunE: func(*cobra.Command, []string) error {
-			lang := diagnostics{cmdutil.OutputLocalizer(asJSON)}
+			lang := diagnostics{cmdutil.OutputLocalizer(asJSON), asJSON}
 			checks := lang.diagnose(time.Now(), executable, agents...)
 			if verbose {
 				for i := range checks {
@@ -68,7 +71,7 @@ func newCmdWithAgents(executable cmdutil.Executable, agents []string) *cobra.Com
 				}
 			} else {
 				for _, c := range checks {
-					fmt.Printf("%-4s %-12s %s\n", lang.Label(c.Status), c.Name, c.Detail)
+					fmt.Printf("%-4s %-12s %s\n", cmdutil.Column(lang.Localizer, lang.Label(c.Status)), c.Name, c.Detail)
 					if c.Capabilities != nil {
 						fmt.Printf("  %s\n", initcmd.CapabilityText(*c.Capabilities))
 					}

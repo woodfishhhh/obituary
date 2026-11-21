@@ -31,4 +31,4 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-var english = diagnostics{i18n.NewLocalizer(i18n.English)}
+var english = diagnostics{i18n.NewLocalizer(i18n.English), false}

@@ -30,7 +30,7 @@ func preview(out io.Writer, self cmdutil.Executable, home string, enabled, resid
 		return err
 	}
 	unit := units[0]
-	fmt.Fprintf(out, cmdutil.Text("cli.daemon.launchd_user_agent"), unit.Action, unit.Path)
+	fmt.Fprintf(out, cmdutil.Text("cli.daemon.launchd_user_agent"), cmdutil.Column(cmdutil.Localizer(), cmdutil.Localizer().Label(unit.Action)), unit.Path)
 	for _, line := range strings.Split(strings.TrimSuffix(unit.Content, "\n"), "\n") {
 		fmt.Fprintln(out, "    "+line)
 	}

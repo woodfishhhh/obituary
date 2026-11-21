@@ -23,7 +23,7 @@ func planStartup(self cmdutil.Executable, enabled bool) (*app.AutostartPlan, err
 		if !enabled {
 			action = "remove"
 		}
-		fmt.Printf("  %-9s HKCU Run %s %s\n", cmdutil.Localizer().Label(action), plan.Name, plan.After)
+		fmt.Printf("  %-9s HKCU Run %s %s\n", cmdutil.Column(cmdutil.Localizer(), cmdutil.Localizer().Label(action)), plan.Name, plan.After)
 	}
 	return plan, nil
 }

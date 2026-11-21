@@ -69,7 +69,8 @@ func printHandled(handled []core.AutoHandled, now time.Time) {
 	}
 	fmt.Println(cmdutil.Text("cli.proposals.registered_without_asking"))
 	for _, h := range handled {
-		fmt.Printf(cmdutil.Text("cli.proposals.expires_printhandled"), h.Item.ID, h.Class, cmdutil.DueIn(h.Item.ExpiresAt.Sub(now)), h.Item.Path)
+		l := cmdutil.Localizer()
+		fmt.Printf(l.Text("cli.proposals.expires_printhandled", nil), h.Item.ID, cmdutil.Column(l, h.Class), cmdutil.Column(l, cmdutil.DueIn(h.Item.ExpiresAt.Sub(now))), h.Item.Path)
 	}
 	fmt.Println(cmdutil.Text("cli.proposals.obit_spare_id_undoes_one_the_file"))
 }

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"text/tabwriter"
+
 	"time"
 
 	"github.com/spf13/cobra"
@@ -65,7 +65,7 @@ func printItems(svc *core.Service, items []ledger.Item, now time.Time, language 
 		fmt.Println(language.Text("cli.list.empty", nil))
 		return nil
 	}
-	w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
+	w := cmdutil.Table(os.Stdout, language.Language())
 	fmt.Fprintln(w, language.Text("cli.list.header", nil))
 	for _, item := range items {
 		note := item.Note

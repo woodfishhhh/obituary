@@ -44,7 +44,7 @@ func NewCmd() *cobra.Command {
 					return language.Text("cli.bury.resurrected", map[string]any{"ID": r.Burial.ID, "Path": r.Path})
 				}
 				if r.Burial == nil {
-					return fmt.Sprintf("%-8s %s", language.Label(r.Action), r.Ref)
+					return fmt.Sprintf("%-8s %s", cmdutil.Column(language, language.Label(r.Action)), r.Ref)
 				}
 				return language.Text("cli.bury.buried", map[string]any{
 					"ID": r.Burial.ID, "Path": r.Burial.Path, "Size": textutil.Bytes(r.Burial.Size),

@@ -74,11 +74,18 @@ func InspectExtensionFor(l *i18n.Localizer, s Scope, agent, kind, executable str
 	return status, nil
 }
 
+func manualPrefix(l *i18n.Localizer) string {
+	if l == nil {
+		return "需要手动步骤 (manual steps required): "
+	}
+	return l.Text("cli.extensions.manual_prefix", nil)
+}
+
 func manualExtensionStatus(l *i18n.Localizer, plan func(bool) ([]Change, error)) (ExtensionStatus, error) {
 	install, err := plan(false)
 	var manual *ManualSteps
 	if errors.As(err, &manual) {
-		return ExtensionStatus{Manual: true, Detail: l.HostText("需要手动步骤 (manual steps required): ") + manual.DisplaySteps(l)}, nil
+		return ExtensionStatus{Manual: true, Detail: manualPrefix(l) + manual.DisplaySteps(l)}, nil
 	}
 	if err != nil {
 		return ExtensionStatus{}, err
@@ -89,7 +96,7 @@ func manualExtensionStatus(l *i18n.Localizer, plan func(bool) ([]Change, error))
 			steps = append(steps, c.DisplayDetail(l))
 		}
 	}
-	return ExtensionStatus{Manual: true, Detail: l.HostText("需要手动步骤 (manual steps required): ") + strings.Join(steps, "\n")}, nil
+	return ExtensionStatus{Manual: true, Detail: manualPrefix(l) + strings.Join(steps, "\n")}, nil
 }
 
 func installedSkillOwner(changes []Change) bool {

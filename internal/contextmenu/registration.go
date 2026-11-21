@@ -86,6 +86,10 @@ func Inspect(reg Registry, executable string) (Status, error) {
 }
 
 func InspectLanguage(reg Registry, executable string, language i18n.Language) (Status, error) {
+	return InspectDisplay(reg, executable, language, nil)
+}
+
+func InspectDisplay(reg Registry, executable string, language i18n.Language, l *i18n.Localizer) (Status, error) {
 	wanted, err := registration(executable, language)
 	if err != nil {
 		return Status{}, err
@@ -98,24 +102,24 @@ func InspectLanguage(reg Registry, executable string, language i18n.Language) (S
 			return st, err
 		}
 		st.Installed = st.Installed || tree != nil
-		entries = append(entries, registrationDetails(path, tree, wanted[path])...)
+		entries = append(entries, registrationDetails(l, path, tree, wanted[path])...)
 		if !reflect.DeepEqual(tree, wanted[path]) {
 			st.Current = false
 			st.Detail += path + "; "
 		}
 	}
 	if !st.Installed {
-		st.Detail = "not installed; obit init --context-menu --yes"
+		st.Detail = l.HostText("not installed; obit init --context-menu --yes")
 	} else if st.Current {
-		st.Detail = "classic context menu installed; commands use current executable: " + executable
+		st.Detail = l.HostText("classic context menu installed; commands use current executable: ") + executable
 	} else {
-		st.Detail = "incomplete, modified or commands do not use current executable (" + executable + "): " + st.Detail
+		st.Detail = l.HostText("incomplete, modified or commands do not use current executable (") + executable + "): " + st.Detail
 	}
 	st.Detail += "\n" + strings.Join(entries, "\n")
 	return st, nil
 }
 
-func registrationDetails(path string, actual, wanted Tree) []string {
+func registrationDetails(l *i18n.Localizer, path string, actual, wanted Tree) []string {
 	var details []string
 	for _, key := range sortedKeys(wanted) {
 		label := wanted[key]["MUIVerb"]
@@ -132,7 +136,10 @@ func registrationDetails(path string, actual, wanted Tree) []string {
 			}
 		}
 		if actual == nil {
-			status = "INFO (missing)"
+			status = l.HostText("INFO (missing)")
+		}
+		if l != nil {
+			status = l.Label(status)
 		}
 		details = append(details, fmt.Sprintf("%s %s [%s] %s", status, path, key, label))
 	}

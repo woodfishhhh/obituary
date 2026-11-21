@@ -77,7 +77,7 @@ func planShortcuts(out io.Writer, exe string, uninstall bool) ([]integrate.Chang
 			return nil, err
 		}
 		for _, ch := range plan {
-			fmt.Fprintf(out, "  %-9s %s %s\n", ch.Action, ch.Path, ch.Detail)
+			fmt.Fprintf(out, "  %-9s %s %s\n", cmdutil.Column(cmdutil.Localizer(), cmdutil.Localizer().Label(ch.Action)), ch.Path, ch.Detail)
 		}
 		// Other installers' links remain visible in the plan and untouched.
 		plan = slices.DeleteFunc(plan, func(c integrate.Change) bool { return c.Action == "preserve" })
@@ -105,7 +105,7 @@ func showDesktop(out io.Writer, self cmdutil.Executable) error {
 	if err != nil {
 		return err
 	}
-	menu, err := contextmenu.Inspect(ContextMenuRegistry(), exe)
+	menu, err := contextmenu.InspectDisplay(ContextMenuRegistry(), exe, cmdutil.Language(), cmdutil.Localizer())
 	if err != nil {
 		return err
 	}

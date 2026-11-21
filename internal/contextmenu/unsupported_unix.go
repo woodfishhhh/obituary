@@ -47,6 +47,10 @@ func PlanLanguage(Registry, string, bool, i18n.Language) ([]Change, error) {
 func InspectLanguage(Registry, string, i18n.Language) (Status, error) {
 	return Status{Detail: unsupported().Error()}, nil
 }
+
+func InspectDisplay(reg Registry, exe string, language i18n.Language, _ *i18n.Localizer) (Status, error) {
+	return InspectLanguage(reg, exe, language)
+}
 func Run([]string, func(string, []string) ([]byte, error), func(string, string) error) error {
 	return unsupported()
 }

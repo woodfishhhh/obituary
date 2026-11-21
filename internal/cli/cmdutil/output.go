@@ -33,6 +33,7 @@ func ReportGraves(results []core.GraveResult, asJSON bool, describe func(core.Gr
 
 func printGraveResult(r core.GraveResult, describe func(core.GraveResult) string) {
 	language := Localizer()
+	r.Error = ReferenceText(language, r.Err, r.Error)
 	if r.Warning != "" {
 		fmt.Fprintln(os.Stderr, language.Text("cli.warning", map[string]any{"Text": r.Warning}))
 	}
@@ -88,6 +89,7 @@ func printBuryResult(r core.GraveResult, describe func(core.GraveResult) string)
 	if r.Detail != "" {
 		detail = r.Detail
 	}
+	detail = ReferenceText(language, r.Err, detail)
 	fmt.Println(language.Text("cli.bury.error", map[string]any{"Action": language.Label(r.Action), "Ref": r.Ref, "Text": detail}))
 }
 
@@ -130,10 +132,10 @@ func Report(results []core.Result, asJSON bool) error {
 	} else {
 		for _, r := range results {
 			if r.Error != "" {
-				fmt.Fprintln(os.Stderr, Text("cli.error_prefix"), r.Error)
+				fmt.Fprintln(os.Stderr, Text("cli.error_prefix"), ReferenceText(Localizer(), r.Err, r.Error))
 				continue
 			}
-			fmt.Printf(Text("cli.mark.receipt"), r.Item.ID, Localizer().Label(r.Action), r.Item.Path, When(r.Item.ExpiresAt))
+			fmt.Printf(Text("cli.mark.receipt"), r.Item.ID, Column(Localizer(), Localizer().Label(r.Action)), r.Item.Path, When(r.Item.ExpiresAt))
 		}
 	}
 	if core.Failed(results) {

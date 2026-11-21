@@ -245,7 +245,7 @@ func printChanges(changes []integrate.Change) {
 			fmt.Printf("  Agent Skill → %s%s\n", c.Path, detail)
 			continue
 		}
-		fmt.Printf("  %-9s %s%s\n", cmdutil.Localizer().Label(c.Action), c.Path, detail)
+		fmt.Printf("  %-9s %s%s\n", cmdutil.Column(cmdutil.Localizer(), cmdutil.Localizer().Label(c.Action)), c.Path, detail)
 		for _, args := range c.Commands {
 			fmt.Println("    " + integrate.CommandText(args))
 		}
