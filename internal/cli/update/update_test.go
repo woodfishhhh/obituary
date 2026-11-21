@@ -52,7 +52,31 @@ func TestUpdateApplyRejectsUnsupportedInstallation(t *testing.T) {
 	t.Setenv("OBIT_HOME", t.TempDir())
 	cmd := newCmd(nil)
 	cmd.SetArgs([]string{"--apply"})
-	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "not supported") {
+	// The test binary is a development build in a folder without the release programs.
+	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "not available") || !strings.Contains(err.Error(), "development build") {
 		t.Fatal(err)
+	}
+}
+
+func TestShowHowToUpdate(t *testing.T) {
+	for name, tc := range map[string]struct {
+		ap      update.Applicability
+		command string
+		newer   bool
+		want    string
+	}{
+		"command":            {update.Applicability{Channel: "scoop", Can: true}, "scoop update obituary", true, "Update: scoop update obituary"},
+		"manual can":         {update.Applicability{Channel: "other", Can: true}, "", true, "obit update --apply"},
+		"manual blocked":     {update.Applicability{Channel: "other", Blocked: update.BlockedFiles, Detail: "obitd.exe"}, "", true, "plain files: obitd.exe"},
+		"manual up to date":  {update.Applicability{Channel: "other", Can: true}, "", false, ""},
+		"blocked up to date": {update.Applicability{Channel: "other", Blocked: update.BlockedDev}, "", false, ""},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var out bytes.Buffer
+			showHowToUpdate(&out, tc.ap, tc.command, tc.newer)
+			if tc.want == "" && out.Len() != 0 || !strings.Contains(out.String(), tc.want) {
+				t.Fatalf("output %q, want %q", out.String(), tc.want)
+			}
+		})
 	}
 }

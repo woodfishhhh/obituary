@@ -112,3 +112,62 @@ func TestCopyUpdaterRegistersScratch(t *testing.T) {
 	}
 	t.Fatalf("worker directory %s has no registered lifespan", filepath.Dir(worker))
 }
+
+// The helper holds a handle to the window's process for its whole run, as
+// updaterWait does, so the number is not reused while it asks this question.
+func TestProcessRunningFollowsTheWindowsProcess(t *testing.T) {
+	if testing.Short() {
+		t.Skip("starts a process")
+	}
+	if !processRunning(os.Getpid()) {
+		t.Fatal("this process is not running")
+	}
+	cmd := exec.Command("cmd", "/c", "exit", "0")
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	_, closeHandle, err := updaterWait(cmd.Process.Pid)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer closeHandle()
+	if err := cmd.Wait(); err != nil {
+		t.Fatal(err)
+	}
+	if processRunning(cmd.Process.Pid) {
+		t.Fatal("an exited process counts as running")
+	}
+}
+
+// A failure before the window was asked to close leaves that window open,
+// showing the error; relaunching would open a second one.
+func TestRelaunchSkipsAWindowThatIsStillOpen(t *testing.T) {
+	if testing.Short() {
+		t.Skip("starts a process")
+	}
+	root := t.TempDir()
+	exe := filepath.Join(root, "obit.exe") // no obit-gui.exe beside it: an attempt to start it fails
+	open := updateHooks(root, exe, true, os.Getpid())
+	if err := open.Relaunch(exe); err != nil {
+		t.Fatalf("relaunched over a window that is still open: %v", err)
+	}
+	cmd := exec.Command("cmd", "/c", "exit", "0")
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	_, closeHandle, err := updaterWait(cmd.Process.Pid)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer closeHandle()
+	if err := cmd.Wait(); err != nil {
+		t.Fatal(err)
+	}
+	closed := updateHooks(root, exe, true, cmd.Process.Pid)
+	if err := closed.Relaunch(exe); err == nil {
+		t.Fatal("the window was not reopened after it closed")
+	}
+	if closed.Retire == nil {
+		t.Fatal("manual installs need the Retire hook")
+	}
+}

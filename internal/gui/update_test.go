@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -144,5 +146,71 @@ func TestPlanUpdateCheckPreservesConfigAndRejectsStalePlan(t *testing.T) {
 	write(t, path, "[update]\ncheck=false\n# edited after preview\n")
 	if _, err := a.ApplyPlan(plan.ID); err == nil {
 		t.Fatal("stale plan accepted")
+	}
+}
+
+// A manual install (programs unpacked into a folder, no receipt) is offered the
+// in-app update when a release is newer; otherwise the card says which
+// condition fails.
+func TestUpdateInfoForAManualInstall(t *testing.T) {
+	a, root := fixture(t)
+	ext := ""
+	if runtime.GOOS == "windows" {
+		ext = ".exe"
+	}
+	dir := filepath.Join(root, "bin")
+	names := []string{"obit" + ext, "obitd" + ext}
+	if runtime.GOOS == "windows" && runtime.GOARCH == "amd64" {
+		names = append(names, "obit-gui.exe")
+	}
+	for _, name := range names {
+		write(t, filepath.Join(dir, name), "program")
+	}
+	a.deps.Executable = filepath.Join(dir, "obit"+ext)
+	write(t, filepath.Join(a.deps.Service.Store.Home, "update.json"), `{"checkedAt":"2026-11-20T00:00:00Z","latest":{"version":"9.0.0"}}`)
+	previous := buildinfo.Version
+	t.Cleanup(func() { buildinfo.Version = previous })
+
+	buildinfo.Version = "1.4.3"
+	info, err := a.Update()
+	if err != nil || !info.Newer || info.Channel != "other" || !info.CanApply || info.ApplyBlocked != "" || info.Command != "" {
+		t.Fatalf("manual install: %+v %v", info, err)
+	}
+	if entries, _ := os.ReadDir(dir); len(entries) != len(names) {
+		t.Fatalf("looking at the install left %d entries, want %d", len(entries), len(names))
+	}
+
+	buildinfo.Version = "1.4.3-dev.abc1234"
+	if info, err = a.Update(); err != nil || info.CanApply || info.ApplyBlocked != update.BlockedDev || info.ApplyDetail != "1.4.3-dev.abc1234" {
+		t.Fatalf("development build: %+v %v", info, err)
+	}
+
+	buildinfo.Version = "1.4.3"
+	if err := os.Remove(filepath.Join(dir, names[1])); err != nil {
+		t.Fatal(err)
+	}
+	if info, err = a.Update(); err != nil || info.CanApply || info.ApplyBlocked != update.BlockedFiles || info.ApplyDetail != names[1] {
+		t.Fatalf("missing program: %+v %v", info, err)
+	}
+	data, err := json.Marshal(info)
+	if err != nil || !strings.Contains(string(data), `"applyBlocked":"files"`) {
+		t.Fatalf("JSON: %s %v", data, err)
+	}
+
+	// With nothing newer the folder is not even probed.
+	write(t, filepath.Join(a.deps.Service.Store.Home, "update.json"), `{"checkedAt":"2026-11-20T00:00:00Z","latest":{"version":"1.4.3"}}`)
+	if info, err = a.Update(); err != nil || info.Newer || info.ApplyBlocked != "" {
+		t.Fatalf("up to date: %+v %v", info, err)
+	}
+}
+
+func TestUpdateProgressReadsTheHelperRecord(t *testing.T) {
+	a, _ := fixture(t)
+	if p, err := a.UpdateProgress(); err != nil || p != (update.Progress{}) {
+		t.Fatalf("before any update: %+v %v", p, err)
+	}
+	write(t, filepath.Join(a.deps.Service.Store.Home, "update-progress.json"), `{"phase":"downloading","done":512,"total":2048}`)
+	if p, err := a.UpdateProgress(); err != nil || p != (update.Progress{Phase: update.PhaseDownloading, Done: 512, Total: 2048}) {
+		t.Fatalf("downloading: %+v %v", p, err)
 	}
 }

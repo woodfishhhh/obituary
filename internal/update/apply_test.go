@@ -61,6 +61,10 @@ func testApply(t *testing.T, failure string) {
 		Ready: func(ApplyResult) error { steps = append(steps, "ack"); return nil },
 		Wait: func() error {
 			steps = append(steps, "wait")
+			// The window may close as soon as the helper waits for it.
+			if p, _ := ReadProgress(home); p.Phase != PhaseReady {
+				t.Errorf("progress while waiting for the window: %+v", p)
+			}
 			if failure == "old process did not exit" {
 				return errors.New(failure)
 			}
@@ -99,6 +103,9 @@ func testApply(t *testing.T, failure string) {
 	last, err := ReadLastApply(home)
 	if err != nil || last == nil || *last != result {
 		t.Fatalf("persisted: %+v, want %+v; %v", last, result, err)
+	}
+	if p, _ := ReadProgress(home); (p.Phase == PhaseDone) != (failure == "") || (failure != "" && (p.Phase != PhaseFailed || p.Error == "")) {
+		t.Fatalf("final progress %+v", p)
 	}
 	data, err := os.ReadFile(result.LogPath)
 	if err != nil || (ranInstall && !strings.Contains(string(data), "installer output")) || (failure != "" && !strings.Contains(string(data), result.Error)) {

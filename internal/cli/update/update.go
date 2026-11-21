@@ -3,6 +3,7 @@ package update
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -61,7 +62,7 @@ func newCmd(checker *update.Checker) *cobra.Command {
 		return showUpdate(cmd, home, state, cfg.Update.Check)
 	}
 	cmd.Flags().BoolVar(&check, "check", false, "check GitHub now, including when automatic checks are disabled")
-	cmd.Flags().BoolVar(&apply, "apply", false, "install the cached newer stable release")
+	cmd.Flags().BoolVar(&apply, "apply", false, "download, verify and install the cached newer stable release (a manual install replaces only Obituary's own programs)")
 	cmd.Flags().IntVar(&waitPID, "wait-pid", 0, "wait for this process to exit before updating (Windows)")
 	cmd.Flags().BoolVar(&relaunch, "relaunch-gui", false, "reopen the desktop window after updating (Windows)")
 	return cmd
@@ -75,14 +76,27 @@ func applyUpdate(cmd *cobra.Command, home string, waitPID int, relaunch bool) er
 	return app.ApplyUpdate(cmd.Context(), home, exe, buildinfo.Version, waitPID, relaunch, cmd.OutOrStdout())
 }
 
+// showHowToUpdate says how to install a newer release: the package manager or
+// script command, or for a manual install `obit update --apply` (or why it
+// cannot be used here).
+func showHowToUpdate(out io.Writer, ap update.Applicability, command string, newer bool) {
+	switch {
+	case command != "":
+		fmt.Fprintln(out, "Update:", command)
+	case newer && ap.Can:
+		fmt.Fprintln(out, "Update: run obit update --apply (replaces only Obituary's own programs in this folder)")
+	case newer && ap.Blocked != "":
+		fmt.Fprintln(out, (&update.BlockedError{Reason: ap.Blocked, Detail: ap.Detail}).Error())
+	}
+}
+
 func showUpdate(cmd *cobra.Command, home string, state update.Cache, automatic bool) error {
 	exe, _ := os.Executable()
-	channel := update.DetectChannel(exe)
+	ap := update.Review(exe, buildinfo.Version, state.Latest.Version)
+	newer := update.Newer(buildinfo.Version, state.Latest.Version)
 	out := cmd.OutOrStdout()
-	fmt.Fprintf(out, "Current: %s\nLatest: %s\nNewer: %t\nAutomatic checks: %t\nChannel: %s\n", buildinfo.Version, state.Latest.Version, update.Newer(buildinfo.Version, state.Latest.Version), automatic, channel)
-	if command := update.Command(channel, state.Latest.Version, exe); command != "" {
-		fmt.Fprintln(out, "Update:", command)
-	}
+	fmt.Fprintf(out, "Current: %s\nLatest: %s\nNewer: %t\nAutomatic checks: %t\nChannel: %s\n", buildinfo.Version, state.Latest.Version, newer, automatic, ap.Channel)
+	showHowToUpdate(out, ap, update.Command(ap.Channel, state.Latest.Version, exe), newer)
 	if state.Latest.URL != "" {
 		fmt.Fprintln(out, "Release:", state.Latest.URL)
 	}

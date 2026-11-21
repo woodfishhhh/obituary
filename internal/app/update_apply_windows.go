@@ -168,7 +168,7 @@ func runUpdater(ctx context.Context, home, exe, current string, pid int, relaunc
 		return err
 	}
 	defer closeHandle()
-	hooks := updateHooks(home, exe, relaunch)
+	hooks := updateHooks(home, exe, relaunch, pid)
 	hooks.Wait = wait
 	hooks.Ready = func(result update.ApplyResult) error {
 		err := json.NewEncoder(out).Encode(result)
@@ -179,9 +179,10 @@ func runUpdater(ctx context.Context, home, exe, current string, pid int, relaunc
 	return err
 }
 
-func updateHooks(home, original string, relaunch bool) update.ApplyHooks {
+func updateHooks(home, original string, relaunch bool, pid int) update.ApplyHooks {
 	var restart bool
 	hooks := update.ApplyHooks{
+		Retire: retireUpdateFiles,
 		Stop: func() error {
 			restart = Running(home)
 			return Stop(home)
@@ -199,6 +200,11 @@ func updateHooks(home, original string, relaunch bool) update.ApplyHooks {
 	}
 	if relaunch {
 		hooks.Relaunch = func(exe string) error {
+			// An update that failed before the window was asked to close leaves
+			// that window open, showing the error; a second one would be a copy.
+			if processRunning(pid) {
+				return nil
+			}
 			cmd := exec.Command(installedSibling(exe, original, "obit-gui.exe"))
 			detach(cmd)
 			if err := cmd.Start(); err != nil {
@@ -216,6 +222,18 @@ func installedSibling(preferred, original, base string) string {
 		return filepath.Join(filepath.Dir(original), base)
 	}
 	return path
+}
+
+// processRunning reports whether pid is alive. The updater holds a handle to
+// it for the whole run, so the number cannot have been reused.
+func processRunning(pid int) bool {
+	h, err := windows.OpenProcess(windows.SYNCHRONIZE, false, uint32(pid))
+	if err != nil {
+		return false
+	}
+	defer windows.CloseHandle(h)
+	status, err := windows.WaitForSingleObject(h, 0)
+	return err == nil && status == uint32(windows.WAIT_TIMEOUT)
 }
 
 func updaterWait(pid int) (func() error, func(), error) {

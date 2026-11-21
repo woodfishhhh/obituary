@@ -39,6 +39,9 @@ type ApplyHooks struct {
 	Stop     func() error
 	Restart  func(executable string) error
 	Relaunch func(executable string) error
+	// Retire gives leftovers of a manual install update a lifespan (the
+	// previous programs wait in a folder beside the new ones).
+	Retire func(paths []string) error
 }
 
 type runner func(context.Context, io.Writer, []string) error
@@ -50,7 +53,54 @@ func Apply(ctx context.Context, home, exe, current, target string, hooks ApplyHo
 }
 
 func apply(ctx context.Context, home, exe, current, target string, hooks ApplyHooks, run runner) (LastApply, error) {
-	exe, channel := installation(exe)
+	return applyFrom(ctx, home, exe, current, target, hooks, run, releaseSources)
+}
+
+// session is what one update run shares between its steps.
+type session struct {
+	exe, current string
+	result       ApplyResult
+	log          *os.File
+	hooks        ApplyHooks
+	run          runner
+	src          sources
+	progress     *tracker
+}
+
+func (s session) wait() error {
+	if s.hooks.Wait == nil {
+		return nil
+	}
+	return s.hooks.Wait()
+}
+
+func (s session) stop() error {
+	if s.hooks.Stop == nil {
+		return nil
+	}
+	if err := s.hooks.Stop(); err != nil {
+		return fmt.Errorf("stop resident: %w", err)
+	}
+	return nil
+}
+
+// retire gives the update folder a lifespan, unless it holds the only copy of
+// the previous programs. The update itself has already succeeded or rolled
+// back, so a failure here is only logged.
+func (s session) retire(tx *swap) {
+	if tx.stranded || s.hooks.Retire == nil {
+		return
+	}
+	if err := s.hooks.Retire([]string{tx.root}); err != nil {
+		fmt.Fprintf(s.log, "The previous programs stay in %s; giving them a lifespan failed: %v\n", tx.root, err)
+	}
+}
+
+func applyFrom(ctx context.Context, home, exe, current, target string, hooks ApplyHooks, run runner, sourcesFor func(version string) sources) (LastApply, error) {
+	exe, channel, err := resolve(exe, current)
+	if err != nil {
+		return LastApply{}, err
+	}
 	p, err := newPlan(channel, exe, current, target)
 	if err != nil {
 		return LastApply{}, err
@@ -68,22 +118,28 @@ func apply(ctx context.Context, home, exe, current, target string, hooks ApplyHo
 		return LastApply{}, fmt.Errorf("create update log: %w", err)
 	}
 	result := LastApply{ApplyResult: ApplyResult{TargetVersion: p.version, LogPath: log.Name()}}
-	result.Version, err = p.install(ctx, exe, current, result.ApplyResult, log, hooks, run)
+	s := session{exe: exe, current: current, result: result.ApplyResult, log: log, hooks: hooks, run: run, src: sourcesFor(p.version), progress: &tracker{home: home}}
+	// Written before the handoff is acknowledged, so a window never reads the last run's.
+	s.progress.phase(PhaseStarting)
+	result.Version, err = p.install(ctx, s)
 	result.At = time.Now().UTC()
 	err = finishApply(home, &result, log, hooks, p.installedExe(exe), err)
 	return result, err
 }
 
-func (p plan) install(ctx context.Context, exe, current string, result ApplyResult, log *os.File, hooks ApplyHooks, run runner) (installed string, err error) {
+func (p plan) install(ctx context.Context, s session) (installed string, err error) {
+	exe, current, log, hooks, run := s.exe, s.current, s.log, s.hooks, s.run
 	if hooks.Ready != nil {
-		if err := hooks.Ready(result); err != nil {
+		if err := hooks.Ready(s.result); err != nil {
 			return "", fmt.Errorf("acknowledge update handoff: %w", err)
 		}
 	}
-	if hooks.Wait != nil {
-		if err := hooks.Wait(); err != nil {
-			return "", err
-		}
+	if p.channel == "manual" {
+		return p.installManual(ctx, s)
+	}
+	s.progress.phase(PhaseReady)
+	if err := s.wait(); err != nil {
+		return "", err
 	}
 	// A second invocation may have been started from an older Scoop directory
 	// after the previous updater released its lock. Never reinstall or downgrade.
@@ -99,11 +155,10 @@ func (p plan) install(ctx context.Context, exe, current string, result ApplyResu
 	if script != "" {
 		defer func() { err = errors.Join(err, os.Remove(script)) }()
 	}
-	if hooks.Stop != nil {
-		if err := hooks.Stop(); err != nil {
-			return "", fmt.Errorf("stop resident: %w", err)
-		}
+	if err := s.stop(); err != nil {
+		return "", err
 	}
+	s.progress.phase(PhaseInstalling)
 	fmt.Fprintf(log, "Updating %s from %s to %s\n", p.channel, current, p.version)
 	if err := run(ctx, log, p.argv(script)); err != nil {
 		return "", fmt.Errorf("run %s update: %w", p.channel, err)
@@ -165,7 +220,13 @@ func finishApply(home string, result *LastApply, log *os.File, hooks ApplyHooks,
 			stateErr = errors.Join(stateErr, saveLastApply(home, result, cause))
 		}
 	}
-	if err := errors.Join(cause, stateErr); err != nil {
+	err := errors.Join(cause, stateErr)
+	final := Progress{Phase: PhaseDone}
+	if err != nil {
+		final = Progress{Phase: PhaseFailed, Error: err.Error()}
+	}
+	(&tracker{home: home}).set(final)
+	if err != nil {
 		return fmt.Errorf("%w (update log: %s)", err, result.LogPath)
 	}
 	return nil

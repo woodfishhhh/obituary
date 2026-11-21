@@ -23,7 +23,7 @@ func ApplyUpdate(ctx context.Context, home, exe, current string, waitPID int, re
 	if err != nil {
 		return err
 	}
-	result, err := update.Apply(ctx, home, exe, current, target, update.ApplyHooks{})
+	result, err := update.Apply(ctx, home, exe, current, target, update.ApplyHooks{Retire: retireUpdateFiles})
 	if err != nil {
 		return err
 	}
