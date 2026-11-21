@@ -32,13 +32,13 @@ func planDesktop(out io.Writer, self cmdutil.Executable, uninstall, noMenu, noSh
 	if err != nil {
 		return p, err
 	}
-	if uninstall || !noMenu {
+	if !noMenu {
 		p.menu, err = planDesktopMenu(out, p.registry, exe, uninstall)
 		if err != nil {
 			return p, err
 		}
 	}
-	if uninstall || !noShortcuts {
+	if !noShortcuts {
 		p.shortcuts, err = planShortcuts(out, exe, uninstall)
 	}
 	return p, err

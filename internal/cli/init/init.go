@@ -167,7 +167,7 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 	cmd.Flags().BoolVar(&guardRM, "guard-rm", false, "deny supported deletion commands with restorable obit alternatives")
 	cmd.Flags().BoolVar(&withMCP, "mcp", false, "register the Obituary MCP stdio server")
 	cmd.Flags().BoolVar(&withSkill, "skill", false, "install the Obituary Agent Skill (enabled by default)")
-	cmd.Flags().BoolVar(&noSkill, "no-skill", false, "skip installing the Obituary Agent Skill")
+	cmd.Flags().BoolVar(&noSkill, "no-skill", false, "leave the Obituary Agent Skill unchanged")
 	cmd.Flags().BoolVar(&withContextMenu, "context-menu", false, "install classic Explorer context menus (enabled by default)")
 	cmd.Flags().BoolVar(&noContextMenu, "no-context-menu", false, "skip Explorer context menus")
 	cmd.Flags().BoolVar(&noShortcuts, "no-shortcuts", false, "skip Start menu and desktop shortcuts")

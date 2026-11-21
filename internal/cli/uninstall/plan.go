@@ -160,6 +160,11 @@ func (p *plan) print(out io.Writer, purge bool) {
 }
 
 func (p *plan) apply(d dependencies, out io.Writer, purge bool) error {
+	if purge {
+		if err := p.preflightData(out); err != nil {
+			return err
+		}
+	}
 	// Disable wakeups before touching policies or their labels. An unsuccessful
 	// stop must block data cleanup, since a resident could recreate metadata.
 	serviceErr := p.removeServices(d)

@@ -12,6 +12,8 @@ obit uninstall                # remove everything Obituary set up, after you con
 
 The graveyard and ledger are kept by default, and you are told how much is in the graveyard and where. If you really want them gone, add `--purge-data`, which lists the graveyard first and asks once more.
 
+`--purge-data` keeps your `config.toml`. You do not need to move it, even when it shares a directory with the ledger (the default on macOS). If the data directory contains an unrecognized file, the command reports its location and stops before purging anything. Both the graveyard and the ledger stay intact.
+
 ## Hooks in other projects
 
 If you installed project-level hooks in other projects too, run `obit uninstall` in each of them before removing the program; otherwise their hooks break when `obit` is gone.
