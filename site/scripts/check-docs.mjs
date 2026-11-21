@@ -17,9 +17,9 @@ const anyText = '[' + String.fromCharCode(92) + 's' + String.fromCharCode(92) + 
 const withoutCodeBlocks = s => s.replace(new RegExp(fence + anyText + fence, 'g'), '');
 const han = /[㐀-䶿一-鿿]/u;
 const simplified = /[为这们让从后还过发进开关与业专门问无现备复机连统传图录仅级译术览归盘线产带别认时该应证说读设计变网处广汉听启类页节块输编样欢标键锁扫预边层导态优严确际]/u;
-const sitemap = await read(new URL('sitemap.xml', output));
 const repo = fileURLToPath(new URL('../..', import.meta.url));
 execFileSync(process.execPath, [fileURLToPath(new URL('./generate-command-reference.mjs', import.meta.url)), '--check'], { cwd: repo, stdio: 'inherit' });
+const sitemap = await read(new URL('sitemap.xml', output));
 const configSource = await read(new URL('../../internal/config/config.go', import.meta.url));
 const structs = new Map([...configSource.matchAll(/type (\w+) struct \{([\s\S]*?)\n\}/g)].map(([, name, body]) => [name, [...body.matchAll(/^\s*\w+\s+(\S+)\s+`toml:"([^"]+)"`/gm)].map(([, type, tag]) => [type, tag.replace(/,.*$/, '')])]));
 const configKeys = [];

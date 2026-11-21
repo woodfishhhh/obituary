@@ -110,11 +110,23 @@ Query and result commands (`list`, `graveyard`, `proposals`, `stats`, `mark`, `b
 <!-- generated-command-reference:start -->
 ## Parameter reference
 
-The tables below are generated from the current `obit --help` output.
+### `obit`
+
+Obituary (讣告), the trash bin for AI agents: give files a lifespan; when it runs out they are buried in a graveyard you can resurrect from
+
+Usage: `obit [command]`
+
+| Option | Short | Default | Description |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | help for obit |
+| `--version` | `-v` | `false` | version for obit |
 
 ### `obit add`
+
+Give paths a lifespan (re-adding a tracked path resets its expiry)
+
 Aliases: `add`, `mark`
-Usage: `obit add <path>... <duration> \| add <path>... --at <time> [flags]`
+Usage: `obit add <path>... <duration> | add <path>... --at <time> [flags]`
 
 | Option | Short | Default | Description |
 | --- | --- | --- | --- |
@@ -134,6 +146,9 @@ obit add report.zip --at "2026-12-01 18:00"
 ```
 
 ### `obit approve`
+
+Approve proposals: register what they list
+
 Usage: `obit approve <proposal id>... [flags]`
 
 | Option | Short | Default | Description |
@@ -142,6 +157,9 @@ Usage: `obit approve <proposal id>... [flags]`
 | `--json` | none | `false` | print JSON |
 
 ### `obit bury`
+
+Move paths into the graveyard now (restore with obit resurrect)
+
 Usage: `obit bury <path>... [flags]`
 
 | Option | Short | Default | Description |
@@ -152,8 +170,11 @@ Usage: `obit bury <path>... [flags]`
 | `--note` | none | `""` | free-text note kept with the burial |
 
 ### `obit cancel`
+
+Spare paths or container IDs: stop tracking them and keep the objects
+
 Aliases: `cancel`, `spare`
-Usage: `obit cancel <id\|path>... [flags]`
+Usage: `obit cancel <id|path>... [flags]`
 
 | Option | Short | Default | Description |
 | --- | --- | --- | --- |
@@ -161,6 +182,9 @@ Usage: `obit cancel <id\|path>... [flags]`
 | `--json` | none | `false` | print JSON |
 
 ### `obit completion`
+
+Generate the autocompletion script for obit for the specified shell.
+
 Usage: `obit completion [command]`
 
 | Option | Short | Default | Description |
@@ -168,6 +192,9 @@ Usage: `obit completion [command]`
 | `--help` | `-h` | `false` | help for completion |
 
 ### `obit completion bash`
+
+Generate the autocompletion script for the bash shell.
+
 Usage: `obit completion bash`
 
 | Option | Short | Default | Description |
@@ -176,6 +203,9 @@ Usage: `obit completion bash`
 | `--no-descriptions` | none | `false` | disable completion descriptions |
 
 ### `obit completion fish`
+
+Generate the autocompletion script for the fish shell.
+
 Usage: `obit completion fish [flags]`
 
 | Option | Short | Default | Description |
@@ -184,6 +214,9 @@ Usage: `obit completion fish [flags]`
 | `--no-descriptions` | none | `false` | disable completion descriptions |
 
 ### `obit completion powershell`
+
+Generate the autocompletion script for powershell.
+
 Usage: `obit completion powershell [flags]`
 
 | Option | Short | Default | Description |
@@ -192,6 +225,9 @@ Usage: `obit completion powershell [flags]`
 | `--no-descriptions` | none | `false` | disable completion descriptions |
 
 ### `obit completion zsh`
+
+Generate the autocompletion script for the zsh shell.
+
 Usage: `obit completion zsh [flags]`
 
 | Option | Short | Default | Description |
@@ -200,6 +236,9 @@ Usage: `obit completion zsh [flags]`
 | `--no-descriptions` | none | `false` | disable completion descriptions |
 
 ### `obit config`
+
+Show the configuration file and effective settings (--create writes the defaults)
+
 Usage: `obit config [flags]`
 
 | Option | Short | Default | Description |
@@ -209,13 +248,19 @@ Usage: `obit config [flags]`
 | `--language` | none | `""` | set the language: auto, en or zh-CN |
 
 ### `obit config telemetry`
-Usage: `obit config telemetry on\|off [flags]`
+
+Usage statistics: a random installation ID, version, OS, architecture, interface language and installation channel help measure installation counts and version use. No files, paths or commands are sent; IP addresses and user agents are not stored. Disable with obit config telemetry off or OBIT_TELEMETRY=0.
+
+Usage: `obit config telemetry on|off [flags]`
 
 | Option | Short | Default | Description |
 | --- | --- | --- | --- |
 | `--help` | `-h` | `false` | help for telemetry |
 
 ### `obit daemon`
+
+Control the background daemon (obitd)
+
 Usage: `obit daemon [command]`
 
 | Option | Short | Default | Description |
@@ -223,6 +268,9 @@ Usage: `obit daemon [command]`
 | `--help` | `-h` | `false` | help for daemon |
 
 ### `obit daemon disable`
+
+Remove the scheduled runner and the resident daemon
+
 Usage: `obit daemon disable [flags]`
 
 | Option | Short | Default | Description |
@@ -231,6 +279,9 @@ Usage: `obit daemon disable [flags]`
 | `--help` | `-h` | `false` | help for disable |
 
 ### `obit daemon enable`
+
+Enable the 5-minute user scheduler (and the login tray on Windows)
+
 Usage: `obit daemon enable [flags]`
 
 | Option | Short | Default | Description |
@@ -240,6 +291,9 @@ Usage: `obit daemon enable [flags]`
 | `--resident` | none | `false` | enable the tray without changing the scheduled fallback |
 
 ### `obit daemon start`
+
+Start the daemon now
+
 Usage: `obit daemon start [flags]`
 
 | Option | Short | Default | Description |
@@ -247,6 +301,9 @@ Usage: `obit daemon start [flags]`
 | `--help` | `-h` | `false` | help for start |
 
 ### `obit daemon status`
+
+Show daemon state and the next expiry
+
 Usage: `obit daemon status [flags]`
 
 | Option | Short | Default | Description |
@@ -255,6 +312,9 @@ Usage: `obit daemon status [flags]`
 | `--json` | none | `false` | print JSON |
 
 ### `obit daemon stop`
+
+Stop the daemon
+
 Usage: `obit daemon stop [flags]`
 
 | Option | Short | Default | Description |
@@ -262,6 +322,9 @@ Usage: `obit daemon stop [flags]`
 | `--help` | `-h` | `false` | help for stop |
 
 ### `obit docker`
+
+Track Docker containers by immutable full ID and creation time. Expiry stops the container and retains its writable layer. Resurrection starts it. After [graveyard] retention_days, purge removes stopped containers without removing volumes. This also applies in recycle mode. Images, volumes and networks are preserved.
+
 Usage: `obit docker [command]`
 
 | Option | Short | Default | Description |
@@ -269,7 +332,10 @@ Usage: `obit docker [command]`
 | `--help` | `-h` | `false` | help for docker |
 
 ### `obit docker add`
-Usage: `obit docker add <container name\|ID> <lifespan> [flags]`
+
+Register one Docker container; expiry stops it
+
+Usage: `obit docker add <container name|ID> <lifespan> [flags]`
 
 | Option | Short | Default | Description |
 | --- | --- | --- | --- |
@@ -277,6 +343,9 @@ Usage: `obit docker add <container name\|ID> <lifespan> [flags]`
 | `--json` | none | `false` | print JSON |
 
 ### `obit docker list`
+
+List registered Docker containers
+
 Usage: `obit docker list [flags]`
 
 | Option | Short | Default | Description |
@@ -285,6 +354,9 @@ Usage: `obit docker list [flags]`
 | `--json` | none | `false` | print JSON |
 
 ### `obit doctor`
+
+Check installation, integrations and data without changing anything
+
 Usage: `obit doctor [flags]`
 
 | Option | Short | Default | Description |
@@ -294,7 +366,10 @@ Usage: `obit doctor [flags]`
 | `--verbose` | none | `false` | include agent capability details |
 
 ### `obit extend`
-Usage: `obit extend <id\|path>... <duration> [flags]`
+
+Push expiries back (counted from now if already due)
+
+Usage: `obit extend <id|path>... <duration> [flags]`
 
 | Option | Short | Default | Description |
 | --- | --- | --- | --- |
@@ -309,6 +384,9 @@ obit extend debug.log 30m
 ```
 
 ### `obit git-clean`
+
+Bury the paths selected by git clean's dry run
+
 Usage: `obit git-clean [options] [--] [pathspec]... [flags]`
 
 | Option | Short | Default | Description |
@@ -316,6 +394,9 @@ Usage: `obit git-clean [options] [--] [pathspec]... [flags]`
 | `--help` | `-h` | `false` | help for git-clean |
 
 ### `obit graveyard`
+
+List what lies in the graveyard and can still be resurrected
+
 Aliases: `graveyard`, `graves`
 Usage: `obit graveyard [flags]`
 
@@ -326,6 +407,9 @@ Usage: `obit graveyard [flags]`
 | `--json` | none | `false` | print JSON |
 
 ### `obit help`
+
+Help provides help for any command in the application.
+
 Usage: `obit help [command] [flags]`
 
 | Option | Short | Default | Description |
@@ -333,6 +417,9 @@ Usage: `obit help [command] [flags]`
 | `--help` | `-h` | `false` | help for help |
 
 ### `obit hook`
+
+Agent hook entry points (called by the agent, not by people)
+
 Usage: `obit hook [command]`
 
 | Option | Short | Default | Description |
@@ -340,6 +427,9 @@ Usage: `obit hook [command]`
 | `--help` | `-h` | `false` | help for hook |
 
 ### `obit hook antigravity`
+
+Handle one antigravity hook event from stdin; errors fail open
+
 Usage: `obit hook antigravity [flags]`
 
 | Option | Short | Default | Description |
@@ -349,6 +439,9 @@ Usage: `obit hook antigravity [flags]`
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
 ### `obit hook audit`
+
+Show hook and delete-guard audit trails
+
 Usage: `obit hook audit [flags]`
 
 | Option | Short | Default | Description |
@@ -357,6 +450,9 @@ Usage: `obit hook audit [flags]`
 | `--lines` | `-n` | `40` | number of lines per source |
 
 ### `obit hook claude`
+
+Handle one claude hook event from stdin; errors fail open
+
 Usage: `obit hook claude [flags]`
 
 | Option | Short | Default | Description |
@@ -366,6 +462,9 @@ Usage: `obit hook claude [flags]`
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
 ### `obit hook cline`
+
+Handle one cline hook event from stdin; errors fail open
+
 Usage: `obit hook cline [flags]`
 
 | Option | Short | Default | Description |
@@ -375,6 +474,9 @@ Usage: `obit hook cline [flags]`
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
 ### `obit hook codebuddy`
+
+Handle one codebuddy hook event from stdin; errors fail open
+
 Usage: `obit hook codebuddy [flags]`
 
 | Option | Short | Default | Description |
@@ -384,6 +486,9 @@ Usage: `obit hook codebuddy [flags]`
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
 ### `obit hook codebuddy-ide`
+
+Handle one codebuddy-ide hook event from stdin; errors fail open
+
 Usage: `obit hook codebuddy-ide [flags]`
 
 | Option | Short | Default | Description |
@@ -393,6 +498,9 @@ Usage: `obit hook codebuddy-ide [flags]`
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
 ### `obit hook codex`
+
+Handle one codex hook event from stdin; errors fail open
+
 Usage: `obit hook codex [flags]`
 
 | Option | Short | Default | Description |
@@ -402,6 +510,9 @@ Usage: `obit hook codex [flags]`
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
 ### `obit hook copilot`
+
+Handle one copilot hook event from stdin; errors fail open
+
 Usage: `obit hook copilot [flags]`
 
 | Option | Short | Default | Description |
@@ -411,6 +522,9 @@ Usage: `obit hook copilot [flags]`
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
 ### `obit hook cursor`
+
+Handle one cursor hook event from stdin; errors fail open
+
 Usage: `obit hook cursor [flags]`
 
 | Option | Short | Default | Description |
@@ -419,7 +533,22 @@ Usage: `obit hook cursor [flags]`
 | `--help` | `-h` | `false` | help for cursor |
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
+### `obit hook deepseek-harness`
+
+Handle one deepseek-harness hook event from stdin; errors fail open
+
+Usage: `obit hook deepseek-harness [flags]`
+
+| Option | Short | Default | Description |
+| --- | --- | --- | --- |
+| `--event` | none | `""` | host event name when omitted from the payload |
+| `--help` | `-h` | `false` | help for deepseek-harness |
+| `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
+
 ### `obit hook droid`
+
+Handle one droid hook event from stdin; errors fail open
+
 Usage: `obit hook droid [flags]`
 
 | Option | Short | Default | Description |
@@ -429,6 +558,9 @@ Usage: `obit hook droid [flags]`
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
 ### `obit hook gemini`
+
+Handle one gemini hook event from stdin; errors fail open
+
 Usage: `obit hook gemini [flags]`
 
 | Option | Short | Default | Description |
@@ -438,6 +570,9 @@ Usage: `obit hook gemini [flags]`
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
 ### `obit hook hermes`
+
+Handle one hermes hook event from stdin; errors fail open
+
 Usage: `obit hook hermes [flags]`
 
 | Option | Short | Default | Description |
@@ -447,6 +582,9 @@ Usage: `obit hook hermes [flags]`
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
 ### `obit hook kilocode`
+
+Handle one kilocode hook event from stdin; errors fail open
+
 Usage: `obit hook kilocode [flags]`
 
 | Option | Short | Default | Description |
@@ -456,6 +594,9 @@ Usage: `obit hook kilocode [flags]`
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
 ### `obit hook kimi`
+
+Handle one kimi hook event from stdin; errors fail open
+
 Usage: `obit hook kimi [flags]`
 
 | Option | Short | Default | Description |
@@ -465,6 +606,9 @@ Usage: `obit hook kimi [flags]`
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
 ### `obit hook lingma`
+
+Handle one lingma hook event from stdin; errors fail open
+
 Usage: `obit hook lingma [flags]`
 
 | Option | Short | Default | Description |
@@ -474,6 +618,9 @@ Usage: `obit hook lingma [flags]`
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
 ### `obit hook minimax-code`
+
+Handle one minimax-code hook event from stdin; errors fail open
+
 Usage: `obit hook minimax-code [flags]`
 
 | Option | Short | Default | Description |
@@ -483,6 +630,9 @@ Usage: `obit hook minimax-code [flags]`
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
 ### `obit hook omp`
+
+Handle one omp hook event from stdin; errors fail open
+
 Usage: `obit hook omp [flags]`
 
 | Option | Short | Default | Description |
@@ -492,6 +642,9 @@ Usage: `obit hook omp [flags]`
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
 ### `obit hook openclaw`
+
+Handle one openclaw hook event from stdin; errors fail open
+
 Usage: `obit hook openclaw [flags]`
 
 | Option | Short | Default | Description |
@@ -501,6 +654,9 @@ Usage: `obit hook openclaw [flags]`
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
 ### `obit hook opencode`
+
+Handle one opencode hook event from stdin; errors fail open
+
 Usage: `obit hook opencode [flags]`
 
 | Option | Short | Default | Description |
@@ -510,6 +666,9 @@ Usage: `obit hook opencode [flags]`
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
 ### `obit hook pi`
+
+Handle one pi hook event from stdin; errors fail open
+
 Usage: `obit hook pi [flags]`
 
 | Option | Short | Default | Description |
@@ -519,6 +678,9 @@ Usage: `obit hook pi [flags]`
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
 ### `obit hook qoder`
+
+Handle one qoder hook event from stdin; errors fail open
+
 Usage: `obit hook qoder [flags]`
 
 | Option | Short | Default | Description |
@@ -528,6 +690,9 @@ Usage: `obit hook qoder [flags]`
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
 ### `obit hook qoder-cn`
+
+Handle one qoder-cn hook event from stdin; errors fail open
+
 Usage: `obit hook qoder-cn [flags]`
 
 | Option | Short | Default | Description |
@@ -537,6 +702,9 @@ Usage: `obit hook qoder-cn [flags]`
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
 ### `obit hook trae`
+
+Handle one trae hook event from stdin; errors fail open
+
 Usage: `obit hook trae [flags]`
 
 | Option | Short | Default | Description |
@@ -546,6 +714,9 @@ Usage: `obit hook trae [flags]`
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
 ### `obit hook trae-cn`
+
+Handle one trae-cn hook event from stdin; errors fail open
+
 Usage: `obit hook trae-cn [flags]`
 
 | Option | Short | Default | Description |
@@ -555,6 +726,9 @@ Usage: `obit hook trae-cn [flags]`
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
 ### `obit hook vibe`
+
+Handle one vibe hook event from stdin; errors fail open
+
 Usage: `obit hook vibe [flags]`
 
 | Option | Short | Default | Description |
@@ -564,6 +738,9 @@ Usage: `obit hook vibe [flags]`
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
 ### `obit hook zcode`
+
+Handle one zcode hook event from stdin; errors fail open
+
 Usage: `obit hook zcode [flags]`
 
 | Option | Short | Default | Description |
@@ -572,7 +749,22 @@ Usage: `obit hook zcode [flags]`
 | `--help` | `-h` | `false` | help for zcode |
 | `--notice-only` | none | `false` | deliver advisory context without the deletion guard |
 
+### `obit hook finish`
+
+Compute a session's leftovers (started in the background by the hooks)
+
+Usage: `obit hook finish [flags]`
+
+| Option | Short | Default | Description |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | help for finish |
+| `--project` | none | `""` | project root |
+| `--session` | none | `""` | agent session id |
+
 ### `obit init`
+
+Install (or --uninstall) Obituary's hooks and instructions for an agent
+
 Usage: `obit init [flags]`
 
 | Option | Short | Default | Description |
@@ -596,15 +788,18 @@ Usage: `obit init [flags]`
 Examples:
 
 ```text
-obit init -g                 # Claude Code, for every project (~/.claude)
-obit init                    # Claude Code, this project only (.claude/)
-obit init -g --agent codex   # Codex (~/.codex/hooks.json + AGENTS.md)
-obit init -g --uninstall     # remove only what Obituary added
-obit init -g --show          # what is installed
+obit init -g  # Claude Code, for every project (~/.claude)
+obit init  # Claude Code, this project only (.claude/)
+obit init -g --agent codex  # Codex (~/.codex/hooks.json + AGENTS.md)
+obit init -g --uninstall  # remove only what Obituary added
+obit init -g --show  # what is installed
 obit init --show --format markdown > docs/agents.md
 ```
 
 ### `obit list`
+
+Show tracked paths and Docker containers, soonest expiry first
+
 Aliases: `list`, `ls`
 Usage: `obit list [flags]`
 
@@ -614,6 +809,9 @@ Usage: `obit list [flags]`
 | `--json` | none | `false` | print JSON |
 
 ### `obit log`
+
+Show the audit log of everything Obituary did
+
 Usage: `obit log [flags]`
 
 | Option | Short | Default | Description |
@@ -623,6 +821,9 @@ Usage: `obit log [flags]`
 | `--lines` | `-n` | `20` | number of events |
 
 ### `obit mcp`
+
+Serve Obituary tools over MCP stdio
+
 Usage: `obit mcp [flags]`
 
 | Option | Short | Default | Description |
@@ -630,6 +831,9 @@ Usage: `obit mcp [flags]`
 | `--help` | `-h` | `false` | help for mcp |
 
 ### `obit mktemp`
+
+Create a temporary directory that buries itself; prints its path
+
 Usage: `obit mktemp <lifespan> [flags]`
 
 | Option | Short | Default | Description |
@@ -642,10 +846,14 @@ Usage: `obit mktemp <lifespan> [flags]`
 Examples:
 
 ```text
+dir=$(obit mktemp 1d)
 obit mktemp 2h --name screenshots
 ```
 
 ### `obit proposals`
+
+Registrations waiting for your approval, and those made without asking
+
 Usage: `obit proposals [flags]`
 
 | Option | Short | Default | Description |
@@ -654,8 +862,11 @@ Usage: `obit proposals [flags]`
 | `--json` | none | `false` | print JSON |
 
 ### `obit purge`
+
+Delete selected or expired file burials. --all and explicit references skip retention, so they ask first; outside a terminal they require --yes. Docker containers require elapsed [graveyard] retention_days, including with --all or an explicit ID; running containers are treated as resurrected. Docker removal preserves volumes and never forces removal. Container handling is identical in recycle mode.
+
 Aliases: `purge`, `cremate`
-Usage: `obit purge [id\|original path]... [flags]`
+Usage: `obit purge [id|original path]... [flags]`
 
 | Option | Short | Default | Description |
 | --- | --- | --- | --- |
@@ -666,6 +877,9 @@ Usage: `obit purge [id\|original path]... [flags]`
 | `--yes` | none | `false` | purge --all or the selected burials without asking (agents: ask the user first) |
 
 ### `obit reject`
+
+Reject proposals
+
 Usage: `obit reject <proposal id>... [flags]`
 
 | Option | Short | Default | Description |
@@ -674,15 +888,21 @@ Usage: `obit reject <proposal id>... [flags]`
 | `--json` | none | `false` | print JSON |
 
 ### `obit remove-item`
-Usage: `obit remove-item [-Recurse] [-Force] [-Path\|-LiteralPath] <path> [flags]`
+
+Bury filesystem items using a limited subset of PowerShell parameters.
+
+Usage: `obit remove-item [-Recurse] [-Force] [-Path|-LiteralPath] <path> [flags]`
 
 | Option | Short | Default | Description |
 | --- | --- | --- | --- |
 | `--help` | `-h` | `false` | help for remove-item |
 
 ### `obit resurrect`
+
+Restore files without overwriting; start buried Docker containers by ID
+
 Aliases: `resurrect`, `raise`
-Usage: `obit resurrect <id\|original path>... \| --last [flags]`
+Usage: `obit resurrect <id|original path>... | --last [flags]`
 
 | Option | Short | Default | Description |
 | --- | --- | --- | --- |
@@ -691,6 +911,9 @@ Usage: `obit resurrect <id\|original path>... \| --last [flags]`
 | `--last` | none | `false` | restore the latest deletion batch in the current session or Git project |
 
 ### `obit rm`
+
+Move paths into the graveyard now (restore with obit resurrect)
+
 Usage: `obit rm [options] <path>... [flags]`
 
 | Option | Short | Default | Description |
@@ -698,6 +921,9 @@ Usage: `obit rm [options] <path>... [flags]`
 | `--help` | `-h` | `false` | help for rm |
 
 ### `obit rmdir`
+
+Move paths into the graveyard now (restore with obit resurrect)
+
 Usage: `obit rmdir [options] <path>... [flags]`
 
 | Option | Short | Default | Description |
@@ -705,6 +931,9 @@ Usage: `obit rmdir [options] <path>... [flags]`
 | `--help` | `-h` | `false` | help for rmdir |
 
 ### `obit rules`
+
+Show the rules in force here: built-ins plus the project's .obitrules once trusted
+
 Usage: `obit rules [flags]`
 
 | Option | Short | Default | Description |
@@ -713,6 +942,9 @@ Usage: `obit rules [flags]`
 | `--json` | none | `false` | print JSON |
 
 ### `obit rules apply`
+
+Register paths by rule (tracked files are never registered)
+
 Usage: `obit rules apply <path>... [flags]`
 
 | Option | Short | Default | Description |
@@ -722,6 +954,9 @@ Usage: `obit rules apply <path>... [flags]`
 | `--session` | none | `""` | agent session the paths came from |
 
 ### `obit rules check`
+
+Show what the rules would register for paths (changes nothing)
+
 Usage: `obit rules check <path>... [flags]`
 
 | Option | Short | Default | Description |
@@ -731,6 +966,9 @@ Usage: `obit rules check <path>... [flags]`
 | `--session` | none | `""` | agent session the paths came from |
 
 ### `obit stats`
+
+What Obituary has done: tracked, buried, space reclaimed, resurrections
+
 Aliases: `stats`, `eulogy`
 Usage: `obit stats [flags]`
 
@@ -740,6 +978,9 @@ Usage: `obit stats [flags]`
 | `--json` | none | `false` | print JSON |
 
 ### `obit sweep`
+
+Reap now: bury everything that is due without waiting for the runner
+
 Aliases: `sweep`, `reap`
 Usage: `obit sweep [flags]`
 
@@ -750,6 +991,9 @@ Usage: `obit sweep [flags]`
 | `--json` | none | `false` | print JSON |
 
 ### `obit trust`
+
+Review and trust the project's .obitrules (edits need a new review)
+
 Usage: `obit trust [rules file] [flags]`
 
 | Option | Short | Default | Description |
@@ -758,6 +1002,9 @@ Usage: `obit trust [rules file] [flags]`
 | `--yes` | none | `false` | trust without asking (only after reviewing the rules) |
 
 ### `obit uninstall`
+
+Remove Obituary integrations and background services; keep data by default
+
 Usage: `obit uninstall [flags]`
 
 | Option | Short | Default | Description |
@@ -768,6 +1015,9 @@ Usage: `obit uninstall [flags]`
 | `--yes` | none | `false` | confirm the plan (and data purge only when --purge-data is also given) |
 
 ### `obit untrust`
+
+Stop applying the project's .obitrules
+
 Usage: `obit untrust [rules file] [flags]`
 
 | Option | Short | Default | Description |
@@ -775,6 +1025,9 @@ Usage: `obit untrust [rules file] [flags]`
 | `--help` | `-h` | `false` | help for untrust |
 
 ### `obit update`
+
+Check or install a stable update
+
 Usage: `obit update [flags]`
 
 | Option | Short | Default | Description |
@@ -786,7 +1039,10 @@ Usage: `obit update [flags]`
 | `--wait-pid` | none | `0` | wait for this process to exit before updating (Windows) |
 
 ### `obit watch`
-Usage: `obit watch <directory> <lifespan> \| watch --list \| watch --remove <directory> [flags]`
+
+Give each top-level child of a folder its own lifespan
+
+Usage: `obit watch <directory> <lifespan> | watch --list | watch --remove <directory> [flags]`
 
 | Option | Short | Default | Description |
 | --- | --- | --- | --- |

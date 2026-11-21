@@ -3,6 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { checkCatalog, translationTemplate } from './command-reference-translations.mjs';
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const docs = join(repo, 'site', 'docs');
@@ -20,40 +21,13 @@ const labels = {
   'pt-BR': ['Referência de parâmetros', 'Aliases', 'Uso', 'Parâmetro', 'Curto', 'Padrão', 'Descrição', 'nenhum'],
   ru: ['Справочник параметров', 'Псевдонимы', 'Использование', 'Параметр', 'Кратко', 'По умолчанию', 'Описание', 'нет'],
 };
-const intro = {
-  zh: '以下表格由当前源码构建的 `obit --help` 输出生成。',
-  'zh-TW': '以下表格由目前原始碼建置的 `obit --help` 輸出產生。',
-  ja: '以下の表は、現在のソースから構築した `obit --help` の出力をもとに生成されています。',
-  ko: '아래 표는 현재 소스에서 빌드한 `obit --help` 출력으로 생성됩니다.',
-  es: 'Las tablas siguientes se generan con la salida de `obit --help` construida desde el código actual.',
-  fr: 'Les tableaux suivants sont générés à partir de la sortie de `obit --help` construite avec le code actuel.',
-  de: 'Die folgenden Tabellen werden aus der mit dem aktuellen Quelltext gebauten Ausgabe von `obit --help` erzeugt.',
-  'pt-BR': 'As tabelas abaixo são geradas pela saída de `obit --help` compilada a partir do código atual.',
-  ru: 'Следующие таблицы создаются по выводу `obit --help`, собранному из текущего исходного кода.',
-};
-const fallback = {
-  zh: '此参数的当前行为由源码生成；请同时查看命令行 help。',
-  'zh-TW': '此參數的目前行為由原始碼產生；請同時查看命令列 help。',
-  ja: 'このパラメーターの現在の動作はソースから生成されます。コマンドラインの help も参照してください。',
-  ko: '이 매개변수의 현재 동작은 소스에서 생성됩니다. 명령줄 help도 확인하세요.',
-  es: 'El comportamiento actual de este parámetro se genera desde el código; consulta también la ayuda.',
-  fr: 'Le comportement actuel de ce paramètre est généré depuis le code ; consultez aussi l’aide.',
-  de: 'Das aktuelle Verhalten dieses Parameters wird aus dem Quelltext erzeugt; siehe auch die Hilfe.',
-  'pt-BR': 'O comportamento atual deste parâmetro é gerado pelo código; consulte também a ajuda.',
-  ru: 'Текущее поведение параметра берётся из исходного кода; см. также справку.',
-};
-const common = {
-  help: { zh: '显示帮助。', 'zh-TW': '顯示說明。', ja: 'ヘルプを表示します。', ko: '도움말을 표시합니다.', es: 'Muestra la ayuda.', fr: 'Affiche l’aide.', de: 'Zeigt die Hilfe an.', 'pt-BR': 'Mostra a ajuda.', ru: 'Показать справку.' },
-  json: { zh: '以 JSON 输出。', 'zh-TW': '以 JSON 輸出。', ja: 'JSON 形式で出力します。', ko: 'JSON으로 출력합니다.', es: 'Muestra la salida en JSON.', fr: 'Affiche la sortie en JSON.', de: 'Gibt JSON aus.', 'pt-BR': 'Exibe a saída em JSON.', ru: 'Вывести результат в JSON.' },
-  'dry-run': { zh: '只显示将执行的操作，不修改文件或服务。', 'zh-TW': '只顯示將執行的操作，不修改檔案或服務。', ja: '実行内容だけを表示し、ファイルやサービスを変更しません。', ko: '수행할 작업만 표시하고 파일이나 서비스를 변경하지 않습니다.', es: 'Solo muestra lo que haría, sin cambiar archivos ni servicios.', fr: 'Affiche seulement les actions prévues, sans modifier les fichiers ni les services.', de: 'Zeigt nur die geplanten Aktionen und ändert keine Dateien oder Dienste.', 'pt-BR': 'Mostra apenas as ações previstas, sem alterar arquivos ou serviços.', ru: 'Только показать действия без изменения файлов и служб.' },
-  yes: { zh: '确认执行，不再询问。', 'zh-TW': '確認執行，不再詢問。', ja: '確認して実行し、再確認しません。', ko: '확인하고 실행하며 다시 묻지 않습니다.', es: 'Confirma la operación sin volver a preguntar.', fr: 'Confirme l’opération sans demander à nouveau.', de: 'Bestätigt den Vorgang ohne weitere Nachfrage.', 'pt-BR': 'Confirma a operação sem perguntar novamente.', ru: 'Подтвердить действие без дополнительного вопроса.' },
-  version: { zh: '显示版本。', 'zh-TW': '顯示版本。', ja: 'バージョンを表示します。', ko: '버전을 표시합니다.', es: 'Muestra la versión.', fr: 'Affiche la version.', de: 'Zeigt die Version an.', 'pt-BR': 'Mostra a versão.', ru: 'Показать версию.' },
-};
 const removeItemUsage = readFileSync(join(repo, 'internal', 'cli', 'removeitem', 'remove-item.go'), 'utf8').split('\n').find(line => line.includes('Use:'))?.split('"')[1];
+const removeItemSummary = readFileSync(join(repo, 'internal', 'cli', 'removeitem', 'remove-item.go'), 'utf8').split(String.fromCharCode(10)).find(line => line.includes('Long:'))?.split(String.fromCharCode(96))[1];
 const exampleLabels = { zh: '示例：', 'zh-TW': '範例：', ja: '例：', ko: '예시:', es: 'Ejemplos:', fr: 'Exemples :', de: 'Beispiele:', 'pt-BR': 'Exemplos:', ru: 'Примеры:' };
 
 function run(exe, args) {
-  return execFileSync(exe, args, { cwd: repo, encoding: 'utf8', env: { ...process.env, OBIT_HOME: join(tmpdir(), 'obit-docs-home'), OBIT_CONFIG_DIR: join(tmpdir(), 'obit-docs-config'), OBIT_USER_HOME: join(tmpdir(), 'obit-docs-user'), OBIT_LANG: 'en' } });
+  const dir = dirname(exe);
+  return execFileSync(exe, args, { cwd: dir, encoding: 'utf8', env: { ...process.env, OBIT_HOME: join(dir, 'data'), OBIT_CONFIG_DIR: join(dir, 'config'), OBIT_USER_HOME: join(dir, 'user'), OBIT_LANG: 'en', DO_NOT_TRACK: '1' } }).replaceAll('\r\n', '\n');
 }
 function build() {
   const dir = mkdtempSync(join(tmpdir(), 'obit-docs-build-'));
@@ -80,42 +54,44 @@ function parseHelp(text, path) {
   const aliases = text.match(/^Aliases:\s*\n\s*(.+)$/m)?.[1]?.trim() ?? '';
   const summary = text.split('\n')[0]?.trim() ?? '';
   const children = [];
-  const available = text.split(/^Available Commands:\s*$/m)[1]?.split(/^Flags:\s*$/m)[0] ?? '';
+  const available = text.match(/^Available Commands:\n((?:  [^\n]*\n)+)/m)?.[1] ?? '';
   for (const line of available.split('\n')) {
-    const match = line.match(/^\s{2,}([\w-]+)\s{2,}(.+)$/);
+    const match = line.match(/^  ([\w-]+)(?:\s|$)/);
     if (match) children.push(match[1]);
   }
   const examples = [];
-  const exampleText = text.split(/^Examples:\s*$/m)[1]?.split(/^Flags:\s*$/m)[0] ?? '';
-  for (const line of exampleText.split('\n')) if (line.trim().startsWith('obit ')) examples.push(line.trim());
-  return { path, usage, aliases, summary, children, examples, flags: parseFlags(text) };
+  const exampleText = text.match(/^Examples:\n((?:  [^\n]*\n)+)/m)?.[1] ?? '';
+  for (const line of exampleText.trim().split('\n').filter(Boolean)) {
+    const [code, comment] = line.trim().split(/\s+#\s+(.+)/);
+    examples.push({ code, comment });
+  }
+  return { name: ['obit', ...path].join(' '), usage, aliases, summary, children, examples, flags: parseFlags(text) };
 }
 function collect(exe) {
   const result = [];
   const visit = path => {
     const text = run(exe, path.length ? ['help', ...path] : ['help']);
     const command = parseHelp(text, path);
+    // This documented background entry point is hidden from Cobra's child list.
+    if (command.name === 'obit hook' && !command.children.includes('finish')) command.children.push('finish');
     if (path.length === 1 && path[0] === 'remove-item' && removeItemUsage) command.usage = 'obit ' + removeItemUsage + ' [flags]';
+    if (path.length === 1 && path[0] === 'remove-item' && removeItemSummary) command.summary = removeItemSummary;
     result.push(command);
     for (const child of command.children) visit([...path, child]);
   };
   visit([]);
-  return result.filter(command => command.path.length);
+  return result;
 }
-function description(flag, locale) {
-  const key = flag.long.slice(2);
-  return common[key]?.[locale] ?? (locale === 'en' ? flag.description : fallback[locale]);
-}
-function render(commands, locale) {
+function render(commands, catalog, locale) {
   const l = labels[locale];
-  const lines = [start, `## ${l[0]}`, '', locale === 'en' ? 'The tables below are generated from the current `obit --help` output.' : intro[locale], ''];
+  const lines = [start, `## ${l[0]}`, ''];
   for (const command of commands) {
-    lines.push(`### \`obit ${command.path.join(' ')}\``);
+    const message = (key, source) => locale === 'en' ? source : catalog[command.name][key].translations[locale];
+    lines.push(`### \`${command.name}\``, '', message('summary', command.summary), '');
     if (command.aliases) lines.push(`${l[1]}: ${command.aliases.split(',').map(x => `\`${x.trim()}\``).join(', ')}`);
-    lines.push(`${l[2]}: \`${command.usage.replaceAll('|', '\\|')}\``, '', `| ${l[3]} | ${l[4]} | ${l[5]} | ${l[6]} |`, '| --- | --- | --- | --- |');
-    for (const flag of command.flags) lines.push(`| \`${flag.long}\` | ${flag.short ? `\`-${flag.short}\`` : l[7]} | \`${flag.defaultValue}\` | ${description(flag, locale)} |`);
-    if (!command.flags.length) lines.push(`| ${l[7]} | ${l[7]} | ${l[7]} | ${locale === 'en' ? command.summary : fallback[locale]} |`);
-    if (command.examples.length) lines.push('', locale === 'en' ? 'Examples:' : exampleLabels[locale], '', '```text', ...command.examples, '```');
+    lines.push(`${l[2]}: \`${command.usage}\``, '', `| ${l[3]} | ${l[4]} | ${l[5]} | ${l[6]} |`, '| --- | --- | --- | --- |');
+    for (const flag of command.flags) lines.push(`| \`${flag.long}\` | ${flag.short ? `\`-${flag.short}\`` : l[7]} | \`${flag.defaultValue}\` | ${message(flag.long, flag.description).replaceAll('|', '\\|')} |`);
+    if (command.examples.length) lines.push('', locale === 'en' ? 'Examples:' : exampleLabels[locale], '', '```text', ...command.examples.map(({ code, comment }) => comment ? `${code}  # ${message(`example: ${code}`, comment)}` : code), '```');
     lines.push('');
   }
   lines.push(end);
@@ -123,21 +99,31 @@ function render(commands, locale) {
 }
 function replaceBlock(source, block) {
   const re = new RegExp(`${start}[\\s\\S]*?${end}`);
-  return re.test(source) ? source.replace(re, block) : `${source.trimEnd()}\n\n${block}\n`;
+  return re.test(source) ? source.replace(re, () => block) : `${source.trimEnd()}\n\n${block}\n`;
 }
 function main() {
   const check = process.argv.includes('--check');
+  const englishOnly = process.argv.includes('--english-only');
   const { dir, exe } = build();
   try {
     const commands = collect(exe);
-    for (const locale of Object.keys(labels)) {
+    const translatedLocales = Object.keys(labels).filter(l => l !== 'en');
+    const expectedCatalog = translationTemplate(commands, translatedLocales);
+    if (process.argv.includes('--template')) {
+      console.log(JSON.stringify(expectedCatalog, null, 2));
+      return;
+    }
+    const catalog = JSON.parse(readFileSync(new URL('./command-reference-translations.json', import.meta.url), 'utf8'));
+    checkCatalog(expectedCatalog, catalog, englishOnly ? [] : translatedLocales);
+    const locales = englishOnly ? ['en'] : Object.keys(labels);
+    for (const locale of locales) {
       const file = join(docs, locale === 'zh' ? 'commands.md' : join(locale, 'commands.md'));
       const source = readFileSync(file, 'utf8');
-      const expected = replaceBlock(source, render(commands, locale));
+      const expected = replaceBlock(source, render(commands, catalog, locale));
       if (check && source !== expected) throw new Error(`command reference is stale: ${file}`);
       if (!check && source !== expected) writeFileSync(file, expected);
     }
-    console.log(`Generated command references for ${commands.length} commands x ${Object.keys(labels).length} locales.`);
+    console.log(`${check ? 'Checked' : 'Generated'} ${commands.length} commands × ${locales.length} locales.`);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

@@ -1,0 +1,4272 @@
+{
+  "obit": {
+    "summary": {
+      "source": "Obituary (讣告), the trash bin for AI agents: give files a lifespan; when it runs out they are buried in a graveyard you can resurrect from",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for obit",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--version": {
+      "source": "version for obit",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit add": {
+    "summary": {
+      "source": "Give paths a lifespan (re-adding a tracked path resets its expiry)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--at": {
+      "source": "expire at a local time: \"2006-01-02 15:04\", \"2006-01-02\" or \"15:04\"",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--force": {
+      "source": "allow folders that contain a .git repository",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for add",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--no-daemon": {
+      "source": "do not start the background daemon",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--note": {
+      "source": "free-text note shown in the list",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit approve": {
+    "summary": {
+      "source": "Approve proposals: register what they list",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for approve",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit bury": {
+    "summary": {
+      "source": "Move paths into the graveyard now (restore with obit resurrect)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--force": {
+      "source": "allow folders that contain a .git repository",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for bury",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--note": {
+      "source": "free-text note kept with the burial",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit cancel": {
+    "summary": {
+      "source": "Spare paths or container IDs: stop tracking them and keep the objects",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for cancel",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit completion": {
+    "summary": {
+      "source": "Generate the autocompletion script for obit for the specified shell.",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for completion",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit completion bash": {
+    "summary": {
+      "source": "Generate the autocompletion script for the bash shell.",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for bash",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--no-descriptions": {
+      "source": "disable completion descriptions",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit completion fish": {
+    "summary": {
+      "source": "Generate the autocompletion script for the fish shell.",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for fish",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--no-descriptions": {
+      "source": "disable completion descriptions",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit completion powershell": {
+    "summary": {
+      "source": "Generate the autocompletion script for powershell.",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for powershell",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--no-descriptions": {
+      "source": "disable completion descriptions",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit completion zsh": {
+    "summary": {
+      "source": "Generate the autocompletion script for the zsh shell.",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for zsh",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--no-descriptions": {
+      "source": "disable completion descriptions",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit config": {
+    "summary": {
+      "source": "Show the configuration file and effective settings (--create writes the defaults)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--create": {
+      "source": "write a config file with the defaults",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for config",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--language": {
+      "source": "set the language: auto, en or zh-CN",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit config telemetry": {
+    "summary": {
+      "source": "Usage statistics: a random installation ID, version, OS, architecture, interface language and installation channel help measure installation counts and version use. No files, paths or commands are sent; IP addresses and user agents are not stored. Disable with obit config telemetry off or OBIT_TELEMETRY=0.",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for telemetry",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit daemon": {
+    "summary": {
+      "source": "Control the background daemon (obitd)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for daemon",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit daemon disable": {
+    "summary": {
+      "source": "Remove the scheduled runner and the resident daemon",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--dry-run": {
+      "source": "only print the changes",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for disable",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit daemon enable": {
+    "summary": {
+      "source": "Enable the 5-minute user scheduler (and the login tray on Windows)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--dry-run": {
+      "source": "only print the changes",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for enable",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--resident": {
+      "source": "enable the tray without changing the scheduled fallback",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit daemon start": {
+    "summary": {
+      "source": "Start the daemon now",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for start",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit daemon status": {
+    "summary": {
+      "source": "Show daemon state and the next expiry",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for status",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit daemon stop": {
+    "summary": {
+      "source": "Stop the daemon",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for stop",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit docker": {
+    "summary": {
+      "source": "Track Docker containers by immutable full ID and creation time. Expiry stops the container and retains its writable layer. Resurrection starts it. After [graveyard] retention_days, purge removes stopped containers without removing volumes. This also applies in recycle mode. Images, volumes and networks are preserved.",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for docker",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit docker add": {
+    "summary": {
+      "source": "Register one Docker container; expiry stops it",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for add",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit docker list": {
+    "summary": {
+      "source": "List registered Docker containers",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for list",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit doctor": {
+    "summary": {
+      "source": "Check installation, integrations and data without changing anything",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for doctor",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--verbose": {
+      "source": "include agent capability details",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit extend": {
+    "summary": {
+      "source": "Push expiries back (counted from now if already due)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for extend",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit git-clean": {
+    "summary": {
+      "source": "Bury the paths selected by git clean's dry run",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for git-clean",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit graveyard": {
+    "summary": {
+      "source": "List what lies in the graveyard and can still be resurrected",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for graveyard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--here": {
+      "source": "show only original paths in the current directory and its descendants",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit help": {
+    "summary": {
+      "source": "Help provides help for any command in the application.",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for help",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook": {
+    "summary": {
+      "source": "Agent hook entry points (called by the agent, not by people)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for hook",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook antigravity": {
+    "summary": {
+      "source": "Handle one antigravity hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for antigravity",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook audit": {
+    "summary": {
+      "source": "Show hook and delete-guard audit trails",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for audit",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--lines": {
+      "source": "number of lines per source",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook claude": {
+    "summary": {
+      "source": "Handle one claude hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for claude",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook cline": {
+    "summary": {
+      "source": "Handle one cline hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for cline",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook codebuddy": {
+    "summary": {
+      "source": "Handle one codebuddy hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for codebuddy",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook codebuddy-ide": {
+    "summary": {
+      "source": "Handle one codebuddy-ide hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for codebuddy-ide",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook codex": {
+    "summary": {
+      "source": "Handle one codex hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for codex",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook copilot": {
+    "summary": {
+      "source": "Handle one copilot hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for copilot",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook cursor": {
+    "summary": {
+      "source": "Handle one cursor hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for cursor",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook deepseek-harness": {
+    "summary": {
+      "source": "Handle one deepseek-harness hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for deepseek-harness",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook droid": {
+    "summary": {
+      "source": "Handle one droid hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for droid",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook gemini": {
+    "summary": {
+      "source": "Handle one gemini hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for gemini",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook hermes": {
+    "summary": {
+      "source": "Handle one hermes hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for hermes",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook kilocode": {
+    "summary": {
+      "source": "Handle one kilocode hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for kilocode",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook kimi": {
+    "summary": {
+      "source": "Handle one kimi hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for kimi",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook lingma": {
+    "summary": {
+      "source": "Handle one lingma hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for lingma",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook minimax-code": {
+    "summary": {
+      "source": "Handle one minimax-code hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for minimax-code",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook omp": {
+    "summary": {
+      "source": "Handle one omp hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for omp",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook openclaw": {
+    "summary": {
+      "source": "Handle one openclaw hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for openclaw",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook opencode": {
+    "summary": {
+      "source": "Handle one opencode hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for opencode",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook pi": {
+    "summary": {
+      "source": "Handle one pi hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for pi",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook qoder": {
+    "summary": {
+      "source": "Handle one qoder hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for qoder",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook qoder-cn": {
+    "summary": {
+      "source": "Handle one qoder-cn hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for qoder-cn",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook trae": {
+    "summary": {
+      "source": "Handle one trae hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for trae",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook trae-cn": {
+    "summary": {
+      "source": "Handle one trae-cn hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for trae-cn",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook vibe": {
+    "summary": {
+      "source": "Handle one vibe hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for vibe",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook zcode": {
+    "summary": {
+      "source": "Handle one zcode hook event from stdin; errors fail open",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--event": {
+      "source": "host event name when omitted from the payload",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for zcode",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--notice-only": {
+      "source": "deliver advisory context without the deletion guard",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit hook finish": {
+    "summary": {
+      "source": "Compute a session's leftovers (started in the background by the hooks)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for finish",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--project": {
+      "source": "project root",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--session": {
+      "source": "agent session id",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit init": {
+    "summary": {
+      "source": "Install (or --uninstall) Obituary's hooks and instructions for an agent",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--agent": {
+      "source": "agents to integrate with (repeat or comma-separate; default: claude)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--context-menu": {
+      "source": "install classic Explorer context menus (enabled by default)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--dry-run": {
+      "source": "only print the changes",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--format": {
+      "source": "output format for --show: text or markdown (agent coverage)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--global": {
+      "source": "user-wide instead of this project",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--guard-rm": {
+      "source": "deny supported deletion commands with restorable obit alternatives",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for init",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--mcp": {
+      "source": "register the Obituary MCP stdio server",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--no-context-menu": {
+      "source": "skip Explorer context menus",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--no-shortcuts": {
+      "source": "skip Start menu and desktop shortcuts",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--no-skill": {
+      "source": "skip installing the Obituary Agent Skill",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--show": {
+      "source": "show what is installed",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--skill": {
+      "source": "install the Obituary Agent Skill (enabled by default)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--uninstall": {
+      "source": "remove what Obituary added",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--yes": {
+      "source": "apply without asking",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "example: obit init -g": {
+      "source": "Claude Code, for every project (~/.claude)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "example: obit init": {
+      "source": "Claude Code, this project only (.claude/)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "example: obit init -g --agent codex": {
+      "source": "Codex (~/.codex/hooks.json + AGENTS.md)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "example: obit init -g --uninstall": {
+      "source": "remove only what Obituary added",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "example: obit init -g --show": {
+      "source": "what is installed",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit list": {
+    "summary": {
+      "source": "Show tracked paths and Docker containers, soonest expiry first",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for list",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit log": {
+    "summary": {
+      "source": "Show the audit log of everything Obituary did",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for log",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--lines": {
+      "source": "number of events",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit mcp": {
+    "summary": {
+      "source": "Serve Obituary tools over MCP stdio",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for mcp",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit mktemp": {
+    "summary": {
+      "source": "Create a temporary directory that buries itself; prints its path",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for mktemp",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--name": {
+      "source": "name prefix for the directory",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--session": {
+      "source": "agent session the directory belongs to",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit proposals": {
+    "summary": {
+      "source": "Registrations waiting for your approval, and those made without asking",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for proposals",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit purge": {
+    "summary": {
+      "source": "Delete selected or expired file burials. --all and explicit references skip retention, so they ask first; outside a terminal they require --yes. Docker containers require elapsed [graveyard] retention_days, including with --all or an explicit ID; running containers are treated as resurrected. Docker removal preserves volumes and never forces removal. Container handling is identical in recycle mode.",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--all": {
+      "source": "purge every burial, not only those past their retention",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--dry-run": {
+      "source": "only show what would happen",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for purge",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--yes": {
+      "source": "purge --all or the selected burials without asking (agents: ask the user first)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit reject": {
+    "summary": {
+      "source": "Reject proposals",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for reject",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit remove-item": {
+    "summary": {
+      "source": "Bury filesystem items using a limited subset of PowerShell parameters.",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for remove-item",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit resurrect": {
+    "summary": {
+      "source": "Restore files without overwriting; start buried Docker containers by ID",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for resurrect",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--last": {
+      "source": "restore the latest deletion batch in the current session or Git project",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit rm": {
+    "summary": {
+      "source": "Move paths into the graveyard now (restore with obit resurrect)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for rm",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit rmdir": {
+    "summary": {
+      "source": "Move paths into the graveyard now (restore with obit resurrect)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for rmdir",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit rules": {
+    "summary": {
+      "source": "Show the rules in force here: built-ins plus the project's .obitrules once trusted",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for rules",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit rules apply": {
+    "summary": {
+      "source": "Register paths by rule (tracked files are never registered)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for apply",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--session": {
+      "source": "agent session the paths came from",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit rules check": {
+    "summary": {
+      "source": "Show what the rules would register for paths (changes nothing)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for check",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--session": {
+      "source": "agent session the paths came from",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit stats": {
+    "summary": {
+      "source": "What Obituary has done: tracked, buried, space reclaimed, resurrections",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for stats",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit sweep": {
+    "summary": {
+      "source": "Reap now: bury everything that is due without waiting for the runner",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--dry-run": {
+      "source": "only show what would happen",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for sweep",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit trust": {
+    "summary": {
+      "source": "Review and trust the project's .obitrules (edits need a new review)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for trust",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--yes": {
+      "source": "trust without asking (only after reviewing the rules)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit uninstall": {
+    "summary": {
+      "source": "Remove Obituary integrations and background services; keep data by default",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--dry-run": {
+      "source": "only print the uninstall plan; do not change files or services",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for uninstall",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--purge-data": {
+      "source": "permanently purge listed graves and remove owned data; keep unknown files",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--yes": {
+      "source": "confirm the plan (and data purge only when --purge-data is also given)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit untrust": {
+    "summary": {
+      "source": "Stop applying the project's .obitrules",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for untrust",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit update": {
+    "summary": {
+      "source": "Check or install a stable update",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--apply": {
+      "source": "install the cached newer stable release",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--check": {
+      "source": "check GitHub now, including when automatic checks are disabled",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for update",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--relaunch-gui": {
+      "source": "reopen the desktop window after updating (Windows)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--wait-pid": {
+      "source": "wait for this process to exit before updating (Windows)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  },
+  "obit watch": {
+    "summary": {
+      "source": "Give each top-level child of a folder its own lifespan",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--age": {
+      "source": "age basis: first-seen or modified (requires approval)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--clear-exclusion": {
+      "source": "explicitly clear this exclusion ID (with --policy)",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--help": {
+      "source": "help for watch",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--json": {
+      "source": "print JSON",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--list": {
+      "source": "list folder policies",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--no-daemon": {
+      "source": "do not start the background runner",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--policy": {
+      "source": "policy ID whose exclusion should be cleared",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--remove": {
+      "source": "remove a policy and cancel its registered lifespans",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    },
+    "--remove-id": {
+      "source": "remove a folder policy by ID, including missing paths",
+      "translations": {
+        "zh": null,
+        "zh-TW": null,
+        "ja": null,
+        "ko": null,
+        "es": null,
+        "fr": null,
+        "de": null,
+        "pt-BR": null,
+        "ru": null
+      }
+    }
+  }
+}
