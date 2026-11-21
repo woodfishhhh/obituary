@@ -6,7 +6,7 @@
 // where the visitor is. Both serve /agent-install.md, so the sentence for an
 // agent is the same everywhere: the Pages copy installs from GitHub, the
 // mirror copy from cn.obituary.woodfish.site, which also serves install.ps1.
-import { cp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { cp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 
 const mirror = process.env.VITE_SITE === "cn";
 const root = new URL("../", import.meta.url);
@@ -24,6 +24,14 @@ for (const [from] of parts) {
 }
 await rm(out, { recursive: true, force: true });
 for (const [from, to] of parts) await cp(from, to, { recursive: true });
+
+// A bundled stylesheet holds no @import: one left behind makes the browser ask for the file beside it, get the
+// 404 page, and fail the script chunk that loads the stylesheet (the landing page's window demo, for one).
+for (const dir of ["assets/", "docs/assets/"]) {
+  for (const name of (await readdir(new URL(dir, out))).filter((n) => n.endsWith(".css"))) {
+    if (/@import/.test(await readFile(new URL(dir + name, out), "utf8"))) throw new Error(`unbundled @import in ${dir}${name}`);
+  }
+}
 
 // The mirror's copy of the agent install guide installs only through the
 // mirror: Scoop (and winget, once listed) download from GitHub, so their lines go.

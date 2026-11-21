@@ -26,6 +26,8 @@ const guiStyles = () => ({
     const sheet = code
       .replace(/^\* \{ box-sizing: border-box; \}\r?\n/m, "")
       .replace(/^html, body, #root \{[^\r\n]*\}\r?\n/m, "")
+      // An @import cannot sit inside the layer; index.css imports the same file at the top of the page's sheet.
+      .replace(/^@import "\.\/squircle\.css";\r?\n/m, "")
       .replaceAll('url("/fonts/', 'url("../public/fonts/')
       // Its text stays hidden until its faces arrive, rather than showing in another face and shifting when they do.
       .replaceAll("font-display: swap", "font-display: block");
