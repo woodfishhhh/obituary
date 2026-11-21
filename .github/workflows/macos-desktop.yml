@@ -42,7 +42,7 @@ jobs:
       - name: Mount DMG and run packaged smoke
         run: |
           set -euo pipefail
-          dmg="$RUNNER_TEMP/macos-desktop/obituary_${GITHUB_REF_NAME#v}_darwin_universal.dmg"
+          dmg="$(find "$RUNNER_TEMP/macos-desktop" -maxdepth 1 -name '*.dmg' -print -quit)"
           mount="$RUNNER_TEMP/macos-dmg"
           mkdir -p "$mount"
           hdiutil attach "$dmg" -nobrowse -readonly -mountpoint "$mount"

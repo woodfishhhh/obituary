@@ -4,6 +4,7 @@ set -euo pipefail
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 version=${1:-${GITHUB_REF_NAME:-dev}}
 version=${version#v}
+version=${version//\//-}
 out=${2:-$root/bin/macos-desktop}
 work=$out/.work
 bundle=$out/Obituary.app
