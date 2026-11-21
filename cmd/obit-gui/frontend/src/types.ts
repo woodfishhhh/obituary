@@ -220,7 +220,20 @@ export interface UpdateInfo {
   command?: string;
   // In-app update: whether this channel supports it, and how the last one went.
   canApply?: boolean;
+  // A manual install that cannot update itself: the condition that fails
+  // ("dev", "platform", "bundle", "files" or "write") and its detail.
+  applyBlocked?: string;
+  applyDetail?: string;
   lastApply?: LastApply;
+}
+
+// What the update helper is doing. The window stays open through the download
+// and closes once the phase is "ready"; "failed" carries the error.
+export interface ApplyProgress {
+  phase: "starting" | "downloading" | "verifying" | "ready" | "installing" | "done" | "failed" | string;
+  done?: number;
+  total?: number;
+  error?: string;
 }
 
 export interface LastApply {
@@ -297,6 +310,8 @@ export interface Api {
   PlanUpdateCheck?(enabled: boolean): Promise<Plan>;
   // Starts the update helper; the window quits once it returns.
   ApplyUpdate?(): Promise<{ targetVersion: string; logPath: string }>;
+  // Progress of that helper; missing on an older backend.
+  UpdateProgress?(): Promise<ApplyProgress>;
   ApplyPlan(id: string): Promise<PlanReceipt>;
   Logs(q: { source: string; lines: number; text: string; from: string; to: string; level: string }): Promise<LogPage>;
 }

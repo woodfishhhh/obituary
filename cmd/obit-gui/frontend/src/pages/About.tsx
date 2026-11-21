@@ -1,10 +1,11 @@
 import { BellRing, Copy, Download, RefreshCw } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { errorText, useApi } from "../api";
-import { when } from "../format";
+import { bytes, when } from "../format";
 import { useLoad } from "../hooks";
-import { t } from "../i18n";
-import type { Plan, UpdateInfo } from "../types";
+import { lang, t } from "../i18n";
+import { notesFor } from "../notes";
+import type { Api, ApplyProgress, Plan, UpdateInfo } from "../types";
 import { Button, useConfirm, useToast } from "../ui";
 
 const REPO = "https://github.com/woodfishhhh/obituary";
@@ -100,22 +101,86 @@ function LastApplyNote({ info }: { info: UpdateInfo }) {
   );
 }
 
+// The helper downloads and checks the release while this window stays open, so
+// the window can show how far it is. It closes itself once nothing is left to
+// download: from then on the helper waits for it to exit, then replaces files.
+async function follow(api: Api, show: (progress: ApplyProgress) => void) {
+  if (!api.UpdateProgress) {
+    window.runtime?.Quit?.();
+    return;
+  }
+  const giveUp = Date.now() + 12 * 60_000;
+  let misses = 0;
+  for (;;) {
+    let progress: ApplyProgress | null = null;
+    try {
+      progress = await api.UpdateProgress();
+      misses = 0;
+    } catch (error) {
+      if (++misses > 5) throw error;
+    }
+    if (progress?.phase === "failed") throw new Error(progress.error ?? "");
+    if (progress) show(progress);
+    if (progress && ["ready", "installing", "done"].includes(progress.phase)) {
+      window.runtime?.Quit?.();
+      return;
+    }
+    if (Date.now() > giveUp) throw new Error(t("upd.stalled"));
+    await new Promise((resolve) => setTimeout(resolve, 400));
+  }
+}
+
+function ApplyStatus({ progress }: { progress: ApplyProgress }) {
+  const total = progress.total && progress.total > 0 ? progress.total : 0;
+  const downloading = progress.phase === "downloading";
+  const text = downloading ? t("upd.phase.downloading", bytes(progress.done ?? 0), total ? bytes(total) : "")
+    : progress.phase === "verifying" ? t("upd.phase.verifying")
+    : progress.phase === "ready" || progress.phase === "installing" ? t("upd.phase.ready") : t("upd.phase.starting");
+  // No value is an indeterminate bar: a download of unknown size, or a first moment.
+  const value = downloading ? (total ? Math.round(((progress.done ?? 0) / total) * 100) : undefined) : progress.phase === "starting" ? undefined : 100;
+  return (
+    <div className="about-progress" role="status">
+      <span>{text}</span>
+      <progress max={100} value={value} aria-label={text} />
+    </div>
+  );
+}
+
+// Why a hand-unpacked copy cannot update itself, in the window's language.
+function blockedText(info: UpdateInfo): string {
+  const detail = info.applyDetail ?? "";
+  switch (info.applyBlocked) {
+    case "dev": return t("upd.blocked.dev", detail);
+    case "platform": return t("upd.blocked.platform", detail);
+    case "bundle": return t("upd.blocked.bundle");
+    case "files": return t("upd.blocked.files", detail);
+    case "write": return t("upd.blocked.write", detail);
+    default: return "";
+  }
+}
+
 function NewRelease({ info }: { info: UpdateInfo }) {
   const api = useApi();
   const toast = useToast();
   const confirm = useConfirm();
   const [starting, setStarting] = useState(false);
+  const [progress, setProgress] = useState<ApplyProgress | null>(null);
   const canApply = !!(info.canApply && api.ApplyUpdate);
+  // A copy that updates itself without a package manager or script command was unpacked by hand.
+  const manual = canApply && !info.command;
+  const blocked = !canApply ? blockedText(info) : "";
+  const notes = info.notes ? notesFor(info.notes, lang()) : "";
   async function update() {
-    if (!(await confirm({ title: t("upd.applyTitle", info.latest ?? ""), body: <p>{t("upd.applyBody")}</p>, ok: t("upd.apply") }))) return;
+    if (!(await confirm({ title: t("upd.applyTitle", info.latest ?? ""), body: <p>{t("upd.applyBody")}</p>, ok: manual ? t("upd.applyManual") : t("upd.apply") }))) return;
     setStarting(true);
+    setProgress(null);
     try {
       await api.ApplyUpdate!();
-      // The helper waits for this process to exit before it replaces any file.
-      window.runtime?.Quit?.();
+      await follow(api, setProgress);
     } catch (error) {
       toast(t("upd.applyFailed", errorText(error)), "error");
       setStarting(false);
+      setProgress(null);
     }
   }
   async function copy() {
@@ -133,18 +198,25 @@ function NewRelease({ info }: { info: UpdateInfo }) {
         {info.published ? <span className="hint">{t("upd.published", when(info.published))}</span> : null}
       </div>
       {canApply ? (
-        <div><Button kind="primary" icon={Download} onClick={update} disabled={starting} aria-busy={starting}>{starting ? t("upd.applying") : t("upd.apply")}</Button></div>
+        <div><Button kind="primary" icon={Download} onClick={update} disabled={starting} aria-busy={starting}>{starting ? t("upd.applying") : manual ? t("upd.applyManual") : t("upd.apply")}</Button></div>
       ) : null}
+      {manual ? <p className="hint">{t("upd.manualNote")}</p> : null}
+      {starting && progress && progress.phase !== "starting" ? <ApplyStatus progress={progress} /> : null}
       {info.command ? (
         <>
           <p>{canApply ? t("upd.orTerminal") : t("upd.howTo")}</p>
           <div className="about-cmd"><code>{info.command}</code><Button kind="ghost" icon={Copy} onClick={copy}>{t("upd.copy")}</Button></div>
         </>
-      ) : <p>{t("upd.howToOther")}</p>}
-      {info.notes ? (
+      ) : !canApply ? (
+        <>
+          {blocked ? <p>{blocked}</p> : null}
+          <p>{t("upd.howToOther")}</p>
+        </>
+      ) : null}
+      {notes ? (
         <details className="about-notes">
           <summary>{t("upd.notes")}</summary>
-          <div className="about-notes-body"><Notes text={info.notes} /></div>
+          <div className="about-notes-body"><Notes text={notes} /></div>
         </details>
       ) : null}
       <div className="about-links">
