@@ -19,17 +19,3 @@ obit uninstall                # 撤掉讣告装过的所有东西，确认后执
 ## Scoop 和 winget
 
 先執行 `obit uninstall`，再用各自的解除安裝命令。
-## 解除安裝範圍與資料位置
-
-`obit uninstall --dry-run` 會列出目前使用者與目前 Git 專案可移除的項目。真正執行會移除整合、hook、MCP、Skill、托盤自啟與排程；其他專案的專案級設定要到各專案分別解除安裝。
-
-| 位置或元件 | Windows | macOS | Linux |
-| --- | --- | --- | --- |
-| 程式 | 安裝目錄中的 `obit`、`obitd`、可選 `obit-gui` | `/Applications/Obituary.app` 或 CLI 目錄 | CLI 目錄；桌面版為 `.deb` |
-| hook、MCP、Skill | 使用者或專案範圍的 agent 設定 | agent 設定範圍 | agent 設定範圍 |
-| 背景排程 | 工作排程、常駐程式與托盤 | 使用者 LaunchAgent 與選單列托盤 | systemd 使用者計時器；桌面托盤可有 XDG 自啟 |
-| 專案設定 | `.claude/`、`.codex/` 等由讖告加入的部分 | 專案設定 | 專案設定 |
-
-預設資料位於 Windows `%LOCALAPPDATA%\obituary`、設定為 `%APPDATA%\obituary\config.toml`；macOS 的 `~/Library/Application Support/obituary`；Linux 的 `$XDG_DATA_HOME/obituary`，未設定時為 `~/.local/share/obituary`。`OBIT_HOME`、`OBIT_CONFIG_DIR`、`OBIT_USER_HOME` 可分別重定向資料、設定與使用者主目錄；同卷可能還有 `.obituary` 墓地。
-
-墓地、賬本、稽核記錄和設定預設保留。`--purge-data` 只清理讖告擁有且已核實的墓地資料，不刪未知檔案，也不是刪除使用者主目錄的授權。recycle 模式必須從系統資源回收筒復原，不能使用 `resurrect`。

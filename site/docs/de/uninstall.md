@@ -19,17 +19,3 @@ Hast du in anderen Projekten projektspezifische Hooks installiert, führe dort j
 ## Scoop und winget
 
 Führe zuerst `obit uninstall` aus und anschließend den Deinstallationsbefehl des verwendeten Paketmanagers.
-## Deinstallationsumfang und Datenorte
-
-`obit uninstall --dry-run` zeigt entfernbarere Elemente für den aktuellen Benutzer und das aktuelle Git-Projekt. Der Befehl entfernt Hooks, MCP, Skills, Tray, Autostart und Zeitpläne, ändert aber keine anderen Projekte; dort muss er separat ausgeführt werden.
-
-| Element | Windows | macOS | Linux |
-| --- | --- | --- | --- |
-| Programm | `obit`, `obitd`, optional `obit-gui` | `/Applications/Obituary.app` oder CLI-Verzeichnis | CLI-Verzeichnis, Desktop als `.deb` |
-| Hook, MCP, Skill | Agent-Konfiguration | Agent-Konfiguration | Agent-Konfiguration |
-| Planung | Aufgabe, residenter Prozess und Tray | LaunchAgent und Menüleiste | systemd-Timer und XDG-Autostart |
-| Projekt | Obituary-Teile in `.claude/` und `.codex/` | Projektkonfiguration | Projektkonfiguration |
-
-Standarddaten liegen unter Windows in `%LOCALAPPDATA%\obituary` und `%APPDATA%\obituary`, unter macOS in `~/Library/Application Support/obituary` und unter Linux in `$XDG_DATA_HOME/obituary` bzw. `~/.local/share/obituary`. `OBIT_HOME`, `OBIT_CONFIG_DIR` und `OBIT_USER_HOME` können Daten, Konfiguration und Benutzerverzeichnis umleiten; auf demselben Volume kann `.obituary` liegen.
-
-Friedhof, Ledger, Audit-Protokoll und Konfiguration bleiben standardmäßig. `--purge-data` löscht nur verifizierte eigene Friedhofsdaten und behält unbekannte Dateien. Im recycle-Modus wird aus dem Papierkorb wiederhergestellt, nicht mit `resurrect`.

@@ -19,17 +19,3 @@ Si instalaste hooks a nivel de proyecto en otros proyectos, ejecuta `obit uninst
 ## Scoop y winget
 
 Ejecuta primero `obit uninstall` y después el comando de desinstalación del gestor de paquetes que usaste.
-## Alcance de la desinstalación y datos
-
-`obit uninstall --dry-run` muestra lo que puede quitarse del usuario y del proyecto Git actuales. La ejecución elimina hooks, MCP, Skills, bandeja, inicio automático y programadores, pero no cambia la instalación de otros proyectos; repite el comando allí.
-
-| Elemento | Windows | macOS | Linux |
-| --- | --- | --- | --- |
-| Programa | `obit`, `obitd`, `obit-gui` opcional | `/Applications/Obituary.app` o directorio CLI | Directorio CLI; escritorio en `.deb` |
-| Hook, MCP, Skill | Configuración del agent | Configuración del agent | Configuración del agent |
-| Programación | Tarea, proceso residente y bandeja | LaunchAgent y barra de menús | Temporizador systemd y XDG autostart |
-| Proyecto | Partes añadidas a `.claude/` y `.codex/` | Configuración del proyecto | Configuración del proyecto |
-
-Los datos predeterminados están en `%LOCALAPPDATA%\obituary` y `%APPDATA%\obituary` en Windows, `~/Library/Application Support/obituary` en macOS y `$XDG_DATA_HOME/obituary` en Linux (`~/.local/share/obituary` si no existe). `OBIT_HOME`, `OBIT_CONFIG_DIR` y `OBIT_USER_HOME` redirigen datos, configuración y hogar; también puede existir `.obituary` en el mismo volumen.
-
-El cementerio, el registro, el historial y la configuración se conservan. `--purge-data` solo elimina datos del cementerio cuya propiedad puede verificarse y conserva archivos desconocidos. En modo recycle se restaura desde la papelera, no con `resurrect`.
