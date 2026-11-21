@@ -9,6 +9,7 @@ import tempfile
 import time
 
 import dbus
+from resident_lifetime import lifetime
 
 
 def run(*args):
@@ -62,6 +63,17 @@ def probe(root):
             assert Path(f"/proc/{pid}/exe").samefile(daemon)
             return pid
 
+        if os.environ.get("OBIT_LONG_PROBE") == "true":
+            def identity():
+                pid = observed()
+                return (pid, Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()[19]) if pid else None
+
+            def crash(expected):
+                assert identity() == expected
+                run(*ctl, "kill", "--kill-whom=main", "--signal=SIGKILL", unit)
+
+            lifetime(cli, root, home, identity, crash)
+            return
         first = wait(observed, 20)
         started = time.monotonic()
         # Signal the manager-owned main process of this exact unit, not a PID by name.

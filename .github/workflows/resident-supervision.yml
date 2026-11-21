@@ -1,12 +1,18 @@
 name: Resident supervision
 on:
   workflow_dispatch:
+    inputs:
+      endurance:
+        type: boolean
+        description: Observe the resident across 30 minutes and exhaust its restart budget
+        default: false
   push:
     paths:
       - .github/workflows/resident-supervision.yml
       - scripts/test-windows-resident.py
       - scripts/test-macos-resident.py
       - scripts/test-linux-resident.py
+      - scripts/resident_lifetime.py
       - internal/app/trayunit_linux.go
       - internal/app/daemon_darwin.go
       - internal/app/*windows.go
@@ -15,10 +21,13 @@ on:
 permissions:
   contents: read
 
+env:
+  OBIT_LONG_PROBE: ${{ inputs.endurance || contains(github.event.head_commit.message, '[resident-long]') }}
+
 jobs:
   linux:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 115
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -38,7 +47,7 @@ jobs:
           xvfb-run -a /usr/bin/python3 -u scripts/test-linux-resident.py
   macos:
     runs-on: macos-15
-    timeout-minutes: 15
+    timeout-minutes: 115
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -55,7 +64,7 @@ jobs:
         trigger: [manual, clock]
         exit-code: ["1", "0xC0000005"]
     runs-on: windows-2025
-    timeout-minutes: 15
+    timeout-minutes: 115
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:

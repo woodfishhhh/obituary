@@ -9,6 +9,7 @@ import signal
 import subprocess
 import tempfile
 import time
+from resident_lifetime import lifetime
 
 
 def command(*args):
@@ -54,6 +55,17 @@ def probe(root):
         job = plistlib.loads(plist.read_bytes())
         assert job["KeepAlive"] == {"SuccessfulExit": False} and job["ThrottleInterval"] == 60
         assert job["ProgramArguments"][0] == str(daemon) and job["RunAtLoad"]
+        if os.environ.get("OBIT_LONG_PROBE") == "true":
+            def identity():
+                value = pid()
+                return (value, command("ps", "-p", str(value), "-o", "lstart=")) if value else None
+
+            def crash(expected):
+                assert identity() == expected
+                command("launchctl", "kill", "SIGKILL", service)
+
+            lifetime(cli, root, home, identity, crash)
+            return
         first = wait(pid, 15)
         started = time.monotonic()
         os.kill(first, signal.SIGKILL)

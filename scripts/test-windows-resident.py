@@ -13,6 +13,7 @@ import xml.etree.ElementTree as ET
 from ctypes import wintypes
 from pathlib import Path
 from xml.sax.saxutils import escape
+from resident_lifetime import lifetime
 
 
 def command(*argv):
@@ -33,8 +34,10 @@ def terminate_verified_process(receipt, daemon, code):
     # Pin the handle and match the creation time before forcibly ending a PID.
     kernel = ctypes.WinDLL("kernel32", use_last_error=True)
     kernel.OpenProcess.restype = wintypes.HANDLE
-    handle = kernel.OpenProcess(0x1001, False, receipt["pid"])
+    handle = kernel.OpenProcess(0x101000 | (1 if code is not None else 0), False, receipt["pid"])
     if not handle:
+        if code is None and ctypes.get_last_error() == 87:
+            return None
         raise ctypes.WinError(ctypes.get_last_error())
     handle = wintypes.HANDLE(handle)
     try:
@@ -46,6 +49,8 @@ def terminate_verified_process(receipt, daemon, code):
         if not kernel.QueryFullProcessImageNameW(handle, 0, path, ctypes.byref(size)):
             raise ctypes.WinError(ctypes.get_last_error())
         assert times[0].value == receipt["created"] and Path(path.value).samefile(daemon), receipt
+        if code is None:
+            return receipt if kernel.WaitForSingleObject(handle, 0) == 258 else None
         if not kernel.TerminateProcess(handle, wintypes.UINT(code)):
             raise ctypes.WinError(ctypes.get_last_error())
     finally:
@@ -91,7 +96,14 @@ def probe(root, name, daemon, cli, trigger, code):
         command("schtasks", "/create", "/tn", name, "/xml", definition)
     try:
         print(command("schtasks", "/query", "/tn", name, "/xml"), flush=True)
-        first = wait(read, 60)
+        if os.environ.get("OBIT_LONG_PROBE") == "true" and trigger == "manual" and code == 1:
+            def identity():
+                row = read()
+                return terminate_verified_process(row, daemon, None) if row and not row["closed"] else None
+
+            lifetime(cli, root, home, identity, lambda row: terminate_verified_process(row, daemon, code))
+            return
+        first = wait(lambda: (r if (r := read()) and not r["closed"] else None), 60)
         parent = json.loads((home / "obitd.supervisor.json").read_bytes())
         assert not parent["closed"] and first["pid"] != parent["pid"], (first, parent)
         print("supervisor", parent, flush=True)
