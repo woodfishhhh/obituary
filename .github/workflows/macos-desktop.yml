@@ -72,6 +72,19 @@ jobs:
               sleep 1
             done
           }
+          stop_all_trays() {
+            kill "$daemon_pid" 2>/dev/null || true
+            pkill -TERM -f '[o]bitd' 2>/dev/null || true
+            for _ in {1..10}; do
+              if ! pgrep -f '[o]bitd' >/dev/null 2>&1; then break; fi
+              sleep 1
+            done
+          }
+          screen_width=$(system_profiler SPDisplaysDataType 2>/dev/null | sed -n 's/.*Resolution: \([0-9][0-9]*\) x.*/\1/p' | head -1)
+          screen_width=${screen_width:-0}
+          crop_x=$((screen_width - 1200))
+          if [ "$crop_x" -lt 0 ]; then crop_x=0; fi
+          : > "$OBIT_HOME/obitd.log"
           "$app/Contents/MacOS/obitd" --tray > "$RUNNER_TEMP/macos-evidence/tray-stdout-before.log" 2>&1 &
           daemon_pid=$!
           wait_for_tray
@@ -84,9 +97,10 @@ jobs:
           "$app/Contents/MacOS/obit-gui" --width 1040 --height 700 > "$RUNNER_TEMP/macos-evidence/gui.log" 2>&1 &
           gui_pid=$!
           sleep 8
-          kill "$daemon_pid" 2>/dev/null || true
-          sleep 3
-          screencapture -x -R 1800,0,1200,180 "$RUNNER_TEMP/macos-evidence/menu-bar-off.png"
+          stop_all_trays
+          pgrep -af '[o]bitd' > "$RUNNER_TEMP/macos-evidence/tray-off-processes.txt" 2>&1 || true
+          screencapture -x -T 2 -R "$crop_x,0,1200,180" "$RUNNER_TEMP/macos-evidence/menu-bar-off.png" 2>/dev/null || screencapture -x -T 2 "$RUNNER_TEMP/macos-evidence/menu-bar-off.png"
+          : > "$OBIT_HOME/obitd.log"
           "$app/Contents/MacOS/obitd" --tray > "$RUNNER_TEMP/macos-evidence/tray-stdout-after.log" 2>&1 &
           daemon_pid=$!
           wait_for_tray
@@ -99,8 +113,10 @@ jobs:
           sleep 3
           screencapture -x -T 2 "$RUNNER_TEMP/macos-evidence/window.png"
           screencapture -x -T 2 "$RUNNER_TEMP/macos-evidence/menu-bar.png"
-          screencapture -x -R 1800,0,1200,180 "$RUNNER_TEMP/macos-evidence/menu-bar-on.png"
-          kill "$gui_pid" "$daemon_pid" 2>/dev/null || true
+          screencapture -x -T 2 -R "$crop_x,0,1200,180" "$RUNNER_TEMP/macos-evidence/menu-bar-on.png" 2>/dev/null || screencapture -x -T 2 "$RUNNER_TEMP/macos-evidence/menu-bar-on.png"
+          stop_all_trays
+          kill "$gui_pid" 2>/dev/null || true
+          ls -la "$RUNNER_TEMP/macos-evidence"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: macos-desktop-package
