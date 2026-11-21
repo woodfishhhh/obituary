@@ -43,7 +43,7 @@ func TestLegacyRunnerPreservesEditedAndDisabledDefinitions(t *testing.T) {
 func (e schedulerExit) Error() string { return fmt.Sprintf("HRESULT %#x", uint32(e)) }
 func (e schedulerExit) ExitCode() int { return int(e) }
 
-func TestFallbackReceiptDistinguishesEditedStartFromAnotherValidInstall(t *testing.T) {
+func TestFallbackMigrationAcceptsOnlyVariableStartBoundary(t *testing.T) {
 	home, config := t.TempDir(), t.TempDir()
 	t.Setenv("OBIT_CONFIG_DIR", config)
 	const daemon = `C:\bin\obitd.exe`
@@ -53,14 +53,15 @@ func TestFallbackReceiptDistinguishesEditedStartFromAnotherValidInstall(t *testi
 	if strings.Replace(first, taskStartBoundary(first), taskStartBoundary(later), 1) != later {
 		t.Fatal("fixture changed more than StartBoundary")
 	}
-	if ownedSchedule(first, daemon, home, config) || ownedSchedule(later, daemon, home, config) {
-		t.Fatal("adopted task without an original receipt")
+	later = strings.Replace(later, taskStartBoundary(later), "2038-01-19T03:14:07.123+08:00", 1)
+	if !ownedSchedule(later, daemon, home, config) {
+		t.Fatal("rejected a legacy task whose only edit was StartBoundary")
 	}
 	if err := os.WriteFile(filepath.Join(home, fallbackReceipt), []byte(first), 0600); err != nil {
 		t.Fatal(err)
 	}
-	if !ownedSchedule(first, daemon, home, config) || ownedSchedule(later, daemon, home, config) {
-		t.Fatal("original task export not enforced")
+	if !ownedSchedule(first, daemon, home, config) || !ownedSchedule(later, daemon, home, config) {
+		t.Fatal("a previous receipt hid the current valid phase")
 	}
 }
 
