@@ -64,14 +64,29 @@ jobs:
           export OBIT_HOME="$RUNNER_TEMP/macos-home"
           export OBIT_CONFIG_DIR="$RUNNER_TEMP/macos-config"
           mkdir -p "$RUNNER_TEMP/macos-evidence"
-          "$app/Contents/MacOS/obitd" --tray > "$RUNNER_TEMP/macos-evidence/obitd.log" 2>&1 &
+          "$app/Contents/MacOS/obitd" --tray > "$RUNNER_TEMP/macos-evidence/tray-stdout.log" 2>&1 &
           daemon_pid=$!
-          sleep 3
+          ready=false
+          for _ in {1..20}; do
+            if ! kill -0 "$daemon_pid" 2>/dev/null; then break; fi
+            if grep -q "obitd started" "$OBIT_HOME/obitd.log" 2>/dev/null; then ready=true; break; fi
+            sleep 1
+          done
+          {
+            printf 'daemon_pid=%s
+' "$daemon_pid"
+            printf 'ready=%s
+' "$ready"
+            ps -p "$daemon_pid" -o pid=,stat=,command= 2>&1 || true
+            if [ -f "$OBIT_HOME/obitd.log" ]; then cat "$OBIT_HOME/obitd.log"; fi
+            if [ -f "$RUNNER_TEMP/macos-evidence/tray-stdout.log" ]; then cat "$RUNNER_TEMP/macos-evidence/tray-stdout.log"; fi
+          } > "$RUNNER_TEMP/macos-evidence/tray-readiness.txt"
           "$app/Contents/MacOS/obit-gui" --width 1040 --height 700 > "$RUNNER_TEMP/macos-evidence/gui.log" 2>&1 &
           gui_pid=$!
           sleep 8
           screencapture -x -T 2 "$RUNNER_TEMP/macos-evidence/window.png"
           screencapture -x -T 2 "$RUNNER_TEMP/macos-evidence/menu-bar.png"
+          screencapture -x -R 1800,0,1200,180 "$RUNNER_TEMP/macos-evidence/menu-bar-right.png"
           kill "$gui_pid" "$daemon_pid" 2>/dev/null || true
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
