@@ -79,6 +79,7 @@ jobs:
             if [ -f "$OBIT_HOME/obitd.log" ]; then cat "$OBIT_HOME/obitd.log"; fi
             if [ -f "$RUNNER_TEMP/macos-evidence/tray-stdout.log" ]; then cat "$RUNNER_TEMP/macos-evidence/tray-stdout.log"; fi
           } > "$RUNNER_TEMP/macos-evidence/tray-readiness.txt"
+          cat "/macos-evidence/tray-readiness.txt"
           "$app/Contents/MacOS/obit-gui" --width 1040 --height 700 > "$RUNNER_TEMP/macos-evidence/gui.log" 2>&1 &
           gui_pid=$!
           sleep 8
