@@ -63,6 +63,10 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         with:
           go-version-file: go.mod
+      - name: Verify upgrade handoff during restart backoff
+        if: matrix.trigger == 'manual' && matrix.exit-code == '1'
+        shell: bash
+        run: go test ./internal/app -count=1 -run "^TestUpdater(TakesPendingRestartOnce|DoesNotRestartAfterFailedStop)$" -v
       - name: Kill and stop a scheduler-owned obitd
         shell: bash
         run: python -u scripts/test-windows-resident.py "${{ matrix.trigger }}" "${{ matrix.exit-code }}"
