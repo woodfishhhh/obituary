@@ -54,6 +54,7 @@ jobs:
           printf 'macOS desktop example\n' > "$RUNNER_TEMP/macos-example.txt"
           "$mount/Obituary.app/Contents/MacOS/obit" mark "$RUNNER_TEMP/macos-example.txt" 7d
           "$mount/Obituary.app/Contents/MacOS/obit-gui" --smoke
+          "$mount/Obituary.app/Contents/MacOS/obit" daemon stop
           hdiutil detach "$mount"
       - name: Capture window and menu bar evidence
         if: always()
