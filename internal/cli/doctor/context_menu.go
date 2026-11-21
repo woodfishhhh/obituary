@@ -26,6 +26,8 @@ func (lang diagnostics) diagnoseContextMenu(executable cmdutil.Executable) Docto
 	c.Detail = st.Detail
 	if !st.Installed {
 		c.Status = "INFO"
+	} else if st.LabelLanguageMismatch {
+		c.Status, c.Installation = "INFO", "label-language-mismatch"
 	} else if !st.Current {
 		c.Status = "WARN"
 	}

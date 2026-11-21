@@ -799,6 +799,8 @@
   "cli.host.registry.classic": "经典右键菜单已安装；命令使用当前程序：",
   "cli.host.registry.incomplete": "不完整、被修改过，或命令没有使用当前程序 (",
   "cli.host.registry.info": "信息 (缺失)",
+  "cli.host.registry.chinese_labels": "右键菜单的标签是中文，当前界面是英文；菜单可以正常使用。如需换成英文标签，请运行 obit init --context-menu --yes。",
+  "cli.host.registry.english_labels": "右键菜单的标签是英文，当前界面是中文；菜单可以正常使用。如需换成中文标签，请运行 obit init --context-menu --yes。",
   "cli.host.schedule.unchanged_scheduled_task_q_absent": "不变        计划任务 %q（不存在）",
   "cli.host.schedule.query_failed_for_scheduled_task": "查询计划任务 %q 失败：%v",
   "cli.host.schedule.remove_scheduled_task_q_every": "移除        计划任务 %q（每 %d 分钟一次，登录时也运行）\n    %s",

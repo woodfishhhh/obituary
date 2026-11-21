@@ -799,6 +799,8 @@
   "cli.host.registry.classic": "classic context menu installed; commands use current executable: ",
   "cli.host.registry.incomplete": "incomplete, modified or commands do not use current executable (",
   "cli.host.registry.info": "INFO (missing)",
+  "cli.host.registry.chinese_labels": "Menu labels are in Chinese; the interface is in English. The menu works normally. To switch its labels to English, run obit init --context-menu --yes.",
+  "cli.host.registry.english_labels": "Menu labels are in English; the interface is in Chinese. The menu works normally. To switch its labels to Chinese, run obit init --context-menu --yes.",
   "cli.host.schedule.unchanged_scheduled_task_q_absent": "unchanged scheduled task %q (absent)",
   "cli.host.schedule.query_failed_for_scheduled_task": "query failed for scheduled task %q: %v",
   "cli.host.schedule.remove_scheduled_task_q_every": "remove scheduled task %q (every %d minutes and at sign-in)\n    %s",

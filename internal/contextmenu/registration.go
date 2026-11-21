@@ -77,8 +77,9 @@ func Apply(reg Registry, changes []Change) error {
 }
 
 type Status struct {
-	Installed, Current bool
-	Detail             string
+	Installed, Current    bool
+	LabelLanguageMismatch bool // The complete registration matches the other supported UI language.
+	Detail                string
 }
 
 func Inspect(reg Registry, executable string) (Status, error) {
@@ -94,26 +95,50 @@ func InspectDisplay(reg Registry, executable string, language i18n.Language, l *
 	if err != nil {
 		return Status{}, err
 	}
-	st := Status{Current: true}
-	var entries []string
+	var st Status
+	actual := make(map[string]Tree, len(wanted))
 	for _, path := range sortedKeys(wanted) {
 		tree, err := reg.ReadTree(path)
 		if err != nil {
 			return st, err
 		}
 		st.Installed = st.Installed || tree != nil
-		entries = append(entries, registrationDetails(l, path, tree, wanted[path])...)
-		if !reflect.DeepEqual(tree, wanted[path]) {
-			st.Current = false
-			st.Detail += path + "; "
+		actual[path] = tree
+	}
+	st.Current = reflect.DeepEqual(actual, wanted)
+	switch {
+	case !st.Installed:
+		st.Detail = l.HostText("not installed; obit init --context-menu --yes")
+	case st.Current:
+		st.Detail = l.HostText("classic context menu installed; commands use current executable: ") + executable
+	default:
+		other := i18n.Chinese
+		note := "cli.host.registry.chinese_labels"
+		if language == i18n.Chinese {
+			other = i18n.English
+			note = "cli.host.registry.english_labels"
+		}
+		alternate, err := registration(executable, other)
+		if err != nil {
+			return st, err
+		}
+		st.LabelLanguageMismatch = reflect.DeepEqual(actual, alternate)
+		if st.LabelLanguageMismatch {
+			wanted = alternate
+			if l == nil {
+				l = i18n.NewLocalizer(i18n.English)
+			}
+			st.Detail = l.Text(note, nil)
+		} else {
+			st.Detail = l.HostText("incomplete, modified or commands do not use current executable (") + executable + "): "
 		}
 	}
-	if !st.Installed {
-		st.Detail = l.HostText("not installed; obit init --context-menu --yes")
-	} else if st.Current {
-		st.Detail = l.HostText("classic context menu installed; commands use current executable: ") + executable
-	} else {
-		st.Detail = l.HostText("incomplete, modified or commands do not use current executable (") + executable + "): " + st.Detail
+	var entries []string
+	for _, path := range sortedKeys(wanted) {
+		if st.Installed && !reflect.DeepEqual(actual[path], wanted[path]) {
+			st.Detail += path + "; "
+		}
+		entries = append(entries, registrationDetails(l, path, actual[path], wanted[path])...)
 	}
 	st.Detail += "\n" + strings.Join(entries, "\n")
 	return st, nil

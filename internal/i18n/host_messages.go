@@ -8,6 +8,8 @@ import (
 func init() { maps.Copy(defaultMessages, hostMessages) }
 
 var hostMessages = map[string]*goi18n.Message{
+	"cli.host.registry.chinese_labels":                                                             {ID: "cli.host.registry.chinese_labels", Other: "Menu labels are in Chinese; the interface is in English. The menu works normally. To switch its labels to English, run obit init --context-menu --yes."},
+	"cli.host.registry.english_labels":                                                             {ID: "cli.host.registry.english_labels", Other: "Menu labels are in English; the interface is in Chinese. The menu works normally. To switch its labels to Chinese, run obit init --context-menu --yes."},
 	"cli.target.host":                                                                              &goi18n.Message{ID: "cli.target.host", Other: "Host"},
 	"cli.target.distribution":                                                                      &goi18n.Message{ID: "cli.target.distribution", Other: "Distribution"},
 	"cli.target.version":                                                                           &goi18n.Message{ID: "cli.target.version", Other: "Version"},

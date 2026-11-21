@@ -23,8 +23,9 @@ type Change struct {
 	Before, After Tree
 }
 type Status struct {
-	Installed, Current bool
-	Detail             string
+	Installed, Current    bool
+	LabelLanguageMismatch bool
+	Detail                string
 }
 type unsupportedRegistry struct{}
 

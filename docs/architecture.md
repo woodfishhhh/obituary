@@ -431,7 +431,8 @@ POSIX 没有「在同一个源句柄上改名」，所以换一种做法：先�
 - **提议重试日志**：同项目、同原因只写一次，原因变化或后台确认恢复时再写；按项目分别比较，避免项目遍历顺序或其他 tick 错误造成重复。去重保存在数据目录，覆盖每次重新启动的 `--once`；暂停或未完成的提议刷新保留原诊断状态。原始错误继续由 `Tick` 返回，`--once` 仍失败退出，缓存读写错误也保留并输出原诊断。
 - **兜底**：登记、批准、`mktemp`、`rules apply`、`bury` 成功后调用 `cmdutil.EnsureDaemon`：有常驻进程在服务这个数据目录，或定时任务的 `--home` 正好是它（`ScheduleServes`，用和 obitd 相同的参数解析），就什么都不做；否则临时起一个常驻进程。`--json` 模式下不往 stderr 写提示。
 - 所有子进程都带 `CREATE_NO_WINDOW`，后台永远不弹黑框；`obitd.exe` 必须用 `-ldflags=-H=windowsgui` 构建。
-- `obit doctor` 只读地检查以上所有环节（PATH、obitd、运行器、两家集成、数据目录权限、账本、信任存储、hook 日志、配置），给出 PASS / WARN / FAIL，有 FAIL 时退出码 1。
+- `obit doctor` 只读地检查以上所有环节（PATH、obitd、运行器、两家集成、数据目录权限、账本、信任存储、hook 日志、配置），给出 PASS / INFO / WARN / FAIL，有 FAIL 时退出码 1。
+- Windows 的 `context-menu` 检查核对完整注册树（含命令、当前程序路径和归属清单）。整套标签与当前界面同语言时是 PASS；仅整套标签为另一种支持的语言时是 INFO，`--json` 的 `installation` 为 `label-language-mismatch`。菜单仍能用，用户可运行 `obit init --context-menu --yes` 刷新标签；doctor 和升级都不改写菜单。标签混用、陌生或注册内容不符仍是 WARN，完全未安装是 INFO。
 
 ### 更新
 
