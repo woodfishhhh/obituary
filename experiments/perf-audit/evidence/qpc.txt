@@ -1,0 +1,9 @@
+OS Windows-11-10.0.26200-SP0 CPU 24 tmp <fixture>
+goos: windows
+goarch: amd64
+pkg: github.com/woodfishhhh/obituary/internal/hook
+cpu: AMD Ryzen 9 7845HX with Radeon Graphics
+BenchmarkClaudeHook/PreToolUse/ordinary-24         	     101	    179452 ns/op	         0.1606 p50-ms	         0.2737 p95-ms	   21498 B/op	     104 allocs/op
+BenchmarkCodexHook/PreToolUse/ordinary-24          	     101	    173208 ns/op	         0.1572 p50-ms	         0.2408 p95-ms	   21336 B/op	     104 allocs/op
+PASS
+ok  	github.com/woodfishhhh/obituary/internal/hook	4.099s

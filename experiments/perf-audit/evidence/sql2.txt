@@ -1,0 +1,27 @@
+OS Windows-11-10.0.26200-SP0 CPU 24 tmp <fixture>
+single/1/ack 21 4.223 6.125
+single/1/group 21 4.292 6.253
+single/1/read-one 21 0.111 0.227
+single/4/ack 84 10.625 19.589
+single/4/group 21 15.85 22.536
+single/4/read-one 21 0.23 0.344
+single/8/ack 168 17.515 32.304
+single/8/group 21 31.541 36.6
+single/8/read-one 21 0.471 0.576
+single/16/ack 336 32.638 60.809
+single/16/group 21 62.095 66.04
+single/16/read-one 21 0.684 1.039
+ack lost/restart/retry OK single 609
+batch/1/ack 21 5.863 8.245
+batch/1/group 21 5.931 8.304
+batch/1/read-one 21 0.093 0.128
+batch/4/ack 84 6.268 10.051
+batch/4/group 21 6.431 10.22
+batch/4/read-one 21 0.167 0.228
+batch/8/ack 168 5.601 10.564
+batch/8/group 21 5.975 10.758
+batch/8/read-one 21 0.354 0.523
+batch/16/ack 336 5.633 8.773
+batch/16/group 21 6.259 9.189
+batch/16/read-one 21 0.604 0.868
+ack lost/restart/retry OK batch 609

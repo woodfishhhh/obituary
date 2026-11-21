@@ -1,0 +1,15 @@
+OS Windows-11-10.0.26200-SP0 CPU 24 tmp <fixture>
+claude/PreToolUse/ordinary 21 50.626 54.538
+claude/PreToolUse/delete 21 58.683 61.982
+claude/PostToolUse/approved 21 195.961 231.966
+claude/PostToolUse/pending 21 179.692 196.022
+claude/SessionStart/startup 21 189.071 207.279
+claude/SessionStart/resume 21 110.696 123.019
+claude/Stop/dispatch 21 139.011 181.493
+codex/PreToolUse/ordinary 21 79.309 95.248
+codex/PreToolUse/delete 21 62.159 86.722
+codex/PostToolUse/approved 21 181.385 196.709
+codex/PostToolUse/pending 21 176.145 190.991
+codex/SessionStart/startup 21 187.629 200.028
+codex/SessionStart/resume 21 113.0 130.37
+codex/Stop/dispatch 21 123.587 167.457

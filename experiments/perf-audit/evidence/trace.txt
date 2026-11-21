@@ -1,0 +1,17 @@
+OS Windows-11-10.0.26200-SP0 CPU 24 tmp <fixture>
+PostToolUse/approved/child-count 9 0 1
+PostToolUse/approved/child-internal-ms 9 0 76.556
+PostToolUse/approved/wall 9 121.499 398.979
+git: []
+PostToolUse/pending/child-count 9 0 0
+PostToolUse/pending/child-internal-ms 9 0 0
+PostToolUse/pending/wall 9 213.667 269.445
+git: []
+SessionStart/startup/child-count 9 1 1
+SessionStart/startup/child-internal-ms 9 74.714 118.548
+SessionStart/startup/wall 9 288.512 580.786
+git: [[-C, <fixture-repo>, ls-files, -z, --others, --directory]]
+SessionStart/resume/child-count 9 0 0
+SessionStart/resume/child-internal-ms 9 0 0
+SessionStart/resume/wall 9 120.073 129.155
+git: []

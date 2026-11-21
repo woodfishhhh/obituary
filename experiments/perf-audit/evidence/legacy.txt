@@ -1,0 +1,22 @@
+=== RUN   TestSQLiteMigrationWaitsForDurableFence
+--- PASS: TestSQLiteMigrationWaitsForDurableFence (0.25s)
+=== RUN   TestSQLiteMigrationRetriesAndFencesV7
+--- PASS: TestSQLiteMigrationRetriesAndFencesV7 (0.09s)
+=== RUN   TestSQLiteLegacyBinaryFence
+--- PASS: TestSQLiteLegacyBinaryFence (0.12s)
+=== RUN   TestSQLiteMigratesV8Operation
+--- PASS: TestSQLiteMigratesV8Operation (0.07s)
+=== RUN   TestSQLiteImportFailureLeavesLegacyUntouched
+--- PASS: TestSQLiteImportFailureLeavesLegacyUntouched (0.09s)
+=== RUN   TestSQLiteMigrationPreservesInterveningLegacyWrite
+--- PASS: TestSQLiteMigrationPreservesInterveningLegacyWrite (0.10s)
+=== RUN   TestSQLiteSHMDeadlineDoesNotRunCallback
+--- PASS: TestSQLiteSHMDeadlineDoesNotRunCallback (0.44s)
+=== RUN   TestSQLiteCommitDeadlineReportsUnconfirmed
+--- PASS: TestSQLiteCommitDeadlineReportsUnconfirmed (0.28s)
+=== RUN   TestSQLiteInspectCreatesNoFiles
+--- PASS: TestSQLiteInspectCreatesNoFiles (0.10s)
+=== RUN   TestSQLiteWALReaderSeesCommittedState
+--- PASS: TestSQLiteWALReaderSeesCommittedState (0.12s)
+PASS
+ok  	github.com/woodfishhhh/obituary/internal/core	1.753s

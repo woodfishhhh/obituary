@@ -1,0 +1,17 @@
+OS Windows-11-10.0.26200-SP0 CPU 24 tmp <fixture>
+obit 31 47.986 68.548
+fast 31 75.377 98.846
+empty 31 33.363 48.27
+lazy 31 70.671 91.096
+all-init 31 10.99 15.53
+github.com/woodfishhhh/obituary/internal/i18n 31 4.7 6.0
+net 31 3.7 4.8
+internal/bytealg 31 0.0 0.0
+internal/runtime/gc/scan 31 0.0 0.0
+runtime 31 0.0 0.83
+crypto/internal/fips140deps/cpu 31 0.0 0.0
+internal/syscall/windows/sysdll 31 0.0 0.0
+math 31 0.0 0.0
+errors 31 0.0 0.0
+iter 31 0.0 0.0
+sync 31 0.0 0.0

@@ -1,0 +1,6 @@
+OS Windows-11-10.0.26200-SP0 CPU 24 tmp <fixture>
+obit 31 58.261 159.551
+routed/obit 31 53.027 123.314
+empty 31 39.039 115.111
+fast/obit 31 88.135 221.239
+lazy/obit 31 82.811 171.701

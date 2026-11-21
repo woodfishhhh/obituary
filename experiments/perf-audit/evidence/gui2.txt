@@ -1,0 +1,48 @@
+dbus-daemon[926511]: [session uid=1000 pid=926511] Successfully activated service 'org.a11y.Bus'
+Overriding existing handler for signal 10. Set JSC_SIGNAL_FOR_GC if you want WebKit to use a different signal
+dbus-daemon[926537]: Successfully activated service 'org.a11y.atspi.Registry'
+SpiRegistry daemon is running with well-known name - org.a11y.atspi.Registry
+0 1027.788560008048 2742.3380850086687 17.368126697076644
+
+Ctrl+C detected. Shutting down...
+Overriding existing handler for signal 10. Set JSC_SIGNAL_FOR_GC if you want WebKit to use a different signal
+1 512.997773999814 2011.6973149997648 17.368126697076644
+
+Ctrl+C detected. Shutting down...
+Overriding existing handler for signal 10. Set JSC_SIGNAL_FOR_GC if you want WebKit to use a different signal
+2 508.73024899919983 1189.1249789914582 17.368126697076644
+
+Ctrl+C detected. Shutting down...
+Overriding existing handler for signal 10. Set JSC_SIGNAL_FOR_GC if you want WebKit to use a different signal
+3 508.17306400858797 1155.483684007777 17.368126697076644
+
+Ctrl+C detected. Shutting down...
+Overriding existing handler for signal 10. Set JSC_SIGNAL_FOR_GC if you want WebKit to use a different signal
+4 507.9388369922526 1256.1683919921052 17.368126697076644
+
+Ctrl+C detected. Shutting down...
+Overriding existing handler for signal 10. Set JSC_SIGNAL_FOR_GC if you want WebKit to use a different signal
+5 508.2393249904271 1197.9832799988799 17.368126697076644
+
+Ctrl+C detected. Shutting down...
+Overriding existing handler for signal 10. Set JSC_SIGNAL_FOR_GC if you want WebKit to use a different signal
+6 509.3882140063215 1452.7408280118834 17.368126697076644
+
+Ctrl+C detected. Shutting down...
+Overriding existing handler for signal 10. Set JSC_SIGNAL_FOR_GC if you want WebKit to use a different signal
+7 528.0816200101981 2433.787276997464 17.368126697076644
+
+Ctrl+C detected. Shutting down...
+Overriding existing handler for signal 10. Set JSC_SIGNAL_FOR_GC if you want WebKit to use a different signal
+8 512.1725450007943 1333.5264490015106 17.368126697076644
+
+Ctrl+C detected. Shutting down...
+Overriding existing handler for signal 10. Set JSC_SIGNAL_FOR_GC if you want WebKit to use a different signal
+9 507.67555700440425 1103.486107007484 17.368126697076644
+
+Ctrl+C detected. Shutting down...
+Overriding existing handler for signal 10. Set JSC_SIGNAL_FOR_GC if you want WebKit to use a different signal
+10 506.78159299422987 1056.464669003617 17.368126697076644
+
+Ctrl+C detected. Shutting down...
+mapped 508.73024899919983 1027.788560008048 painted 1256.1683919921052 2742.3380850086687

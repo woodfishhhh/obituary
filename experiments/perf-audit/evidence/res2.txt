@@ -1,0 +1,9 @@
+OS Windows-11-10.0.26200-SP0 CPU 24 tmp <fixture>
+obitd/working-set-MiB 5 0.035 0.039
+obitd/cpu-ms-1.5s 5 0.0 0.0
+obitd/host-cpu-pct 5 16.732 39.583
+probe/working-set-MiB 5 20.77 21.301
+probe/cpu-ms-1.5s 5 0.0 0.0
+probe/host-cpu-pct 5 19.844 85.981
+probe/burst-ms 5 10103.224 11504.814
+probe/steps 5 6.0 6.0

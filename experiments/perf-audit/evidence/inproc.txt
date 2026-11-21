@@ -1,0 +1,21 @@
+test scratch recovery: skipped <unrelated temp directory>: Access is denied.
+goos: windows
+goarch: amd64
+pkg: github.com/woodfishhhh/obituary/internal/hook
+cpu: AMD Ryzen 9 7845HX with Radeon Graphics
+BenchmarkClaudeHook/PreToolUse/delete-24         	      21	  18519143 ns/op	        17.59 p50-ms	        21.85 p95-ms	  168241 B/op	    2214 allocs/op
+BenchmarkClaudeHook/PreToolUse/ordinary-24       	      21	    153010 ns/op	         0 p50-ms	         0 p95-ms	   21130 B/op	     100 allocs/op
+BenchmarkClaudeHook/PostToolUse/approved-24      	      21	  88035633 ns/op	        85.00 p50-ms	       105.2 p95-ms	  986405 B/op	    5724 allocs/op
+BenchmarkClaudeHook/PostToolUse/pending-24       	      21	  84068119 ns/op	        82.81 p50-ms	        89.48 p95-ms	  858201 B/op	    5156 allocs/op
+BenchmarkClaudeHook/SessionStart/startup-24      	      21	 108998829 ns/op	       107.5 p50-ms	       116.7 p95-ms	  394539 B/op	    3444 allocs/op
+BenchmarkClaudeHook/SessionStart/resume-24       	      21	  37148948 ns/op	        37.31 p50-ms	        38.35 p95-ms	  142777 B/op	    1180 allocs/op
+BenchmarkClaudeHook/Stop/dispatch-24             	      21	    493105 ns/op	         0.5256 p50-ms	         0.5815 p95-ms	    9544 B/op	      70 allocs/op
+BenchmarkCodexHook/PreToolUse/delete-24          	      21	   9088367 ns/op	         8.959 p50-ms	         9.557 p95-ms	  167227 B/op	    2207 allocs/op
+BenchmarkCodexHook/PreToolUse/ordinary-24        	      21	     98629 ns/op	         0 p50-ms	         0 p95-ms	   21096 B/op	     100 allocs/op
+BenchmarkCodexHook/PostToolUse/approved-24       	      21	  85124424 ns/op	        83.72 p50-ms	        90.58 p95-ms	 1145431 B/op	    5725 allocs/op
+BenchmarkCodexHook/PostToolUse/pending-24        	      21	  84449281 ns/op	        83.13 p50-ms	        90.08 p95-ms	 1000841 B/op	    5182 allocs/op
+BenchmarkCodexHook/SessionStart/startup-24       	      21	 108334862 ns/op	       106.6 p50-ms	       115.0 p95-ms	  391538 B/op	    3439 allocs/op
+BenchmarkCodexHook/SessionStart/resume-24        	      21	  36745438 ns/op	        36.68 p50-ms	        38.32 p95-ms	  146476 B/op	    1176 allocs/op
+BenchmarkCodexHook/Stop/dispatch-24              	      21	    497676 ns/op	         0.5196 p50-ms	         0.5380 p95-ms	    9339 B/op	      71 allocs/op
+PASS
+ok  	github.com/woodfishhhh/obituary/internal/hook	18.707s

@@ -1,0 +1,4 @@
+OS Windows-11-10.0.26200-SP0 CPU 24 tmp <fixture>
+WS-MiB 7 21.938 22.312
+CPU-ms-1.8s 7 0.0 0.0
+hostCPU-pct 7 12.5 86.598

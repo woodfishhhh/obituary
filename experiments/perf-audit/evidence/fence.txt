@@ -1,0 +1,2 @@
+OS Windows-11-10.0.26200-SP0 CPU 24 tmp <fixture>
+1 obit: store was written by a newer Obituary (version 18)
