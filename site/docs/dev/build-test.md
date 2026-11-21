@@ -16,9 +16,18 @@ go build -ldflags=-H=windowsgui -o bin/obitd.exe ./cmd/obitd
 
 Linux 和 macOS 的 CLI 不依赖桌面库。在 Bash 中可以用 `GOOS=darwin GOARCH=arm64 go build ./cmd/obit ./cmd/obitd` 检查目标平台是否编得过；交叉编译不能验证通知、菜单栏或首次打开应用。桌面程序的原生条件见[小窗口](./gui)。
 
-## 选择测试范围
+## 提交前检查
 
-本地对改动包跑完整测试，对上层包跑短测；全量留给 CI。测试移动或删除的改动，先写失败用例，修完再换回可编译的错误实现，确认测试确实失败。CI 的 MCP 和删除护栏变异检查按分片运行，由定时或手动工作流触发。
+提交前在仓库根目录运行：
+
+```bash
+gofmt -l .
+go vet ./...
+golangci-lint run ./...
+go test -short ./...
+```
+
+本地对改动包跑完整测试。全仓完整测试和变异测试在 CI 上跑；MCP 和删除护栏变异检查由定时或手动工作流分片运行。涉及文件移动、下葬或删除时，见[安全模型](./safety)。
 
 网站与 Go 构建独立。在 `site/` 使用工作区固定的 pnpm 版本安装依赖，再分别验证两个部署目标：
 

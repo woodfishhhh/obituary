@@ -16,9 +16,18 @@ go build -ldflags=-H=windowsgui -o bin/obitd.exe ./cmd/obitd
 
 The Linux and macOS CLI builds need no desktop libraries. In Bash, `GOOS=darwin GOARCH=arm64 go build ./cmd/obit ./cmd/obitd` checks compilation for an Apple silicon target. It does not test notifications, the menu bar or a first launch. See [Desktop window](./gui) for native desktop prerequisites.
 
-## Choose the scope
+## Before submitting
 
-Run the full tests for the affected package and short tests for its callers locally. Leave the whole suite to CI. For a change that moves or deletes data, write a failing test first. After the fix, restore a compilable faulty implementation temporarily to prove the test detects it. CI runs sharded MCP and delete-guard mutations on a schedule or on demand.
+Run these checks from the repository root before submitting:
+
+```bash
+gofmt -l .
+go vet ./...
+golangci-lint run ./...
+go test -short ./...
+```
+
+Run the affected package's full tests locally. The full repository suite and mutation tests run in CI; MCP and delete-guard mutations run in shards on a schedule or on demand. For changes that move, bury or delete files, see the [safety model](./safety).
 
 The website builds independently. In `site/`, use the workspace's pinned pnpm version and check both deployment targets:
 
