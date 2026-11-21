@@ -1,0 +1,41 @@
+name: macOS 1.6.0 release acceptance
+
+on:
+  push:
+    branches: [woodfishhhh/mac-acceptance]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/woodfishhhh/mac-acceptance'
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15, macos-15-intel]
+        lane: [gatekeeper, desktop]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Download published release (no rebuild)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download v1.6.0 --repo woodfishhhh/obituary -p '*.dmg' -p checksums.txt -D "$RUNNER_TEMP/release"
+      - name: Exercise released app
+        env:
+          LANE: ${{ matrix.lane }}
+          EXPECTED_ARCH: ${{ matrix.runner == 'macos-15' && 'arm64' || 'x86_64' }}
+          OBIT_TELEMETRY: '0'
+        run: bash scripts/accept-macos-release.sh
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: v1.6.0-${{ matrix.runner }}-${{ matrix.lane }}
+          path: ${{ runner.temp }}/evidence/
+          retention-days: 7
+          if-no-files-found: error
