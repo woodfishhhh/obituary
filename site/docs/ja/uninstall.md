@@ -19,3 +19,17 @@ obit uninstall                # remove everything Obituary set up, after you con
 ## Scoop と winget
 
 先に `obit uninstall` を実行してから、インストールに使ったパッケージマネージャーのアンインストールコマンドを実行してください。
+## アンインストール範囲とデータの場所
+
+`obit uninstall --dry-run` は現在のユーザーと Git プロジェクトから削除できる項目を表示します。実行すると hook、MCP、Skill、トレイ、自動起動、スケジューラーを外しますが、他のプロジェクトの設定は変更しません。各プロジェクトで実行してください。
+
+| 場所または要素 | Windows | macOS | Linux |
+| --- | --- | --- | --- |
+| プログラム | `obit`、`obitd`、任意の `obit-gui` | `/Applications/Obituary.app` または CLI ディレクトリ | CLI ディレクトリ、デスクトップは `.deb` |
+| hook、MCP、Skill | ユーザーまたはプロジェクトの agent 設定 | agent 設定 | agent 設定 |
+| スケジューラー | タスク、常駐プロセス、トレイ | LaunchAgent とメニューバー | systemd ユーザータイマー、XDG 自動起動 |
+| プロジェクト設定 | `.claude/`、`.codex/` の Obituary 部分 | プロジェクト設定 | プロジェクト設定 |
+
+データは Windows の `%LOCALAPPDATA%\obituary`、macOS の `~/Library/Application Support/obituary`、Linux の `$XDG_DATA_HOME/obituary`（未設定時 `~/.local/share/obituary`）です。設定ディレクトリは `OBIT_CONFIG_DIR`、データは `OBIT_HOME`、ユーザーホームは `OBIT_USER_HOME` で変更できます。同じボリュームの `.obituary` に墓地がある場合もあります。
+
+墓地、台帳、監査ログ、設定は既定で残ります。`--purge-data` は所有を確認できる墓地データだけを削除し、未知のファイルは残します。recycle モードではシステムのごみ箱から戻し、`resurrect` は使えません。
