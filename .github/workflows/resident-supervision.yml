@@ -13,6 +13,11 @@ permissions:
 
 jobs:
   windows:
+    strategy:
+      fail-fast: false
+      matrix:
+        trigger: [manual, clock]
+        exit-code: ["1", "0xC0000005"]
     runs-on: windows-2025
     timeout-minutes: 15
     steps:
@@ -24,4 +29,4 @@ jobs:
           go-version-file: go.mod
       - name: Kill and stop a scheduler-owned obitd
         shell: bash
-        run: python -u scripts/test-windows-resident.py
+        run: python -u scripts/test-windows-resident.py "${{ matrix.trigger }}" "${{ matrix.exit-code }}"

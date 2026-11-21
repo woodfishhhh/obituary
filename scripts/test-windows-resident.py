@@ -28,7 +28,7 @@ def wait(check, seconds):
     raise AssertionError(f"timeout after {seconds}s waiting for {check.__name__}")
 
 
-def verified_process(receipt, daemon):
+def terminate_verified_process(receipt, daemon, code):
     # Pin the handle and match the creation time before forcibly ending a PID.
     kernel = ctypes.WinDLL("kernel32", use_last_error=True)
     kernel.OpenProcess.restype = wintypes.HANDLE
@@ -45,22 +45,25 @@ def verified_process(receipt, daemon):
         if not kernel.QueryFullProcessImageNameW(handle, 0, path, ctypes.byref(size)):
             raise ctypes.WinError(ctypes.get_last_error())
         assert times[0].value == receipt["created"] and Path(path.value).samefile(daemon), receipt
-        if not kernel.TerminateProcess(handle, 1):
+        if not kernel.TerminateProcess(handle, wintypes.UINT(code)):
             raise ctypes.WinError(ctypes.get_last_error())
     finally:
         kernel.CloseHandle(handle)
 
 
-def probe(root, name, daemon, cli):
+def probe(root, name, daemon, cli, trigger, code):
     home, cfg = root / "ledger", root / "config"
     cfg.mkdir()
     (cfg / "config.toml").write_text("[update]\ncheck = false\n[telemetry]\nenabled = false\n")
     os.environ.update(OBIT_HOME=str(home), OBIT_CONFIG_DIR=str(cfg), OBIT_TELEMETRY="0")
     sid = next(csv.reader([command("whoami", "/user", "/fo", "csv", "/nh")]))[1]
     args = subprocess.list2cmdline(["--tray", "--home", str(home), "--config-dir", str(cfg)])
+    # A one-shot clock trigger exercises the normal scheduler path without logging off the VM.
+    when = (dt.datetime.now() + dt.timedelta(seconds=12)).isoformat(timespec="seconds")
+    clock = f"<TimeTrigger><StartBoundary>{when}</StartBoundary></TimeTrigger>" if trigger == "clock" else ""
     xml = f"""<?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
-  <Triggers><LogonTrigger><UserId>{escape(sid)}</UserId></LogonTrigger></Triggers>
+  <Triggers>{clock}<LogonTrigger><UserId>{escape(sid)}</UserId></LogonTrigger></Triggers>
   <Principals><Principal id="Author"><UserId>{escape(sid)}</UserId><LogonType>InteractiveToken</LogonType><RunLevel>LeastPrivilege</RunLevel></Principal></Principals>
   <Settings><MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy><DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries><StopIfGoingOnBatteries>false</StopIfGoingOnBatteries><ExecutionTimeLimit>PT0S</ExecutionTimeLimit><RestartOnFailure><Interval>PT1M</Interval><Count>3</Count></RestartOnFailure></Settings>
   <Actions Context="Author"><Exec><Command>{escape(str(daemon))}</Command><Arguments>{escape(args)}</Arguments></Exec></Actions>
@@ -77,11 +80,13 @@ def probe(root, name, daemon, cli):
 
     command("schtasks", "/create", "/tn", name, "/xml", definition)
     try:
-        command("schtasks", "/run", "/tn", name)
-        first = wait(read, 20)
+        print(command("schtasks", "/query", "/tn", name, "/xml"), flush=True)
+        if trigger == "manual":
+            command("schtasks", "/run", "/tn", name)
+        first = wait(read, 60)
         print("first", first, flush=True)
         started = time.monotonic()
-        verified_process(first, daemon)
+        terminate_verified_process(first, daemon, code)
 
         def restarted():
             r = read()
@@ -109,4 +114,4 @@ if __name__ == "__main__":
     command("go", "build", "-ldflags=-H=windowsgui", "-o", daemon, "./cmd/obitd")
     command("go", "build", "-o", cli, "./cmd/obit")
     print(dt.datetime.now(dt.timezone.utc), base, flush=True)
-    probe(base, base.name, daemon, cli)
+    probe(base, base.name, daemon, cli, sys.argv[1], int(sys.argv[2], 0))
