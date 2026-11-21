@@ -8,6 +8,11 @@ version=${version//\//-}
 out=${2:-$root/bin/macos-desktop}
 work=$out/.work
 bundle=$out/Obituary.app
+export MACOSX_DEPLOYMENT_TARGET=12.0
+minflag="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET"
+export CGO_CFLAGS="${CGO_CFLAGS:--O2 -g} $minflag"
+export CGO_CXXFLAGS="${CGO_CXXFLAGS:--O2 -g} $minflag"
+export CGO_LDFLAGS="${CGO_LDFLAGS:--O2 -g} $minflag"
 
 mkdir -p "$work" "$bundle/Contents/MacOS" "$bundle/Contents/Resources"
 
@@ -46,13 +51,14 @@ cat > "$bundle/Contents/Info.plist" <<PLIST
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleShortVersionString</key><string>$version</string>
 <key>CFBundleVersion</key><string>$version</string>
-<key>LSMinimumSystemVersion</key><string>12.0</string>
+<key>LSMinimumSystemVersion</key><string>$MACOSX_DEPLOYMENT_TARGET</string>
 <key>NSHighResolutionCapable</key><true/>
 </dict>
 </plist>
 PLIST
 
 plutil -lint "$bundle/Contents/Info.plist"
+bash "$root/scripts/check-macos-target.sh" "$bundle"
 for name in obit obitd obit-gui; do
     codesign --force --sign - "$bundle/Contents/MacOS/$name"
 done

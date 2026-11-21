@@ -10,12 +10,15 @@ app=/Applications/Obituary.app
 cli=$app/Contents/MacOS/obit
 data="$HOME/Library/Application Support/obituary"
 mnt=$RUNNER_TEMP/obit-volume
-snap() { screencapture -x "$ev/$1.png" || echo "screencapture failed: $1"; }
+snap() { screencapture -x "$ev/$1.png"; }
 ui() { python3 -c 'import subprocess,sys; sys.exit(subprocess.run(["osascript", *sys.argv[1:]],timeout=12).returncode)' "$@"; }
 sw_vers
+[[ $(sw_vers -productVersion) == "$EXPECTED_MAJOR".* ]]
 [[ $(uname -m) == "$EXPECTED_ARCH" ]]
 cd "$RUNNER_TEMP/release"
-file=obituary_1.6.0_darwin_universal.dmg
+files=(obituary_*_darwin_universal.dmg)
+[[ ${#files[@]} == 1 && -f ${files[0]} ]]
+file=${files[0]}
 awk -v f="$file" '$2==f {print; n++} END {if(n!=1)exit 1}' checksums.txt > "$ev/dmg.sha256"
 shasum -a 256 -c "$ev/dmg.sha256"
 [[ ! -e $app && ! -e $data ]]
@@ -28,8 +31,7 @@ hdiutil detach "$mnt"
 ! mount | grep -F " on $mnt " || exit 1
 codesign --verify --deep --strict "$app"
 codesign -dv "$app"
-plutil -extract LSMinimumSystemVersion raw "$app/Contents/Info.plist"
-for exe in "$app"/Contents/MacOS/*; do xcrun vtool -show-build "$exe"; done
+bash "$GITHUB_WORKSPACE/scripts/check-macos-target.sh" "$app" | tee "$ev/deployment-targets.txt"
 snap installed
 if [[ $LANE == gatekeeper ]]; then
   xattr -w com.apple.quarantine "0083;$(printf '%x' "$(date +%s)");Safari;$(uuidgen)" "$app"
@@ -50,36 +52,48 @@ fi
 
 # Separate pristine VM: this measures desktop behavior, not Gatekeeper approval.
 xattr -l "$app"
+trap 'if [[ -f "$data/audit.jsonl" ]]; then cp "$data/audit.jsonl" "$ev/audit.jsonl"; fi' EXIT
 open "$app"
 sleep 6
 pgrep -lx obit-gui
-pgrep -lx obitd || echo 'No tray process on first launch'
+traypid=$(pgrep -x obitd)
+[[ $traypid != *$'\n'* ]]
+tray="tell application \"System Events\" to tell (first application process whose unix id is $traypid) to "
+ui -e "${tray}get description of menu bar item 1 of last menu bar"
 snap cold-open
 before=$(pgrep -x obit-gui)
 open "$app"
 sleep 2
 after=$(pgrep -x obit-gui)
-[[ $before == "$after" && $after != *$'\n'* ]] || echo 'FAIL: second open changed GUI PID set'
+[[ $before == "$after" && $after != *$'\n'* && $(pgrep -x obitd) == "$traypid" ]]
 
 "$cli" config telemetry off
 printf 'calendar fixture\n' > "$HOME/obit-calendar.txt"
 printf 'grave-retention fixture\n' > "$HOME/obit-retention.txt"
 printf 'notification fixture\n' > "$HOME/obit-notify.txt"
+keep="$HOME/obit-retention.txt"
+restore="$HOME/obit-notify.txt"
+hash() { shasum -a 256 "$1" | cut -d ' ' -f1; }
+keep_hash=$(hash "$keep")
+restore_hash=$(hash "$restore")
 "$cli" mark "$HOME/obit-calendar.txt" 2d
 "$cli" bury "$HOME/obit-retention.txt" "$HOME/obit-notify.txt"
-"$cli" graveyard --json
+"$cli" graveyard --json > "$ev/before.json"
+grave() { jq -er --arg p "$1" '[.burials[] | select(.path == $p)] | select(length == 1) | .[0].grave' "$2"; }
+payload=$(grave "$keep" "$ev/before.json")
+selected=$(grave "$restore" "$ev/before.json")
+[[ ! -e $keep && ! -e $restore && $(hash "$payload") == "$keep_hash" && $(hash "$selected") == "$restore_hash" ]]
 pkill -TERM -x obit-gui
 sleep 2
-if ! pgrep -x obitd; then "$app/Contents/MacOS/obitd" --tray > "$ev/tray.log" 2>&1 & sleep 3; fi
 tray='tell application "System Events" to tell (first application process whose unix id is '
 if traypid=$(pgrep -xo obitd); then
   tray="$tray$traypid) to "
-  ui -e "${tray}click menu bar item 1 of last menu bar" || true
+  ui -e "${tray}click menu bar item 1 of last menu bar"
   sleep 1
   snap tray-menu
-  ui -e "${tray}click menu item \"Open Obituary\" of menu 1 of menu bar item 1 of last menu bar" || true
+  ui -e "${tray}click menu item \"Open Obituary\" of menu 1 of menu bar item 1 of last menu bar"
   sleep 2
-  pgrep -lx obit-gui || echo 'No window process after tray menu action'
+  pgrep -lx obit-gui
   snap tray-opened-window
 fi
 for style in light dark; do
@@ -129,19 +143,22 @@ else
   launchctl print "$svc" >/dev/null || echo "after attempted enable: launchctl exit=$?"
 fi
 snap login-off
-if ! pgrep -x obitd; then "$app/Contents/MacOS/obitd" --tray >> "$ev/tray.log" 2>&1 & sleep 3; fi
+[[ ! -e $keep && ! -e $restore && $(hash "$payload") == "$keep_hash" && $(hash "$selected") == "$restore_hash" ]]
 if traypid=$(pgrep -xo obitd); then
   path="of menu 1 of menu bar item 1 of last menu bar"
   tray="tell application \"System Events\" to tell (first application process whose unix id is $traypid) to "
   ui -e "${tray}click menu bar item 1 of last menu bar" || true
   parent="menu item \"Recently buried (click one to resurrect)\" $path"
   ui -e "${tray}click $parent" || true
-  ui -e "${tray}click (first menu item of menu 1 of $parent whose name contains \"obit-notify\")" || true
+  ui -e "${tray}click (first menu item of menu 1 of $parent whose name contains \"obit-notify\")"
 fi
 sleep 3
-[[ -f "$HOME/obit-notify.txt" ]] && echo 'Tray restored notification fixture' || echo 'No tray restore observed'
+"$cli" graveyard --json > "$ev/after.json"
+[[ $(grave "$keep" "$ev/after.json") == "$payload" && ! -e $keep && $(hash "$payload") == "$keep_hash" ]]
+[[ ! -e $selected && $(hash "$restore") == "$restore_hash" ]]
+jq -e --arg p "$restore" 'all(.burials[]; .path != $p)' "$ev/after.json"
 snap notification
-/usr/bin/log show --last 3m --style compact --predicate '(process == "usernoted" OR subsystem == "com.apple.UserNotifications") AND eventMessage CONTAINS[c] "obituary"' > "$ev/notification.log" || true
+/usr/bin/log show --last 3m --info --style compact --predicate '(process == "usernoted" OR process == "obitd" OR subsystem == "com.apple.UserNotifications") AND eventMessage CONTAINS[c] "obituary"' > "$ev/notification.log"
 
 if traypid=$(pgrep -xo obitd); then
   tray="tell application \"System Events\" to tell (first application process whose unix id is $traypid) to "
@@ -156,9 +173,7 @@ sleep 2
 ! pgrep -lx obit-gui || exit 1
 ! pgrep -lx obitd || exit 1
 find "$data" -type f | sort
-payload=$(find "$data/graveyard" -type f -name obit-retention.txt)
-[[ -n $payload ]]
-grep -Fx 'grave-retention fixture' "$payload"
+[[ ! -e $keep && $(hash "$payload") == "$keep_hash" && $(hash "$restore") == "$restore_hash" ]]
 shasum -a 256 "$data/store.json" "$data/config.toml" "$payload" > "$ev/preserved.sha256"
 # A different ledger removes only the test installation, not the data under test.
 cp "$cli" "$RUNNER_TEMP/obit"
