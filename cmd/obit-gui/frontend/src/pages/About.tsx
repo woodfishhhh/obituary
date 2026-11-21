@@ -166,8 +166,8 @@ function NewRelease({ info }: { info: UpdateInfo }) {
   const [starting, setStarting] = useState(false);
   const [progress, setProgress] = useState<ApplyProgress | null>(null);
   const canApply = !!(info.canApply && api.ApplyUpdate);
-  // A copy that updates itself without a package manager or script command was unpacked by hand.
-  const manual = canApply && !info.command;
+  // The install channel "other" that can update itself is a copy unpacked by hand.
+  const manual = canApply && info.channel === "other";
   const blocked = !canApply ? blockedText(info) : "";
   const notes = info.notes ? notesFor(info.notes, lang()) : "";
   async function update() {
