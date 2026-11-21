@@ -97,3 +97,707 @@ obit uninstall           # 撤掉讣告装过的所有东西（先 --dry-run 看
 | `OBIT_HOOK_AUDIT=1` | 记下每次 hook 收到了什么、做了什么 |
 | `OBIT_TRUST_PROJECT_RULES=1` | CI 里信任项目的 `.obitrules` |
 | `OBIT_HOME`、`OBIT_CONFIG_DIR`、`OBIT_USER_HOME` | 换数据目录、配置目录、用户主目录 |
+
+
+
+## 删除兼容参数
+
+- git-clean 接受 Git clean 的 -d、-f、-n、-q、-x、-X、-e pattern、--exclude pattern 和 --；也接受 --dry-run、--force、--quiet。
+- rm 接受常用的 -r、-R、-f、-d、-v、--recursive、--force、--dir、--verbose、--preserve-root、--，以及其后的路径。
+- rmdir 只接受 -v 或 --verbose 及路径；不接受 rmdir -p 等其他参数。
+- Windows 的 remove-item 只接受 -Recurse、-Force、-Path 或 -LiteralPath，并且只能有一个字面路径。需要通配符时在 Bash 中使用 obit rm。
+
+<!-- generated-command-reference:start -->
+## 参数参考
+
+以下表格由当前源码构建的 `obit --help` 输出生成。
+
+### `obit add`
+别名: `add`, `mark`
+用法: `obit add <path>... <duration> \| add <path>... --at <time> [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--at` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--force` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--json` | 无 | `false` | 以 JSON 输出。 |
+| `--no-daemon` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--note` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+示例：
+
+```text
+obit add debug.log 2h
+obit add output\shots 1d12h
+obit add report.zip --at "2026-12-01 18:00"
+```
+
+### `obit approve`
+用法: `obit approve <proposal id>... [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--json` | 无 | `false` | 以 JSON 输出。 |
+
+### `obit bury`
+用法: `obit bury <path>... [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--force` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--json` | 无 | `false` | 以 JSON 输出。 |
+| `--note` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit cancel`
+别名: `cancel`, `spare`
+用法: `obit cancel <id\|path>... [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--json` | 无 | `false` | 以 JSON 输出。 |
+
+### `obit completion`
+用法: `obit completion [command]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+
+### `obit completion bash`
+用法: `obit completion bash`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--no-descriptions` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit completion fish`
+用法: `obit completion fish [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--no-descriptions` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit completion powershell`
+用法: `obit completion powershell [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--no-descriptions` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit completion zsh`
+用法: `obit completion zsh [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--no-descriptions` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit config`
+用法: `obit config [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--create` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--language` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit config telemetry`
+用法: `obit config telemetry on\|off [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+
+### `obit daemon`
+用法: `obit daemon [command]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+
+### `obit daemon disable`
+用法: `obit daemon disable [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--dry-run` | 无 | `false` | 只显示将执行的操作，不修改文件或服务。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+
+### `obit daemon enable`
+用法: `obit daemon enable [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--dry-run` | 无 | `false` | 只显示将执行的操作，不修改文件或服务。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--resident` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit daemon start`
+用法: `obit daemon start [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+
+### `obit daemon status`
+用法: `obit daemon status [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--json` | 无 | `false` | 以 JSON 输出。 |
+
+### `obit daemon stop`
+用法: `obit daemon stop [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+
+### `obit docker`
+用法: `obit docker [command]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+
+### `obit docker add`
+用法: `obit docker add <container name\|ID> <lifespan> [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--json` | 无 | `false` | 以 JSON 输出。 |
+
+### `obit docker list`
+用法: `obit docker list [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--json` | 无 | `false` | 以 JSON 输出。 |
+
+### `obit doctor`
+用法: `obit doctor [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--json` | 无 | `false` | 以 JSON 输出。 |
+| `--verbose` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit extend`
+用法: `obit extend <id\|path>... <duration> [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--json` | 无 | `false` | 以 JSON 输出。 |
+
+示例：
+
+```text
+obit extend 3 1d
+obit extend debug.log 30m
+```
+
+### `obit git-clean`
+用法: `obit git-clean [options] [--] [pathspec]... [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+
+### `obit graveyard`
+别名: `graveyard`, `graves`
+用法: `obit graveyard [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--here` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--json` | 无 | `false` | 以 JSON 输出。 |
+
+### `obit help`
+用法: `obit help [command] [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+
+### `obit hook`
+用法: `obit hook [command]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+
+### `obit hook antigravity`
+用法: `obit hook antigravity [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook audit`
+用法: `obit hook audit [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--lines` | `-n` | `40` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook claude`
+用法: `obit hook claude [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook cline`
+用法: `obit hook cline [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook codebuddy`
+用法: `obit hook codebuddy [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook codebuddy-ide`
+用法: `obit hook codebuddy-ide [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook codex`
+用法: `obit hook codex [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook copilot`
+用法: `obit hook copilot [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook cursor`
+用法: `obit hook cursor [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook droid`
+用法: `obit hook droid [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook gemini`
+用法: `obit hook gemini [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook hermes`
+用法: `obit hook hermes [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook kilocode`
+用法: `obit hook kilocode [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook kimi`
+用法: `obit hook kimi [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook lingma`
+用法: `obit hook lingma [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook minimax-code`
+用法: `obit hook minimax-code [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook omp`
+用法: `obit hook omp [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook openclaw`
+用法: `obit hook openclaw [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook opencode`
+用法: `obit hook opencode [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook pi`
+用法: `obit hook pi [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook qoder`
+用法: `obit hook qoder [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook qoder-cn`
+用法: `obit hook qoder-cn [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook trae`
+用法: `obit hook trae [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook trae-cn`
+用法: `obit hook trae-cn [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook vibe`
+用法: `obit hook vibe [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit hook zcode`
+用法: `obit hook zcode [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--event` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--notice-only` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit init`
+用法: `obit init [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--agent` | 无 | `[claude]` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--context-menu` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--dry-run` | 无 | `false` | 只显示将执行的操作，不修改文件或服务。 |
+| `--format` | 无 | `"text"` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--global` | `-g` | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--guard-rm` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--mcp` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--no-context-menu` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--no-shortcuts` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--no-skill` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--show` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--skill` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--uninstall` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--yes` | 无 | `false` | 确认执行，不再询问。 |
+
+示例：
+
+```text
+obit init -g                 # Claude Code, for every project (~/.claude)
+obit init                    # Claude Code, this project only (.claude/)
+obit init -g --agent codex   # Codex (~/.codex/hooks.json + AGENTS.md)
+obit init -g --uninstall     # remove only what Obituary added
+obit init -g --show          # what is installed
+obit init --show --format markdown > docs/agents.md
+```
+
+### `obit list`
+别名: `list`, `ls`
+用法: `obit list [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--json` | 无 | `false` | 以 JSON 输出。 |
+
+### `obit log`
+用法: `obit log [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--json` | 无 | `false` | 以 JSON 输出。 |
+| `--lines` | `-n` | `20` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit mcp`
+用法: `obit mcp [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+
+### `obit mktemp`
+用法: `obit mktemp <lifespan> [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--json` | 无 | `false` | 以 JSON 输出。 |
+| `--name` | 无 | `"tmp"` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--session` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+示例：
+
+```text
+obit mktemp 2h --name screenshots
+```
+
+### `obit proposals`
+用法: `obit proposals [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--json` | 无 | `false` | 以 JSON 输出。 |
+
+### `obit purge`
+别名: `purge`, `cremate`
+用法: `obit purge [id\|original path]... [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--all` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--dry-run` | 无 | `false` | 只显示将执行的操作，不修改文件或服务。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--json` | 无 | `false` | 以 JSON 输出。 |
+| `--yes` | 无 | `false` | 确认执行，不再询问。 |
+
+### `obit reject`
+用法: `obit reject <proposal id>... [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--json` | 无 | `false` | 以 JSON 输出。 |
+
+### `obit remove-item`
+用法: `obit remove-item [-Recurse] [-Force] [-Path\|-LiteralPath] <path> [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+
+### `obit resurrect`
+别名: `resurrect`, `raise`
+用法: `obit resurrect <id\|original path>... \| --last [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--json` | 无 | `false` | 以 JSON 输出。 |
+| `--last` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit rm`
+用法: `obit rm [options] <path>... [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+
+### `obit rmdir`
+用法: `obit rmdir [options] <path>... [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+
+### `obit rules`
+用法: `obit rules [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--json` | 无 | `false` | 以 JSON 输出。 |
+
+### `obit rules apply`
+用法: `obit rules apply <path>... [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--json` | 无 | `false` | 以 JSON 输出。 |
+| `--session` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit rules check`
+用法: `obit rules check <path>... [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--json` | 无 | `false` | 以 JSON 输出。 |
+| `--session` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit stats`
+别名: `stats`, `eulogy`
+用法: `obit stats [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--json` | 无 | `false` | 以 JSON 输出。 |
+
+### `obit sweep`
+别名: `sweep`, `reap`
+用法: `obit sweep [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--dry-run` | 无 | `false` | 只显示将执行的操作，不修改文件或服务。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--json` | 无 | `false` | 以 JSON 输出。 |
+
+### `obit trust`
+用法: `obit trust [rules file] [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--yes` | 无 | `false` | 确认执行，不再询问。 |
+
+### `obit uninstall`
+用法: `obit uninstall [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--dry-run` | 无 | `false` | 只显示将执行的操作，不修改文件或服务。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--purge-data` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--yes` | 无 | `false` | 确认执行，不再询问。 |
+
+### `obit untrust`
+用法: `obit untrust [rules file] [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--help` | `-h` | `false` | 显示帮助。 |
+
+### `obit update`
+用法: `obit update [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--apply` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--check` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--relaunch-gui` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--wait-pid` | 无 | `0` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+### `obit watch`
+用法: `obit watch <directory> <lifespan> \| watch --list \| watch --remove <directory> [flags]`
+
+| 参数 | 简写 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--age` | 无 | `"first-seen"` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--clear-exclusion` | 无 | `0` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--help` | `-h` | `false` | 显示帮助。 |
+| `--json` | 无 | `false` | 以 JSON 输出。 |
+| `--list` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--no-daemon` | 无 | `false` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--policy` | 无 | `0` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--remove` | 无 | `""` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+| `--remove-id` | 无 | `0` | 此参数的当前行为由源码生成；请同时查看命令行 help。 |
+
+<!-- generated-command-reference:end -->
