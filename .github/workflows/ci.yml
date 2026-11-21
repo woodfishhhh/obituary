@@ -239,7 +239,7 @@ jobs:
           node-version: "22"
       - name: Build POSIX packages
         run: go build ./...
-      - name: Reject invalid CN mirror SSH commands before networking
+      - name: Verify CN mirror commands and tunnel cleanup
         run: python3 scripts/cn-mirror-pull.test.py
       - name: Verify offline CN mirror publishing and atomic rejection
         run: bash scripts/cn-mirror-publish.test.sh

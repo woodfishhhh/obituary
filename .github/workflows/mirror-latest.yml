@@ -22,58 +22,22 @@ jobs:
       group: cn-deploy
       cancel-in-progress: false
     timeout-minutes: 20
-    permissions:
-      contents: read
-    env:
-      TAG: ${{ inputs.tag || github.event.release.tag_name }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Download stable release assets and tagged installers
+      - name: Trigger verified pull on the mainland mirror
         env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          [[ $TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Expected a stable tag (vX.Y.Z)' >&2; exit 1; }
-          incoming=$RUNNER_TEMP/incoming
-          mkdir "$incoming"
-          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" | jq -e --arg tag "$TAG" '
-            select(.tag_name == $tag and .draft == false and .prerelease == false) |
-            {tag_name,name,body,html_url,published_at,draft,prerelease}' > "$incoming/release.json"
-          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir "$incoming" --pattern 'obituary_*' --pattern checksums.txt
-          git show "refs/tags/$TAG:install.sh" > "$incoming/install.sh"
-          git show "refs/tags/$TAG:packaging/install.ps1" > "$incoming/install.ps1"
-          gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name > "$incoming/latest-tag"
-      - name: Verify release SHA-256 and complete file list
-        run: |
-          source scripts/cn-mirror-pull.sh
-          cd "$RUNNER_TEMP/incoming"
-          sha256sum install.sh install.ps1 checksums.txt release.json latest-tag > transport.sha256
-          verify "$TAG" .
-      - name: Configure pinned SSH connection
-        shell: bash
-        env:
-          CN_RELEASE_DEPLOY_KEY: ${{ secrets.CN_RELEASE_DEPLOY_KEY }}
+          TAG: ${{ inputs.tag || github.event.release.tag_name }}
+          CN_MIRROR_TRIGGER_KEY: ${{ secrets.CN_MIRROR_TRIGGER_KEY }}
           CN_DEPLOY_HOST: ${{ secrets.CN_DEPLOY_HOST }}
           CN_DEPLOY_KNOWN_HOSTS: ${{ secrets.CN_DEPLOY_KNOWN_HOSTS }}
         run: |
           set -euo pipefail
-          : "${CN_RELEASE_DEPLOY_KEY:?Missing CN_RELEASE_DEPLOY_KEY}" "${CN_DEPLOY_HOST:?Missing CN_DEPLOY_HOST}" "${CN_DEPLOY_KNOWN_HOSTS:?Missing CN_DEPLOY_KNOWN_HOSTS}"
+          [[ $TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Expected a stable tag (vX.Y.Z)' >&2; exit 1; }
+          : "${CN_MIRROR_TRIGGER_KEY:?Missing CN_MIRROR_TRIGGER_KEY}" "${CN_DEPLOY_HOST:?Missing CN_DEPLOY_HOST}" "${CN_DEPLOY_KNOWN_HOSTS:?Missing CN_DEPLOY_KNOWN_HOSTS}"
           umask 077
-          mkdir -m 700 "$RUNNER_TEMP/mirror-ssh"
-          cd "$RUNNER_TEMP/mirror-ssh"
-          printf '%s\n' "$CN_RELEASE_DEPLOY_KEY" | tr -d '\r' > key
+          cd "$(mktemp -d "$RUNNER_TEMP/mirror-ssh.XXXXXXXX")"
+          trap 'rm -f -- key known_hosts' EXIT
+          printf '%s\n' "$CN_MIRROR_TRIGGER_KEY" | tr -d '\r' > key
           printf '%s\n' "$CN_DEPLOY_KNOWN_HOSTS" > known_hosts
-          printf '%s\n' 'Host cn-release' "  HostName $CN_DEPLOY_HOST" '  User obit-deploy' \
-            "  IdentityFile $PWD/key" "  UserKnownHostsFile $PWD/known_hosts" \
-            '  IdentitiesOnly yes' '  StrictHostKeyChecking yes' '  BatchMode yes' \
-            '  ConnectTimeout 15' '  ServerAliveInterval 30' > config
-      - name: Upload to private staging
-        run: rsync -rc --delete -e "ssh -F $RUNNER_TEMP/mirror-ssh/config" "$RUNNER_TEMP/incoming/" cn-release:incoming/
-      - name: Publish verified staging
-        run: ssh -F "$RUNNER_TEMP/mirror-ssh/config" cn-release "publish $TAG"
-      - name: Remove runner SSH credentials
-        if: always()
-        run: rm -f -- "$RUNNER_TEMP/mirror-ssh/key"
+          ssh -nT -i key -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -o "UserKnownHostsFile=$PWD/known_hosts" -o ConnectTimeout=15 -o ServerAliveInterval=30 \
+            "obit-deploy@$CN_DEPLOY_HOST" "pull $TAG"

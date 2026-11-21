@@ -14,18 +14,42 @@ SECONDS=0
 exec 9>> "$download/.pull.lock"
 flock 9
 
-get() {
-  curl -qfsSL --proto '=https' --proto-redir '=https' --retry 3 --max-time 60 "$@"
-}
-
 stage=$(mktemp -d "$download/.$tag.XXXXXX")
-trap 'rm -rf -- "$stage"' EXIT
+proxy=127.0.0.1:31761
+tunnel= transfer=
+cleanup() {
+  local pid
+  for pid in "$transfer" "$tunnel"; do
+    [[ -n $pid ]] || continue
+    kill "$pid" 2>/dev/null || :; wait "$pid" 2>/dev/null || :
+  done
+  rm -rf -- "$stage"
+}
+trap cleanup EXIT
 trap 'exit 129' HUP
 trap 'exit 130' INT
 trap 'exit 143' TERM
 files=$stage/files
 mkdir -- "$files"
-get "$api/releases/tags/$tag" > "$stage/release.json"
+# LocalCommand signals after authentication and binding. Keep SSH as a child, without the lock.
+mkfifo -- "$stage/ready"
+ssh -F /etc/obituary-mirror/attvps.conf -nNT -D "$proxy" -o ExitOnForwardFailure=yes -o BatchMode=yes \
+  -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=12 \
+  -o ServerAliveInterval=15 -o ServerAliveCountMax=2 -o PermitLocalCommand=yes -o 'LocalCommand=echo ready' \
+  attvps 9>&- > "$stage/ready" &
+tunnel=$!
+if ! read -rt 20 ready < "$stage/ready" || [[ $ready != ready ]]; then fail 'Could not open the attvps SOCKS tunnel'; fi
+
+get() {
+  local out=$1; shift
+  # wait is interruptible even when a large transfer is stalled. Never honor an inherited NO_PROXY.
+  curl -qfsSL --proto '=https' --proto-redir '=https' --proxy "socks5h://$proxy" --noproxy '' \
+    --connect-timeout 15 --max-time 60 --retry 3 --retry-max-time 180 --remove-on-error -o "$out" "$@" 9>&- &
+  transfer=$!
+  wait "$transfer"
+  transfer=
+}
+get "$stage/release.json" "$api/releases/tags/$tag"
 jq -er --arg tag "$tag" --arg assets "$api/releases/assets/" '
   if .tag_name != $tag or .draft != false or .prerelease != false then
     error("Release must be published and stable")
@@ -35,27 +59,8 @@ jq -er --arg tag "$tag" --arg assets "$api/releases/assets/" '
     else error("Invalid release asset name or URL") end
   end' "$stage/release.json" > "$stage/assets"
 
-# github.com often times out from this host while api.github.com answers in under a
-# second, so each try asks the API for the asset's short-lived signed URL (one request:
-# the anonymous limit is 60 an hour) and aria2 opens its 16 connections on that URL.
-aria_opts=(--max-tries=5 --retry-wait=5 --timeout=45 --connect-timeout=15 --no-conf
-           --continue=true --allow-overwrite=true --auto-file-renaming=false
-           --console-log-level=error --summary-interval=0 --show-console-readout=false --download-result=hide)
-fetch() {
-  local signed
-  for _ in 1 2 3; do
-    signed=$(curl -qfsS --proto '=https' --retry 3 --max-time 30 -o /dev/null -w '%{redirect_url}' \
-      -H 'Accept: application/octet-stream' "$2") || signed=
-    if [[ $signed == https://* ]] &&
-       nice -n 19 aria2c -x16 -s16 -k1M "${aria_opts[@]}" --dir="$files" --out="$1" "$signed"; then
-      return 0
-    fi
-    sleep 10
-  done
-  fail "Could not download $1"
-}
 while IFS=$'\t' read -r name url; do
-  fetch "$name" "$url"
+  get "$files/$name" --max-time 300 --retry-all-errors --retry-max-time 480 -H 'Accept: application/octet-stream' "$url"
 done < "$stage/assets"
 
 # Validate the list before asking sha256sum to open any paths from it.
@@ -67,8 +72,8 @@ cmp -s "$stage/expected" "$stage/listed" || fail 'Release assets and checksums.t
 (cd "$files" && nice -n 19 sha256sum --check --strict --quiet checksums.txt)
 
 # The tagged Git bytes are the contract, not a checkout's line endings.
-get -H 'Accept: application/vnd.github.raw' "$api/contents/install.sh?ref=$tag" > "$files/install.sh"
-get -H 'Accept: application/vnd.github.raw' "$api/contents/packaging/install.ps1?ref=$tag" > "$files/install.ps1"
+get "$files/install.sh" -H 'Accept: application/vnd.github.raw' "$api/contents/install.sh?ref=$tag"
+get "$files/install.ps1" -H 'Accept: application/vnd.github.raw' "$api/contents/packaging/install.ps1?ref=$tag"
 chmod 644 -- "$files"/*
 count=$(wc -l < "$stage/assets")
 bytes=$(stat -c %s -- "$files"/* | awk '{total += $1} END {printf "%.0f", total}')
@@ -93,7 +98,8 @@ else
 fi
 
 # Read latest after the downloads, so replaying an older tag cannot roll it back.
-latest=$(get "$api/releases/latest" | jq -er '.tag_name | strings | select(length > 0)')
+get "$stage/github-latest.json" "$api/releases/latest"
+latest=$(jq -er '.tag_name | strings | select(length > 0)' "$stage/github-latest.json")
 if [[ $latest == "$tag" ]]; then
   jq '{tag_name, name, body, html_url, published_at, draft, prerelease}' "$stage/release.json" > "$stage/latest.json"
   chmod 644 -- "$stage/latest.json"

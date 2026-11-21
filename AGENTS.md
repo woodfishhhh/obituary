@@ -57,11 +57,15 @@
 
 ## 国内发布镜像
 
-`mirror-latest.yml` 与 `pages.yml` 的 `deploy-cn` 共用 `cn-deploy`，不取消运行中的任务。正式 Release 发布时自动推送；重放用 `gh workflow run mirror-latest.yml --ref main -f tag=vX.Y.Z`。runner 用只读 `GITHUB_TOKEN` 下载 Release 的六个归档和 `checksums.txt`，从同一 Git 标签取两个安装脚本；核对归档清单和 SHA-256 后，经固定的 `CN_DEPLOY_KNOWN_HOSTS` 上传。`transport.sha256` 校验脚本和元数据的传输，不是独立的发布者签名。
+正式 Release 触发 `mirror-latest.yml`；重放用 `gh workflow run mirror-latest.yml --ref main -f tag=vX.Y.Z`。runner 不检出代码、不传附件，只用 `CN_MIRROR_TRIGGER_KEY`（ed25519 指纹 `SHA256:gyozun5uOtMGBi505J/pH1M8RClqn3724R/J0OCoD3k`）和固定的 `CN_DEPLOY_KNOWN_HOSTS` 登录国内服务器，等待 `pull vX.Y.Z` 的远端回执。`obit-deploy` 的强制命令 `/usr/local/bin/obituary-mirror-pull` 来自 `scripts/cn-mirror-pull-legacy.sh`。它持 `download/.pull.lock`，经临时的 attvps SOCKS5h 隧道取正式 Release、附件和同标签的两份安装脚本；按 `checksums.txt` 核对后发布，新版本目录和最新正式版的索引分别在同一文件系统内改名。网络失败不回退直连。
 
-专用仓库 Secret 是 `CN_RELEASE_DEPLOY_KEY`，ed25519 指纹 `SHA256:XDh6ylMRs/gpoyCC1T2TXzwFlHlIUOLIpmPzVpdoQ2E`。非 root 用户 `obit-deploy` 的 `authorized_keys` 只为这把钥匙增加 `restrict,command="/usr/local/bin/obituary-mirror-publish"`。该入口来自 `scripts/cn-mirror-pull.sh`，只接受以 `/home/obit-deploy/release-staging`（0700）为根的只写 rrsync，或 `publish vX.Y.Z`。两者都拿 `download/.pull.lock`；服务端从 `incoming/` 复核文件和哈希，在同一文件系统上改名发布完整版本，再按 runner 核对的最新正式版原子更新 `latest.json`。同标签内容不同则拒绝覆盖，相同则保留原文件。日志用 `journalctl -t obituary-mirror` 查。
+出网端必须是专用的无特权 `obit-mirror`（`nologin`）。国内 `/etc/obituary-mirror/attvps.conf` 的 `Host attvps` 固定主机、公钥信任文件、用户和 `IdentityFile`；隧道私钥只在国内，由 `obit-deploy` 持有且模式为 0600。出网端仅接受一把 `restrict,port-forwarding` 钥匙，只允许本地 TCP 转发到 `api.github.com:443`、`release-assets.githubusercontent.com:443`；`permitopen` 不覆盖 Unix 套接字，必须另行验证该账号的 `AllowStreamLocalForwarding no`，并禁用 TTY、agent/X11 转发及 Tunnel。部署时通过 `ssh-keygen -lf` 对照公钥指纹，不导出私钥，不借用 Bifrost 账号。
 
-人工备用仍是原来的 `pull vX.Y.Z`（`CN_MIRROR_TRIGGER_KEY`、`/usr/local/bin/obituary-mirror-pull`，源码 `scripts/cn-mirror-pull-legacy.sh`）；只有这条备用路径从服务器访问 GitHub。回滚时先等 `cn-deploy` 空闲，回退本次工作流，再只移除上述指纹对应的新增授权行并撤销 `CN_RELEASE_DEPLOY_KEY`。核对原授权行和旧脚本与服务器 `/root/obituary-cn-mirror-<日期时间>-<后缀>/` 中的备份一致，不覆盖后续新增授权。需要恢复索引时，先核对备份的 `download.inventory` 和最新版本，持 `.pull.lock` 将备份的 `latest.json` 通过同目录临时文件改名恢复；不要删除任何已发布版本。最后停用新增入口和 staging，保留备份及旧 `pull` 入口。回滚不改 `CN_DEPLOY_KEY`、原站点钥匙或 `deploy-cn`。
+临时切回 runner 上传：`gh workflow run mirror-upload.yml --ref main -f tag=vX.Y.Z`（仅手动）。它与正常 pull、`pages.yml` 的 `deploy-cn` 共用 `cn-deploy`，不取消在途任务。备用钥匙仍为 `CN_RELEASE_DEPLOY_KEY`（ed25519 指纹 `SHA256:XDh6ylMRs/gpoyCC1T2TXzwFlHlIUOLIpmPzVpdoQ2E`），只允许 `/usr/local/bin/obituary-mirror-publish` 的受限上传或 `publish vX.Y.Z`。私有 `/home/obit-deploy/release-staging/incoming/` 接收可续传的半成品；发布时持同一把锁复核清单和哈希，不覆盖同名但不同内容的版本。`transport.sha256` 是传输校验，不是独立签名。两个上传入口的 rsync 均设置 120 秒 I/O 超时，不是整个上传的时限。
+
+验收上传断线要检查**接收端**。`rsync --timeout` 统计双向 I/O，接收端还能写入保活消息时，不等于 120 秒未收到数据就会放锁。`bash scripts/cn-mirror-upload-timeout.test.sh 120` 在独立的临时目录中暂停发送端而不关闭管道，检查两个实际 rrsync 接收器的退出状态和锁；仅验证工作流参数或正常断开不能代替这项检查。
+
+回滚：等 `cn-deploy` 空闲，切回备用上传，停止自动 pull。核对国内 `/root/obituary-cn-mirror-<日期时间>-<后缀>/` 的备份后恢复原 pull 脚本。按本次隧道公钥指纹只撤销它自己的授权；确认没有在途隧道后再停用专用账号和国内的专用 SSH 配置。若部署变更过 sshd，只撤回出网端本次专用账号的配置块，和 `/root/obit-mirror-<日期时间>-<后缀>/` 的备份核对，不覆盖其他改动；保留管理连接，检查语法及各账号有效配置后按授权 reload，另开管理连接验证。不撤销 `CN_RELEASE_DEPLOY_KEY`、原站点钥匙或触发钥匙，不删除已发布版本；只有需恢复索引时才持 `.pull.lock` 核对备份及当前最新正式版后原子恢复 `latest.json`。
 
 ## 命令
 
