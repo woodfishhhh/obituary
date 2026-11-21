@@ -94,13 +94,3 @@ macOS and Linux have no context menu yet; use the commands: `obit mark <path> 7d
 To skip them at install time: `obit init --no-context-menu` leaves out the context menu, `--no-shortcuts` the Start menu and desktop shortcuts.
 
 Burial dates shown in Explorer are covered in [Folder policies](./folder-policies#dates-in-explorer).
-## Four-platform comparison
-
-| Platform | Window | Tray or menu bar | Login start and notifications | Context menu and dates | Architecture and dependency | After uninstall |
-| --- | --- | --- | --- | --- | --- | --- |
-| Windows | `obit-gui.exe` | Notification area | Scheduled task fallback; optional tray-at-login and notifications | Explorer context menu and date labels | x64; WebView2 required | Programs, integrations and startup entries can be removed; data stays by default |
-| macOS desktop preview | Universal `Obituary.app` | Menu bar | Optional LaunchAgent and notifications | No context menu or Finder date labels | Intel and Apple silicon; DMG app is unsigned and notarized-free | App and LaunchAgent can be removed; CLI data stays by default |
-| Ubuntu 24.04 desktop preview | Window in the `.deb` package | StatusNotifierItem-compatible tray | Optional XDG autostart and desktop notifications | No context menu or file-manager date labels | amd64 only; GTK 3 and WebKitGTK 4.1 | Package, autostart and tray are removed; data stays |
-| CLI-only macOS/Linux | No window | No tray or menu bar | launchd or systemd user scheduler; crontab is also possible | No context menu or date labels | x64 and ARM64 CLI builds | Programs and services are removed; user data stays by default |
-
-Verify SHA-256 before using unsigned or preview packages. For the unsigned macOS first open, follow [the release step](#first-opening-an-unsigned-app). Recycle mode does not support `resurrect`.

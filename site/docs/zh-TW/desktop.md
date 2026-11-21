@@ -83,13 +83,3 @@ macOS 和 Linux 目前沒有右鍵選單。請用 `obit mark <路径> 7d` 登記
 安裝時可用 `obit init --no-context-menu` 略過右鍵選單，用 `--no-shortcuts` 略過開始功能表和桌面捷徑。
 
 檔案總管中顯示的下葬日期，詳見[資料夾策略](./folder-policies#explorer-dates)。
-## 四個平台能力對照
-
-| 平台 | 視窗 | 托盤或選單列 | 登入啟動與通知 | 右鍵選單與日期 | 架構與依賴 | 解除安裝後 |
-| --- | --- | --- | --- | --- | --- | --- |
-| Windows | 有 `obit-gui.exe` | 通知區 | 工作排程兜底，可選登入啟動與通知 | 檔案總管右鍵選單與日期標籤 | x64，需要 WebView2 | 程式、整合與自啟可移除，資料預設保留 |
-| macOS 桌面預覽版 | 通用 `Obituary.app` | 選單列 | 可用 LaunchAgent 隨登入啟動 | 沒有右鍵選單或 Finder 日期標籤 | Intel 與 Apple 晶片；未簽署或公證 | app 與 LaunchAgent 可移除，CLI 資料保留 |
-| Ubuntu 24.04 桌面預覽版 | `.deb` 內的小視窗 | 支援 StatusNotifierItem 的托盤 | 可選 XDG 自啟與桌面通知 | 沒有右鍵選單或檔案管理器日期 | 僅 amd64，需要 GTK 3、WebKitGTK 4.1 | 套件、自啟與托盤移除，資料保留 |
-| 僅 CLI 的 macOS/Linux | 沒有視窗 | 沒有托盤或選單列 | launchd 或 systemd 使用者排程，也可使用 crontab | 沒有右鍵選單或日期標籤 | x64 與 ARM64 CLI | 程式與服務移除，資料預設保留 |
-
-未簽署或預覽套件先核對 SHA-256；macOS 第一次開啟請依[放行步驟](#第一次開啟未簽署-app)操作。回收站模式不支援 `resurrect`。

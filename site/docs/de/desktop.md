@@ -81,13 +81,3 @@ Unter macOS und Linux gibt es noch kein Kontextmenü. Nutze `obit mark <path> 7d
 Mit `obit init --no-context-menu` lässt du das Kontextmenü bei der Installation aus, mit `--no-shortcuts` die Verknüpfungen im Startmenü und auf dem Desktop.
 
 Wie der Explorer die Begräbnisdaten anzeigt, steht unter [Ordnerrichtlinien](./folder-policies#dates-in-explorer).
-## Vergleich der vier Plattformen
-
-| Plattform | Fenster | Tray oder Menüleiste | Anmeldung und Benachrichtigungen | Kontextmenü und Datumsanzeige | Architektur und Abhängigkeit | Nach der Deinstallation |
-| --- | --- | --- | --- | --- | --- | --- |
-| Windows | `obit-gui.exe` | Infobereich | Aufgabenplanung, optionaler Autostart | Explorer-Kontextmenü und Datumsmarkierungen | x64, WebView2 erforderlich | Programme und Integrationen entfernt, Daten bleiben |
-| macOS Desktop-Vorschau | Universelles `Obituary.app` | Menüleiste | Optionaler LaunchAgent und Benachrichtigungen | Kein Kontextmenü und keine Finder-Daten | Intel und Apple, unsigniert/nicht notarisiert | app und LaunchAgent entfernt, CLI-Daten bleiben |
-| Ubuntu-24.04-Vorschau | Fenster im `.deb` | StatusNotifierItem-Tray | Optionales XDG-Autostart und Benachrichtigungen | Kein Kontextmenü und keine Datumsanzeige | Nur amd64, GTK 3 und WebKitGTK 4.1 | Paket und Autostart entfernt, Daten bleiben |
-| macOS/Linux nur CLI | Kein Fenster | Kein Tray | launchd, systemd oder crontab | Kein Kontextmenü und keine Daten | CLI für x64 und ARM64 | Programme und Dienste entfernt, Daten bleiben |
-
-Prüfen Sie SHA-256 vor unsignierten oder Vorschaupaketen. Für den ersten macOS-Start gilt die [Anleitung](#unsignierte-app-zum-ersten-mal-öffnen). Im recycle-Modus gibt es kein `resurrect`.

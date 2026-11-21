@@ -97,13 +97,3 @@ macOS 和 Linux 还没有右键菜单，先用命令：`obit mark <路径> 7d` �
 安装时就不想要：`obit init --no-context-menu` 不装右键菜单，`--no-shortcuts` 不建开始菜单和桌面快捷方式。
 
 资源管理器里显示下葬日期的做法见[文件夹策略](./folder-policies#资源管理器里的日期)。
-## 四个平台能力对照
-
-| 平台 | 小窗口 | 托盘或菜单栏 | 登录自启与通知 | 右键菜单与日期 | 架构与依赖 | 卸载后 |
-| --- | --- | --- | --- | --- | --- | --- |
-| Windows | 有 `obit-gui.exe` | 任务栏通知区 | 任务计划兜底；托盘可随登录启动并发通知 | 资源管理器右键菜单和日期标签 | x64；需要 WebView2 | 程序、集成和自启可移除，墓地、账本和配置默认保留 |
-| macOS 桌面预览版 | 有通用 `Obituary.app` | 菜单栏 | LaunchAgent 可随登录启动并通知 | 没有右键菜单或 Finder 日期标签 | Intel 与 Apple 芯片；DMG app 未签名或公证 | app 和 LaunchAgent 可移除，CLI 数据默认保留 |
-| Ubuntu 24.04 桌面预览版 | 有 `.deb` 内的小窗口 | 支持 StatusNotifierItem 的托盘 | XDG 自启可选并发送桌面通知 | 没有右键菜单或文件管理器日期标签 | 仅 amd64；GTK 3、WebKitGTK 4.1 | `.deb`、自启和托盘移除，墓地和设置保留 |
-| 仅 CLI 的 macOS/Linux | 没有小窗口 | 没有托盘或菜单栏 | launchd 或 systemd 用户调度；也可使用 crontab | 没有右键菜单或日期标签 | macOS/Linux 提供 x64 与 ARM64 CLI | 程序和服务移除，用户数据默认保留 |
-
-Windows 和 Ubuntu 的未签名或预览包先核对 SHA-256；macOS 第一次打开未签名 app 按[放行步骤](#第一次打开未签名-app)操作。回收站模式不提供 `resurrect`。
