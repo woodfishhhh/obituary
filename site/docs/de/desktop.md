@@ -8,6 +8,8 @@ Lade den universellen macOS-DMG und die Checksums-Datei aus derselben Veröffent
 
 Die App enthält das kleine Wails-Fenster, das Menüsymbol sowie die Hilfsprogramme obit und obitd. Der Launchd-Benutzeragent für die Prüfung alle fünf Minuten bleibt ein unabhängiger Fallback. Aktiviere in den Einstellungen den Tray-Start bei der Anmeldung, um den eigenen LaunchAgent zu installieren; beim Deaktivieren wird nur dieser Eintrag entfernt.
 
+Wenn du `Obituary.app` entfernst, bleiben deine Daten standardmäßig unter `~/Library/Application Support/obituary/`: das Register in `store.json`, die Einstellungen in `config.toml` und die auf diesem Volume begrabenen Dateien in `graveyard/`.
+
 ### Erste Öffnung einer unsignierten App
 
 Diese Veröffentlichung ist nicht mit Developer ID signiert und nicht notarisiert. Prüfe Quelle und SHA-256 und öffne die App einmal. Wenn macOS den Entwickler nicht verifizieren kann, öffne « Systemeinstellungen → Datenschutz & Sicherheit », wähle für Obituary « Trotzdem öffnen », bestätige und versuche es erneut. Deaktiviere Gatekeeper nicht global und entferne die Quarantäne nicht rekursiv. Bei Meldungen über Beschädigung, Malware oder eine Organisationsrichtlinie brich ab.

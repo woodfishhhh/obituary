@@ -8,6 +8,8 @@ Download the universal macOS DMG and checksums file from the same release. Verif
 
 The app contains the Wails small window, the menu bar icon, and matching obit and obitd helpers. The five-minute launchd user agent remains a separate fallback. In Settings, enable Start the tray at sign-in to install Obituary's own user LaunchAgent; disable it there to remove only that entry.
 
+Removing `Obituary.app` leaves your data in `~/Library/Application Support/obituary/` by default: `store.json` is the ledger, `config.toml` holds your settings, and `graveyard/` holds files buried on that volume.
+
 ### First opening an unsigned app
 
 The release is not Developer ID signed or notarized. After checking the SHA-256 from a trusted release, try opening the app once. If macOS says it cannot verify the developer, open System Settings, Privacy and Security, choose Open Anyway for Obituary, confirm the prompt, and open it again. Do not disable Gatekeeper globally or clear quarantine recursively. Stop if macOS reports a damaged app, malware, or an organisation policy that forbids opening it.

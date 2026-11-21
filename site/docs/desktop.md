@@ -8,6 +8,8 @@
 
 这个 app 里有 Wails 小窗口、菜单栏图标，以及配套的 obit 和 obitd。每 5 分钟运行一次的 launchd 用户代理仍是独立的兜底任务。在设置页打开「随登录启动托盘」会安装讣告自己的用户 LaunchAgent；关闭它只会移除这一项。
 
+移除 `Obituary.app` 不会删除用户数据。默认目录是 `~/Library/Application Support/obituary/`：`store.json` 是账本，`config.toml` 是设置，同卷下葬的文件保留在 `graveyard/`。
+
 ### 第一次打开未签名 app
 
 这个发布包没有 Developer ID 签名，也没有公证。确认下载自可信发布页并核对 SHA-256 后，先尝试打开一次。如果 macOS 提示无法验证开发者，打开「系统设置 → 隐私与安全性」，在讣告对应位置选择「仍要打开」，确认系统提示后再打开。不要全局关闭 Gatekeeper，也不要递归清除隔离属性；如果系统报告 app 已损坏、包含恶意软件，或公司策略禁止放行，请停止。

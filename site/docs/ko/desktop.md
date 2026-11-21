@@ -8,6 +8,8 @@
 
 app에는 Wails 작은 창, 메뉴 막대 아이콘, 함께 제공되는 obit과 obitd가 들어 있습니다. 5분마다 실행되는 launchd 사용자 에이전트는 별도의 대체 경로입니다. 설정에서 로그인 시 트레이 시작을 켜면 Obituary 전용 LaunchAgent가 설치되고, 끄면 해당 항목만 제거됩니다.
 
+`Obituary.app`을 삭제해도 사용자 데이터는 기본 경로인 `~/Library/Application Support/obituary/`에 남습니다. `store.json`은 장부, `config.toml`은 설정 파일이며, 이 볼륨에서 매장한 파일은 `graveyard/`에 보관됩니다.
+
 ### 서명되지 않은 app을 처음 열기
 
 이 릴리스에는 Developer ID 서명이나 공증이 없습니다. 신뢰할 수 있는 릴리스인지 확인하고 SHA-256을 검증한 뒤 한 번 열어 보세요. macOS가 개발자를 확인할 수 없다고 하면 「시스템 설정 → 개인정보 보호 및 보안」에서 Obituary의 「그래도 열기」를 선택하고 확인한 다음 다시 엽니다. Gatekeeper를 전역으로 끄거나 격리 속성을 재귀적으로 지우지 마세요. 손상, 악성 코드 또는 회사 정책 거부가 표시되면 중단합니다.

@@ -8,6 +8,8 @@ Baixe o DMG universal do macOS e o arquivo de checksums da mesma versão. Verifi
 
 O app contém a janela Wails, o ícone da barra de menus e os auxiliares obit e obitd. O agente de usuário do launchd que verifica vencimentos a cada 5 minutos continua sendo um fallback separado. Em Configurações, ative o início da bandeja no login para instalar o LaunchAgent do Obituary; desativar remove somente essa entrada.
 
+Remover `Obituary.app` mantém seus dados no diretório padrão `~/Library/Application Support/obituary/`: `store.json` contém o registro, `config.toml` guarda as configurações e `graveyard/` contém os arquivos enterrados nesse volume.
+
 ### Primeira abertura de um app sem assinatura
 
 Esta versão não tem assinatura Developer ID nem notarização. Confirme a origem e o SHA-256 e tente abrir uma vez. Se o macOS não puder verificar o desenvolvedor, abra « Ajustes do Sistema → Privacidade e Segurança », escolha « Abrir Mesmo Assim » para Obituary, confirme e abra novamente. Não desative o Gatekeeper globalmente nem remova a quarentena de forma recursiva. Pare diante de avisos de app danificado, malware ou política da organização.
