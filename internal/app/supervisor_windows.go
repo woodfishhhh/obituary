@@ -78,7 +78,9 @@ func Supervise(home string) (result error) {
 	if err != nil {
 		return err
 	}
-	launch := func() error { return exec.Command(exe, append([]string{"--tray"}, daemonArgs(home)...)...).Run() }
+	launch := func() error {
+		return runTrayProcess(exec.Command(exe, append([]string{"--tray"}, daemonArgs(home)...)...))
+	}
 	for {
 		stopped, err := windows.WaitForSingleObject(stop, 0)
 		if err != nil || stopped == windows.WAIT_OBJECT_0 {
@@ -92,7 +94,7 @@ func Supervise(home string) (result error) {
 			return nil
 		}
 		state, readErr := readSupervision(home)
-		if readErr != nil || state.Open || len(state.Failures) == 0 {
+		if readErr != nil || state.Open || state.LaunchFailed || len(state.Failures) == 0 {
 			return errors.Join(err, readErr)
 		}
 		if state.Abandoned {

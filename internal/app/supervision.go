@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"time"
@@ -26,6 +27,22 @@ type supervision struct {
 	Open, Abandoned bool
 	Failures        []time.Time
 	Reason          string
+	LastAttempt     time.Time
+	LastExitCode    *int
+	LaunchFailed    bool
+}
+
+// A failed Start has no process or exit status. Only Wait observes a child exit.
+type trayLaunchError struct{ cause error }
+
+func (e *trayLaunchError) Error() string { return "could not launch tray: " + e.cause.Error() }
+func (e *trayLaunchError) Unwrap() error { return e.cause }
+
+func runTrayProcess(cmd *exec.Cmd) error {
+	if err := cmd.Start(); err != nil {
+		return &trayLaunchError{err}
+	}
+	return cmd.Wait()
 }
 
 func readSupervision(home string) (supervision, error) {
@@ -77,21 +94,38 @@ func managedAttempt(home string, now func() time.Time, run func() error) error {
 	at := now()
 	s.prune(at)
 	if s.Open {
+		s.LastExitCode = nil
 		s.failed(at, "previous resident did not close its receipt")
 	}
 	if s.Abandoned {
 		return s.save(home)
 	}
-	s.Open = true
+	s.Open, s.LaunchFailed = true, false
+	s.LastAttempt = at
 	if err := s.save(home); err != nil {
 		return err
 	}
 	err = run()
-	s.Open = false
-	if err != nil {
-		s.failed(now(), err.Error())
-	} else {
-		s.Reason = ""
-	}
+	s.finishAttempt(now(), err)
 	return errors.Join(err, s.save(home))
+}
+
+func (s *supervision) finishAttempt(at time.Time, err error) {
+	s.Open = false
+	s.LastExitCode = nil
+	var launch *trayLaunchError
+	var exit *exec.ExitError
+	switch {
+	case errors.As(err, &launch):
+		s.LaunchFailed, s.Reason = true, launch.Error()
+	case err != nil:
+		s.failed(at, err.Error())
+		if errors.As(err, &exit) {
+			code := exit.ExitCode()
+			s.LastExitCode = &code
+		}
+	default:
+		code := 0
+		s.LastExitCode, s.Reason = &code, ""
+	}
 }
