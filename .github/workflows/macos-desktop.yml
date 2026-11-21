@@ -38,7 +38,7 @@ jobs:
           test "$(lipo -archs "$app/Contents/MacOS/obit-gui")" = "x86_64 arm64"
           test "$(lipo -archs "$app/Contents/MacOS/obitd")" = "x86_64 arm64"
           test "$(lipo -archs "$app/Contents/MacOS/obit")" = "x86_64 arm64"
-          shasum -a 256 --check "$RUNNER_TEMP/macos-desktop/checksums.txt"
+          (cd "$RUNNER_TEMP/macos-desktop" && shasum -a 256 --check checksums.txt)
       - name: Mount DMG and run packaged smoke
         run: |
           set -euo pipefail
