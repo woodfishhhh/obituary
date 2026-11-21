@@ -45,6 +45,8 @@ export function cacheLang(next: Lang) {
 
 // The window's language, and how the 语言 setting hands it the backend's
 // new effectiveLanguage after a change is applied.
-export interface LangChoice { lang: Lang; adopt: (effectiveLanguage?: string) => void }
+export interface LangChoice { lang: Lang; contextMenu?: boolean; adopt: (effectiveLanguage?: string) => void }
 export const LangContext = createContext<LangChoice | null>(null);
 export const useLangChoice = () => useContext(LangContext);
+export const useTrackingHint = (key: "up.quietAll" | "cal.upQuietText" | "nt.quietAll" | "vg.noLitAll") =>
+  t(useLangChoice()?.contextMenu ? key : "up.quietCLI");

@@ -9,7 +9,7 @@ import Decisions from "../../pages/Decisions";
 import Logs from "../../pages/Logs";
 import Settings from "../../pages/Settings";
 import { useAppearance } from "../../appearance";
-import { t } from "../../i18n";
+import { t, useTrackingHint } from "../../i18n";
 import Notices from "../../notices";
 import { pageTitle, type PageId, type ShellProps } from "../../shell";
 import { extendSpans, folderOf, nameOf, remaining, span, Star, useGraves, useItems, HOUR, DAY } from "../shared";
@@ -229,6 +229,7 @@ function GraveList({ query, commands, input }: { query: string; commands: Cmd[];
 // ── 即将下葬 ───────────────────────────────────────────────────────────
 
 function ItemList({ query, commands, input }: { query: string; commands: Cmd[]; input: React.RefObject<HTMLInputElement | null> }) {
+  const emptyHint = useTrackingHint("up.quietAll");
   const it = useItems("");
   const [menu, setMenu] = useState(false);
   const rows: Row[] = useMemo(() => it.items.filter((x) => matches(x.path, query)).map((x) => {
@@ -244,7 +245,7 @@ function ItemList({ query, commands, input }: { query: string; commands: Cmd[]; 
   return (
     <>
       <List rows={rows} commands={commands} at={at} setActive={setActive} has={it.sel.has} toggle={it.sel.toggle} onOpen={(id) => extend("1d", id)} loading={it.loading && !it.data}
-        empty={query ? <><b>{t("pl.noItem", query)}</b><span>{t("pl.noItemText")}</span></> : <><b>{t("pl.itemsEmpty")}</b><span>{t("up.quietAll")}</span></>} />
+        empty={query ? <><b>{t("pl.noItem", query)}</b><span>{t("pl.noItemText")}</span></> : <><b>{t("pl.itemsEmpty")}</b><span>{emptyHint}</span></>} />
       {it.error ? <div className="pl-error">{t("up.readError", it.error)}</div> : null}
       <Bar context={k ? t("pl.pickedItems", k) : t("pl.itemsCtx", it.items.length)}>
         <Act kind="cobalt" keys={["Enter"]} disabled={!k && !active} onClick={() => extend("1d", active?.id)}>{t("pl.extendDay", k)}</Act>

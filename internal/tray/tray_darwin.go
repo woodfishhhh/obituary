@@ -221,22 +221,6 @@ func (m *menu) tell(outcome i18n.Key, detail string) {
 	_ = m.ui.notify(m.language.Text(outcome), detail)
 }
 
-// listen hands a row's clicks to the menu loop until the rows are rebuilt.
-func (m *menu) listen(ctx context.Context, row menuItem, action func() error) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-row.clicks():
-			select {
-			case <-ctx.Done():
-				return
-			case m.actions <- action:
-			}
-		}
-	}
-}
-
 func (m *menu) upcomingRows(ctx context.Context) error {
 	now := time.Now()
 	rows, err := m.resident.Upcoming(now)

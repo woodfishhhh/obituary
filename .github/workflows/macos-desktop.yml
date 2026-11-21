@@ -27,8 +27,8 @@ jobs:
         run: go test -tags desktop ./internal/app ./internal/gui ./internal/tray
       - name: Build universal app and DMG
         env:
-          GITHUB_REF_NAME: ${{ github.ref_name }}
-        run: bash scripts/build-macos-desktop.sh "${GITHUB_REF_NAME}" "$RUNNER_TEMP/macos-desktop"
+          PACKAGE_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || format('0.0.{0}', github.run_number) }}
+        run: bash scripts/build-macos-desktop.sh "$PACKAGE_VERSION" "$RUNNER_TEMP/macos-desktop"
       - name: Verify bundle, architectures and checksums
         run: |
           set -euo pipefail

@@ -9,7 +9,7 @@ import { bytes, graveSize, noteText } from "../../format";
 import Decisions from "../../pages/Decisions";
 import Logs from "../../pages/Logs";
 import Settings from "../../pages/Settings";
-import { t } from "../../i18n";
+import { t, useTrackingHint } from "../../i18n";
 import Notices from "../../notices";
 import { pageTitle, type ShellProps } from "../../shell";
 import { DAY, extendSpans, hm, md, nameOf, remaining, sourceLabel, span, Star, useGraves, useItems, weekday } from "../shared";
@@ -168,6 +168,7 @@ function Graves() {
 // ── 即将下葬: the burial calendar ─────────────────────────────────────
 
 function Upcoming() {
+  const emptyHint = useTrackingHint("cal.upQuietText");
   const it = useItems("");
   const [lifespan, setLifespan] = useState("1d");
   const now = Date.now();
@@ -201,7 +202,7 @@ function Upcoming() {
       {it.error ? <p className="cal-alert">{t("up.readError", it.error)}</p> : null}
       {it.loading && !it.data ? <Loading /> : (
         <Board entries={entries} has={it.sel.has} toggle={it.sel.toggle} onMove={move}
-          empty={<><b>{t("cal.upQuiet")}</b><span>{t("cal.upQuietText")}</span></>} />
+          empty={<><b>{t("cal.upQuiet")}</b><span>{emptyHint}</span></>} />
       )}
     </div>
   );

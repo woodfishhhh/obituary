@@ -1,0 +1,185 @@
+#!/usr/bin/env bash
+# Only run on a fresh GitHub-hosted Mac, never on a developer's desktop.
+set -euo pipefail
+[[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_ENVIRONMENT:-} == github-hosted ]]
+ev=$RUNNER_TEMP/evidence
+mkdir "$ev"
+exec > >(tee "$ev/session.log") 2>&1
+set -x
+app=/Applications/Obituary.app
+cli=$app/Contents/MacOS/obit
+data="$HOME/Library/Application Support/obituary"
+mnt=$RUNNER_TEMP/obit-volume
+snap() { screencapture -x "$ev/$1.png"; }
+ui() { python3 -c 'import subprocess,sys; sys.exit(subprocess.run(["osascript", *sys.argv[1:]],timeout=12).returncode)' "$@"; }
+sw_vers
+[[ $(sw_vers -productVersion) == "$EXPECTED_MAJOR".* ]]
+[[ $(uname -m) == "$EXPECTED_ARCH" ]]
+cd "$RUNNER_TEMP/release"
+files=(obituary_*_darwin_universal.dmg)
+[[ ${#files[@]} == 1 && -f ${files[0]} ]]
+file=${files[0]}
+awk -v f="$file" '$2==f {print; n++} END {if(n!=1)exit 1}' checksums.txt > "$ev/dmg.sha256"
+shasum -a 256 -c "$ev/dmg.sha256"
+[[ ! -e $app && ! -e $data ]]
+mkdir "$mnt"
+hdiutil attach "$file" -readonly -nobrowse -mountpoint "$mnt"
+ls -la "$mnt/"
+snap mounted
+ditto "$mnt/Obituary.app" "$app"
+hdiutil detach "$mnt"
+! mount | grep -F " on $mnt " || exit 1
+codesign --verify --deep --strict "$app"
+codesign -dv "$app"
+bash "$GITHUB_WORKSPACE/scripts/check-macos-target.sh" "$app" | tee "$ev/deployment-targets.txt"
+snap installed
+if [[ $LANE == gatekeeper ]]; then
+  xattr -w com.apple.quarantine "0083;$(printf '%x' "$(date +%s)");Safari;$(uuidgen)" "$app"
+  xattr -p com.apple.quarantine "$app"
+  spctl --status
+  spctl -a -t execute -vv "$app" || echo "assessment exit=$?"
+  ui -e 'return system version of (system info)' || true
+  open "$app" > "$ev/first-open.log" 2>&1 &
+  sleep 4
+  pgrep -lx obit-gui || true
+  snap first-open
+  open 'x-apple.systempreferences:com.apple.preference.security?Privacy' || true
+  sleep 3
+  snap privacy-security
+  echo 'Open Anyway and confirmation are intentionally left to the user.'
+  exit 0
+fi
+
+# Separate pristine VM: this measures desktop behavior, not Gatekeeper approval.
+xattr -l "$app"
+trap 'if [[ -f "$data/audit.jsonl" ]]; then cp "$data/audit.jsonl" "$ev/audit.jsonl"; fi' EXIT
+open "$app"
+sleep 6
+pgrep -lx obit-gui
+traypid=$(pgrep -x obitd)
+[[ $traypid != *$'\n'* ]]
+tray="tell application \"System Events\" to tell (first application process whose unix id is $traypid) to "
+ui -e "${tray}get description of menu bar item 1 of last menu bar"
+snap cold-open
+before=$(pgrep -x obit-gui)
+open "$app"
+sleep 2
+after=$(pgrep -x obit-gui)
+[[ $before == "$after" && $after != *$'\n'* && $(pgrep -x obitd) == "$traypid" ]]
+
+"$cli" config telemetry off
+printf 'calendar fixture\n' > "$HOME/obit-calendar.txt"
+printf 'grave-retention fixture\n' > "$HOME/obit-retention.txt"
+printf 'notification fixture\n' > "$HOME/obit-notify.txt"
+keep="$HOME/obit-retention.txt"
+restore="$HOME/obit-notify.txt"
+hash() { shasum -a 256 "$1" | cut -d ' ' -f1; }
+keep_hash=$(hash "$keep")
+restore_hash=$(hash "$restore")
+"$cli" mark "$HOME/obit-calendar.txt" 2d
+"$cli" bury "$HOME/obit-retention.txt" "$HOME/obit-notify.txt"
+"$cli" graveyard --json > "$ev/before.json"
+grave() { jq -er --arg p "$1" '[.burials[] | select(.path == $p)] | select(length == 1) | .[0].grave' "$2"; }
+payload=$(grave "$keep" "$ev/before.json")
+selected=$(grave "$restore" "$ev/before.json")
+[[ ! -e $keep && ! -e $restore && $(hash "$payload") == "$keep_hash" && $(hash "$selected") == "$restore_hash" ]]
+pkill -TERM -x obit-gui
+sleep 2
+tray='tell application "System Events" to tell (first application process whose unix id is '
+if traypid=$(pgrep -xo obitd); then
+  tray="$tray$traypid) to "
+  ui -e "${tray}click menu bar item 1 of last menu bar"
+  sleep 1
+  snap tray-menu
+  ui -e "${tray}click menu item \"Open Obituary\" of menu 1 of menu bar item 1 of last menu bar"
+  sleep 2
+  pgrep -lx obit-gui
+  snap tray-opened-window
+fi
+for style in light dark; do
+  flag=false; [[ $style == light ]] || flag=true
+  ui -e "tell application \"System Events\" to tell appearance preferences to set dark mode to $flag" || true
+  ui -e 'tell application "System Events" to get dark mode of appearance preferences' || true
+  open "$app"
+  sleep 2
+  snap "$style-calendar-and-menu-bar"
+done
+
+svc="gui/$(id -u)/site.woodfish.obituary.tray"
+plist="$HOME/Library/LaunchAgents/site.woodfish.obituary.tray.plist"
+launchctl print "$svc" >/dev/null || echo "initial launchctl exit=$?"
+pkill -TERM -x obit-gui
+sleep 2
+open "$app"
+sleep 5
+ui -e "tell application \"System Events\" to set frontmost of (first application process whose unix id is $(pgrep -xo obit-gui)) to true" || true
+swiftc "$GITHUB_WORKSPACE/scripts/accept-macos-controls.swift" -o "$RUNNER_TEMP/controls"
+click() {
+  if [[ $1 == Settings ]]; then
+    ui "$GITHUB_WORKSPACE/scripts/accept-macos-click.applescript" "$(pgrep -xo obit-gui)" "$1" && return 0
+  fi
+  for i in 1 2 3 4; do
+    snap "settings-$i"
+    "$RUNNER_TEMP/controls" "$ev/settings-$i.png" "$1" && return 0
+    [[ $1 != Settings ]] || break
+    sleep 1
+  done
+  return 1
+}
+click Settings || true
+sleep 2
+click 'Start the tray at sign-in' || true
+sleep 2
+if [[ -f $plist ]]; then
+  plutil -p "$plist"
+  launchctl print "$svc" | grep -E 'state =|program =|pid =|/Obituary.app/' || true
+  snap login-on
+  click 'Start the tray at sign-in' || true
+  sleep 2
+  [[ ! -e $plist ]] || echo 'FAIL: plist still present'
+  launchctl print "$svc" >/dev/null || echo "after toggle off: launchctl exit=$?"
+else
+  echo 'No login plist after attempted UI toggle'
+  launchctl print "$svc" >/dev/null || echo "after attempted enable: launchctl exit=$?"
+fi
+snap login-off
+[[ ! -e $keep && ! -e $restore && $(hash "$payload") == "$keep_hash" && $(hash "$selected") == "$restore_hash" ]]
+if traypid=$(pgrep -xo obitd); then
+  path="of menu 1 of menu bar item 1 of last menu bar"
+  tray="tell application \"System Events\" to tell (first application process whose unix id is $traypid) to "
+  ui -e "${tray}click menu bar item 1 of last menu bar" || true
+  parent="menu item \"Recently buried (click one to resurrect)\" $path"
+  ui -e "${tray}click $parent" || true
+  ui -e "${tray}click (first menu item of menu 1 of $parent whose name contains \"obit-notify\")"
+fi
+sleep 3
+"$cli" graveyard --json > "$ev/after.json"
+[[ $(grave "$keep" "$ev/after.json") == "$payload" && ! -e $keep && $(hash "$payload") == "$keep_hash" ]]
+[[ ! -e $selected && $(hash "$restore") == "$restore_hash" ]]
+jq -e --arg p "$restore" 'all(.burials[]; .path != $p)' "$ev/after.json"
+snap notification
+/usr/bin/log show --last 3m --info --style compact --predicate '(subsystem == "com.apple.UserNotifications" OR process == "usernoted" OR eventMessage BEGINSWITH "obituary notification") AND eventMessage CONTAINS[c] "obituary"' > "$ev/notification.log"
+grep -F '[site.woodfish.obituary.tray] Requesting authorization' "$ev/notification.log"
+if grep -Eq 'hasError: 1|obituary notification (authorization|delivery):' "$ev/notification.log"; then exit 1; fi
+
+if traypid=$(pgrep -xo obitd); then
+  tray="tell application \"System Events\" to tell (first application process whose unix id is $traypid) to "
+  ui -e "${tray}click menu bar item 1 of last menu bar" || true
+  ui -e "${tray}click menu item \"Quit\" of menu 1 of menu bar item 1 of last menu bar" || true
+  sleep 2
+fi
+"$cli" daemon stop || true
+pkill -TERM -x obitd || true
+pkill -TERM -x obit-gui || true
+sleep 2
+! pgrep -lx obit-gui || exit 1
+! pgrep -lx obitd || exit 1
+find "$data" -type f | sort
+[[ ! -e $keep && $(hash "$payload") == "$keep_hash" && $(hash "$restore") == "$restore_hash" ]]
+shasum -a 256 "$data/store.json" "$data/config.toml" "$payload" > "$ev/preserved.sha256"
+# A different ledger removes only the test installation, not the data under test.
+cp "$cli" "$RUNNER_TEMP/obit"
+OBIT_HOME="$RUNNER_TEMP/uninstall-data" OBIT_CONFIG_DIR="$RUNNER_TEMP/uninstall-config" "$RUNNER_TEMP/obit" bury "$app"
+[[ ! -e $app ]]
+shasum -a 256 -c "$ev/preserved.sha256"
+snap uninstalled
