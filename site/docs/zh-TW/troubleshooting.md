@@ -1,35 +1,118 @@
 # 疑難排解
 
-先執行 `obit doctor`。它只讀檢查安裝、整合、背景服務與資料，不會修改檔案；需要更多資訊時加上 `--json` 或 `--verbose`。
+出了問題，先執行 `obit doctor`。它只讀不寫，逐項檢查安裝、agent 整合、背景排程和資料，每一行以 `PASS`、`INFO`、`WARN` 或 `FAIL` 開頭，後面寫著原因和該怎麼做；出現 `FAIL` 時，命令會以非零的結束碼結束。要把結果給別人看，加上 `--json`；想看每個 agent 具體接上了哪些功能，加上 `--verbose`。
 
-## PATH 與校驗和
+下面每一條都按同樣的順序寫：你會看到什麼、為什麼、怎麼辦、怎麼確認已經好了。
 
-**症狀：** 終端機找不到 `obit`，或下載的壓縮檔校驗和不一致。
+## 終端機裡找不到 `obit`
 
-**處理：** 從同一版本下載 `checksums.txt`，在下載目錄執行 `sha256sum --check --strict checksums.txt`。Windows PowerShell 可用 `Get-FileHash .\obit-*.zip -Algorithm SHA256` 比對。校驗不一致時不要執行，修改 PATH 後重新開啟終端機。
+終端機提示 `command not found`，PowerShell 說無法辨識 `obit`，原因是程式在磁碟上，但它所在的資料夾不在 PATH 裡。Windows 的安裝腳本會把 `%LOCALAPPDATA%\Programs\obituary` 加進使用者 PATH，不過已經開啟的終端機讀不到新的 PATH。`install.sh` 把程式放進 `~/.local/bin`，從來不改 PATH，有的系統預設也沒有這個資料夾。Ubuntu 的 `.deb` 把程式放在 `/usr/libexec/obituary/`，同樣不在 PATH 裡。
 
-## Windows、macOS 與 Linux 桌面
+Windows 上把終端機關掉重開就行。macOS 和 Linux 要把 `~/.local/bin` 加進 shell 設定，例如 zsh 在 `~/.zshrc` 裡加一行 `export PATH="$HOME/.local/bin:$PATH"`，再開一個新的終端機。只裝了 `.deb` 的話，改用完整路徑 `/usr/libexec/obituary/obit`，或另外用安裝腳本裝一份命令列。
 
-Windows SmartScreen 未簽署程式會顯示保護提示；先核對 SHA-256，再選「更多資訊 → 仍要執行」。小視窗缺少 WebView2 時安裝 Microsoft Edge WebView2 Runtime；Windows 小視窗目前只有 x64。
+`obit --version` 能印出版本號，`obit doctor` 裡的 `path` 那一行不再是 `WARN`，就是好了。
 
-macOS app 未 Developer ID 簽署或公證。核對校驗和後第一次開啟，在「系統設定 → 隱私權與安全性」選「仍要開啟」。不要關閉 Gatekeeper，也不要放行顯示損壞或惡意軟體的 app。選單列未隨登入啟動時執行 `obit daemon status` 和 `launchctl list | grep obituary`。
+## `obit doctor` 說找不到 `obitd`
 
-Ubuntu 24.04 小視窗需要 GTK 3 和 WebKitGTK 4.1：
+`obit doctor` 裡出現 `FAIL obitd`，表示 `obit` 旁邊沒有背景程式 `obitd`。訃告會到同一個資料夾裡找它，所以只複製 `obit` 一個檔案是不夠的。把 `obit` 和 `obitd` 放在一起，或依照你的安裝方式重新安裝；之後再執行 `obit doctor`，這一行變成 `PASS` 就是好了。
+
+## 下載的檔案核對不過
+
+用安裝腳本的話，這一步由腳本自己做，雜湊對不上它就會停下，什麼都不會裝。只有手動下載壓縮檔、DMG 或 `.deb` 時，才需要自己核對。對不上的原因通常是下載不完整、檔案在途中被改動，或是 `checksums.txt` 取自另一個版本，因為雜湊是依版本計算的。
+
+從同一個發行頁重新下載安裝檔和 `checksums.txt`（在中國大陸可以從鏡像下載），再核對一次，仍然對不上就不要執行。把下面的 `VERSION` 和檔名換成你下載的那一個。Linux：
+
+```bash
+file=obituary_VERSION_linux_amd64.deb
+grep -F "  $file" checksums.txt | sha256sum --check --strict -
+```
+
+macOS 把最後一行裡的 `sha256sum --check --strict -` 換成 `shasum -a 256 -c -`。Windows PowerShell：
+
+```powershell
+$file = "obituary_VERSION_windows_amd64.zip"
+(Get-FileHash $file -Algorithm SHA256).Hash -eq ((Select-String -Path checksums.txt -SimpleMatch $file).Line -split '\s+')[0]
+```
+
+Linux 和 macOS 印出檔名加 `OK`，PowerShell 印出 `True`，就表示對上了。
+
+## Windows 跳出「Windows 已保護您的電腦」
+
+用瀏覽器手動下載的壓縮檔，Windows SmartScreen 可能會攔一下，原因是訃告的程式還沒有程式碼簽章。用 Scoop、winget 或安裝腳本安裝，一般遇不到。先依上一條核對 SHA-256，對上了再按「其他資訊」，然後按「仍要執行」。核對不了，或系統回報的是惡意軟體，而不只是「未知的發行者」，就不要執行。
+
+## Windows 的小視窗打不開
+
+從開始功能表或系統匣點「訃告」沒有反應，或是提示缺少執行階段，是因為視窗靠 Microsoft Edge WebView2 執行階段繪製。Windows 11 內建它，Windows 10 多數也已經裝好，沒有的機器視窗就起不來。到 Microsoft 官網下載並安裝 WebView2 執行階段（選常青版），再點一次「訃告」，視窗開啟就是好了。
+
+視窗目前只有 x64 版，ARM64 的 Windows 壓縮檔裡沒有 `obit-gui.exe`，只能用命令列。系統匣選單裡的「開啟訃告」跳出通知、說找不到視窗程式，是因為 `obit-gui.exe` 不在 `obitd.exe` 旁邊，ARM64 壓縮檔就是這樣；x64 的把它們放進同一個資料夾即可。
+
+## macOS：app 提示與目前系統版本不相容
+
+1.6.0 的 macOS 小視窗（DMG 裡的 `Obituary.app`）需要 macOS 26。在 macOS 15 及更早的系統上，開啟它時系統會提示這個 app 與目前的版本不相容，無法開啟。這是 1.6.0 打包時留下的問題，1.6.1 修正。在那之前，要使用這個視窗就得升級到 macOS 26。問題只出在 DMG 裡的小視窗上。裝上 1.6.1 或更新的版本，app 能正常開啟，就是好了。
+
+## macOS：「無法驗證開發者」
+
+DMG 裡的 app 沒有 Developer ID 簽名，也沒有公證，所以第一次開啟會被 Gatekeeper 擋下。核對 SHA-256 之後，先正常開啟一次；系統說無法驗證開發者，就到「系統設定 → 隱私權與安全性」，在頁面下方找到 Obituary，按「仍要打開」，再確認一次。詳細步驟在[第一次開啟未簽名的 app](./desktop#第一次開啟未簽名的-app)。不要為此全域關閉 Gatekeeper。系統如果說 app 已損壞或含有惡意軟體，那是另一回事，不要放行。
+
+## 系統匣沒有隨登入啟動（macOS、Ubuntu）
+
+登入之後選單列或系統匣裡沒有訃告的圖示。隨登入啟動靠一個自動啟動項目：macOS 上是使用者 LaunchAgent `site.woodfish.obituary.tray`，Ubuntu 上是 `~/.config/autostart/obituary.desktop`。小視窗設定裡的開關沒開，或是 app 搬過位置、是在 DMG 裡直接執行時開啟的，項目裡記的路徑就失效了，登入時找不到程式。
+
+開啟小視窗，在 Settings 裡把「Start the tray at sign-in」關掉再打開，讓訃告重寫這個項目。macOS 上執行 `launchctl list | grep obituary`，能看到 `site.woodfish.obituary.tray`；Ubuntu 上 `ls ~/.config/autostart/obituary.desktop` 找得到檔案，下次登入系統匣就會出現。
+
+## Ubuntu：小視窗打不開，或沒有系統匣圖示
+
+從應用程式清單點「訃告」沒有反應，一般是缺少 GTK 3 或 WebKitGTK 4.1。用 `apt install ./….deb` 安裝時它們會自動裝上，只有後來被移除，或安裝到一半出錯才會缺。Ubuntu 24.04 裡 GTK 3 的套件叫 `libgtk-3-0t64`，名稱不帶 `t64` 的 `libgtk-3-0` 在這個版本裡不存在，照著舊教學輸入會失敗：
 
 ```bash
 sudo apt update
-sudo apt install libgtk-3-0 libwebkit2gtk-4.1-0
-obit doctor
+sudo apt install libgtk-3-0t64 libwebkit2gtk-4.1-0 xdg-utils
 ```
 
-用 `systemctl --user status obituary.timer`、`systemctl --user list-timers | grep obituary` 和 `crontab -l` 檢查排程。
+裝完再從應用程式清單開啟，視窗出現就是好了。視窗能開、只是沒有系統匣圖示，是因為系統匣要靠桌面提供 StatusNotifierItem，GNOME 預設沒有。不裝擴充功能也能從應用程式清單開啟同一個視窗；想要圖示，就替 GNOME 裝一個支援它的擴充功能，例如 AppIndicator。
 
-## 背景、更新與檔案
+## 到期的項目沒有被下葬
 
-背景未執行時查看 `obit daemon status`，立即處理可執行 `obit sweep`，恢復排程可執行 `obit daemon enable`。國內鏡像使用 `bash install.sh --mirror cn`，不可混用不同版本的壓縮檔與校驗檔。
+檔案的壽命早就到了，卻還在原處，`obit daemon status` 裡 `runner:` 那一行寫著 `off`。到期清理靠一個每 5 分鐘執行一次的排程工作：Windows 是工作排程器裡的「Obituary Runner」，macOS 是 launchd 使用者代理，Linux 是 systemd 使用者計時器 `obituary.timer`。它沒裝、被關掉，或是裝給了另一個資料目錄，時間到了就沒人動手；這時到期的項目要等到下一次 `obit sweep`，或 agent 的 hook 觸發，才會被處理。
 
-WSL 掛載磁碟改名後先確認真實 Windows 路徑，不要用舊路徑強行復原。檔案被占用時讖告會保留原檔並重試；關閉占用程式後執行 `obit sweep`，或在視窗選擇「重試」或「停止追蹤」。TOML 拼寫、引號或時長錯誤會由 `obit config` 指出，未知鍵不會被忽略。
+執行 `obit daemon enable` 裝上排程工作（在 Windows 上同時會裝登入時啟動的系統匣）；眼前就要清理，執行 `obit sweep`。Linux 上若沒有 systemd 使用者服務（有些容器和精簡系統是這樣），`obit daemon enable` 裝不上，就改用 cron，每 5 分鐘執行一次 `obitd --once --home <資料目錄> --config-dir <設定目錄>`，這兩個目錄 `obit config` 都會告訴你。`obit daemon status` 裡 `runner` 不再是 `off`，就是好了；Linux 上還可以用 `systemctl --user list-timers | grep obituary` 看到它。
 
-## 整合與容器
+## 到期了，但沒有下葬成功
 
-hook 沒有生效時執行 `obit init --show`、`obit init --dry-run` 和 `obit doctor --verbose`，並確認沒有設定 `OBIT_DISABLED=1`。設定 `OBIT_HOOK_AUDIT=1` 後可執行 `obit hook audit`。Docker 未啟動時先啟動 Docker Desktop 或 Engine，再批准提議。復原目標已存在時 `obit resurrect` 不會覆蓋，而會使用不衝突的名稱；先處理衝突後再試。
+小視窗的「For you」頁（待你決定）裡，「Burials that failed」（沒埋成的）下有這一項，旁邊寫著原因，常見的是檔案正被編輯器、同步軟體或別的程式占用，檔案還留在原處。下葬要把檔案搬走，被占用或沒有權限時搬不動。訃告不會硬來，原檔案保持原樣，過一陣子再試，間隔越來越長，多次失敗後停下，等你決定。
+
+先關掉占用檔案的程式，再按「Retry」，或是執行 `obit sweep`。不想再管它，就按「Stop tracking」，檔案留在原處，不再倒數。這一項從「Burials that failed」裡消失，並出現在 `obit graveyard` 裡，就是下葬成功了。
+
+## 復活之後檔名變了
+
+`obit resurrect` 沒有報錯，放回來的檔案卻叫 `report (resurrected).txt`，是因為原位置已經有同名的東西了。復活從不覆蓋，名稱被占用時，就在同一個資料夾裡換個名稱放回來，兩份內容都完好。自己比較一下，留下要的那份，把名稱改回去。
+
+## 設定檔寫錯了
+
+`obit config` 回報 `config file has errors`，後面跟著檔案路徑、行號和鍵名，是因為 `config.toml` 裡有訃告不認得的鍵，或是值不合法。訃告不會默默忽略它們，否則 `retention = 30` 會讓 7 天的保留期照舊生效，你卻以為已經改了。依提示裡的行號修正拼字、引號或時間長度，再執行 `obit config`；不再報錯，`obit doctor` 裡的 `config` 那一行是 `PASS`，就是好了。各項的寫法見[設定參考](./config)。
+
+## hook 沒有生效
+
+`obit init` 裝完，agent 刪檔案時沒有被攔下，或是什麼提示都沒出現。常見的原因有三個：agent 沒有重新啟動，還在使用舊設定；這個 agent 的整合裝在另一個範圍（全域還是專案）；agent 的環境裡設了 `OBIT_DISABLED=1`（關閉所有 hook）或 `OBIT_GUARD_RM=0`（關閉刪除護欄）。
+
+先看裝了什麼：
+
+```bash
+obit init -g --show        # 全域裝了什麼
+obit init --show           # 目前專案裝了什麼
+obit doctor --verbose      # 每個 agent 的接入情況
+```
+
+沒有裝，就用 `obit init -g --agent <名稱>` 裝上，想先看計畫就加上 `--dry-run`。裝完重新啟動 agent；Codex 還要在裡面執行 `/hooks`，信任訃告的 hook。想知道 hook 到底收到了什麼，在啟動 agent 的終端機裡先設定 `OBIT_HOOK_AUDIT=1`，用一陣子之後執行 `obit hook audit`。被攔下的刪除命令不需要這個開關，本來就會記錄。hook 自己的錯誤寫在資料目錄的 `hook.log` 裡，`obit doctor` 的 `hook-log` 那一行會統計最近 24 小時的錯誤。
+
+`obit doctor` 裡這個 agent 的那一行（例如 `claude`）是 `PASS`、寫著 `integration is current`，就是裝好了；使用刪除護欄的話，`claude-guard-rm` 這樣的行要寫 `registered: yes`。在啟動 agent 的同一個終端機裡執行 `obit doctor`，如果環境變數把 hook 關掉了，這一行會變成 `WARN`，並寫出是哪個變數。
+
+## Docker 容器的提議無法批准
+
+小視窗裡容器提議的「Approve」點不了，卡片上寫著「Docker is not running: start Docker to decide on this proposal.」，意思是 Docker 沒有執行，要先啟動它才能處理這則提議。登記容器要向 Docker 確認它完整的 ID 和建立時間，Docker 沒執行就確認不了。啟動 Docker Desktop 或 Docker Engine，再批准；「Approve」可以點了，`obit docker list` 裡列出這個容器，就是好了。
+
+容器到期時，訃告只是把它停掉，可寫層保留，復活時再重新啟動；保留期過後才會刪除已停止的容器。映像、磁碟區和網路從來不動。
+
+## 更新失敗，或在中國大陸下載很慢
+
+`obit update --check` 回報錯誤，或安裝腳本下載很慢、失敗，多半是這台電腦連不上 GitHub。`obit update --check` 和安裝腳本在 GitHub 遲遲沒有回應時，會自己改走中國大陸的鏡像。想一開始就走鏡像，macOS 和 Linux 執行 `bash install.sh --mirror cn`，Windows 執行 `.\install.ps1 -Mirror cn`。手動下載的話，壓縮檔和 `checksums.txt` 要取自同一個版本、同一個來源。`obit update --check` 能印出 `Latest:` 那一行，就是好了。

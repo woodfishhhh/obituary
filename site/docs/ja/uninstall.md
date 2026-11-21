@@ -1,35 +1,60 @@
 # アンインストール
 
+アンインストールは 2 段階です。まず Obituary が設定したものを取り除き、次にプログラム本体を削除します。墓地と台帳は既定で残るので、埋葬したファイルはその後も復活できます。
+
 ```powershell
-obit uninstall --dry-run      # see what would be removed
-obit uninstall                # remove everything Obituary set up, after you confirm
-.\install.ps1 -Uninstall      # if you used the install script: also remove the program files, PATH entry and Start menu shortcut
+obit uninstall --dry-run      # 取り除くものを一覧するだけで、何も変更しない
+obit uninstall                # 計画を表示し、確認後に実行する
 ```
 
-`obit uninstall` が取り除くのは、Obituary が追加したものだけです。対象はユーザーと現在の Git プロジェクトに設定したエージェントのフック、MCP、Skill のほか、ログイン時の自動起動、スケジュールされたタスク、実行中のデーモン、コンテキストメニュー、エクスプローラーの日付表示、フォルダーポリシーです。
+Windows でインストールスクリプトを使った場合は、次の 1 つで済みます。
 
-## 墓地と台帳は残ります
+```powershell
+.\install.ps1 -Uninstall      # obit uninstall --yes を実行したあと、プログラムのファイル、追加した PATH のエントリ、スタートメニューのショートカットを削除する
+```
 
-既定では墓地と台帳を残し、墓地の場所と保管量を表示します。これらも削除する場合に限り `--purge-data` を付けてください。墓地の内容が一覧表示され、もう一度確認を求められます。
+## 取り除かれるもの
 
-## 他のプロジェクトのフック
+`obit uninstall` が扱うのは、ユーザー単位と現在の Git プロジェクトにあるものです。各エージェントのフック、MCP、Skill、5 分ごとに動く定期ジョブ（Windows ではタスク スケジューラ、macOS では launchd のユーザーエージェント、Linux では systemd のユーザータイマー）、常駐プロセスとトレイ、そしてフォルダーポリシー（ポリシーの下のファイルはそのまま残ります）です。Windows では、ログイン時の自動起動、エクスプローラーのコンテキストメニュー、日付ラベルも取り除きます。
 
-他のプロジェクトにもプロジェクト単位でフックを設定した場合は、プログラムを削除する前に、それぞれのプロジェクトで `obit uninstall` を実行してください。先に `obit` を削除すると、それらのフックが動作しなくなります。
+触れるのは、Obituary 自身が書いたものだけです。あなたが編集したエントリや、ほかのインストールが残したエントリはそのまま残り、どれを残したかとその理由が計画に書かれます。ターミナルのない環境（スクリプトやエージェントのコマンドライン）では `--yes` を付けてください。付けないと、ターミナルが必要だと表示して止まります。
 
-## Scoop と winget
+自動では行われないことが 3 つあります。プログラムのファイルは、インストールした方法に合わせて削除します（下記）。ほかのプロジェクトにプロジェクト単位のフックを入れた場合は、プログラムを削除する前に、それぞれのプロジェクトで `obit uninstall` を実行してください。そうしないと、`obit` がなくなってそちらのフックが動かなくなります。そして macOS と Linux では、トレイの自動起動のエントリは一覧に含まれません。アンインストールの前に、小窓の Settings で「Start the tray at sign-in」をオフにしてください。Obituary が書いたエントリが削除されます。Windows ではトレイの自動起動を `obit uninstall` が処理しますが、`obit init` が作ったスタートメニューとデスクトップのショートカットは一覧に入っていません。これらは `obit init --uninstall` で削除されます。
 
-先に `obit uninstall` を実行してから、インストールに使ったパッケージマネージャーのアンインストールコマンドを実行してください。
-## アンインストール範囲とデータの場所
+## 墓地、台帳、設定
 
-`obit uninstall --dry-run` は現在のユーザーと Git プロジェクトから削除できる項目を表示します。実行すると hook、MCP、Skill、トレイ、自動起動、スケジューラーを外しますが、他のプロジェクトの設定は変更しません。各プロジェクトで実行してください。
+既定で残るのは 3 つです。墓地のファイル、台帳と監査ログ、そして `config.toml` です。`obit uninstall` は、墓地にまだどれだけ入っているか、どこにあるかを表示します。あとで再インストールすれば、それらをそのまま使えます。ごみ箱モードを使っている場合、期限が切れたものはすでにシステムのごみ箱にあります。アンインストールはそれに触れず、戻すときもごみ箱から行います。`obit resurrect` は届きません。
 
-| 場所または要素 | Windows | macOS | Linux |
-| --- | --- | --- | --- |
-| プログラム | `obit`、`obitd`、任意の `obit-gui` | `/Applications/Obituary.app` または CLI ディレクトリ | CLI ディレクトリ、デスクトップは `.deb` |
-| hook、MCP、Skill | ユーザーまたはプロジェクトの agent 設定 | agent 設定 | agent 設定 |
-| スケジューラー | タスク、常駐プロセス、トレイ | LaunchAgent とメニューバー | systemd ユーザータイマー、XDG 自動起動 |
-| プロジェクト設定 | `.claude/`、`.codex/` の Obituary 部分 | プロジェクト設定 | プロジェクト設定 |
+すべて消したいときは、`--purge-data` を付けます。
 
-データは Windows の `%LOCALAPPDATA%\obituary`、macOS の `~/Library/Application Support/obituary`、Linux の `$XDG_DATA_HOME/obituary`（未設定時 `~/.local/share/obituary`）です。設定ディレクトリは `OBIT_CONFIG_DIR`、データは `OBIT_HOME`、ユーザーホームは `OBIT_USER_HOME` で変更できます。同じボリュームの `.obituary` に墓地がある場合もあります。
+```powershell
+obit uninstall --purge-data
+```
 
-墓地、台帳、監査ログ、設定は既定で残ります。`--purge-data` は所有を確認できる墓地データだけを削除し、未知のファイルは残します。recycle モードではシステムのごみ箱から戻し、`resurrect` は使えません。
+まず墓地の全項目を一覧し、アンインストール計画を確認したあとで、もう一度確認します。そのうえで、それらのファイルを完全に削除し、台帳、監査ログ、そのほか Obituary 自身のファイル、最後にデータディレクトリを削除します。スクリプトでは `--yes --purge-data` を一緒に指定すると、2 回の確認が省かれます。削除するのは Obituary が認識できるファイルだけです。データディレクトリにほかのファイルや、知らないサブフォルダーが混ざっていると、そこで止まり、ディレクトリはそのまま残って、どれが原因かが表示されます。`config.toml` は削除の対象に入りません。macOS では台帳と同じフォルダーにあるため、削除の前に別の場所へ移しておいてください。そうしないと、そこで止まります。
+
+## プログラムの削除
+
+プログラムの削除方法は、インストールした方法によって決まります。
+
+| インストール方法 | 削除方法 |
+| --- | --- |
+| Windows のインストールスクリプト | `.\install.ps1 -Uninstall` |
+| Scoop | `obit uninstall` のあと `scoop uninstall obituary` |
+| winget | `obit uninstall` のあと `winget uninstall woodfishhhh.Obituary` |
+| macOS の小窓（DMG） | `obit uninstall` を実行して「Start the tray at sign-in」をオフにし、「アプリケーション」の Obituary.app をゴミ箱へドラッグ |
+| Homebrew | `obit uninstall` のあと `brew uninstall --cask obituary` |
+| macOS と Linux の `install.sh` | `obit uninstall` のあと、`~/.local/bin` の `obit` と `obitd` を削除 |
+| Ubuntu のデスクトップパッケージ（`.deb`） | 「Start the tray at sign-in」をオフにしてトレイを終了し、`sudo apt remove obituary-desktop` |
+
+macOS の app と Ubuntu の `.deb` は、それぞれ独自の `obit` を含んでいますが、どちらも PATH には入りません。コマンドラインを別にインストールしていない場合は、アンインストールの前にフルパスで実行してください。app の中のものは `/Applications/Obituary.app/Contents/MacOS/obit`、`.deb` のものは `/usr/libexec/obituary/obit` です。`apt remove` はそのフォルダーのプログラムを削除しますが、墓地、設定、ほかの方法で入れたコマンドラインには触れません。
+
+## データの場所
+
+| | データ（台帳、墓地、ログ） | 設定（`config.toml`） |
+| --- | --- | --- |
+| Windows | `%LOCALAPPDATA%\obituary` | `%APPDATA%\obituary` |
+| macOS | `~/Library/Application Support/obituary` | 同じフォルダー |
+| Linux | `~/.local/share/obituary` | `~/.config/obituary` |
+
+Linux で `XDG_DATA_HOME` や `XDG_CONFIG_HOME` を設定している場合は、それぞれの下の `obituary` フォルダーです。環境変数 `OBIT_HOME` と `OBIT_CONFIG_DIR` で、データと設定を別の場所に移せます。どちらを使っているかは `obit config` が表示します。データディレクトリがあるドライブでは、墓地はその中の `graveyard` フォルダーです。ほかのドライブでは、そのドライブの直下にある隠しフォルダー `.obituary` が墓地になります。こうすることで、埋葬は常に同じドライブ内での名前変更になり、コピーは発生しません。

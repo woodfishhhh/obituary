@@ -2,19 +2,51 @@
 
 不必開啟命令列，也能復活檔案、核准提議和變更設定。
 
+## 三個平台上有什麼
+
+小視窗、系統匣和桌面通知，Windows、macOS 和 Ubuntu 24.04 上都有；右鍵選單、檔案總管裡的日期標籤和資源回收筒模式只有 Windows 才有。macOS 和 Ubuntu 的桌面版目前是預覽版。其他 Linux 發行版沒有桌面版，請使用命令列。
+
+| | Windows | macOS | Ubuntu 24.04 |
+| --- | --- | --- | --- |
+| 小視窗 | `obit-gui.exe`，只有 x64 | `Obituary.app`，Intel 與 Apple 晶片通用 | `.deb` 安裝包，只有 amd64 |
+| 系統匣 | 工作列通知區 | 選單列 | 系統匣，需要桌面提供 StatusNotifierItem |
+| 登入時啟動系統匣 | `obit init` 預設開啟 | 在設定裡切換 | 在設定裡切換 |
+| 到期清理 | 系統匣常駐程式，工作排程器備援 | launchd 使用者代理，每 5 分鐘 | systemd 使用者計時器，每 5 分鐘 |
+| 桌面通知 | 有 | 有 | 有 |
+| 右鍵選單 | 檔案總管 | 無 | 無 |
+| 檔案總管裡的日期標籤 | 有 | 無 | 無 |
+| 資源回收筒模式 | 有 | 無，只有墓地 | 無，只有墓地 |
+| 安裝方式 | 安裝腳本、Scoop、winget 或壓縮檔 | DMG | `.deb` |
+| 第一次開啟 | 手動下載的壓縮檔可能遇到 SmartScreen 提示 | 要手動放行，見[下文](#第一次開啟未簽名的-app) | 直接開啟 |
+| 系統需求 | WebView2 執行階段 | 1.6.0 需要 macOS 26，1.6.1 修正 | GTK 3、WebKitGTK 4.1，由 apt 自動安裝 |
+
 ## macOS 小視窗與選單列圖示
 
-從同一個發行版本下載通用 macOS DMG 和 checksums.txt。先核對 SHA-256，再開啟 DMG，把 Obituary.app 拖到「應用程式」或使用者的 Applications 資料夾；啟用登入啟動前先退出 DMG。
+從發行頁下載通用 DMG（`obituary_<版本>_darwin_universal.dmg`）和 `checksums.txt`，核對 SHA-256 之後開啟 DMG，把 Obituary.app 拖進「應用程式」，退出 DMG，再從「應用程式」裡開啟它。先拖出來再開，是因為登入啟動項目記的是 app 所在的位置，如果直接在 DMG 裡執行，退出 DMG 之後這個位置就不存在了。
 
-這個 app 包含 Wails 小視窗、選單列圖示，以及配套的 obit 和 obitd。每 5 分鐘執行一次的 launchd 使用者代理仍是獨立的備援。在設定中開啟「登入時啟動托盤」會安裝讣告自己的使用者 LaunchAgent；關閉時只移除這個項目。
+app 裡有小視窗、選單列圖示，以及配套的 `obit` 和 `obitd`。到期清理由另一個 launchd 使用者代理負責，每 5 分鐘執行一次，用 `obit daemon enable` 安裝，關掉視窗和選單列圖示不影響它。在小視窗的 Settings 裡開啟「Start the tray at sign-in」，會安裝訃告自己的使用者 LaunchAgent，讓選單列圖示隨登入出現；關閉它，只會移除這一項。
 
 ### 第一次開啟未簽名的 app
 
-這個發行包沒有 Developer ID 簽名，也沒有公證。從可信的發行頁確認來源並核對 SHA-256 後，先嘗試開啟一次。如果 macOS 顯示無法驗證開發者，開啟「系統設定 → 隱私權與安全性」，在讣告項目選擇「仍要開啟」，確認系統提示後再開啟。不要全域關閉 Gatekeeper，也不要遞迴清除隔離屬性；如果系統報告 app 已損壞、含有惡意軟體，或公司政策禁止放行，請停止。
+這個發行包沒有 Developer ID 簽名，也沒有公證，所以 macOS 第一次會攔一下。確認下載自可信的發行頁、核對過 SHA-256 之後，先正常開啟一次。如果系統提示無法驗證開發者，開啟「系統設定 → 隱私權與安全性」，在頁面下方找到訃告，按「仍要打開」，再確認一次，然後重新開啟。不要為此全域關閉 Gatekeeper，也不要遞迴清除隔離屬性。系統如果回報 app 已損壞、含有惡意軟體，或公司政策不允許放行，就到此為止。
 
-### Homebrew Cask 方案
+### 1.6.0 需要 macOS 26
 
-Cask 應安裝同一個通用 DMG，把 Obituary.app 複製到「應用程式」，並從 app bundle 提供 obit 和 obitd。在桌面 DMG 有穩定發行網址並完成卸載回執核對前，現有 CLI 壓縮包 cask 與桌面 cask 分開。
+1.6.0 的 macOS 小視窗需要 macOS 26。在 macOS 15 及更早的系統上，系統會提示 app 與目前的版本不相容，無法開啟。這個問題在 1.6.1 修正。
+
+## Ubuntu 24.04（amd64）
+
+從發行頁下載桌面套件 `obituary_<版本>_linux_amd64.deb` 和 `checksums.txt`。在下載目錄執行下面的命令，把 `VERSION` 換成實際的版本號，核對成功後才會安裝：
+
+```bash
+file=obituary_VERSION_linux_amd64.deb
+grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt install "./$file"
+```
+
+裝好後從應用程式清單開啟「訃告」。小視窗使用 GTK 3 和 WebKitGTK 4.1，apt 會一併裝上。程式放在 `/usr/libexec/obituary/`，不在 PATH 裡；要在終端機裡使用 `obit`，請另外用安裝腳本裝一份命令列。
+
+系統匣需要桌面提供 StatusNotifierItem，GNOME 預設沒有。這時從應用程式清單開啟同一個視窗就行，不用裝任何擴充功能，只是沒有系統匣圖示。想讓系統匣在下次登入時自動出現，在設定裡開啟「Start the tray at sign-in」；關閉它，會刪除訃告自己寫下的自動啟動項目。解除安裝見[解除安裝](./uninstall)。
+
 ## 系統匣
 
 `obit init` 會讓系統匣圖示在登入時啟動。選單包含：
@@ -83,13 +115,3 @@ macOS 和 Linux 目前沒有右鍵選單。請用 `obit mark <路径> 7d` 登記
 安裝時可用 `obit init --no-context-menu` 略過右鍵選單，用 `--no-shortcuts` 略過開始功能表和桌面捷徑。
 
 檔案總管中顯示的下葬日期，詳見[資料夾策略](./folder-policies#explorer-dates)。
-## 四個平台能力對照
-
-| 平台 | 視窗 | 托盤或選單列 | 登入啟動與通知 | 右鍵選單與日期 | 架構與依賴 | 解除安裝後 |
-| --- | --- | --- | --- | --- | --- | --- |
-| Windows | 有 `obit-gui.exe` | 通知區 | 工作排程兜底，可選登入啟動與通知 | 檔案總管右鍵選單與日期標籤 | x64，需要 WebView2 | 程式、整合與自啟可移除，資料預設保留 |
-| macOS 桌面預覽版 | 通用 `Obituary.app` | 選單列 | 可用 LaunchAgent 隨登入啟動 | 沒有右鍵選單或 Finder 日期標籤 | Intel 與 Apple 晶片；未簽署或公證 | app 與 LaunchAgent 可移除，CLI 資料保留 |
-| Ubuntu 24.04 桌面預覽版 | `.deb` 內的小視窗 | 支援 StatusNotifierItem 的托盤 | 可選 XDG 自啟與桌面通知 | 沒有右鍵選單或檔案管理器日期 | 僅 amd64，需要 GTK 3、WebKitGTK 4.1 | 套件、自啟與托盤移除，資料保留 |
-| 僅 CLI 的 macOS/Linux | 沒有視窗 | 沒有托盤或選單列 | launchd 或 systemd 使用者排程，也可使用 crontab | 沒有右鍵選單或日期標籤 | x64 與 ARM64 CLI | 程式與服務移除，資料預設保留 |
-
-未簽署或預覽套件先核對 SHA-256；macOS 第一次開啟請依[放行步驟](#第一次開啟未簽署-app)操作。回收站模式不支援 `resurrect`。

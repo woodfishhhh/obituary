@@ -2,19 +2,51 @@
 
 Puedes resucitar archivos, aprobar propuestas y cambiar ajustes sin usar la línea de comandos.
 
+## Qué tiene cada una de las tres plataformas
+
+La ventana, la bandeja y las notificaciones de escritorio existen en Windows, macOS y Ubuntu 24.04; el menú contextual, las etiquetas de fecha del Explorador y el modo Papelera de reciclaje existen solo en Windows. Las ediciones de escritorio para macOS y Ubuntu son, por ahora, versiones preliminares. Otras distribuciones de Linux no tienen edición de escritorio y usan la línea de comandos.
+
+| | Windows | macOS | Ubuntu 24.04 |
+| --- | --- | --- | --- |
+| Ventana | `obit-gui.exe`, solo x64 | `Obituary.app`, universal para Intel y Apple Silicon | un paquete `.deb`, solo amd64 |
+| Bandeja | área de notificación | barra de menús | bandeja; requiere un escritorio que ofrezca StatusNotifierItem |
+| Bandeja al iniciar sesión | activada de forma predeterminada tras `obit init` | interruptor en Settings | interruptor en Settings |
+| Comprobación de caducidad | proceso residente de la bandeja, con el Programador de tareas como respaldo | agente de usuario de launchd, cada 5 minutos | temporizador de usuario de systemd, cada 5 minutos |
+| Notificaciones de escritorio | sí | sí | sí |
+| Menú contextual | en el Explorador | no | no |
+| Etiquetas de fecha en el Explorador | sí | no | no |
+| Modo Papelera de reciclaje | sí | no, solo cementerio | no, solo cementerio |
+| Se instala con | el script de instalación, Scoop, winget o el archivo comprimido | el DMG | el `.deb` |
+| Primera apertura | un archivo descargado a mano puede mostrar un aviso de SmartScreen | requiere aprobación manual, ver [más abajo](#primer-inicio-de-una-app-sin-firma) | se abre directamente |
+| Requisitos | el runtime de WebView2 | la 1.6.0 necesita macOS 26 (corregido en la 1.6.1) | GTK 3 y WebKitGTK 4.1, que instala apt |
+
 ## Ventana pequeña e icono de la barra de menús en macOS
 
-Descarga el DMG universal de macOS y el archivo de checksums de la misma versión. Comprueba SHA-256, abre el DMG y arrastra Obituary.app a Aplicaciones o a la carpeta Applications del usuario; expulsa el DMG antes de activar el inicio de sesión.
+Descarga el DMG universal (`obituary_<versión>_darwin_universal.dmg`) y `checksums.txt` desde la página de la versión, comprueba el SHA-256, abre el DMG, arrastra Obituary.app a Aplicaciones, expulsa el DMG y abre la app desde Aplicaciones. Arrástrala primero porque la entrada de inicio al iniciar sesión guarda dónde está la app, y una app ejecutada directamente desde el DMG ya no está allí cuando se expulsa.
 
-La app contiene la ventana Wails, el icono de la barra de menús y los auxiliares obit y obitd. El agente de usuario launchd que comprueba cada 5 minutos sigue siendo un respaldo independiente. En Ajustes, activa el inicio del tray al iniciar sesión para instalar el LaunchAgent de Obituary; al desactivarlo solo se elimina esa entrada.
+La app contiene la ventana, el icono de la barra de menús y los programas `obit` y `obitd` que la acompañan. De la caducidad se ocupa otro agente de usuario de launchd que se ejecuta cada 5 minutos; lo instalas con `obit daemon enable`, y cerrar la ventana o el icono de la barra de menús no le afecta. Al activar «Start the tray at sign-in» en Settings de la ventana se instala el LaunchAgent de usuario propio de Obituary para que el icono de la barra de menús aparezca al iniciar sesión; al desactivarlo, se elimina solo esa entrada.
 
 ### Primer inicio de una app sin firma
 
-La versión no tiene firma Developer ID ni notarización. Confirma el origen y SHA-256, e intenta abrirla una vez. Si macOS no puede verificar al desarrollador, abre «Ajustes del Sistema → Privacidad y seguridad», elige «Abrir igualmente» para Obituary, confirma y vuelve a abrirla. No desactives Gatekeeper globalmente ni borres la cuarentena de forma recursiva. Detente ante avisos de app dañada, malware o políticas de la organización.
+La versión no tiene firma de Developer ID ni está notarizada, así que macOS la detiene la primera vez. Después de comprobar que la descarga viene de una página de versiones de confianza y de verificar el SHA-256, ábrela normalmente una vez. Si el sistema dice que no puede verificar al desarrollador, abre Ajustes del Sistema, luego Privacidad y seguridad, busca Obituary al final de la página, elige «Abrir igualmente», confirma otra vez y abre la app de nuevo. No desactives Gatekeeper de forma global para esto ni borres el atributo de cuarentena de forma recursiva. Si el sistema indica que la app está dañada o contiene malware, o que una política de la empresa impide abrirla, detente ahí.
 
-### Propuesta para Homebrew Cask
+### La 1.6.0 necesita macOS 26
 
-El cask debe instalar el mismo DMG universal, copiar Obituary.app a Aplicaciones y exponer obit y obitd desde el app bundle. Hasta que el DMG de escritorio tenga una URL estable y una comprobación de desinstalación revisada, se mantiene separado del cask existente para CLI.
+La ventana de macOS de la 1.6.0 necesita macOS 26. En macOS 15 y anteriores, el sistema dice que la app no es compatible con esta versión y no se abre. Está corregido en la 1.6.1.
+
+## Ubuntu 24.04 (amd64)
+
+Descarga el paquete de escritorio `obituary_<versión>_linux_amd64.deb` y `checksums.txt` desde la página de la versión. Desde el directorio de descarga, ejecuta los comandos siguientes, sustituyendo `VERSION` por la versión que descargaste; el paquete solo se instala si la comprobación tiene éxito:
+
+```bash
+file=obituary_VERSION_linux_amd64.deb
+grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt install "./$file"
+```
+
+Después abre Obituary desde la lista de aplicaciones. La ventana usa GTK 3 y WebKitGTK 4.1, y apt los instala junto con el paquete. Los programas están en `/usr/libexec/obituary/`, que no está en tu PATH; para usar `obit` en una terminal, instala la línea de comandos por separado con el script de instalación.
+
+La bandeja necesita un escritorio que ofrezca StatusNotifierItem, y GNOME no lo hace de forma predeterminada. Allí abres la misma ventana desde la lista de aplicaciones, sin ninguna extensión, pero no hay icono en la bandeja. Para que la bandeja aparezca en tu próximo inicio de sesión, activa «Start the tray at sign-in» en Settings; al desactivarlo se elimina la entrada de inicio que escribió Obituary. Para desinstalar, consulta [Desinstalación](./uninstall).
+
 ## Bandeja del sistema
 
 `obit init` hace que aparezca un icono en la bandeja al iniciar sesión. Desde su menú puedes:
@@ -27,10 +59,10 @@ El cask debe instalar el mismo DMG universal, copiar Obituary.app a Aplicaciones
 
 ## La pequeña ventana
 
-`obit-gui.exe` tiene cinco páginas: Upcoming, Graveyard, Decisions, Settings y Logs. Puedes abrir la ventana desde «Obituary» en Inicio, desde el acceso directo del escritorio o con «Open Obituary» en la bandeja.
+`obit-gui.exe` tiene cinco páginas: Expiring, Graveyard, For you, Settings y Logs. Puedes abrir la ventana desde «Obituary» en Inicio, desde el acceso directo del escritorio o con «Open Obituary» en la bandeja.
 
-- La barra superior de la página de inicio indica «Auto registration: off» u «on». Púlsala para abrir los ajustes. Tanto en la parte superior de Decisions como en Settings puedes elegir entre desactivado (por defecto: solo entra lo que registráis tú y el agente), escalonado, totalmente automático o preguntar siempre. Consulta [Qué se registra](./auto-register). Más abajo, «Handled automatically» muestra lo registrado sin preguntar. Con un clic puedes deshacer el registro (se detiene la cuenta atrás y el elemento queda en su sitio) o prolongar la vida útil.
-- Si un elemento caduca pero no se puede enterrar, por ejemplo porque otro programa mantiene abierto el archivo, aparece en «Burials that failed» de Decisions, con el motivo y la fecha del siguiente intento. Obituary reintenta a intervalos cada vez mayores. Tras varios fallos se detiene: «Retry» vuelve a intentarlo ahora y «Stop tracking» deja el elemento en su sitio sin seguirlo.
+- La barra superior de la página de inicio indica «Auto registration: off» u «on». Púlsala para abrir los ajustes. Tanto en la parte superior de For you como en Settings puedes elegir entre desactivado (por defecto: solo entra lo que registráis tú y el agente), escalonado, totalmente automático o preguntar siempre. Consulta [Qué se registra](./auto-register). Más abajo, «Handled automatically» muestra lo registrado sin preguntar. Con un clic puedes deshacer el registro (se detiene la cuenta atrás y el elemento queda en su sitio) o prolongar la vida útil.
+- Si un elemento caduca pero no se puede enterrar, por ejemplo porque otro programa mantiene abierto el archivo, aparece en «Burials that failed» de For you, con el motivo y la fecha del siguiente intento. Obituary reintenta a intervalos cada vez mayores. Tras varios fallos se detiene: «Retry» vuelve a intentarlo ahora y «Stop tracking» deja el elemento en su sitio sin seguirlo.
 - Mientras Docker no esté en ejecución, no podrás aprobar propuestas de contenedores. La tarjeta explica el motivo. Podrás aprobarlas cuando Docker esté en marcha.
 - Al confiar en un archivo `.obitrules`, solo confías en la versión exacta que aparece en la ventana.
 - La ventana, la bandeja y el menú contextual usan `[ui] language` de `config.toml` (`auto`, `zh-CN` o `en`; `auto` sigue el idioma de Windows). También puedes cambiarlo en los ajustes.
@@ -81,13 +113,3 @@ macOS y Linux todavía no tienen menú contextual. Usa `obit mark <path> 7d` par
 Para omitirlos durante la instalación, usa `obit init --no-context-menu` para el menú contextual y `--no-shortcuts` para los accesos directos de Inicio y del escritorio.
 
 Las fechas de entierro del Explorador se explican en [Políticas de carpetas](./folder-policies#dates-in-explorer).
-## Comparación de cuatro plataformas
-
-| Plataforma | Ventana | Bandeja o barra de menús | Inicio y notificaciones | Menú contextual y fechas | Arquitectura y dependencia | Tras desinstalar |
-| --- | --- | --- | --- | --- | --- | --- |
-| Windows | `obit-gui.exe` | Área de notificación | Tarea programada y opción de iniciar sesión | Menú contextual y fechas del Explorador | x64; requiere WebView2 | Se quitan programas e integraciones; los datos quedan |
-| Vista previa de escritorio macOS | `Obituary.app` universal | Barra de menús | LaunchAgent y notificaciones opcionales | Sin menú contextual ni fechas de Finder | Intel y Apple; app sin firma ni notarización | Se quitan app y LaunchAgent; los datos CLI quedan |
-| Vista previa Ubuntu 24.04 | Ventana del `.deb` | Bandeja StatusNotifierItem | XDG autostart y notificaciones opcionales | Sin menú contextual ni fechas | Solo amd64; GTK 3 y WebKitGTK 4.1 | Se quitan paquete y autostart; los datos quedan |
-| macOS/Linux solo CLI | No hay ventana | No hay bandeja | launchd, systemd o crontab | Sin menú contextual ni fechas | CLI x64 y ARM64 | Se quitan programas y servicios; los datos quedan |
-
-Verifica SHA-256 antes de usar paquetes sin firma o de vista previa. En macOS sigue el [procedimiento de primer inicio](#abrir-una-app-sin-firma-por-primera-vez). El modo recycle no admite `resurrect`.

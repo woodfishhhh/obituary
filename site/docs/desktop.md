@@ -2,31 +2,50 @@
 
 不会用命令行，也能复活文件、批准提议、改设置。
 
+## 三个平台上有什么
+
+小窗口、托盘和桌面通知，Windows、macOS 和 Ubuntu 24.04 上都有；右键菜单、资源管理器里的日期标签和回收站模式只有 Windows 有。macOS 和 Ubuntu 的桌面版目前是预览版。其他 Linux 发行版没有桌面版，用命令行。
+
+| | Windows | macOS | Ubuntu 24.04 |
+| --- | --- | --- | --- |
+| 小窗口 | `obit-gui.exe`，只有 x64 | `Obituary.app`，Intel 和 Apple 芯片通用 | `.deb` 安装包，只有 amd64 |
+| 托盘 | 任务栏通知区 | 菜单栏 | 托盘，需要桌面提供 StatusNotifierItem |
+| 登录时启动托盘 | `obit init` 默认开启 | 设置里开关 | 设置里开关 |
+| 到期清理 | 托盘常驻进程，任务计划兜底 | launchd 用户代理，每 5 分钟 | systemd 用户定时器，每 5 分钟 |
+| 桌面通知 | 有 | 有 | 有 |
+| 右键菜单 | 资源管理器 | 无 | 无 |
+| 资源管理器里的日期标签 | 有 | 无 | 无 |
+| 回收站模式 | 有 | 无，只有墓地 | 无，只有墓地 |
+| 安装方式 | 安装脚本、Scoop、winget 或压缩包 | DMG | `.deb` |
+| 第一次打开 | 手动下载的压缩包可能遇到 SmartScreen 提示 | 要手动放行，见[下文](#第一次打开未签名-app) | 直接打开 |
+| 系统要求 | WebView2 运行时 | 1.6.0 需要 macOS 26，1.6.1 修复 | GTK 3、WebKitGTK 4.1，apt 自动安装 |
+
 ## macOS 小窗口和菜单栏图标
 
-从同一个发布版本下载通用 macOS DMG 和 checksums.txt。先核对 SHA-256，再打开 DMG，把 Obituary.app 拖到「应用程序」或用户的 Applications 文件夹；启用登录启动前先弹出 DMG。
+从发布页下载通用 DMG（`obituary_<版本>_darwin_universal.dmg`）和 `checksums.txt`，核对 SHA-256 之后打开 DMG，把 Obituary.app 拖进「应用程序」，弹出 DMG，再从「应用程序」里打开它。先拖出来再打开，是因为登录启动项记的是 app 所在的位置，从 DMG 里直接运行的话，弹出 DMG 之后这个位置就不存在了。
 
-这个 app 里有 Wails 小窗口、菜单栏图标，以及配套的 obit 和 obitd。每 5 分钟运行一次的 launchd 用户代理仍是独立的兜底任务。在设置页打开「随登录启动托盘」会安装讣告自己的用户 LaunchAgent；关闭它只会移除这一项。
+app 里有小窗口、菜单栏图标，以及配套的 `obit` 和 `obitd`。到期清理由另一个 launchd 用户代理负责，每 5 分钟运行一次，用 `obit daemon enable` 安装，关掉窗口和菜单栏图标不影响它。在设置页打开「开机启动托盘」，会安装讣告自己的用户 LaunchAgent，让菜单栏图标随登录出现；关掉它，只移除这一项。
 
 ### 第一次打开未签名 app
 
-这个发布包没有 Developer ID 签名，也没有公证。确认下载自可信发布页并核对 SHA-256 后，先尝试打开一次。如果 macOS 提示无法验证开发者，打开「系统设置 → 隐私与安全性」，在讣告对应位置选择「仍要打开」，确认系统提示后再打开。不要全局关闭 Gatekeeper，也不要递归清除隔离属性；如果系统报告 app 已损坏、包含恶意软件，或公司策略禁止放行，请停止。
+这个发布包没有 Developer ID 签名，也没有公证，所以 macOS 第一次会拦一下。确认下载自可信的发布页、核对过 SHA-256 之后，先正常打开一次。如果系统提示无法验证开发者，打开「系统设置 → 隐私与安全性」，在页面下方找到讣告，点「仍要打开」，再确认一次，然后重新打开。不要为此全局关掉 Gatekeeper，也不要递归清除隔离属性。系统如果报告 app 已损坏、含有恶意软件，或者公司策略不允许放行，就到此为止。
 
-### Homebrew Cask 方案
+### 1.6.0 需要 macOS 26
 
-Cask 应安装同一个通用 DMG，把 Obituary.app 复制到「应用程序」，并从 app bundle 提供 obit 和 obitd。在桌面 DMG 有稳定发布地址并完成卸载回执复核前，现有 CLI 压缩包 cask 与桌面 cask 分开。
+1.6.0 的 macOS 小窗口需要 macOS 26。在 macOS 15 及更早的系统上，系统会提示 app 与当前版本不兼容，打不开。这个问题 1.6.1 修复。
+
 ## Ubuntu 24.04（amd64）
 
-从同一个发布版本下载桌面包 `obituary_<版本>_linux_amd64.deb` 和 `checksums.txt`。在下载目录运行以下命令，把 `VERSION` 换成实际版本号，校验成功后再安装：
+从发布页下载桌面包 `obituary_<版本>_linux_amd64.deb` 和 `checksums.txt`。在下载目录运行下面的命令，把 `VERSION` 换成实际版本号，校验成功后才会安装：
 
 ```bash
 file=obituary_VERSION_linux_amd64.deb
 grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt install "./$file"
 ```
 
-从应用列表打开「讣告」。小窗口使用 GTK 3 和 WebKitGTK 4.1，依赖由 apt 安装。希望下次登录桌面时启动托盘，在设置页打开「随登录启动托盘」；关闭同一开关会移除讣告自己的 XDG 自启项。
+装好后从应用列表打开「讣告」。小窗口用 GTK 3 和 WebKitGTK 4.1，apt 会一并装上。程序放在 `/usr/libexec/obituary/`，不在 PATH 里；要在终端里用 `obit`，另外用安装脚本装一份命令行。
 
-托盘需要支持 StatusNotifierItem 的宿主。GNOME 没有宿主时，仍可从应用列表打开同一窗口，无需安装扩展。卸载时先关闭托盘自启并退出托盘，再运行 `sudo apt remove obituary-desktop`；墓地、设置、原有 CLI 和用户定时器都会保留。
+托盘需要桌面提供 StatusNotifierItem，GNOME 默认没有，这时从应用列表打开同一个窗口，不用装任何扩展，只是没有托盘图标。想让托盘在下次登录时自动出现，在设置页打开「开机启动托盘」；关掉它，会删除讣告自己写的自启项。卸载见[卸载](./uninstall)。
 
 ## Windows 托盘
 
@@ -97,13 +116,3 @@ macOS 和 Linux 还没有右键菜单，先用命令：`obit mark <路径> 7d` �
 安装时就不想要：`obit init --no-context-menu` 不装右键菜单，`--no-shortcuts` 不建开始菜单和桌面快捷方式。
 
 资源管理器里显示下葬日期的做法见[文件夹策略](./folder-policies#资源管理器里的日期)。
-## 四个平台能力对照
-
-| 平台 | 小窗口 | 托盘或菜单栏 | 登录自启与通知 | 右键菜单与日期 | 架构与依赖 | 卸载后 |
-| --- | --- | --- | --- | --- | --- | --- |
-| Windows | 有 `obit-gui.exe` | 任务栏通知区 | 任务计划兜底；托盘可随登录启动并发通知 | 资源管理器右键菜单和日期标签 | x64；需要 WebView2 | 程序、集成和自启可移除，墓地、账本和配置默认保留 |
-| macOS 桌面预览版 | 有通用 `Obituary.app` | 菜单栏 | LaunchAgent 可随登录启动并通知 | 没有右键菜单或 Finder 日期标签 | Intel 与 Apple 芯片；DMG app 未签名或公证 | app 和 LaunchAgent 可移除，CLI 数据默认保留 |
-| Ubuntu 24.04 桌面预览版 | 有 `.deb` 内的小窗口 | 支持 StatusNotifierItem 的托盘 | XDG 自启可选并发送桌面通知 | 没有右键菜单或文件管理器日期标签 | 仅 amd64；GTK 3、WebKitGTK 4.1 | `.deb`、自启和托盘移除，墓地和设置保留 |
-| 仅 CLI 的 macOS/Linux | 没有小窗口 | 没有托盘或菜单栏 | launchd 或 systemd 用户调度；也可使用 crontab | 没有右键菜单或日期标签 | macOS/Linux 提供 x64 与 ARM64 CLI | 程序和服务移除，用户数据默认保留 |
-
-Windows 和 Ubuntu 的未签名或预览包先核对 SHA-256；macOS 第一次打开未签名 app 按[放行步骤](#第一次打开未签名-app)操作。回收站模式不提供 `resurrect`。

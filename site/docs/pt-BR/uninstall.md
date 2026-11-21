@@ -1,35 +1,60 @@
 # Desinstalação
 
+Desinstalar tem duas etapas: primeiro o Obituary remove o que configurou, depois você apaga os programas em si. O cemitério e o registro ficam por padrão, de modo que os arquivos que você enterrou ainda podem ser ressuscitados depois.
+
 ```powershell
-obit uninstall --dry-run      # see what would be removed
-obit uninstall                # remove everything Obituary set up, after you confirm
-.\install.ps1 -Uninstall      # if you used the install script: also remove the program files, PATH entry and Start menu shortcut
+obit uninstall --dry-run      # lista o que seria removido; não altera nada
+obit uninstall                # mostra o plano e o aplica depois que você confirmar
 ```
 
-`obit uninstall` remove apenas o que o Obituary adicionou: hooks dos agentes, MCP e Skill instalados para o usuário e para o projeto Git atual, inicialização automática no login, tarefa agendada, daemon em execução, menu de contexto, datas exibidas no Explorador de Arquivos e políticas de pastas.
+Se você instalou pelo script no Windows, um comando basta:
 
-## O cemitério e o registro são preservados
+```powershell
+.\install.ps1 -Uninstall      # executa obit uninstall --yes por você e depois remove os arquivos do programa, a entrada do PATH que ele adicionou e seu atalho do menu Iniciar
+```
 
-Por padrão, o cemitério e o registro são preservados. O comando informa onde fica o cemitério e quanto há nele. Se quiser excluir os dois, acrescente `--purge-data`. O comando lista o conteúdo do cemitério e pede uma nova confirmação.
+## O que é removido
 
-## Hooks em outros projetos
+`obit uninstall` trabalha no nível do usuário e no projeto Git atual: os hooks, o MCP e a Skill de cada agente, a tarefa agendada que roda a cada 5 minutos (o Agendador de Tarefas no Windows, um agente de usuário do launchd no macOS, um timer de usuário do systemd no Linux), o processo residente e o ícone da bandeja, e as políticas de pastas (os arquivos sob uma política ficam onde estão). No Windows, também remove a entrada de inicialização no login, o menu de contexto do Explorador de Arquivos e as etiquetas de data do Explorador.
 
-Se você também instalou hooks locais em outros projetos, execute `obit uninstall` em cada um antes de remover o programa. Caso contrário, esses hooks vão parar de funcionar quando não encontrarem mais `obit`.
+Ele só mexe no que o próprio Obituary escreveu. Uma entrada que você editou, ou que outra instalação deixou, é mantida como está, e o plano diz qual e por quê. Onde não há terminal (um script, a linha de comando de um agente), acrescente `--yes`; sem ele, o comando para e avisa que precisa de um terminal.
 
-## Scoop e winget
+Há três coisas que ele não faz por você. Os arquivos do programa são apagados conforme o modo como você instalou (veja abaixo). Se você instalou hooks no nível de projeto em outros projetos, execute `obit uninstall` em cada um deles antes de remover os programas, ou os hooks de lá vão falhar porque `obit` não existirá mais. E, no macOS e no Linux, a entrada de inicialização da bandeja não está na lista: antes de desinstalar, desative “Start the tray at sign-in” em Settings na janela, o que remove a entrada que o Obituary escreveu. No Windows, `obit uninstall` cuida da inicialização da bandeja, mas os atalhos do menu Iniciar e da área de trabalho criados por `obit init` não estão na lista dele; `obit init --uninstall` os remove.
 
-Execute primeiro `obit uninstall` e depois o comando de desinstalação do gerenciador de pacotes que usou.
-## Escopo da desinstalação e dados
+## O cemitério, o registro e sua configuração
 
-`obit uninstall --dry-run` lista itens removíveis para o usuário e o projeto Git atuais. O comando remove hooks, MCP, Skills, bandeja, inicialização e agendadores, mas não altera outros projetos; execute-o em cada um deles.
+Três coisas ficam por padrão: os arquivos do cemitério, o registro com o log de auditoria e o `config.toml`. `obit uninstall` diz quanto ainda há no cemitério e onde ele está, e uma reinstalação posterior retoma tudo. Se você usa o modo Lixeira, o que expirou já está na Lixeira do sistema; a desinstalação não mexe nela, e a restauração é feita a partir dela, porque `obit resurrect` não a alcança.
 
-| Item | Windows | macOS | Linux |
-| --- | --- | --- | --- |
-| Programa | `obit`, `obitd`, `obit-gui` opcional | `/Applications/Obituary.app` ou diretório CLI | Diretório CLI; desktop em `.deb` |
-| Hook, MCP, Skill | Configuração do agent | Configuração do agent | Configuração do agent |
-| Agendamento | Tarefa, processo residente e bandeja | LaunchAgent e barra de menus | Timer systemd e XDG autostart |
-| Projeto | Partes adicionadas a `.claude/` e `.codex/` | Configuração do projeto | Configuração do projeto |
+Quando você realmente quiser apagar tudo, acrescente `--purge-data`:
 
-Os dados padrão ficam em `%LOCALAPPDATA%\obituary` e `%APPDATA%\obituary` no Windows, `~/Library/Application Support/obituary` no macOS e `$XDG_DATA_HOME/obituary` no Linux (`~/.local/share/obituary` sem a variável). `OBIT_HOME`, `OBIT_CONFIG_DIR` e `OBIT_USER_HOME` redirecionam esses locais; `.obituary` também pode existir no mesmo volume.
+```powershell
+obit uninstall --purge-data
+```
 
-Cemitério, registro, auditoria e configuração são preservados. `--purge-data` remove apenas dados próprios e verificados do cemitério, mantendo arquivos desconhecidos. No modo recycle, restaure pela lixeira, não por `resurrect`.
+Ele lista primeiro cada item do cemitério e pede mais uma confirmação depois que você confirma o plano de desinstalação. Depois apaga esses arquivos de forma permanente, junto com o registro, o log de auditoria e os demais arquivos que o Obituary mantém, e por fim o diretório de dados. Em um script, `--yes --purge-data` juntos pulam as duas perguntas. Ele só apaga arquivos que reconhece: se o diretório de dados tiver outros arquivos, ou uma subpasta que o Obituary não conhece, a limpeza para ali, deixa o diretório como está e diz qual é. O `config.toml` nunca faz parte da limpeza. No macOS ele fica na mesma pasta que o registro, então tire-o de lá antes de limpar; do contrário, a limpeza para nele.
+
+## Remover os programas
+
+Como remover os programas depende de como você os instalou.
+
+| Instalado com | Remover com |
+| --- | --- |
+| O script de instalação do Windows | `.\install.ps1 -Uninstall` |
+| Scoop | `obit uninstall` e depois `scoop uninstall obituary` |
+| winget | `obit uninstall` e depois `winget uninstall woodfishhhh.Obituary` |
+| A janela do macOS (DMG) | `obit uninstall` e desativar “Start the tray at sign-in”; depois arrastar o Obituary.app de Aplicativos para o Lixo |
+| Homebrew | `obit uninstall` e depois `brew uninstall --cask obituary` |
+| `install.sh` no macOS ou no Linux | `obit uninstall` e depois apagar `obit` e `obitd` de `~/.local/bin` |
+| O pacote de desktop do Ubuntu (`.deb`) | desativar “Start the tray at sign-in” e sair da bandeja; depois `sudo apt remove obituary-desktop` |
+
+O app do macOS e o `.deb` do Ubuntu trazem cada um o seu `obit`, mas nenhum deles o coloca no seu PATH. Se você não instalou a linha de comando separadamente, execute-o pelo caminho completo antes de desinstalar: `/Applications/Obituary.app/Contents/MacOS/obit` no app, `/usr/libexec/obituary/obit` no `.deb`. `apt remove` apaga os programas dessa pasta e deixa seu cemitério, suas configurações e qualquer linha de comando que você tenha instalado de outro jeito.
+
+## Onde ficam os dados
+
+| | Dados (registro, cemitério, logs) | Configuração (`config.toml`) |
+| --- | --- | --- |
+| Windows | `%LOCALAPPDATA%\obituary` | `%APPDATA%\obituary` |
+| macOS | `~/Library/Application Support/obituary` | a mesma pasta |
+| Linux | `~/.local/share/obituary` | `~/.config/obituary` |
+
+No Linux, se `XDG_DATA_HOME` ou `XDG_CONFIG_HOME` estiverem definidas, cada uma é a pasta `obituary` dentro dela. As variáveis de ambiente `OBIT_HOME` e `OBIT_CONFIG_DIR` levam os dados e a configuração para outro lugar, e `obit config` mostra quais estão em uso. No disco que contém o diretório de dados, o cemitério é a pasta `graveyard` dele; nos outros discos, é uma pasta oculta `.obituary` na raiz do disco, para que enterrar seja sempre uma renomeação dentro de um mesmo disco e nunca uma cópia.

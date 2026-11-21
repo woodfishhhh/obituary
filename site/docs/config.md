@@ -1,44 +1,82 @@
 # 配置参考
 
-讣告读取配置目录中的 `config.toml`。所有键都可以省略；省略时使用下表的默认值。`obit config` 显示文件位置和当前生效值。
+讣告的设置都写在配置目录里的 `config.toml`。这个文件不是必须的：没有它，或者里面只写了几项，其余的都用默认值。`obit config` 会告诉你文件在哪、有没有创建、每一项现在实际取什么值；`obit config --create` 写出一份带注释、取值全是默认值的文件，从它开始改最省事。
 
-## 配置键
+配置目录在 Windows 上是 `%APPDATA%\obituary`，在 macOS 上是 `~/Library/Application Support/obituary`，在 Linux 上是 `~/.config/obituary`（设了 `XDG_CONFIG_HOME` 就在它下面的 `obituary`）。想换个位置，设环境变量 `OBIT_CONFIG_DIR`。
 
-| 键 | 默认值 | 可选值或格式 | 作用 |
-| --- | --- | --- | --- |
-| `codex_windows_shell` | 未设置 | `bash`、`powershell` | 声明 Windows 上 Codex 使用的 shell；未设置时不改写含糊的删除命令。 |
-| `agent_shells.<agent>` | 未设置 | `bash`、`powershell` | 为指定 hook agent 声明 Windows shell。 |
-| `graveyard.mode` | `graveyard` | `graveyard`、`recycle` | 到期后移入墓地，或交给系统回收站。 |
-| `graveyard.retention_days` | `7` | `1` 到 `3650` 的整数 | 墓地项目可复活的天数。 |
-| `watch.stable_window` | `10m` | Go 时长格式，例如 `30s`、`10m`、`1h` | 文件夹策略等待文件稳定后再移动的时间。必须为正数。 |
-| `explorer.enabled` | `true` | `true`、`false` | 是否写入资源管理器日期标签。 |
-| `explorer.everywhere` | `false` | `true`、`false` | 是否在所有受支持文件夹中显示日期。 |
-| `explorer.in_git` | `false` | `true`、`false` | 是否在 Git 工作区内显示日期。 |
-| `ui.language` | `auto` | `auto`、`en`、`zh-CN` | CLI、窗口和托盘使用的语言。 |
-| `ui.tray` | `true` | `true`、`false` | 是否启用托盘或菜单栏入口。 |
-| `ui.taskbar` | `true` | `true`、`false` | Windows 窗口是否在任务栏显示独立图标。 |
-| `hooks.session_summary` | `false` | `true`、`false` | 是否在会话开始时显示摘要。 |
-| `hooks.session_cleanup` | `true` | `true`、`false` | 是否在会话结束时整理本次新建且未归类的文件。 |
-| `proposals.mode` | `off` | `off`、`tiered`、`auto`、`ask` | 自动登记等待批准的范围。 |
-| `update.check` | `true` | `true`、`false` | 是否自动检查正式版本更新。 |
-| `telemetry.enabled` | `true` | `true`、`false` | 是否允许使用统计上报。与更新检查独立。 |
+| 键 | 默认值 | 可选值 |
+| --- | --- | --- |
+| `graveyard.mode` | `graveyard` | `graveyard`、`recycle` |
+| `graveyard.retention_days` | `7` | 1 到 3650 的整数 |
+| `proposals.mode` | `off` | `off`、`tiered`、`auto`、`ask` |
+| `hooks.session_cleanup` | `true` | `true`、`false` |
+| `hooks.session_summary` | `false` | `true`、`false` |
+| `watch.stable_window` | `10m` | 正的时长，如 `30s`、`10m`、`1h30m` |
+| `explorer.enabled` | `true` | `true`、`false` |
+| `explorer.everywhere` | `false` | `true`、`false` |
+| `explorer.in_git` | `false` | `true`、`false` |
+| `ui.language` | `auto` | `auto`、`en`、`zh-CN` |
+| `ui.tray` | `true` | `true`、`false` |
+| `ui.taskbar` | `true` | `true`、`false` |
+| `update.check` | `true` | `true`、`false` |
+| `telemetry.enabled` | `true` | `true`、`false` |
+| `agent_shells` | 未设置 | 表，键是 agent 名，值是 `bash` 或 `powershell` |
+| `codex_windows_shell` | 未设置 | `bash`、`powershell` |
 
-`agent_shells` 是按 agent 名称展开的表，例如 `[agent_shells] codex = "powershell"`。`codex_windows_shell` 是兼容 Codex 的旧写法；两者同时设置且值不同会报错。
+## 到期之后去哪儿
 
-## 格式和错误
+默认情况下，寿命用完的东西进讣告自己的墓地，`graveyard.retention_days` 天内（默认 7 天）可以用 `obit resurrect` 放回原处，过了这个期限才被永久删除。这个天数可以在 1 到 3650 之间调整。
 
-时长使用 Go 的格式：数字后接 `ns`、`us`、`ms`、`s`、`m` 或 `h`，可以组合，例如 `1h30m`。墓地保留天数必须在 `1` 到 `3650` 之间。`graveyard.mode`、`ui.language` 和 `proposals.mode` 只能使用表中的值。
+把 `graveyard.mode` 改成 `recycle`，到期的东西就交给系统回收站，由 Windows 自己管；它只在 Windows 上有，macOS 和 Linux 只有墓地。进了回收站的东西要在回收站里还原，`obit resurrect` 找不到它们。
 
-未知键不会静默忽略。讣告会报告配置文件路径、行号和完整键名；拼写接近已知键时还会给出建议。TOML 语法错误也会让 `obit config` 失败，请修正文件后再试。
+## 自动登记和 agent 会话
 
-## 常用操作
+`proposals.mode` 决定讣告会不会自己给文件登记寿命。默认的 `off` 什么都不自动做，只有 agent 或你用命令、右键菜单、文件夹策略登记的东西才进来。`tiered` 让 agent 在本次会话里新建的文件、会话启动的容器直接进来，事后告诉你，不想要可以用 `obit spare` 撤回；其余的先放进 `obit proposals`，等你批准。`auto` 把自动登记发现的一切直接登记，事后告诉你。`ask` 则每一项都先问你。不论哪一档，Git 已经跟踪的文件，以及依赖、构建产物和缓存（`node_modules`、`dist`、`__pycache__` 之类）都不会被自动登记。详细规则见[什么进讣告](./auto-register)。
 
-```powershell
-obit config
-obit config --create
-obit config --language en
-obit config telemetry off
-obit config telemetry on
+`hooks.session_cleanup` 默认开着。agent 每个会话在快要结束时，会被告知它这次新建、还没有寿命、Git 也没有跟踪的文件，并请它给临时文件登记寿命（`obit mark`）或者下葬，交付物留着不动。`hooks.session_summary` 默认关着；打开后，agent 在会话开始时还会听到项目里 24 小时内到期的东西和最近下葬的东西。它默认关闭是为了省 token：agent 碰到已下葬的路径时，本来就会被告知。
+
+## 文件夹策略和资源管理器里的日期
+
+`watch.stable_window` 是文件夹策略的耐心：新文件出现后，要连续这么久没有变化，才会被移动，免得把还在下载的文件移走。它写成 Go 的时长格式，数字后面跟 `s`、`m` 或 `h`，可以连写，比如 `1h30m`，而且必须大于零。
+
+`explorer.*` 只对 Windows 有意义。讣告会让资源管理器在文件名旁显示下葬日期，真实的文件名不变。默认只在「下载」、桌面（含子文件夹）和文件夹策略管着的位置显示；`explorer.everywhere` 打开后，其他受跟踪的位置也显示；Git 工作区默认不显示，要显示就把 `explorer.in_git` 设为 `true`；`explorer.enabled` 设为 `false` 则完全不写。见[文件夹策略](./folder-policies)。
+
+## 界面
+
+`ui.language` 管命令行、小窗口、托盘和右键菜单的语言，目前只有 `en` 和 `zh-CN`；`auto` 依次看环境变量 `OBIT_LANG`、`LC_ALL`、`LC_MESSAGES`、`LANG` 和系统界面语言。`ui.tray` 控制托盘图标（macOS 上是菜单栏图标）的显示，隐藏之后后台清理和更新检查照常进行。`ui.taskbar` 只对 Windows 有效，决定小窗口打开时是否在任务栏占一个按钮。
+
+## 更新检查和使用统计
+
+`update.check` 开着时，讣告每天最多读一次 GitHub 上公开的发布信息，不发送任何使用数据；关掉后仍可以随时用 `obit update --check` 手动检查。`telemetry.enabled` 控制匿名的使用统计，它和更新检查是两个独立的开关，`obit config telemetry off` 只关统计，并清掉本机的安装 ID 和待发的数据。详情见[隐私政策](./privacy)。
+
+## Windows 上 agent 用哪种 shell
+
+删除护栏要读懂 agent 要执行的删除命令，才能给出等价的 `obit` 命令。Windows 上的 agent 可能用 bash，也可能用 PowerShell，讣告自己分辨不了，所以由你来声明：这个 agent 就在这台 Windows 电脑上，用这种 shell 执行命令。没有声明时，意思含糊的命令一律放行，不拦。
+
+```toml
+[agent_shells]
+codex = "powershell"
 ```
 
-`--create` 只在配置文件不存在时写入带注释的默认模板。`--language` 修改界面语言；`auto`、`en` 和 `zh-CN` 是唯一接受的值。`telemetry on|off` 只切换 `telemetry.enabled`，不会改变 `update.check`；需要分别编辑 `[update] check`。
+`agent_shells` 里的键是 agent 的名字，目前读取它的有 `codex`、`codebuddy`、`codebuddy-ide` 和 `minimax-code`。`codex_windows_shell` 是只给 Codex 的旧写法，和 `agent_shells.codex` 同时出现且值不一样时，配置会被拒绝。
+
+## 写错了会怎样
+
+讣告不会悄悄忽略写错的键。如果忽略，`retention = 30` 会让 7 天的保留期原样生效，而你以为已经改成了 30。所以遇到不认识的键，`obit config` 会报出文件路径、行号和完整的键名，拼写接近时还会给出建议：
+
+```text
+obit: config file has errors: …\config.toml:2: unknown key "graveyard.retention" (did you mean "graveyard.retention_days"?)
+```
+
+取值超出范围时同样会指出是哪一项、允许什么，比如 `graveyard.retention_days must be between 1 and 3650`。TOML 语法错误也一样让 `obit config` 失败。改好文件再运行一次，不再报错就是好了。
+
+## 常用命令
+
+```powershell
+obit config                  # 文件位置、数据目录和当前生效的值
+obit config --create         # 写出带注释的默认文件
+obit config --language en    # 把界面语言写进配置：auto、en 或 zh-CN
+obit config telemetry off    # 关闭使用统计（on 重新打开）
+```
+
+`--create` 不会覆盖已有的文件，文件已经存在时它会报错并退出。`--language` 在文件不存在时会连同默认内容一起创建。
