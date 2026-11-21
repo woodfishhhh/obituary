@@ -27,6 +27,7 @@ Obituary の台帳、墓地、ログ、設定は端末内に保存されます�
 
 - Scoop、winget、インストールスクリプトは [GitHub Releases](https://github.com/woodfishhhh/obituary/releases) からアーカイブを取得します。[GitHub のプライバシー声明](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement)が適用されます。
 - ミラー（`-Mirror cn`）を使うと、取得元は `cn.obituary.woodfish.site` になります。このサーバーは障害調査のために通常のアクセスログ（時刻、IP アドレス、要求された URL）を保存します。
+- アプリ内の更新（ウィンドウの「Update now」または「Download and restart to update」、`obit update --apply`）は、リリースのアーカイブと `checksums.txt` を GitHub Releases から取得します。GitHub が 10 秒以内に応答しない場合は `cn.obituary.woodfish.site` から取得します。リクエストに含まれるのは IP アドレスと Obituary のバージョンを示す User-Agent だけで、利用データは送信しません。
 - リリース時に GitHub Actions がミラーにファイルを転送します。ミラーは自身のサーバーでファイルを検証して配信し、利用者のダウンロード要求を GitHub に転送しません。
 
 ## エージェントとの接続

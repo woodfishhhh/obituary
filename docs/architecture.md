@@ -389,6 +389,7 @@ POSIX 没有「在同一个源句柄上改名」，所以换一种做法：先�
 | `proposal-log.json` / `proposal-log.lock` | 按项目保存上次提议刷新错误；共用锁文件以独占方式串行更新，临时文件经 `os.Root.Rename` 替换，常驻和各次 `--once` 共用去重状态 |
 | `update.json` / `update.lock` | 正式版更新检查缓存和独立的检查锁；缓存记录检查时间、ETag、发布说明和最近错误，不读写账本 |
 | `update-apply.json` / `update-apply.lock` / `update-*.log` | 上次应用更新结果、独占执行锁和逐次升级日志，与检查缓存分开写 |
+| `update-progress.json` | 升级助手当前所处阶段（`starting` / `downloading` / `verifying` / `ready` / `installing` / `done` / `failed`）和下载字节数，供还开着的窗口轮询；每次升级在确认交接前先重写，不会读到上一次的结果 |
 | `*.lock`、`obitd.stop` | 锁文件；常驻进程的停止信号 |
 
 配置目录 `%APPDATA%\obituary`（`OBIT_CONFIG_DIR` 可改）：`config.toml`，所有键都可省略。项目里只有 `.obit/`（`mktemp` 的临时目录），自动写进 `.git/info/exclude`。
@@ -438,7 +439,11 @@ POSIX 没有「在同一个源句柄上改名」，所以换一种做法：先�
 
 `[update] check` 默认开启；关闭后自动检查静默返回，显式 `CheckUpdate` / `obit update --check` 允许手动查询。测试环境通过 `OBIT_TEST_NO_UPDATE=1` 阻止默认端点请求，HTTP 测试显式注入本机服务器。缓存复用账本的共享删除读取和原子替换辅助函数，与账本使用不同的锁。
 
-安装方式按程序路径判断 Scoop、WinGet、Homebrew，脚本安装由同目录的 `.obituary-install.json` 标识。GUI 的 `Update` 只读检查缓存和上次升级结果；有新正式版时才可执行升级，其他安装方式给出发布页。包管理器用固定参数列表调用，脚本安装只用 HTTPS 从目标 tag 下载（镜像安装先试镜像的同版本目录，取不到再试 GitHub 的 tag，归档仍由脚本按原渠道下载和校验）。查询新版本不会自动启动升级。
+安装方式按程序路径判断 Scoop、WinGet、Homebrew，脚本安装由同目录的 `.obituary-install.json` 标识。GUI 的 `Update` 只读检查缓存和上次升级结果；有新正式版时才可执行升级；手动安装满足下面的条件时同样可以，否则给出发布页和不满足的那一条。包管理器用固定参数列表调用，脚本安装只用 HTTPS 从目标 tag 下载（镜像安装先试镜像的同版本目录，取不到再试 GitHub 的 tag，归档仍由脚本按原渠道下载和校验）。查询新版本不会自动启动升级。
+
+**手动安装的原地升级。** 没有安装回执、也不在 Scoop / WinGet / Homebrew 路径下的安装（`DetectChannel` 仍返回 `other`，统计里的渠道名不变）满足下面全部条件才算 `manual`，由 `update.Inspect` / `update.Review` 判断并给出不满足的那一条（`dev` / `platform` / `bundle` / `files` / `write`，窗口逐条翻译）：运行的是正式发布版（开发和本地构建不行）；这个系统和架构有发布包；不在 `.app` 包里；发布包里讣告自己的全部程序（Windows amd64 是 `obit.exe`、`obitd.exe`、`obit-gui.exe`，arm64 没有窗口，macOS / Linux 是 `obit`、`obitd`）都在运行程序所在的目录且是普通文件（链接、目录、被改名的运行程序都不行）；当前用户能在该目录建文件（建一个自己命名的探测文件再删掉，不需要管理员权限）。只有存在新版本时才探测目录，窗口每次打开不会碰它。
+
+这个目录是共用的（可能在 PATH 上，里面有别的工具），所以不用安装脚本（它写回执、改 PATH 和开始菜单），由 `plan.installManual` 自己做，只动发布包里的那几个程序：先从 GitHub 取 `checksums.txt`（10 秒内没有任何响应才改用国内镜像；HTTP 错误是 GitHub 的回答，不回退），再从同一处下载归档（上限 256 MiB，重定向只许 HTTPS），按 `checksums.txt` 里唯一的一行核对 SHA-256，核对之后才解包。只取归档顶层名字与程序完全相同的条目，以 `O_EXCL` 写进目录旁的 `.obituary-update-XXXX/new`（同一个卷，改名不会变成复制），其余条目一概忽略。这一阶段窗口还开着：助手把进度写进 `update-progress.json`，窗口轮询，到 `ready`（下载和核对都完成、还没动任何文件）才自己退出；失败时窗口保持打开并显示原因，助手不会再重开第二个窗口。之后助手等窗口退出、核对当前安装版本、停常驻进程，把旧程序逐个改名到 `old/`，再把新程序改名进目录，用新的 `obit --version` 确认版本。版本不对或新程序起不来，按相反顺序改名回去（整体回滚，错误里写明）；回滚本身失败时保留 `old/`，错误里写出位置，且不给它寿命。成功或回滚后，`.obituary-update-XXXX` 经 `ApplyHooks.Retire` 以 1 天寿命登记（等同 `obit mark … 1d`），到期下葬、可以复活。不删除任何文件，不写回执，目录里的其他东西不碰。`OBIT_UPDATE_BASE_URL` 只在是回环地址的 HTTP 时才改变下载源（与 `install.ps1 -BaseUrl` 的本机快照服务器同一例外），供端到端测试使用。
 
 Windows 的 `ApplyUpdate` 和 `obit update --apply` 都从 2 小时寿命的临时目录启动 `obit.exe` 副本，保留原安装路径及数据、配置目录。副本锁定调用方的进程句柄、拿到执行锁并创建日志后，经管道发回确认（调用方最多等 10 秒）；收到确认后旧进程退出，副本最多等 30 秒。副本先核对当前安装版本，再用已有的关闭回执停止常驻进程（等待互斥量释放、进程退出各最多 10 秒），执行升级（下载与安装共 10 分钟，单次脚本请求最多 10 秒），并重新读取安装后的版本（最多 10 秒）。无论成功还是失败，尝试恢复此前运行的常驻进程（最多 5 秒），写下结果后按需重新打开窗口。macOS / Linux 没有常驻模式和桌面窗口，CLI 在原进程中执行，不更改已有调度设置。
 

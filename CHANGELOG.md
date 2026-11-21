@@ -1,5 +1,14 @@
 # Changelog / 更新日志
 
+## Unreleased
+
+- 手动解压的版本也能在「关于与更新」里一键升级，按钮是「下载并重启更新」；终端里用 `obit update --apply`。讣告先从 GitHub 下载（不通就改用国内镜像），核对 SHA-256 之后才关闭窗口，只替换自己的程序（`obit`、`obitd`、`obit-gui`），文件夹里的其他文件一概不动；旧程序留一天后进墓地，仍可复活，任何一步失败都会整体回滚。运行的是开发版、文件夹里缺程序或需要管理员权限时，页面会写明是哪一条不满足。
+- A copy you unpacked yourself can now update from About and updates with one button, "Download and restart to update", or with `obit update --apply`. Obituary downloads from GitHub (from the mirror in mainland China when GitHub does not answer), checks the SHA-256, and only then closes the window and replaces its own programs (`obit`, `obitd`, `obit-gui`); every other file in the folder stays as it is. The previous programs wait for a day before going to the graveyard, where they can be resurrected, and any failed step rolls everything back. When it cannot update itself (a development build, a missing program, a folder that needs administrator rights), the page says which condition fails.
+- 更新窗口在下载时保持打开并显示进度，下载并核对完成后才关闭；下载失败时窗口留在原处并显示原因。
+- The window stays open and shows progress while the update downloads, and closes only once the download is checked; when the download fails it stays and shows why.
+- 「这一版改了什么」只显示窗口所用语言的那一段发布说明，没有对应语言时显示英文，不再把两种语言和中间的分隔线一起显示。
+- "What changed" now shows only the release notes in the window's language, in English when there is no translation, instead of both languages and the rule between them.
+
 ## 1.6.0 - 2026-11-21
 
 - Linux 小窗口预览版：Ubuntu 24.04（amd64）用户可安装 `.deb`，从应用列表或托盘打开小窗口、接收桌面通知，并选择登录时启动托盘。

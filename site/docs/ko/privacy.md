@@ -27,6 +27,7 @@ Obituary의 장부, 묘지, 로그, 설정은 사용자 컴퓨터에 보관됩�
 
 - Scoop, winget, 설치 스크립트는 [GitHub Releases](https://github.com/woodfishhhh/obituary/releases)에서 압축 파일을 내려받습니다. [GitHub 개인정보처리방침](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement)이 적용됩니다.
 - 미러(`-Mirror cn`)를 사용하면 `cn.obituary.woodfish.site`에서 내려받습니다. 서버는 문제 진단을 위해 일반적인 접속 로그(시각, IP 주소, 요청 URL)를 보관합니다.
+- 앱 안의 업데이트(창의 ‘Update now’ 또는 ‘Download and restart to update’, `obit update --apply`)는 릴리스 아카이브와 `checksums.txt`를 GitHub Releases에서 내려받으며, GitHub가 10초 안에 응답하지 않으면 `cn.obituary.woodfish.site`에서 내려받습니다. 요청에는 IP 주소와 Obituary 버전을 담은 User-Agent만 포함되며 사용 데이터는 보내지 않습니다.
 - 릴리스 시 GitHub Actions가 파일을 미러로 전송합니다. 미러는 파일을 직접 검증하고 제공하며 사용자의 다운로드 요청을 GitHub로 전달하지 않습니다.
 
 ## 에이전트 연결

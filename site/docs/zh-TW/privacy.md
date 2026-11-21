@@ -27,6 +27,7 @@
 
 - Scoop、winget 和安裝指令稿會從 [GitHub Releases](https://github.com/woodfishhhh/obituary/releases) 下載壓縮檔，適用 [GitHub 隱私權聲明](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement)。
 - 使用鏡像站（`-Mirror cn`）時，檔案來自 `cn.obituary.woodfish.site`。鏡像伺服器會保留一般的存取日誌（時間、IP 位址和請求的網址），以便排查問題。
+- 視窗中的「立即更新」「下載並重新啟動以更新」，以及 `obit update --apply`（含手動解壓縮的版本），會從 GitHub Releases 下載發行套件和 `checksums.txt`；GitHub 十秒內沒有回應時，改從 `cn.obituary.woodfish.site` 下載同一版本。請求只帶一般請求會帶的內容（IP 位址與標示訃告版本的 User-Agent），不傳送使用資料。
 - 發行新版本時，GitHub Actions 會將檔案推送到鏡像站。鏡像站在本機驗證並提供檔案，不會將你的下載請求轉給 GitHub。
 
 ## 接入 agent

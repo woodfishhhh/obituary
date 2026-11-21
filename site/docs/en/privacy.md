@@ -27,6 +27,7 @@ Disabling reporting clears the local installation ID and any pending report. Upd
 
 - Scoop, winget and the install script download the archives from [GitHub Releases](https://github.com/woodfishhhh/obituary/releases); [GitHub's privacy statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement) applies.
 - With the mirror (`-Mirror cn`) they come from `cn.obituary.woodfish.site`, whose server keeps ordinary access logs (time, IP address, requested URL) for troubleshooting.
+- In-app updates (Update now or Download and restart to update in the window, and `obit update --apply`) download the release archive and `checksums.txt` from GitHub Releases, or from `cn.obituary.woodfish.site` when GitHub does not answer within ten seconds. The requests carry only your IP address and a User-Agent with Obituary's version, and no usage data.
 - GitHub Actions pushes files to the mirror at release time. The mirror verifies and serves them locally; it does not forward your download request to GitHub.
 
 ## Connecting agents

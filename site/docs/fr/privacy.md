@@ -27,6 +27,7 @@ La désactivation efface l’identifiant d’installation local et tout rapport 
 
 - Scoop, winget et le script d’installation téléchargent les archives depuis [GitHub Releases](https://github.com/woodfishhhh/obituary/releases). La [déclaration de confidentialité de GitHub](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement) s’applique.
 - Avec le miroir (`-Mirror cn`), les archives viennent de `cn.obituary.woodfish.site`. Ce serveur tient des journaux d’accès ordinaires (heure, adresse IP, URL demandée) pour le diagnostic des problèmes.
+- Les mises à jour depuis l’application (« Update now » ou « Download and restart to update » dans la fenêtre, et `obit update --apply`) téléchargent l’archive de la version et `checksums.txt` depuis GitHub Releases, ou depuis `cn.obituary.woodfish.site` si GitHub ne répond pas en dix secondes. Les requêtes ne portent que votre adresse IP et un User-Agent indiquant la version d’Obituary, et aucune donnée d’usage n’est envoyée.
 - Lors de la publication, GitHub Actions envoie les fichiers au miroir. Celui-ci les vérifie et les distribue localement, sans transmettre votre demande de téléchargement à GitHub.
 
 ## Connexion des agents

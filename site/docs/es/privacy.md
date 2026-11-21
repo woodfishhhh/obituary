@@ -27,6 +27,7 @@ Al desactivar los informes se eliminan el identificador de instalación local y 
 
 - Scoop, winget y el script de instalación descargan los archivos comprimidos de [GitHub Releases](https://github.com/woodfishhhh/obituary/releases). Se aplica la [declaración de privacidad de GitHub](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement).
 - Con el espejo (`-Mirror cn`), proceden de `cn.obituary.woodfish.site`. El servidor lleva un registro de acceso ordinario (hora, dirección IP y URL solicitada) para diagnosticar problemas.
+- Las actualizaciones desde la aplicación («Update now» o «Download and restart to update» en la ventana, y `obit update --apply`) descargan el archivo de la versión y `checksums.txt` desde GitHub Releases, o desde `cn.obituary.woodfish.site` si GitHub no responde en diez segundos. Las solicitudes llevan solo tu dirección IP y un User-Agent con la versión de Obituary, y no se envían datos de uso.
 - Al publicar una versión, GitHub Actions envía los archivos al espejo. Este los verifica y los sirve localmente sin reenviar tu solicitud de descarga a GitHub.
 
 ## Conexión de agentes

@@ -27,6 +27,7 @@
 
 - Scoop, winget и установочный скрипт загружают архивы с [GitHub Releases](https://github.com/woodfishhhh/obituary/releases). При этом действует [положение GitHub о конфиденциальности](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement).
 - При выборе зеркала (`-Mirror cn`) файлы поступают с `cn.obituary.woodfish.site`. Для диагностики неполадок сервер ведёт обычные журналы доступа: время, IP-адрес и запрошенный URL.
+- Обновления из приложения («Update now» или «Download and restart to update» в окне и `obit update --apply`) скачивают архив выпуска и `checksums.txt` с GitHub Releases, а если GitHub не отвечает в течение десяти секунд — с `cn.obituary.woodfish.site`. В запросах только IP-адрес и User-Agent с версией Obituary; данные об использовании не отправляются.
 - При выпуске GitHub Actions отправляет файлы на зеркало. Зеркало проверяет и раздаёт их самостоятельно и не пересылает ваш запрос на загрузку в GitHub.
 
 ## Подключение агентов

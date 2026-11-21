@@ -27,6 +27,7 @@
 
 - Scoop、winget 和安装脚本从 [GitHub Releases](https://github.com/woodfishhhh/obituary/releases) 下载程序包，适用 [GitHub 的隐私声明](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement)。
 - 使用国内镜像（`-Mirror cn`）时从 `cn.obituary.woodfish.site` 下载；服务器只记录一般的访问日志（时间、IP、请求的地址），用于排查故障。
+- 窗口里的「立即更新」「下载并重启更新」和 `obit update --apply`（含手动解压的版本）从 GitHub Releases 下载发布包和 `checksums.txt`；GitHub 十秒内没有响应时，改从 `cn.obituary.woodfish.site` 下载同一版本。请求只带普通请求带的内容（IP 地址和写着讣告版本的 User-Agent），不发送使用数据。
 - GitHub Actions 在发布时将文件推送到国内镜像。镜像在本地校验并提供文件，不会把你的下载请求转发给 GitHub。
 
 ## 接入 agent

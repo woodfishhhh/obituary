@@ -27,6 +27,7 @@ Beim Abschalten werden die lokale Installations-ID und ausstehende Meldungen gel
 
 - Scoop, winget und das Installationsskript laden die Archive von [GitHub Releases](https://github.com/woodfishhhh/obituary/releases). Es gilt die [Datenschutzerklärung von GitHub](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement).
 - Mit `-Mirror cn` kommen die Dateien von `cn.obituary.woodfish.site`. Zur Fehlersuche führt dieser Server gewöhnliche Zugriffsprotokolle mit Uhrzeit, IP-Adresse und angeforderter URL.
+- App-interne Updates („Update now“ oder „Download and restart to update“ im Fenster sowie `obit update --apply`) laden das Release-Archiv und `checksums.txt` von GitHub Releases herunter, oder von `cn.obituary.woodfish.site`, wenn GitHub nicht innerhalb von zehn Sekunden antwortet. Die Anfragen enthalten nur die IP-Adresse und einen User-Agent mit der Obituary-Version, es werden keine Nutzungsdaten gesendet.
 - GitHub Actions überträgt die Dateien bei der Veröffentlichung auf den Spiegelserver. Dieser prüft sie und stellt sie lokal bereit, ohne deine Downloadanfrage an GitHub weiterzuleiten.
 
 ## Agenten anbinden

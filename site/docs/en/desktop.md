@@ -51,7 +51,9 @@ The tray needs a StatusNotifierItem host. On GNOME without one, open the same wi
 
 ### Updates
 
-Install a newer stable release from Settings > About and updates. Obituary closes the window and the running tray, updates through the original Scoop, WinGet or script channel, then attempts to restore the tray and reopen the window. Failures and log paths are shown on the same page. For a manually extracted copy, download a replacement from the release page.
+Install a newer stable release from Settings > About and updates. Obituary closes the window and the running tray, updates through the original Scoop, WinGet or script channel, then attempts to restore the tray and reopen the window. Failures and log paths are shown on the same page.
+
+A copy you unpacked yourself updates in place too, and its button reads "Download and restart to update". Obituary downloads the release from GitHub (from the mainland China mirror when GitHub does not answer within ten seconds), checks its SHA-256, and only then closes the window and replaces Obituary's own programs in that folder (`obit`, `obitd` and `obit-gui`). Every other file in the folder stays as it is, and PATH and the Start menu are not touched. The previous programs wait for a day in a hidden `.obituary-update-…` folder in the same place, then go to the graveyard, where they can still be resurrected; if any step fails, including a new `obit` that does not start, the previous version is put back. This needs a stable release (not a development build), every program of the release in the folder as a plain file, and a folder the current user can write to without administrator rights. When one of these does not hold, the page says which, and you can still download a replacement from the release page. From a terminal, `obit update --apply` does the same. "What changed" shows the notes in the window's language, in English when there is no translation.
 
 ### Eight looks
 
