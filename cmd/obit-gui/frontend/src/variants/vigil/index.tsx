@@ -8,7 +8,7 @@ import { bytes, graveSize } from "../../format";
 import Decisions from "../../pages/Decisions";
 import Logs from "../../pages/Logs";
 import Settings from "../../pages/Settings";
-import { t } from "../../i18n";
+import { t, useTrackingHint } from "../../i18n";
 import Notices from "../../notices";
 import { pageTitle, type ShellProps } from "../../shell";
 import { extendSpans, folderOf, hm, md, nameOf, parts, pause, remaining, sourceLabel, span, Star, useGraves, useItems, type Burial, type Item } from "../shared";
@@ -202,6 +202,7 @@ function Batch({ count, unit, names, note, onClear, children }: { count: number;
 type Range = "" | "24h" | "7d";
 
 function Upcoming() {
+  const emptyHint = useTrackingHint("vg.noLitAll");
   const [range, setRange] = useState<Range>("");
   const it = useItems(range);
   const items = it.items;
@@ -242,7 +243,7 @@ function Upcoming() {
           </Batch>
         ) : (chosen[0] ?? active) ? (
           <ItemDetail x={chosen[0] ?? active!} onExtend={(v) => it.extend(v, [(chosen[0] ?? active!).id])} onCancel={() => it.cancel([(chosen[0] ?? active!).id])} />
-        ) : it.loading ? null : <Quiet title={t("vg.noLit")} text={range ? t("up.quietRange") : t("vg.noLitAll")} />}
+        ) : it.loading ? null : <Quiet title={t("vg.noLit")} text={range ? t("up.quietRange") : emptyHint} />}
       </section>
     </div>
   );

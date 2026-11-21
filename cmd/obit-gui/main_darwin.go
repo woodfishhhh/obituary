@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -15,6 +16,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/config"
 	"github.com/woodfishhhh/obituary/internal/gui"
 	"github.com/woodfishhhh/obituary/internal/i18n"
+	"github.com/woodfishhhh/obituary/internal/userdirs"
 )
 
 func windowOptions(api *gui.API, width, height int) *options.App {
@@ -38,6 +40,15 @@ func windowOptions(api *gui.API, width, height int) *options.App {
 			mu.Lock()
 			window = ctx
 			mu.Unlock()
+			go func() {
+				home, err := userdirs.Data()
+				if err == nil {
+					err = app.Start(home)
+				}
+				if err != nil {
+					log.Printf("start menu bar: %v", err)
+				}
+			}()
 			app.ObserveUsage()
 		},
 		SingleInstanceLock: &options.SingleInstanceLock{

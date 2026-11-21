@@ -3,13 +3,14 @@ import { useState } from "react";
 import { useApi } from "../api";
 import { when } from "../format";
 import { useLoad, useRefresh } from "../hooks";
-import { t } from "../i18n";
+import { t, useTrackingHint } from "../i18n";
 import { Button, Empty, Head, LifeLine, NameCell, Seg, SelectionBar, Skeleton, useBatch, useConfirm } from "../ui";
 import { extendList, extendSpans, sourceLabel, spanLabel } from "../variants/shared";
 
 type Range = "" | "24h" | "7d";
 
 export default function Upcoming({ embedded = false }: { embedded?: boolean }) {
+  const emptyHint = useTrackingHint("up.quietAll");
   const api = useApi();
   const { version, bump } = useRefresh();
   const confirm = useConfirm();
@@ -67,7 +68,7 @@ export default function Upcoming({ embedded = false }: { embedded?: boolean }) {
       {error ? <div className="notice error">{t("up.readError", error)}</div> : null}
       <div className="card list">
         {loading && !data ? <Skeleton /> : items.length === 0 ? (
-          <Empty icon={Hourglass} title={t("up.quiet")} text={range ? t("up.quietRange") : t("up.quietAll")} />
+          <Empty icon={Hourglass} title={t("up.quiet")} text={range ? t("up.quietRange") : emptyHint} />
         ) : (
           <>
             <div className="row head-row cols-item">

@@ -19,10 +19,14 @@ function Root() {
   // context menu). Until it answers, nothing is drawn; an older backend
   // without the field, or none at all, falls back to Windows' language.
   const [current, setCurrent] = useState<Lang | null>(null);
+  const [contextMenu, setContextMenu] = useState(false);
   useEffect(() => {
     let live = true;
     api.Settings().then(
-      (s) => fromTag(s.effectiveLanguage) ?? systemLang(),
+      (s) => {
+        if (live) setContextMenu(s.capabilities?.contextMenu === true);
+        return fromTag(s.effectiveLanguage) ?? systemLang();
+      },
       () => cachedLang() ?? systemLang(),
     ).then((next) => { if (live) { cacheLang(next); setCurrent(next); } });
     return () => { live = false; };
@@ -31,8 +35,9 @@ function Root() {
   useEffect(() => { if (current) document.title = t("brand"); }, [current]);
   const langChoice = useMemo(() => ({
     lang: current ?? systemLang(),
+    contextMenu,
     adopt: (tag?: string) => { const next = fromTag(tag); if (next) { cacheLang(next); setCurrent(next); } },
-  }), [current]);
+  }), [current, contextMenu]);
 
   // Each look is its own chunk, fetched the first time it is shown. A saved
   // id that no longer ships, or a chunk that fails to load, falls back to

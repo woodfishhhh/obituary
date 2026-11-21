@@ -125,6 +125,7 @@ export const en: Messages = {
   "up.quiet": "Quiet for now",
   "up.quietRange": "Switch to All to see everything that is tracked",
   "up.quietAll": "Right-click a file in Explorer and choose Add to Obituary, or add a folder policy (Downloads, say) in Settings; it then appears here.",
+  "up.quietCLI": "Set a file’s lifespan with obit mark <path> 7d, or add a folder policy in Settings.",
 
 
   // ── For you (decisions) ────────────────────────────────
