@@ -77,10 +77,8 @@ func Start(home string) error {
 
 func Stop(home string) error {
 	if !Running(home) {
-		if Autostart() != "" {
-			if err := unloadTrayLaunchd(); err != nil {
-				return err
-			}
+		if err := cancelPendingRestart(home); err != nil {
+			return err
 		}
 		return clearStopRequest(home)
 	}
@@ -91,6 +89,39 @@ func Stop(home string) error {
 		return err
 	}
 	return clearStopRequest(home)
+}
+
+func cancelPendingRestart(home string) error {
+	if Running(home) {
+		return nil
+	}
+	dir, err := userdirs.LaunchAgents()
+	if err != nil {
+		return err
+	}
+	before, err := readTrayLaunchd(filepath.Join(dir, trayTaskName+".plist"))
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	daemon, err := DaemonPath()
+	if err != nil {
+		return err
+	}
+	config, err := userdirs.Config()
+	if err != nil {
+		return err
+	}
+	want, err := trayLaunchdContent(daemon, home, config)
+	if err != nil {
+		return err
+	}
+	if before != string(want) {
+		return errors.New("preserving tray agent bound to another installation")
+	}
+	return unloadTrayLaunchd()
 }
 
 func clearStopRequest(home string) error {

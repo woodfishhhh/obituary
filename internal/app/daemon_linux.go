@@ -63,6 +63,9 @@ func startAt(home, path string) error {
 
 func Stop(home string) error {
 	if !Running(home) {
+		if err := cancelPendingRestart(home); err != nil {
+			return err
+		}
 		return clearStopRequest(home)
 	}
 	if err := os.WriteFile(stopPath(home), nil, 0o600); err != nil {

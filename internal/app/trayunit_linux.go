@@ -16,6 +16,28 @@ import (
 
 const trayUnit = "obituary-tray.service"
 
+func cancelPendingRestart(home string) error {
+	if Running(home) {
+		return nil
+	}
+	config, err := userdirs.Config()
+	if err != nil {
+		return err
+	}
+	exe, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	path, _, before, err := readTrayUnit(filepath.Join(filepath.Dir(exe), daemonName), home, config)
+	if err != nil || before == "" {
+		return err
+	}
+	if err := verifyTrayUnitSource(path); err != nil {
+		return err
+	}
+	return userSystemctl("stop", trayUnit)
+}
+
 func graphicalLogin() bool {
 	return os.Getenv("SSH_CONNECTION") == "" && os.Getenv("SSH_TTY") == "" && os.Getenv("SSH_CLIENT") == "" && (os.Getenv("DISPLAY") != "" || os.Getenv("WAYLAND_DISPLAY") != "")
 }

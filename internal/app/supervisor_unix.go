@@ -4,8 +4,7 @@ package app
 
 import "github.com/woodfishhhh/obituary/internal/core"
 
-func Supervise(string) error            { return core.ErrUnsupported }
-func cancelPendingRestart(string) error { return nil }
+func Supervise(string) error { return core.ErrUnsupported }
 func SupervisorProblem(home string) (string, error) {
 	s, err := readSupervision(home)
 	if s.Abandoned {
