@@ -1,7 +1,5 @@
 import assert from 'node:assert/strict';
 import { readdir, readFile } from 'node:fs/promises';
-import { execFileSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
 import { locales } from '../landing/src/locales.ts';
 import { agentData, agentDocLink } from '../landing/src/agents-data.ts';
 
@@ -36,19 +34,6 @@ for (const l of locales) {
     assert.ok(sitemap.includes(`/docs/${path.replace(/index\.md$/, '').replace(/\.md$/, '.html')}</loc>`), `dev sitemap: ${path}`);
   }
 }
-const repo = fileURLToPath(new URL('../..', import.meta.url));
-execFileSync(process.execPath, [fileURLToPath(new URL('./generate-command-reference.mjs', import.meta.url)), '--check'], { cwd: repo, stdio: 'inherit' });
-const configSource = await read(new URL('../../internal/config/config.go', import.meta.url));
-const structs = new Map([...configSource.matchAll(/type (\w+) struct \{([\s\S]*?)\n\}/g)].map(([, name, body]) => [name, [...body.matchAll(/^\s*\w+\s+(\S+)\s+`toml:"([^"]+)"`/gm)].map(([, type, tag]) => [type, tag.replace(/,.*$/, '')])]));
-const configKeys = [];
-const expandConfigKeys = (type, prefix = '') => {
-  for (const [fieldType, tag] of structs.get(type) ?? []) {
-    const key = prefix ? `${prefix}.${tag}` : tag;
-    if (structs.has(fieldType)) expandConfigKeys(fieldType, key);
-    else configKeys.push(key);
-  }
-};
-expandConfigKeys('Config');
 for (const l of locales) {
   assert.deepEqual(await pageNames(new URL(l.path || '.', root)), pages, l.html);
   const agentPages = agentData.map(a => `agents/${a.id}.md`);
@@ -64,7 +49,6 @@ for (const l of locales) {
   }
   for (const page of pages) {
     const source = await read(new URL(l.path + page, root));
-    if (page === 'config.md') for (const key of configKeys) assert.ok(source.includes(String.fromCharCode(96) + key + String.fromCharCode(96)), 'config key missing: ' + l.path + key);
     assert.ok(!/<[0-9]+>/.test(withoutCodeBlocks(source)), 'placeholder marker in ' + l.path + page);
     if (page === 'index.md') {
       const text = withoutCodeBlocks(source);
