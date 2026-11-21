@@ -25,7 +25,7 @@ func NewCmd() *cobra.Command {
 		Long:    "Delete selected or expired file burials. --all and explicit references skip retention, so they ask first; outside a terminal they require --yes. Docker containers require elapsed [graveyard] retention_days, including with --all or an explicit ID; running containers are treated as resurrected. Docker removal preserves volumes and never forces removal. Container handling is identical in recycle mode.",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if all && len(args) > 0 {
-				return fmt.Errorf("--all cannot be combined with explicit burial references")
+				return errors.New(cmdutil.OutputLocalizer(asJSON).Text("cli.purge.all_cannot_be_combined_with_explicit_burial", nil))
 			}
 			return nil
 		},
@@ -71,38 +71,38 @@ func confirm(cmd *cobra.Command, preview []core.GraveResult, asJSON bool) error 
 	if !asJSON {
 		_ = report(preview, nil, true, false) // the run reports failures again
 	}
-	const retry = "purge deletes permanently; re-run with --yes to confirm (agents: ask the user first)"
+	retry := cmdutil.OutputLocalizer(asJSON).Text("cli.purge.purge_deletes_permanently_re_run_with_yes", nil)
 	if !isTerminal() {
-		return errors.New("not a terminal: " + retry)
+		return errors.New(cmdutil.OutputLocalizer(asJSON).Text("cli.purge.not_a_terminal", nil) + retry)
 	}
-	fmt.Fprint(os.Stderr, "Permanently delete the selected burials? [y/N] ")
+	fmt.Fprint(os.Stderr, cmdutil.OutputLocalizer(asJSON).Text("cli.purge.confirm", nil))
 	// A character device such as NUL also counts as a terminal; it reads EOF.
 	answer, err := bufio.NewReader(cmd.InOrStdin()).ReadString('\n')
 	if a := strings.ToLower(strings.TrimSpace(answer)); a != "y" && a != "yes" {
 		if err != nil && answer == "" {
-			return fmt.Errorf("confirmation not read (%w): %s", err, retry)
+			return fmt.Errorf(cmdutil.OutputLocalizer(asJSON).Text("cli.purge.confirmation_not_read", nil), err, retry)
 		}
-		return errors.New("nothing purged")
+		return errors.New(cmdutil.OutputLocalizer(asJSON).Text("cli.purge.nothing_purged", nil))
 	}
 	return nil
 }
 
 func report(results []core.GraveResult, err error, dryRun, asJSON bool) error {
 	if !asJSON && len(results) == 0 {
-		fmt.Println("nothing to purge")
+		fmt.Println(cmdutil.Text("cli.purge.nothing_to_purge"))
 	}
 	verb := ""
 	if dryRun {
-		verb = "would be "
+		verb = cmdutil.Text("cli.preview.would_be")
 	}
 	reportErr := cmdutil.ReportGraves(results, asJSON, func(r core.GraveResult) string {
 		if r.Action == core.ActionResurrected {
 			if dryRun {
-				return fmt.Sprintf("#%d would confirm an already completed resurrection  %s", r.Burial.ID, r.Path)
+				return fmt.Sprintf(cmdutil.Text("cli.purge.would_confirm_an_already_completed_resurrection"), r.Burial.ID, r.Path)
 			}
-			return fmt.Sprintf("#%d resurrected  %s (confirmed)", r.Burial.ID, r.Path)
+			return fmt.Sprintf(cmdutil.Text("cli.purge.resurrected_confirmed"), r.Burial.ID, r.Path)
 		}
-		return fmt.Sprintf("#%d %s%s  %s  (%s)", r.Burial.ID, verb, r.Action, r.Burial.Path, textutil.Bytes(r.Burial.Size))
+		return fmt.Sprintf("#%d %s%s  %s  (%s)", r.Burial.ID, verb, cmdutil.Localizer().Label(r.Action), r.Burial.Path, textutil.Bytes(r.Burial.Size))
 	})
 	if err := cmdutil.Committed(err); err != nil {
 		return err

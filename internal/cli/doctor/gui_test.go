@@ -45,7 +45,7 @@ func TestDoctorGUICompanion(t *testing.T) {
 				daemonErr = errors.New("missing obitd")
 			}
 			before := clitest.TreeSnapshot(t, root)
-			got := diagnoseGUI(daemon, daemonErr, func(path string) string {
+			got := english.diagnoseGUI(daemon, daemonErr, func(path string) string {
 				if path == daemon {
 					return tc.daemonVersion
 				}

@@ -3,6 +3,7 @@ package uninstall
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"os"
 	"regexp"
 	"strings"
@@ -29,14 +30,14 @@ func sessionFiles(root *os.Root) ([]string, error) {
 			return nil, err
 		}
 		if !info.Mode().IsRegular() || !sessionName.MatchString(entry.Name()) {
-			return nil, fmt.Errorf("data retained: unrecognized session file %s", name)
+			return nil, fmt.Errorf(cmdutil.Text("cli.uninstall.data_retained_unrecognized_session_file"), name)
 		}
 		data, err := root.ReadFile(name)
 		if err != nil {
 			return nil, err
 		}
 		if !ownedSession(entry.Name(), data) {
-			return nil, fmt.Errorf("data retained: unrecognized session contents %s", name)
+			return nil, fmt.Errorf(cmdutil.Text("cli.uninstall.data_retained_unrecognized_session_contents"), name)
 		}
 		names = append(names, name)
 	}

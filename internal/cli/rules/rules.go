@@ -22,7 +22,7 @@ func NewCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			p, err := CurrentProject()
+			p, err := currentProject(asJSON)
 			if err != nil {
 				return err
 			}
@@ -33,19 +33,19 @@ func NewCmd() *cobra.Command {
 			if asJSON {
 				return cmdutil.PrintJSON(map[string]any{"project": p.Root, "file": state, "rules": set.Rules})
 			}
-			fmt.Printf("project  %s\nrules    %s (%s)\n\n", p.Root, filepath.Join(p.Root, rules.FileName), state.Status)
+			fmt.Printf(cmdutil.Text("cli.rules.project_rules"), p.Root, filepath.Join(p.Root, rules.FileName), cmdutil.Localizer().Label(state.Status))
 			if state.Warning != "" {
 				fmt.Println(state.Warning)
 			}
 			for _, r := range set.Rules {
-				life := "off"
+				life := cmdutil.Text("cli.rules.off")
 				if !r.Negate {
 					life = lifespan.FormatRemaining(r.Lifespan)
 				}
 				fmt.Printf("  %-24s %-6s %s:%d\n", r.Pattern, life, r.Source, r.Line)
 			}
 			if state.Status == rules.Untrusted || state.Status == rules.Changed {
-				fmt.Printf("\nthe project's rules are not applied until you review them: obit trust\n")
+				fmt.Print(cmdutil.Text("cli.rules.the_project_s_rules_are_not_applied"))
 			}
 			return nil
 		},
@@ -83,13 +83,14 @@ func applyCmd(use, short string, dryRun bool) *cobra.Command {
 			}
 			for _, d := range decisions {
 				if d.Warning != "" {
-					fmt.Println("warning:", d.Warning)
+					fmt.Println(cmdutil.Text("cli.warning_prefix"), d.Warning)
 				}
 				switch d.Action {
 				case auto.Skipped:
-					fmt.Printf("skipped        %s  (%s)\n", d.Path, d.Reason)
+					fmt.Printf(cmdutil.Text("cli.rules.skipped"), d.Path, d.Reason)
 				default:
-					fmt.Printf("%-14s %s  %s by %s\n", d.Action, d.Unit, d.Lifespan, d.Rule)
+					l := cmdutil.Localizer()
+					fmt.Printf(l.Text("cli.rules.by", nil), cmdutil.Column(l, l.Label(d.Action)), d.Unit, d.Lifespan, d.Rule)
 				}
 			}
 			return nil

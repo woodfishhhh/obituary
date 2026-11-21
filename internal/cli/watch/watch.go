@@ -66,7 +66,7 @@ func (o *options) run(args []string) error {
 		if o.asJSON {
 			return cmdutil.PrintJSON(map[string]string{"removed": path})
 		}
-		fmt.Println("folder policy removed:", path)
+		fmt.Println(cmdutil.Text("cli.watch.folder_policy_removed"), path)
 		return nil
 	}
 	path, err := expandHome(args[0])
@@ -90,7 +90,7 @@ func (o *options) printPolicy(svc *core.Service, p core.WatchPolicy) error {
 	if o.asJSON {
 		return cmdutil.PrintJSON(p)
 	}
-	fmt.Printf("#%d %s  %s  age=%s  %s\n", p.ID, p.Path, p.Lifespan, p.Age, p.Consent)
+	fmt.Printf(cmdutil.Text("cli.watch.age"), p.ID, p.Path, p.Lifespan, cmdutil.Localizer().Label(p.Age), cmdutil.Localizer().Label(p.Consent))
 	if p.Consent != core.ConsentApproved {
 		return printWatchProposal(svc, p.ID)
 	}
@@ -104,7 +104,7 @@ func printWatchProposal(svc *core.Service, policyID int64) error {
 	}
 	for _, p := range st.Proposals {
 		if p.WatchID == policyID {
-			fmt.Printf("已提议，用 obit approve %d 批准。\n", p.ID)
+			fmt.Printf(cmdutil.Text("cli.watch.proposed"), p.ID)
 			break
 		}
 	}
@@ -119,7 +119,7 @@ func (o *options) changePolicy(svc *core.Service) error {
 		if o.asJSON {
 			return cmdutil.PrintJSON(map[string]int64{"removedId": o.removeID})
 		}
-		fmt.Printf("folder policy removed: #%d\n", o.removeID)
+		fmt.Printf(cmdutil.Text("cli.watch.folder_policy_removed_changepolicy"), o.removeID)
 		return nil
 	}
 	if err := svc.ClearWatchExclusion(o.policyID, o.clearExclusion); err != nil {
@@ -128,7 +128,7 @@ func (o *options) changePolicy(svc *core.Service) error {
 	if o.asJSON {
 		return cmdutil.PrintJSON(map[string]int64{"policyId": o.policyID, "clearedExclusion": o.clearExclusion})
 	}
-	fmt.Printf("folder policy #%d: exclusion #%d cleared\n", o.policyID, o.clearExclusion)
+	fmt.Printf(cmdutil.Text("cli.watch.folder_policy_exclusion_cleared"), o.policyID, o.clearExclusion)
 	return nil
 }
 

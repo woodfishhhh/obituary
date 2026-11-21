@@ -7,14 +7,18 @@ import (
 
 var ContextMenuRegistry = contextmenu.UserRegistry
 
-func diagnoseContextMenu(executable cmdutil.Executable) DoctorCheck {
+func (lang diagnostics) diagnoseContextMenu(executable cmdutil.Executable) DoctorCheck {
 	c := DoctorCheck{Name: "context-menu", Status: "PASS"}
 	exe, err := executable.Path()
 	if err != nil {
 		c.Status, c.Detail = "FAIL", err.Error()
 		return c
 	}
-	st, err := contextmenu.Inspect(ContextMenuRegistry(), exe)
+	display := lang.Localizer
+	if lang.machine {
+		display = nil
+	}
+	st, err := contextmenu.InspectDisplay(ContextMenuRegistry(), exe, cmdutil.Language(), display)
 	if err != nil {
 		c.Status, c.Detail = "FAIL", err.Error()
 		return c

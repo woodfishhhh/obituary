@@ -36,7 +36,7 @@ func TestDoctorReportsPausedProjectRules(t *testing.T) {
 	testenv.InitRepo(t, root)
 	t.Chdir(root)
 	clitest.WriteFixture(t, filepath.Join(root, ".obitrules"), "[broken 2h\n")
-	checks := diagnoseProjectRules(t.TempDir())
+	checks := english.diagnoseProjectRules(t.TempDir())
 	if len(checks) != 1 || checks[0].Status != "WARN" || !strings.Contains(checks[0].Detail, ".obitrules:1:") || !strings.Contains(checks[0].Detail, "automatic registration paused") {
 		t.Fatalf("doctor hid paused rules: %+v", checks)
 	}
@@ -142,7 +142,7 @@ func TestDoctorCodexWindowsShell(t *testing.T) {
 				t.Fatal(err)
 			}
 			clitest.WriteFixture(t, path, "codex_windows_shell = '"+tc.value+"'\n")
-			got := diagnoseCodexWindowsShell()
+			got := english.diagnoseCodexWindowsShell()
 			if got.Status != tc.status || !strings.Contains(got.Detail, tc.detail) {
 				t.Fatalf("shell diagnosis: %+v", got)
 			}
@@ -154,14 +154,14 @@ func TestDoctorCodexWindowsShell(t *testing.T) {
 		t.Fatal(err)
 	}
 	clitest.WriteFixture(t, path, "[agent_shells]\ncodex = 'bash'\n")
-	if got := diagnoseCodexWindowsShell(); got.Status != "PASS" || !strings.Contains(got.Detail, "bash") {
+	if got := english.diagnoseCodexWindowsShell(); got.Status != "PASS" || !strings.Contains(got.Detail, "bash") {
 		t.Fatalf("table declaration diagnosis: %+v", got)
 	}
 }
 
 func TestDoctorWarnsForPurgeInProgress(t *testing.T) {
 	svc, b := clitest.PurgingCommandFixture(t)
-	c := diagnoseRecovery(svc.Store.Home)
+	c := english.diagnoseRecovery(svc.Store.Home)
 	if c.Status != "WARN" || !strings.Contains(c.Detail, "1 graveyard records need attention") || !strings.Contains(c.Detail, "purging") || !strings.Contains(c.Detail, b.LastPurgeError) {
 		t.Fatalf("doctor hid purge in progress: %+v", c)
 	}
@@ -208,7 +208,7 @@ func TestDoctorWarnsForUnverifiedWatchDirectory(t *testing.T) {
 		t.Fatal(err)
 	}
 	before := clitest.TreeSnapshot(t, svc.Store.Home)
-	c := diagnoseRecovery(svc.Store.Home)
+	c := english.diagnoseRecovery(svc.Store.Home)
 	if c.Status != "WARN" || !strings.Contains(c.Detail, "manual attention") || !strings.Contains(c.Detail, "occupied") {
 		t.Fatalf("doctor hid watch rollback failure: %+v", c)
 	}
@@ -232,7 +232,7 @@ func TestDoctorWarnsForEmptyGrave(t *testing.T) {
 	if err := os.Remove(rows[0].Burial.Grave); err != nil {
 		t.Fatal(err)
 	}
-	c := diagnoseRecovery(svc.Store.Home)
+	c := english.diagnoseRecovery(svc.Store.Home)
 	if c.Status != "WARN" || !strings.Contains(c.Detail, "grave is empty") || !strings.Contains(c.Detail, "obit purge") {
 		t.Fatalf("doctor hid empty grave: %+v", c)
 	}
@@ -264,7 +264,7 @@ func TestDoctorSeesEmptyGraveWithCommittedManifest(t *testing.T) {
 		t.Fatal(err)
 	}
 	before := clitest.TreeSnapshot(t, svc.Store.Home)
-	c := diagnoseRecovery(svc.Store.Home)
+	c := english.diagnoseRecovery(svc.Store.Home)
 	if c.Status != "WARN" || !strings.Contains(c.Detail, "grave is empty") {
 		t.Fatalf("committed manifest hid empty grave from doctor: %+v", c)
 	}
@@ -287,7 +287,7 @@ func TestDisabledScheduleFailsDoctorAndIsNotScheduled(t *testing.T) {
 		t.Errorf("disabled task diagnosis: %+v, %v", checks["runner"], err)
 	}
 	cmdutil.RunnerRunning = func(string) bool { return true }
-	if check := diagnoseRunner(home); check.Status != "FAIL" || !strings.Contains(check.Detail, "scheduled task is disabled: ") {
+	if check := english.diagnoseRunner(home); check.Status != "FAIL" || !strings.Contains(check.Detail, "scheduled task is disabled: ") {
 		t.Errorf("resident runner must not hide disabled task: %+v", check)
 	}
 	out, _, err := clitest.Execute(t, daemoncmd.StatusCmd(userdirs.Data), "--json")
@@ -494,11 +494,11 @@ func TestDoctorCountsOnlyRecentHookErrorsIncludingRotation(t *testing.T) {
 	clitest.WriteFixture(t, filepath.Join(root, "data", "hook.log.1"), line(now.Add(-time.Hour)))
 	clitest.WriteFixture(t, filepath.Join(root, "data", "hook-audit.log"), line(now))
 	home, _ := userdirs.Data()
-	got := diagnoseHookLog(home, now)
+	got := english.diagnoseHookLog(home, now)
 	if got.Status != "WARN" || got.Errors != 3 {
 		t.Fatalf("recent errors: %+v", got)
 	}
-	if got := diagnoseHookLog(home, now.Add(49*time.Hour)); got.Status != "PASS" || got.Errors != 0 {
+	if got := english.diagnoseHookLog(home, now.Add(49*time.Hour)); got.Status != "PASS" || got.Errors != 0 {
 		t.Fatalf("expired errors: %+v", got)
 	}
 	if err := os.Remove(filepath.Join(home, "hook.log")); err != nil {
@@ -507,7 +507,7 @@ func TestDoctorCountsOnlyRecentHookErrorsIncludingRotation(t *testing.T) {
 	if err := os.Mkdir(filepath.Join(home, "hook.log"), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if got := diagnoseHookLog(home, now); got.Status != "FAIL" {
+	if got := english.diagnoseHookLog(home, now); got.Status != "FAIL" {
 		t.Fatalf("unreadable log: %+v", got)
 	}
 }
@@ -598,7 +598,7 @@ func TestDoctorIgnoresSkippedAndLegacyDiscoveryDenials(t *testing.T) {
 			clitest.WriteFixture(t, filepath.Join(home, "hook.log.1"), stamp+legacy+"\n")
 			clitest.WriteFixture(t, filepath.Join(home, "hook.log"), stamp+`skip: project discovery unavailable; cwd="C:\\fixture" reason="permission denied"`+"\n")
 			before := clitest.TreeSnapshot(t, home)
-			got := diagnoseHookLog(home, now, protected)
+			got := english.diagnoseHookLog(home, now, protected)
 			if got.Status != "PASS" || got.Errors != 0 || strings.Contains(got.Detail, "denied access") {
 				t.Fatalf("unavailable cwd warned about hook account access: %+v", got)
 			}
@@ -606,7 +606,7 @@ func TestDoctorIgnoresSkippedAndLegacyDiscoveryDenials(t *testing.T) {
 				t.Fatal("hook-log diagnostic changed legacy logs")
 			}
 			clitest.WriteFixture(t, filepath.Join(home, "hook.log"), stamp+`codex Stop: "open C:\\data\\store.lock: Access is denied."; permission_diagnostic={"operation":"open","path":"C:\\data\\store.lock"}`+"\n")
-			got = diagnoseHookLog(home, now, protected)
+			got = english.diagnoseHookLog(home, now, protected)
 			if got.Status != "WARN" || got.Errors != 1 || !strings.Contains(got.Detail, "store.lock") {
 				t.Fatalf("cwd skip hid a genuine ledger denial: %+v", got)
 			}
@@ -623,7 +623,7 @@ func TestDoctorWarnsAboutDiscoveryDenialsOutsideProtectedLocations(t *testing.T)
 			message := fmt.Sprintf("discover project from %q: resolve project directory %s: Access is denied.", filepath.Join(protected, "app"), path)
 			line := fmt.Sprintf("%s codex SessionStart: %q; permission_diagnostic={\"operation\":\"resolve project directory\",\"path\":%q}\n", now.Format(time.RFC3339), message, path)
 			clitest.WriteFixture(t, filepath.Join(home, "hook.log.1"), line)
-			got := diagnoseHookLog(home, now, protected)
+			got := english.diagnoseHookLog(home, now, protected)
 			if got.Status != "WARN" || got.Errors != 1 || !strings.Contains(got.Detail, "latest denied access") {
 				t.Fatalf("user project discovery denial was hidden: %+v", got)
 			}
@@ -645,7 +645,7 @@ func TestDoctorKeepsOtherDiscoveryAndPermissionErrors(t *testing.T) {
 			now := time.Now().Truncate(time.Second)
 			line := fmt.Sprintf("%s codex SessionEnd: %q; permission_diagnostic=%s\n", now.Format(time.RFC3339), tc.message, tc.diagnostic)
 			clitest.WriteFixture(t, filepath.Join(home, "hook.log"), line)
-			got := diagnoseHookLog(home, now)
+			got := english.diagnoseHookLog(home, now)
 			if got.Status != "WARN" || got.Errors != 1 {
 				t.Fatalf("unrelated error disappeared: %+v", got)
 			}
@@ -660,10 +660,10 @@ func TestDoctorSurfacesRecentHookAccountDenial(t *testing.T) {
 	hook.LogEventError(home, "codex", hook.Event{Name: "SessionStart", Session: "denied", Cwd: root},
 		&os.PathError{Op: "open", Path: filepath.Join(home, "store.lock"), Err: os.ErrPermission})
 	// The current doctor's access can succeed after a different account failed.
-	if got := diagnoseData(home); got.Status != "PASS" {
+	if got := english.diagnoseData(home); got.Status != "PASS" {
 		t.Fatal(got)
 	}
-	got := diagnoseHookLog(home, now.Add(time.Second))
+	got := english.diagnoseHookLog(home, now.Add(time.Second))
 	if got.Status != "WARN" || got.Errors != 1 || !strings.Contains(got.Detail, "same account") || !strings.Contains(got.Detail, "OBIT_HOME") {
 		t.Fatalf("recent denied hook account was hidden: %+v", got)
 	}
@@ -672,7 +672,7 @@ func TestDoctorSurfacesRecentHookAccountDenial(t *testing.T) {
 			t.Errorf("latest denial summary missing %q: %+v", want, got)
 		}
 	}
-	if got := diagnoseHookLog(home, now.Add(25*time.Hour)); got.Status != "PASS" || strings.Contains(got.Detail, "same account") {
+	if got := english.diagnoseHookLog(home, now.Add(25*time.Hour)); got.Status != "PASS" || strings.Contains(got.Detail, "same account") {
 		t.Fatalf("expired permission failure still displayed: %+v", got)
 	}
 }
@@ -689,7 +689,7 @@ func TestDoctorSelectsLatestPermissionFailureAcrossRotatedLogs(t *testing.T) {
 	clitest.WriteFixture(t, filepath.Join(home, "hook.log"), current)
 	clitest.WriteFixture(t, filepath.Join(home, "hook.log.1"), rotated)
 	before := clitest.TreeSnapshot(t, home)
-	got := diagnoseHookLog(home, now)
+	got := english.diagnoseHookLog(home, now)
 	if got.Status != "WARN" || got.Errors != 3 || !strings.Contains(got.Detail, "latest denied access at "+now.Add(-time.Hour).Format(time.RFC3339)) {
 		t.Fatalf("latest permission error was not selected by timestamp: %+v", got)
 	}
@@ -711,7 +711,7 @@ func TestDoctorSelectsLaterPermissionRecordWithinSameSecond(t *testing.T) {
 		`codex SessionStart: denied; permission_diagnostic={"user":"current-user","sid":"current-sid","operation":"open","path":"C:\\fixture\\store.lock"}` + "\n"
 	clitest.WriteFixture(t, filepath.Join(home, "hook.log"), current)
 	clitest.WriteFixture(t, filepath.Join(home, "hook.log.1"), stamp+"codex Stop: Access is denied.\n")
-	got := diagnoseHookLog(home, now)
+	got := english.diagnoseHookLog(home, now)
 	if got.Status != "WARN" || got.Errors != 3 || !strings.Contains(got.Detail, "current-user") || !strings.Contains(got.Detail, "store.lock") {
 		t.Fatalf("same-second diagnostic was hidden by an earlier record: %+v", got)
 	}
@@ -745,7 +745,7 @@ func TestDoctorWarnsForGraveWithoutManifest(t *testing.T) {
 	if err := os.Remove(p.Manifest); err != nil {
 		t.Fatal(err)
 	}
-	check := diagnoseRecovery(svc.Store.Home)
+	check := english.diagnoseRecovery(svc.Store.Home)
 	if check.Status != "WARN" || !strings.Contains(check.Detail, "without a matching manifest") {
 		t.Fatalf("unindexed grave not diagnosed: %+v", check)
 	}
@@ -761,7 +761,7 @@ func TestDoctorWarnsForConflictingManifestRetention(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	check := diagnoseRecovery(svc.Store.Home)
+	check := english.diagnoseRecovery(svc.Store.Home)
 	if check.Status != "WARN" || !strings.Contains(check.Detail, "conflicts") {
 		t.Fatalf("conflict not diagnosed: %+v", check)
 	}

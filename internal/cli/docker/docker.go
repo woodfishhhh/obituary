@@ -36,7 +36,7 @@ func newAdd() *cobra.Command {
 		if asJSON {
 			return cmdutil.PrintJSON(item)
 		}
-		fmt.Printf("#%d %s  expires %s\n", item.ID, item.Path, cmdutil.When(item.ExpiresAt))
+		fmt.Printf(cmdutil.Text("cli.docker.expires"), item.ID, item.Path, cmdutil.When(item.ExpiresAt))
 		return nil
 	}}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print JSON")
@@ -64,10 +64,10 @@ func newList() *cobra.Command {
 			return cmdutil.PrintJSON(items)
 		}
 		if len(items) == 0 {
-			fmt.Println("no containers are tracked")
+			fmt.Println(cmdutil.Text("cli.docker.no_containers_are_tracked"))
 		}
 		for _, it := range items {
-			fmt.Printf("#%d %s  expires %s\n", it.ID, it.Path, cmdutil.When(it.ExpiresAt))
+			fmt.Printf(cmdutil.Text("cli.docker.expires"), it.ID, it.Path, cmdutil.When(it.ExpiresAt))
 		}
 		return nil
 	}}

@@ -3,6 +3,7 @@ package init
 import (
 	"errors"
 	"fmt"
+	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"slices"
 	"strings"
 
@@ -17,7 +18,7 @@ func ApplyUninstall(changes []integrate.Change) error {
 	automatic := slices.DeleteFunc(slices.Clone(changes), func(c integrate.Change) bool { return c.Manual })
 	err := applyIntegrationPlan(automatic, true)
 	if slices.ContainsFunc(changes, func(c integrate.Change) bool { return c.Manual && !c.Implicit }) {
-		err = errors.Join(err, errors.New("manual agent removal steps remain; see the uninstall plan"))
+		err = errors.Join(err, errors.New(cmdutil.Text("cli.init.manual_agent_removal_steps_remain_see_the")))
 	}
 	return errors.Join(err, integrate.PreservedError(changes))
 }
@@ -43,7 +44,7 @@ func (p Planner) planExtensions(changes []integrate.Change, scope integrate.Scop
 				continue
 			}
 			if explicit {
-				return nil, fmt.Errorf("%s --%s is unsupported: %s", agent, kind, support.Detail)
+				return nil, fmt.Errorf(cmdutil.Text("cli.init.is_unsupported"), agent, kind, cmdutil.Localizer().HostText(support.Detail))
 			}
 			continue
 		}
@@ -74,7 +75,7 @@ func (p Planner) planExtensions(changes []integrate.Change, scope integrate.Scop
 		extension, err := plan(uninstall)
 		var manual *integrate.ManualSteps
 		if errors.As(err, &manual) {
-			changes = append(changes, integrate.Change{Path: agent + " " + kind, Extension: kind, Action: "preserve", Manual: true, Detail: manual.Steps})
+			changes = append(changes, manual.Change(integrate.Change{Path: agent + " " + kind, Extension: kind, Action: "preserve", Manual: true}))
 			continue
 		}
 		if err != nil {
@@ -160,7 +161,7 @@ func applyInstallPlan(changes []integrate.Change, apply func([]integrate.Change)
 			}
 		}
 		if err := apply(optional); err != nil {
-			fmt.Printf("warning: implicit %s refresh failed: %v\n", kind, err)
+			fmt.Printf(cmdutil.Text("cli.init.warning_implicit_refresh_failed"), kind, err)
 		}
 	}
 	return nil
@@ -178,7 +179,7 @@ func expireBackups(paths []string) {
 		err = app.ExpireBackups(svc, paths)
 	}
 	if err != nil {
-		fmt.Printf("warning: backups kept without a lifespan: %v\n", err)
+		fmt.Printf(cmdutil.Text("cli.init.warning_backups_kept_without_a_lifespan"), err)
 	}
 }
 
@@ -194,7 +195,7 @@ func (p Planner) showExtensions(scope integrate.Scope, agent string) error {
 				continue
 			}
 		}
-		status, err := integrate.InspectExtension(scope, agent, kind, executable)
+		status, err := integrate.InspectExtensionFor(cmdutil.Localizer(), scope, agent, kind, executable)
 		if err != nil {
 			fmt.Printf("%s: %v\n", kind, err)
 			continue

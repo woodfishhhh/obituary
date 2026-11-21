@@ -65,7 +65,8 @@ func (s *Service) mutate(refs []string, action string, apply func(*State, int)) 
 				continue
 			}
 			if idx < 0 {
-				results[i].Error = s.untrackedLifespanHint(st, ref)
+				results[i].Err = s.untrackedLifespanHint(st, ref)
+				results[i].Error = results[i].Err.Error()
 				continue
 			}
 			if err := s.checkItemMutation(st, idx, path, roots); err != nil {
@@ -92,23 +93,21 @@ func (s *Service) mutate(refs []string, action string, apply func(*State, int)) 
 	return results, errors.Join(err, s.Store.RecordCommitted(events...))
 }
 
-func (s *Service) untrackedLifespanHint(st *State, ref string) string {
-	hint := fmt.Sprintf("%s is not tracked", ref)
+func (s *Service) untrackedLifespanHint(st *State, ref string) error {
 	if j, lookupErr := s.findBurial(st, ref); lookupErr == nil && j >= 0 {
 		b := st.Burials[j]
 		if hint := pendingRestoreHint(b); hint != "" {
-			return hint
+			return errors.New(hint)
 		}
 	}
 	if id, err := strconv.ParseInt(strings.TrimPrefix(ref, "#"), 10, 64); err == nil {
 		for _, b := range st.Burials {
 			if id == b.ID || slices.Contains(b.Contains, id) {
-				hint = fmt.Sprintf("#%d was buried with #%d; obit resurrect %d", id, b.ID, b.ID)
-				break
+				return &ReferenceError{Kind: "already_buried", Ref: ref, BurialID: strconv.FormatInt(b.ID, 10), cause: fmt.Errorf("#%d was buried with #%d; obit resurrect %d", id, b.ID, b.ID)}
 			}
 		}
 	}
-	return hint
+	return &ReferenceError{Kind: "untracked", Ref: ref, cause: fmt.Errorf("%s is not tracked", ref)}
 }
 
 func lifespanCommitError(err error) error {

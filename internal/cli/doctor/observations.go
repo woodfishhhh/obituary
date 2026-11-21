@@ -5,10 +5,9 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
-	"github.com/woodfishhhh/obituary/internal/textutil"
 )
 
-func diagnoseHookQueue(home string, now time.Time) DoctorCheck {
+func (lang diagnostics) diagnoseHookQueue(home string, now time.Time) DoctorCheck {
 	status, err := (ledger.Store{Home: home}).InspectObservations()
 	c := DoctorCheck{Name: "hook-queue", Status: "PASS", Queue: &status}
 	if err != nil {
@@ -19,12 +18,12 @@ func diagnoseHookQueue(home string, now time.Time) DoctorCheck {
 	if !status.Oldest.IsZero() {
 		age = max(0, now.Sub(status.Oldest)).Round(time.Second)
 	}
-	c.Detail = fmt.Sprintf("%s; oldest %s; %d dead; %d invalid; %s", textutil.Count(status.Pending, "pending observation"), age, status.Dead, status.Invalid, textutil.Count(status.Partial, "incomplete temporary file"))
+	c.Detail = fmt.Sprintf(lang.Text("cli.doctor.oldest_dead_invalid", nil), lang.Count("cli.count.pending_observation", status.Pending), age, status.Dead, status.Invalid, lang.Count("cli.count.incomplete_temporary_file", status.Partial))
 	if status.Pending+status.Dead+status.Invalid+status.Partial > 0 {
 		c.Status = "WARN"
 	}
 	if status.Dead > 0 {
-		c.Detail += "; failed requests are retained in observations/dead"
+		c.Detail += lang.Text("cli.doctor.failed_requests_are_retained_in_observations_dead", nil)
 	}
 	return c
 }

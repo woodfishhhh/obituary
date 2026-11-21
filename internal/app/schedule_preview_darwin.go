@@ -3,6 +3,7 @@ package app
 import (
 	"errors"
 	"fmt"
+	"github.com/woodfishhhh/obituary/internal/i18n"
 	"os"
 	"path/filepath"
 
@@ -50,9 +51,12 @@ func PreviewSchedule(daemon, home, config string, enabled bool) ([]ScheduleUnit,
 }
 
 func PreviewScheduleRemoval(daemon, home, config string) string {
+	return PreviewScheduleRemovalFor(nil, daemon, home, config)
+}
+func PreviewScheduleRemovalFor(l *i18n.Localizer, daemon, home, config string) string {
 	units, err := PreviewSchedule(daemon, home, config, false)
 	if err != nil {
-		return fmt.Sprintf("query failed for launchd agent %q: %v", TaskName, err)
+		return fmt.Sprintf(l.HostText("query failed for launchd agent %q: %v"), TaskName, err)
 	}
-	return units[0].Action + " " + units[0].Path
+	return l.HostText(units[0].Action) + " " + units[0].Path
 }

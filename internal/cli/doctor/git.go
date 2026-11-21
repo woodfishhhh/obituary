@@ -13,7 +13,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
-func diagnoseSlowGit(home string, now time.Time) DoctorCheck {
+func (lang diagnostics) diagnoseSlowGit(home string, now time.Time) DoctorCheck {
 	c := DoctorCheck{Name: "slow-git", Status: "PASS"}
 	var latest ledger.Event
 	seen := make(map[ledger.Event]bool)
@@ -23,10 +23,10 @@ func diagnoseSlowGit(home string, now time.Time) DoctorCheck {
 			return c
 		}
 	}
-	c.Detail = fmt.Sprintf("%d Git verification timeouts in the last 24 hours (available audit logs)", c.Errors)
+	c.Detail = fmt.Sprintf(lang.Text("cli.doctor.git_verification_timeouts_in_the_last_hours", nil), c.Errors)
 	if c.Errors >= 3 {
 		c.Status = "WARN"
-		c.Detail += fmt.Sprintf("; automatic cleanup kept files in place and will retry; slow Git startup/query or index verification exceeded its budget; latest #%d: %s; inspect obit list and Git performance in that project", latest.ID, latest.Detail)
+		c.Detail += fmt.Sprintf(lang.Text("cli.doctor.automatic_cleanup_kept_files_in_place_and", nil), latest.ID, latest.Detail)
 	}
 	return c
 }

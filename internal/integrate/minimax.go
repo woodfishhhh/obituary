@@ -37,7 +37,7 @@ func PlanMiniMax(s Scope, commands Commands, uninstall bool) ([]Change, error) {
 		ch, err := planPluginRules(s, filepath.Join(s.Project, "AGENTS.md"), minimaxAgent, uninstall)
 		ch.Detail = "Project AGENTS.md only; native hooks load from MINIMAX_DATA_DIR/plugins; use a global installation for hooks"
 		if s.GuardRM && !uninstall {
-			ch.Detail += "; install PreToolUse with obit init -g --agent minimax-code --guard-rm"
+			ch = ch.appended(describe("; install PreToolUse with obit init -g --agent minimax-code --guard-rm"))
 		}
 		return []Change{ch}, err
 	}
@@ -234,11 +234,11 @@ func miniMaxBundleDetails(changes []Change, manifestPath, name, capability strin
 	}
 	for i := range changes {
 		if changes[i].Path == manifestPath && changes[i].Action != "preserve" {
-			changes[i].Detail = "Local native bundle; mcode plugin marketplace upgrade, then mcode plugin enable " + name + "@local; verify mcode plugin list --json; stop active sessions before refresh/uninstall because hooks use immutable cached snapshots"
+			changes[i] = changes[i].described(describe("Local native bundle; mcode plugin marketplace upgrade, then mcode plugin enable %s@local; verify mcode plugin list --json; stop active sessions before refresh/uninstall because hooks use immutable cached snapshots", name))
 			if uninstall {
 				changes[i].Detail = "Owned local bundle removed; refresh mcode plugin marketplace upgrade after active sessions stop; host runtime caches are retained"
 			} else if capability == "mcpServers" {
-				changes[i].Detail += "; node must be available in the host PATH; the relay pins obit.exe without a shell"
+				changes[i] = changes[i].appended(describe("; node must be available in the host PATH; the relay pins obit.exe without a shell"))
 			}
 		}
 	}

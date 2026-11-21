@@ -14,7 +14,7 @@ import (
 
 func preview(out io.Writer, self cmdutil.Executable, home string, enabled, resident bool) error {
 	if resident {
-		return fmt.Errorf("resident mode is unavailable; use the user timer: %w", core.ErrUnsupported)
+		return fmt.Errorf(cmdutil.Text("cli.daemon.resident_mode_is_unavailable_use_the_user"), core.ErrUnsupported)
 	}
 	exe, err := self.Path()
 	if err != nil {
@@ -30,7 +30,7 @@ func preview(out io.Writer, self cmdutil.Executable, home string, enabled, resid
 	}
 	changed := false
 	for _, unit := range units {
-		fmt.Fprintf(out, "  %-9s user unit %s\n", unit.Action, unit.Path)
+		fmt.Fprintf(out, cmdutil.Text("cli.daemon.user_unit"), cmdutil.Column(cmdutil.Localizer(), cmdutil.Localizer().Label(unit.Action)), unit.Path)
 		for _, line := range strings.Split(strings.TrimSuffix(unit.Content, "\n"), "\n") {
 			fmt.Fprintln(out, "    "+line)
 		}
@@ -44,6 +44,6 @@ func preview(out io.Writer, self cmdutil.Executable, home string, enabled, resid
 		}
 		fmt.Fprintf(out, "  systemctl --user %s --now %s\n", action, app.TaskName)
 	}
-	fmt.Fprintln(out, "  preview made no changes")
+	fmt.Fprintln(out, cmdutil.Text("cli.daemon.preview_made_no_changes"))
 	return nil
 }

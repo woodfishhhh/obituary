@@ -14,7 +14,7 @@ import (
 
 func TestDockerUnavailableIsInformational(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())
-	row := diagnoseDocker()
+	row := english.diagnoseDocker()
 	if row.Status != "INFO" || !strings.Contains(row.Detail, "skipped") {
 		t.Fatal(row)
 	}
@@ -26,12 +26,12 @@ func TestDockerDoctorPolicy(t *testing.T) {
 	}
 	_, state, _ := testenv.FakeDocker(t)
 	testenv.WriteDocker(t, state)
-	row := diagnoseDocker()
+	row := english.diagnoseDocker()
 	if row.Status != "PASS" || !strings.Contains(row.Detail, "recycle") || !strings.Contains(row.Detail, "volumes") {
 		t.Fatal(row)
 	}
 	t.Setenv("OBIT_FAKE_DOCKER_MODE", "fail")
-	if row := diagnoseDocker(); row.Status != "INFO" {
+	if row := english.diagnoseDocker(); row.Status != "INFO" {
 		t.Fatal(row)
 	}
 }
@@ -58,7 +58,7 @@ func TestDockerDoctorUnavailable(t *testing.T) {
 	}
 	testenv.FakeDocker(t)
 	t.Setenv("OBIT_FAKE_DOCKER_MODE", "fail")
-	c := diagnoseDocker()
+	c := english.diagnoseDocker()
 	if c.Status != "INFO" || !strings.Contains(c.Detail, "daemon unavailable") || !strings.Contains(c.Detail, "Start Docker Desktop") {
 		t.Fatal(c)
 	}
@@ -66,12 +66,12 @@ func TestDockerDoctorUnavailable(t *testing.T) {
 
 func TestDockerDoctorLegacyTarget(t *testing.T) {
 	st := ledger.State{Items: []ledger.Item{{Container: &docker.Identity{ID: "legacy"}}}}
-	c := diagnoseDockerTargets(st)
+	c := english.diagnoseDockerTargets(st)
 	if c.Status != "WARN" || !strings.Contains(c.Detail, "legacy v14") {
 		t.Fatal(c)
 	}
 	st.Items[0].Container.Target = &docker.Target{Endpoint: "test", DaemonID: "one"}
-	if c := diagnoseDockerTargets(st); c.Status != "PASS" {
+	if c := english.diagnoseDockerTargets(st); c.Status != "PASS" {
 		t.Fatal(c)
 	}
 }

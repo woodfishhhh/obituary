@@ -168,6 +168,9 @@ func agentGoldenValue(v reflect.Value) any {
 		out := map[string]any{}
 		for i := range v.NumField() {
 			name := v.Type().Field(i).Name
+			if v.Type() == reflect.TypeFor[Change]() && name == "display" {
+				continue
+			} // Human rendering, not installation intent.
 			// Optional shortcut transactions have no state in agent plans.
 			if name == "relocated" && v.Field(i).IsNil() {
 				continue

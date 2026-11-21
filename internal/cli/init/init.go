@@ -43,22 +43,22 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 				return err
 			}
 			if withContextMenu && noContextMenu {
-				return errors.New("--context-menu conflicts with --no-context-menu")
+				return errors.New(cmdutil.Text("cli.init.context_menu_conflicts_with_no_context_menu"))
 			}
 			if withSkill && noSkill {
-				return errors.New("--skill conflicts with --no-skill")
+				return errors.New(cmdutil.Text("cli.init.skill_conflicts_with_no_skill"))
 			}
 			var selected []string
 			for _, agent := range agents {
 				if !slices.Contains(AgentNames(), agent) {
-					return fmt.Errorf("unknown agent %q (supported: %s)", agent, strings.Join(AgentNames(), ", "))
+					return fmt.Errorf(cmdutil.Text("cli.init.unknown_agent_supported"), agent, strings.Join(AgentNames(), ", "))
 				}
 				if !slices.Contains(selected, agent) {
 					selected = append(selected, agent)
 				}
 			}
 			if len(selected) == 0 {
-				return errors.New("--agent requires at least one name")
+				return errors.New(cmdutil.Text("cli.init.agent_requires_at_least_one_name"))
 			}
 			if format == "markdown" {
 				if !cmd.Flags().Changed("agent") {
@@ -72,7 +72,7 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 			if !global {
 				p, err := rulescmd.CurrentProject()
 				if err != nil {
-					return fmt.Errorf("%w; use -g for a user-wide install", err)
+					return fmt.Errorf(cmdutil.Text("cli.init.use_g_for_a_user_wide_install"), err)
 				}
 				scope.Project = p.Root
 			}
@@ -105,9 +105,9 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 			}
 			if !integrate.Pending(changes) && (startup == nil || !startup.Pending()) && !desktop.pending() {
 				if uninstall {
-					fmt.Println("nothing to remove")
+					fmt.Println(cmdutil.Text("cli.init.nothing_to_remove"))
 				} else {
-					fmt.Println("already installed")
+					fmt.Println(cmdutil.Text("cli.init.already_installed"))
 				}
 				return nil
 			}
@@ -116,12 +116,12 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 			}
 			if !yes {
 				if !cmdutil.IsTerminal(os.Stdin) {
-					return errors.New("not a terminal: re-run with --yes to apply these changes")
+					return errors.New(cmdutil.Text("cli.init.not_a_terminal_re_run_with_yes"))
 				}
-				fmt.Print("Apply these changes (backups are kept as .bak for 30 days)? [y/N] ")
+				fmt.Print(cmdutil.Text("cli.init.confirm"))
 				answer, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 				if a := strings.ToLower(strings.TrimSpace(answer)); a != "y" && a != "yes" {
-					return errors.New("nothing changed")
+					return errors.New(cmdutil.Text("cli.init.nothing_changed"))
 				}
 			}
 			// Manual changes only carry instructions. Keep real preserve conflicts
@@ -144,11 +144,11 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 			for _, agent := range selected {
 				switch {
 				case uninstall:
-					fmt.Println("removed; restart " + agentName(agent))
+					fmt.Println(cmdutil.Text("cli.init.removed_restart") + agentName(agent))
 				case agent == "codex":
-					fmt.Println("installed. Codex only runs hooks you have trusted: start Codex, run /hooks and trust Obituary's hooks (project hooks also need the project to be trusted).")
+					fmt.Println(cmdutil.Text("cli.init.installed_codex_only_runs_hooks_you_have"))
 				default:
-					fmt.Println("installed; restart " + agentName(agent))
+					fmt.Println(cmdutil.Text("cli.init.installed_restart") + agentName(agent))
 				}
 			}
 			if !uninstall {
@@ -206,14 +206,14 @@ func (p Planner) showHookPlan(scope integrate.Scope, agent string) error {
 		return err
 	}
 	if !integrate.Pending(changes) {
-		fmt.Println(agentName(agent) + " integration: installed")
+		fmt.Println(agentName(agent) + cmdutil.Text("cli.init.integration_installed"))
 	} else {
-		fmt.Println(agentName(agent) + " integration: not (fully) installed; obit init would:")
+		fmt.Println(agentName(agent) + cmdutil.Text("cli.init.integration_not_fully_installed_obit_init_would"))
 	}
 	printChanges(changes)
 	registered, effective := integrate.GuardRMStatus(changes, agent)
-	status, _ := DeleteGuardStatus(registered, effective)
-	fmt.Printf("delete guard: %s\n", status)
+	status, _ := DeleteGuardStatus(cmdutil.Localizer(), registered, effective)
+	fmt.Printf(cmdutil.Text("cli.init.delete_guard"), status)
 	return nil
 }
 
@@ -229,7 +229,7 @@ func agentName(agent string) string {
 
 func incompleteIntegration(changes []integrate.Change) error {
 	if slices.ContainsFunc(changes, func(c integrate.Change) bool { return c.Manual && !c.Implicit }) {
-		fmt.Println("未完成，需要手动步骤 (incomplete; manual steps required): complete the steps above, then inspect with obit init --show; manual host state cannot be verified automatically.")
+		fmt.Println(cmdutil.Text("cli.init.incomplete_manual_steps_required_complete_the_steps"))
 		return cmdutil.ErrReported
 	}
 	return integrate.PreservedError(changes)
@@ -239,13 +239,13 @@ func printChanges(changes []integrate.Change) {
 	for _, c := range changes {
 		detail := ""
 		if c.Detail != "" && c.Detail != "Agent Skill → "+c.Path {
-			detail = "  (" + c.Detail + ")"
+			detail = "  (" + c.DisplayDetail(cmdutil.Localizer()) + ")"
 		}
 		if c.Extension == "skill" && strings.HasSuffix(c.Path, "SKILL.md") {
 			fmt.Printf("  Agent Skill → %s%s\n", c.Path, detail)
 			continue
 		}
-		fmt.Printf("  %-9s %s%s\n", c.Action, c.Path, detail)
+		fmt.Printf("  %-9s %s%s\n", cmdutil.Column(cmdutil.Localizer(), cmdutil.Localizer().Label(c.Action)), c.Path, detail)
 		for _, args := range c.Commands {
 			fmt.Println("    " + integrate.CommandText(args))
 		}

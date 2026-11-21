@@ -10,7 +10,21 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
+	"golang.org/x/text/language"
 )
+
+func TestMissingTranslationRendersEnglishDefault(t *testing.T) {
+	bundle := goi18n.NewBundle(language.English)
+	if err := bundle.AddMessages(language.SimplifiedChinese, &goi18n.Message{ID: "other", Other: "other"}); err != nil {
+		t.Fatal(err)
+	}
+	l := &Localizer{language: Chinese, localizer: goi18n.NewLocalizer(bundle, string(Chinese))}
+	if got := l.Text("cli.warning", map[string]any{"Text": "sample"}); got != "warning: sample" {
+		t.Fatalf("got %q", got)
+	}
+}
 
 func TestMessageFilesMatchEnglish(t *testing.T) {
 	english := readMessageFile(t, "messages/active.en.json")
@@ -28,6 +42,18 @@ func TestMessageFilesMatchEnglish(t *testing.T) {
 		name := "messages/" + entry.Name()
 		if err := validateMessageCatalog(english, readMessageFile(t, name)); err != nil {
 			t.Errorf("%s: %v", name, err)
+		}
+	}
+}
+
+func TestEveryCLILanguageHasNonemptyMessages(t *testing.T) {
+	for _, tag := range supportedTags {
+		lang := tag.String()
+		catalog := readMessageFile(t, "messages/active."+lang+".json")
+		for id := range defaultMessages {
+			if strings.TrimSpace(catalog[id]) == "" {
+				t.Errorf("%s: missing or blank message %s", lang, id)
+			}
 		}
 	}
 }
@@ -60,7 +86,7 @@ func validateMessageCatalog(english, catalog map[string]string) error {
 			problems = append(problems, "extra key "+key)
 		}
 	}
-	placeholders := regexp.MustCompile("%[ds]|[{][{][^}]+[}][}]")
+	placeholders := regexp.MustCompile(`%[-+#0-9.]*[dsqtwv]|\{\{[^}]+\}\}`)
 	for key, value := range english {
 		translated, ok := catalog[key]
 		if !ok {

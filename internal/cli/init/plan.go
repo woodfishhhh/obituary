@@ -3,6 +3,7 @@ package init
 import (
 	"errors"
 	"fmt"
+	"github.com/woodfishhhh/obituary/internal/i18n"
 	"os"
 	"runtime"
 	"slices"
@@ -48,10 +49,10 @@ func (p Planner) IntegrationPlans(agents []string, scope integrate.Scope, uninst
 func (p Planner) integrationPlan(agent string, scope integrate.Scope, uninstall bool) ([]integrate.Change, error) {
 	installer, ok := integrate.LookupAgent(agent)
 	if !ok {
-		return nil, fmt.Errorf("agent %q has no installer", agent)
+		return nil, fmt.Errorf(cmdutil.Text("cli.init.agent_has_no_installer"), agent)
 	}
 	if scope.GuardRM && !uninstall && installer.Capabilities.DeleteGuard.Level == hook.Unsupported {
-		return nil, fmt.Errorf("--guard-rm is unsupported: %s", installer.Capabilities.DeleteGuard.Detail)
+		return nil, fmt.Errorf(cmdutil.Text("cli.init.guard_rm_is_unsupported"), cmdutil.Localizer().HostText(installer.Capabilities.DeleteGuard.Detail))
 	}
 	executable, err := p.Executable.Path()
 	if err != nil {
@@ -75,13 +76,13 @@ func (p Planner) integrationPlan(agent string, scope integrate.Scope, uninstall 
 	return p.planExtensions(changes, scope, agent, uninstall)
 }
 
-func DeleteGuardStatus(registered, covered bool) (string, bool) {
-	registration, coverage := "no (opt-in with --guard-rm)", "none"
+func DeleteGuardStatus(language *i18n.Localizer, registered, covered bool) (string, bool) {
+	registration, coverage := language.Text("cli.init.guard_opt_in", nil), language.Text("cli.init.guard_none", nil)
 	if registered {
-		registration, coverage = "yes", "incomplete"
+		registration, coverage = language.Text("cli.init.guard_registered", nil), language.Text("cli.init.guard_incomplete", nil)
 	}
 	if covered {
-		coverage = "complete"
+		coverage = language.Text("cli.init.guard_complete", nil)
 	}
 	var disabledBy []string
 	if os.Getenv("OBIT_GUARD_RM") == "0" {
@@ -90,10 +91,10 @@ func DeleteGuardStatus(registered, covered bool) (string, bool) {
 	if hook.Disabled() {
 		disabledBy = append(disabledBy, "OBIT_DISABLED")
 	}
-	environment := "not disabled"
+	environment := language.Text("cli.init.guard_active", nil)
 	if len(disabledBy) > 0 {
-		environment = "disabled by " + strings.Join(disabledBy, ", ")
+		environment = language.Text("cli.init.guard_disabled_by", nil) + strings.Join(disabledBy, ", ")
 	}
-	return fmt.Sprintf("registered: %s; matcher coverage: %s; current process environment: %s (agent environment not inspected)", registration, coverage, environment),
+	return fmt.Sprintf(language.Text("cli.init.guard_status", nil), registration, coverage, environment),
 		registered && (!covered || len(disabledBy) > 0)
 }

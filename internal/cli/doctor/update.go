@@ -9,7 +9,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/update"
 )
 
-func diagnoseUpdate(home string) DoctorCheck {
+func (lang diagnostics) diagnoseUpdate(home string) DoctorCheck {
 	out := DoctorCheck{Name: "update", Status: "INFO"}
 	cfg, err := config.Load()
 	if err != nil {
@@ -20,16 +20,16 @@ func diagnoseUpdate(home string) DoctorCheck {
 	if err != nil {
 		state.LastError = err.Error()
 	}
-	checked := "never"
+	checked := lang.Text("cli.doctor.never", nil)
 	if !state.CheckedAt.IsZero() {
 		checked = state.CheckedAt.Format(time.RFC3339)
 	}
-	out.Detail = fmt.Sprintf("check=%t; last checked=%s; newer=%t", cfg.Update.Check, checked, update.Newer(buildinfo.Version, state.Latest.Version))
+	out.Detail = fmt.Sprintf(lang.Text("cli.doctor.check_last_checked_newer", nil), cfg.Update.Check, checked, update.Newer(buildinfo.Version, state.Latest.Version))
 	if state.Latest.Version != "" {
-		out.Detail += "; latest=" + state.Latest.Version
+		out.Detail += lang.Text("cli.doctor.latest", nil) + state.Latest.Version
 	}
 	if state.LastError != "" {
-		out.Detail += "; lastError=" + state.LastError
+		out.Detail += lang.Text("cli.doctor.lasterror", nil) + state.LastError
 	}
 	return out
 }

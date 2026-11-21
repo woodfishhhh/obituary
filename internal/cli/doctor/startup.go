@@ -8,8 +8,8 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-func diagnoseStartup(daemon, home string) DoctorCheck {
-	c := DoctorCheck{Name: "tray-startup", Status: "WARN", Detail: "tray login startup is absent; rerun obit init"}
+func (lang diagnostics) diagnoseStartup(daemon, home string) DoctorCheck {
+	c := DoctorCheck{Name: "tray-startup", Status: "WARN", Detail: lang.Text("cli.doctor.tray_login_startup_is_absent_rerun_obit", nil)}
 	command := cmdutil.RunnerAutostart()
 	if command == "" {
 		return c
@@ -21,9 +21,9 @@ func diagnoseStartup(daemon, home string) DoctorCheck {
 	}
 	want := windows.ComposeCommandLine([]string{daemon, "--tray", "--home", home, "--config-dir", config})
 	if command != want {
-		c.Detail = "Run command differs from this installation: " + command
+		c.Detail = lang.Text("cli.doctor.run_command_differs_from_this_installation", nil) + command
 		return c
 	}
-	c.Status, c.Detail = "PASS", "tray starts at login: "+command
+	c.Status, c.Detail = "PASS", lang.Text("cli.doctor.tray_starts_at_login", nil)+command
 	return c
 }

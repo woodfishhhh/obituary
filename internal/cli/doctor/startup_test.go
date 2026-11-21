@@ -18,7 +18,7 @@ func TestDoctorChecksTrayStartupCommand(t *testing.T) {
 		{windows.ComposeCommandLine([]string{`C:\obitd.exe`, "--tray", "--home", `C:\data`, "--config-dir", `C:\config`}), "PASS"},
 	} {
 		cmdutil.RunnerAutostart = func() string { return tc.command }
-		if got := diagnoseStartup(`C:\obitd.exe`, `C:\data`); got.Status != tc.status {
+		if got := english.diagnoseStartup(`C:\obitd.exe`, `C:\data`); got.Status != tc.status {
 			t.Fatal(got)
 		}
 	}

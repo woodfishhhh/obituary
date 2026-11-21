@@ -12,41 +12,41 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func diagnoseStartup(string, string) DoctorCheck {
+func (lang diagnostics) diagnoseStartup(string, string) DoctorCheck {
 	if runtime.GOOS != "darwin" {
-		return DoctorCheck{Name: "tray-startup", Status: "INFO", Detail: "tray startup and Explorer labels are Windows-only"}
+		return DoctorCheck{Name: "tray-startup", Status: "INFO", Detail: lang.Text("cli.doctor.tray_startup_and_explorer_labels_are_windows", nil)}
 	}
 	if path := cmdutil.RunnerAutostart(); path != "" {
-		return DoctorCheck{Name: "tray-startup", Status: "PASS", Detail: "tray starts at login: " + path}
+		return DoctorCheck{Name: "tray-startup", Status: "PASS", Detail: lang.Text("cli.doctor.tray_starts_at_login", nil) + path}
 	}
-	return DoctorCheck{Name: "tray-startup", Status: "WARN", Detail: "tray login startup is absent; enable it in the Obituary window settings"}
+	return DoctorCheck{Name: "tray-startup", Status: "WARN", Detail: lang.Text("cli.doctor.tray_login_startup_is_absent_enable_it", nil)}
 }
 
-func diagnoseRunner(home string) DoctorCheck {
-	c := DoctorCheck{Name: "runner", Status: "WARN", Detail: "no user timer serves this data directory; obit daemon enable installs one; without systemd run obitd --once from cron"}
+func (lang diagnostics) diagnoseRunner(home string) DoctorCheck {
+	c := DoctorCheck{Name: "runner", Status: "WARN", Detail: lang.Text("cli.doctor.no_user_timer_serves_this_data_directory", nil)}
 	if runtime.GOOS == "darwin" {
-		c.Detail = "no launchd user agent serves this data directory; obit daemon enable installs one for the signed-in user"
+		c.Detail = lang.Text("cli.doctor.no_launchd_user_agent_serves_this_data", nil)
 	}
 	if cmdutil.RunnerInstalled() {
 		target, err := cmdutil.RunnerTarget()
 		if err != nil {
 			c.Detail = err.Error()
 		} else if cmdutil.RunnerServes(home) {
-			c.Status, c.Detail = "PASS", "user timer serves this data directory: "+target
+			c.Status, c.Detail = "PASS", lang.Text("cli.doctor.user_timer_serves_this_data_directory", nil)+target
 		}
 	}
 	return c
 }
 
-func diagnoseData(home string) DoctorCheck {
-	c := DoctorCheck{Name: "data", Status: "PASS", Detail: "data directory is accessible: " + home}
+func (lang diagnostics) diagnoseData(home string) DoctorCheck {
+	c := DoctorCheck{Name: "data", Status: "PASS", Detail: lang.Text("cli.doctor.data_directory_is_accessible", nil) + home}
 	info, err := os.Stat(home)
 	if errors.Is(err, os.ErrNotExist) {
-		c.Status, c.Detail = "WARN", "data directory does not exist: "+home
+		c.Status, c.Detail = "WARN", lang.Text("cli.doctor.data_directory_does_not_exist", nil)+home
 		return c
 	}
 	if err == nil && !info.IsDir() {
-		err = errors.New("data path is not a directory")
+		err = errors.New(lang.Text("cli.doctor.data_path_is_not_a_directory", nil))
 	}
 	if err == nil {
 		err = unix.Access(home, unix.W_OK|unix.X_OK)

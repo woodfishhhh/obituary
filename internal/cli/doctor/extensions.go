@@ -7,7 +7,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/integrate"
 )
 
-func diagnoseExtension(kind string, current cmdutil.Executable) DoctorCheck {
+func (lang diagnostics) diagnoseExtension(kind string, current cmdutil.Executable) DoctorCheck {
 	c := DoctorCheck{Name: kind, Status: "PASS"}
 	executable, err := current.Path()
 	if err != nil {
@@ -15,8 +15,12 @@ func diagnoseExtension(kind string, current cmdutil.Executable) DoctorCheck {
 		return c
 	}
 	var details []string
+	display := lang.Localizer
+	if lang.machine {
+		display = nil
+	}
 	for _, agent := range []string{"claude", "codex"} {
-		st, err := integrate.InspectExtension(integrate.Scope{Global: true}, agent, kind, executable)
+		st, err := integrate.InspectExtensionFor(display, integrate.Scope{Global: true}, agent, kind, executable)
 		if err != nil {
 			c.Status = "FAIL"
 			details = append(details, agent+": "+err.Error())
@@ -26,12 +30,12 @@ func diagnoseExtension(kind string, current cmdutil.Executable) DoctorCheck {
 			c.Status = "WARN"
 		}
 		if !st.Installed {
-			st.Detail += "; install with obit init -g --agent " + agent
+			st.Detail += lang.Text("cli.doctor.install_with_obit_init_g_agent", nil) + agent
 			if kind == "mcp" {
 				st.Detail += " --mcp"
 			}
 		}
-		details = append(details, agent+" global: "+st.Detail)
+		details = append(details, agent+lang.Text("cli.doctor.global", nil)+st.Detail)
 	}
 	c.Detail = strings.Join(details, "; ")
 	return c

@@ -65,7 +65,7 @@ codex = "powershell"
 讣告不会悄悄忽略写错的键。如果忽略，`retention = 30` 会让 7 天的保留期原样生效，而你以为已经改成了 30。所以遇到不认识的键，`obit config` 会报出文件路径、行号和完整的键名，拼写接近时还会给出建议：
 
 ```text
-obit: config file has errors: …\config.toml:2: unknown key "graveyard.retention" (did you mean "graveyard.retention_days"?)
+obit: 配置文件有错误：…\config.toml:2: unknown key "graveyard.retention" (did you mean "graveyard.retention_days"?)
 ```
 
 取值超出范围时同样会指出是哪一项、允许什么，比如 `graveyard.retention_days must be between 1 and 3650`。TOML 语法错误也一样让 `obit config` 失败。改好文件再运行一次，不再报错就是好了。

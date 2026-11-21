@@ -73,9 +73,9 @@ func planClaudeMCP(ch Change, executable string, uninstall bool) (Change, error)
 		planned.Commands = append(planned.Commands, claudeAddJSON(planned.claude.want))
 	}
 	planned.data = nil // the state file is never written by Apply
-	planned.Detail = "Claude user MCP via official CLI; requires >= 2.1.318 for configuration locking; " + ClaudeUpgradeHint
+	planned = planned.described(describe("Claude user MCP via official CLI; requires >= 2.1.318 for configuration locking; %s", describe(ClaudeUpgradeHint)))
 	if len(before) != 0 && !uninstall {
-		planned.Detail += "; remove then add is not atomic"
+		planned = planned.appended(describe("; remove then add is not atomic"))
 	}
 	return planned, nil
 }

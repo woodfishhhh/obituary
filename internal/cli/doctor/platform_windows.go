@@ -12,52 +12,52 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-func diagnoseRunner(home string) DoctorCheck {
-	c := DoctorCheck{Name: "runner", Status: "WARN", Detail: "no runner serves this data directory; obit daemon enable installs one"}
+func (lang diagnostics) diagnoseRunner(home string) DoctorCheck {
+	c := DoctorCheck{Name: "runner", Status: "WARN", Detail: lang.Text("cli.doctor.no_runner_serves_this_data_directory_obit", nil)}
 	running := cmdutil.RunnerRunning(home)
 	if cmdutil.RunnerInstalled() { //nolint:nestif // Existing Windows diagnostic flow moved unchanged into the platform file.
 		target, err := cmdutil.RunnerTarget()
 		switch {
 		case errors.Is(err, app.ErrScheduleDisabled):
-			c.Status, c.Detail = "FAIL", "scheduled task is disabled: "+target
+			c.Status, c.Detail = "FAIL", lang.Text("cli.doctor.scheduled_task_is_disabled", nil)+target
 		case err != nil:
-			c.Status, c.Detail = "FAIL", "cannot read scheduled task: "+err.Error()
+			c.Status, c.Detail = "FAIL", lang.Text("cli.doctor.cannot_read_scheduled_task", nil)+err.Error()
 		case !cmdutil.RunnerServes(home):
-			c.Status, c.Detail = "FAIL", "scheduled task does not serve this data directory: "+target
+			c.Status, c.Detail = "FAIL", lang.Text("cli.doctor.scheduled_task_does_not_serve_this_data", nil)+target
 		default:
 			args, err := windows.DecomposeCommandLine(target)
 			if err == nil && len(args) > 0 {
-				err = regularFile(args[0])
+				err = lang.regularFile(args[0])
 				if err == nil && !strings.EqualFold(filepath.Base(args[0]), "obitd.exe") {
-					err = errors.New("scheduled command is not obitd.exe")
+					err = errors.New(lang.Text("cli.doctor.scheduled_command_is_not_obitd_exe", nil))
 				}
 			} else if err == nil {
-				err = errors.New("empty scheduled command")
+				err = errors.New(lang.Text("cli.doctor.empty_scheduled_command", nil))
 			}
 			if err != nil {
-				c.Status, c.Detail = "FAIL", "invalid scheduled executable: "+err.Error()
+				c.Status, c.Detail = "FAIL", lang.Text("cli.doctor.invalid_scheduled_executable", nil)+err.Error()
 			} else {
-				c.Status, c.Detail = "PASS", "scheduled task serves this data directory: "+target
+				c.Status, c.Detail = "PASS", lang.Text("cli.doctor.scheduled_task_serves_this_data_directory", nil)+target
 			}
 		}
 		if c.Status == "FAIL" && running && !errors.Is(err, app.ErrScheduleDisabled) {
-			c.Status, c.Detail = "WARN", c.Detail+"; a resident daemon currently serves this directory"
+			c.Status, c.Detail = "WARN", c.Detail+lang.Text("cli.doctor.a_resident_daemon_currently_serves_this_directory", nil)
 		}
 	} else if running {
-		c.Status, c.Detail = "PASS", "resident daemon serves this data directory"
+		c.Status, c.Detail = "PASS", lang.Text("cli.doctor.resident_daemon_serves_this_data_directory", nil)
 	}
 	return c
 }
 
-func diagnoseData(home string) DoctorCheck {
-	c := DoctorCheck{Name: "data", Status: "PASS", Detail: "data directory grants creation access; existing store.lock and sessions are accessible: " + home}
+func (lang diagnostics) diagnoseData(home string) DoctorCheck {
+	c := DoctorCheck{Name: "data", Status: "PASS", Detail: lang.Text("cli.doctor.data_directory_grants_creation_access_existing_store", nil) + home}
 	info, err := os.Stat(home)
 	if errors.Is(err, os.ErrNotExist) {
-		c.Status, c.Detail = "WARN", "data directory does not exist: "+home
+		c.Status, c.Detail = "WARN", lang.Text("cli.doctor.data_directory_does_not_exist", nil)+home
 		return c
 	}
 	if err == nil && !info.IsDir() {
-		err = errors.New("data path is not a directory: " + home)
+		err = errors.New(lang.Text("cli.doctor.data_path_is_not_a_directory_diagnosedata", nil) + home)
 	}
 	if err == nil {
 		for _, entry := range []struct {

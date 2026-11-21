@@ -2,20 +2,22 @@ package init
 
 import (
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
+	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/integrate"
 )
 
 // AgentInspector owns the snapshot for one diagnostic invocation. Executable
 // resolution is shared across agents, just like the read-only file snapshot.
 type AgentInspector struct {
+	language   *i18n.Localizer
 	scope      integrate.Scope
 	executable cmdutil.Executable
 	prefixes   *integrate.Commands
 	commandErr error
 }
 
-func NewAgentInspector(scope integrate.Scope, executable cmdutil.Executable) *AgentInspector {
-	return &AgentInspector{scope: scope.ForInspection(), executable: executable}
+func NewAgentInspector(scope integrate.Scope, executable cmdutil.Executable, language *i18n.Localizer) *AgentInspector {
+	return &AgentInspector{language: language, scope: scope.ForInspection(), executable: executable}
 }
 
 func (in *AgentInspector) commands(agent string) (integrate.Commands, error) {

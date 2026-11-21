@@ -33,7 +33,7 @@ func NewCmd() *cobra.Command {
 				return err
 			}
 			if state.Status == rules.Absent {
-				return fmt.Errorf("%s does not exist", path)
+				return fmt.Errorf(cmdutil.Text("cli.trust.does_not_exist"), path)
 			}
 			if state.Warning != "" {
 				fmt.Println(state.Warning)
@@ -45,18 +45,18 @@ func NewCmd() *cobra.Command {
 			fmt.Println(strings.Repeat("-", 60))
 			if !yes {
 				if !cmdutil.IsTerminal(os.Stdin) {
-					return errors.New("not a terminal: review the rules above and re-run with --yes (agents: ask the user first)")
+					return errors.New(cmdutil.Text("cli.trust.not_a_terminal_review_the_rules_above"))
 				}
-				fmt.Print("These rules can give untracked files in this project a lifespan. Trust them? [y/N] ")
+				fmt.Print(cmdutil.Text("cli.trust.confirm"))
 				answer, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 				if a := strings.ToLower(strings.TrimSpace(answer)); a != "y" && a != "yes" {
-					return errors.New("not trusted")
+					return errors.New(cmdutil.Text("cli.trust.not_trusted"))
 				}
 			}
 			if _, err := e.Trust.Trust(path, state.SHA256); err != nil {
 				return err
 			}
-			fmt.Println("trusted (sha256 " + state.SHA256[:12] + "…)")
+			fmt.Println(cmdutil.Text("cli.trust.trusted_sha256") + state.SHA256[:12] + "…)")
 			return nil
 		},
 	}

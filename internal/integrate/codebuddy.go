@@ -168,11 +168,11 @@ func PlanCodeBuddyMCP(s Scope, executable string, uninstall bool) ([]Change, err
 		checks = append(checks, ch)
 	}
 	if selected == legacy {
-		detail := fmt.Sprintf("Legacy CodeBuddy runtime state is not edited: inspect the obituary server with /mcp; if the name is unused, run codebuddy mcp add --scope user obituary -- %s mcp; retain existing server options when refreshing, and do not create a higher-priority .mcp.json that hides existing services", strconv.Quote(filepath.ToSlash(executable)))
+		detail := describe("Legacy CodeBuddy runtime state is not edited: inspect the obituary server with /mcp; if the name is unused, run codebuddy mcp add --scope user obituary -- %s mcp; retain existing server options when refreshing, and do not create a higher-priority .mcp.json that hides existing services", strconv.Quote(filepath.ToSlash(executable)))
 		if uninstall {
-			detail = "Legacy CodeBuddy runtime state is not edited: in /mcp remove only the user-scoped obituary server after verifying command is obit.exe and args is [mcp]"
+			detail = describe("Legacy CodeBuddy runtime state is not edited: in /mcp remove only the user-scoped obituary server after verifying command is obit.exe and args is [mcp]")
 		}
-		return []Change{{Path: legacy, Action: "preserve", Manual: true, Detail: detail}}, nil
+		return []Change{Change{Path: legacy, Action: "preserve", Manual: true}.described(detail)}, nil
 	}
 	plan, err := PlanCodeBuddyMCPFile(s, selected, "codebuddy", executable, uninstall)
 	if err != nil {

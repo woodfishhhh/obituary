@@ -23,7 +23,7 @@ func planStartup(self cmdutil.Executable, enabled bool) (*app.AutostartPlan, err
 		if !enabled {
 			action = "remove"
 		}
-		fmt.Printf("  %-9s HKCU Run %s %s\n", action, plan.Name, plan.After)
+		fmt.Printf("  %-9s HKCU Run %s %s\n", cmdutil.Column(cmdutil.Localizer(), cmdutil.Localizer().Label(action)), plan.Name, plan.After)
 	}
 	return plan, nil
 }
@@ -38,7 +38,7 @@ func readStartupPlan(self cmdutil.Executable, enabled bool) (*app.AutostartPlan,
 	}
 	daemon := filepath.Join(filepath.Dir(exe), "obitd.exe")
 	if _, err := os.Stat(daemon); enabled && errors.Is(err, os.ErrNotExist) {
-		fmt.Println("  tray startup unavailable: obitd.exe is missing next to obit; install the companion and rerun init")
+		fmt.Println(cmdutil.Text("cli.init.tray_startup_unavailable_obitd_exe_is_missing"))
 		return nil, nil
 	} else if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return nil, err

@@ -29,7 +29,7 @@ func NewCmd() *cobra.Command {
 			outcomes, err := svc.Sweep(dryRun)
 			err = errors.Join(proposalErr, err)
 			if errors.Is(err, core.ErrSweepBusy) {
-				return errors.New("another sweep is running (probably the daemon); try again shortly")
+				return errors.New(cmdutil.OutputLocalizer(asJSON).Text("cli.sweep.another_sweep_is_running_probably_the_daemon", nil))
 			}
 			err = cmdutil.Committed(err)
 			if asJSON {
@@ -57,13 +57,13 @@ func NewCmd() *cobra.Command {
 
 func printOutcomes(outcomes []core.Outcome, dryRun bool) {
 	if len(outcomes) == 0 {
-		fmt.Println("nothing is due")
+		fmt.Println(cmdutil.Text("cli.sweep.nothing_is_due"))
 	}
 	verb := ""
 	if dryRun {
-		verb = "would be "
+		verb = cmdutil.Text("cli.preview.would_be")
 	}
 	for _, o := range outcomes {
-		fmt.Printf("#%d %s%s %s %s\n", o.Item.ID, verb, o.Action, o.Path, o.Detail)
+		fmt.Printf("#%d %s%s %s %s\n", o.Item.ID, verb, cmdutil.Localizer().Label(o.Action), o.Path, o.Detail)
 	}
 }

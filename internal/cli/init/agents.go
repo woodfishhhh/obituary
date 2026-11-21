@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
+	"github.com/woodfishhhh/obituary/internal/i18n"
 	"os"
 	"path/filepath"
 	"slices"
@@ -41,7 +43,7 @@ func InspectAgent(name string, scope integrate.Scope) (AgentStatus, error) {
 }
 
 func (p Planner) InspectAgent(name string, scope integrate.Scope) (AgentStatus, error) {
-	return NewAgentInspector(scope, p.Executable).Inspect(name)
+	return NewAgentInspector(scope, p.Executable, cmdutil.Localizer()).Inspect(name)
 }
 
 // Inspect reports one agent using this invocation's snapshot.
@@ -57,10 +59,10 @@ func (in *AgentInspector) Inspect(name string) (AgentStatus, error) {
 	if host, ok := hook.Lookup(name); ok && !installed {
 		status.Capabilities = host.Capabilities
 	} else if !installed {
-		return status, fmt.Errorf("unknown agent %q", name)
+		return status, fmt.Errorf(cmdutil.Text("cli.init.unknown_agent"), name)
 	}
 	if !installed {
-		status.Installation, status.Detail = "unavailable", "安装尚未提供 (installer not available)"
+		status.Installation, status.Detail = "unavailable", in.language.Text("cli.init.installer_not_available", nil)
 		return status, nil
 	}
 	commands, err := in.commands(name)
@@ -70,13 +72,13 @@ func (in *AgentInspector) Inspect(name string) (AgentStatus, error) {
 	changes, err := installer.Plan(scope, commands, false)
 	var manual *integrate.ManualSteps
 	if errors.As(err, &manual) {
-		return in.inspectManualAgent(status, name, manual.Steps)
+		return in.inspectManualAgent(status, name, manual.DisplaySteps(in.language))
 	}
 	if err != nil {
 		return status, err
 	}
 	if len(changes) == 0 {
-		status.Installation, status.Detail = "unavailable", "安装尚未提供 (no automatic configuration target for this scope)"
+		status.Installation, status.Detail = "unavailable", in.language.Text("cli.init.scope_unavailable", nil)
 		return status, nil
 	}
 	if scope.MCP || scope.Skill {
@@ -89,7 +91,7 @@ func (in *AgentInspector) Inspect(name string) (AgentStatus, error) {
 	automatic := false
 	for _, change := range changes {
 		if change.Manual && !change.Implicit {
-			steps = append(steps, change.Path+": "+change.Detail)
+			steps = append(steps, change.Path+": "+change.DisplayDetail(in.language))
 		}
 		if !change.Manual && !change.Implicit && change.Action != "preserve" {
 			automatic = true
@@ -98,7 +100,7 @@ func (in *AgentInspector) Inspect(name string) (AgentStatus, error) {
 	if !automatic && len(steps) == 0 {
 		for _, change := range changes {
 			if !change.Implicit && change.Detail != "" {
-				steps = append(steps, change.Path+": "+change.Detail)
+				steps = append(steps, change.Path+": "+change.DisplayDetail(in.language))
 			}
 		}
 	}
@@ -106,18 +108,18 @@ func (in *AgentInspector) Inspect(name string) (AgentStatus, error) {
 		return in.inspectManualAgent(status, name, strings.Join(steps, "\n"))
 	}
 	if !automatic {
-		status.Installation, status.Detail = "unavailable", "安装尚未提供 (no automatic configuration target for this scope)"
+		status.Installation, status.Detail = "unavailable", in.language.Text("cli.init.scope_unavailable", nil)
 		return status, nil
 	}
-	status.Installation, status.Detail = "installed", "已安装 (integration is current)"
+	status.Installation, status.Detail = "installed", in.language.Text("cli.init.integration_current", nil)
 	if integrate.Pending(changes) {
 		remove, err := installer.Plan(scope, commands, true)
 		if err != nil {
 			return status, err
 		}
-		status.Installation, status.Detail = "missing", "未安装 (integration is missing)"
+		status.Installation, status.Detail = "missing", in.language.Text("cli.init.integration_missing", nil)
 		if integrate.Pending(remove) {
-			status.Installation, status.Detail = "outdated", "需要刷新 (integration is outdated or incomplete)"
+			status.Installation, status.Detail = "outdated", in.language.Text("cli.init.integration_outdated", nil)
 		}
 	}
 	return status, nil
@@ -128,9 +130,9 @@ func (in *AgentInspector) inspectManualAgent(status AgentStatus, name, steps str
 	if err != nil {
 		return status, err
 	}
-	status.Installation, status.Detail = "missing", "未安装；接入需要手动步骤 (not installed; manual setup required): "+steps
+	status.Installation, status.Detail = "missing", in.language.Text("cli.init.manual_missing", nil)+steps
 	if present {
-		status.Installation, status.Detail = "manual", manualStatusDetail(steps)
+		status.Installation, status.Detail = "manual", manualStatusDetail(in.language, steps)
 	}
 	return status, nil
 }
@@ -143,7 +145,7 @@ func AgentInstallationPresent(name string, scope integrate.Scope) (bool, error) 
 }
 
 func (p Planner) AgentInstallationPresent(name string, scope integrate.Scope) (bool, error) {
-	return NewAgentInspector(scope, p.Executable).Present(name)
+	return NewAgentInspector(scope, p.Executable, cmdutil.Localizer()).Present(name)
 }
 
 // Present recognizes owned entries using this invocation's snapshot.
@@ -174,7 +176,7 @@ func (in *AgentInspector) Present(name string) (bool, error) {
 		remove, err := plan(true)
 		var manual *integrate.ManualSteps
 		if err != nil && !errors.As(err, &manual) {
-			errs = append(errs, fmt.Errorf("inspect %s removal: %w", name, err))
+			errs = append(errs, fmt.Errorf(cmdutil.Text("cli.init.inspect_removal"), name, err))
 		}
 		for _, change := range remove {
 			if !change.Manual && integrate.Pending([]integrate.Change{change}) {
@@ -224,11 +226,12 @@ func agentReceiptsPresent(name string, changes []integrate.Change) (bool, error)
 	return false, nil
 }
 
-func manualStatusDetail(steps string) string {
-	return "需要手动步骤 (manual steps required): " + steps + "\nNext: complete these steps in the host; manual activation cannot be verified automatically."
+func manualStatusDetail(language *i18n.Localizer, steps string) string {
+	return language.Text("cli.init.manual_steps", nil) + steps + language.Text("cli.init.manual_activate", nil)
 }
 
 func CapabilityText(c hook.Capabilities) string {
+	language := cmdutil.Localizer()
 	var parts []string
 	for _, field := range []struct {
 		name string
@@ -238,54 +241,61 @@ func CapabilityText(c hook.Capabilities) string {
 		{"session start", c.SessionStart}, {"stop", c.Stop}, {"session end", c.SessionEnd},
 		{"context", c.Context}, {"MCP", c.MCP}, {"skill", c.Skill},
 	} {
-		level := "不支持 (unsupported)"
+		level := language.Text("cli.init.unsupported", nil)
 		switch field.Level {
 		case hook.Supported:
-			level = "支持 (supported)"
+			level = language.Text("cli.init.supported", nil)
 		case hook.Limited:
-			level = "有限 (limited)"
+			level = language.Text("cli.init.limited", nil)
 		}
-		line := field.name + ": " + level
+		line := language.HostText(field.name) + ": " + level
 		if field.Detail != "" {
-			line += "; " + field.Detail
+			line += "; " + language.HostText(field.Detail)
 		}
 		target := field.Target
 		if target == (hook.Target{}) {
 			target = c.Target
 		}
-		if text := targetText(target); text != "" {
+		if text := targetTextFor(language, target); text != "" {
 			line += "; " + text
 		}
 		if field.ActuallyVerified() {
 			v := field.Verification
-			line += "; 实际验证: " + targetText(v.Target) + "; " + v.Evidence
+			line += language.Text("cli.init.verified_target", nil) + targetTextFor(language, v.Target) + "; " + language.HostText(v.Evidence)
 		}
 		parts = append(parts, line)
 	}
 	return strings.Join(parts, "\n  ")
 }
 
-func targetText(t hook.Target) string {
+var targetKeys = map[string]string{"宿主": "cli.target.host", "发行版": "cli.target.distribution", "版本": "cli.target.version", "作用域": "cli.target.scope"}
+
+func targetText(t hook.Target) string { return targetTextFor(nil, t) }
+func targetTextFor(l *i18n.Localizer, t hook.Target) string {
 	var parts []string
 	for _, field := range []struct{ name, value string }{
 		{"宿主", t.Host}, {"发行版", t.Distribution}, {"版本", t.Version}, {"作用域", t.Scope},
 	} {
 		if field.value != "" {
-			parts = append(parts, field.name+"="+field.value)
+			name := field.name
+			if l != nil {
+				name = l.Text(targetKeys[name], nil)
+			}
+			parts = append(parts, name+"="+field.value)
 		}
 	}
 	return strings.Join(parts, ", ")
 }
 
 func (p Planner) showAgents(scope integrate.Scope, names []string, summary bool) error {
-	inspector := NewAgentInspector(scope, p.Executable)
+	inspector := NewAgentInspector(scope, p.Executable, cmdutil.Localizer())
 	var firstErr error
 	statuses := make([]AgentStatus, 0, len(names))
 	for _, name := range names {
 		status, err := inspector.Inspect(name)
 		if err == nil {
 			var detail string
-			detail, _, err = integrate.AgentWindowsShellStatus(name)
+			detail, _, err = integrate.AgentWindowsShellStatus(inspector.language, name)
 			if detail != "" {
 				status.Detail += "; " + detail
 			}
@@ -300,11 +310,11 @@ func (p Planner) showAgents(scope integrate.Scope, names []string, summary bool)
 		statuses = append(statuses, status)
 	}
 	if summary {
-		fmt.Println("安装摘要 (installation summary):")
+		fmt.Println(cmdutil.Text("cli.init.installation_summary"))
 		for i, name := range names {
 			fmt.Printf("  %s: %s\n", name, installationSummary(statuses[i].Installation))
 		}
-		fmt.Println("\n能力明细 (capability details):")
+		fmt.Println(cmdutil.Text("cli.init.capability_details"))
 	}
 	for i, name := range names {
 		fmt.Printf("%s: %s\n  %s\n", name, statuses[i].Detail, CapabilityText(statuses[i].Capabilities))
@@ -316,16 +326,16 @@ func (p Planner) showAgents(scope integrate.Scope, names []string, summary bool)
 func installationSummary(state string) string {
 	switch state {
 	case "installed":
-		return "已安装，最新 (installed, current)"
+		return cmdutil.Text("cli.init.installed_current")
 	case "outdated":
-		return "已安装，需要刷新 (installed, outdated or incomplete)"
+		return cmdutil.Text("cli.init.installed_outdated_or_incomplete")
 	case "missing":
-		return "未安装 (not installed)"
+		return cmdutil.Text("cli.init.not_installed")
 	case "manual":
-		return "已有安装记录，手动激活及版本未核实 (manual setup, currency unverified)"
+		return cmdutil.Text("cli.init.manual_setup_currency_unverified")
 	case "unavailable":
-		return "无自动安装支持 (installer unavailable)"
+		return cmdutil.Text("cli.init.installer_unavailable")
 	default:
-		return "无法核实安装及版本 (unknown)"
+		return cmdutil.Text("cli.init.unknown")
 	}
 }

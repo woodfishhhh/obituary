@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/woodfishhhh/obituary/internal/i18n"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -33,12 +34,12 @@ func PlanAgentWindowsShell(s Scope, agent string) (Change, error) {
 		return ch, err
 	}
 	if shell := cfg.WindowsShell(agent); shell != "" {
-		ch.Detail = fmt.Sprintf("preserved agent_shells.%s = %q", agent, shell)
+		ch = ch.described(describe("preserved agent_shells.%s = %q", agent, shell))
 		return ch, nil
 	}
 	shell, why := inferAgentWindowsShell(s, agent)
 	if shell == "" {
-		ch.Detail = "warning: " + why + "; " + agentShellInstructions(agent, path)
+		ch = ch.described(describe("warning: %s; %s", why, agentShellInstructions(agent, path)))
 		ch.Manual, ch.Implicit = true, true // Advisory, retained separately in multi-agent plans.
 		return ch, nil
 	}
@@ -46,11 +47,11 @@ func PlanAgentWindowsShell(s Scope, agent string) (Change, error) {
 	if _, err := config.Parse(data, path); err != nil {
 		return ch, err
 	}
-	ch.Detail = fmt.Sprintf("agent_shells.%s = %q inferred from %s; change this declaration if the host uses another shell or backend", agent, shell, why)
+	ch = ch.described(describe("agent_shells.%s = %q inferred from %s; change this declaration if the host uses another shell or backend", agent, shell, why))
 	return setIntegrationData(ch, data), nil
 }
 
-func inferAgentWindowsShell(s Scope, agent string) (string, string) {
+func inferAgentWindowsShell(s Scope, agent string) (string, *description) {
 	switch agent {
 	case "codebuddy":
 		return inferCodeBuddyShell(s)
@@ -60,12 +61,12 @@ func inferAgentWindowsShell(s Scope, agent string) (string, string) {
 		// pwsh then powershell on Windows. Do not guess its Bash fallback.
 		for _, name := range []string{"pwsh.exe", "powershell.exe"} {
 			if _, err := exec.LookPath(name); err == nil {
-				return "powershell", "MiniMax 3c21163c local Windows default (" + name + " on PATH)"
+				return "powershell", describe("MiniMax 3c21163c local Windows default (%s on PATH)", name)
 			}
 		}
-		return "", "MiniMax's local Windows PowerShell default is unavailable on PATH"
+		return "", describe("MiniMax's local Windows PowerShell default is unavailable on PATH")
 	default:
-		return "", "the CodeBuddy IDE execution shell is not exposed by its documented settings"
+		return "", describe("the CodeBuddy IDE execution shell is not exposed by its documented settings")
 	}
 }
 
@@ -73,10 +74,10 @@ func inferAgentWindowsShell(s Scope, agent string) (string, string) {
 // Git Bash path configures the hook launcher and cannot attest a tool shell.
 // settings.json env entries are inspected too; conflicting launch contexts
 // require a manual declaration instead of guessing which client will run.
-func inferCodeBuddyShell(s Scope) (string, string) {
+func inferCodeBuddyShell(s Scope) (string, *description) {
 	dir, err := userdirs.CodeBuddyDir()
 	if err != nil {
-		return "", err.Error()
+		return "", describe("%s", err.Error())
 	}
 	paths := []string{filepath.Join(dir, "settings.json")}
 	if !s.Global {
@@ -85,13 +86,13 @@ func inferCodeBuddyShell(s Scope) (string, string) {
 	values := []string{os.Getenv("CODEBUDDY_CODE_SHELL")}
 	for _, key := range []string{"CODEBUDDY_CODE_SHELL_PREFIX", "CODEBUDDY_SANDBOX_IMAGE"} {
 		if os.Getenv(key) != "" {
-			return "", key + " may select a wrapper or nonlocal backend"
+			return "", describe("%s may select a wrapper or nonlocal backend", key)
 		}
 	}
 	for _, path := range paths {
 		value, err := codeBuddyConfiguredShell(path)
 		if err != nil {
-			return "", err.Error()
+			return "", describe("%s", err.Error())
 		}
 		values = append(values, value)
 	}
@@ -101,14 +102,14 @@ func inferCodeBuddyShell(s Scope) (string, string) {
 			continue
 		}
 		if value != "bash" && value != "powershell" || shell != "" && shell != value {
-			return "", "CODEBUDDY_CODE_SHELL is unsupported or conflicts across launch settings"
+			return "", describe("CODEBUDDY_CODE_SHELL is unsupported or conflicts across launch settings")
 		}
 		shell = value
 	}
 	if shell == "" {
-		return "", "CODEBUDDY_CODE_SHELL is not configured"
+		return "", describe("CODEBUDDY_CODE_SHELL is not configured")
 	}
-	return shell, "CODEBUDDY_CODE_SHELL in the current environment or host settings"
+	return shell, describe("CODEBUDDY_CODE_SHELL in the current environment or host settings")
 }
 
 func codeBuddyConfiguredShell(path string) (string, error) {
@@ -176,12 +177,12 @@ func insertAgentShell(original []byte, agent, shell string, members int) []byte 
 	return append(append(bytes.Clone(original[:position]), insertion...), original[position:]...)
 }
 
-func agentShellInstructions(agent, path string) string {
-	return fmt.Sprintf("in %s, add or update %s = \"bash\" or \"powershell\" under [agent_shells] after confirming local Windows execution; undeclared commands pass through", path, agent)
+func agentShellInstructions(agent, path string) *description {
+	return describe("in %s, add or update %s = \"bash\" or \"powershell\" under [agent_shells] after confirming local Windows execution; undeclared commands pass through", path, agent)
 }
 
 // AgentWindowsShellStatus reports the declaration actually read by hooks.
-func AgentWindowsShellStatus(agent string) (detail string, warning bool, err error) {
+func AgentWindowsShellStatus(l *i18n.Localizer, agent string) (detail string, warning bool, err error) {
 	if agent != "codebuddy" && agent != "codebuddy-ide" && agent != "minimax-code" {
 		return "", false, nil
 	}
@@ -194,7 +195,7 @@ func AgentWindowsShellStatus(agent string) (detail string, warning bool, err err
 		return "", false, err
 	}
 	if shell := cfg.WindowsShell(agent); shell != "" {
-		return fmt.Sprintf("agent_shells.%s = %q; declared local Windows shell; remote payloads pass through", agent, shell), false, nil
+		return describe("agent_shells.%s = %q; declared local Windows shell; remote payloads pass through", agent, shell).text(l), false, nil
 	}
-	return "agent_shells." + agent + " is unset; " + agentShellInstructions(agent, path), true, nil
+	return describe("agent_shells.%s is unset; %s", agent, agentShellInstructions(agent, path)).text(l), true, nil
 }

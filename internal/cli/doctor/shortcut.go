@@ -11,18 +11,18 @@ import (
 	"github.com/woodfishhhh/obituary/internal/shortcut"
 )
 
-func diagnoseShortcut(executable string, target func(string) (string, error)) DoctorCheck {
-	return diagnoseShortcutAt(executable, shortcut.StartMenu, target)
+func (lang diagnostics) diagnoseShortcut(executable string, target func(string) (string, error)) DoctorCheck {
+	return lang.diagnoseShortcutAt(executable, shortcut.StartMenu, target)
 }
 
-func diagnoseDesktop(executable string, target func(string) (string, error)) DoctorCheck {
-	return diagnoseShortcutAt(executable, shortcut.Desktop, target)
+func (lang diagnostics) diagnoseDesktop(executable string, target func(string) (string, error)) DoctorCheck {
+	return lang.diagnoseShortcutAt(executable, shortcut.Desktop, target)
 }
 
-func diagnoseShortcutAt(executable string, place shortcut.Location, target func(string) (string, error)) DoctorCheck {
+func (lang diagnostics) diagnoseShortcutAt(executable string, place shortcut.Location, target func(string) (string, error)) DoctorCheck {
 	c := DoctorCheck{Name: string(place), Status: "WARN"}
 	if runtime.GOOS != "windows" {
-		c.Status, c.Detail = "INFO", "desktop shortcuts are provided by the Windows edition"
+		c.Status, c.Detail = "INFO", lang.Text("cli.doctor.desktop_shortcuts_are_provided_by_the_windows", nil)
 		return c
 	}
 	paths, err := shortcut.Paths(place)
@@ -40,38 +40,38 @@ func diagnoseShortcutAt(executable string, place shortcut.Location, target func(
 			return c
 		}
 		if !strings.EqualFold(filepath.Clean(got), filepath.Clean(shortcut.Target(executable))) {
-			c.Detail = "Shortcut targets a different installation: " + got
+			c.Detail = lang.Text("cli.doctor.shortcut_targets_a_different_installation", nil) + got
 			continue
 		}
 		if err := shortcut.CheckReceipt(executable, path); err != nil {
-			c.Detail = "Shortcut ownership receipt requires attention: " + err.Error()
+			c.Detail = lang.Text("cli.doctor.shortcut_ownership_receipt_requires_attention", nil) + err.Error()
 			return c
 		}
 		c.Status, c.Detail = "PASS", path+" -> "+got
 		return c
 	}
 	if c.Detail == "" {
-		c.Detail = "Shortcut is absent; obit init creates it; Settings can turn it off"
+		c.Detail = lang.Text("cli.doctor.shortcut_is_absent_obit_init_creates_it", nil)
 	}
 	return c
 }
 
 func shortcutTarget(path string) (string, error) { return shortcut.ReadTarget(path) }
 
-func diagnoseIcons() []DoctorCheck {
+func (lang diagnostics) diagnoseIcons() []DoctorCheck {
 	if runtime.GOOS != "windows" {
 		return []DoctorCheck{
-			{Name: "tray-icon", Status: "INFO", Detail: "tray icon is provided by the Windows edition"},
-			{Name: "taskbar", Status: "INFO", Detail: "taskbar window is provided by the Windows edition"},
+			{Name: "tray-icon", Status: "INFO", Detail: lang.Text("cli.doctor.tray_icon_is_provided_by_the_windows", nil)},
+			{Name: "taskbar", Status: "INFO", Detail: lang.Text("cli.doctor.taskbar_window_is_provided_by_the_windows", nil)},
 		}
 	}
 	cfg, err := config.Load()
-	checks := []DoctorCheck{{Name: "tray-icon", Status: "PASS", Detail: "visible"}, {Name: "taskbar", Status: "PASS", Detail: "visible"}}
+	checks := []DoctorCheck{{Name: "tray-icon", Status: "PASS", Detail: lang.Text("cli.doctor.visible", nil)}, {Name: "taskbar", Status: "PASS", Detail: lang.Text("cli.doctor.visible", nil)}}
 	if !cfg.UI.Tray {
-		checks[0].Detail = "hidden; resident cleanup and update checks continue"
+		checks[0].Detail = lang.Text("cli.doctor.hidden_resident_cleanup_and_update_checks_continue", nil)
 	}
 	if !cfg.UI.Taskbar {
-		checks[1].Detail = "hidden; shortcuts can still open the management window"
+		checks[1].Detail = lang.Text("cli.doctor.hidden_shortcuts_can_still_open_the_management", nil)
 	}
 	if err != nil {
 		for i := range checks {

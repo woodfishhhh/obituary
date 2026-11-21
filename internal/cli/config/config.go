@@ -25,7 +25,7 @@ func NewCmd() *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if create && language != "" {
-				return errors.New("--create and --language cannot be used together")
+				return errors.New(cmdutil.Text("cli.config.create_and_language_cannot_be_used_together"))
 			}
 			if language != "" {
 				path, err := config.Path()
@@ -47,7 +47,7 @@ func NewCmd() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				fmt.Println("created", path)
+				fmt.Println(cmdutil.Text("cli.config.created"), path)
 				return nil
 			}
 			path, err := config.Path()
@@ -55,14 +55,14 @@ func NewCmd() *cobra.Command {
 				return err
 			}
 			cfg, err := config.Load()
-			state := "not created (defaults in use; obit config --create writes them)"
+			state := cmdutil.Text("cli.config.not_created_defaults_in_use_obit_config")
 			if _, statErr := os.Stat(path); statErr == nil {
-				state = "present"
+				state = cmdutil.Text("cli.config.present")
 			}
 			data, _ := userdirs.Data()
-			fmt.Printf("config file  %s (%s)\ndata         %s\n\n", path, state, data)
+			fmt.Printf(cmdutil.Text("cli.config.config_file_data"), path, state, data)
 			if cfg.CodexWindowsShell == "" {
-				fmt.Println("# codex_windows_shell is unset")
+				fmt.Println(cmdutil.Text("cli.config.codex_windows_shell_is_unset"))
 			} else {
 				fmt.Printf("codex_windows_shell = %q\n", cfg.CodexWindowsShell)
 			}
@@ -71,17 +71,17 @@ func NewCmd() *cobra.Command {
 			fmt.Printf("\n[telemetry]\nenabled = %t\n", cfg.Telemetry.Enabled)
 			fmt.Printf("\n[watch]\nstable_window = %q\n", cfg.Watch.StableWindow)
 			fmt.Printf("\n[ui]\nlanguage = %q\neffective_language = %q\n", cfg.UI.Language, config.UILanguage())
-			fmt.Printf("\n[hooks]\n# List expiring items and recent burials at session start.\nsession_summary = %t\n# Ask the agent once per session to sort the files it created without a lifespan.\nsession_cleanup = %t\n", cfg.Hooks.SessionSummary, cfg.Hooks.SessionCleanup)
-			fmt.Printf("\n[proposals]\n# off: nothing goes in by itself. tiered: the agent's own new files and session containers\n# go in without asking; the rest waits. auto: everything goes in. ask: everything waits.\nmode = %q\n", cfg.Proposals.Mode)
+			fmt.Printf(cmdutil.Text("cli.config.hooks_list_expiring_items_and_recent_burials"), cfg.Hooks.SessionSummary, cfg.Hooks.SessionCleanup)
+			fmt.Printf(cmdutil.Text("cli.config.proposals_off_nothing_goes_in_by_itself"), cfg.Proposals.Mode)
 			if len(cfg.AgentShells) > 0 {
 				fmt.Println("\n[agent_shells]")
 				for _, agent := range slices.Sorted(maps.Keys(cfg.AgentShells)) {
 					fmt.Printf("%q = %q\n", agent, cfg.AgentShells[agent])
 				}
 			}
-			fmt.Printf("\n[explorer]\n# Default scope: Downloads, Desktop (including subfolders), and folder-policy items.\nenabled = %t\n# Include other locations; Git still follows in_git.\neverywhere = %t\nin_git = %t\n", cfg.Explorer.Enabled, cfg.Explorer.Everywhere, cfg.Explorer.InGit)
+			fmt.Printf(cmdutil.Text("cli.config.explorer_default_scope_downloads_desktop_including_subfolders"), cfg.Explorer.Enabled, cfg.Explorer.Everywhere, cfg.Explorer.InGit)
 			if err != nil {
-				return errors.New("config file has errors: " + err.Error())
+				return errors.New(cmdutil.Text("cli.config.config_file_has_errors") + err.Error())
 			}
 			return nil
 		},

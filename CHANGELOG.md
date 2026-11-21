@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 中文界面下，命令行给人看的输出现在全是中文：表头、提示、确认、报错和后台进程的提示都译好了，中文表格按显示宽度对齐。给 agent 看的内容（hook 回执、`--json`、MCP、Skill）保持英文不变。英文界面里原来夹着中文的几处（`obit init` 的安装状态、资源管理器右键菜单的结果等）改成了纯英文。
+- With the Chinese interface, everything the command line prints for people is now in Chinese: table headers, prompts, confirmations, errors and background-process notices, and Chinese tables line up by display width. Output meant for agents (hook replies, `--json`, MCP, the skill) stays in English. A few places that printed Chinese in the English interface, such as `obit init`'s installation status and the results of Explorer context menu actions, now print English.
 - 修复：Windows 本地盘上名叫 `NUL`、`con.txt`、`COM1` 等的文件可以正常登记、下葬、复活和火化；`obit rm ./NUL` 只处理当前目录的真实文件，不访问同名设备。
 - Fix: files named `NUL`, `con.txt`, `COM1`, and other DOS-reserved names on local Windows drives can be marked, buried, restored, and purged. `obit rm ./NUL` addresses the file in the current directory, never the device.
 

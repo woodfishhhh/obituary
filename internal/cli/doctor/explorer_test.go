@@ -26,7 +26,7 @@ func TestDoctorExplorerScope(t *testing.T) {
 			t.Setenv("OBIT_CONFIG_DIR", filepath.Join(root, "config"))
 			clitest.WriteFixture(t, filepath.Join(root, "config", "config.toml"), tc.config)
 			before := clitest.TreeSnapshot(t, root)
-			got := diagnoseExplorer(filepath.Join(root, "missing"))
+			got := english.diagnoseExplorer(filepath.Join(root, "missing"))
 			if got.Status != "PASS" || !strings.Contains(got.Detail, tc.scope) || got.Explorer.Enabled != tc.enabled || got.Explorer.Everywhere != tc.everywhere || got.Explorer.InGit != tc.inGit {
 				t.Fatalf("Explorer scope: %+v %+v", got, got.Explorer)
 			}
@@ -53,7 +53,7 @@ func TestDoctorExplorerRetainedFailures(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			clitest.WriteFixture(t, filepath.Join(root, "explorer.log"), tc.log)
 			before := clitest.TreeSnapshot(t, root)
-			got := diagnoseExplorer(root)
+			got := english.diagnoseExplorer(root)
 			if got.Status != tc.status || got.Explorer.CleanupTargets != 3 || got.Explorer.RepeatedFailures != tc.failures {
 				t.Fatalf("Explorer cleanup failures: %+v %+v", got, got.Explorer)
 			}
@@ -83,7 +83,7 @@ func TestDoctorExplorerInvalidInput(t *testing.T) {
 				}
 			}
 			before := clitest.TreeSnapshot(t, root)
-			if got := diagnoseExplorer(root); got.Status != "FAIL" {
+			if got := english.diagnoseExplorer(root); got.Status != "FAIL" {
 				t.Fatal(got)
 			}
 			if !reflect.DeepEqual(before, clitest.TreeSnapshot(t, root)) {

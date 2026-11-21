@@ -29,7 +29,7 @@ func PlanCodexWindowsShell(s Scope) (Change, error) {
 		return ch, err
 	}
 	if shell := cfg.AgentShells["codex"]; shell != "" {
-		ch.Detail = fmt.Sprintf("preserved agent_shells.codex = %q", shell)
+		ch = ch.described(describe("preserved agent_shells.codex = %q", shell))
 		return ch, nil
 	}
 	var keys map[string]any
@@ -37,12 +37,12 @@ func PlanCodexWindowsShell(s Scope) (Change, error) {
 		return ch, err
 	}
 	if _, exists := keys["codex_windows_shell"]; exists {
-		ch.Detail = "preserved codex_windows_shell = " + fmt.Sprintf("%q", cfg.CodexWindowsShell)
+		ch = ch.described(describe("preserved codex_windows_shell = %s", fmt.Sprintf("%q", cfg.CodexWindowsShell)))
 		return ch, nil
 	}
 	why := inferCodexWindowsShell(s)
-	if why != "" {
-		ch.Detail = "warning: " + why + "; set codex_windows_shell = \"bash\" or \"powershell\" manually in this file; undeclared Windows shell commands pass through"
+	if why != nil {
+		ch = ch.described(describe("warning: %s; set codex_windows_shell = \"bash\" or \"powershell\" manually in this file; undeclared Windows shell commands pass through", why))
 		return ch, nil
 	}
 	// Prefix a root key instead of appending after an arbitrary TOML table.
@@ -64,10 +64,10 @@ func PlanCodexWindowsShell(s Scope) (Change, error) {
 // the child environment. exec_command.shell can override per call but is lost
 // in its PreToolUse payload. Opaque desktop settings cannot be inferred here.
 // https://github.com/openai/codex/blob/rust-v0.167.0/codex-rs/shell-command/src/shell_detect.rs
-func inferCodexWindowsShell(s Scope) string {
+func inferCodexWindowsShell(s Scope) *description {
 	dir, err := userdirs.CodexDir()
 	if err != nil {
-		return err.Error()
+		return describe("%s", err.Error())
 	}
 	paths := []string{filepath.Join(dir, "config.toml")}
 	if !s.Global {
@@ -76,20 +76,20 @@ func inferCodexWindowsShell(s Scope) string {
 	for _, path := range paths {
 		ch, err := readIntegrationChange(Scope{Global: true}, path)
 		if err != nil {
-			return "cannot read Codex config: " + err.Error()
+			return describe("cannot read Codex config: %s", err.Error())
 		}
 		var cfg map[string]any
 		if err := toml.Unmarshal(bytes.TrimPrefix(ch.orig, []byte("\xef\xbb\xbf")), &cfg); err != nil {
-			return "cannot parse Codex config " + path + ": " + err.Error()
+			return describe("cannot parse Codex config %s: %s", path, err.Error())
 		}
 		if desktop, ok := cfg["desktop"].(map[string]any); ok && len(desktop) > 0 {
-			return "Codex desktop shell cannot be inferred from opaque desktop settings in " + path
+			return describe("Codex desktop shell cannot be inferred from opaque desktop settings in %s", path)
 		}
 	}
 	for _, name := range []string{"pwsh.exe", "powershell.exe"} {
 		if _, err := exec.LookPath(name); err == nil {
-			return ""
+			return nil
 		}
 	}
-	return "Codex's PowerShell default cannot be verified on PATH (its cmd fallback is unsupported)"
+	return describe("Codex's PowerShell default cannot be verified on PATH (its cmd fallback is unsupported)")
 }

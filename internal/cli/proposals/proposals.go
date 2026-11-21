@@ -42,23 +42,23 @@ func NewCmd() *cobra.Command {
 
 func printProposals(proposals []core.Proposal) {
 	if len(proposals) == 0 {
-		fmt.Println("no pending proposals")
+		fmt.Println(cmdutil.Text("cli.proposals.no_pending_proposals"))
 		return
 	}
 	for _, p := range proposals {
-		fmt.Printf("#%d %s  %s  %s, %s\n", p.ID, p.Kind, p.Project, textutil.Count(len(p.Candidates), "item"), textutil.Bytes(p.Size()))
+		fmt.Printf("#%d %s  %s  %s, %s\n", p.ID, cmdutil.Localizer().Label(p.Kind), p.Project, cmdutil.Localizer().Count("cli.count.item", len(p.Candidates)), textutil.Bytes(p.Size()))
 		for _, c := range p.Candidates {
 			rule := ""
 			if c.Reason != "" {
 				rule = "  " + c.Reason
 			}
 			if c.Rule != "" {
-				rule = "  by " + c.Rule
+				rule = cmdutil.Text("cli.proposals.by") + c.Rule
 			}
 			fmt.Printf("    %-5s %9s  %s%s\n", c.Lifespan, textutil.Bytes(c.Size), c.Path, rule)
 		}
 	}
-	fmt.Println("\nobit approve <id> approves the displayed action (expired folders are buried); obit reject <id> declines it (expired folders are spared).")
+	fmt.Println(cmdutil.Text("cli.proposals.obit_approve_id_approves_the_displayed_action"))
 }
 
 // printHandled lists what the proposal mode let in without asking, while it
@@ -67,18 +67,19 @@ func printHandled(handled []core.AutoHandled, now time.Time) {
 	if len(handled) == 0 {
 		return
 	}
-	fmt.Println("\nregistered without asking:")
+	fmt.Println(cmdutil.Text("cli.proposals.registered_without_asking"))
 	for _, h := range handled {
-		fmt.Printf("    #%-5d %-11s expires %-10s %s\n", h.Item.ID, h.Class, textutil.DueIn(h.Item.ExpiresAt.Sub(now)), h.Item.Path)
+		l := cmdutil.Localizer()
+		fmt.Printf(l.Text("cli.proposals.expires_printhandled", nil), h.Item.ID, cmdutil.Column(l, h.Class), cmdutil.Column(l, cmdutil.DueIn(h.Item.ExpiresAt.Sub(now))), h.Item.Path)
 	}
-	fmt.Println("obit spare <id> undoes one (the file stays, without a lifespan); obit extend <id> <lifespan> keeps it longer; once buried, obit resurrect <id> brings it back.")
+	fmt.Println(cmdutil.Text("cli.proposals.obit_spare_id_undoes_one_the_file"))
 }
 
-var modeText = map[string]string{
-	core.ProposalsOff:    "off: nothing goes in by itself; agents use obit mark / mktemp / bury, and you the context menu",
-	core.ProposalsTiered: "tiered: files the agent created in its session and session containers go in without asking; the rest waits here",
-	core.ProposalsAuto:   "auto: everything automatic registration finds goes in without asking",
-	core.ProposalsAsk:    "ask: every automatic registration waits here first",
+var modeMessages = map[string]string{
+	core.ProposalsOff:    "cli.proposals.off_nothing_goes_in_by_itself_agents",
+	core.ProposalsTiered: "cli.proposals.tiered_files_the_agent_created_in_its",
+	core.ProposalsAuto:   "cli.proposals.auto_everything_automatic_registration_finds_goes_in",
+	core.ProposalsAsk:    "cli.proposals.ask_every_automatic_registration_waits_here_first",
 }
 
 func printMode(mode string) {
@@ -86,13 +87,13 @@ func printMode(mode string) {
 	if err != nil {
 		path = "config.toml"
 	}
-	fmt.Printf("\nproposal mode %s.\n", modeText[mode])
+	fmt.Printf(cmdutil.Text("cli.proposals.proposal_mode"), cmdutil.Text(modeMessages[mode]))
 	switch mode {
 	case core.ProposalsOff:
-		fmt.Printf("To turn automatic registration on, set [proposals] mode = \"tiered\" (or \"ask\", \"auto\") in %s, or switch it on the window's Decisions page.\n", path)
+		fmt.Printf(cmdutil.Text("cli.proposals.to_turn_automatic_registration_on_set_proposals"), path)
 	case core.ProposalsAuto:
-		fmt.Printf("To be asked again, set [proposals] mode = \"tiered\" (or \"ask\") in %s, or switch it on the window's Decisions page.\n", path)
+		fmt.Printf(cmdutil.Text("cli.proposals.to_be_asked_again_set_proposals_mode"), path)
 	default:
-		fmt.Printf("To let agents' artefacts in without asking, set [proposals] mode = \"auto\" in %s, or switch it on the window's Decisions page.\n", path)
+		fmt.Printf(cmdutil.Text("cli.proposals.to_let_agents_artefacts_in_without_asking"), path)
 	}
 }

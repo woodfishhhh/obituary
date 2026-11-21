@@ -16,11 +16,11 @@ func PlanQoderWork(s Scope, _ Commands, uninstall bool) ([]Change, error) {
 	if s.GuardRM && !uninstall {
 		return nil, fmt.Errorf("QoderWork delete guard is limited: requires #35's managed exit-code wrapper (validated deny to exit 2 + stderr, errors to exit 0); no hooks installed")
 	}
-	detail := "QoderWork persistent rule location is unverified. Paste these instructions into a local task prompt; this is manual context, not automatic registration:\n" + Awareness
+	detail := describe("QoderWork persistent rule location is unverified. Paste these instructions into a local task prompt; this is manual context, not automatic registration:\n%s", Awareness)
 	if uninstall {
-		detail = "No QoderWork hooks or persistent rules were installed. Remove only the Obituary text previously pasted into a task or a rule you created manually"
+		detail = describe("No QoderWork hooks or persistent rules were installed. Remove only the Obituary text previously pasted into a task or a rule you created manually")
 	}
-	return []Change{{Path: "QoderWork task instructions (manual)", Action: "preserve", Manual: true, Detail: detail}}, nil
+	return []Change{Change{Path: "QoderWork task instructions (manual)", Action: "preserve", Manual: true}.described(detail)}, nil
 }
 
 func PlanQoderWorkMCP(_ Scope, executable string, uninstall bool) ([]Change, error) {

@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/woodfishhhh/obituary/internal/i18n"
 	"os"
 	"path/filepath"
 	"slices"
@@ -74,17 +75,20 @@ func removalScheduleXML() (string, error) {
 
 // PreviewScheduleRemoval uses exactly the execution ownership predicate.
 func PreviewScheduleRemoval(daemon, home, config string) string {
+	return PreviewScheduleRemovalFor(nil, daemon, home, config)
+}
+func PreviewScheduleRemovalFor(l *i18n.Localizer, daemon, home, config string) string {
 	definition, err := removalScheduleXML()
 	if errors.Is(err, os.ErrNotExist) {
-		return fmt.Sprintf("unchanged scheduled task %q (absent)", TaskName)
+		return fmt.Sprintf(l.HostText("unchanged scheduled task %q (absent)"), TaskName)
 	}
 	if err != nil {
-		return fmt.Sprintf("query failed for scheduled task %q: %v", TaskName, err)
+		return fmt.Sprintf(l.HostText("query failed for scheduled task %q: %v"), TaskName, err)
 	}
 	if ownedSchedule(definition, daemon, home, config) {
-		return fmt.Sprintf("remove scheduled task %q (every %d minutes and at sign-in)\n    %s", TaskName, int(Interval.Minutes()), scheduleDefinitionTarget(definition))
+		return fmt.Sprintf(l.HostText("remove scheduled task %q (every %d minutes and at sign-in)\n    %s"), TaskName, int(Interval.Minutes()), scheduleDefinitionTarget(definition))
 	}
-	return fmt.Sprintf("preserve scheduled task %q: task belongs to another installation (path, home, config)\n    %s", TaskName, scheduleDefinitionTarget(definition))
+	return fmt.Sprintf(l.HostText("preserve scheduled task %q: task belongs to another installation (path, home, config)\n    %s"), TaskName, scheduleDefinitionTarget(definition))
 }
 
 func scheduleDefinitionTarget(definition string) string {

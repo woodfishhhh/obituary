@@ -15,7 +15,7 @@ import (
 
 func preview(out io.Writer, self cmdutil.Executable, home string, enabled, resident bool) error {
 	if resident {
-		return fmt.Errorf("resident mode is unavailable; use the launchd user agent: %w", core.ErrUnsupported)
+		return fmt.Errorf(cmdutil.Text("cli.daemon.resident_mode_is_unavailable_use_the_launchd"), core.ErrUnsupported)
 	}
 	exe, err := self.Path()
 	if err != nil {
@@ -30,17 +30,17 @@ func preview(out io.Writer, self cmdutil.Executable, home string, enabled, resid
 		return err
 	}
 	unit := units[0]
-	fmt.Fprintf(out, "  %-9s launchd user agent %s\n", unit.Action, unit.Path)
+	fmt.Fprintf(out, cmdutil.Text("cli.daemon.launchd_user_agent"), cmdutil.Column(cmdutil.Localizer(), cmdutil.Localizer().Label(unit.Action)), unit.Path)
 	for _, line := range strings.Split(strings.TrimSuffix(unit.Content, "\n"), "\n") {
 		fmt.Fprintln(out, "    "+line)
 	}
 	if enabled {
-		fmt.Fprintf(out, "  launchctl bootout gui/%d/%s (if loaded)\n", os.Getuid(), app.TaskName)
+		fmt.Fprintf(out, cmdutil.Text("cli.daemon.launchctl_bootout_gui_if_loaded"), os.Getuid(), app.TaskName)
 		fmt.Fprintf(out, "  launchctl enable gui/%d/%s\n", os.Getuid(), app.TaskName)
 		fmt.Fprintf(out, "  launchctl bootstrap gui/%d %q\n", os.Getuid(), unit.Path)
 	} else if unit.Action == "remove" {
-		fmt.Fprintf(out, "  launchctl bootout gui/%d/%s (if loaded)\n", os.Getuid(), app.TaskName)
+		fmt.Fprintf(out, cmdutil.Text("cli.daemon.launchctl_bootout_gui_if_loaded"), os.Getuid(), app.TaskName)
 	}
-	fmt.Fprintln(out, "  preview made no changes")
+	fmt.Fprintln(out, cmdutil.Text("cli.daemon.preview_made_no_changes"))
 	return nil
 }

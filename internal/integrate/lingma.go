@@ -40,11 +40,11 @@ func PlanLingma(s Scope, commands Commands, uninstall bool) ([]Change, error) {
 		hooks[i].Detail = "Lingma: successful writes leave notices pending; inspect obit proposals manually; no verified model-context channel, start/end snapshot or delete guard; restart the IDE"
 	}
 	if s.Global {
-		detail := "Lingma only documents project rules: Personal Settings > Rules > Add > obituary > Always; paste the following instructions in each intended project (no global rule path assumed):\n" + Awareness
+		detail := describe("Lingma only documents project rules: Personal Settings > Rules > Add > obituary > Always; paste the following instructions in each intended project (no global rule path assumed):\n%s", Awareness)
 		if uninstall {
-			detail = "Personal Settings > Rules: remove only the obituary rule you manually added; retain all other rules and metadata"
+			detail = describe("Personal Settings > Rules: remove only the obituary rule you manually added; retain all other rules and metadata")
 		}
-		return append(hooks, Change{Path: "Lingma project rules (UI)", Action: "preserve", Manual: true, Detail: detail}), nil
+		return append(hooks, Change{Path: "Lingma project rules (UI)", Action: "preserve", Manual: true}.described(detail)), nil
 	}
 	rules, err := PlanManagedAssets(s, []ManagedAsset{{
 		Path: filepath.Join(dir, "rules", "obituary.md"), ID: "lingma-obituary-rule", Owner: "lingma", Version: "1", Content: []byte(Awareness),

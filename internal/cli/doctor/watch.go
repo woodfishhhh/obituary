@@ -7,7 +7,6 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
-	"github.com/woodfishhhh/obituary/internal/textutil"
 )
 
 type WatchCheck struct {
@@ -22,10 +21,10 @@ type WatchCheck struct {
 	Skipped          []core.WatchSkip `json:"skipped,omitempty"`
 }
 
-func diagnoseWatches(state ledger.State, err error, now time.Time, watchPath func(ledger.WatchPolicy) (string, error)) DoctorCheck {
+func (lang diagnostics) diagnoseWatches(state ledger.State, err error, now time.Time, watchPath func(ledger.WatchPolicy) (string, error)) DoctorCheck {
 	c := DoctorCheck{Name: "watch", Status: "PASS"}
 	if err != nil {
-		c.Status, c.Detail = "FAIL", "cannot inspect folder policies: "+err.Error()+"; check store.json"
+		c.Status, c.Detail = "FAIL", lang.Text("cli.doctor.cannot_inspect_folder_policies", nil)+err.Error()+lang.Text("cli.doctor.check_store_json", nil)
 		return c
 	}
 	w := &WatchCheck{Policies: len(state.Watches), Exemptions: len(state.WatchExemptions)}
@@ -57,15 +56,15 @@ func diagnoseWatches(state ledger.State, err error, now time.Time, watchPath fun
 			}
 		}
 	}
-	c.Detail = fmt.Sprintf("%s, %d pending approval, %s, %s, %s, %s older than 1 day still awaiting stability; obit watch --list shows exemptions (path, reason, time); obit proposals shows pending decisions", textutil.Count(w.Policies, "folder policy", "folder policies"), w.Pending, textutil.Count(w.Unavailable, "unavailable/changed folder"), textutil.Count(w.Exclusions, "exclusion"), textutil.Count(w.Exemptions, "exemption"), textutil.Count(w.Unstable, "item"))
+	c.Detail = fmt.Sprintf(lang.Text("cli.doctor.pending_approval_older_than_day_still_awaiting", nil), lang.Count("cli.count.folder_policy", w.Policies), w.Pending, lang.Count("cli.count.unavailable_changed_folder", w.Unavailable), lang.Count("cli.count.exclusion", w.Exclusions), lang.Count("cli.count.exemption", w.Exemptions), lang.Count("cli.count.item", w.Unstable))
 	if w.Pending+w.Unavailable+w.Unstable > 0 {
 		c.Status = "WARN"
 	}
 	if w.Unavailable > 0 {
-		c.Detail += fmt.Sprintf("; first unavailable: %s (%s); reconnect the folder or review and replace its policy", w.FirstUnavailable, firstError)
+		c.Detail += fmt.Sprintf(lang.Text("cli.doctor.first_unavailable_reconnect_the_folder_or_review", nil), w.FirstUnavailable, firstError)
 	}
 	if w.Unstable > 0 {
-		c.Detail += "; first awaiting stability: " + w.FirstUnstable + "; check for unfinished downloads or open writers before changing its lifespan"
+		c.Detail += lang.Text("cli.doctor.first_awaiting_stability", nil) + w.FirstUnstable + lang.Text("cli.doctor.check_for_unfinished_downloads_or_open_writers", nil)
 	}
 	for _, skip := range w.Skipped {
 		c.Detail += fmt.Sprintf("; %s: %s; %s", skip.Path, skip.Reason, skip.Manage)

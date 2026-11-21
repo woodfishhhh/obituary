@@ -122,7 +122,7 @@ func qoderHookLayers(s Scope, dir, agent, command string, uninstall bool) ([]Cha
 		if uninstall {
 			ch.phase = -40
 		}
-		ch.Detail = agent + ": successful writes are deferred to a later prompt; guard unavailable; restart the IDE and review CLI folder trust; explicit --settings can override these files"
+		ch = ch.described(describe("%s: successful writes are deferred to a later prompt; guard unavailable; restart the IDE and review CLI folder trust; explicit --settings can override these files", agent))
 		changes = append(changes, ch)
 	}
 	return changes, nil

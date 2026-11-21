@@ -3,6 +3,7 @@ package integrate
 import (
 	"errors"
 	"fmt"
+	"github.com/woodfishhhh/obituary/internal/i18n"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -17,6 +18,10 @@ type ExtensionStatus struct {
 }
 
 func InspectExtension(s Scope, agent, kind, executable string) (ExtensionStatus, error) {
+	return InspectExtensionFor(nil, s, agent, kind, executable)
+}
+
+func InspectExtensionFor(l *i18n.Localizer, s Scope, agent, kind, executable string) (ExtensionStatus, error) {
 	s = s.ForInspection()
 	installer, ok := LookupAgent(agent)
 	if !ok {
@@ -37,7 +42,7 @@ func InspectExtension(s Scope, agent, kind, executable string) (ExtensionStatus,
 	remove, err := plan(true)
 	var manual *ManualSteps
 	if errors.As(err, &manual) || hasManualChanges(remove) {
-		return manualExtensionStatus(plan)
+		return manualExtensionStatus(l, plan)
 	}
 	if err != nil {
 		return ExtensionStatus{}, err
@@ -52,6 +57,7 @@ func InspectExtension(s Scope, agent, kind, executable string) (ExtensionStatus,
 				return status, fmt.Errorf("%s: %s", c.Path, c.Detail)
 			}
 		}
+		status.Detail = l.HostText(status.Detail)
 		return status, nil
 	}
 	install, err := plan(false)
@@ -64,14 +70,22 @@ func InspectExtension(s Scope, agent, kind, executable string) (ExtensionStatus,
 	} else if status.Installed {
 		status.Detail = "installed, outdated"
 	}
+	status.Detail = l.HostText(status.Detail)
 	return status, nil
 }
 
-func manualExtensionStatus(plan func(bool) ([]Change, error)) (ExtensionStatus, error) {
+func manualPrefix(l *i18n.Localizer) string {
+	if l == nil {
+		return "需要手动步骤 (manual steps required): "
+	}
+	return l.Text("cli.extensions.manual_prefix", nil)
+}
+
+func manualExtensionStatus(l *i18n.Localizer, plan func(bool) ([]Change, error)) (ExtensionStatus, error) {
 	install, err := plan(false)
 	var manual *ManualSteps
 	if errors.As(err, &manual) {
-		return ExtensionStatus{Manual: true, Detail: "需要手动步骤 (manual steps required): " + manual.Steps}, nil
+		return ExtensionStatus{Manual: true, Detail: manualPrefix(l) + manual.DisplaySteps(l)}, nil
 	}
 	if err != nil {
 		return ExtensionStatus{}, err
@@ -79,10 +93,10 @@ func manualExtensionStatus(plan func(bool) ([]Change, error)) (ExtensionStatus, 
 	var steps []string
 	for _, c := range install {
 		if c.Manual {
-			steps = append(steps, c.Detail)
+			steps = append(steps, c.DisplayDetail(l))
 		}
 	}
-	return ExtensionStatus{Manual: true, Detail: "需要手动步骤 (manual steps required): " + strings.Join(steps, "\n")}, nil
+	return ExtensionStatus{Manual: true, Detail: manualPrefix(l) + strings.Join(steps, "\n")}, nil
 }
 
 func installedSkillOwner(changes []Change) bool {

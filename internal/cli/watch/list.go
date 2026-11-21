@@ -64,28 +64,28 @@ func policyListing(svc *core.Service, st ledger.State, p ledger.WatchPolicy, now
 
 func printPolicy(row listing) {
 	p := row.WatchPolicy
-	fmt.Printf("#%d %s  %s  age=%s  %s\n", p.ID, p.Path, p.Lifespan, p.Age, p.Consent)
+	fmt.Printf(cmdutil.Text("cli.watch.age"), p.ID, p.Path, p.Lifespan, cmdutil.Localizer().Label(p.Age), cmdutil.Localizer().Label(p.Consent))
 	for _, e := range p.Exclusions {
-		fmt.Printf("  excluded #%d %s; clear: obit watch --policy %d --clear-exclusion %d\n", e.ID, e.Path, p.ID, e.ID)
+		fmt.Printf(cmdutil.Text("cli.watch.excluded_clear_obit_watch_policy_clear_exclusion"), e.ID, e.Path, p.ID, e.ID)
 	}
 	for _, e := range row.Exemptions {
-		at := "unknown (legacy exemption)"
+		at := cmdutil.Text("cli.watch.unknown_legacy_exemption")
 		if !e.KeptAt.IsZero() {
 			at = e.KeptAt.Format(time.RFC3339)
 		}
 		path := e.Path
 		if path == "" {
-			path = "path unavailable"
+			path = cmdutil.Text("cli.watch.path_unavailable")
 		}
-		fmt.Printf("  exempt %s; reason=%s; time=%s\n", path, e.Reason, at)
+		fmt.Printf(cmdutil.Text("cli.watch.exempt_reason_time"), path, e.Reason, at)
 	}
 	for _, child := range row.Stability {
-		fmt.Printf("  #%d %s; quiet for %s more (stable_window=%s); next check %s\n", child.ID, child.Path, child.QuietFor, child.StableWindow, child.NextCheck.Format(time.RFC3339))
+		fmt.Printf(cmdutil.Text("cli.watch.quiet_for_more_stable_window_next_check"), child.ID, child.Path, child.QuietFor, child.StableWindow, child.NextCheck.Format(time.RFC3339))
 	}
 	for _, skip := range row.Skipped {
 		fmt.Printf("  %s: %s; %s\n", skip.Path, skip.Reason, skip.Manage)
 	}
 	if row.ScanError != "" {
-		fmt.Println("  scan:", row.ScanError)
+		fmt.Println(cmdutil.Text("cli.watch.scan"), row.ScanError)
 	}
 }

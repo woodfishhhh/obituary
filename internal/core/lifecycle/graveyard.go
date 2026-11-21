@@ -32,6 +32,7 @@ const (
 
 // GraveResult describes what happened to one burial or requested path.
 type GraveResult struct {
+	Err             error   `json:"-"`
 	Ref             string  `json:"ref"`
 	Action          string  `json:"action,omitempty"`
 	Burial          *Burial `json:"burial,omitempty"`

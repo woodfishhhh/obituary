@@ -26,9 +26,9 @@ func PlanOpenClaw(s Scope, commands Commands, uninstall bool) ([]Change, error) 
 		return nil, err
 	}
 	root := filepath.Join(dir, "extensions", "obituary")
-	manual := Change{Path: config, Action: "preserve", Manual: true, Detail: fmt.Sprintf("manual activation required for native local Windows Gateway: in the OpenClaw Control UI configuration editor set plugins.entries.obituary.enabled=true; add obituary to plugins.allow if an allowlist exists; confirm discovery of %s with openclaw plugins list, then reload the Gateway yourself; JSON5 is left unchanged; WSL/remote Gateway requires its own executable and environment bridge", root)}
+	manual := Change{Path: config, Action: "preserve", Manual: true}.described(describe("manual activation required for native local Windows Gateway: in the OpenClaw Control UI configuration editor set plugins.entries.obituary.enabled=true; add obituary to plugins.allow if an allowlist exists; confirm discovery of %s with openclaw plugins list, then reload the Gateway yourself; JSON5 is left unchanged; WSL/remote Gateway requires its own executable and environment bridge", root))
 	if uninstall {
-		manual.Detail = fmt.Sprintf("manual unregistration required: in the OpenClaw Control UI for %s disable plugins.entries.obituary, remove obituary from plugins.allow and remove any %s entry from plugins.load.paths, then reload the Gateway yourself; JSON5 activation cannot be verified automatically, so plugin files and receipts under %s are retained; after verifying disabled state they may be removed manually", config, root, root)
+		manual = manual.described(describe("manual unregistration required: in the OpenClaw Control UI for %s disable plugins.entries.obituary, remove obituary from plugins.allow and remove any %s entry from plugins.load.paths, then reload the Gateway yourself; JSON5 activation cannot be verified automatically, so plugin files and receipts under %s are retained; after verifying disabled state they may be removed manually", config, root, root))
 		return []Change{manual}, nil
 	}
 	assets, err := planPlugin(s, dir, "openclaw", "openclaw-plugin", "plugins/openclaw/index.ts", filepath.Join("extensions", "obituary", "index.ts"), commands.Executable, false)
@@ -57,7 +57,7 @@ func PlanOpenClaw(s Scope, commands Commands, uninstall bool) ([]Change, error) 
 		}
 		assets = append(assets, block)
 	} else {
-		manual.Detail += "; global workspace rules have no unique target: add Obituary instructions to the active agent workspace AGENTS.md manually"
+		manual = manual.described(describe(`%s%s`, manual.display, describe("; global workspace rules have no unique target: add Obituary instructions to the active agent workspace AGENTS.md manually")))
 	}
 	return append(assets, manual), nil
 }
@@ -67,15 +67,15 @@ func PlanOpenClawMCP(s Scope, executable string, uninstall bool) ([]Change, erro
 	if err != nil {
 		return nil, err
 	}
-	operation := "remove mcp.servers.obituary only after verifying command is obit.exe and args is [\"mcp\"]"
+	operation := describe("remove mcp.servers.obituary only after verifying command is obit.exe and args is [\"mcp\"]")
 	if !uninstall {
 		entry, err := (CommandArgsMCP{}).Encode(executable, nil)
 		if err != nil {
 			return nil, err
 		}
-		operation = "set mcp.servers.obituary to " + string(entry) + " only if absent or owned by Obituary"
+		operation = describe("set mcp.servers.obituary to %s only if absent or owned by Obituary", string(entry))
 	}
-	return []Change{{Path: config, Action: "preserve", Manual: true, Detail: "manual MCP step required: in the OpenClaw Control UI for " + config + ", " + operation + "; Gateway owns this JSON5 state; confirm native local Windows execution, then reload it yourself; project MCP activation also uses this Gateway configuration"}}, nil
+	return []Change{Change{Path: config, Action: "preserve", Manual: true}.described(describe("manual MCP step required: in the OpenClaw Control UI for %s, %s; Gateway owns this JSON5 state; confirm native local Windows execution, then reload it yourself; project MCP activation also uses this Gateway configuration", config, operation))}, nil
 }
 
 func PlanOpenClawSkill(s Scope, uninstall bool) (changes []Change, err error) {

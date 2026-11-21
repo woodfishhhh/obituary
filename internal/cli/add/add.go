@@ -25,7 +25,7 @@ func NewCmd() *cobra.Command {
   obit add report.zip --at "2026-12-01 18:00"`,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			paths, expires, err := parseExpiry(args, at, time.Now())
+			paths, expires, err := parseExpiry(args, at, time.Now(), asJSON)
 			if err != nil {
 				return err
 			}
@@ -52,13 +52,13 @@ func NewCmd() *cobra.Command {
 	return cmd
 }
 
-func parseExpiry(args []string, at string, now time.Time) ([]string, time.Time, error) {
+func parseExpiry(args []string, at string, now time.Time, asJSON bool) ([]string, time.Time, error) {
 	if at != "" {
 		expires, err := lifespan.ParseAt(at, now)
 		return args, expires, err
 	}
 	if len(args) < 2 {
-		return nil, time.Time{}, errors.New("give a duration after the paths (for example 2h), or use --at")
+		return nil, time.Time{}, errors.New(cmdutil.OutputLocalizer(asJSON).Text("cli.add.give_a_duration_after_the_paths_for", nil))
 	}
 	d, err := lifespan.ParseDuration(args[len(args)-1])
 	if err != nil {

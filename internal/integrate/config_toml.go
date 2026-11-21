@@ -161,7 +161,7 @@ func (block tomlBlockState) finishChange(ch Change, id string, out []byte, expec
 	if bytes.HasPrefix(ch.orig, bom) {
 		out = append(bytes.Clone(bom), out...)
 	}
-	ch.Detail = "owned TOML block: " + id
+	ch = ch.described(describe("owned TOML block: %s", id))
 	ch = setIntegrationData(ch, out)
 	if ch.Action != "unchanged" {
 		if block.start < 0 {
