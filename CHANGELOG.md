@@ -1,5 +1,14 @@
 # Changelog / 更新日志
 
+## 1.6.0 - 2026-11-21
+
+- Linux 小窗口预览版：Ubuntu 24.04（amd64）用户可安装 `.deb`，从应用列表或托盘打开小窗口、接收桌面通知，并选择登录时启动托盘。
+- Linux desktop preview: install the `.deb` on Ubuntu 24.04 (amd64) to open the window from the application menu or tray, receive desktop notifications, and optionally start the tray at login.
+- macOS 小窗口预览版：通用 DMG 内的 `Obituary.app` 支持 Intel 和 Apple 芯片，提供菜单栏图标，可通过 LaunchAgent 随登录启动。应用未经 Developer ID 签名或公证，见[首次打开说明](https://obituary.woodfish.site/docs/desktop.html#第一次打开未签名-app)。
+- macOS desktop preview: the universal DMG includes `Obituary.app` for Intel and Apple silicon, with a menu bar icon and optional login startup via LaunchAgent. The app is not Developer ID signed or notarized; see the [first-open instructions](https://obituary.woodfish.site/docs/en/desktop.html#first-opening-an-unsigned-app).
+- Windows 安装脚本不再依赖 PowerShell 模块自动加载来校验 SHA-256 和解压安装包。
+- The Windows installer can now verify SHA-256 and extract the archive without PowerShell module autoloading.
+
 ## 1.5.0 - 2026-11-21
 
 - 命令行、Windows 托盘、小窗口和资源管理器菜单共用同一个语言设置，可选择英文或简体中文。
