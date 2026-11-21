@@ -15,9 +15,9 @@ Todo lo registrado se entierra cuando caduca y puede resucitarse tal como estaba
 
 ## Activa el registro automático cuando lo desees
 
-Actívalo desde Settings o Decisions, o define `[proposals] mode` en `config.toml`.
+Actívalo desde Settings o For you, o define `[proposals] mode` en `config.toml`.
 
-- `"tiered"` registra directamente los archivos creados por el agente en esta sesión y los [contenedores Docker](./docker) iniciados para el proyecto. Un archivo solo entra directamente si el hook observó la escritura, no estaba en la instantánea inicial y su fecha de creación es posterior al inicio de la sesión. Se avisa al agente y aparece en `obit proposals` y en «Handled automatically» de Decisions. Los archivos anteriores a la sesión o cuya escritura no observó el hook solo generan una propuesta. `obit approve <id>` registra lo propuesto para el proyecto; desde entonces sus coincidencias de reglas pueden registrarse directamente. `obit reject <id>` rechaza el registro automático en este proyecto.
+- `"tiered"` registra directamente los archivos creados por el agente en esta sesión y los [contenedores Docker](./docker) iniciados para el proyecto. Un archivo solo entra directamente si el hook observó la escritura, no estaba en la instantánea inicial y su fecha de creación es posterior al inicio de la sesión. Se avisa al agente y aparece en `obit proposals` y en «Handled automatically» de For you. Los archivos anteriores a la sesión o cuya escritura no observó el hook solo generan una propuesta. `obit approve <id>` registra lo propuesto para el proyecto; desde entonces sus coincidencias de reglas pueden registrarse directamente. `obit reject <id>` rechaza el registro automático en este proyecto.
 - `"auto"` registra directamente todo lo que encuentre el registro automático y te informa después.
 - `"ask"` convierte todo en una propuesta pendiente de aprobación.
 

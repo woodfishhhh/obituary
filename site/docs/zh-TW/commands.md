@@ -1,28 +1,28 @@
 # 命令參考
 
-把 `<编号>` 換成 `obit add` 或 `obit bury` 執行結果中的編號，也可以從 `obit list` 或 `obit graveyard` 的清單查到。時間單位有 `s`、`m`、`h`、`d` 和 `w`，可以組合使用，例如 `1d12h`。
+把 `<編號>` 換成 `obit add` 或 `obit bury` 執行結果中的編號，也可以從 `obit list` 或 `obit graveyard` 的清單查到。時間單位有 `s`、`m`、`h`、`d` 和 `w`，可以組合使用，例如 `1d12h`。
 
 ## 壽命
 
 ```powershell
-obit add debug.log 2h                       # 2 小时后收走（别名 mark）
-obit add output\shots 1d12h                 # 文件夹也可以
-obit add report.zip --at "2026-12-01 18:00" # 指定时刻
-obit list                                   # 谁还剩多久
-obit extend <编号> 1d                       # 续命 1 天
-obit spare <编号>                           # 饶它一命：不再跟踪，文件保留（同 cancel）
-obit reap                                   # 现在就把已到期的下葬（同 sweep，--dry-run 只预览）
+obit add debug.log 2h                       # 2 小時後收走（別名 mark）
+obit add output\shots 1d12h                 # 資料夾也可以
+obit add report.zip --at "2026-12-01 18:00" # 指定時刻
+obit list                                   # 誰還剩多久
+obit extend <編號> 1d                       # 续命 1 天
+obit spare <編號>                           # 饶它一命：不再跟踪，文件保留（同 cancel）
+obit reap                                   # 現在就把已到期的下葬（同 sweep，--dry-run 只預覽）
 ```
 
 ## 墓地
 
 ```powershell
 obit bury old-build                         # 立刻下葬
-obit graveyard                              # 墓地里有什么、还剩几天被火化（--here 只看当前目录下的）
-obit resurrect <编号>                       # 复活：放回原处；原处已有同名的，改名放回，绝不覆盖
-obit resurrect --last                       # 撤销上一次删除：一条 obit bury / obit rm 埋下的几项一起回来
-obit purge                                  # 火化保留期已过的（--all 全部，先确认；--dry-run 预览）
-obit purge <编号>                           # 立即火化这一座（永久删除，先确认；非终端要加 --yes）
+obit graveyard                              # 墓地裡有什麼、還剩幾天被火化（--here 只看目前目錄下的）
+obit resurrect <編號>                       # 復活：放回原處；原處已有同名的，改名放回，絕不覆蓋
+obit resurrect --last                       # 撤銷上一次刪除：一條 obit bury / obit rm 埋下的幾項一起回來
+obit purge                                  # 火化保留期已過的（--all 全部，先確認；--dry-run 預覽）
+obit purge <編號>                           # 立即火化這一座（永久刪除，先確認；非終端機要加 --yes）
 ```
 
 在 `resurrect` 和 `purge` 中，單獨的數字（`5`、`#5`）一律當作編號。編號不存在就會報錯，不會改以檔名查找。檔名本身是數字時，請寫成 `./5` 或使用絕對路徑。
@@ -30,23 +30,23 @@ obit purge <编号>                           # 立即火化这一座（永久�
 ## 可復原的刪除指令
 
 ```powershell
-obit rm -rf build            # 和 rm 一样的常用参数，每个路径都走下葬
+obit rm -rf build            # 和 rm 一樣的常用參數，每個路徑都走下葬
 obit rmdir empty-dir
 obit git-clean -fdx
-obit remove-item .\build     # 只接受一个字面路径
+obit remove-item .\build     # 只接受一個字面路徑
 ```
 
 ## 規則與提議
 
 ```powershell
-obit rules                       # 当前项目生效的规则
-obit rules check debug.log out/  # 预览：会登记什么、按哪条规则
-obit rules apply debug.log       # 按规则登记
-obit trust                       # 信任这个项目的 .obitrules（非交互环境加 --yes）
-obit proposals                   # 等你点头的提议，和没问你就登记了的东西
+obit rules                       # 目前專案生效的規則
+obit rules check debug.log out/  # 預覽：會登記什麼、依哪條規則
+obit rules apply debug.log       # 依規則登記
+obit trust                       # 信任這個專案的 .obitrules（非互動環境加 --yes）
+obit proposals                   # 等你點頭的提議，和沒問你就登記了的東西
 obit approve 3                   # 同意
-obit reject 3                    # 拒绝
-$dir = obit mktemp 1d            # 会自动下葬的临时目录
+obit reject 3                    # 拒絕
+$dir = obit mktemp 1d            # 會自動下葬的暫存目錄
 ```
 
 ## 資料夾策略與 Docker
@@ -62,14 +62,14 @@ obit docker list
 ## 整合與背景服務
 
 ```powershell
-obit init                       # Claude Code 的 hook 和 Skill、右键菜单、开始菜单和桌面快捷方式，托盘随登录启动
+obit init                       # Claude Code 的 hook 和 Skill、右鍵選單、開始功能表和桌面捷徑，系統匣隨登入啟動
 obit init -g --agent codex      # Codex
-obit init -g --guard-rm         # 删除护栏
-obit init -g --mcp              # 加装 MCP 服务
-obit init --no-context-menu --no-shortcuts --no-skill   # 不装右键菜单、快捷方式或 Skill
+obit init -g --guard-rm         # 刪除護欄
+obit init -g --mcp              # 加裝 MCP 服務
+obit init --no-context-menu --no-shortcuts --no-skill   # 不裝右鍵選單、捷徑或 Skill
 obit init -g --uninstall --no-context-menu   # 解除安裝時留下右鍵選單，其餘照常撤掉；--no-shortcuts、--no-skill 同理
-obit init -g --show             # 装了什么
-obit daemon enable              # 托盘随登录启动，并装兜底的定时任务
+obit init -g --show             # 裝了什麼
+obit daemon enable              # 系統匣隨登入啟動，並裝備援的排程工作
 obit daemon status
 obit daemon disable
 ```
@@ -77,13 +77,13 @@ obit daemon disable
 ## 查詢與檢查
 
 ```powershell
-obit doctor              # 只读体检（支持 --json）
-obit stats               # 悼词：埋了多少、腾出多少空间、复活过几次（同 eulogy）
-obit log                 # 生平记录：做过的所有事
-obit config              # 查看配置；--create 生成带注释的默认配置
-obit config telemetry off # 关闭使用统计并清除本地安装 ID；不影响查更新
-obit hook audit          # 设了 OBIT_HOOK_AUDIT=1 时，查看每次 hook 收到了什么、做了什么
-obit uninstall           # 撤掉讣告装过的所有东西（先 --dry-run 看看）
+obit doctor              # 唯讀檢查（支援 --json）
+obit stats               # 悼詞：埋了多少、騰出多少空間、復活過幾次（同 eulogy）
+obit log                 # 生平記錄：做過的所有事
+obit config              # 查看設定；--create 產生附註解的預設設定
+obit config telemetry off # 關閉使用統計並清除本機安裝 ID；不影響檢查更新
+obit hook audit          # 設了 OBIT_HOOK_AUDIT=1 時，查看每次 hook 收到了什麼、做了什麼
+obit uninstall           # 撤掉訃告裝過的所有東西（先 --dry-run 看看）
 ```
 
 查詢及回傳結果的指令（`list`、`graveyard`、`proposals`、`stats`、`mark`、`bury`、`resurrect` 等）支援 `--json`，供指令稿和 agent 讀取。`obit rm` 這類包裝原有刪除指令的命令會保留原指令的輸出格式，不支援 `--json`。

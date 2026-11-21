@@ -15,9 +15,9 @@ Tout élément enregistré est enterré à l’échéance et reste ressuscitable
 
 ## Activez l'enregistrement automatique quand vous le souhaitez
 
-Activez-le dans Settings ou Decisions, ou définissez `[proposals] mode` dans `config.toml`.
+Activez-le dans Settings ou For you, ou définissez `[proposals] mode` dans `config.toml`.
 
-- `"tiered"` enregistre directement les fichiers créés par l’agent pendant la session et les [conteneurs Docker](./docker) démarrés pour le projet. Un fichier doit avoir été observé par le hook, être absent de l’instantané initial et avoir une date de création postérieure au début de la session. L’agent est informé et l’élément apparaît dans `obit proposals` et sous « Handled automatically » dans Decisions. Les fichiers déjà présents ou non observés par le hook deviennent seulement des propositions. `obit approve <id>` enregistre les éléments proposés ; les correspondances de règles du projet sont ensuite enregistrées directement. `obit reject <id>` refuse l’enregistrement automatique dans ce projet.
+- `"tiered"` enregistre directement les fichiers créés par l’agent pendant la session et les [conteneurs Docker](./docker) démarrés pour le projet. Un fichier doit avoir été observé par le hook, être absent de l’instantané initial et avoir une date de création postérieure au début de la session. L’agent est informé et l’élément apparaît dans `obit proposals` et sous « Handled automatically » dans For you. Les fichiers déjà présents ou non observés par le hook deviennent seulement des propositions. `obit approve <id>` enregistre les éléments proposés ; les correspondances de règles du projet sont ensuite enregistrées directement. `obit reject <id>` refuse l’enregistrement automatique dans ce projet.
 - `"auto"` enregistre directement tout ce que trouve l’enregistrement automatique et vous en informe ensuite.
 - `"ask"` transforme tout en proposition en attente d’approbation.
 
