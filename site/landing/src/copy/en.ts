@@ -20,7 +20,7 @@ export const en: Strings = {
     language: "Language",
     hint: { text: "This page is also in English.", go: "Switch to English", close: "Dismiss" },
   },
-  nav: { why: "Why", life: "Lifecycle", window: "The window", install: "Install", docs: "Docs" },
+  nav: { blog: "Blog", why: "Why", life: "Lifecycle", window: "The window", install: "Install", docs: "Docs" },
   hero: {
     tagline: {
       before: "Obituary — the",

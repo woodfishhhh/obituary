@@ -21,7 +21,7 @@ export const es: Strings = {
     language: "Idioma",
     hint: { text: "Esta página también está disponible en español.", go: "Ver en español", close: "Cerrar aviso" },
   },
-  nav: { why: "Por qué", life: "Ciclo de vida", window: "La ventana", install: "Instalar", docs: "Documentación" },
+  nav: { blog: "Blog", why: "Por qué", life: "Ciclo de vida", window: "La ventana", install: "Instalar", docs: "Documentación" },
   hero: {
     tagline: {
       before: "Obituary —",

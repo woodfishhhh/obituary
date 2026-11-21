@@ -21,7 +21,7 @@ export const de: Strings = {
     language: "Sprache",
     hint: { text: "Diese Seite gibt es auch auf Deutsch.", go: "Auf Deutsch ansehen", close: "Hinweis schließen" },
   },
-  nav: { why: "Warum", life: "Lebenszyklus", window: "Das Fenster", install: "Installieren", docs: "Doku" },
+  nav: { blog: "Blog", why: "Warum", life: "Lebenszyklus", window: "Das Fenster", install: "Installieren", docs: "Doku" },
   hero: {
     tagline: { before: "Obituary — der", words: ["Papierkorb", "Wächter", "Rückgängig-Button", "Aufräumer"], after: "für KI-Agenten", label: "Obituary — der Papierkorb für KI-Agenten" },
     before: "Gib den Dateien deiner KI eine ",

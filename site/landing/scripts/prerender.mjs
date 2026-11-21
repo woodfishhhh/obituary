@@ -74,6 +74,6 @@ ${locales.map((l) => `  <url>\n    <loc>${url(l)}</loc>\n${locales.map((a) => ` 
 `;
 await writeFile(new URL("dist/sitemap.xml", root), sitemap);
 // The docs build writes its own sitemap under /docs/.
-await writeFile(new URL("dist/robots.txt", root), `User-agent: *\nAllow: /\n\nSitemap: ${siteOrigin}/sitemap.xml\nSitemap: ${siteOrigin}/docs/sitemap.xml\n`);
+await writeFile(new URL("dist/robots.txt", root), `User-agent: *\nAllow: /\n\nSitemap: ${siteOrigin}/sitemap.xml\nSitemap: ${siteOrigin}/docs/sitemap.xml\nSitemap: ${siteOrigin}/blog/sitemap.xml\n`);
 await rm(new URL("dist-ssr/", root), { recursive: true, force: true });
 await rm(new URL("dist/.vite/", root), { recursive: true, force: true });

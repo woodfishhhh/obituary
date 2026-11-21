@@ -21,7 +21,7 @@ export const ptBR: Strings = {
     language: "Idioma",
     hint: { text: "Esta página também está em português.", go: "Ver em português", close: "Fechar aviso" },
   },
-  nav: { why: "Por quê", life: "Ciclo de vida", window: "A janela", install: "Instalar", docs: "Documentação" },
+  nav: { blog: "Blog", why: "Por quê", life: "Ciclo de vida", window: "A janela", install: "Instalar", docs: "Documentação" },
   hero: {
     tagline: {
       before: "Obituary —",

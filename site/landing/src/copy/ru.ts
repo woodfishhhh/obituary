@@ -21,7 +21,7 @@ export const ru: Strings = {
     language: "Язык",
     hint: { text: "Эта страница есть и на русском.", go: "Открыть на русском", close: "Закрыть подсказку" },
   },
-  nav: { why: "Зачем", life: "Жизненный цикл", window: "Окно", install: "Установка", docs: "Документация" },
+  nav: { blog: "Блог", why: "Зачем", life: "Жизненный цикл", window: "Окно", install: "Установка", docs: "Документация" },
   hero: {
     tagline: {
       before: "Obituary —",

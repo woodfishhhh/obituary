@@ -10,5 +10,6 @@ const run = (cmd) => execSync(cmd, { stdio: "inherit", env, cwd: new URL("../", 
 run("node scripts/community.mjs");
 run("pnpm --filter landing build");
 run("pnpm --filter docs build");
+run("pnpm --filter blog build");
 run("node scripts/assemble.mjs");
 run("node scripts/check-docs.mjs");

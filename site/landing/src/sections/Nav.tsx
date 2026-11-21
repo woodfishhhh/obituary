@@ -35,6 +35,9 @@ export function Nav({ c }: { c: Copy }) {
             {c.nav.docs}
           </a>
           <LanguageMenu c={c} />
+          <a href={siteLink(c.lang === 'zh' ? 'blog/' : 'blog/en/')} className="rounded-full px-2 py-2 text-sm font-medium whitespace-nowrap text-ink hover:bg-paper-3 sm:px-3">
+            {c.nav.blog}
+          </a>
           <a href={repo} className="rounded-full bg-ink px-3 py-2 text-sm font-medium whitespace-nowrap text-paper transition-colors hover:bg-ink-2 sm:px-4">
             GitHub
           </a>

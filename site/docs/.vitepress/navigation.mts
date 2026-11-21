@@ -23,6 +23,7 @@ const labels: Record<Lang, string[]> = {
 
 const devLabels: Record<Lang, string> = {zh:'开发', en:'Development', 'zh-TW':'開發', ja:'開発', ko:'개발', es:'Desarrollo', fr:'Développement', de:'Entwicklung', 'pt-BR':'Desenvolvimento', ru:'Разработка'};
 const devPages = ['index','architecture','repository','build-test','gui','safety','agent-integration','i18n','release','docs-and-blog'];
+const blogLabels: Record<Lang,string> = {zh:'博客',en:'Blog','zh-TW':'部落格',ja:'ブログ',ko:'블로그',es:'Blog',fr:'Blog',de:'Blog','pt-BR':'Blog',ru:'Блог'};
 
 export function docLocales(site: string, repo: string): LocaleConfig<DefaultTheme.Config> {
   return Object.fromEntries(locales.map(({ id, path, html, name }) => {
@@ -42,7 +43,7 @@ export function docLocales(site: string, repo: string): LocaleConfig<DefaultThem
       label: name, lang: html, title: `${brand} · ${docs}`, titleTemplate: `:title · ${brand}`,
       description: `${docs} · ${brand}: ${sidebar[0].items.map(p => p.text).join(' · ')}`,
       themeConfig: { siteTitle: brand, logoLink: site+path, sidebar: { [`/${path}`]: sidebar, ...section },
-        nav: [{text:home,link:site+path,target:'_self',noIcon:true}, sidebar[0].items[0], {text:docs,link:`/${path}how-it-works`}, {text:devLabels[id],link:dev}, {text:download,link:`${repo}/releases`}],
+        nav: [{text:home,link:site+path,target:'_self',noIcon:true}, sidebar[0].items[0], {text:docs,link:`/${path}how-it-works`}, {text:devLabels[id],link:dev}, {text:blogLabels[id],link:site+(id === 'zh' ? 'blog/' : 'blog/en/'),target:'_self',noIcon:true}, {text:download,link:`${repo}/releases`}],
         outline: {label:outline,level:[2,3]}, docFooter:{prev,next}, langMenuLabel:language, sidebarMenuLabel:menu, returnToTopLabel:top,
         editLink:{pattern:`${repo}/edit/main/site/docs/:path`, text:edit},
         footer: {message:'MIT', copyright:brand},

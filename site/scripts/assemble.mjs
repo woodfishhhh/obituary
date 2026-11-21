@@ -15,6 +15,7 @@ const out = new URL(mirror ? "dist-cn/" : "dist/", root);
 const parts = [
   [new URL("landing/dist/", root), out],
   [new URL("docs/.vitepress/dist/", root), new URL("docs/", out)],
+  [new URL("blog/.vitepress/dist/", root), new URL("blog/", out)],
 ];
 
 for (const [from] of parts) {
