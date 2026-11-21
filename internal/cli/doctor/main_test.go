@@ -15,5 +15,17 @@ func TestMain(m *testing.M) {
 	initcmd.ShortcutCodec = clitest.ShortcutCodec{}
 	ContextMenuRegistry = func() contextmenu.Registry { return readOnlyMenuRegistry{} }
 	regtxnProbe = func() error { return nil }
-	os.Exit(testenv.Main(m))
+	// Run outside any project: doctor reports the project rules of the working
+	// directory, and the repository's own .obitrules would add a row to every check.
+	cwd, err := os.MkdirTemp("", "obit-doctor-cwd-")
+	if err != nil {
+		panic(err)
+	}
+	if err := os.Chdir(cwd); err != nil {
+		panic(err)
+	}
+	code := testenv.Main(m)
+	_ = os.Chdir(os.TempDir())
+	_ = os.RemoveAll(cwd)
+	os.Exit(code)
 }
