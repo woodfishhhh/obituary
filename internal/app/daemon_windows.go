@@ -124,6 +124,18 @@ func SpawnSelf(args ...string) error {
 
 // Stop asks a running daemon to exit and waits for it.
 func Stop(home string) error {
+	managed, err := signalSupervisor(home, supervisorSuffix, true)
+	if err != nil {
+		return err
+	}
+	if managed {
+		if err := os.WriteFile(stopPath(home), nil, 0600); err != nil {
+			return err
+		}
+		if err := waitFor(func() bool { alive, e := signalSupervisor(home, supervisorSuffix, false); return e == nil && !alive }, 10*time.Second, "supervisor did not stop"); err != nil {
+			return err
+		}
+	}
 	deadline := time.Now().Add(10 * time.Second)
 	running, err := waitDaemonStartup(home, time.Until(deadline))
 	if err != nil {

@@ -18,6 +18,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"github.com/woodfishhhh/obituary/internal/tray"
+	"github.com/woodfishhhh/obituary/internal/userdirs"
 )
 
 const logLimit = 1 << 20
@@ -32,6 +33,8 @@ func main() {
 	menu := flag.Bool("context-menu", false, "run an explicit Explorer action and show its result")
 	menuServer := flag.Bool("context-menu-server", false, "receive an Explorer selection through COM")
 	withTray := flag.Bool("tray", defaultTray == "true", "show the resident tray icon")
+	supervise := flag.Bool("supervise", false, "supervise the Windows login tray")
+	managed := flag.Bool("managed", false, "apply the crash budget for a system-managed tray")
 	usageStamp := flag.String("usage-report", "", "")
 	flag.Parse()
 	if err := setDirectoryOverrides(map[*string]string{home: "OBIT_HOME", configDir: "OBIT_CONFIG_DIR"}); err != nil {
@@ -52,19 +55,38 @@ func main() {
 		}
 		return
 	}
-	svc, err := app.Open()
-	if err != nil {
+	if *supervise || *managed {
+		h, err := userdirs.Data()
+		if err == nil && *supervise {
+			err = app.Supervise(h)
+		} else if err == nil {
+			err = app.ManagedTray(h, func() error { return runDaemon(false, true) })
+		}
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
+	if err := runDaemon(*once, *withTray); err != nil {
 		os.Exit(1)
 	}
+}
+
+func runDaemon(once, withTray bool) error {
+	svc, err := app.Open()
+	if err != nil {
+		return err
+	}
 	logger := log.New(&rotatingLog{path: filepath.Join(svc.Store.Home, "obitd.log")}, "", log.LstdFlags)
-	if *once {
+	if once {
 		defer app.CheckUpdatesOnce(svc.Store.Home)
 		runOnce(svc, logger)
-		return
+		return nil
 	}
 	serve := app.Serve
 	debug.SetMemoryLimit(12 << 20)
-	if *withTray {
+	if withTray {
 		serve = tray.Run
 	}
 	if err := serve(svc, logger); err != nil {
@@ -72,8 +94,9 @@ func main() {
 		if runtime.GOOS != "windows" {
 			fmt.Fprintln(os.Stderr, err)
 		}
-		os.Exit(1)
+		return err
 	}
+	return nil
 }
 
 func runOnce(svc *core.Service, logger *log.Logger) {

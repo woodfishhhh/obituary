@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/woodfishhhh/obituary/internal/core"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -58,6 +59,10 @@ func processCreated(h windows.Handle) (uint64, error) {
 }
 
 func writeDaemonProcess(home string, closed bool, runErr error) error {
+	return writeProcessReceipt(filepath.Join(home, "obitd.process.json"), closed, runErr)
+}
+
+func writeProcessReceipt(path string, closed bool, runErr error) error {
 	created, err := processCreated(windows.CurrentProcess())
 	if err != nil {
 		return err
@@ -70,12 +75,16 @@ func writeDaemonProcess(home string, closed bool, runErr error) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(home, "obitd.process.json"), data, 0o600)
+	return core.WriteMetadata(path, data)
 }
 
 func readDaemonProcess(home string) (daemonProcess, error) {
+	return readProcessReceipt(filepath.Join(home, "obitd.process.json"))
+}
+
+func readProcessReceipt(path string) (daemonProcess, error) {
 	var p daemonProcess
-	data, err := os.ReadFile(filepath.Join(home, "obitd.process.json"))
+	data, err := core.ReadMetadata(path)
 	if err == nil {
 		err = json.Unmarshal(data, &p)
 	}

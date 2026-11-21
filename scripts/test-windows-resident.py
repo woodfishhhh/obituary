@@ -57,7 +57,7 @@ def probe(root, name, daemon, cli, trigger, code):
     (cfg / "config.toml").write_text("[update]\ncheck = false\n[telemetry]\nenabled = false\n")
     os.environ.update(OBIT_HOME=str(home), OBIT_CONFIG_DIR=str(cfg), OBIT_TELEMETRY="0")
     sid = next(csv.reader([command("whoami", "/user", "/fo", "csv", "/nh")]))[1]
-    args = subprocess.list2cmdline(["--tray", "--home", str(home), "--config-dir", str(cfg)])
+    args = subprocess.list2cmdline(["--supervise", "--home", str(home), "--config-dir", str(cfg)])
     # A one-shot clock trigger exercises the normal scheduler path without logging off the VM.
     when = (dt.datetime.now() + dt.timedelta(seconds=12)).isoformat(timespec="seconds")
     clock = f"<TimeTrigger><StartBoundary>{when}</StartBoundary></TimeTrigger>" if trigger == "clock" else ""
@@ -84,6 +84,9 @@ def probe(root, name, daemon, cli, trigger, code):
         if trigger == "manual":
             command("schtasks", "/run", "/tn", name)
         first = wait(read, 60)
+        parent = json.loads((home / "obitd.supervisor.json").read_bytes())
+        assert not parent["closed"] and first["pid"] != parent["pid"], (first, parent)
+        print("supervisor", parent, flush=True)
         print("first", first, flush=True)
         started = time.monotonic()
         terminate_verified_process(first, daemon, code)
