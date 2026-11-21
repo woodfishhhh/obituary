@@ -113,7 +113,7 @@ func scheduleDefinitionTarget(definition string) string {
 }
 
 func ownedSchedule(definition, daemon, home, config string) bool {
-	return ownedTaskAction(definition, daemon, "--once", home, config)
+	return ownedTaskAction(definition, daemon, "--once", home, config) && generatedFallback(definition, daemon, home, config)
 }
 
 func ownedTaskAction(definition, daemon, mode, home, config string) bool {

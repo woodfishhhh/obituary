@@ -64,7 +64,7 @@ func createLoginTask(home, daemon, config string) error {
 		return err
 	}
 	name := loginTaskName(home)
-	if err := registerTask(name, loginTaskXML(daemon, home, config, u.Uid), false); err != nil {
+	if err := registerTask(name, loginTaskXML(daemon, home, config, u.Uid)); err != nil {
 		return err
 	}
 	actual, err := registeredTaskXML(name)

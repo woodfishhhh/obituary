@@ -15,6 +15,7 @@ import (
 	"time"
 	"unicode/utf16"
 
+	"github.com/woodfishhhh/obituary/internal/userdirs"
 	"golang.org/x/sys/windows"
 )
 
@@ -117,15 +118,29 @@ func InstallSchedule(home string) error {
 }
 
 func installScheduleFor(daemon, home string) error {
+	config, err := userdirs.Config()
+	if err != nil {
+		return err
+	}
+	current, err := registeredTaskXML(TaskName)
+	if err == nil {
+		if !ownedSchedule(current, daemon, home, config) {
+			return fmt.Errorf("preserving edited, disabled or foreign scheduled task %q", TaskName)
+		}
+		return nil
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
 	u, err := user.Current()
 	if err != nil {
 		return err
 	}
 	text := taskXML(daemon, home, u.Username, time.Now().Add(time.Minute))
-	return registerTask(TaskName, text, true)
+	return registerTask(TaskName, text)
 }
 
-func registerTask(name, text string, replace bool) error {
+func registerTask(name, text string) error {
 	// Task Scheduler wants the file in UTF-16 with a byte order mark.
 	units := utf16.Encode([]rune(text))
 	buf := make([]byte, 2+2*len(units))
@@ -147,9 +162,6 @@ func registerTask(name, text string, replace bool) error {
 		return err
 	}
 	args := []string{"/Create", "/TN", name, "/XML", tmpPath}
-	if replace {
-		args = append(args, "/F")
-	}
 	if out, err := schtasks(args...); err != nil {
 		return fmt.Errorf("schtasks /Create: %v: %s", err, out) //nolint:errorlint // schtasks exit errors are diagnostics, not the scheduler API's error types.
 	}

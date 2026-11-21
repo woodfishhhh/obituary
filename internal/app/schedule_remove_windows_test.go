@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"os/user"
 	"strings"
 	"testing"
 	"time"
@@ -9,11 +10,23 @@ import (
 
 type schedulerExit uint32
 
+func schedulerUser(t *testing.T) string {
+	t.Helper()
+	u, err := user.Current()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return u.Username
+}
+
 func TestLegacyRunnerPreservesEditedAndDisabledDefinitions(t *testing.T) {
 	config := t.TempDir()
 	t.Setenv("OBIT_CONFIG_DIR", config)
 	exe, home := "C:/bin/obitd.exe", t.TempDir()
-	definition := taskXML(exe, home, "account", time.Now())
+	definition := taskXML(exe, home, schedulerUser(t), time.Now())
+	if !ownedSchedule(definition, exe, home, config) {
+		t.Fatal("generated fallback rejected")
+	}
 	for _, edit := range [][2]string{
 		{"PT5M", "PT20M"}, {"PT30M", "PT1H"}, {"<Enabled>true</Enabled>", "<Enabled>false</Enabled>"},
 		{"LeastPrivilege", "HighestAvailable"}, {"</Settings>", "<RestartOnFailure><Interval>PT1M</Interval><Count>9</Count></RestartOnFailure></Settings>"},
@@ -32,7 +45,7 @@ func TestScheduleRemovalPreviewUsesOwnership(t *testing.T) {
 	old := schtasks
 	t.Cleanup(func() { schtasks = old })
 	t.Setenv("OBIT_CONFIG_DIR", `C:\config`)
-	definition := taskXML(`C:\bin\obitd.exe`, `C:\home`, "test", time.Now())
+	definition := taskXML(`C:\bin\obitd.exe`, `C:\home`, schedulerUser(t), time.Now())
 	for _, tc := range []struct {
 		name, daemon, home, config, want string
 		err                              error
@@ -66,7 +79,7 @@ func TestRemoveScheduleChecksDefinitionAndDeletion(t *testing.T) {
 	old := schtasks
 	t.Cleanup(func() { schtasks = old })
 	t.Setenv("OBIT_CONFIG_DIR", `C:\config`)
-	definition := taskXML(`C:\bin\obitd.exe`, `C:\home`, "test", time.Now())
+	definition := taskXML(`C:\bin\obitd.exe`, `C:\home`, schedulerUser(t), time.Now())
 	for _, scenario := range []string{"owned", "absent", "query denied", "changed before", "replaced after", "verify denied", "delete denied"} {
 		t.Run(scenario, func(t *testing.T) {
 			queries, deletes := 0, 0
