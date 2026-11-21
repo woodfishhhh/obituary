@@ -4,6 +4,8 @@ import BlogNav from './BlogNav.vue';
 import PostList from './PostList.vue';
 import PostPage from './PostPage.vue';
 import { useBlog } from './blog';
+// The filing number the landing page's footer shows on the mainland China mirror, from the same place.
+import { icp, isMirror } from '../../../landing/src/config';
 
 const { page, frontmatter } = useData();
 const { en, c, root } = useBlog();
@@ -30,6 +32,7 @@ const repo = 'https://github.com/woodfishhhh/obituary';
       <a :href="repo">GitHub</a>
       <a :href="withBase(en ? '/en/feed.xml' : '/feed.xml')" target="_self">RSS</a>
     </nav>
+    <p v-if="isMirror && icp" class="icp"><a href="https://beian.miit.gov.cn/">{{ icp }}</a></p>
   </footer>
 </template>
 
@@ -46,4 +49,8 @@ main { min-height: 70vh; outline: none; }
 .foot nav { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
 .foot a { color: var(--vp-c-text-2); transition: color 200ms; }
 .foot a:hover { color: var(--vp-c-brand-1); }
+.foot .icp { flex-basis: 100%; text-align: right; }
+.foot .icp a { color: var(--vp-c-text-3); text-underline-offset: 4px; }
+.foot .icp a:hover { color: var(--vp-c-text-1); text-decoration: underline; }
+@media (max-width: 639px) { .foot .icp { text-align: left; } }
 </style>
