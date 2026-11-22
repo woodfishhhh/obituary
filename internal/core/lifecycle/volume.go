@@ -176,7 +176,7 @@ func (s *Service) archiveAndRemoveVolume(client docker.VolumeClient, item Item, 
 		_ = client.ReleaseVolumeHolder(s.Store.Context(), item.Volume)
 		return err
 	}
-	b := Burial{Kind: KindDockerVolume, Volume: item.Volume, ID: item.ID, Path: item.Path, Grave: archive, Size: check.Bytes, BuriedAt: s.now(), PurgeAt: s.now().Add(s.retention()), Reason: reason, Note: item.Note, Source: item.Source, Project: item.Project, Session: item.Session, VolumeArchiveDigest: check.Digest, VolumeHolderID: item.Volume.HolderID}
+	b := Burial{Kind: KindDockerVolume, Volume: item.Volume, ID: item.ID, Path: item.Path, Grave: archive, Size: check.Bytes, BuriedAt: s.now(), PurgeAt: s.now().Add(s.retention()), Reason: reason, Note: item.Note, Source: item.Source, Project: item.Project, Session: item.Session, VolumeArchiveDigest: check.Digest, VolumeHolderID: item.Volume.HolderID, VolumeEventStarted: item.Volume.EventStarted}
 	if err := writeManifest(manifest, b); err != nil {
 		return err
 	}

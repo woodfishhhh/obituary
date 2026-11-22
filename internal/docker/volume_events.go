@@ -1,9 +1,11 @@
 package docker
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
+	"slices"
 	"strings"
 	"time"
 )
@@ -82,20 +84,75 @@ func (c CLI) VolumeEvents(ctx context.Context, name string, since, until time.Ti
 	if err != nil {
 		return nil, err
 	}
-	out, err := bound.run(ctx, "events", "--since", since.UTC().Format(time.RFC3339Nano), "--until", until.UTC().Format(time.RFC3339Nano), "--filter", "type=volume", "--filter", "volume="+name, "--format", "{{json .}}")
-	if err != nil {
-		return nil, err
-	}
+	base := []string{"events", "--since", since.UTC().Format(time.RFC3339Nano), "--until", until.UTC().Format(time.RFC3339Nano), "--format", "{{json .}}"}
 	var rows []volumeEvent
-	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
-		if strings.TrimSpace(line) == "" {
+	for _, filters := range [][]string{{"type=container"}, {"type=volume", "volume=" + name}} {
+		args := append([]string{}, base[:len(base)-2]...)
+		for _, filter := range filters {
+			args = append(args, "--filter", filter)
+		}
+		args = append(args, "--format", "{{json .}}")
+		out, runErr := bound.run(ctx, args...)
+		if runErr != nil {
+			return nil, runErr
+		}
+		for _, line := range strings.Split(strings.TrimSpace(string(out)), string(rune(10))) {
+			if strings.TrimSpace(line) == "" {
+				continue
+			}
+			var row volumeEvent
+			if err := json.Unmarshal([]byte(line), &row); err != nil {
+				return nil, err
+			}
+			rows = append(rows, row)
+		}
+	}
+	slices.SortFunc(rows, func(a, b volumeEvent) int { return cmp.Compare(a.TimeNano, b.TimeNano) })
+	return rows, nil
+}
+
+// CheckVolumeEvents refuses incomplete or foreign activity in the operation window.
+func CheckVolumeEvents(rows []volumeEvent, name, holder string, post bool) error {
+	started, holderDestroyed, destroyed := false, false, 0
+	helpers := map[string]bool{}
+	var previous int64
+	for _, row := range rows {
+		if row.TimeNano <= 0 || row.TimeNano < previous {
+			return errors.New("daemon event time is inconsistent")
+		}
+		previous = row.TimeNano
+		if row.Type == "container" {
+			if row.Action == "create" && row.Actor.ID == holder {
+				started = true
+			}
+			if row.Action == "destroy" && row.Actor.ID == holder {
+				holderDestroyed = true
+			}
 			continue
 		}
-		var row volumeEvent
-		if err := json.Unmarshal([]byte(line), &row); err != nil {
-			return nil, err
+		if row.Type != "volume" || row.Actor.ID != name {
+			continue
 		}
-		rows = append(rows, row)
+		switch row.Action {
+		case "mount", "unmount":
+			container := row.Actor.Attributes["container"]
+			if container != "" && container != holder {
+				helpers[container] = true
+			}
+		case "create":
+			return errors.New("volume was recreated during archival")
+		case "destroy":
+			destroyed++
+		}
 	}
-	return rows, nil
+	if !started || len(helpers) != 1 {
+		return errors.New("volume event evidence incomplete; do not assume success")
+	}
+	if post && (!holderDestroyed || destroyed != 1) {
+		return errors.New("volume deletion event evidence incomplete; do not assume success")
+	}
+	if !post && destroyed != 0 {
+		return errors.New("volume was destroyed before archival completed")
+	}
+	return nil
 }

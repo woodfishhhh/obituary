@@ -40,3 +40,28 @@ func TestVolumeEvidenceRequiresAnchorsAndNoForeignChanges(t *testing.T) {
 		})
 	}
 }
+
+func TestCheckVolumeEventsRejectsMissingAndForeignActivity(t *testing.T) {
+	makeEvent := func(kind, action, id, container string, ts int64) volumeEvent {
+		var row volumeEvent
+		row.Type, row.Action, row.TimeNano, row.Actor.ID = kind, action, ts, id
+		row.Actor.Attributes = map[string]string{"container": container}
+		return row
+	}
+	pre := []volumeEvent{
+		makeEvent("container", "create", "holder", "", 1),
+		makeEvent("volume", "mount", "cache", "helper", 2),
+		makeEvent("container", "destroy", "helper", "", 3),
+	}
+	if err := CheckVolumeEvents(pre, "cache", "holder", false); err != nil {
+		t.Fatal(err)
+	}
+	post := append(pre, makeEvent("container", "destroy", "holder", "", 4), makeEvent("volume", "destroy", "cache", "", 5))
+	if err := CheckVolumeEvents(post, "cache", "holder", true); err != nil {
+		t.Fatal(err)
+	}
+	foreign := append(pre, makeEvent("volume", "mount", "cache", "foreign", 4))
+	if err := CheckVolumeEvents(foreign, "cache", "holder", false); err == nil {
+		t.Fatal("foreign volume activity accepted")
+	}
+}

@@ -71,6 +71,7 @@ type Burial struct {
 	Volume              *docker.Volume   `json:"volume,omitempty"`
 	VolumeArchiveDigest string           `json:"volumeArchiveDigest,omitempty"`
 	VolumeHolderID      string           `json:"volumeHolderId,omitempty"`
+	VolumeEventStarted  time.Time        `json:"volumeEventStarted,omitzero"`
 	ID                  int64            `json:"id"` // same number the item had while tracked
 	Path                string           `json:"path"`
 	Grave               string           `json:"grave"` // where it lies now

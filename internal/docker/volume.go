@@ -29,7 +29,8 @@ type Volume struct {
 	Target            Target            `json:"target"`
 	RestoreLabelOwned bool              `json:"restoreLabelOwned,omitempty"`
 	mountpoint        string
-	HolderID          string `json:"-"`
+	HolderID          string    `json:"-"`
+	EventStarted      time.Time `json:"-"`
 }
 
 func (v Volume) Check() error {

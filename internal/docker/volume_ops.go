@@ -84,11 +84,20 @@ func (c CLI) ArchiveVolume(ctx context.Context, want *Volume, out io.Writer) (Vo
 		}
 		return VolumeArchive{}, fmt.Errorf("%w: %s", ErrVolumeReferenced, refs[0].Display())
 	}
+	want.EventStarted = time.Now().UTC()
 	archive, err := bound.archiveStream(ctx, got, out)
 	if err != nil {
 		_, _ = bound.run(ctx, "rm", "--", want.HolderID)
 		want.HolderID = ""
 		return VolumeArchive{}, err
+	}
+	rows, err := bound.VolumeEvents(ctx, want.Name, want.EventStarted, time.Now().UTC())
+	if err != nil || CheckVolumeEvents(rows, want.Name, want.HolderID, false) != nil {
+		_ = bound.ReleaseVolumeHolder(ctx, want)
+		if err != nil {
+			return VolumeArchive{}, err
+		}
+		return VolumeArchive{}, errors.New("volume event evidence incomplete; do not assume success")
 	}
 	return archive, nil
 }
@@ -122,7 +131,14 @@ func (c CLI) RemoveVolume(ctx context.Context, want *Volume) error {
 		return err
 	}
 	_, err = bound.run(ctx, "volume", "rm", "--", want.Name)
-	return err
+	if err != nil {
+		return err
+	}
+	rows, eventErr := bound.VolumeEvents(ctx, want.Name, want.EventStarted, time.Now().UTC())
+	if eventErr != nil {
+		return eventErr
+	}
+	return CheckVolumeEvents(rows, want.Name, "", true)
 }
 
 func (c CLI) ReleaseVolumeHolder(ctx context.Context, want *Volume) error {
