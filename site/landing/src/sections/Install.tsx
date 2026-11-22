@@ -200,8 +200,6 @@ function Platform({ c, os }: { c: Copy; os: Os }) {
           <p className="mt-4 text-sm text-muted">{isMirror ? i.mirrorFact : i.fact[os]}</p>
         </div>
       )}
-
-      <p className="text-sm text-muted">{i.network[os]}</p>
     </div>
   );
 }
@@ -234,7 +232,6 @@ export function Install({ c }: { c: Copy }) {
             </button>
           ))}
         </div>
-        <p className="mb-8 max-w-[70ch] text-ink-2">{i.gets[os]}</p>
         <Platform c={c} os={os} />
       </div>
     </section>

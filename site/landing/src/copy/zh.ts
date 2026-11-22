@@ -103,7 +103,6 @@ export const zh = {
   },
   window: {
     head: "不会用命令行，也能复活",
-    lead: "开始菜单、桌面、托盘都能打开；右键文件就能放进讣告。",
     looks: { calendar: "日历", palette: "一行" } as Record<LookId, string>,
     pages: { upcoming: "即将下葬", graveyard: "即将火化", decisions: "待你决定" } as Record<PageId, string>,
     lookLabel: "外观",
@@ -138,7 +137,6 @@ export const zh = {
   },
   agents: {
     head: "接到你用的 agent 上",
-    lead: "每一家都是一条命令。点你用的那个。",
     project: "在要接入的项目目录里运行",
     global: "为当前用户运行",
   },
@@ -165,15 +163,9 @@ export const zh = {
       linux: "更新：再运行一次安装脚本。obit update 会告诉你当前版本和最新版本。",
     } as Record<Os, string>,
     uninstall: "卸载：obit uninstall，先 --dry-run 看看会撤掉什么；墓地默认保留。",
-    network: {
-      windows: "讣告唯一的联网是每天最多一次检查新版本，只读公开的发布信息（GitHub 或国内镜像），可以在设置里关掉。",
-      macos: "讣告唯一的联网是每天最多一次检查新版本，只读公开的发布信息（GitHub 或国内镜像），在 config.toml 的 [update] 里写 check = false 就能关掉。",
-      linux: "讣告唯一的联网是每天最多一次检查新版本，只读公开的发布信息（GitHub 或国内镜像），在 config.toml 的 [update] 里写 check = false 就能关掉。",
-    } as Record<Os, string>,
     mirrorScript: "安装脚本和安装包都从国内镜像下载",
     downloadHead: "直接下载",
     downloads: archives(["Apple 芯片", "Intel"]),
-    gets: { windows: "Windows 上有托盘、小窗口和右键菜单，也有命令行和 agent 接入。", macos: "macOS 上是命令行加 agent 接入：obit list、obit graveyard、obit resurrect 顶替小窗口；launchd 每 5 分钟检查到期。", linux: "Linux 上是命令行加 agent 接入：obit list、obit graveyard、obit resurrect 顶替小窗口；systemd --user 每 5 分钟检查到期（没有 systemd 时用用户 crontab）。" } as Record<Os, string>,
     routeLabel: "安装方式",
     agentHead: "让 AI 装",
     agentLine: "把这句话发给你正在用的 agent（Claude Code、Codex、Cursor……都行），要你拍板的地方它会停下来问你。",

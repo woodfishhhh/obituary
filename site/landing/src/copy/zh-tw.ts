@@ -103,7 +103,6 @@ export const zhTW: Strings = {
   },
   window: {
     head: "不會用命令列，也能復活",
-    lead: "開始功能表、桌面、系統匣都能開啟；右鍵檔案就能放進讣告。",
     looks: { calendar: "月曆", palette: "單行" } as Record<LookId, string>,
     pages: { upcoming: "即將下葬", graveyard: "墓地", decisions: "待你決定" } as Record<PageId, string>,
     lookLabel: "外觀",
@@ -138,7 +137,6 @@ export const zhTW: Strings = {
   },
   agents: {
     head: "接到你用的 agent 上",
-    lead: "每一家都只要一條命令。點你用的那一個。",
     project: "在要連接的專案目錄中執行",
     global: "為目前的使用者執行",
   },
@@ -165,15 +163,9 @@ export const zhTW: Strings = {
       linux: "更新：再執行一次安裝腳本。obit update 會告訴你目前的版本和最新版本。",
     } as Record<Os, string>,
     uninstall: "解除安裝：obit uninstall，先加 --dry-run 看看會移除什麼；墓地預設保留。",
-    network: {
-      windows: "讣告唯一的連線是每天最多一次檢查新版本，只讀取公開的發行資訊（GitHub 或中國大陸鏡像），可以在設定裡關掉。",
-      macos: "讣告唯一的連線是每天最多一次檢查新版本，只讀取公開的發行資訊（GitHub 或中國大陸鏡像），在 config.toml 的 [update] 裡寫 check = false 就能關掉。",
-      linux: "讣告唯一的連線是每天最多一次檢查新版本，只讀取公開的發行資訊（GitHub 或中國大陸鏡像），在 config.toml 的 [update] 裡寫 check = false 就能關掉。",
-    } as Record<Os, string>,
     mirrorScript: "安裝腳本和安裝檔都從中國大陸鏡像下載",
     downloadHead: "直接下載",
     downloads: archives(["Apple 晶片", "Intel"]),
-    gets: { windows: "Windows 上有系統匣、小視窗和右鍵選單，也有命令列和 agent 接入。", macos: "macOS 上是命令列加 agent 接入：obit list、obit graveyard、obit resurrect 取代小視窗；launchd 每 5 分鐘檢查到期。", linux: "Linux 上是命令列加 agent 接入：obit list、obit graveyard、obit resurrect 取代小視窗；systemd --user 每 5 分鐘檢查到期（沒有 systemd 時用使用者 crontab）。" } as Record<Os, string>,
     routeLabel: "安裝方式",
     agentHead: "讓 AI 來裝",
     agentLine: "把這句話傳給你正在用的 agent（Claude Code、Codex、Cursor……都行），需要你拍板的地方它會停下來問你。",

@@ -34,10 +34,7 @@ export function WindowLooks({ c }: { c: Copy }) {
   return (
     <section id="window" aria-labelledby="window-head" className="py-24 md:py-32">
       <div className="mx-auto max-w-[1240px] px-6 md:px-10">
-        <div className="mb-10 grid gap-6 lg:grid-cols-2 lg:items-end">
-          <h2 id="window-head" className="max-w-[18ch] text-[clamp(2rem,3.4vw,3.25rem)] leading-[1.08] font-semibold tracking-[-0.02em]">{w.head}</h2>
-          <p className="max-w-[46ch] text-lg text-ink-2">{w.lead}</p>
-        </div>
+        <h2 id="window-head" className="mb-10 max-w-[18ch] text-[clamp(2rem,3.4vw,3.25rem)] leading-[1.08] font-semibold tracking-[-0.02em]">{w.head}</h2>
         <div className="mb-6 flex flex-wrap items-center gap-3">
           <Segmented label={w.lookLabel} options={(["calendar", "palette"] as LookId[]).map((id) => [id, w.looks[id]])} value={look} onChange={setLook} />
           <Segmented label={w.pageLabel} options={(["upcoming", "graveyard", "decisions"] as PageId[]).map((id) => [id, w.pages[id]])} value={page} onChange={setPage} />

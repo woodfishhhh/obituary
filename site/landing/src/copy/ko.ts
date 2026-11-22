@@ -103,7 +103,6 @@ export const ko: Strings = {
   },
   window: {
     head: "명령줄 없이도 부활시킬 수 있습니다",
-    lead: "시작 메뉴, 바탕 화면, 트레이에서 열 수 있습니다. 파일을 오른쪽 클릭해 Obituary에 추가할 수 있습니다.",
     looks: { calendar: "달력", palette: "한 줄" } as Record<LookId, string>,
     pages: { upcoming: "곧 매장", graveyard: "묘지", decisions: "결정 대기" } as Record<PageId, string>,
     lookLabel: "외관",
@@ -138,7 +137,6 @@ export const ko: Strings = {
   },
   agents: {
     head: "쓰고 있는 에이전트에 연결",
-    lead: "모두 명령 하나로 연결됩니다. 쓰는 것을 클릭하세요.",
     project: "연결할 프로젝트 폴더에서 실행하세요",
     global: "현재 사용자 계정에서 실행하세요",
   },
@@ -165,15 +163,9 @@ export const ko: Strings = {
       linux: "업데이트: 설치 스크립트를 다시 실행합니다. obit update가 현재 버전과 최신 버전을 알려 줍니다.",
     } as Record<Os, string>,
     uninstall: "제거: obit uninstall. 먼저 --dry-run으로 무엇이 제거되는지 확인하세요. 묘지는 기본적으로 남습니다.",
-    network: {
-      windows: "Obituary가 네트워크를 쓰는 것은 새 버전 확인뿐이며 하루에 최대 한 번입니다. 공개된 릴리스 정보(GitHub 또는 중국 본토 미러)만 읽고, 설정에서 끌 수 있습니다.",
-      macos: "Obituary가 네트워크를 쓰는 것은 새 버전 확인뿐이며 하루에 최대 한 번입니다. 공개된 릴리스 정보(GitHub 또는 중국 본토 미러)만 읽고, config.toml의 [update]에 check = false를 쓰면 끌 수 있습니다.",
-      linux: "Obituary가 네트워크를 쓰는 것은 새 버전 확인뿐이며 하루에 최대 한 번입니다. 공개된 릴리스 정보(GitHub 또는 중국 본토 미러)만 읽고, config.toml의 [update]에 check = false를 쓰면 끌 수 있습니다.",
-    } as Record<Os, string>,
     mirrorScript: "설치 스크립트와 압축 파일은 중국 본토 미러에서 받습니다",
     downloadHead: "직접 다운로드",
     downloads: archives(["Apple 실리콘", "Intel"]),
-    gets: { windows: "Windows에서는 트레이, 작은 창, 오른쪽 클릭 메뉴에 더해 명령줄과 에이전트 연결도 쓸 수 있습니다.", macos: "macOS에서는 명령줄과 에이전트 연결을 씁니다. 작은 창 대신 obit list, obit graveyard, obit resurrect가 있고, launchd가 5분마다 만료를 확인합니다.", linux: "Linux에서는 명령줄과 에이전트 연결을 씁니다. 작은 창 대신 obit list, obit graveyard, obit resurrect가 있고, systemd --user가 5분마다 만료를 확인합니다(systemd가 없으면 사용자 crontab)." } as Record<Os, string>,
     routeLabel: "설치 방법",
     agentHead: "AI에게 맡기기",
     agentLine: "쓰고 있는 에이전트(Claude Code, Codex, Cursor 등)에게 아래 문장을 보내세요. 결정이 필요한 곳에서는 멈추고 물어봅니다.",

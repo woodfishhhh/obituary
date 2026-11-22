@@ -107,7 +107,6 @@ export const en: Strings = {
   },
   window: {
     head: "Resurrect without the command line",
-    lead: "Open it from Start, the desktop or the tray; right-click a file to add it to Obituary.",
     looks: { calendar: "Calendar", palette: "One line" },
     pages: { upcoming: "Expiring", graveyard: "Graveyard", decisions: "For you" },
     lookLabel: "Look",
@@ -142,7 +141,6 @@ export const en: Strings = {
   },
   agents: {
     head: "Connect the agents you use",
-    lead: "Each connects with one command. Pick yours.",
     project: "Run this in the project you want to connect",
     global: "Run this for your user account",
   },
@@ -169,15 +167,9 @@ export const en: Strings = {
       linux: "Update: run the install script again. obit update shows your version and the latest one.",
     },
     uninstall: "Uninstall: obit uninstall, with --dry-run first to see what it removes; the graveyard stays by default.",
-    network: {
-      windows: "Obituary's only network use is a check for a new version, at most once a day. It reads only public release information (GitHub or the mirror in mainland China), and you can turn it off in Settings.",
-      macos: "Obituary's only network use is a check for a new version, at most once a day. It reads only public release information (GitHub or the mirror in mainland China); check = false under [update] in config.toml turns it off.",
-      linux: "Obituary's only network use is a check for a new version, at most once a day. It reads only public release information (GitHub or the mirror in mainland China); check = false under [update] in config.toml turns it off.",
-    },
     mirrorScript: "The install script and the archives come from the mainland China mirror",
     downloadHead: "Direct download",
     downloads: archives(["Apple silicon", "Intel"]),
-    gets: { windows: "Windows gets the tray, the small window and the right-click menu, plus the command line and agent connection.", macos: "macOS gets the command line and agent connection: obit list, obit graveyard and obit resurrect do what the window does on Windows, and launchd checks for expiry every 5 minutes.", linux: "Linux gets the command line and agent connection: obit list, obit graveyard and obit resurrect do what the window does on Windows, and systemd --user checks for expiry every 5 minutes (a user crontab without systemd)." } as Record<Os, string>,
     routeLabel: "How to install",
     agentHead: "Let your AI do it",
     agentLine: "Send this sentence to the agent you use (Claude Code, Codex, Cursor…). It stops wherever a decision is yours.",

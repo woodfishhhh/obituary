@@ -23,8 +23,8 @@ export const PgCtx = createContext<Ctx>(null as unknown as Ctx);
 export const usePg = () => useContext(PgCtx);
 
 export const words = {
-  zh: { head: zh.agents.head, lead: zh.agents.lead, pick: "点你用的那个", copy: "复制", copied: "已复制", docs: "看文档", flipBack: "翻回去", drag: "拖一拖", filter: "输入名字筛选…", none: "没有这一家", run: "运行这一条" },
-  en: { head: en.agents.head, lead: en.agents.lead, pick: "Pick the one you use.", copy: "Copy", copied: "Copied", docs: "Docs", flipBack: "Flip back", drag: "Drag me", filter: "type to filter…", none: "No match", run: "Run this" },
+  zh: { head: zh.agents.head, pick: "点你用的那个", copy: "复制", copied: "已复制", docs: "看文档", flipBack: "翻回去", drag: "拖一拖", filter: "输入名字筛选…", none: "没有这一家", run: "运行这一条" },
+  en: { head: en.agents.head, pick: "Pick the one you use.", copy: "Copy", copied: "Copied", docs: "Docs", flipBack: "Flip back", drag: "Drag me", filter: "type to filter…", none: "No match", run: "Run this" },
 } as const;
 
 // The command the agent's guide shows (scope and flags included).
@@ -116,7 +116,7 @@ export function CommandPanel() {
   );
 }
 
-/** The section as the page has it: dot field, a heading and a lead, the wall, then the command. */
+/** The section as the page has it: dot field, a heading, the wall, then the command. */
 export function Section({ children, panel, aura }: { children: React.ReactNode; panel: boolean; aura: boolean }) {
   const { lang } = usePg();
   const t = words[lang];
@@ -125,10 +125,7 @@ export function Section({ children, panel, aura }: { children: React.ReactNode; 
       <div aria-hidden="true" className="pg-aura absolute inset-0" data-off={aura ? undefined : true} />
       <div aria-hidden="true" className="dot-field fade-edges absolute inset-0 opacity-60" />
       <div className="relative mx-auto max-w-[1240px] px-5 @3xl:px-10">
-        <div className="mb-10 grid gap-5 @5xl:mb-12 @5xl:grid-cols-2 @5xl:items-end @5xl:gap-6">
-          <h2 className="max-w-[16ch] text-[clamp(1.9rem,4.4cqw,3.25rem)] leading-[1.08] font-semibold tracking-[-0.02em]">{t.head}</h2>
-          <p className="max-w-[46ch] text-base text-ink-2 @3xl:text-lg">{t.lead}</p>
-        </div>
+        <h2 className="mb-10 max-w-[16ch] text-[clamp(1.9rem,4.4cqw,3.25rem)] leading-[1.08] font-semibold tracking-[-0.02em] @5xl:mb-12">{t.head}</h2>
       </div>
       <div className="relative">{children}</div>
       {panel && (

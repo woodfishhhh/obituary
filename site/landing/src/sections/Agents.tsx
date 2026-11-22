@@ -15,10 +15,7 @@ export function Agents({ c }: { c: Copy }) {
     <section aria-labelledby="agents-head" className="relative overflow-hidden border-y border-line bg-paper-2 py-24 md:py-32">
       <div aria-hidden="true" className="dot-field fade-edges absolute inset-0 opacity-60" />
       <div className="relative mx-auto max-w-[1240px] px-6 md:px-10">
-        <div className="mb-12 grid gap-6 lg:grid-cols-2 lg:items-end">
-          <h2 id="agents-head" className="max-w-[16ch] text-[clamp(2rem,3.4vw,3.25rem)] leading-[1.08] font-semibold tracking-[-0.02em]">{a.head}</h2>
-          <p className="max-w-[46ch] text-lg text-ink-2">{a.lead}</p>
-        </div>
+        <h2 id="agents-head" className="mb-12 max-w-[16ch] text-[clamp(2rem,3.4vw,3.25rem)] leading-[1.08] font-semibold tracking-[-0.02em]">{a.head}</h2>
       </div>
       <div className="relative">
         <AgentStream agents={agents} options={streamDefaults} selected={picked} onSelect={setPicked} href={(x) => siteLink(agentDocLink(x.id, c.lang))} label={a.head} />

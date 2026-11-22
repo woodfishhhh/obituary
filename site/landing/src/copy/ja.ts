@@ -103,7 +103,6 @@ export const ja: Strings = {
   },
   window: {
     head: "コマンドラインなしでも復活できる",
-    lead: "スタートメニュー、デスクトップ、トレイから開けます。ファイルを右クリックして Obituary に追加できます。",
     looks: { calendar: "カレンダー", palette: "1 行" } as Record<LookId, string>,
     pages: { upcoming: "まもなく埋葬", graveyard: "墓地", decisions: "あなたの判断待ち" } as Record<PageId, string>,
     lookLabel: "表示",
@@ -138,7 +137,6 @@ export const ja: Strings = {
   },
   agents: {
     head: "使っているエージェントにつなぐ",
-    lead: "どれも 1 つのコマンドでつながります。使っているものをクリック。",
     project: "接続したいプロジェクトのディレクトリで実行します",
     global: "現在のユーザー用に実行します",
   },
@@ -165,15 +163,9 @@ export const ja: Strings = {
       linux: "更新：インストールスクリプトをもう一度実行します。obit update で現在のバージョンと最新バージョンが分かります。",
     } as Record<Os, string>,
     uninstall: "アンインストール：obit uninstall。先に --dry-run で何が取り除かれるか確認できます。墓地は既定で残ります。",
-    network: {
-      windows: "Obituary が通信するのは新バージョンの確認だけで、1 日に最大 1 回です。読むのは公開されているリリース情報（GitHub または中国本土のミラー）だけで、設定でオフにできます。",
-      macos: "Obituary が通信するのは新バージョンの確認だけで、1 日に最大 1 回です。読むのは公開されているリリース情報（GitHub または中国本土のミラー）だけで、config.toml の [update] に check = false と書くとオフにできます。",
-      linux: "Obituary が通信するのは新バージョンの確認だけで、1 日に最大 1 回です。読むのは公開されているリリース情報（GitHub または中国本土のミラー）だけで、config.toml の [update] に check = false と書くとオフにできます。",
-    } as Record<Os, string>,
     mirrorScript: "インストールスクリプトとアーカイブは中国本土のミラーから取得します",
     downloadHead: "直接ダウンロード",
     downloads: archives(["Apple シリコン", "Intel"]),
-    gets: { windows: "Windows ではトレイ、小さなウィンドウ、右クリックメニューに加えて、コマンドラインとエージェント連携も使えます。", macos: "macOS ではコマンドラインとエージェント連携を使います。小さなウィンドウの代わりに obit list、obit graveyard、obit resurrect があり、launchd が 5 分ごとに期限を確認します。", linux: "Linux ではコマンドラインとエージェント連携を使います。小さなウィンドウの代わりに obit list、obit graveyard、obit resurrect があり、systemd --user が 5 分ごとに期限を確認します（systemd がなければユーザーの crontab）。" } as Record<Os, string>,
     routeLabel: "インストール方法",
     agentHead: "AI にまかせる",
     agentLine: "使っているエージェント（Claude Code、Codex、Cursor など）に次の 1 文を送ります。あなたの判断が必要なところでは、止まって尋ねます。",
