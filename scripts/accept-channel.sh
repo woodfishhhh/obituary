@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-root=$(cd "$RUNNER_TEMP" && pwd -P)/channel-work
-if [[ "$RUNNER_OS" == Windows ]]; then
-  root=$(cygpath -am "$root")
-fi
-export OBIT_HOME="$root/data" OBIT_CONFIG_DIR="$root/config"
+root=${OBIT_HOME%/data}
 fixture="$root/sample.txt"
 
 case "$1" in
@@ -33,12 +29,33 @@ case "$1" in
     # Leave a real payload in the graveyard to check uninstall, not just an empty directory.
     obit bury "$fixture"
     test ! -e "$fixture"
-    if [[ "$RUNNER_OS" == Windows ]]; then
-      obit daemon stop
-    fi
     find "$OBIT_HOME/graveyard" -type f -name sample.txt -print | grep -F sample.txt
     cp "$OBIT_HOME/store.json" "$root/store-before.json"
     cp -R "$OBIT_HOME/graveyard" "$root/graveyard-before"
+    ;;
+  uninstall-macos)
+    label=site.woodfish.obituary
+    service="gui/$(id -u)/$label"
+    plist="$OBIT_USER_HOME/Library/LaunchAgents/$label.plist"
+    obit daemon enable
+    test -f "$plist"
+    launchctl kickstart -p "$service"
+    launchctl print "$service"
+
+    obit uninstall --yes
+    test ! -e "$plist"
+    if launchctl print "$service"; then
+      echo 'obit uninstall left a loaded LaunchAgent' >&2
+      exit 1
+    else
+      [[ $? == 113 ]]
+    fi
+    brew uninstall --cask obituary
+    installed=$(brew list --cask)
+    if grep -Fxq obituary <<< "$installed" || pgrep -x obitd; then
+      echo 'Homebrew cask or daemon remains after uninstall' >&2
+      exit 1
+    fi
     ;;
   verify)
     for executable in obit obitd; do

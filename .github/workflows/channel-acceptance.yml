@@ -7,21 +7,29 @@ on:
         description: Published version currently indexed by both channels (e.g. 1.6.2)
         type: string
         required: true
+      scoop_commit:
+        description: Optional Scoop bucket commit SHA to verify before merging
+        type: string
 
 permissions:
   contents: read
 
 jobs:
   cli:
-    name: ${{ matrix.channel }} (${{ matrix.runner }})
+    name: ${{ matrix.channel }} (${{ matrix.runner }}, ${{ matrix.path }})
     strategy:
       fail-fast: false
       matrix:
         include:
           - channel: Scoop
             runner: windows-latest
+            path: documented
+          - channel: Scoop
+            runner: windows-latest
+            path: direct
           - channel: Homebrew
             runner: macos-15
+            path: documented
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 15
     env:
@@ -36,6 +44,10 @@ jobs:
         shell: bash
         run: |
           mkdir -p "$RUNNER_TEMP/channel-evidence"
+          root=$(cd "$RUNNER_TEMP" && pwd -P)/channel-work
+          if [[ "$RUNNER_OS" == Windows ]]; then root=$(cygpath -am "$root"); fi
+          mkdir -p "$root/user"
+          printf 'OBIT_HOME=%s/data\nOBIT_CONFIG_DIR=%s/config\nOBIT_USER_HOME=%s/user\n' "$root" "$root" "$root" >> "$GITHUB_ENV"
           {
             uname -sm
             printf 'Expected version: %s\n' "$EXPECTED_VERSION"
@@ -56,11 +68,20 @@ jobs:
       - name: Read the Scoop index and install Obituary
         if: runner.os == 'Windows'
         shell: pwsh
+        env:
+          SCOOP_COMMIT: ${{ inputs.scoop_commit }}
         run: |
           Start-Transcript -Path "$env:RUNNER_TEMP/channel-evidence/install.log"
           scoop bucket add woodfishhhh https://github.com/woodfishhhh/scoop-bucket.git
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $bucket = "$env:RUNNER_TEMP/scoop/buckets/woodfishhhh"
+          if ($env:SCOOP_COMMIT) {
+            if ($env:SCOOP_COMMIT -notmatch '^[0-9a-f]{40}$') { throw "Expected a full Scoop commit SHA" }
+            git -C $bucket fetch origin $env:SCOOP_COMMIT
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            git -C $bucket checkout --detach $env:SCOOP_COMMIT
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
           git -C $bucket rev-parse HEAD
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $manifest = Get-Content "$bucket/bucket/obituary.json" -Raw
@@ -82,10 +103,13 @@ jobs:
             brew tap woodfishhhh/tap
             tap=$(brew --repository woodfishhhh/tap)
             git -C "$tap" rev-parse HEAD
-            brew trust --cask woodfishhhh/tap/obituary
-            brew info --json=v2 --cask woodfishhhh/tap/obituary | tee "$RUNNER_TEMP/channel-evidence/cask.json" |
+            package=woodfishhhh/tap/obituary
+            # Index inspection must not evaluate an untrusted recipe before brew install trusts it.
+            git -C "$tap" show "HEAD:Casks/${package##*/}.rb" | tee "$RUNNER_TEMP/channel-evidence/index.rb"
+            grep -Fx "  version \"$EXPECTED_VERSION\"" "$RUNNER_TEMP/channel-evidence/index.rb"
+            brew install --cask "$package"
+            brew info --json=v2 --cask "$package" | tee "$RUNNER_TEMP/channel-evidence/cask.json" |
               jq -e --arg version "$EXPECTED_VERSION" '.casks[0].version == $version'
-            brew install --cask woodfishhhh/tap/obituary
             brew list --cask --versions obituary
           } 2>&1 | tee "$RUNNER_TEMP/channel-evidence/install.log"
       - name: Check installed version and exercise the CLI
@@ -96,28 +120,28 @@ jobs:
         shell: pwsh
         run: |
           Start-Transcript -Path "$env:RUNNER_TEMP/channel-evidence/uninstall.log"
+          $gui = Start-Process "$env:RUNNER_TEMP/scoop/apps/obituary/current/obit-gui.exe" -WindowStyle Hidden -PassThru
+          if ($gui.WaitForExit(2000)) { throw "Obituary window failed to stay running" }
+          Get-Process -Name obitd,obit-gui -ErrorAction Stop | Select-Object Id,ProcessName,Path | Format-Table -AutoSize
+          if ('${{ matrix.path }}' -eq 'documented') {
+            obit uninstall --yes
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            if (Get-Process -Name obitd -ErrorAction Ignore) { throw "obit uninstall left the daemon running" }
+          }
           scoop uninstall obituary
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           if (Test-Path "$env:RUNNER_TEMP/scoop/apps/obituary") { throw "Scoop package remains installed" }
+          if (Get-Process -Name obitd,obit-gui -ErrorAction Ignore) { throw "Obituary processes are still running" }
       - name: Uninstall with Homebrew
         if: runner.os == 'macOS'
         shell: bash
-        run: |
-          {
-            set -x
-            brew uninstall --cask woodfishhhh/tap/obituary
-            installed=$(brew list --cask)
-            if grep -Fxq obituary <<< "$installed"; then
-              echo 'Homebrew cask remains installed' >&2
-              exit 1
-            fi
-          } 2>&1 | tee "$RUNNER_TEMP/channel-evidence/uninstall.log"
+        run: bash scripts/accept-channel.sh uninstall-macos 2>&1 | tee "$RUNNER_TEMP/channel-evidence/uninstall.log"
       - name: Check removal and retained data
         shell: bash
         run: bash scripts/accept-channel.sh verify 2>&1 | tee "$RUNNER_TEMP/channel-evidence/retention.log"
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: channel-${{ matrix.channel }}-${{ matrix.runner }}
+          name: channel-${{ matrix.channel }}-${{ matrix.runner }}-${{ matrix.path }}
           path: ${{ runner.temp }}/channel-evidence/
           if-no-files-found: error
