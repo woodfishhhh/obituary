@@ -69,22 +69,6 @@
   .pg-cmd[data-empty] { border-style: dashed; justify-content: center; color: var(--color-muted); box-shadow: none; }
   .pg-cmd code { font-family: var(--font-mono); }
 
-  /* ---- 01 stream ---- */
-  .pg-stream { display: flex; flex-direction: column; gap: calc(var(--gap) * 0.8); transform: rotate(calc(var(--tilt) * -1)) scale(1.04); transform-origin: center; padding-block: 0.5rem; }
-  .pg-stream-row { overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent); }
-  .pg-stream-track { display: flex; width: max-content; margin: 0; padding: 0.4rem 0; list-style: none; animation: pg-stream var(--dur) linear infinite; will-change: transform; }
-  .pg-stream-row[data-reverse] .pg-stream-track { animation-direction: reverse; }
-  .pg-stream-track > li { flex: none; margin-right: var(--gap); }
-  @keyframes pg-stream { to { transform: translate3d(-33.3333%, 0, 0); } }
-  .pg-stream[data-pause] .pg-stream-row:hover .pg-stream-track, .pg-stream-row[data-focus] .pg-stream-track { animation-play-state: paused; }
-  .pg-stream-row[data-focus] { overflow-x: auto; mask-image: none; scrollbar-width: none; }
-  .pg-stream-row[data-focus] .pg-stream-track { animation: none; }
-  .pg-chip { display: inline-flex; align-items: center; gap: 0.7rem; padding: 0.4rem 1.1rem 0.4rem 0.4rem; border-radius: 999px; border: 1px solid var(--color-line); background: var(--color-paper); box-shadow: var(--shadow-node); transition: transform 0.35s var(--ease-out-soft), border-color 0.3s, box-shadow 0.3s; }
-  .pg-chip[data-nameless] { padding: 0.4rem; }
-  .pg-chip:is(:hover, :focus-visible) { transform: scale(calc(1 + var(--hover) * 0.14)) translateY(calc(var(--hover) * -3px)); border-color: color-mix(in oklab, var(--color-cobalt) 45%, var(--color-line)); box-shadow: var(--shadow-glow-soft); }
-  .pg-chip[data-on] { border-color: var(--color-cobalt); }
-  .pg-chip-name { font-size: 0.9375rem; font-weight: 500; color: var(--color-ink); white-space: nowrap; }
-
   /* ---- 03 spotlight ---- */
   .pg-spot { display: grid; }
   .pg-spot-btn { position: relative; display: flex; width: 100%; height: 100%; align-items: center; gap: 0.75rem; padding: var(--pad); text-align: center; }
@@ -171,15 +155,11 @@
 /* A preview of "reduce motion" even where the system setting is off. */
 :root[data-motion="reduce"] *, :root[data-motion="reduce"] *::before, :root[data-motion="reduce"] *::after { animation: none !important; transition-duration: 0.01ms !important; }
 @media (prefers-reduced-motion: reduce) {
-  .pg-stream { transform: none; }
-  .pg-stream-row { overflow: visible; mask-image: none; }
-  .pg-stream-track { width: auto; flex-wrap: wrap; justify-content: center; gap: 0.75rem; padding-inline: 1rem; }
-  .pg-stream-track > li { margin: 0; }
-  .pg-stream-track > li[aria-hidden="true"] { display: none; }
   .pg-ring, .pg-up2 { animation: none !important; }
 }
-:root[data-motion="reduce"] .pg-stream { transform: none; }
-:root[data-motion="reduce"] .pg-stream-row { overflow: visible; mask-image: none; }
-:root[data-motion="reduce"] .pg-stream-track { width: auto; flex-wrap: wrap; justify-content: center; gap: 0.75rem; padding-inline: 1rem; }
-:root[data-motion="reduce"] .pg-stream-track > li { margin: 0; }
-:root[data-motion="reduce"] .pg-stream-track > li[aria-hidden="true"] { display: none; }
+/* The same preview for the wall: still, wrapped bands (src/index.css has the system-setting version). */
+:root[data-motion="reduce"] .agent-stream { transform: none; }
+:root[data-motion="reduce"] .agent-band { overflow: visible; mask-image: none; }
+:root[data-motion="reduce"] .agent-track { width: auto; flex-wrap: wrap; justify-content: center; gap: 0.75rem; padding-inline: 1rem; }
+:root[data-motion="reduce"] .agent-track > li { margin: 0; }
+:root[data-motion="reduce"] .agent-track > li[aria-hidden="true"] { display: none; }

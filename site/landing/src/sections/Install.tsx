@@ -19,7 +19,7 @@ const mirrorScript = (os: Os) =>
 
 const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalt";
 
-function CopyButton({ text, c }: { text: string; c: Copy["install"] }) {
+export function CopyButton({ text, c }: { text: string; c: Copy["install"] }) {
   const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);

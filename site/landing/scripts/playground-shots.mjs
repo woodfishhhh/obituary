@@ -31,7 +31,7 @@ for (const [id, base] of styles) {
     await page.waitForSelector(".pg-stage section");
     await page.waitForTimeout(1500);
     // Desktop: park the pointer on the wall, so the hover effects (the Dock's swell, the spotlight) are in the picture.
-    const hover = { dock: "[role=toolbar]", spotlight: ".pg-spot-card >> nth=9", flip: ".pg-flip >> nth=11", bento: ".pg-bento-tile >> nth=4", stream: ".pg-chip >> nth=6", orbit: ".pg-orb >> nth=3" }[id];
+    const hover = { dock: "[role=toolbar]", spotlight: ".pg-spot-card >> nth=9", flip: ".pg-flip >> nth=11", bento: ".pg-bento-tile >> nth=4", stream: ".agent-chip >> nth=6", orbit: ".pg-orb >> nth=3" }[id];
     if (s.name !== "mobile" && hover) {
       const box = await page.locator(hover).first().boundingBox();
       if (box) await page.mouse.move(box.x + box.width * (id === "dock" ? 0.4 : 0.5), box.y + box.height * 0.5);

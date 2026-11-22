@@ -48,7 +48,7 @@ for (const [w, zoom] of [[1280, 1], [1536, 1.25], [1920, 1], [390, 1]]) {
       for (const v of [min, max, value]) { await page.locator(`#${id}`).fill(v); await page.waitForTimeout(40); await note(page, `${tag} ${id}=${v}`); }
     }
     // A mouse click on an item, then keyboard focus on the next one.
-    const item = page.locator(".pg-item, .pg-chip").first();
+    const item = page.locator(".pg-item, .agent-chip").first();
     await item.click({ force: true }).catch(() => {});
     await note(page, `${tag} after click`);
     await page.keyboard.press("Tab");
