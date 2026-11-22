@@ -120,7 +120,8 @@ jobs:
         shell: pwsh
         run: |
           Start-Transcript -Path "$env:RUNNER_TEMP/channel-evidence/uninstall.log"
-          $gui = Start-Process "$env:RUNNER_TEMP/scoop/apps/obituary/current/obit-gui.exe" -WindowStyle Hidden -PassThru
+          $link = if ('${{ matrix.path }}' -eq 'documented') { 'current' } else { $env:EXPECTED_VERSION }
+          $gui = Start-Process "$env:RUNNER_TEMP/scoop/apps/obituary/$link/obit-gui.exe" -WindowStyle Hidden -PassThru
           if ($gui.WaitForExit(2000)) { throw "Obituary window failed to stay running" }
           Get-Process -Name obitd,obit-gui -ErrorAction Stop | Select-Object Id,ProcessName,Path | Format-Table -AutoSize
           if ('${{ matrix.path }}' -eq 'documented') {
