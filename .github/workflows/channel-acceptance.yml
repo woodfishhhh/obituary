@@ -1,0 +1,124 @@
+name: Scoop and Homebrew CLI acceptance
+
+on:
+  push:
+    branches: [woodfishhhh/channel-acceptance]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Published version currently indexed by both channels (e.g. 1.6.2)
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  cli:
+    name: ${{ matrix.channel }} (${{ matrix.runner }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - channel: Scoop
+            runner: windows-latest
+          - channel: Homebrew
+            runner: macos-15
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    env:
+      EXPECTED_VERSION: ${{ inputs.version || '1.6.2' }}
+      OBIT_TELEMETRY: '0'
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check runner and input
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/channel-evidence"
+          {
+            uname -sm
+            printf 'Expected version: %s\n' "$EXPECTED_VERSION"
+            [[ "$EXPECTED_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          } 2>&1 | tee "$RUNNER_TEMP/channel-evidence/runner.log"
+      - name: Install Scoop
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Start-Transcript -Path "$env:RUNNER_TEMP/channel-evidence/scoop-bootstrap.log"
+          $root = "$env:RUNNER_TEMP/scoop"
+          $installer = "$env:RUNNER_TEMP/install-scoop.ps1"
+          Invoke-WebRequest https://get.scoop.sh -OutFile $installer
+          & $installer -RunAsAdmin -ScoopDir $root
+          & "$root/shims/scoop.ps1" --version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "$root/shims" >> $env:GITHUB_PATH
+      - name: Read the Scoop index and install Obituary
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Start-Transcript -Path "$env:RUNNER_TEMP/channel-evidence/install.log"
+          scoop bucket add woodfishhhh https://github.com/woodfishhhh/scoop-bucket.git
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $bucket = "$env:RUNNER_TEMP/scoop/buckets/woodfishhhh"
+          git -C $bucket rev-parse HEAD
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $manifest = Get-Content "$bucket/bucket/obituary.json" -Raw
+          Write-Host $manifest
+          if (($manifest | ConvertFrom-Json).version -cne $env:EXPECTED_VERSION) { throw "Wrong Scoop index version" }
+          scoop install woodfishhhh/obituary
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          scoop list obituary
+          if (-not (Test-Path "$env:RUNNER_TEMP/scoop/apps/obituary/$env:EXPECTED_VERSION/obit.exe" -PathType Leaf)) {
+            throw "Scoop did not install the expected package"
+          }
+      - name: Read the Homebrew index and install Obituary
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          {
+            set -x
+            brew --version
+            brew tap woodfishhhh/tap
+            tap=$(brew --repository woodfishhhh/tap)
+            git -C "$tap" rev-parse HEAD
+            brew info --json=v2 --cask woodfishhhh/tap/obituary | tee "$RUNNER_TEMP/channel-evidence/cask.json" |
+              jq -e --arg version "$EXPECTED_VERSION" '.casks[0].version == $version'
+            brew install --cask woodfishhhh/tap/obituary
+            brew list --cask --versions obituary
+          } 2>&1 | tee "$RUNNER_TEMP/channel-evidence/install.log"
+      - name: Check installed version and exercise the CLI
+        shell: bash
+        run: bash scripts/accept-channel.sh exercise 2>&1 | tee "$RUNNER_TEMP/channel-evidence/cli.log"
+      - name: Uninstall with Scoop
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Start-Transcript -Path "$env:RUNNER_TEMP/channel-evidence/uninstall.log"
+          scoop uninstall obituary
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (Test-Path "$env:RUNNER_TEMP/scoop/apps/obituary") { throw "Scoop package remains installed" }
+      - name: Uninstall with Homebrew
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          {
+            set -x
+            brew uninstall --cask woodfishhhh/tap/obituary
+            installed=$(brew list --cask)
+            if grep -Fxq obituary <<< "$installed"; then
+              echo 'Homebrew cask remains installed' >&2
+              exit 1
+            fi
+          } 2>&1 | tee "$RUNNER_TEMP/channel-evidence/uninstall.log"
+      - name: Check removal and retained data
+        shell: bash
+        run: bash scripts/accept-channel.sh verify 2>&1 | tee "$RUNNER_TEMP/channel-evidence/retention.log"
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: channel-${{ matrix.channel }}-${{ matrix.runner }}
+          path: ${{ runner.temp }}/channel-evidence/
+          if-no-files-found: error
