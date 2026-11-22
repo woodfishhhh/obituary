@@ -44,12 +44,27 @@ import (
 )
 
 func main() {
+	root := newRoot(os.Args[1:])
+	cmdutil.SetUsage(root)
+	if command, err := root.ExecuteC(); err != nil {
+		if !errors.Is(err, cmdutil.ErrReported) {
+			fmt.Fprintln(os.Stderr, "obit:", cmdutil.CommandError(command, os.Args[1:], err))
+		}
+		os.Exit(1)
+	}
+}
+
+func newRoot(args []string) *cobra.Command {
 	root := &cobra.Command{
 		Use:           "obit",
 		Short:         "Obituary (讣告), the trash bin for AI agents: give files a lifespan; when it runs out they are buried in a graveyard you can resurrect from",
 		Version:       buildinfo.Version,
 		SilenceUsage:  true,
 		SilenceErrors: true,
+	}
+	if len(args) > 0 && args[0] == "hook" {
+		root.AddCommand(hookcmd.NewCmd())
+		return root
 	}
 	root.AddCommand(
 		addcmd.NewCmd(), listcmd.NewCmd(), extendcmd.NewCmd(), cancelcmd.NewCmd(),
@@ -67,11 +82,5 @@ func main() {
 		rmcmd.NewCmd(), rmdircmd.NewCmd(), removeitemcmd.NewCmd(),
 		gitcleancmd.NewCmd(), mcpcmd.NewCmd(buildinfo.Version),
 	)
-	cmdutil.SetUsage(root)
-	if command, err := root.ExecuteC(); err != nil {
-		if !errors.Is(err, cmdutil.ErrReported) {
-			fmt.Fprintln(os.Stderr, "obit:", cmdutil.CommandError(command, os.Args[1:], err))
-		}
-		os.Exit(1)
-	}
+	return root
 }

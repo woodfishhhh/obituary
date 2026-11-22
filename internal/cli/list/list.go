@@ -17,18 +17,17 @@ import (
 
 func NewCmd() *cobra.Command {
 	var asJSON bool
-	language := cmdutil.Localizer()
 	cmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
-		Short:   language.Text("cli.list.short", nil),
+		Short:   "Show tracked paths and Docker containers, soonest expiry first",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			svc, err := cmdutil.Open()
 			if err != nil {
 				return err
 			}
-			state, err := svc.Store.Read()
+			state, err := svc.Store.ReadActive()
 			if err != nil {
 				return err
 			}
@@ -39,7 +38,7 @@ func NewCmd() *cobra.Command {
 			return printItems(svc, state.Items, now, cmdutil.Localizer())
 		},
 	}
-	cmd.Flags().BoolVar(&asJSON, "json", false, language.Text("cli.list.json", nil))
+	cmd.Flags().BoolVar(&asJSON, "json", false, "print JSON")
 	cmdutil.SetLocalizedHelp(cmd, func(language *i18n.Localizer, command *cobra.Command) {
 		command.Short = language.Text("cli.list.short", nil)
 		command.Flags().Lookup("json").Usage = language.Text("cli.list.json", nil)

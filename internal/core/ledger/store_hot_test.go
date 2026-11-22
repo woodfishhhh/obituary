@@ -2,14 +2,83 @@ package ledger
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 )
+
+func TestReadActiveAndSummaryAllowAnEmptyLedger(t *testing.T) {
+	store := Store{Home: t.TempDir()}
+	active, err := store.ReadActive()
+	if err != nil || len(active.Items) != 0 {
+		t.Fatalf("empty active read: %+v %v", active, err)
+	}
+	state, summary, err := store.ReadSummary()
+	if err != nil || len(state.Items) != 0 || summary != (GraveyardSummary{}) {
+		t.Fatalf("empty summary read: %+v %+v %v", state, summary, err)
+	}
+}
+
+func TestReadViewsRejectColdSnapshotIndexDamage(t *testing.T) {
+	store := snapshotTestStore(t)
+	st, err := store.ReadSnapshot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(store.Home, st.Graveyard.File)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		t.Fatal(err)
+	}
+	fields["generation"] = json.RawMessage([]byte("\"wrong-generation\""))
+	data, err = json.Marshal(fields)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	st.Graveyard.Hash = fmt.Sprintf("%x", sha256.Sum256(data))
+	hot, err := marshalHot(st)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(store.statePath(), hot, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.ReadActive(); err == nil {
+		t.Fatal("active read accepted a damaged cold reference")
+	}
+	if _, _, err := store.ReadSummary(); err == nil {
+		t.Fatal("summary read accepted a damaged cold reference")
+	}
+}
+
+func TestReadViewsRejectCrossEntityIDConflict(t *testing.T) {
+	store := snapshotTestStore(t)
+	if err := store.UpdateGraveyard(func(st *State) error {
+		st.Items[0].ID = st.Burials[0].ID
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.ReadActive(); err == nil {
+		t.Fatal("active read accepted an active/graveyard ID conflict")
+	}
+	if _, _, err := store.ReadSummary(); err == nil {
+		t.Fatal("summary read accepted an active/graveyard ID conflict")
+	}
+}
 
 func TestHotLegacyNormalizationPreservesGraves(t *testing.T) {
 	store, _, state := legacyLedgerVersion(t, 16, false)
