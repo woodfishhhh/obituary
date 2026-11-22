@@ -15,6 +15,8 @@ import (
 	"time"
 	"unicode/utf16"
 
+	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/userdirs"
 	"golang.org/x/sys/windows"
 )
 
@@ -32,12 +34,17 @@ const Interval = 5 * time.Minute
 // requires: keep running on battery, catch up after sleep (StartWhenAvailable),
 // never stack instances, and stay hidden.
 func taskXML(daemon, home, userID string, start time.Time) string {
+	return taskXMLInterval(daemon, home, userID, start, Interval)
+}
+
+func taskXMLInterval(daemon, home, userID string, start time.Time, interval time.Duration) string {
 	esc := func(s string) string {
 		var b strings.Builder
 		_ = xml.EscapeText(&b, []byte(s))
 		return b.String()
 	}
 	args := "--once"
+	intervalText := taskIntervalText(interval)
 	pinned := daemonArgs(home)
 	for i := 0; i+1 < len(pinned); i += 2 {
 		args += fmt.Sprintf(` %s "%s"`, pinned[i], pinned[i+1])
@@ -45,13 +52,13 @@ func taskXML(daemon, home, userID string, start time.Time) string {
 	return `<?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <RegistrationInfo>
-    <Description>Obituary: buries items whose lifespan ran out and purges the graveyard. Runs hidden every ` + fmt.Sprint(int(Interval.Minutes())) + ` minutes.</Description>
+		<Description>Obituary: buries items whose lifespan ran out and purges the graveyard. Runs hidden every ` + fmt.Sprint(int(interval.Minutes())) + ` minutes.</Description>
     <URI>\` + esc(TaskName) + `</URI>
   </RegistrationInfo>
   <Triggers>
     <TimeTrigger>
       <Repetition>
-        <Interval>PT` + fmt.Sprint(int(Interval.Minutes())) + `M</Interval>
+        <Interval>` + intervalText + `</Interval>
         <StopAtDurationEnd>false</StopAtDurationEnd>
       </Repetition>
       <StartBoundary>` + start.Format("2006-01-02T15:04:05") + `</StartBoundary>
@@ -77,6 +84,13 @@ func taskXML(daemon, home, userID string, start time.Time) string {
   </Actions>
 </Task>
 `
+}
+
+func taskIntervalText(interval time.Duration) string {
+	if interval >= time.Hour {
+		return "PT1H"
+	}
+	return fmt.Sprintf("PT%dM", int(interval.Minutes()))
 }
 
 const taskSettingsXML = `  <Settings>
@@ -107,7 +121,7 @@ var schtasks = func(args ...string) (string, error) {
 	return strings.TrimSpace(string(out)), err
 }
 
-// InstallSchedule registers (or replaces) the scheduled runner for home.
+// InstallSchedule never replaces a task registered under an existing name.
 func InstallSchedule(home string) error {
 	daemon, err := DaemonPath()
 	if err != nil {
@@ -117,11 +131,85 @@ func InstallSchedule(home string) error {
 }
 
 func installScheduleFor(daemon, home string) error {
+	config, err := userdirs.Config()
+	if err != nil {
+		return err
+	}
+	current, err := registeredTaskXML(TaskName)
+	if err == nil {
+		return migrateExistingSchedule(current, daemon, home, config)
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
 	u, err := user.Current()
 	if err != nil {
 		return err
 	}
-	text := taskXML(daemon, home, u.Username, time.Now().Add(time.Minute))
+	text := taskXMLInterval(daemon, home, u.Username, time.Now().Add(time.Minute), ScheduleInterval(home))
+	if err := os.MkdirAll(home, 0700); err != nil {
+		return err
+	}
+	if err := registerTask(TaskName, text); err != nil {
+		return err
+	}
+	actual, err := registeredTaskXML(TaskName)
+	if err != nil {
+		return err
+	}
+	if !generatedFallback(actual, daemon, home, config) || taskStartBoundary(actual) != taskStartBoundary(text) {
+		return fmt.Errorf("scheduled task %q changed during registration; not adopting it", TaskName)
+	}
+	return core.WriteMetadata(filepath.Join(home, fallbackReceipt), []byte(actual))
+}
+
+func migrateExistingSchedule(current, daemon, home, config string) error {
+	if field := fallbackDifference(current, daemon, home, config); field != "" {
+		return fmt.Errorf("preserving scheduled task %q: %s does not match this installation; see https://obituary.woodfish.site/docs/troubleshooting", TaskName, field)
+	}
+	if err := os.MkdirAll(home, 0700); err != nil {
+		return err
+	}
+	latest, err := registeredTaskXML(TaskName)
+	if err != nil || latest != current {
+		return errors.Join(err, errors.New("fallback changed while taking migration snapshot; preserved"))
+	}
+	desired := ScheduleInterval(home)
+	if err := ensureFallbackSnapshot(home, current, daemon, config); err != nil {
+		return err
+	}
+	if generatedSchedule(current, daemon, home, config, desired) {
+		return core.WriteMetadata(filepath.Join(home, fallbackReceipt), []byte(current))
+	}
+	u, err := user.Current()
+	if err != nil {
+		return err
+	}
+	start := taskStartBoundary(current)
+	text := taskXMLInterval(daemon, home, u.Username, time.Now().Add(time.Minute), desired)
+	text = strings.Replace(text, taskStartBoundary(text), start, 1)
+	if err := registerTaskReplacing(TaskName, text); err != nil {
+		return err
+	}
+	actual, err := registeredTaskXML(TaskName)
+	if err != nil {
+		return err
+	}
+	if !generatedSchedule(actual, daemon, home, config, desired) || taskStartBoundary(actual) != start {
+		return fmt.Errorf("scheduled task %q changed during interval migration; preserved", TaskName)
+	}
+	return core.WriteMetadata(filepath.Join(home, fallbackReceipt), []byte(actual))
+}
+
+func registerTask(name, text string) error {
+	return registerTaskWithMode(name, text, false)
+}
+
+func registerTaskReplacing(name, text string) error {
+	return registerTaskWithMode(name, text, true)
+}
+
+func registerTaskWithMode(name, text string, replace bool) error {
 	// Task Scheduler wants the file in UTF-16 with a byte order mark.
 	units := utf16.Encode([]rune(text))
 	buf := make([]byte, 2+2*len(units))
@@ -142,7 +230,11 @@ func installScheduleFor(daemon, home string) error {
 	if err := tmp.Close(); err != nil {
 		return err
 	}
-	if out, err := schtasks("/Create", "/TN", TaskName, "/XML", tmpPath, "/F"); err != nil {
+	args := []string{"/Create", "/TN", name, "/XML", tmpPath}
+	if replace {
+		args = append(args, "/F")
+	}
+	if out, err := schtasks(args...); err != nil {
 		return fmt.Errorf("schtasks /Create: %v: %s", err, out) //nolint:errorlint // schtasks exit errors are diagnostics, not the scheduler API's error types.
 	}
 	return nil

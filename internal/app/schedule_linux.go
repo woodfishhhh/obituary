@@ -34,6 +34,10 @@ func unitArgument(value string) (string, error) {
 }
 
 func scheduleFiles(daemon, home, config string) (map[string]string, error) {
+	return scheduleFilesWithInterval(daemon, home, config, Interval)
+}
+
+func scheduleFilesWithInterval(daemon, home, config string, interval time.Duration) (map[string]string, error) {
 	args := []string{daemon, "--once", "--home", home, "--config-dir", config}
 	quoted := make([]string, len(args))
 	for i, arg := range args {
@@ -48,7 +52,11 @@ func scheduleFiles(daemon, home, config string) (map[string]string, error) {
 		return nil, err
 	}
 	service := unitOwner + "# argv: " + string(metadata) + "\n[Unit]\nDescription=Obituary maintenance\n\n[Service]\nType=oneshot\nExecStart=:" + strings.Join(quoted, " ") + "\n"
-	timer := unitOwner + "[Unit]\nDescription=Obituary maintenance timer\n\n[Timer]\nOnCalendar=*:0/5\nPersistent=true\nUnit=" + serviceName + "\n\n[Install]\nWantedBy=timers.target\n"
+	calendar := "*:0/5"
+	if interval >= time.Hour {
+		calendar = "hourly"
+	}
+	timer := unitOwner + "[Unit]\nDescription=Obituary maintenance timer\n\n[Timer]\nOnCalendar=" + calendar + "\nPersistent=true\nUnit=" + serviceName + "\n\n[Install]\nWantedBy=timers.target\n"
 	return map[string]string{serviceName: service, TaskName: timer}, nil
 }
 
@@ -70,7 +78,7 @@ func InstallSchedule(home string) error {
 	if err != nil {
 		return err
 	}
-	files, err := scheduleFiles(daemon, home, config)
+	files, err := scheduleFilesWithInterval(daemon, home, config, ScheduleInterval(home))
 	if err != nil {
 		return err
 	}
@@ -102,6 +110,30 @@ func InstallSchedule(home string) error {
 	return userSystemctl("enable", "--now", TaskName)
 }
 
+func ownedScheduleFile(data []byte, name string) error {
+	if !strings.HasPrefix(string(data), unitOwner) {
+		return fmt.Errorf("preserving unowned unit %s", name)
+	}
+	args := []string{"", "--once", "--home", "", "--config-dir", ""}
+	var err error
+	if name == serviceName {
+		args, err = unitArgs(data)
+		if err != nil {
+			return err
+		}
+	}
+	for _, interval := range []time.Duration{Interval, FallbackInterval} {
+		files, err := scheduleFilesWithInterval(args[0], args[3], args[5], interval)
+		if err != nil {
+			return err
+		}
+		if string(data) == files[name] {
+			return nil
+		}
+	}
+	return fmt.Errorf("preserving edited unit %s", name)
+}
+
 func ownedUnit(root *os.Root, name string) error {
 	info, err := root.Lstat(name)
 	if errors.Is(err, os.ErrNotExist) {
@@ -117,24 +149,7 @@ func ownedUnit(root *os.Root, name string) error {
 	if err != nil {
 		return err
 	}
-	if !strings.HasPrefix(string(data), unitOwner) {
-		return fmt.Errorf("preserving unowned unit %s", name)
-	}
-	args := []string{"", "--once", "--home", "", "--config-dir", ""}
-	if name == serviceName {
-		args, err = unitArgs(data)
-		if err != nil {
-			return err
-		}
-	}
-	files, err := scheduleFiles(args[0], args[3], args[5])
-	if err != nil {
-		return err
-	}
-	if string(data) != files[name] {
-		return fmt.Errorf("preserving edited unit %s", name)
-	}
-	return nil
+	return ownedScheduleFile(data, name)
 }
 
 func writeUnit(root *os.Root, name, body string) error {
@@ -194,20 +209,24 @@ func readSchedule() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	files, err := scheduleFiles(args[0], args[3], args[5])
-	if err != nil {
-		return nil, err
-	}
-	for name, want := range files {
-		got, err := os.ReadFile(filepath.Join(dir, name))
+	for _, interval := range []time.Duration{Interval, FallbackInterval} {
+		files, err := scheduleFilesWithInterval(args[0], args[3], args[5], interval)
 		if err != nil {
 			return nil, err
 		}
-		if string(got) != want {
-			return nil, fmt.Errorf("user unit %s has changed", name)
+		match := true
+		for name, want := range files {
+			got, err := os.ReadFile(filepath.Join(dir, name))
+			if err != nil || string(got) != want {
+				match = false
+				break
+			}
+		}
+		if match {
+			return args, nil
 		}
 	}
-	return args, nil
+	return nil, fmt.Errorf("user units have changed")
 }
 
 func unitArgs(data []byte) ([]string, error) {

@@ -17,7 +17,7 @@ func PreviewSchedule(daemon, home, config string, enabled bool) ([]ScheduleUnit,
 	if err != nil {
 		return nil, err
 	}
-	data, err := launchdContent(daemon, home, config)
+	data, err := launchdContentWithInterval(daemon, home, config, ScheduleInterval(home))
 	if err != nil {
 		return nil, err
 	}

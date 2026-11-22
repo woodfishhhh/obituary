@@ -71,7 +71,7 @@ func enableCmd(home func() (string, error), self cmdutil.Executable) *cobra.Comm
 }
 
 func enable(home string, resident bool) error {
-	if runtime.GOOS != "windows" {
+	if !app.DesktopSession() {
 		if resident {
 			return app.Start(home)
 		}
@@ -89,11 +89,16 @@ func enable(home string, resident bool) error {
 	if err := app.SetAutostart(home, true); err != nil {
 		return err
 	}
+	if err := app.InstallSchedule(home); err != nil {
+		return err
+	}
 	if err := app.Start(home); err != nil {
 		return err
 	}
 	if resident {
 		fmt.Println(cmdutil.Text("cli.daemon.tray_daemon_running_it_also_starts_when"))
+	} else if runtime.GOOS != "windows" {
+		fmt.Printf(cmdutil.Text("cli.daemon.user_scheduler_enabled_checks_expiries_every_minutes"), int(app.Interval.Minutes()))
 	} else {
 		fmt.Printf(cmdutil.Text("cli.daemon.tray_running_and_enabled_at_sign_in"), app.TaskName, int(app.Interval.Minutes()))
 	}

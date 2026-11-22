@@ -79,7 +79,29 @@ func SetAutostart(home string, enabled bool) error {
 	if err != nil {
 		return err
 	}
-	plan, err := PlanAutostart(runkey.Current, path, home, config, enabled)
+	// An existing Run value remains the login owner until a verified handoff.
+	legacy, err := runkey.Current.Read(startupName(home))
+	if err != nil {
+		return err
+	}
+	wantLegacy := windows.ComposeCommandLine([]string{path, "--tray", "--home", home, "--config-dir", config})
+	if legacy.Exists && legacy != runkey.StringValue(wantLegacy) {
+		return fmt.Errorf("preserving edited or differently bound Run value %s", startupName(home))
+	}
+	if enabled {
+		if err := createLoginTask(home, path, config); err != nil {
+			return err
+		}
+		plan, err := PlanAutostart(runkey.Current, path, home, config, false)
+		if err != nil {
+			return err
+		}
+		return plan.Apply()
+	}
+	if err := removeLoginTask(home, path, config); err != nil {
+		return err
+	}
+	plan, err := PlanAutostart(runkey.Current, path, home, config, false)
 	if err != nil {
 		return err
 	}
@@ -90,6 +112,14 @@ func Autostart() string {
 	home, err := userdirs.Data()
 	if err != nil {
 		return ""
+	}
+	exe, exeErr := os.Executable()
+	config, configErr := userdirs.Config()
+	if exeErr == nil && configErr == nil {
+		path := filepath.Join(filepath.Dir(exe), daemonName)
+		if current, e := installedLoginTask(home, path, config); e == nil && current != "" {
+			return windows.ComposeCommandLine([]string{path, "--supervise", "--home", home, "--config-dir", config})
+		}
 	}
 	value, _ := runkey.Current.Get(startupName(home))
 	return value

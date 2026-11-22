@@ -184,11 +184,16 @@ func updateHooks(home, original string, relaunch bool, pid int) update.ApplyHook
 	hooks := update.ApplyHooks{
 		Retire: retireUpdateFiles,
 		Stop: func() error {
-			restart = Running(home)
-			return Stop(home)
+			var err error
+			restart, err = stopForHandoff(home)
+			return err
 		},
 		Restart: func(exe string) error {
-			if !restart || Running(home) {
+			if !restart {
+				return nil
+			}
+			restart = false
+			if Running(home) {
 				return nil
 			}
 			path := installedSibling(exe, original, daemonName)

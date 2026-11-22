@@ -60,9 +60,13 @@ func removeScheduleFor(daemon, home, config string) error {
 }
 
 func removalScheduleXML() (string, error) {
+	return registeredTaskXML(TaskName)
+}
+
+func registeredTaskXML(name string) (string, error) {
 	// /HRESULT provides locale-independent errors, unlike matching schtasks'
 	// translated console text. Only ERROR_FILE_NOT_FOUND proves absence.
-	out, err := schtasks("/Query", "/TN", TaskName, "/XML", "/HRESULT")
+	out, err := schtasks("/Query", "/TN", name, "/XML", "/HRESULT")
 	if err == nil {
 		return out, nil
 	}
@@ -70,7 +74,7 @@ func removalScheduleXML() (string, error) {
 	if errors.As(err, &status) && uint32(status.ExitCode()) == 0x80070002 {
 		return "", os.ErrNotExist
 	}
-	return "", fmt.Errorf("query scheduled task %q: %w: %s", TaskName, err, out)
+	return "", fmt.Errorf("query scheduled task %q: %w: %s", name, err, out)
 }
 
 // PreviewScheduleRemoval uses exactly the execution ownership predicate.
@@ -86,7 +90,7 @@ func PreviewScheduleRemovalFor(l *i18n.Localizer, daemon, home, config string) s
 		return fmt.Sprintf(l.HostText("query failed for scheduled task %q: %v"), TaskName, err)
 	}
 	if ownedSchedule(definition, daemon, home, config) {
-		return fmt.Sprintf(l.HostText("remove scheduled task %q (every %d minutes and at sign-in)\n    %s"), TaskName, int(Interval.Minutes()), scheduleDefinitionTarget(definition))
+	return fmt.Sprintf(l.HostText("remove scheduled task %q (independent fallback)\n    %s"), TaskName, scheduleDefinitionTarget(definition))
 	}
 	return fmt.Sprintf(l.HostText("preserve scheduled task %q: task belongs to another installation (path, home, config)\n    %s"), TaskName, scheduleDefinitionTarget(definition))
 }
@@ -109,6 +113,11 @@ func scheduleDefinitionTarget(definition string) string {
 }
 
 func ownedSchedule(definition, daemon, home, config string) bool {
+	return ownedTaskAction(definition, daemon, "--once", home, config) &&
+		(generatedSchedule(definition, daemon, home, config, Interval) || generatedSchedule(definition, daemon, home, config, FallbackInterval))
+}
+
+func ownedTaskAction(definition, daemon, mode, home, config string) bool {
 	var task struct {
 		Actions struct {
 			Entries []struct {
@@ -132,6 +141,6 @@ func ownedSchedule(definition, daemon, home, config string) bool {
 		return false
 	}
 	args, err := windows.DecomposeCommandLine("obitd " + action.Arguments)
-	want := []string{"obitd", "--once", "--home", home, "--config-dir", config}
+	want := []string{"obitd", mode, "--home", home, "--config-dir", config}
 	return err == nil && slices.EqualFunc(args, want, strings.EqualFold)
 }

@@ -22,7 +22,12 @@ import (
 
 const daemonName = "obitd"
 
-const trayTaskName = "site.woodfish.obituary.tray"
+func DesktopSession() bool {
+	return os.Getenv("SSH_CONNECTION") == "" && userTrayLaunchctl("print", trayLaunchdDomain()) == nil
+}
+
+const legacyTrayName = "site.woodfish.obituary.tray"
+const trayTaskName = legacyTrayName + ".supervised"
 
 const trayLaunchdOwner = "<!-- obituary tray user agent v1 -->\n"
 
@@ -37,6 +42,27 @@ func Running(home string) bool {
 	return false
 }
 
+func ResidentEnabled(home string) bool {
+	config, err := userdirs.Config()
+	if err != nil {
+		return false
+	}
+	daemon, err := DaemonPath()
+	if err != nil {
+		return false
+	}
+	dir, err := userdirs.LaunchAgents()
+	if err != nil {
+		return false
+	}
+	data, err := readTrayLaunchd(filepath.Join(dir, trayTaskName+".plist"))
+	if err != nil {
+		return false
+	}
+	want, err := trayLaunchdContent(daemon, home, config)
+	return err == nil && string(want) == data
+}
+
 func Start(home string) error {
 	if Running(home) {
 		return nil
@@ -44,6 +70,20 @@ func Start(home string) error {
 	path, err := DaemonPath()
 	if err != nil {
 		return err
+	}
+	if target := Autostart(); target != "" {
+		if err := userTrayLaunchctl("print", trayLaunchdService()); err != nil {
+			var status *exec.ExitError
+			if !errors.As(err, &status) || status.ExitCode() != 113 {
+				return err
+			}
+			if err := userTrayLaunchctl("bootstrap", trayLaunchdDomain(), target); err != nil {
+				return err
+			}
+		} else if err := userTrayLaunchctl("kickstart", trayLaunchdService()); err != nil {
+			return err
+		}
+		return waitFor(func() bool { return Running(home) }, 5*time.Second, "managed tray did not start")
 	}
 	cmd := exec.Command(path, append([]string{"--tray"}, daemonArgs(home)...)...)
 	detach(cmd)
@@ -58,6 +98,9 @@ func Start(home string) error {
 
 func Stop(home string) error {
 	if !Running(home) {
+		if err := cancelPendingRestart(home); err != nil {
+			return err
+		}
 		return clearStopRequest(home)
 	}
 	if err := os.WriteFile(stopPath(home), nil, 0o600); err != nil {
@@ -67,6 +110,39 @@ func Stop(home string) error {
 		return err
 	}
 	return clearStopRequest(home)
+}
+
+func cancelPendingRestart(home string) error {
+	if Running(home) {
+		return nil
+	}
+	dir, err := userdirs.LaunchAgents()
+	if err != nil {
+		return err
+	}
+	before, err := readTrayLaunchd(filepath.Join(dir, trayTaskName+".plist"))
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	daemon, err := DaemonPath()
+	if err != nil {
+		return err
+	}
+	config, err := userdirs.Config()
+	if err != nil {
+		return err
+	}
+	want, err := trayLaunchdContent(daemon, home, config)
+	if err != nil {
+		return err
+	}
+	if before != string(want) {
+		return errors.New("preserving tray agent bound to another installation")
+	}
+	return unloadTrayLaunchd()
 }
 
 func clearStopRequest(home string) error {
@@ -214,27 +290,46 @@ func PlanAutostart(_ RunRegistry, daemon, home, config string, enabled bool) (*A
 	if enabled {
 		after = string(content)
 	}
-	if before != "" && !managedTrayLaunchd(before) {
+	if before != "" && before != string(content) {
 		return nil, fmt.Errorf("autostart entry is not managed by Obituary: %s", path)
 	}
 	return &AutostartPlan{Name: path, Before: before, After: after, path: path, content: string(content), enabled: enabled}, nil
 }
 
 func trayLaunchdContent(daemon, home, config string) ([]byte, error) {
+	return trayDefinition(daemon, home, config, trayTaskName)
+}
+
+func trayDefinition(daemon, home, config, label string) ([]byte, error) {
 	var b bytes.Buffer
-	b.WriteString(xml.Header + trayLaunchdOwner + "<plist version=\"1.0\"><dict>\n<key>Label</key><string>" + trayTaskName + "</string>\n<key>ProgramArguments</key><array>\n")
-	for _, arg := range []string{daemon, "--tray", "--home", home, "--config-dir", config} {
+	b.WriteString(xml.Header + trayLaunchdOwner + "<plist version=\"1.0\"><dict>\n<key>Label</key><string>" + label + "</string>\n<key>ProgramArguments</key><array>\n")
+	args := []string{daemon, "--tray", "--home", home, "--config-dir", config}
+	if label == trayTaskName {
+		args = append(args, "--managed")
+	}
+	for _, arg := range args {
 		b.WriteString("<string>")
 		if err := xml.EscapeText(&b, []byte(arg)); err != nil {
 			return nil, err
 		}
 		b.WriteString("</string>\n")
 	}
-	b.WriteString("</array>\n<key>RunAtLoad</key><true/>\n<key>ProcessType</key><string>Interactive</string>\n</dict></plist>\n")
+	b.WriteString("</array>\n<key>RunAtLoad</key><true/>\n")
+	if label == trayTaskName {
+		b.WriteString("<key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>\n<key>ThrottleInterval</key><integer>60</integer>\n")
+	}
+	b.WriteString("<key>ProcessType</key><string>Interactive</string>\n</dict></plist>\n")
 	return b.Bytes(), nil
 }
 
 func readTrayLaunchd(path string) (string, error) {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return "", err
+	}
+	if !info.Mode().IsRegular() {
+		return "", fmt.Errorf("preserving non-regular tray job: %s", path)
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
@@ -263,7 +358,7 @@ func verifyTrayLaunchd(data []byte) error {
 	if err := xml.Unmarshal(data, &plist); err != nil {
 		return err
 	}
-	if len(plist.Args) != 6 || plist.Args[1] != "--tray" || plist.Args[2] != "--home" || plist.Args[4] != "--config-dir" {
+	if len(plist.Args) != 7 || plist.Args[1] != "--tray" || plist.Args[2] != "--home" || plist.Args[4] != "--config-dir" || plist.Args[6] != "--managed" {
 		return errors.New("unowned launchd tray agent")
 	}
 	want, err := trayLaunchdContent(plist.Args[0], plist.Args[3], plist.Args[5])
@@ -274,10 +369,6 @@ func verifyTrayLaunchd(data []byte) error {
 		return errors.New("preserving edited or unowned launchd tray agent")
 	}
 	return nil
-}
-
-func managedTrayLaunchd(content string) bool {
-	return strings.HasPrefix(content, xml.Header+trayLaunchdOwner)
 }
 
 func trayLaunchdDomain() string  { return "gui/" + strconv.Itoa(os.Getuid()) }

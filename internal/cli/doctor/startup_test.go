@@ -15,6 +15,8 @@ func TestDoctorChecksTrayStartupCommand(t *testing.T) {
 	t.Cleanup(func() { cmdutil.RunnerAutostart = old })
 	for _, tc := range []struct{ command, status string }{
 		{"", "WARN"}, {"unrelated.exe", "WARN"},
+		{windows.ComposeCommandLine([]string{`C:\obitd.exe`, "--supervise", "--home", `C:\data`, "--config-dir", `C:\config`}), "PASS"},
+		{windows.ComposeCommandLine([]string{`C:\obitd.exe`, "--supervise", "--home", `C:\other`, "--config-dir", `C:\config`}), "WARN"},
 		{windows.ComposeCommandLine([]string{`C:\obitd.exe`, "--tray", "--home", `C:\data`, "--config-dir", `C:\config`}), "PASS"},
 	} {
 		cmdutil.RunnerAutostart = func() string { return tc.command }

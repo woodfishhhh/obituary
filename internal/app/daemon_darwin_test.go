@@ -17,6 +17,11 @@ func TestTrayLaunchdContentAndOwnership(t *testing.T) {
 	if err := verifyTrayLaunchd(data); err != nil {
 		t.Fatal(err)
 	}
+	for _, want := range []string{"<key>SuccessfulExit</key><false/>", "<key>ThrottleInterval</key><integer>60</integer>", "<string>--managed</string>"} {
+		if !strings.Contains(string(data), want) {
+			t.Fatalf("missing %s in tray job", want)
+		}
+	}
 	if !strings.Contains(string(data), "<key>RunAtLoad</key><true/>") || !strings.Contains(string(data), "&lt;x&gt;") {
 		t.Fatalf("unexpected tray agent: %s", data)
 	}

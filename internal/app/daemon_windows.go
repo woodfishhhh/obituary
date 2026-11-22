@@ -21,6 +21,8 @@ const (
 
 func stopPath(home string) string { return filepath.Join(home, "obitd.stop") }
 
+func DesktopSession() bool { return true }
+
 // Running reports whether a daemon is serving home.
 func Running(home string) bool {
 	name, err := daemonMutexName(home)
@@ -33,6 +35,19 @@ func Running(home string) bool {
 	}
 	windows.CloseHandle(h)
 	return true
+}
+
+func ResidentEnabled(home string) bool {
+	config, err := userdirs.Config()
+	if err != nil {
+		return false
+	}
+	daemon, err := DaemonPath()
+	if err != nil {
+		return false
+	}
+	current, err := installedLoginTask(home, daemon, config)
+	return err == nil && current != ""
 }
 
 // DaemonPath is obitd.exe next to the running executable.
@@ -61,7 +76,21 @@ func Start(home string) error {
 }
 
 func startAt(home, path string) error {
-	cmd := exec.Command(path, daemonArgs(home)...)
+	config, err := userdirs.Config()
+	if err != nil {
+		return err
+	}
+	registration, err := installedLoginTask(home, path, config)
+	if err != nil {
+		return err
+	}
+	if registration != "" {
+		if out, err := schtasks("/Run", "/TN", loginTaskName(home), "/HRESULT"); err != nil {
+			return fmt.Errorf("start supervised login task: %w: %s", err, out)
+		}
+		return waitFor(func() bool { return Running(home) }, 5*time.Second, "supervised daemon did not start")
+	}
+	cmd := exec.Command(path, append([]string{"--tray"}, daemonArgs(home)...)...)
 	detach(cmd)
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("start %s: %w", path, err)
@@ -124,14 +153,38 @@ func SpawnSelf(args ...string) error {
 
 // Stop asks a running daemon to exit and waits for it.
 func Stop(home string) error {
+	_, err := stopForHandoff(home)
+	return err
+}
+
+// The updater restores only an owner it actually stopped, including one in backoff.
+func stopForHandoff(home string) (bool, error) {
+	managed, err := signalSupervisor(home, supervisorSuffix, true)
+	if err != nil {
+		return false, err
+	}
+	if managed {
+		if err := os.WriteFile(stopPath(home), nil, 0600); err != nil {
+			return false, err
+		}
+		if err := waitFor(func() bool { alive, e := signalSupervisor(home, supervisorSuffix, false); return e == nil && !alive }, 10*time.Second, "supervisor did not stop"); err != nil {
+			return false, err
+		}
+	}
 	deadline := time.Now().Add(10 * time.Second)
 	running, err := waitDaemonStartup(home, time.Until(deadline))
 	if err != nil {
-		return err
+		return false, err
 	}
 	if !running {
-		return clearStopRequest(home)
+		err := clearStopRequest(home)
+		return managed && err == nil, err
 	}
+	err = stopAndVerifyResident(home, deadline)
+	return err == nil, err
+}
+
+func stopAndVerifyResident(home string, deadline time.Time) error {
 	check, closeHandle, verifyErr := daemonExitCheck(home)
 	if closeHandle != nil {
 		defer closeHandle()

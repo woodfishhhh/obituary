@@ -20,7 +20,8 @@ func (lang diagnostics) diagnoseStartup(daemon, home string) DoctorCheck {
 		return c
 	}
 	want := windows.ComposeCommandLine([]string{daemon, "--tray", "--home", home, "--config-dir", config})
-	if command != want {
+	supervised := windows.ComposeCommandLine([]string{daemon, "--supervise", "--home", home, "--config-dir", config})
+	if command != want && command != supervised {
 		c.Detail = lang.Text("cli.doctor.run_command_differs_from_this_installation", nil) + command
 		return c
 	}

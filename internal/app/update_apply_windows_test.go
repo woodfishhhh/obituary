@@ -9,9 +9,70 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/woodfishhhh/obituary/internal/update"
+	"golang.org/x/sys/windows"
 )
+
+func TestUpdaterTakesPendingRestartOnce(t *testing.T) {
+	home := t.TempDir()
+	owner, ok, err := supervisorEvent(home, supervisorSuffix)
+	if err != nil || !ok {
+		t.Fatalf("supervisor event: %v, %v", ok, err)
+	}
+	done := make(chan error, 1)
+	go func() {
+		retry, err := waitSupervisorRetry(home, owner)
+		if err == nil && retry {
+			err = errors.New("old supervisor restarted during update")
+		}
+		windows.CloseHandle(owner)
+		done <- err
+	}()
+	t.Cleanup(func() { _, _ = signalSupervisor(home, supervisorSuffix, true) })
+	if err := waitFor(func() bool { pending, e := signalSupervisor(home, retrySuffix, false); return pending && e == nil }, 5*time.Second, "supervisor never entered backoff"); err != nil {
+		t.Fatal(err)
+	}
+	exe := filepath.Join(home, "obit.exe")
+	hooks := updateHooks(home, exe, false, 0)
+	if err := hooks.Stop(); err != nil {
+		t.Fatal(err)
+	}
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+	// No replacement executable: one restart attempt must report its failure; a second is not owned.
+	old := schtasks
+	schtasks = func(...string) (string, error) { return "", schedulerExit(0x80070002) }
+	t.Cleanup(func() { schtasks = old })
+	if err := hooks.Restart(exe); err == nil {
+		t.Fatal("lost the pending restart, or concealed its failure")
+	}
+	if err := hooks.Restart(exe); err != nil {
+		t.Fatalf("retried the replacement: %v", err)
+	}
+}
+
+func TestUpdaterDoesNotRestartAfterFailedStop(t *testing.T) {
+	home := t.TempDir()
+	owner, ok, err := supervisorEvent(home, supervisorSuffix)
+	if err != nil || !ok {
+		t.Fatalf("supervisor event: %v, %v", ok, err)
+	}
+	defer windows.CloseHandle(owner)
+	if err := os.Mkdir(stopPath(home), 0700); err != nil {
+		t.Fatal(err)
+	}
+	exe := filepath.Join(home, "obit.exe")
+	hooks := updateHooks(home, exe, false, 0)
+	if err := hooks.Stop(); err == nil {
+		t.Fatal("accepted unsuccessful stop")
+	}
+	if err := hooks.Restart(exe); err != nil {
+		t.Fatalf("attempted replacement after failed handoff: %v", err)
+	}
+}
 
 func TestUpdaterRejectsInvalidReadiness(t *testing.T) {
 	for _, tc := range []struct{ message, want string }{
