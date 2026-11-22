@@ -93,7 +93,7 @@ def probe(root, name, daemon, cli, trigger, code):
         assert installed.findtext("{*}Settings/{*}RestartOnFailure/{*}Count") == "3"
         assert installed.findtext("{*}Actions/{*}Exec/{*}Command") == str(daemon)
         fallback = ET.fromstring(command("schtasks", "/query", "/tn", "Obituary Runner", "/xml"))
-        assert fallback.findtext("{*}Triggers/{*}TimeTrigger/{*}Repetition/{*}Interval") == "PT60M"
+        assert fallback.findtext("{*}Triggers/{*}TimeTrigger/{*}Repetition/{*}Interval") == "PT1H"
         command(cli, "daemon", "stop")
         command(cli, "daemon", "start")
     else:

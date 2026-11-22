@@ -44,6 +44,7 @@ func taskXMLInterval(daemon, home, userID string, start time.Time, interval time
 		return b.String()
 	}
 	args := "--once"
+	intervalText := taskIntervalText(interval)
 	pinned := daemonArgs(home)
 	for i := 0; i+1 < len(pinned); i += 2 {
 		args += fmt.Sprintf(` %s "%s"`, pinned[i], pinned[i+1])
@@ -57,7 +58,7 @@ func taskXMLInterval(daemon, home, userID string, start time.Time, interval time
   <Triggers>
     <TimeTrigger>
       <Repetition>
-        <Interval>PT` + fmt.Sprint(int(interval.Minutes())) + `M</Interval>
+        <Interval>` + intervalText + `</Interval>
         <StopAtDurationEnd>false</StopAtDurationEnd>
       </Repetition>
       <StartBoundary>` + start.Format("2006-01-02T15:04:05") + `</StartBoundary>
@@ -83,6 +84,13 @@ func taskXMLInterval(daemon, home, userID string, start time.Time, interval time
   </Actions>
 </Task>
 `
+}
+
+func taskIntervalText(interval time.Duration) string {
+	if interval >= time.Hour {
+		return "PT1H"
+	}
+	return fmt.Sprintf("PT%dM", int(interval.Minutes()))
 }
 
 const taskSettingsXML = `  <Settings>

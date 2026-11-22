@@ -63,7 +63,7 @@ func scheduleDifference(definition, daemon, home, config string, interval time.D
 		return ""
 	}
 	args := fmt.Sprintf(`--once --home "%s" --config-dir "%s"`, home, config)
-	exportedTemplate := strings.ReplaceAll(fallbackExport, "PT5M", fmt.Sprintf("PT%dM", int(interval.Minutes())))
+	exportedTemplate := strings.ReplaceAll(fallbackExport, "PT5M", taskIntervalText(interval))
 	exportedTemplate = strings.ReplaceAll(exportedTemplate, "every 5 minutes", fmt.Sprintf("every %d minutes", int(interval.Minutes())))
 	exported := fmt.Sprintf(exportedTemplate, xmlText(TaskName), xmlText(u.Uid), xmlText(start), xmlText(u.Username), xmlText(daemon), xmlText(args))
 	diff, matched := taskXMLDifference(exported, raw, u)
