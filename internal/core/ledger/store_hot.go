@@ -9,11 +9,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"sort"
 	"time"
-
-	"github.com/woodfishhhh/obituary/internal/pathutil"
 )
 
 func newDataID() string { return rand.Text() }
@@ -190,7 +189,7 @@ func (s Store) readGraveyardSummary(st State) (GraveyardSummary, error) {
 	if err := decoder.Decode(&snap); err != nil {
 		return GraveyardSummary{}, fmt.Errorf("invalid referenced graveyard snapshot: %w", err)
 	}
-	if len(bytes.TrimSpace(data[decoder.InputOffset():])) != 0 {
+	if len(bytes.Trim(data[decoder.InputOffset():], " \t\n\r")) != 0 {
 		return GraveyardSummary{}, errors.New("trailing data in graveyard snapshot")
 	}
 	if snap.Owner != graveyardSnapshotOwner || snap.Version != stateVersion || snap.DataID == "" || snap.DataID != st.DataID || snap.Generation != st.Graveyard.Generation {
@@ -215,35 +214,19 @@ func (s Store) readGraveyardSummary(st State) (GraveyardSummary, error) {
 
 func validateSummaryIndex(st State, snap graveyardSummarySnapshot) error {
 	idx := &graveyardIndex{}
-	addID := func(id int64) {
-		idx.MaxID = max(idx.MaxID, id)
-		idx.Keys = append(idx.Keys, graveyardKey("id", fmt.Sprint(id)))
-	}
+	wire := ledgerState{plainState: &plainState{Version: stateVersion}, Volumes: snap.Volumes}
 	add := func(b graveyardSummaryBurial) error {
-		wire := ledgerState{plainState: &plainState{Version: stateVersion}, Volumes: snap.Volumes}
 		if _, err := wire.unpackIdentity(b.GraveID); err != nil {
 			return err
 		}
 		if b.Kind != "" {
 			return errors.New("object kind requires full graveyard validation")
 		}
-		addID(b.ID)
-		idx.Keys = append(idx.Keys, graveyardPathKey(b.Path))
-		if b.Identity != nil {
-			identity, err := wire.unpackIdentity(b.Identity)
-			if err != nil {
-				return err
-			}
-			if identity != nil {
-				idx.Keys = append(idx.Keys, graveyardIdentityKey(*identity))
-			}
+		identity, err := wire.unpackIdentity(b.Identity)
+		if err != nil {
+			return err
 		}
-		if b.Kind != KindContainer {
-			idx.Volumes = append(idx.Volumes, pathutil.VolumeRoot(b.Path))
-		}
-		for _, id := range b.Contains {
-			addID(id)
-		}
+		idx.add(Burial{ID: b.ID, Path: b.Path, Identity: identity, Contains: b.Contains})
 		return nil
 	}
 	for _, b := range snap.Burials {
@@ -259,11 +242,8 @@ func validateSummaryIndex(st State, snap graveyardSummarySnapshot) error {
 			return fmt.Errorf("invalid referenced graveyard snapshot: %w", err)
 		}
 	}
-	slices.Sort(idx.Keys)
-	idx.Keys = slices.Compact(idx.Keys)
-	slices.Sort(idx.Volumes)
-	idx.Volumes = slices.Compact(idx.Volumes)
-	if !slices.Equal(idx.Keys, st.GraveyardIndex.Keys) || !slices.Equal(idx.Volumes, st.GraveyardIndex.Volumes) || idx.MaxID != st.GraveyardIndex.MaxID || idx.ReservedAudit != st.GraveyardIndex.ReservedAudit {
+	idx.compact()
+	if !reflect.DeepEqual(idx, st.GraveyardIndex) {
 		return errors.New("graveyard safety index does not match committed snapshot")
 	}
 	return nil

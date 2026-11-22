@@ -46,39 +46,45 @@ func graveyardIdentityKey(id Identity) uint64 {
 	return graveyardKey("identity", string(data))
 }
 
+func (idx *graveyardIndex) addID(id int64) {
+	idx.MaxID = max(idx.MaxID, id)
+	idx.Keys = append(idx.Keys, graveyardKey("id", fmt.Sprint(id)))
+}
+
+func (idx *graveyardIndex) add(b Burial) {
+	idx.addID(b.ID)
+	idx.Keys = append(idx.Keys, graveyardPathKey(b.Path))
+	if b.Identity != nil {
+		idx.Keys = append(idx.Keys, graveyardIdentityKey(*b.Identity))
+	}
+	if b.Kind != KindContainer {
+		idx.Volumes = append(idx.Volumes, pathutil.VolumeRoot(b.Path))
+	}
+	for _, id := range b.Contains {
+		idx.addID(id)
+	}
+}
+
 func buildGraveyardIndex(st State) *graveyardIndex {
 	idx := &graveyardIndex{}
-	addID := func(id int64) {
-		idx.MaxID = max(idx.MaxID, id)
-		idx.Keys = append(idx.Keys, graveyardKey("id", fmt.Sprint(id)))
-	}
-	add := func(b Burial) {
-		addID(b.ID)
-		idx.Keys = append(idx.Keys, graveyardPathKey(b.Path))
-		if b.Identity != nil {
-			idx.Keys = append(idx.Keys, graveyardIdentityKey(*b.Identity))
-		}
-		if b.Kind != KindContainer {
-			idx.Volumes = append(idx.Volumes, pathutil.VolumeRoot(b.Path))
-		}
-		for _, id := range b.Contains {
-			addID(id)
-		}
-	}
 	for _, b := range st.Burials {
-		add(b)
+		idx.add(b)
 		if b.PurgeIntent != nil && FindContainerIntent(&st, b.ID) == nil {
 			idx.ReservedAudit++
 		}
 	}
 	for _, c := range st.RestoreCleanups {
-		add(c.Burial)
+		idx.add(c.Burial)
 	}
+	idx.compact()
+	return idx
+}
+
+func (idx *graveyardIndex) compact() {
 	slices.Sort(idx.Keys)
 	idx.Keys = slices.Compact(idx.Keys)
 	slices.Sort(idx.Volumes)
 	idx.Volumes = slices.Compact(idx.Volumes)
-	return idx
 }
 
 func GraveyardMayMatch(st *State, path string, identity *Identity) bool {
