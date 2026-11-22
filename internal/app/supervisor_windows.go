@@ -81,6 +81,10 @@ func Supervise(home string) (result error) {
 	launch := func() error {
 		return runTrayProcess(exec.Command(exe, append([]string{"--tray"}, daemonArgs(home)...)...))
 	}
+	return superviseLoop(home, stop, launch)
+}
+
+func superviseLoop(home string, stop windows.Handle, launch func() error) error {
 	for {
 		stopped, err := windows.WaitForSingleObject(stop, 0)
 		if err != nil || stopped == windows.WAIT_OBJECT_0 {
@@ -171,6 +175,10 @@ func SupervisorProblem(home string) (string, error) {
 	if s.Reason == "stopped intentionally" || s.Reason == "stopped normally" {
 		return "resident daemon was intentionally stopped; fallback schedule remains independent (" + supervisionDetails(s) + ")", nil
 	}
+	return supervisorLiveProblem(home, s)
+}
+
+func supervisorLiveProblem(home string, s supervision) (string, error) {
 	retry, err := signalSupervisor(home, retrySuffix, false)
 	if err != nil {
 		return "", err

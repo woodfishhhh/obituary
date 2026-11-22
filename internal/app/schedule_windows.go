@@ -129,41 +129,7 @@ func installScheduleFor(daemon, home string) error {
 	}
 	current, err := registeredTaskXML(TaskName)
 	if err == nil {
-		if field := fallbackDifference(current, daemon, home, config); field != "" {
-			return fmt.Errorf("preserving scheduled task %q: %s does not match this installation; see https://obituary.woodfish.site/docs/troubleshooting", TaskName, field)
-		}
-		if err := os.MkdirAll(home, 0700); err != nil {
-			return err
-		}
-		latest, err := registeredTaskXML(TaskName)
-		if err != nil || latest != current {
-			return errors.Join(err, errors.New("fallback changed while taking migration snapshot; preserved"))
-		}
-		desired := ScheduleInterval(home)
-		if err := ensureFallbackSnapshot(home, current, daemon, config); err != nil {
-			return err
-		}
-		if generatedSchedule(current, daemon, home, config, desired) {
-			return core.WriteMetadata(filepath.Join(home, fallbackReceipt), []byte(current))
-		}
-		u, err := user.Current()
-		if err != nil {
-			return err
-		}
-		start := taskStartBoundary(current)
-		text := taskXMLInterval(daemon, home, u.Username, time.Now().Add(time.Minute), desired)
-		text = strings.Replace(text, taskStartBoundary(text), start, 1)
-		if err := registerTaskReplacing(TaskName, text); err != nil {
-			return err
-		}
-		actual, err := registeredTaskXML(TaskName)
-		if err != nil {
-			return err
-		}
-		if !generatedSchedule(actual, daemon, home, config, desired) || taskStartBoundary(actual) != start {
-			return fmt.Errorf("scheduled task %q changed during interval migration; preserved", TaskName)
-		}
-		return core.WriteMetadata(filepath.Join(home, fallbackReceipt), []byte(actual))
+		return migrateExistingSchedule(current, daemon, home, config)
 	}
 	if !errors.Is(err, os.ErrNotExist) {
 		return err
@@ -185,6 +151,44 @@ func installScheduleFor(daemon, home string) error {
 	}
 	if !generatedFallback(actual, daemon, home, config) || taskStartBoundary(actual) != taskStartBoundary(text) {
 		return fmt.Errorf("scheduled task %q changed during registration; not adopting it", TaskName)
+	}
+	return core.WriteMetadata(filepath.Join(home, fallbackReceipt), []byte(actual))
+}
+
+func migrateExistingSchedule(current, daemon, home, config string) error {
+	if field := fallbackDifference(current, daemon, home, config); field != "" {
+		return fmt.Errorf("preserving scheduled task %q: %s does not match this installation; see https://obituary.woodfish.site/docs/troubleshooting", TaskName, field)
+	}
+	if err := os.MkdirAll(home, 0700); err != nil {
+		return err
+	}
+	latest, err := registeredTaskXML(TaskName)
+	if err != nil || latest != current {
+		return errors.Join(err, errors.New("fallback changed while taking migration snapshot; preserved"))
+	}
+	desired := ScheduleInterval(home)
+	if err := ensureFallbackSnapshot(home, current, daemon, config); err != nil {
+		return err
+	}
+	if generatedSchedule(current, daemon, home, config, desired) {
+		return core.WriteMetadata(filepath.Join(home, fallbackReceipt), []byte(current))
+	}
+	u, err := user.Current()
+	if err != nil {
+		return err
+	}
+	start := taskStartBoundary(current)
+	text := taskXMLInterval(daemon, home, u.Username, time.Now().Add(time.Minute), desired)
+	text = strings.Replace(text, taskStartBoundary(text), start, 1)
+	if err := registerTaskReplacing(TaskName, text); err != nil {
+		return err
+	}
+	actual, err := registeredTaskXML(TaskName)
+	if err != nil {
+		return err
+	}
+	if !generatedSchedule(actual, daemon, home, config, desired) || taskStartBoundary(actual) != start {
+		return fmt.Errorf("scheduled task %q changed during interval migration; preserved", TaskName)
 	}
 	return core.WriteMetadata(filepath.Join(home, fallbackReceipt), []byte(actual))
 }
