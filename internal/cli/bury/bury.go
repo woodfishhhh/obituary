@@ -14,10 +14,9 @@ func NewCmd() *cobra.Command {
 		force, asJSON, dockerVolume bool
 		note                        string
 	)
-	language := cmdutil.Localizer()
 	cmd := &cobra.Command{
 		Use:   "bury <path>...",
-		Short: language.Text("cli.bury.short", nil),
+		Short: "Move paths using the configured deletion mode; recovery depends on that mode",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			svc, err := cmdutil.Open()
@@ -62,10 +61,10 @@ func NewCmd() *cobra.Command {
 			return reportErr
 		},
 	}
-	cmd.Flags().BoolVar(&force, "force", false, language.Text("cli.bury.force", nil))
+	cmd.Flags().BoolVar(&force, "force", false, "allow folders that contain a .git repository")
 	cmd.Flags().BoolVar(&dockerVolume, "docker-volume", false, "treat operands as Docker volume names")
-	cmd.Flags().StringVar(&note, "note", "", language.Text("cli.bury.note", nil))
-	cmd.Flags().BoolVar(&asJSON, "json", false, language.Text("cli.bury.json", nil))
+	cmd.Flags().StringVar(&note, "note", "", "free-text note kept with the burial")
+	cmd.Flags().BoolVar(&asJSON, "json", false, "print JSON")
 	cmdutil.SetBurialHelp(cmd)
 	return cmd
 }

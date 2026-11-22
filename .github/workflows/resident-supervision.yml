@@ -1,0 +1,85 @@
+name: Resident supervision
+on:
+  workflow_dispatch:
+    inputs:
+      endurance:
+        type: boolean
+        description: Observe the resident across 30 minutes and exhaust its restart budget
+        default: false
+  push:
+    paths:
+      - .github/workflows/resident-supervision.yml
+      - scripts/test-windows-resident.py
+      - scripts/test-macos-resident.py
+      - scripts/test-linux-resident.py
+      - scripts/resident_lifetime.py
+      - internal/app/trayunit_linux.go
+      - internal/app/daemon_darwin.go
+      - internal/app/*windows.go
+      - cmd/obitd/main.go
+
+permissions:
+  contents: read
+
+env:
+  OBIT_LONG_PROBE: ${{ inputs.endurance || contains(github.event.head_commit.message, '[resident-long]') }}
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 115
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+      - name: Verify the manager owns the registered tray
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y dbus-user-session python3-dbus python3-gi xvfb xauth
+          sudo loginctl enable-linger "$(id -un)"
+          sudo systemctl start "user@$(id -u).service"
+          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          xvfb-run -a /usr/bin/python3 -u scripts/test-linux-resident.py
+  macos:
+    runs-on: macos-15
+    timeout-minutes: 115
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+      - run: go test -tags desktop ./internal/app -run "Test(TrayLaunchd|TrayAutostart|Supervision)"
+      - run: python3 -u scripts/test-macos-resident.py
+  windows:
+    strategy:
+      fail-fast: false
+      matrix:
+        trigger: [manual, clock]
+        exit-code: ["1", "0xC0000005"]
+    runs-on: windows-2025
+    timeout-minutes: 115
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+      - name: Verify upgrade handoff during restart backoff
+        if: matrix.trigger == 'manual' && matrix.exit-code == '1'
+        shell: bash
+        run: go test ./internal/app -count=1 -run "^TestUpdater(TakesPendingRestartOnce|DoesNotRestartAfterFailedStop)$" -v
+      - name: Verify exported fallback and refusal of edits
+        if: matrix.trigger == 'manual' && matrix.exit-code == '1'
+        shell: bash
+        run: OBIT_TEST_SCHEDULER=1 go test ./internal/app -count=1 -run "^Test(ScheduleRoundTrip|LegacyRunnerPreservesEditedAndDisabledDefinitions|FallbackMigrationAcceptsOnlyVariableStartBoundary)$" -v
+      - name: Kill and stop a scheduler-owned obitd
+        shell: bash
+        run: python -u scripts/test-windows-resident.py "${{ matrix.trigger }}" "${{ matrix.exit-code }}"

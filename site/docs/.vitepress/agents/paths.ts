@@ -1,3 +1,4 @@
+import { initCommand, initPrefix } from '../../../landing/src/agents-data';
 import { guides } from './catalog';
 
 export type Copy = {
@@ -9,9 +10,10 @@ export type Copy = {
 const code = (value: string) => '\n```sh\n' + value + '\n```\n';
 
 export function agentPaths(t: Copy) {
-  return { paths: () => guides.map(({ id, name, paths, global, flags, variant, manual }) => {
-    const base = `obit init${global ? ' -g' : ''} --agent `;
-    const install = (id: string) => `${base}${id} --mcp${flags ? ' ' + flags : ''}`;
+  return { paths: () => guides.map((guide) => {
+    const { id, name, paths, global, variant, manual } = guide;
+    const base = initPrefix(guide);
+    const install = (to: string) => initCommand(guide, to);
     const locations = (Array.isArray(paths) ? paths.map(p => `- \`${p}\``) :
       Object.entries(paths).map(([os, p]) => `- ${os}: \`${p}\``)).join('\n');
     const content = [

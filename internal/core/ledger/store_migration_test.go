@@ -11,6 +11,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/woodfishhhh/obituary/internal/docker"
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/core/internal/fileio"
@@ -311,6 +313,11 @@ func TestV17SplitLedgerVolumeMigration(t *testing.T) {
 	if err = os.WriteFile(coldPath, cold, 0600); err != nil {
 		t.Fatal(err)
 	}
+	st.Items = append(st.Items,
+		Item{Kind: KindContainer, ID: 7001, Rev: 1, Path: "docker:legacy", CreatedAt: time.Now(), ExpiresAt: time.Now().Add(time.Hour), Container: &docker.Identity{ID: strings.Repeat("a", 64), Created: time.Now(), Name: "legacy", Target: &docker.Target{Context: "test", Endpoint: "unix:///docker.sock", DaemonID: "daemon", OSType: "linux"}}},
+		Item{Kind: KindDockerVolume, ID: 7002, Rev: 1, Path: "cache", CreatedAt: time.Now(), ExpiresAt: time.Now().Add(time.Hour), Volume: &docker.Volume{Name: "cache", Driver: "local", Scope: "local", CreatedAt: time.Now(), Target: docker.Target{Context: "test", Endpoint: "unix:///docker.sock", DaemonID: "daemon", OSType: "linux"}}},
+	)
+	st.NextID = 7003
 	st.Version = 17
 	st.Graveyard.Hash = fmt.Sprintf("%x", sha256.Sum256(cold))
 	hot, err := marshalHot(st)
@@ -332,8 +339,11 @@ func TestV17SplitLedgerVolumeMigration(t *testing.T) {
 	if err != nil || got.Version != 18 || !reflect.DeepEqual(st.Burials, got.Burials) {
 		t.Fatalf("cold records not preserved on first hot update: version=%d err=%v", got.Version, err)
 	}
-	if len(got.Items) != 1 || !got.Items[0].ExpiresAt.Equal(wantExpiry) || got.Items[0].Rev != st.Items[0].Rev+1 {
-		t.Fatal("first lifespan extension was not committed", got.Items)
+	if len(got.Items) != 3 || !got.Items[0].ExpiresAt.Equal(wantExpiry) || got.Items[0].Rev != st.Items[0].Rev+1 {
+		t.Fatal("first lifespan extension or v17 objects were not committed", got.Items)
+	}
+	if got.Items[1].Container == nil || got.Items[2].Volume == nil {
+		t.Fatal("v17 migration lost container or volume identity", got.Items)
 	}
 	backup, err := os.ReadFile(filepath.Join(s.Home, fmt.Sprintf("store.v17-%x.json.bak", sha256.Sum256(hot))))
 	if err != nil || !bytes.Equal(backup, hot) {

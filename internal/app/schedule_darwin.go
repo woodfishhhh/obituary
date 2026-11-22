@@ -23,6 +23,10 @@ const Interval = 5 * time.Minute
 const launchdOwner = "<!-- obituary user agent v1 -->\n"
 
 func launchdContent(daemon, home, config string) ([]byte, error) {
+	return launchdContentWithInterval(daemon, home, config, Interval)
+}
+
+func launchdContentWithInterval(daemon, home, config string, interval time.Duration) ([]byte, error) {
 	var b bytes.Buffer
 	b.WriteString(xml.Header + launchdOwner + "<plist version=\"1.0\"><dict>\n<key>Label</key><string>" + TaskName + "</string>\n<key>ProgramArguments</key><array>\n")
 	for _, arg := range []string{daemon, "--once", "--home", home, "--config-dir", config} {
@@ -32,7 +36,7 @@ func launchdContent(daemon, home, config string) ([]byte, error) {
 		}
 		b.WriteString("</string>\n")
 	}
-	fmt.Fprintf(&b, "</array>\n<key>StartInterval</key><integer>%d</integer>\n<key>RunAtLoad</key><true/>\n<key>ProcessType</key><string>Background</string>\n</dict></plist>\n", int(Interval.Seconds()))
+	fmt.Fprintf(&b, "</array>\n<key>StartInterval</key><integer>%d</integer>\n<key>RunAtLoad</key><true/>\n<key>ProcessType</key><string>Background</string>\n</dict></plist>\n", int(interval.Seconds()))
 	return b.Bytes(), nil
 }
 
@@ -47,14 +51,16 @@ func launchdArguments(data []byte) ([]string, error) {
 	if len(a) != 6 || a[1] != "--once" || a[2] != "--home" || a[4] != "--config-dir" {
 		return nil, errors.New("unowned launchd user agent")
 	}
-	want, err := launchdContent(a[0], a[3], a[5])
-	if err != nil {
-		return nil, err
+	for _, interval := range []time.Duration{Interval, FallbackInterval} {
+		want, err := launchdContentWithInterval(a[0], a[3], a[5], interval)
+		if err != nil {
+			return nil, err
+		}
+		if bytes.Equal(data, want) {
+			return a, nil
+		}
 	}
-	if !bytes.Equal(data, want) {
-		return nil, errors.New("preserving edited or unowned launchd user agent")
-	}
-	return a, nil
+	return nil, errors.New("preserving edited or unowned launchd user agent")
 }
 
 func readLaunchd(root *os.Root) ([]byte, error) {

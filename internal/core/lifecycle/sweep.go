@@ -123,6 +123,7 @@ func (s *Service) sweepItems(state State, dryRun bool, roots []resolvedGraveyard
 		if blocked[snapshot.ID] || !snapshot.Due(s.now()) || awaitingWatchBurial(&state, snapshot) {
 			continue
 		}
+		//nolint:nestif // volume expiry has a distinct commit path from file expiry.
 		if snapshot.Kind == KindDockerVolume {
 			out := s.settleDockerVolume(snapshot, dryRun, ReasonExpired)
 			outcomes = append(outcomes, out)

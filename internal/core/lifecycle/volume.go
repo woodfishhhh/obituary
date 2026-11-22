@@ -19,7 +19,7 @@ const KindDockerVolume = ledger.KindDockerVolume
 func (s *Service) volumeClient() (docker.VolumeClient, error) {
 	client, ok := s.Docker.(docker.VolumeClient)
 	if !ok || client == nil {
-		return nil, errors.New("Docker volume operations are unavailable")
+		return nil, errors.New("docker volume operations are unavailable")
 	}
 	return client, nil
 }
@@ -54,7 +54,7 @@ func (s *Service) saveDockerVolumeItem(volume docker.Volume, opts AddOptions) (i
 	err = s.Store.UpdateHot(func(st *State) error {
 		for i := range st.Burials {
 			if st.Burials[i].Kind == KindDockerVolume && st.Burials[i].Volume != nil && st.Burials[i].Volume.Name == volume.Name && st.Burials[i].Volume.Target == volume.Target {
-				return fmt.Errorf("Docker volume is buried as #%d; obit resurrect %d", st.Burials[i].ID, st.Burials[i].ID)
+				return fmt.Errorf("docker volume is buried as #%d; obit resurrect %d", st.Burials[i].ID, st.Burials[i].ID)
 			}
 		}
 		for i := range st.Items {
@@ -142,6 +142,7 @@ func (s *Service) buryDockerVolume(item Item, reason string) (result GraveResult
 	return result
 }
 
+//nolint:funlen // archive, verification, holder release, deletion and ledger commit are one recovery boundary.
 func (s *Service) archiveAndRemoveVolume(client docker.VolumeClient, item Item, reason string, result *GraveResult) error {
 	archive, manifest, cleanup, err := s.prepareVolumeArchive(item.ID)
 	if err != nil {
@@ -189,7 +190,7 @@ func (s *Service) archiveAndRemoveVolume(client docker.VolumeClient, item Item, 
 	err = s.Store.UpdateGraveyard(func(st *State) error {
 		idx := st.Index(item.ID)
 		if idx < 0 || st.Items[idx].Kind != KindDockerVolume || st.Items[idx].Volume == nil || !st.Items[idx].Volume.Same(*item.Volume) {
-			return errors.New("Docker volume lifespan changed during archival")
+			return errors.New("docker volume lifespan changed during archival")
 		}
 		if err := entombDockerVolume(st, b, s.now()); err != nil {
 			return err
@@ -269,6 +270,7 @@ func (r GraveResult) BurialSize() int64 {
 	return r.Burial.Size
 }
 
+//nolint:funlen // restore must keep the create, stream, verify and ledger commit sequence together.
 func (s *Service) resurrectDockerVolume(result *GraveResult, b Burial) error {
 	client, err := s.volumeClient()
 	if err != nil {
@@ -311,7 +313,7 @@ func (s *Service) resurrectDockerVolume(result *GraveResult, b Burial) error {
 	if err := s.Store.UpdateGraveyard(func(st *State) error {
 		idx := st.BurialIndex(b.ID)
 		if idx < 0 {
-			return errors.New("Docker volume burial disappeared")
+			return errors.New("docker volume burial disappeared")
 		}
 		st.Burials = append(st.Burials[:idx], st.Burials[idx+1:]...)
 		st.Stats.Resurrected++

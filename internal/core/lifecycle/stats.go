@@ -56,23 +56,20 @@ type Summary struct {
 
 // Summarize collects the current ledger and lifetime counters.
 func (s *Service) Summarize() (Summary, error) {
-	state, err := s.Store.Read()
+	state, graveyard, err := s.Store.ReadSummary()
 	if err != nil {
 		return Summary{}, err
 	}
-	sum := Summary{Tracked: len(state.Items), Graves: len(state.Burials), Lifetime: state.Stats}
+	sum := Summary{Tracked: len(state.Items), Graves: graveyard.Count, GraveBytes: graveyard.Bytes, Lifetime: state.Stats}
 	for _, item := range state.Items {
 		if sum.NextDue == nil || item.ExpiresAt.Before(*sum.NextDue) {
 			t := item.ExpiresAt
 			sum.NextDue = &t
 		}
 	}
-	for _, b := range state.Burials {
-		sum.GraveBytes += b.Size
-		if sum.NextPurge == nil || b.PurgeAt.Before(*sum.NextPurge) {
-			t := b.PurgeAt
-			sum.NextPurge = &t
-		}
+	if graveyard.Count != 0 {
+		t := graveyard.NextPurge
+		sum.NextPurge = &t
 	}
 	return sum, nil
 }

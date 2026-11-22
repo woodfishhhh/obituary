@@ -22,7 +22,10 @@ func SetPaused(home string, paused bool) error {
 		if err := os.MkdirAll(home, 0o700); err != nil {
 			return err
 		}
-		return os.WriteFile(path, nil, 0o600)
+		if err := os.WriteFile(path, nil, 0o600); err != nil {
+			return err
+		}
+		return cancelPendingRestart(home)
 	}
 	err := os.Remove(path)
 	if errors.Is(err, os.ErrNotExist) {

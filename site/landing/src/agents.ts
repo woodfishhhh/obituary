@@ -28,46 +28,45 @@ import lingma from "@/assets/agents/lingma.png";
 import ohMyPi from "@/assets/agents/oh-my-pi.svg?url";
 import pi from "@/assets/agents/pi.svg?url";
 
-import { agentData } from "./agents-data";
+import { agentData, type AgentData } from "./agents-data";
 export { agentDocLink } from "./agents-data";
 
-export interface Agent {
-  name: string;
-  // The value for obit init --agent.
-  id: string;
+export interface Agent extends AgentData {
   logo?: string;
   // A light mark that needs a dark tile.
   dark?: boolean;
+  // A black mark, which has to turn white on a dark ground: "ink" is black alone, "duo" has colour beside the black.
+  tone?: "ink" | "duo";
 }
 
-const marks: Record<string, { logo: string; dark?: boolean }> = {
+const marks: Record<string, { logo: string; dark?: boolean; tone?: "ink" | "duo" }> = {
   claude: { logo: claudecode },
   codex: { logo: codex },
-  copilot: { logo: copilot },
-  cursor: { logo: cursor },
+  copilot: { logo: copilot, tone: "ink" },
+  cursor: { logo: cursor, tone: "ink" },
   gemini: { logo: geminicli },
   droid: { logo: factory },
   trae: { logo: trae },
-  kimi: { logo: kimi },
+  kimi: { logo: kimi, tone: "duo" },
   vibe: { logo: mistral },
   antigravity: { logo: antigravity },
   codebuddy: { logo: codebuddy },
-  qoder: { logo: qoder },
+  qoder: { logo: qoder, tone: "duo" },
   lingma: { logo: lingma },
   zcode: { logo: zhipu },
-  opencode: { logo: opencode },
+  opencode: { logo: opencode, tone: "ink" },
   openclaw: { logo: openclaw },
   pi: { logo: pi },
   omp: { logo: ohMyPi, dark: true },
-  hermes: { logo: hermes },
-  cline: { logo: cline },
-  kilocode: { logo: kilocode },
+  hermes: { logo: hermes, tone: "ink" },
+  cline: { logo: cline, tone: "ink" },
+  kilocode: { logo: kilocode, tone: "ink" },
   "minimax-code": { logo: minimax },
   "deepseek-harness": { logo: deepseek },
-  roo: { logo: roocode },
-  windsurf: { logo: windsurf },
+  roo: { logo: roocode, tone: "ink" },
+  windsurf: { logo: windsurf, tone: "ink" },
   workbuddy: { logo: workbuddy },
-  qoderwork: { logo: qoder },
+  qoderwork: { logo: qoder, tone: "duo" },
 };
 
 export const agents: Agent[] = agentData.map((a) => ({ ...a, ...marks[a.id] }));

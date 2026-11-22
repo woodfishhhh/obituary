@@ -103,7 +103,6 @@ export const de: Strings = {
   },
   window: {
     head: "Wiederbeleben ohne Kommandozeile",
-    lead: "Öffne das Fenster über das Startmenü, den Desktop oder den Infobereich; ein Rechtsklick auf eine Datei fügt sie Obituary hinzu.",
     looks: { calendar: "Kalender", palette: "Eine Zeile" } as Record<LookId, string>,
     pages: { upcoming: "Bald begraben", graveyard: "Friedhof", decisions: "Für dich" } as Record<PageId, string>,
     lookLabel: "Ansicht",
@@ -138,7 +137,8 @@ export const de: Strings = {
   },
   agents: {
     head: "Verbinde die Agenten, die du nutzt",
-    lead: "Jeder verbindet sich mit einem Befehl. Wähle deinen.",
+    project: "Führen Sie diesen Befehl im gewünschten Projektordner aus",
+    global: "Führen Sie diesen Befehl für Ihr Benutzerkonto aus",
   },
   community: {
     head: "Mach Obituary mit uns besser",
@@ -163,15 +163,9 @@ export const de: Strings = {
       linux: "Aktualisieren: das Installationsskript erneut ausführen. obit update zeigt deine Version und die neueste.",
     } as Record<Os, string>,
     uninstall: "Deinstallieren: obit uninstall, vorher mit --dry-run ansehen, was entfernt wird; der Friedhof bleibt standardmäßig erhalten.",
-    network: {
-      windows: "Obituary nutzt das Netzwerk nur für die Suche nach einer neuen Version, höchstens einmal am Tag. Es liest nur öffentliche Release-Informationen (GitHub oder den Spiegel in Festlandchina), und du kannst es in den Einstellungen abschalten.",
-      macos: "Obituary nutzt das Netzwerk nur für die Suche nach einer neuen Version, höchstens einmal am Tag. Es liest nur öffentliche Release-Informationen (GitHub oder den Spiegel in Festlandchina); check = false unter [update] in config.toml schaltet es ab.",
-      linux: "Obituary nutzt das Netzwerk nur für die Suche nach einer neuen Version, höchstens einmal am Tag. Es liest nur öffentliche Release-Informationen (GitHub oder den Spiegel in Festlandchina); check = false unter [update] in config.toml schaltet es ab.",
-    } as Record<Os, string>,
     mirrorScript: "Das Installationsskript und die Archive kommen vom Spiegel in Festlandchina",
     downloadHead: "Direkter Download",
     downloads: archives(["Apple Silicon", "Intel"]),
-    gets: { windows: "Unter Windows gibt es Tray, kleines Fenster und Kontextmenü, dazu Kommandozeile und Agentenanbindung.", macos: "Unter macOS gibt es Kommandozeile und Agentenanbindung: obit list, obit graveyard und obit resurrect übernehmen, was unter Windows das Fenster tut, und launchd prüft alle 5 Minuten auf Ablauf.", linux: "Unter Linux gibt es Kommandozeile und Agentenanbindung: obit list, obit graveyard und obit resurrect übernehmen, was unter Windows das Fenster tut, und systemd --user prüft alle 5 Minuten auf Ablauf (ohne systemd ein Benutzer-Crontab)." } as Record<Os, string>,
     routeLabel: "So installierst du",
     agentHead: "Lass deine KI das machen",
     agentLine: "Schicke diesen Satz an den Agenten, den du nutzt (Claude Code, Codex, Cursor …). Wo die Entscheidung bei dir liegt, hält er an.",

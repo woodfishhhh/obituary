@@ -24,7 +24,7 @@ type VolumeClient interface {
 	RestoreVolume(context.Context, Volume, io.Reader) error
 }
 
-var ErrVolumeReferenced = errors.New("Docker volume is referenced by a container")
+var ErrVolumeReferenced = errors.New("docker volume is referenced by a container")
 
 func (c CLI) ListVolumeReferences(ctx context.Context, want Volume) ([]Container, error) {
 	bound, err := c.bind(WithTarget(ctx, &want.Target))
@@ -48,6 +48,7 @@ func (c CLI) ListVolumeReferences(ctx context.Context, want Volume) ([]Container
 	return refs, nil
 }
 
+//nolint:funlen // Docker volume archive gates must remain ordered around the holder and event window.
 func (c CLI) ArchiveVolume(ctx context.Context, want *Volume, out io.Writer) (VolumeArchive, error) {
 	bound, err := c.bind(WithTarget(ctx, &want.Target))
 	if err != nil {
@@ -67,6 +68,7 @@ func (c CLI) ArchiveVolume(ctx context.Context, want *Volume, out io.Writer) (Vo
 	if len(refs) != 0 {
 		return VolumeArchive{}, fmt.Errorf("%w: %s", ErrVolumeReferenced, refs[0].Display())
 	}
+	want.EventStarted = time.Now().UTC()
 	if err := bound.createVolumeHolder(ctx, want); err != nil {
 		return VolumeArchive{}, err
 	}
@@ -84,7 +86,6 @@ func (c CLI) ArchiveVolume(ctx context.Context, want *Volume, out io.Writer) (Vo
 		}
 		return VolumeArchive{}, fmt.Errorf("%w: %s", ErrVolumeReferenced, refs[0].Display())
 	}
-	want.EventStarted = time.Now().UTC()
 	archive, err := bound.archiveStream(ctx, got, out)
 	if err != nil {
 		_, _ = bound.run(ctx, "rm", "--", want.HolderID)
@@ -92,12 +93,13 @@ func (c CLI) ArchiveVolume(ctx context.Context, want *Volume, out io.Writer) (Vo
 		return VolumeArchive{}, err
 	}
 	rows, err := bound.VolumeEvents(ctx, want.Name, want.EventStarted, time.Now().UTC())
-	if err != nil || CheckVolumeEvents(rows, want.Name, want.HolderID, false) != nil {
+	checkErr := CheckVolumeEvents(rows, want.Name, want.HolderID, false)
+	if err != nil || checkErr != nil {
 		_ = bound.ReleaseVolumeHolder(ctx, want)
 		if err != nil {
 			return VolumeArchive{}, err
 		}
-		return VolumeArchive{}, errors.New("volume event evidence incomplete; do not assume success")
+		return VolumeArchive{}, fmt.Errorf("volume event evidence incomplete: %w", checkErr)
 	}
 	return archive, nil
 }
@@ -193,7 +195,7 @@ func (c CLI) createVolumeHolder(ctx context.Context, want *Volume) error {
 	}
 	want.HolderID = strings.TrimSpace(string(out))
 	if want.HolderID == "" {
-		return errors.New("Docker placeholder container returned no ID")
+		return errors.New("docker placeholder container returned no ID")
 	}
 	return nil
 }

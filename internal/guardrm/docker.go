@@ -34,6 +34,8 @@ func dockerReplacement(words []word, context Context, segments [][]word, segment
 }
 
 // Parse Docker command positions separately from values such as compose -f down.
+//
+//nolint:funlen,nestif // Docker global and subcommand flags must be parsed in one command-position pass.
 func dockerDeletion(args []string) string {
 	var group, verb string
 	var help, preview, volumes bool

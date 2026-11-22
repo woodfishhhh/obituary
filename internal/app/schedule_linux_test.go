@@ -57,3 +57,16 @@ func TestPOSIXUserTimerContentAndOwnership(t *testing.T) {
 		t.Fatal("newline accepted")
 	}
 }
+
+func TestPOSIXUserTimerUsesHourlyFallbackForSupervisedInstall(t *testing.T) {
+	files, err := scheduleFilesWithInterval("/tmp/bin/obitd", "/tmp/data", "/tmp/config", FallbackInterval)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(files[TaskName], "OnCalendar=hourly") || strings.Contains(files[TaskName], "*:0/5") {
+		t.Fatalf("not hourly: %s", files[TaskName])
+	}
+	if !strings.Contains(files[TaskName], "Persistent=true") {
+		t.Fatal("hourly fallback lost Persistent catch-up")
+	}
+}

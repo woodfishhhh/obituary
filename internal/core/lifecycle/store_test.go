@@ -17,6 +17,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/auto"
 	core "github.com/woodfishhhh/obituary/internal/core/lifecycle"
+	"github.com/woodfishhhh/obituary/internal/docker"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 	"github.com/woodfishhhh/obituary/internal/watch"
 	"golang.org/x/sys/windows"
@@ -65,7 +66,11 @@ func TestStoreContainerMigration(t *testing.T) {
 		t.Fatal(identifyErr)
 	}
 	legacy.Identity = &identity
-	st.Items = []core.Item{legacy}
+	volume := core.Item{Kind: core.KindDockerVolume, ID: 38, Rev: 1, Path: "cache", CreatedAt: f.clock, ExpiresAt: f.clock.Add(time.Hour), Volume: &docker.Volume{
+		Name: "cache", Driver: "local", Scope: "local", CreatedAt: f.clock,
+		Target: docker.Target{Context: "legacy", Endpoint: "unix:///docker.sock", DaemonID: "daemon", OSType: "linux"},
+	}}
+	st.Items = []core.Item{volume, legacy}
 	st.NextID = 40
 	data, _ = json.Marshal(st)
 	if err := os.WriteFile(path, data, 0o600); err != nil {
@@ -80,7 +85,7 @@ func TestStoreContainerMigration(t *testing.T) {
 		t.Fatal(it, err)
 	}
 	read, err = f.svc.Store.Read()
-	if err != nil || read.Version != 17 || read.Index(it.ID) < 0 || read.Items[read.Index(it.ID)].Container.ID != it.Container.ID {
+	if err != nil || read.Version != 18 || read.Index(it.ID) < 0 || read.Items[read.Index(it.ID)].Container.ID != it.Container.ID || read.Index(volume.ID) < 0 || read.Items[read.Index(volume.ID)].Volume == nil || read.Index(legacy.ID) < 0 {
 		t.Fatal("v13 migration lost container", read, err)
 	}
 	beforeFile, _ := json.Marshal(legacy)
@@ -88,7 +93,7 @@ func TestStoreContainerMigration(t *testing.T) {
 	if !bytes.Equal(beforeFile, afterFile) {
 		t.Fatal("container migration changed file record")
 	}
-	read.Version = 18
+	read.Version = 19
 	data, _ = json.Marshal(read)
 	if err := os.WriteFile(path, data, 0o600); err != nil {
 		t.Fatal(err)

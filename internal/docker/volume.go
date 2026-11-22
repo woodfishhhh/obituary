@@ -16,7 +16,7 @@ const RestoreLabel = "io.obituary.restore"
 const volumeImage = "docker.io/library/debian@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc"
 
 var volumeName = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.-]+$`)
-var ErrNoVolume = errors.New("Docker volume does not exist on the original daemon")
+var ErrNoVolume = errors.New("docker volume does not exist on the original daemon")
 
 // Volume contains only inspect fields used to identify a local volume. Never use Mountpoint as a host path.
 type Volume struct {

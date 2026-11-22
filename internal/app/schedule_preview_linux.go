@@ -16,7 +16,7 @@ import (
 type ScheduleUnit struct{ Path, Action, Content string }
 
 func PreviewSchedule(daemon, home, config string, enabled bool) ([]ScheduleUnit, error) {
-	files, err := scheduleFiles(daemon, home, config)
+	files, err := scheduleFilesWithInterval(daemon, home, config, ScheduleInterval(home))
 	if err != nil {
 		return nil, err
 	}

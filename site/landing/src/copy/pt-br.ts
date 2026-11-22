@@ -108,7 +108,6 @@ export const ptBR: Strings = {
   },
   window: {
     head: "Ressuscite sem a linha de comando",
-    lead: "Abra a janela pelo menu Iniciar, pela área de trabalho ou pela bandeja; clique com o botão direito em um arquivo para adicioná-lo ao Obituary.",
     looks: { calendar: "Calendário", palette: "Uma linha" } as Record<LookId, string>,
     pages: { upcoming: "Próximos enterros", graveyard: "Cemitério", decisions: "Para você" } as Record<PageId, string>,
     lookLabel: "Visual",
@@ -143,7 +142,8 @@ export const ptBR: Strings = {
   },
   agents: {
     head: "Conecte os agentes que você usa",
-    lead: "Cada um se conecta com um só comando. Escolha o seu.",
+    project: "Execute este comando na pasta do projeto",
+    global: "Execute este comando para sua conta de usuário",
   },
   community: {
     head: "Ajude a melhorar o Obituary",
@@ -168,15 +168,9 @@ export const ptBR: Strings = {
       linux: "Atualizar: rode o script de instalação de novo. obit update mostra sua versão e a mais recente.",
     } as Record<Os, string>,
     uninstall: "Desinstalar: obit uninstall, com --dry-run antes para ver o que será removido; o cemitério é mantido por padrão.",
-    network: {
-      windows: "O único uso de rede do Obituary é verificar se há uma versão nova, no máximo uma vez por dia. Ele lê apenas informações públicas de versões (GitHub ou o espelho na China continental) e você pode desligar isso nas Configurações.",
-      macos: "O único uso de rede do Obituary é verificar se há uma versão nova, no máximo uma vez por dia. Ele lê apenas informações públicas de versões (GitHub ou o espelho na China continental); check = false em [update] no config.toml desliga isso.",
-      linux: "O único uso de rede do Obituary é verificar se há uma versão nova, no máximo uma vez por dia. Ele lê apenas informações públicas de versões (GitHub ou o espelho na China continental); check = false em [update] no config.toml desliga isso.",
-    } as Record<Os, string>,
     mirrorScript: "O script de instalação e os arquivos vêm do espelho na China continental",
     downloadHead: "Download direto",
     downloads: archives(["Apple silicon", "Intel"]),
-    gets: { windows: "No Windows você tem a bandeja, a janela pequena e o menu de contexto, além da linha de comando e da conexão com agentes.", macos: "No macOS você tem a linha de comando e a conexão com agentes: obit list, obit graveyard e obit resurrect fazem o que a janela faz no Windows, e o launchd verifica a expiração a cada 5 minutos.", linux: "No Linux você tem a linha de comando e a conexão com agentes: obit list, obit graveyard e obit resurrect fazem o que a janela faz no Windows, e o systemd --user verifica a expiração a cada 5 minutos (sem systemd, um crontab do usuário)." } as Record<Os, string>,
     routeLabel: "Como instalar",
     agentHead: "Deixe sua IA fazer isso",
     agentLine: "Envie esta frase ao agente que você usa (Claude Code, Codex, Cursor…). Ele para onde a decisão é sua.",

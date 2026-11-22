@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
 	"time"
@@ -22,6 +23,8 @@ type volumeEvent struct {
 type volumeEvidence struct{ Name, Holder, Helper, Witness string }
 
 // Anchor both ends in the same buffered history. A filtered empty reply cannot distinguish idle from truncated.
+//
+//nolint:funlen,nestif // this is the bounded event state machine for archive evidence.
 func (w volumeEvidence) check(rows []volumeEvent, post bool) error {
 	started, mounted, verified, released, closed := false, false, false, false, false
 	removals := 0
@@ -112,9 +115,11 @@ func (c CLI) VolumeEvents(ctx context.Context, name string, since, until time.Ti
 }
 
 // CheckVolumeEvents refuses incomplete or foreign activity in the operation window.
+//
+//nolint:funlen // the bounded event evidence state machine stays in one ordered pass.
 func CheckVolumeEvents(rows []volumeEvent, name, holder string, post bool) error {
 	started, holderDestroyed, destroyed := false, false, 0
-	helpers := map[string]bool{}
+	helpers, created := map[string]bool{}, map[string]bool{}
 	var previous int64
 	for _, row := range rows {
 		if row.TimeNano <= 0 || row.TimeNano < previous {
@@ -124,6 +129,8 @@ func CheckVolumeEvents(rows []volumeEvent, name, holder string, post bool) error
 		if row.Type == "container" {
 			if row.Action == "create" && row.Actor.ID == holder {
 				started = true
+			} else if row.Action == "create" && row.Actor.ID != "" {
+				created[row.Actor.ID] = true
 			}
 			if row.Action == "destroy" && row.Actor.ID == holder {
 				holderDestroyed = true
@@ -145,8 +152,33 @@ func CheckVolumeEvents(rows []volumeEvent, name, holder string, post bool) error
 			destroyed++
 		}
 	}
+	if len(helpers) == 0 {
+		for id := range created {
+			if id != holder {
+				helpers[id] = true
+			}
+		}
+	}
+	holderID := holder
+	//nolint:nestif // derive the holder only when Docker omitted the expected create identity.
+	if !started {
+		var candidates []string
+		for id := range created {
+			if !helpers[id] {
+				candidates = append(candidates, id)
+			}
+		}
+		if len(candidates) == 1 {
+			started, holderID = true, candidates[0]
+			for _, row := range rows {
+				if row.Type == "container" && row.Action == "destroy" && row.Actor.ID == holderID {
+					holderDestroyed = true
+				}
+			}
+		}
+	}
 	if !started || len(helpers) != 1 {
-		return errors.New("volume event evidence incomplete; do not assume success")
+		return fmt.Errorf("volume event evidence incomplete: started=%t helpers=%d created=%d destroyed=%d holderDestroyed=%t holder=%s events=%s", started, len(helpers), len(created), destroyed, holderDestroyed, holderID, summarizeVolumeEvents(rows))
 	}
 	if post && (!holderDestroyed || destroyed != 1) {
 		return errors.New("volume deletion event evidence incomplete; do not assume success")
@@ -155,4 +187,12 @@ func CheckVolumeEvents(rows []volumeEvent, name, holder string, post bool) error
 		return errors.New("volume was destroyed before archival completed")
 	}
 	return nil
+}
+
+func summarizeVolumeEvents(rows []volumeEvent) string {
+	var parts []string
+	for _, row := range rows {
+		parts = append(parts, row.Type+":"+row.Action+":"+row.Actor.ID)
+	}
+	return strings.Join(parts, ",")
 }

@@ -62,6 +62,9 @@ export default defineConfig(({ isSsrBuild }) => ({
     emptyOutDir: true,
     // scripts/prerender.mjs reads it to name each page's language module in a modulepreload link.
     manifest: !isSsrBuild,
+    // The agents' marks stay files: the wall repeats each one several times in the page, and as inlined data
+    // every repeat is in the HTML, which the first paint has to read before anything shows.
+    assetsInlineLimit: (file: string) => (/icons-static-svg|\/assets\/agents\//.test(file.replaceAll("\\", "/")) ? false : undefined),
     // One template: scripts/prerender.mjs writes a page per language from it. The server build starts from its own entry.
     rollupOptions: isSsrBuild ? {} : { input: fileURLToPath(new URL("./index.html", import.meta.url)) },
   },

@@ -35,6 +35,19 @@ func TestPOSIXLaunchdContentAndOwnership(t *testing.T) {
 	}
 }
 
+func TestLaunchdUsesHourlyFallbackForSupervisedInstall(t *testing.T) {
+	data, err := launchdContentWithInterval("/tmp/bin/obitd", "/tmp/data", "/tmp/config", FallbackInterval)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "<integer>3600</integer>") || strings.Contains(string(data), "<integer>300</integer>") {
+		t.Fatalf("not hourly: %s", data)
+	}
+	if _, err := launchdArguments(data); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func fakeLaunchctl(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()

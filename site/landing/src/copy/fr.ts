@@ -108,7 +108,6 @@ export const fr: Strings = {
   },
   window: {
     head: "Ressuscitez sans ligne de commande",
-    lead: "Ouvrez la fenêtre depuis le menu Démarrer, le bureau ou la zone de notification ; un clic droit sur un fichier l’ajoute à Obituary.",
     looks: { calendar: "Calendrier", palette: "Une ligne" } as Record<LookId, string>,
     pages: { upcoming: "À enterrer", graveyard: "Cimetière", decisions: "À vous de voir" } as Record<PageId, string>,
     lookLabel: "Aspect",
@@ -143,7 +142,8 @@ export const fr: Strings = {
   },
   agents: {
     head: "Connectez les agents que vous utilisez",
-    lead: "Chacun se connecte en une commande. Choisissez le vôtre.",
+    project: "Exécutez cette commande dans le dossier du projet",
+    global: "Exécutez cette commande pour votre compte utilisateur",
   },
   community: {
     head: "Améliorons Obituary ensemble",
@@ -168,15 +168,9 @@ export const fr: Strings = {
       linux: "Mise à jour : relancez le script d’installation. obit update indique votre version et la dernière.",
     } as Record<Os, string>,
     uninstall: "Désinstallation : obit uninstall, avec --dry-run d’abord pour voir ce qui sera retiré ; le cimetière est conservé par défaut.",
-    network: {
-      windows: "Le seul accès réseau d’Obituary est la vérification d’une nouvelle version, au plus une fois par jour. Il ne lit que des informations de version publiques (GitHub ou le miroir de Chine continentale) et se désactive dans les Paramètres.",
-      macos: "Le seul accès réseau d’Obituary est la vérification d’une nouvelle version, au plus une fois par jour. Il ne lit que des informations de version publiques (GitHub ou le miroir de Chine continentale) ; check = false sous [update] dans config.toml le désactive.",
-      linux: "Le seul accès réseau d’Obituary est la vérification d’une nouvelle version, au plus une fois par jour. Il ne lit que des informations de version publiques (GitHub ou le miroir de Chine continentale) ; check = false sous [update] dans config.toml le désactive.",
-    } as Record<Os, string>,
     mirrorScript: "Le script d’installation et les archives viennent du miroir de Chine continentale",
     downloadHead: "Téléchargement direct",
     downloads: archives(["Apple silicon", "Intel"]),
-    gets: { windows: "Sous Windows, vous avez la zone de notification, la petite fenêtre et le menu contextuel, en plus de la ligne de commande et de la connexion aux agents.", macos: "Sous macOS, vous avez la ligne de commande et la connexion aux agents : obit list, obit graveyard et obit resurrect font ce que fait la fenêtre sous Windows, et launchd vérifie les expirations toutes les 5 minutes.", linux: "Sous Linux, vous avez la ligne de commande et la connexion aux agents : obit list, obit graveyard et obit resurrect font ce que fait la fenêtre sous Windows, et systemd --user vérifie les expirations toutes les 5 minutes (sans systemd, un crontab utilisateur)." } as Record<Os, string>,
     routeLabel: "Comment installer",
     agentHead: "Laissez votre IA le faire",
     agentLine: "Envoyez cette phrase à l’agent que vous utilisez (Claude Code, Codex, Cursor…). Il s’arrête là où la décision vous revient.",

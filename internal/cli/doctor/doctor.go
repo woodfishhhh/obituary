@@ -3,6 +3,7 @@ package doctor
 import (
 	"errors"
 	"fmt"
+	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 	"os"
 	"os/exec"
@@ -146,7 +147,13 @@ func (lang diagnostics) diagnose(now time.Time, executable cmdutil.Executable, a
 	} else {
 		checks = append(checks, lang.diagnoseUpdate(home))
 		checks = append(checks, lang.diagnoseRunner(home))
-		checks = append(checks, lang.diagnoseStartup(daemon, home))
+		startup := lang.diagnoseStartup(daemon, home)
+		if problem, err := app.SupervisorProblem(home); err != nil {
+			startup.Status, startup.Detail = "FAIL", err.Error()
+		} else if problem != "" {
+			startup.Status, startup.Detail = "WARN", problem
+		}
+		checks = append(checks, startup)
 	}
 	available := 0
 	scope := (integrate.Scope{Global: true}).ForInspection()

@@ -22,7 +22,7 @@ for arch in amd64 arm64; do
     mkdir -p "$work/$arch"
     GOOS=darwin GOARCH="$arch" CGO_ENABLED=1 go build -trimpath -tags desktop,production -ldflags "$ldflags" -o "$work/$arch/obit-gui" ./cmd/obit-gui
     GOOS=darwin GOARCH="$arch" CGO_ENABLED=1 go build -trimpath -tags desktop -ldflags "$ldflags" -o "$work/$arch/obitd" ./cmd/obitd
-    GOOS=darwin GOARCH="$arch" CGO_ENABLED=1 go build -trimpath -ldflags "$ldflags" -o "$work/$arch/obit" ./cmd/obit
+    GOOS=darwin GOARCH="$arch" CGO_ENABLED=1 go build -trimpath -tags desktop -ldflags "$ldflags" -o "$work/$arch/obit" ./cmd/obit
 done
 
 for name in obit obitd obit-gui; do

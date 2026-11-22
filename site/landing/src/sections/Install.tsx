@@ -19,7 +19,7 @@ const mirrorScript = (os: Os) =>
 
 const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalt";
 
-function CopyButton({ text, c }: { text: string; c: Copy["install"] }) {
+export function CopyButton({ text, c }: { text: string; c: Copy["install"] }) {
   const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
@@ -200,8 +200,6 @@ function Platform({ c, os }: { c: Copy; os: Os }) {
           <p className="mt-4 text-sm text-muted">{isMirror ? i.mirrorFact : i.fact[os]}</p>
         </div>
       )}
-
-      <p className="text-sm text-muted">{i.network[os]}</p>
     </div>
   );
 }
@@ -234,7 +232,6 @@ export function Install({ c }: { c: Copy }) {
             </button>
           ))}
         </div>
-        <p className="mb-8 max-w-[70ch] text-ink-2">{i.gets[os]}</p>
         <Platform c={c} os={os} />
       </div>
     </section>
