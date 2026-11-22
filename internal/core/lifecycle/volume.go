@@ -147,9 +147,13 @@ func (s *Service) archiveAndRemoveVolume(client docker.VolumeClient, item Item, 
 	if err != nil {
 		return err
 	}
+	releaseHolder := true
 	defer func() {
 		if cleanup != nil {
 			cleanup()
+		}
+		if releaseHolder && item.Volume != nil && item.Volume.HolderID != "" {
+			_ = client.ReleaseVolumeHolder(s.Store.Context(), item.Volume)
 		}
 	}()
 	partial := archive + ".partial"
@@ -160,13 +164,16 @@ func (s *Service) archiveAndRemoveVolume(client docker.VolumeClient, item Item, 
 	_, streamErr := client.ArchiveVolume(s.Store.Context(), item.Volume, f)
 	closeErr := f.Close()
 	if streamErr != nil || closeErr != nil {
+		_ = client.ReleaseVolumeHolder(s.Store.Context(), item.Volume)
 		return errors.Join(streamErr, closeErr)
 	}
 	check, err := verifyVolumeArchiveFile(partial)
 	if err != nil {
+		_ = client.ReleaseVolumeHolder(s.Store.Context(), item.Volume)
 		return err
 	}
 	if err := os.Rename(partial, archive); err != nil {
+		_ = client.ReleaseVolumeHolder(s.Store.Context(), item.Volume)
 		return err
 	}
 	b := Burial{Kind: KindDockerVolume, Volume: item.Volume, ID: item.ID, Path: item.Path, Grave: archive, Size: check.Bytes, BuriedAt: s.now(), PurgeAt: s.now().Add(s.retention()), Reason: reason, Note: item.Note, Source: item.Source, Project: item.Project, Session: item.Session, VolumeArchiveDigest: check.Digest, VolumeHolderID: item.Volume.HolderID}
@@ -175,6 +182,7 @@ func (s *Service) archiveAndRemoveVolume(client docker.VolumeClient, item Item, 
 	}
 	// From this point the archive and manifest are recovery evidence; keep them on any later failure.
 	cleanup = nil
+	releaseHolder = false
 	if err := client.RemoveVolume(s.Store.Context(), item.Volume); err != nil {
 		return err
 	}

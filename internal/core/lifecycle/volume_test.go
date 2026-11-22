@@ -49,6 +49,7 @@ func (f *fakeVolumeClient) RemoveVolume(context.Context, *docker.Volume) error {
 	f.removed = true
 	return nil
 }
+func (f *fakeVolumeClient) ReleaseVolumeHolder(context.Context, *docker.Volume) error { return nil }
 func (f *fakeVolumeClient) CreateVolume(_ context.Context, want docker.Volume, token string) (docker.Volume, error) {
 	want.Labels = map[string]string{docker.RestoreLabel: token}
 	want.RestoreLabelOwned = true

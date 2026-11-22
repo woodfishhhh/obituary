@@ -19,6 +19,7 @@ type VolumeClient interface {
 	ListVolumeReferences(context.Context, Volume) ([]Container, error)
 	ArchiveVolume(context.Context, *Volume, io.Writer) (VolumeArchive, error)
 	RemoveVolume(context.Context, *Volume) error
+	ReleaseVolumeHolder(context.Context, *Volume) error
 	CreateVolume(context.Context, Volume, string) (Volume, error)
 	RestoreVolume(context.Context, Volume, io.Reader) error
 }
@@ -69,6 +70,20 @@ func (c CLI) ArchiveVolume(ctx context.Context, want *Volume, out io.Writer) (Vo
 	if err := bound.createVolumeHolder(ctx, want); err != nil {
 		return VolumeArchive{}, err
 	}
+	refs, err = bound.ListVolumeReferences(ctx, got)
+	for i := range refs {
+		if refs[i].ID == want.HolderID {
+			refs = append(refs[:i], refs[i+1:]...)
+			break
+		}
+	}
+	if err != nil || len(refs) != 0 {
+		_ = bound.ReleaseVolumeHolder(ctx, want)
+		if err != nil {
+			return VolumeArchive{}, err
+		}
+		return VolumeArchive{}, fmt.Errorf("%w: %s", ErrVolumeReferenced, refs[0].Display())
+	}
 	archive, err := bound.archiveStream(ctx, got, out)
 	if err != nil {
 		_, _ = bound.run(ctx, "rm", "--", want.HolderID)
@@ -103,14 +118,26 @@ func (c CLI) RemoveVolume(ctx context.Context, want *Volume) error {
 	if len(refs) != 0 {
 		return fmt.Errorf("%w: %s", ErrVolumeReferenced, refs[0].Display())
 	}
-	if want.HolderID != "" {
-		if _, err := bound.run(ctx, "rm", "--", want.HolderID); err != nil {
-			return err
-		}
-		want.HolderID = ""
+	if err := bound.ReleaseVolumeHolder(ctx, want); err != nil {
+		return err
 	}
 	_, err = bound.run(ctx, "volume", "rm", "--", want.Name)
 	return err
+}
+
+func (c CLI) ReleaseVolumeHolder(ctx context.Context, want *Volume) error {
+	if want.HolderID == "" {
+		return nil
+	}
+	bound, err := c.bind(WithTarget(ctx, &want.Target))
+	if err != nil {
+		return err
+	}
+	if _, err := bound.run(ctx, "rm", "--", want.HolderID); err != nil {
+		return err
+	}
+	want.HolderID = ""
+	return nil
 }
 
 func (c CLI) CreateVolume(ctx context.Context, want Volume, token string) (Volume, error) {
