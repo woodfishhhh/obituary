@@ -21,6 +21,6 @@
       "@radix-ui/react-dialog": ["./node_modules/@radix-ui/react-dialog"]
     }
   },
-  "include": ["src", "vite.config.ts", "../../cmd/obit-gui/frontend/src/**/*"],
+  "include": ["src", "playground", "vite.config.ts", "vite.playground.config.ts", "../../cmd/obit-gui/frontend/src/**/*"],
   "exclude": ["../../cmd/obit-gui/frontend/src/playground", "../../cmd/obit-gui/frontend/src/main.tsx"]
 }
