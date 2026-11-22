@@ -1,8 +1,6 @@
 name: Scoop and Homebrew CLI acceptance
 
 on:
-  push:
-    branches: [woodfishhhh/channel-acceptance]
   workflow_dispatch:
     inputs:
       version:
@@ -27,7 +25,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 15
     env:
-      EXPECTED_VERSION: ${{ inputs.version || '1.6.2' }}
+      EXPECTED_VERSION: ${{ inputs.version }}
       OBIT_TELEMETRY: '0'
       HOMEBREW_NO_AUTO_UPDATE: '1'
     steps:
@@ -84,6 +82,7 @@ jobs:
             brew tap woodfishhhh/tap
             tap=$(brew --repository woodfishhhh/tap)
             git -C "$tap" rev-parse HEAD
+            brew trust --cask woodfishhhh/tap/obituary
             brew info --json=v2 --cask woodfishhhh/tap/obituary | tee "$RUNNER_TEMP/channel-evidence/cask.json" |
               jq -e --arg version "$EXPECTED_VERSION" '.casks[0].version == $version'
             brew install --cask woodfishhhh/tap/obituary

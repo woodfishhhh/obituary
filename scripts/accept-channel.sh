@@ -33,6 +33,9 @@ case "$1" in
     # Leave a real payload in the graveyard to check uninstall, not just an empty directory.
     obit bury "$fixture"
     test ! -e "$fixture"
+    if [[ "$RUNNER_OS" == Windows ]]; then
+      obit daemon stop
+    fi
     find "$OBIT_HOME/graveyard" -type f -name sample.txt -print | grep -F sample.txt
     cp "$OBIT_HOME/store.json" "$root/store-before.json"
     cp -R "$OBIT_HOME/graveyard" "$root/graveyard-before"
