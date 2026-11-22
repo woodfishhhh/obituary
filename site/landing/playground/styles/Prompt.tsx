@@ -87,7 +87,7 @@ export function Wall({ v }: { v: Values }) {
           <div className="flex min-h-10 flex-wrap items-center gap-3 border-t border-[#263055] pt-4" aria-live="polite">
             {a ? (
               <>
-                <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap"><span style={{ color: "#4f8bff" }}>$ </span>{commandOf(a.id)}</code>
+                <code className="min-w-0 flex-[1_1_15rem] break-all"><span style={{ color: "#4f8bff" }}>$ </span>{commandOf(a.id)}</code>
                 <button type="button" className="pg-btn" onClick={() => copy(a.id, commandOf(a.id))}>{copied === a.id ? t.copied : t.copy}</button>
                 <a className="pg-btn pg-btn-solid" href={docUrl(a.id, lang)} target="_blank" rel="noreferrer">{t.docs} ↗</a>
               </>

@@ -39,8 +39,8 @@ function Row({ row, v, reverse }: { row: typeof agents; v: Values; reverse: bool
       className="pg-stream-row"
       data-reverse={reverse || undefined}
       style={{ "--dur": `${(one / num(v.speed)).toFixed(1)}s` } as CSSProperties}
-      // With keyboard focus inside, the row stops looping and becomes scrollable, so the focused logo is in view.
-      onFocusCapture={() => { if (box.current) box.current.dataset.focus = "true"; }}
+      // With keyboard focus inside (not a mouse click), the row stops looping and becomes scrollable, so the focused logo is in view.
+      onFocusCapture={(e) => { if (box.current && e.target.matches(":focus-visible")) box.current.dataset.focus = "true"; }}
       onBlurCapture={(e) => { if (box.current && !box.current.contains(e.relatedTarget as Node | null)) delete box.current.dataset.focus; }}
     >
       <ul className="pg-stream-track">
