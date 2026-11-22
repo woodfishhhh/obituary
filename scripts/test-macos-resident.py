@@ -59,6 +59,9 @@ def probe(root):
         job = plistlib.loads(plist.read_bytes())
         assert job["KeepAlive"] == {"SuccessfulExit": False} and job["ThrottleInterval"] == 60
         assert job["ProgramArguments"][0] == str(daemon) and job["RunAtLoad"]
+        fallback = root / "Library" / "LaunchAgents" / "site.woodfish.obituary.plist"
+        fallback_job = plistlib.loads(fallback.read_bytes())
+        assert fallback_job["StartInterval"] == 3600, fallback_job
         if os.environ.get("OBIT_LONG_PROBE") == "true":
             def identity():
                 value = pid()

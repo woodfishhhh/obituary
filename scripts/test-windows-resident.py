@@ -89,7 +89,11 @@ def probe(root, name, daemon, cli, trigger, code):
         installed = ET.fromstring((home / "obitd.login-task.xml").read_text(encoding="utf-8"))
         name = installed.findtext("{*}RegistrationInfo/{*}URI")
         assert name and installed.findtext("{*}Settings/{*}ExecutionTimeLimit") == "PT0S"
+        assert installed.findtext("{*}Settings/{*}RestartOnFailure/{*}Interval") == "PT1M"
+        assert installed.findtext("{*}Settings/{*}RestartOnFailure/{*}Count") == "3"
         assert installed.findtext("{*}Actions/{*}Exec/{*}Command") == str(daemon)
+        fallback = ET.fromstring(command("schtasks", "/query", "/tn", "Obituary Runner", "/xml"))
+        assert fallback.findtext("{*}Triggers/{*}TimeTrigger/{*}Repetition/{*}Interval") == "PT60M"
         command(cli, "daemon", "stop")
         command(cli, "daemon", "start")
     else:

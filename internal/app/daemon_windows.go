@@ -37,6 +37,19 @@ func Running(home string) bool {
 	return true
 }
 
+func ResidentEnabled(home string) bool {
+	config, err := userdirs.Config()
+	if err != nil {
+		return false
+	}
+	daemon, err := DaemonPath()
+	if err != nil {
+		return false
+	}
+	current, err := installedLoginTask(home, daemon, config)
+	return err == nil && current != ""
+}
+
 // DaemonPath is obitd.exe next to the running executable.
 func DaemonPath() (string, error) {
 	exe, err := os.Executable()
@@ -77,7 +90,7 @@ func startAt(home, path string) error {
 		}
 		return waitFor(func() bool { return Running(home) }, 5*time.Second, "supervised daemon did not start")
 	}
-	cmd := exec.Command(path, daemonArgs(home)...)
+	cmd := exec.Command(path, append([]string{"--tray"}, daemonArgs(home)...)...)
 	detach(cmd)
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("start %s: %w", path, err)

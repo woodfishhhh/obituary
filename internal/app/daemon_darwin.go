@@ -42,6 +42,27 @@ func Running(home string) bool {
 	return false
 }
 
+func ResidentEnabled(home string) bool {
+	config, err := userdirs.Config()
+	if err != nil {
+		return false
+	}
+	daemon, err := DaemonPath()
+	if err != nil {
+		return false
+	}
+	dir, err := userdirs.LaunchAgents()
+	if err != nil {
+		return false
+	}
+	data, err := readTrayLaunchd(filepath.Join(dir, trayTaskName+".plist"))
+	if err != nil {
+		return false
+	}
+	want, err := trayLaunchdContent(daemon, home, config)
+	return err == nil && string(want) == data
+}
+
 func Start(home string) error {
 	if Running(home) {
 		return nil

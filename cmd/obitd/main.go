@@ -82,6 +82,7 @@ func runDaemon(once, withTray bool) error {
 	if once {
 		defer app.CheckUpdatesOnce(svc.Store.Home)
 		runOnce(svc, logger)
+		logger.Printf("obitd one-shot completed")
 		return nil
 	}
 	serve := app.Serve
@@ -96,6 +97,7 @@ func runDaemon(once, withTray bool) error {
 		}
 		return err
 	}
+	logger.Printf("obitd stopped normally")
 	return nil
 }
 
@@ -112,6 +114,7 @@ func runOnce(svc *core.Service, logger *log.Logger) {
 		logger.Printf("once: %v", logErr)
 	}
 	if err != nil || logErr != nil {
+		logger.Printf("obitd one-shot failed")
 		os.Exit(1)
 	}
 }

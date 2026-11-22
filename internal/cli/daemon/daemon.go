@@ -89,6 +89,9 @@ func enable(home string, resident bool) error {
 	if err := app.SetAutostart(home, true); err != nil {
 		return err
 	}
+	if err := app.InstallSchedule(home); err != nil {
+		return err
+	}
 	if err := app.Start(home); err != nil {
 		return err
 	}

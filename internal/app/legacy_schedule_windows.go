@@ -28,10 +28,24 @@ const fallbackExport = `<Task version="1.4" xmlns="http://schemas.microsoft.com/
 <Actions Context="Author"><Exec><Command>%s</Command><Arguments>%s</Arguments></Exec></Actions></Task>`
 
 func generatedFallback(definition, daemon, home, config string) bool {
-	return fallbackDifference(definition, daemon, home, config) == ""
+	return generatedSchedule(definition, daemon, home, config, Interval) ||
+		generatedSchedule(definition, daemon, home, config, FallbackInterval)
 }
 
 func fallbackDifference(definition, daemon, home, config string) string {
+	for _, interval := range []time.Duration{Interval, FallbackInterval} {
+		if diff := scheduleDifference(definition, daemon, home, config, interval); diff == "" {
+			return ""
+		}
+	}
+	return scheduleDifference(definition, daemon, home, config, Interval)
+}
+
+func generatedSchedule(definition, daemon, home, config string, interval time.Duration) bool {
+	return scheduleDifference(definition, daemon, home, config, interval) == ""
+}
+
+func scheduleDifference(definition, daemon, home, config string, interval time.Duration) string {
 	raw := strings.TrimSpace(strings.TrimPrefix(definition, `<?xml version="1.0" encoding="UTF-16"?>`))
 	start := taskStartBoundary(raw)
 	if start == "" {
@@ -41,7 +55,7 @@ func fallbackDifference(definition, daemon, home, config string) string {
 	if err != nil {
 		return err.Error()
 	}
-	original := taskXML(daemon, home, u.Username, time.Time{})
+	original := taskXMLInterval(daemon, home, u.Username, time.Time{}, interval)
 	original = strings.Replace(original, "<StartBoundary>0001-01-01T00:00:00</StartBoundary>", "<StartBoundary>"+xmlText(start)+"</StartBoundary>", 1)
 	_, original, _ = strings.Cut(original, "?>")
 	sourceDiff, sourceMatch := taskXMLDifference(original, raw, u)
@@ -49,7 +63,9 @@ func fallbackDifference(definition, daemon, home, config string) string {
 		return ""
 	}
 	args := fmt.Sprintf(`--once --home "%s" --config-dir "%s"`, home, config)
-	exported := fmt.Sprintf(fallbackExport, xmlText(TaskName), xmlText(u.Uid), xmlText(start), xmlText(u.Username), xmlText(daemon), xmlText(args))
+	exportedTemplate := strings.ReplaceAll(fallbackExport, "PT5M", fmt.Sprintf("PT%dM", int(interval.Minutes())))
+	exportedTemplate = strings.ReplaceAll(exportedTemplate, "every 5 minutes", fmt.Sprintf("every %d minutes", int(interval.Minutes())))
+	exported := fmt.Sprintf(exportedTemplate, xmlText(TaskName), xmlText(u.Uid), xmlText(start), xmlText(u.Username), xmlText(daemon), xmlText(args))
 	diff, matched := taskXMLDifference(exported, raw, u)
 	if diff == "" || matched >= sourceMatch {
 		return diff
@@ -138,6 +154,24 @@ func snapshotFallback(home, current string) error {
 	return errors.Join(writeErr, f.Sync(), f.Close())
 }
 
+func ensureFallbackSnapshot(home, current, daemon, config string) error {
+	path := filepath.Join(home, legacyFallbackSnapshot)
+	saved, err := core.ReadMetadata(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return snapshotFallback(home, current)
+	}
+	if err != nil {
+		return err
+	}
+	if string(saved) == current {
+		return nil
+	}
+	if field := fallbackDifference(string(saved), daemon, home, config); field != "" {
+		return fmt.Errorf("fallback differs from the saved migration snapshot: %s", field)
+	}
+	return nil
+}
+
 func restoreFallbackSnapshot(home, daemon, config string) error {
 	saved, err := core.ReadMetadata(filepath.Join(home, legacyFallbackSnapshot))
 	if err != nil {
@@ -157,7 +191,19 @@ func restoreFallbackSnapshot(home, daemon, config string) error {
 		return err
 	}
 	if current != string(saved) {
-		return errors.New("fallback differs from rollback snapshot; not replacing it")
+		if field := fallbackDifference(current, daemon, home, config); field != "" {
+			return errors.New("fallback differs from rollback snapshot; not replacing it")
+		}
+		if err := registerTaskReplacing(TaskName, string(saved)); err != nil {
+			return err
+		}
+		current, err = registeredTaskXML(TaskName)
+		if err != nil {
+			return err
+		}
+	}
+	if current != string(saved) {
+		return errors.New("fallback changed during rollback; preserved")
 	}
 	return nil
 }

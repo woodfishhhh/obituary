@@ -90,7 +90,7 @@ func PreviewScheduleRemovalFor(l *i18n.Localizer, daemon, home, config string) s
 		return fmt.Sprintf(l.HostText("query failed for scheduled task %q: %v"), TaskName, err)
 	}
 	if ownedSchedule(definition, daemon, home, config) {
-		return fmt.Sprintf(l.HostText("remove scheduled task %q (every %d minutes and at sign-in)\n    %s"), TaskName, int(Interval.Minutes()), scheduleDefinitionTarget(definition))
+	return fmt.Sprintf(l.HostText("remove scheduled task %q (independent fallback)\n    %s"), TaskName, scheduleDefinitionTarget(definition))
 	}
 	return fmt.Sprintf(l.HostText("preserve scheduled task %q: task belongs to another installation (path, home, config)\n    %s"), TaskName, scheduleDefinitionTarget(definition))
 }
@@ -113,7 +113,8 @@ func scheduleDefinitionTarget(definition string) string {
 }
 
 func ownedSchedule(definition, daemon, home, config string) bool {
-	return ownedTaskAction(definition, daemon, "--once", home, config) && generatedFallback(definition, daemon, home, config)
+	return ownedTaskAction(definition, daemon, "--once", home, config) &&
+		(generatedSchedule(definition, daemon, home, config, Interval) || generatedSchedule(definition, daemon, home, config, FallbackInterval))
 }
 
 func ownedTaskAction(definition, daemon, mode, home, config string) bool {

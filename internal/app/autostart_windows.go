@@ -89,7 +89,14 @@ func SetAutostart(home string, enabled bool) error {
 		return fmt.Errorf("preserving edited or differently bound Run value %s", startupName(home))
 	}
 	if enabled {
-		return createLoginTask(home, path, config)
+		if err := createLoginTask(home, path, config); err != nil {
+			return err
+		}
+		plan, err := PlanAutostart(runkey.Current, path, home, config, false)
+		if err != nil {
+			return err
+		}
+		return plan.Apply()
 	}
 	if err := removeLoginTask(home, path, config); err != nil {
 		return err

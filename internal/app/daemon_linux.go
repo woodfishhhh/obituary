@@ -32,6 +32,25 @@ func Running(home string) bool {
 	return false
 }
 
+func ResidentEnabled(home string) bool {
+	if !graphicalManager() {
+		return false
+	}
+	config, err := userdirs.Config()
+	if err != nil {
+		return false
+	}
+	daemon, err := DaemonPath()
+	if err != nil {
+		return false
+	}
+	path, _, before, err := readTrayUnit(daemon, home, config)
+	if err != nil || before == "" || path == "" {
+		return false
+	}
+	return userSystemctl("is-enabled", "--quiet", trayUnit) == nil
+}
+
 func Start(home string) error {
 	if !graphicalLogin() {
 		return errors.New("no local graphical session; tray not started")

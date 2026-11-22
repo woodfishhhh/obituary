@@ -19,6 +19,7 @@ import (
 const daemonName = "obitd"
 
 func DesktopSession() bool { return false }
+func ResidentEnabled(string) bool { return false }
 
 func cancelPendingRestart(string) error { return nil }
 

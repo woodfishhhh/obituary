@@ -28,6 +28,7 @@ func loginTaskXML(daemon, home, config, sid string) string {
 	account := "<UserId>" + xmlText(sid) + "</UserId>"
 	args := windows.ComposeCommandLine([]string{"--supervise", "--home", home, "--config-dir", config})
 	settings := strings.Replace(taskSettingsXML, "PT30M", "PT0S", 1)
+	settings = strings.Replace(settings, "  </Settings>", "    <RestartOnFailure><Interval>PT1M</Interval><Count>3</Count></RestartOnFailure>\n  </Settings>", 1)
 	return head + "<RegistrationInfo><URI>\\" + xmlText(loginTaskName(home)) + "</URI></RegistrationInfo>\n" +
 		"<Triggers><LogonTrigger>" + account + "</LogonTrigger></Triggers>\n" +
 		"<Principals><Principal id=\"Author\">" + account + "<LogonType>InteractiveToken</LogonType><RunLevel>LeastPrivilege</RunLevel></Principal></Principals>\n" +

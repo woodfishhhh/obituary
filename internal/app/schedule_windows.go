@@ -34,6 +34,10 @@ const Interval = 5 * time.Minute
 // requires: keep running on battery, catch up after sleep (StartWhenAvailable),
 // never stack instances, and stay hidden.
 func taskXML(daemon, home, userID string, start time.Time) string {
+	return taskXMLInterval(daemon, home, userID, start, Interval)
+}
+
+func taskXMLInterval(daemon, home, userID string, start time.Time, interval time.Duration) string {
 	esc := func(s string) string {
 		var b strings.Builder
 		_ = xml.EscapeText(&b, []byte(s))
@@ -47,13 +51,13 @@ func taskXML(daemon, home, userID string, start time.Time) string {
 	return `<?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <RegistrationInfo>
-    <Description>Obituary: buries items whose lifespan ran out and purges the graveyard. Runs hidden every ` + fmt.Sprint(int(Interval.Minutes())) + ` minutes.</Description>
+		<Description>Obituary: buries items whose lifespan ran out and purges the graveyard. Runs hidden every ` + fmt.Sprint(int(interval.Minutes())) + ` minutes.</Description>
     <URI>\` + esc(TaskName) + `</URI>
   </RegistrationInfo>
   <Triggers>
     <TimeTrigger>
       <Repetition>
-        <Interval>PT` + fmt.Sprint(int(Interval.Minutes())) + `M</Interval>
+        <Interval>PT` + fmt.Sprint(int(interval.Minutes())) + `M</Interval>
         <StopAtDurationEnd>false</StopAtDurationEnd>
       </Repetition>
       <StartBoundary>` + start.Format("2006-01-02T15:04:05") + `</StartBoundary>
@@ -131,14 +135,35 @@ func installScheduleFor(daemon, home string) error {
 		if err := os.MkdirAll(home, 0700); err != nil {
 			return err
 		}
-		if err := snapshotFallback(home, current); err != nil {
-			return err
-		}
 		latest, err := registeredTaskXML(TaskName)
 		if err != nil || latest != current {
 			return errors.Join(err, errors.New("fallback changed while taking migration snapshot; preserved"))
 		}
-		return core.WriteMetadata(filepath.Join(home, fallbackReceipt), []byte(current))
+		desired := ScheduleInterval(home)
+		if err := ensureFallbackSnapshot(home, current, daemon, config); err != nil {
+			return err
+		}
+		if generatedSchedule(current, daemon, home, config, desired) {
+			return core.WriteMetadata(filepath.Join(home, fallbackReceipt), []byte(current))
+		}
+		u, err := user.Current()
+		if err != nil {
+			return err
+		}
+		start := taskStartBoundary(current)
+		text := taskXMLInterval(daemon, home, u.Username, time.Now().Add(time.Minute), desired)
+		text = strings.Replace(text, taskStartBoundary(text), start, 1)
+		if err := registerTaskReplacing(TaskName, text); err != nil {
+			return err
+		}
+		actual, err := registeredTaskXML(TaskName)
+		if err != nil {
+			return err
+		}
+		if !generatedSchedule(actual, daemon, home, config, desired) || taskStartBoundary(actual) != start {
+			return fmt.Errorf("scheduled task %q changed during interval migration; preserved", TaskName)
+		}
+		return core.WriteMetadata(filepath.Join(home, fallbackReceipt), []byte(actual))
 	}
 	if !errors.Is(err, os.ErrNotExist) {
 		return err
@@ -147,7 +172,7 @@ func installScheduleFor(daemon, home string) error {
 	if err != nil {
 		return err
 	}
-	text := taskXML(daemon, home, u.Username, time.Now().Add(time.Minute))
+	text := taskXMLInterval(daemon, home, u.Username, time.Now().Add(time.Minute), ScheduleInterval(home))
 	if err := os.MkdirAll(home, 0700); err != nil {
 		return err
 	}
@@ -165,6 +190,14 @@ func installScheduleFor(daemon, home string) error {
 }
 
 func registerTask(name, text string) error {
+	return registerTaskWithMode(name, text, false)
+}
+
+func registerTaskReplacing(name, text string) error {
+	return registerTaskWithMode(name, text, true)
+}
+
+func registerTaskWithMode(name, text string, replace bool) error {
 	// Task Scheduler wants the file in UTF-16 with a byte order mark.
 	units := utf16.Encode([]rune(text))
 	buf := make([]byte, 2+2*len(units))
@@ -186,6 +219,9 @@ func registerTask(name, text string) error {
 		return err
 	}
 	args := []string{"/Create", "/TN", name, "/XML", tmpPath}
+	if replace {
+		args = append(args, "/F")
+	}
 	if out, err := schtasks(args...); err != nil {
 		return fmt.Errorf("schtasks /Create: %v: %s", err, out) //nolint:errorlint // schtasks exit errors are diagnostics, not the scheduler API's error types.
 	}

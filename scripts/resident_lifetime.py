@@ -66,5 +66,5 @@ def lifetime(cli, root, home, identity, terminate):
     state = home / "obitd.supervision.json"
     until(lambda: json.loads(state.read_bytes())["Abandoned"], 100)
     assert not identity() and len(json.loads(state.read_bytes())["Failures"]) == 3
-    measure(cli, root, "fallback", int(os.getenv("OBIT_FALLBACK_TIMEOUT", "395")))
+    measure(cli, root, "fallback", int(os.getenv("OBIT_FALLBACK_TIMEOUT", "3695")))
     assert not identity(), "a fourth business process started"

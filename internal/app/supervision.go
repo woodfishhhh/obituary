@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,7 +21,11 @@ func ManagedTray(home string, run func() error) error {
 	if paused, err := Paused(home); paused || err != nil {
 		return err
 	}
-	return managedAttempt(home, time.Now, run)
+	err := managedAttempt(home, time.Now, run)
+	if err == nil {
+		_ = recordSupervisionReason(home, "stopped normally")
+	}
+	return err
 }
 
 type supervision struct {
@@ -57,12 +62,47 @@ func readSupervision(home string) (supervision, error) {
 	return s, err
 }
 
+func logSupervisionFailure(home string, err error) {
+	if err == nil {
+		return
+	}
+	f, openErr := os.OpenFile(filepath.Join(home, "obitd.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+	if openErr != nil {
+		return
+	}
+	defer f.Close()
+	_, _ = f.WriteString(time.Now().Format(time.RFC3339) + " supervisor: " + err.Error() + string([]byte{10}))
+}
+
+func supervisionDetails(s supervision) string {
+	detail := fmt.Sprintf("failures=%d/%d", len(s.Failures), crashLimit)
+	if !s.LastAttempt.IsZero() {
+		detail += ", last attempt=" + s.LastAttempt.Format(time.RFC3339)
+	}
+	if s.LastExitCode != nil {
+		detail += fmt.Sprintf(", last exit code=%d", *s.LastExitCode)
+	}
+	if s.Reason != "" {
+		detail += ", reason=" + s.Reason
+	}
+	return detail
+}
+
 func (s supervision) save(home string) error {
 	data, err := json.Marshal(s)
 	if err != nil {
 		return err
 	}
 	return core.WriteMetadata(filepath.Join(home, supervisionFile), data)
+}
+
+func recordSupervisionReason(home, reason string) error {
+	s, err := readSupervision(home)
+	if err != nil {
+		return err
+	}
+	s.Reason = reason
+	return s.save(home)
 }
 
 func (s *supervision) prune(now time.Time) {

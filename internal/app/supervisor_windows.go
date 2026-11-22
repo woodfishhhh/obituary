@@ -84,13 +84,26 @@ func Supervise(home string) (result error) {
 	for {
 		stopped, err := windows.WaitForSingleObject(stop, 0)
 		if err != nil || stopped == windows.WAIT_OBJECT_0 {
+			if err == nil {
+				_ = recordSupervisionReason(home, "stopped intentionally")
+				logSupervisionFailure(home, errors.New("resident supervision stopped intentionally"))
+			}
 			return err
 		}
 		if paused, err := Paused(home); paused || err != nil {
+			if err == nil {
+				_ = recordSupervisionReason(home, "paused")
+				logSupervisionFailure(home, errors.New("resident supervision paused"))
+			}
 			return err
 		}
 		err = managedAttempt(home, time.Now, launch)
+		if err != nil {
+			logSupervisionFailure(home, err)
+		}
 		if err == nil {
+			_ = recordSupervisionReason(home, "stopped normally")
+			logSupervisionFailure(home, errors.New("resident stopped normally"))
 			return nil
 		}
 		state, readErr := readSupervision(home)
@@ -98,6 +111,7 @@ func Supervise(home string) (result error) {
 			return errors.Join(err, readErr)
 		}
 		if state.Abandoned {
+			logSupervisionFailure(home, fmt.Errorf("resident supervision gave up after %d failures in %s: %s", len(state.Failures), crashWindow, state.Reason))
 			return nil
 		}
 		retry, waitErr := waitSupervisorRetry(home, stop)
@@ -136,23 +150,60 @@ func cancelPendingRestart(home string) error {
 }
 
 func SupervisorProblem(home string) (string, error) {
+	if paused, err := Paused(home); err != nil {
+		return "", err
+	} else if paused {
+		return "resident supervision is paused; fallback maintenance is paused too", nil
+	}
 	s, err := readSupervision(home)
 	if err != nil {
 		return "", err
 	}
 	if s.Abandoned {
-		return "resident supervision gave up after 3 failures in 15 minutes: " + s.Reason, nil
+		return "resident supervision gave up after 3 failures in 15 minutes (" + supervisionDetails(s) + ")", nil
+	}
+	if s.LaunchFailed {
+		return "resident supervisor could not launch the tray (" + supervisionDetails(s) + ")", nil
+	}
+	if s.Reason == "paused" {
+		return "resident supervision is paused; fallback maintenance is paused too (" + supervisionDetails(s) + ")", nil
+	}
+	if s.Reason == "stopped intentionally" || s.Reason == "stopped normally" {
+		return "resident daemon was intentionally stopped; fallback schedule remains independent (" + supervisionDetails(s) + ")", nil
+	}
+	retry, err := signalSupervisor(home, retrySuffix, false)
+	if err != nil {
+		return "", err
 	}
 	alive, err := signalSupervisor(home, supervisorSuffix, false)
-	if err != nil || alive {
+	if err != nil {
 		return "", err
+	}
+	if alive && retry {
+		return "resident supervisor is waiting to retry the tray in 60 seconds (" + supervisionDetails(s) + ")", nil
+	}
+	if alive {
+		return "", nil
+	}
+	if _, err := os.Stat(stopPath(home)); err == nil {
+		return "resident daemon was intentionally stopped; fallback schedule remains independent", nil
 	}
 	p, err := readProcessReceipt(filepath.Join(home, "obitd.supervisor.json"))
 	if errors.Is(err, os.ErrNotExist) {
 		return "", nil
 	}
-	if err == nil && !p.Closed {
-		return "resident supervisor is no longer running; fallback schedule is independent", nil
+	if err != nil {
+		return "", err
 	}
-	return p.Error, err
+	if !p.Closed {
+		tray := "tray is not running"
+		if Running(home) {
+			tray = "tray is still running without its supervisor"
+		}
+		return "resident supervisor stopped unexpectedly; " + tray + "; no restart until the next login; fallback schedule is independent (" + supervisionDetails(s) + ")", nil
+	}
+	if p.Error != "" {
+		return "resident supervisor exited: " + p.Error + " (" + supervisionDetails(s) + ")", nil
+	}
+	return "", nil
 }

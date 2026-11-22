@@ -40,6 +40,15 @@ func TestLegacyRunnerPreservesEditedAndDisabledDefinitions(t *testing.T) {
 	}
 }
 
+func TestLoginTaskUsesFiniteStartupRetry(t *testing.T) {
+	text := loginTaskXML("C:\\bin\\obitd.exe", "C:\\data", "C:\\config", "S-1-5-21-test")
+	for _, want := range []string{"<ExecutionTimeLimit>PT0S</ExecutionTimeLimit>", "<RestartOnFailure><Interval>PT1M</Interval><Count>3</Count></RestartOnFailure>", "--supervise"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("login task missing %q: %s", want, text)
+		}
+	}
+}
+
 func (e schedulerExit) Error() string { return fmt.Sprintf("HRESULT %#x", uint32(e)) }
 func (e schedulerExit) ExitCode() int { return int(e) }
 
