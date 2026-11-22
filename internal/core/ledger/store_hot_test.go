@@ -40,7 +40,15 @@ func TestReadViewsRejectColdSnapshotIndexDamage(t *testing.T) {
 	if err := json.Unmarshal(data, &fields); err != nil {
 		t.Fatal(err)
 	}
-	fields["generation"] = json.RawMessage([]byte("\"wrong-generation\""))
+	var rows []map[string]json.RawMessage
+	if err := json.Unmarshal(fields["burials"], &rows); err != nil {
+		t.Fatal(err)
+	}
+	rows[0]["parentRef"] = json.RawMessage("-1")
+	fields["burials"], err = json.Marshal(rows)
+	if err != nil {
+		t.Fatal(err)
+	}
 	data, err = json.Marshal(fields)
 	if err != nil {
 		t.Fatal(err)

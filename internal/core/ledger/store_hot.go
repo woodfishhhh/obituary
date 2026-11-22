@@ -143,6 +143,13 @@ type graveyardSummarySnapshot struct {
 }
 
 type graveyardSummaryBurial struct {
+	Grave       string
+	IsDir       bool
+	BuriedAt    time.Time
+	Reason      string
+	Note        string
+	Source      string
+	GraveID     *ledgerIdentity
 	Kind        string          `json:"kind,omitempty"`
 	ID          int64           `json:"id"`
 	Path        string          `json:"path"`
@@ -162,7 +169,7 @@ func summaryFromState(st State) GraveyardSummary {
 	for _, b := range st.Burials {
 		summary.Count++
 		summary.Bytes += b.Size
-		if summary.NextPurge.IsZero() || b.PurgeAt.Before(summary.NextPurge) {
+		if summary.Count == 1 || b.PurgeAt.Before(summary.NextPurge) {
 			summary.NextPurge = b.PurgeAt
 		}
 	}
@@ -178,8 +185,13 @@ func (s Store) readGraveyardSummary(st State) (GraveyardSummary, error) {
 		return GraveyardSummary{}, errors.New("invalid referenced graveyard snapshot: graveyard snapshot hash or reference mismatch")
 	}
 	var snap graveyardSummarySnapshot
-	if err := json.Unmarshal(data, &snap); err != nil {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&snap); err != nil {
 		return GraveyardSummary{}, fmt.Errorf("invalid referenced graveyard snapshot: %w", err)
+	}
+	if len(bytes.TrimSpace(data[decoder.InputOffset():])) != 0 {
+		return GraveyardSummary{}, errors.New("trailing data in graveyard snapshot")
 	}
 	if snap.Owner != graveyardSnapshotOwner || snap.Version != stateVersion || snap.DataID == "" || snap.DataID != st.DataID || snap.Generation != st.Graveyard.Generation {
 		return GraveyardSummary{}, errors.New("invalid referenced graveyard snapshot: graveyard snapshot version, data owner or generation mismatch")
@@ -194,7 +206,7 @@ func (s Store) readGraveyardSummary(st State) (GraveyardSummary, error) {
 	for _, b := range snap.Burials {
 		summary.Count++
 		summary.Bytes += b.Size
-		if summary.NextPurge.IsZero() || b.PurgeAt.Before(summary.NextPurge) {
+		if summary.Count == 1 || b.PurgeAt.Before(summary.NextPurge) {
 			summary.NextPurge = b.PurgeAt
 		}
 	}
@@ -208,10 +220,16 @@ func validateSummaryIndex(st State, snap graveyardSummarySnapshot) error {
 		idx.Keys = append(idx.Keys, graveyardKey("id", fmt.Sprint(id)))
 	}
 	add := func(b graveyardSummaryBurial) error {
+		wire := ledgerState{plainState: &plainState{Version: stateVersion}, Volumes: snap.Volumes}
+		if _, err := wire.unpackIdentity(b.GraveID); err != nil {
+			return err
+		}
+		if b.Kind != "" {
+			return errors.New("object kind requires full graveyard validation")
+		}
 		addID(b.ID)
 		idx.Keys = append(idx.Keys, graveyardPathKey(b.Path))
 		if b.Identity != nil {
-			wire := ledgerState{plainState: &plainState{Version: stateVersion}, Volumes: snap.Volumes}
 			identity, err := wire.unpackIdentity(b.Identity)
 			if err != nil {
 				return err

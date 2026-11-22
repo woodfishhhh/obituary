@@ -67,7 +67,7 @@ func (s *Service) Summarize() (Summary, error) {
 			sum.NextDue = &t
 		}
 	}
-	if !graveyard.NextPurge.IsZero() {
+	if graveyard.Count != 0 {
 		t := graveyard.NextPurge
 		sum.NextPurge = &t
 	}
