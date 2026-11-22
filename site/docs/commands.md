@@ -59,6 +59,8 @@ obit docker add web-1 3d
 obit docker list
 ```
 
+运行 `obit mark --docker-volume cache 3d`（也可用 `add`）让 `cache` 三天后下葬；要立即下葬，运行 `obit bury --docker-volume -- cache`。[Docker 容器和卷](./docker)
+
 ## 接入与后台
 
 ```powershell
@@ -73,6 +75,8 @@ obit daemon enable              # 托盘随登录启动，并装兜底的定时�
 obit daemon status
 obit daemon disable
 ```
+
+桌面版启用监督后，托盘常驻进程在到期时处理，另有独立任务每小时兜底一次。无托盘版本仍每 5 分钟检查一次。
 
 ## 查询与体检
 
@@ -132,6 +136,7 @@ obit uninstall           # 撤掉讣告装过的所有东西（先 --dry-run 看
 | 参数 | 简写 | 默认值 | 说明 |
 | --- | --- | --- | --- |
 | `--at` | 无 | `""` | 在指定的本地时间到期："2006-01-02 15:04"、"2006-01-02" 或 "15:04" |
+| `--docker-volume` | 无 | `false` | 把参数当作 Docker 卷名 |
 | `--force` | 无 | `false` | 允许处理含有 .git 仓库的文件夹 |
 | `--help` | `-h` | `false` | add 的帮助 |
 | `--json` | 无 | `false` | 输出 JSON |
@@ -165,6 +170,7 @@ obit add report.zip --at "2026-12-01 18:00"
 
 | 参数 | 简写 | 默认值 | 说明 |
 | --- | --- | --- | --- |
+| `--docker-volume` | 无 | `false` | 把参数当作 Docker 卷名 |
 | `--force` | 无 | `false` | 允许处理含有 .git 仓库的文件夹 |
 | `--help` | `-h` | `false` | bury 的帮助 |
 | `--json` | 无 | `false` | 输出 JSON |

@@ -36,6 +36,8 @@ obit extend 12 1w        # keep it longer
 - **Vor dem Begräbnis wird Git erneut gefragt.** Ein per Regel oder Vorschlag registrierter Eintrag wird nicht begraben, wenn er bei Ablauf bereits committet ist.
 - **Vorschläge laufen selbst ab.** Committete oder gelöschte Einträge verschwinden; leere Vorschläge werden zurückgezogen, im Auditprotokoll vermerkt und nicht als Ablehnung gezählt.
 
+Volumes werden nie automatisch registriert. Obituary verarbeitet nur ausdrücklich registrierte oder begrabene Volumes und löscht weder Images noch Netzwerke.
+
 ## Regeln
 
 ```powershell

@@ -59,6 +59,8 @@ obit docker add web-1 3d
 obit docker list
 ```
 
+Mit `obit mark --docker-volume cache 3d` (auch `add`) wird `cache` in drei Tagen begraben, mit `obit bury --docker-volume -- cache` sofort. [Docker-Container und Volumes](./docker)
+
 ## Integration und Hintergrundbetrieb
 
 ```powershell
@@ -73,6 +75,8 @@ obit daemon enable              # tray at login plus the fallback scheduled task
 obit daemon status
 obit daemon disable
 ```
+
+Bei aktiver Desktop-Überwachung verarbeitet der Tray-Prozess fällige Einträge sofort; ein unabhängiger Auftrag prüft stündlich nach. Ausgaben ohne Tray prüfen weiterhin alle fünf Minuten.
 
 ## Abfragen und Prüfungen
 
@@ -132,6 +136,7 @@ Verwendung: `obit add <path>... <duration> | add <path>... --at <time> [flags]`
 | Parameter | Kurz | Standardwert | Beschreibung |
 | --- | --- | --- | --- |
 | `--at` | keiner | `""` | Zu einer bestimmten lokalen Zeit ablaufen: "2006-01-02 15:04", "2006-01-02" oder "15:04" |
+| `--docker-volume` | keiner | `false` | Argumente als Docker-Volume-Namen behandeln |
 | `--force` | keiner | `false` | Ordner zulassen, die ein .git-Repository enthalten |
 | `--help` | `-h` | `false` | Hilfe zu add |
 | `--json` | keiner | `false` | JSON ausgeben |
@@ -165,6 +170,7 @@ Verwendung: `obit bury <path>... [flags]`
 
 | Parameter | Kurz | Standardwert | Beschreibung |
 | --- | --- | --- | --- |
+| `--docker-volume` | keiner | `false` | Argumente als Docker-Volume-Namen behandeln |
 | `--force` | keiner | `false` | Ordner zulassen, die ein .git-Repository enthalten |
 | `--help` | `-h` | `false` | Hilfe zu bury |
 | `--json` | keiner | `false` | JSON ausgeben |

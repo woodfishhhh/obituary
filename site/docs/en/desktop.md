@@ -11,7 +11,7 @@ The window, the tray and desktop notifications exist on Windows, macOS and Ubunt
 | Window | `obit-gui.exe`, x64 only | `Obituary.app`, universal for Intel and Apple silicon | a `.deb` package, amd64 only |
 | Tray | notification area | menu bar | tray, needs a desktop that provides StatusNotifierItem |
 | Tray at login | on by default after `obit init` | switch in Settings | switch in Settings |
-| Expiry check | resident tray process, Task Scheduler as a fallback | launchd user agent, every 5 minutes | systemd user timer, every 5 minutes |
+| Expiry check | resident tray process | LaunchAgent | systemd |
 | Desktop notifications | yes | yes | yes |
 | Context menu | in Explorer | no | no |
 | Date labels in Explorer | yes | no | no |
@@ -20,11 +20,19 @@ The window, the tray and desktop notifications exist on Windows, macOS and Ubunt
 | First opening | an archive downloaded by hand may meet a SmartScreen warning | needs manual approval, see [below](#first-opening-an-unsigned-app) | opens directly |
 | Requirements | the WebView2 runtime | 1.6.0 needs macOS 26, fixed in 1.6.1 | GTK 3 and WebKitGTK 4.1, installed by apt |
 
+Windows starts the tray with a scheduled task at sign-in, macOS uses a user LaunchAgent, and Linux uses a user systemd service in a graphical session. After a crash the system waits 60 seconds before restarting; after the third crash in 15 minutes, it stops trying.
+
+With desktop supervision enabled, the tray handles expiries as they occur and an independent job checks once an hour. Editions without a tray check every five minutes.
+
+On Windows, an old scheduled task is migrated only if it matches the one Obituary created for this installation. Its original definition is saved for rollback; modified or disabled tasks stay as they are.
+
 ## macOS app and menu bar icon
 
 Download the universal DMG (`obituary_<version>_darwin_universal.dmg`) and `checksums.txt` from the release page, check the SHA-256, open the DMG, drag Obituary.app into Applications, eject the DMG, and open the app from Applications. Drag it out first because the login startup entry records where the app is, and an app run straight from the DMG is no longer there once the DMG is ejected.
 
-The app contains the window, the menu bar icon, and matching `obit` and `obitd` programs. Expiry is handled by a separate launchd user agent that runs every 5 minutes; you install it with `obit daemon enable`, and closing the window or the menu bar icon does not affect it. Turning on "Start the tray at sign-in" in Settings installs Obituary's own user LaunchAgent so that the menu bar icon appears when you sign in; turning it off removes only that entry.
+The app contains the window, the menu bar icon, and matching `obit` and `obitd` programs. Turning on "Start the tray at sign-in" in Settings installs Obituary's own user LaunchAgent so that the menu bar icon appears when you sign in; turning it off removes only that entry.
+
+Install the independent expiry job with `obit daemon enable`. Closing the window or the menu bar icon does not disable it.
 
 Removing `Obituary.app` leaves your data in `~/Library/Application Support/obituary/` by default: `store.json` is the ledger, `config.toml` holds your settings, and `graveyard/` holds files buried on that volume.
 
@@ -99,6 +107,8 @@ Switch in Settings → Appearance. It changes only how the window looks on this 
 - **Bury now (recoverable)**: into the graveyard right away, restorable during the retention period (7 days by default).
 
 Select many files and add them at once. A notification says how many went in, when they will be buried, and how many failed. Windows 11's new menu does not show it: click "Show more options" (or hold Shift while right-clicking). `obit init --dry-run` lists every entry and its command, and `obit doctor` checks that it is installed correctly.
+
+If all Explorer menu labels are in another supported language after an upgrade, the menu still works. `obit doctor` reports this as information (`installation: label-language-mismatch` in JSON). Run `obit init --context-menu --yes` to switch the labels to the current interface language.
 
 macOS and Linux have no context menu yet; use the commands: `obit mark <path> 7d` to add, `obit bury <path>` to bury now.
 

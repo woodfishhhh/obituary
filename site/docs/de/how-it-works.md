@@ -35,7 +35,11 @@ Die Konfiguration steht in `%APPDATA%\obituary\config.toml`. `obit config` zeigt
 
 ## Hintergrundbetrieb
 
-Standardmäßig startet `obitd.exe` bei der Anmeldung, läuft im Infobereich und begräbt Einträge sekundengenau. Das Tray-Symbol ist seine einzige Oberfläche. Zusätzlich führt eine geplante Windows-Aufgabe `obitd --once` alle fünf Minuten und bei jeder Anmeldung aus. So werden auch dann fällige Einträge begraben und alte Gräber nach Ende der Aufbewahrungsfrist geleert, wenn das Tray geschlossen oder nie gestartet wurde. Agenten-Hooks führen zu Sitzungsbeginn und -ende ebenfalls einen Durchlauf aus; `obit reap` startet sofort einen.
+Bei aktiver Desktop-Überwachung verarbeitet der Tray-Prozess fällige Einträge sofort; ein unabhängiger Auftrag prüft stündlich nach. Ausgaben ohne Tray prüfen weiterhin alle fünf Minuten.
+
+Windows nutzt eine Aufgabe bei der Anmeldung, macOS einen Benutzer-LaunchAgent und Linux einen systemd-Benutzerdienst in der grafischen Sitzung. Nach einem Absturz erfolgt der Neustart nach 60 Sekunden; beim dritten Absturz innerhalb von 15 Minuten enden die Versuche.
+
+Agenten-Hooks führen zu Sitzungsbeginn und -ende ebenfalls einen Durchlauf aus; `obit reap` startet sofort einen.
 
 ```powershell
 obit daemon enable              # tray at login plus the fallback scheduled task (--dry-run lists what would be installed)

@@ -15,7 +15,7 @@ Si vous avez installé avec le script sous Windows, une seule commande suffit :
 
 ## Ce qui est retiré
 
-`obit uninstall` agit au niveau de l’utilisateur et sur le projet Git courant : les hooks, MCP et Skill de chaque agent, la tâche planifiée qui s’exécute toutes les 5 minutes (le Planificateur de tâches sous Windows, un agent utilisateur launchd sous macOS, un minuteur utilisateur systemd sous Linux), le processus résident et l’icône de notification, ainsi que les règles de dossier (les fichiers qui en dépendent restent où ils sont). Sous Windows, il retire aussi l’entrée de démarrage à l’ouverture de session, le menu contextuel de l’Explorateur et les étiquettes de date de l’Explorateur.
+`obit uninstall` agit au niveau de l’utilisateur et sur le projet Git courant : les hooks, MCP et Skill de chaque agent, la tâche planifiée (le Planificateur de tâches sous Windows, un agent utilisateur launchd sous macOS, un minuteur utilisateur systemd sous Linux), le processus résident et l’icône de notification, ainsi que les règles de dossier (les fichiers qui en dépendent restent où ils sont). Sous Windows, il retire aussi l’entrée de démarrage à l’ouverture de session, le menu contextuel de l’Explorateur et les étiquettes de date de l’Explorateur.
 
 Il ne touche qu’à ce qu’Obituary a lui-même écrit. Une entrée que vous avez modifiée, ou laissée par une autre installation, est conservée telle quelle, et le plan indique laquelle et pourquoi. Là où il n’y a pas de terminal (un script, la ligne de commande d’un agent), ajoutez `--yes` ; sans cela, la commande s’arrête et vous dit qu’il lui faut un terminal.
 

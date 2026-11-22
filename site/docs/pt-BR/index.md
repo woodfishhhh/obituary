@@ -9,7 +9,7 @@ Windows 10 / 11, macOS e Linux (x64 e ARM64):
 | | Windows | macOS | Linux |
 |---|---|---|---|
 | Instalar com | Scoop, o script `install.ps1` (winget em revisão) | Homebrew, o script `install.sh` | o script `install.sh` |
-| Verificar expirações a cada 5 minutos | processo residente na bandeja, Agendador de Tarefas como alternativa | agente launchd do usuário | temporizador `systemd --user`; crontab do usuário sem systemd |
+| Verificação de vencimentos | processo residente na bandeja, Agendador de Tarefas como alternativa | agente launchd do usuário | temporizador `systemd --user`; crontab do usuário sem systemd |
 | CLI, cemitério e ressurreição, registro automático (opcional), guardião de exclusão, integração com agentes (hooks, Skill, MCP), contêineres Docker, políticas de pastas | sim | sim | sim |
 | Bandeja, janela pequena, menus de contexto, datas de enterro no Explorer, menu Iniciar e atalhos da área de trabalho | sim | use a CLI: `obit list`, `obit graveyard`, `obit resurrect` | como no macOS |
 | Modo Lixeira | sim | apenas o cemitério | apenas o cemitério |
@@ -88,7 +88,7 @@ Reinicie o agente depois. Para outros agentes, o servidor MCP e o Agent Skill, c
 
 No macOS / Linux, o Claude Code usa `~/.claude`, o Codex usa `~/.codex` e as Skills compartilhadas usam `~/.agents/skills`. As substituições `CLAUDE_CONFIG_DIR` e `CODEX_HOME` também são respeitadas.
 
-Ative o agendador do usuário para verificar expirações a cada 5 minutos:
+Com a supervisão de desktop ativa, a bandeja trata os vencimentos e uma tarefa independente verifica pendências a cada hora. Edições sem bandeja continuam verificando a cada cinco minutos.
 
 ```bash
 obit daemon enable --dry-run

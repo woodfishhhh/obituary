@@ -15,7 +15,7 @@ Hast du unter Windows mit dem Skript installiert, genügt ein Befehl:
 
 ## Was entfernt wird
 
-`obit uninstall` arbeitet auf Benutzerebene und am aktuellen Git-Projekt: die Hooks, MCP und Skill jedes Agenten, die geplante Aufgabe, die alle 5 Minuten läuft (die Aufgabenplanung unter Windows, ein launchd-Benutzeragent unter macOS, ein systemd-Benutzer-Timer unter Linux), der residente Prozess und das Symbol im Infobereich sowie die Ordnerrichtlinien (die Dateien unter einer Richtlinie bleiben, wo sie sind). Unter Windows entfernt es außerdem den Autostart-Eintrag bei der Anmeldung, das Explorer-Kontextmenü und die Datumsmarkierungen im Explorer.
+`obit uninstall` arbeitet auf Benutzerebene und am aktuellen Git-Projekt: die Hooks, MCP und Skill jedes Agenten, die geplante Aufgabe (die Aufgabenplanung unter Windows, ein launchd-Benutzeragent unter macOS, ein systemd-Benutzer-Timer unter Linux), der residente Prozess und das Symbol im Infobereich sowie die Ordnerrichtlinien (die Dateien unter einer Richtlinie bleiben, wo sie sind). Unter Windows entfernt es außerdem den Autostart-Eintrag bei der Anmeldung, das Explorer-Kontextmenü und die Datumsmarkierungen im Explorer.
 
 Es fasst nur an, was Obituary selbst geschrieben hat. Ein Eintrag, den du bearbeitet hast, oder einer, den eine andere Installation hinterlassen hat, bleibt unverändert, und der Plan nennt, welcher und warum. Wo es kein Terminal gibt (ein Skript, die Befehlszeile eines Agenten), füge `--yes` hinzu; ohne diese Option bricht der Befehl ab und sagt dir, dass er ein Terminal braucht.
 

@@ -191,7 +191,7 @@ export const ko: Strings = {
       linux: "설치 스크립트는 GitHub 릴리스의 압축 파일을 받고, 풀기 전에 SHA-256을 확인합니다.",
     } as Record<Os, string>,
     daemonHead: "백그라운드 점검 켜기",
-    daemonLine: "5분마다 만료된 파일을 점검합니다. macOS는 launchd, Linux는 systemd --user를 씁니다(systemd가 없으면 사용자 crontab으로 5분마다 obitd --once를 실행). 먼저 --dry-run으로 무엇이 설치되는지 확인하세요.",
+    daemonLine: "데스크톱에서 감독 기능을 켜면 트레이 프로세스가 만료 시점에 처리하고 별도 작업이 한 시간마다 누락된 항목을 확인합니다. 트레이가 없는 버전은 기존처럼 5분마다 확인합니다. 먼저 --dry-run으로 무엇이 설치되는지 확인하세요.",
     then: "이어서 에이전트에 연결",
     init: [
       { label: "Claude Code", code: "obit init -g" },

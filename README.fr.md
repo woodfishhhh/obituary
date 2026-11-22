@@ -61,7 +61,8 @@ Obituary est né parce que les agents nous y ont poussés. Dès que la version 0
 - **Dans la barre système, comme Everything (Windows).** `obit init` démarre une icône à la connexion. Le menu affiche les enterrements récents, permet de ressusciter un fichier, de suspendre le nettoyage automatique et d’ouvrir la petite fenêtre Obituary. Le Planificateur de tâches Windows reste une solution de secours.
 - **Une petite fenêtre (Windows / Ubuntu 24.04 amd64).** Expiring, Graveyard, For you, Settings et Logs permettent de restaurer des fichiers, approuver des propositions et modifier les réglages sans ligne de commande(`obit-gui.exe` ou « Open Obituary »). Chinois et anglais, huit apparences. Sur Ubuntu, ouvrez Obituary depuis le menu des applications.
 - **Menu contextuel et dates dans l’Explorateur (Windows).** Clic droit → « Add to Obituary » → 1, 7 ou 30 jours, ou « Bury now (recoverable) ». Sous Windows 11, l’option est dans « Show more options ». Les éléments suivis affichent « name (11-13 burial) » sans changer le vrai nom.
-- **Conteneurs Docker.** `obit docker add <container> 3d` donne une durée au conteneur ; à l’échéance, `docker stop` l’arrête(`obit resurrect` le redémarre), puis `docker rm` ne le supprime qu’après rétention. Volumes et images ne sont jamais touchés. Les conteneurs démarrés par une session d’agent pour le projet sont aussi enregistrés si l’automatisation est activée.
+- **Conteneurs Docker.** `obit docker add <container> 3d` donne une durée au conteneur ; à l’échéance, `docker stop` l’arrête(`obit resurrect` le redémarre), puis `docker rm` ne le supprime qu’après rétention. Les conteneurs démarrés par une session d’agent pour le projet sont aussi enregistrés si l’automatisation est activée.
+- Avec `obit mark --docker-volume cache 3d` (ou `add`), le volume `cache` sera enterré dans trois jours. Pour l’enterrer maintenant, utilisez `obit bury --docker-volume -- cache`. Les volumes ne sont jamais enregistrés automatiquement. Obituary ne traite que ceux que vous enregistrez ou enterrez explicitement et ne supprime ni les images ni les réseaux.
 - **Politiques de dossiers.** `obit watch Downloads 2w` enterre chaque fichier arrivé deux semaines plus tard. Un sous-dossier expiré produit seulement une proposition et est enterré après approbation ; la politique elle-même doit aussi être approuvée.
 
 ## Installation
@@ -86,10 +87,12 @@ Chaque plateforme en bref :
 | | Windows | macOS | Linux |
 |---|---|---|---|
 | Installation | Scoop, script `install.ps1`(winget en revue) | Homebrew, script `install.sh` | script `install.sh` |
-| Vérification de l’expiration toutes les 5 minutes | processus résident dans la barre système, Planificateur des tâches en secours | agent launchd utilisateur | minuteur `systemd --user` ; crontab utilisateur sans systemd |
+| Vérification des échéances | processus résident dans la barre système, Planificateur des tâches en secours | agent launchd utilisateur | minuteur `systemd --user` ; crontab utilisateur sans systemd |
 | CLI, cimetière et résurrection, enregistrement automatique optionnel, garde de suppression, intégration agent(hooks, Skill, MCP), conteneurs Docker, politiques de dossiers | oui | oui | oui |
 | Barre système, petite fenêtre, menus contextuels, dates d’enterrement dans l’Explorateur, raccourcis du menu Démarrer et du bureau | oui | Petite fenêtre et icône de barre des menus macOS via DMG universel; pas encore de menu contextuel | Fenêtre et icône de notification sur Ubuntu 24.04 amd64 (deb) |
 | Mode Corbeille | oui | cimetière uniquement | cimetière uniquement |
+
+Avec la supervision du bureau activée, le processus résident traite les échéances à temps et une tâche indépendante vérifie les retards toutes les heures. Sans icône de zone de notification, les éditions en ligne de commande gardent une vérification toutes les cinq minutes.
 
 Pour installer manuellement, mettre à jour et désinstaller, consultez le [guide d’installation](docs/install.en.md).
 

@@ -59,6 +59,8 @@ obit docker add web-1 3d
 obit docker list
 ```
 
+`obit mark --docker-volume cache 3d`（`add` も可）で `cache` を3日後に埋葬できます。すぐに埋葬するには `obit bury --docker-volume -- cache` を実行します。[Docker コンテナーとボリューム](./docker)
+
 ## エージェント連携とバックグラウンド処理
 
 ```powershell
@@ -73,6 +75,8 @@ obit daemon enable              # tray at login plus the fallback scheduled task
 obit daemon status
 obit daemon disable
 ```
+
+デスクトップ版で監視が有効な場合、トレイの常駐プロセスが期限に合わせて処理し、独立したジョブが1時間ごとに取りこぼしを確認します。トレイのない版では従来どおり5分間隔です。
 
 ## 状態の照会と診断
 
@@ -123,6 +127,7 @@ Obituary (讣告)。AI エージェント向けのごみ箱で、ファイルに
 | パラメーター | 短縮 | 既定値 | 説明 |
 | --- | --- | --- | --- |
 | `--at` | なし | `""` | 指定したローカル時刻に期限切れにする："2006-01-02 15:04"、"2006-01-02"、"15:04" のいずれか |
+| `--docker-volume` | なし | `false` | 引数を Docker ボリューム名として扱う |
 | `--force` | なし | `false` | .git リポジトリを含むフォルダーを許可する |
 | `--help` | `-h` | `false` | add のヘルプ |
 | `--json` | なし | `false` | JSON を出力する |
@@ -156,6 +161,7 @@ obit add report.zip --at "2026-12-01 18:00"
 
 | パラメーター | 短縮 | 既定値 | 説明 |
 | --- | --- | --- | --- |
+| `--docker-volume` | なし | `false` | 引数を Docker ボリューム名として扱う |
 | `--force` | なし | `false` | .git リポジトリを含むフォルダーを許可する |
 | `--help` | `-h` | `false` | bury のヘルプ |
 | `--json` | なし | `false` | JSON を出力する |

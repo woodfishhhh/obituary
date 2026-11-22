@@ -6,6 +6,8 @@ Einen Benutzerordner oder ein ganzes Laufwerk zu löschen ist keine hypothetisch
 obit init -g --guard-rm                 # Claude Code; add --agent codex for Codex. Off by default
 ```
 
+Der Löschschutz erkennt `docker volume rm`, `docker volume remove`, `docker volume prune`, `docker compose down -v` (oder `--volumes`) und `docker system prune --volumes`. Nur bei einem einfachen `docker volume rm` mit ausdrücklichen Namen schlägt er `obit bury --docker-volume` vor.
+
 ## Ein echter Lauf
 
 Bei aktivem Löschschutz erhielt der Hook einen Claude-Code-Bash-Aufruf, `rm -rf build`, und antwortete wie folgt; `rm` wurde nie ausgeführt:

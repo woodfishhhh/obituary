@@ -35,7 +35,11 @@ Le fichier de configuration est `%APPDATA%\obituary\config.toml`. `obit config` 
 
 ## Fonctionnement en arrière-plan
 
-Par défaut, `obitd.exe` démarre à l’ouverture de session et enterre les éléments à l’échéance, à la seconde près. Son icône dans la zone de notification est sa seule interface. En secours, une tâche planifiée Windows lance `obitd --once` toutes les cinq minutes et à chaque ouverture de session. Même si le programme de notification est fermé ou n’a jamais démarré, les éléments arrivés à échéance sont enterrés et ceux dont la conservation a pris fin sont supprimés définitivement. Les hooks lancent aussi un passage en début et en fin de session. `obit reap` en lance un immédiatement.
+Avec la supervision du bureau activée, le processus résident traite les échéances à temps et une tâche indépendante vérifie les retards toutes les heures. Sans icône de zone de notification, les éditions en ligne de commande gardent une vérification toutes les cinq minutes.
+
+Windows utilise une tâche à l’ouverture de session, macOS un LaunchAgent utilisateur et Linux un service systemd utilisateur dans la session graphique. Après un arrêt anormal, le redémarrage a lieu au bout de 60 secondes ; au troisième en 15 minutes, les tentatives cessent.
+
+Les hooks lancent aussi un passage en début et en fin de session. `obit reap` en lance un immédiatement.
 
 ```powershell
 obit daemon enable              # tray at login plus the fallback scheduled task (--dry-run lists what would be installed)

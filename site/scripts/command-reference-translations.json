@@ -72,6 +72,20 @@
         "ru": "Задать местное время истечения срока: \"2006-01-02 15:04\", \"2006-01-02\" или \"15:04\""
       }
     },
+    "--docker-volume": {
+      "source": "treat operands as Docker volume names",
+      "translations": {
+        "zh": "把参数当作 Docker 卷名",
+        "zh-TW": "將引數視為 Docker 資料卷名稱",
+        "ja": "引数を Docker ボリューム名として扱う",
+        "ko": "인수를 Docker 볼륨 이름으로 해석",
+        "es": "Interpretar los argumentos como nombres de volúmenes de Docker",
+        "fr": "Interpréter les arguments comme des noms de volumes Docker",
+        "de": "Argumente als Docker-Volume-Namen behandeln",
+        "pt-BR": "Interpretar os argumentos como nomes de volumes do Docker",
+        "ru": "Считать аргументы именами томов Docker"
+      }
+    },
     "--force": {
       "source": "allow folders that contain a .git repository",
       "translations": {
@@ -200,6 +214,20 @@
         "de": "Pfade sofort auf den Friedhof verschieben (Wiederherstellung mit obit resurrect)",
         "pt-BR": "Mover caminhos para o cemitério agora (restaure com obit resurrect)",
         "ru": "Переместить пути на кладбище сейчас (восстановление — obit resurrect)"
+      }
+    },
+    "--docker-volume": {
+      "source": "treat operands as Docker volume names",
+      "translations": {
+        "zh": "把参数当作 Docker 卷名",
+        "zh-TW": "將引數視為 Docker 資料卷名稱",
+        "ja": "引数を Docker ボリューム名として扱う",
+        "ko": "인수를 Docker 볼륨 이름으로 해석",
+        "es": "Interpretar los argumentos como nombres de volúmenes de Docker",
+        "fr": "Interpréter les arguments comme des noms de volumes Docker",
+        "de": "Argumente als Docker-Volume-Namen behandeln",
+        "pt-BR": "Interpretar os argumentos como nomes de volumes do Docker",
+        "ru": "Считать аргументы именами томов Docker"
       }
     },
     "--force": {

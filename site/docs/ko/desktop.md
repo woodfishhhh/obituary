@@ -11,7 +11,7 @@
 | 작은 창 | `obit-gui.exe`, x64 전용 | `Obituary.app`, Intel과 Apple 실리콘 공용 | `.deb` 패키지, amd64 전용 |
 | 트레이 | 작업 표시줄 알림 영역 | 메뉴 막대 | 트레이. 데스크톱이 StatusNotifierItem을 제공해야 함 |
 | 로그인 시 트레이 시작 | `obit init`에서 기본으로 켜짐 | 설정에서 전환 | 설정에서 전환 |
-| 만료 처리 | 상주하는 트레이, 작업 스케줄러는 보조 | launchd 사용자 에이전트(5분마다) | systemd 사용자 타이머(5분마다) |
+| 만료 처리 | 상주하는 트레이 | LaunchAgent | systemd |
 | 데스크톱 알림 | 있음 | 있음 | 있음 |
 | 컨텍스트 메뉴 | 탐색기 | 없음 | 없음 |
 | 탐색기의 날짜 레이블 | 있음 | 없음 | 없음 |
@@ -20,11 +20,19 @@
 | 처음 열 때 | 직접 내려받은 압축 파일은 SmartScreen 경고가 나올 수 있음 | 수동 허용이 필요함. [아래](#서명되지-않은-app을-처음-열기) 참고 | 바로 열림 |
 | 요구 사항 | WebView2 런타임 | 1.6.0은 macOS 26 필요(1.6.1에서 수정) | GTK 3, WebKitGTK 4.1(apt가 자동 설치) |
 
+Windows에서는 로그인 시 시작하는 예약 작업, macOS에서는 사용자 LaunchAgent, Linux에서는 그래픽 세션의 사용자 systemd 서비스가 트레이를 감독합니다. 비정상 종료 후 60초 뒤에 재시작하며, 15분 안에 세 번째로 비정상 종료하면 재시도를 중단합니다.
+
+데스크톱에서 감독 기능을 켜면 트레이 프로세스가 만료 시점에 처리하고 별도 작업이 한 시간마다 누락된 항목을 확인합니다. 트레이가 없는 버전은 기존처럼 5분마다 확인합니다.
+
+Windows의 기존 예약 작업은 현재 설치용으로 생성한 정의와 일치할 때만 이전합니다. 원래 정의를 보관해 되돌릴 수 있으며, 수정하거나 비활성화한 작업은 그대로 둡니다.
+
 ## macOS 작은 창과 메뉴 막대 아이콘
 
 릴리스 페이지에서 universal DMG(`obituary_<버전>_darwin_universal.dmg`)와 `checksums.txt`를 내려받고, SHA-256을 확인한 뒤 DMG를 엽니다. Obituary.app을 응용 프로그램 폴더로 드래그하고 DMG를 추출한 다음, 응용 프로그램 폴더에서 app을 여세요. 먼저 드래그해 두는 것은 로그인 시 시작 항목이 app의 위치를 기록하기 때문입니다. DMG 안에서 바로 실행하면 DMG를 추출하는 순간 그 위치가 사라집니다.
 
-app에는 작은 창, 메뉴 막대 아이콘, 함께 쓰는 `obit`과 `obitd`가 들어 있습니다. 만료 처리는 별도의 launchd 사용자 에이전트가 맡아 5분마다 실행되며, `obit daemon enable`로 설치합니다. 창이나 메뉴 막대 아이콘을 닫아도 영향을 받지 않습니다. 작은 창의 Settings에서 ‘Start the tray at sign-in’을 켜면 Obituary 전용 사용자 LaunchAgent가 설치되어 로그인할 때 메뉴 막대 아이콘이 나타납니다. 끄면 이 항목만 제거됩니다.
+app에는 작은 창, 메뉴 막대 아이콘, 함께 쓰는 `obit`과 `obitd`가 들어 있습니다. 창이나 메뉴 막대 아이콘을 닫아도 영향을 받지 않습니다. 작은 창의 Settings에서 ‘Start the tray at sign-in’을 켜면 Obituary 전용 사용자 LaunchAgent가 설치되어 로그인할 때 메뉴 막대 아이콘이 나타납니다. 끄면 이 항목만 제거됩니다.
+
+`obit daemon enable`로 독립적인 만료 확인 작업을 설치합니다. 창이나 메뉴 막대 아이콘을 닫아도 이 작업은 유지됩니다.
 
 `Obituary.app`을 삭제해도 사용자 데이터는 기본 경로인 `~/Library/Application Support/obituary/`에 남습니다. `store.json`은 장부, `config.toml`은 설정 파일이며, 이 볼륨에서 매장한 파일은 `graveyard/`에 보관됩니다.
 
@@ -99,6 +107,8 @@ grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt insta
 - **Bury now (recoverable)**: 즉시 묘지로 옮깁니다. 보관 기간(기본 7일) 동안 부활시킬 수 있습니다.
 
 파일을 여러 개 선택해 한꺼번에 추가할 수 있습니다. 알림에 등록된 개수, 매장 예정 시점, 실패한 개수가 표시됩니다. Windows 11의 새 메뉴에는 보이지 않으므로 ‘더 많은 옵션 표시’를 선택하거나 Shift를 누른 채 오른쪽 클릭하세요. `obit init --dry-run`은 각 메뉴 항목과 명령을 나열하고 `obit doctor`는 설치 상태를 점검합니다.
+
+업그레이드 후 탐색기 메뉴 전체가 다른 지원 언어로 표시되더라도 메뉴는 정상 작동합니다. `obit doctor`는 정보로만 알립니다(JSON에서는 `installation: label-language-mismatch`). `obit init --context-menu --yes`를 실행하면 현재 인터페이스 언어로 바뀝니다.
 
 macOS와 Linux에는 아직 상황에 맞는 메뉴가 없습니다. 등록할 때는 `obit mark <path> 7d`, 바로 매장할 때는 `obit bury <path>`을 사용하세요.
 

@@ -4,6 +4,8 @@ When something goes wrong, start with `obit doctor`. It only reads and never wri
 
 Each entry below follows the same order: what you see, why, what to do, and how to tell it is fixed.
 
+If all Explorer menu labels are in another supported language after an upgrade, the menu still works. `obit doctor` reports this as information (`installation: label-language-mismatch` in JSON). Run `obit init --context-menu --yes` to switch the labels to the current interface language.
+
 ## The shell cannot find `obit`
 
 The terminal says `command not found`, or PowerShell does not recognise `obit`. The program is on disk, but its folder is not on your PATH. The Windows install script adds `%LOCALAPPDATA%\Programs\obituary` to your user PATH, but a terminal that was already open does not see the new PATH. `install.sh` puts the programs in `~/.local/bin` and never edits PATH, and some systems do not have that folder on PATH to begin with. The Ubuntu `.deb` puts them in `/usr/libexec/obituary/`, which is not on PATH either.
@@ -56,9 +58,9 @@ The app in the DMG has no Developer ID signature and is not notarized, so Gateke
 
 ## The tray does not start at login (macOS, Ubuntu)
 
-After you sign in there is no Obituary icon in the menu bar or the tray. Starting at login relies on a startup entry: on macOS the user LaunchAgent `site.woodfish.obituary.tray`, on Ubuntu `~/.config/autostart/obituary.desktop`. If the switch in the window's Settings is off, or the app was moved, or the switch was turned on while the app ran straight from the DMG, the path recorded in the entry is stale and nothing is found at login.
+After you sign in there is no Obituary icon in the menu bar or the tray. Starting at login relies on a startup entry: on macOS the user LaunchAgent `site.woodfish.obituary.tray.supervised`, on Ubuntu `obituary-tray.service`. If the switch in the window's Settings is off, or the app was moved, or the switch was turned on while the app ran straight from the DMG, the path recorded in the entry is stale and nothing is found at login.
 
-Open the window and, in Settings, turn "Start the tray at sign-in" off and on again, so that Obituary rewrites the entry. On macOS, `launchctl list | grep obituary` should now show `site.woodfish.obituary.tray`; on Ubuntu, `ls ~/.config/autostart/obituary.desktop` should find the file, and the tray appears at your next login.
+Open the window and, in Settings, turn "Start the tray at sign-in" off and on again, so that Obituary rewrites the entry. On macOS, `launchctl list | grep obituary` should now show `site.woodfish.obituary.tray.supervised`; on Ubuntu, `systemctl --user status obituary-tray.service` shows the state of the service.
 
 ## Ubuntu: the window does not open, or there is no tray icon
 
@@ -73,7 +75,11 @@ Open Obituary from the application list again; when the window appears, it is fi
 
 ## Expired items are not being buried
 
-A file's lifespan ran out long ago and it is still where it was, and the `runner:` line of `obit daemon status` says `off`. Expiry is handled by a scheduled job that runs every 5 minutes: "Obituary Runner" in Task Scheduler on Windows, a launchd user agent on macOS, the systemd user timer `obituary.timer` on Linux. If it is not installed, was switched off, or was installed for a different data directory, nobody acts when the time comes; in that case expired items wait for the next `obit sweep`, or for an agent's hook, before they are dealt with.
+Check `obit daemon status` for the expiry job. Run `obit reap` to handle expired items now.
+
+With desktop supervision enabled, the tray handles expiries as they occur and an independent job checks once an hour. Editions without a tray check every five minutes.
+
+`obit doctor` shows who supervises the tray, recent failures and the last exit reason. It distinguishes waiting to restart, a pause or deliberate stop, and a missing or failed supervisor.
 
 Run `obit daemon enable` to install the job (on Windows this also installs the tray at login), and `obit sweep` if you want the cleanup now. On a Linux machine without a systemd user service, as in some containers and minimal systems, `obit daemon enable` cannot install it; use cron to run `obitd --once --home <data directory> --config-dir <config directory>` every 5 minutes instead, and `obit config` tells you both directories. When the `runner` line of `obit daemon status` no longer says `off`, it is fixed; on Linux you can also see the timer with `systemctl --user list-timers | grep obituary`.
 
@@ -111,7 +117,11 @@ When the agent's line in `obit doctor` (`claude`, for example) is `PASS` and say
 
 "Approve" on a container proposal in the window is greyed out, and the card says "Docker is not running: start Docker to decide on this proposal." Registering a container means asking Docker for its full ID and creation time, which cannot be done while Docker is off. Start Docker Desktop or Docker Engine and approve again; when "Approve" can be clicked and `obit docker list` shows the container, it worked.
 
-When a container expires, Obituary only stops it and keeps its writable layer, and resurrecting starts it again; a stopped container is deleted only after the retention period. Images, volumes and networks are never touched.
+When a container expires, Obituary only stops it and keeps its writable layer, and resurrecting starts it again; a stopped container is deleted only after the retention period.
+
+## The Docker volume was not confirmed as buried
+
+Docker events are checked before and after removal. If deletion cannot be confirmed, keep the verified archive and check `obit doctor`; do not assume the volume was buried successfully. [Docker containers and volumes](./docker)
 
 ## An update fails, or downloads from mainland China are slow
 

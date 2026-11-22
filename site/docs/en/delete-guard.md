@@ -6,6 +6,8 @@ Agents wiping a home directory or a whole drive is no longer hypothetical; peopl
 obit init -g --guard-rm                 # Claude Code; add --agent codex for Codex. Off by default
 ```
 
+The delete guard recognizes `docker volume rm`, `docker volume remove`, `docker volume prune`, `docker compose down -v` (or `--volumes`) and `docker system prune --volumes`. It suggests `obit bury --docker-volume` only for a plain `docker volume rm` with explicit names; it does not guess what a prune would remove.
+
 ## One real run
 
 With the delete guard on, the hook received one Claude Code Bash call, `rm -rf build`, and replied as follows; `rm` never ran:

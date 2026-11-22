@@ -9,7 +9,7 @@ Windows 10 / 11, macOS and Linux (x64 and ARM64):
 | | Windows | macOS | Linux |
 |---|---|---|---|
 | Install with | Scoop, the `install.ps1` script (winget in review) | Homebrew, the `install.sh` script | the `install.sh` script |
-| Checks for expiry every 5 minutes | resident tray process, Task Scheduler as a fallback | user launchd agent | `systemd --user` timer; a user crontab without systemd |
+| Expiry checks | resident tray process, Task Scheduler as a fallback | user launchd agent | `systemd --user` timer; a user crontab without systemd |
 | CLI, graveyard and resurrection, automatic registration (optional), delete guard, agent integration (hooks, Skill, MCP), Docker containers, folder policies | yes | yes | yes |
 | Tray, small window, context menus, burial dates in Explorer, Start menu and desktop shortcuts | yes | the CLI instead: `obit list`, `obit graveyard`, `obit resurrect` | Ubuntu 24.04 amd64: [window and tray](./desktop) |
 | Recycle Bin mode | yes | graveyard only | graveyard only |
@@ -88,7 +88,7 @@ Restart the agent afterwards. Other agents, the MCP server and the Agent Skill: 
 
 On macOS / Linux, Claude Code uses `~/.claude`, Codex uses `~/.codex`, and shared Skills use `~/.agents/skills`. `CLAUDE_CONFIG_DIR` and `CODEX_HOME` overrides are also respected.
 
-Enable the user scheduler to check expiries every 5 minutes:
+With desktop supervision enabled, the tray handles expiries as they occur and an independent job checks once an hour. Editions without a tray check every five minutes.
 
 ```bash
 obit daemon enable --dry-run

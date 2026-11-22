@@ -36,6 +36,8 @@ obit extend 12 1w        # keep it longer
 - **Git is asked again before burial.** Anything registered by rule or proposal is not buried if it has been committed by the time it expires.
 - **Proposals expire on their own.** Entries that were committed or deleted are dropped, and proposals with nothing left are withdrawn (recorded in the audit log, not counted as a rejection).
 
+Volumes are never registered automatically. Obituary only handles a volume you explicitly mark or bury; it does not remove images or networks.
+
 ## Rules
 
 ```powershell

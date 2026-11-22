@@ -4,6 +4,8 @@
 
 下面每一條都按同樣的順序寫：你會看到什麼、為什麼、怎麼辦、怎麼確認已經好了。
 
+升級後，若檔案總管整套右鍵選單標籤使用另一種支援的語言，選單仍可正常使用。`obit doctor` 只會顯示資訊提示（JSON 為 `installation: label-language-mismatch`）。執行 `obit init --context-menu --yes` 即可換成目前的介面語言。
+
 ## 終端機裡找不到 `obit`
 
 終端機提示 `command not found`，PowerShell 說無法辨識 `obit`，原因是程式在磁碟上，但它所在的資料夾不在 PATH 裡。Windows 的安裝腳本會把 `%LOCALAPPDATA%\Programs\obituary` 加進使用者 PATH，不過已經開啟的終端機讀不到新的 PATH。`install.sh` 把程式放進 `~/.local/bin`，從來不改 PATH，有的系統預設也沒有這個資料夾。Ubuntu 的 `.deb` 把程式放在 `/usr/libexec/obituary/`，同樣不在 PATH 裡。
@@ -56,9 +58,9 @@ DMG 裡的 app 沒有 Developer ID 簽名，也沒有公證，所以第一次開
 
 ## 系統匣沒有隨登入啟動（macOS、Ubuntu）
 
-登入之後選單列或系統匣裡沒有訃告的圖示。隨登入啟動靠一個自動啟動項目：macOS 上是使用者 LaunchAgent `site.woodfish.obituary.tray`，Ubuntu 上是 `~/.config/autostart/obituary.desktop`。小視窗設定裡的開關沒開，或是 app 搬過位置、是在 DMG 裡直接執行時開啟的，項目裡記的路徑就失效了，登入時找不到程式。
+登入之後選單列或系統匣裡沒有訃告的圖示。隨登入啟動靠一個自動啟動項目：macOS 上是使用者 LaunchAgent `site.woodfish.obituary.tray.supervised`，Ubuntu 上是 `obituary-tray.service`。小視窗設定裡的開關沒開，或是 app 搬過位置、是在 DMG 裡直接執行時開啟的，項目裡記的路徑就失效了，登入時找不到程式。
 
-開啟小視窗，在 Settings 裡把「Start the tray at sign-in」關掉再打開，讓訃告重寫這個項目。macOS 上執行 `launchctl list | grep obituary`，能看到 `site.woodfish.obituary.tray`；Ubuntu 上 `ls ~/.config/autostart/obituary.desktop` 找得到檔案，下次登入系統匣就會出現。
+開啟小視窗，在 Settings 裡把「Start the tray at sign-in」關掉再打開，讓訃告重寫這個項目。macOS 上執行 `launchctl list | grep obituary`，能看到 `site.woodfish.obituary.tray.supervised`；Ubuntu 上 `systemctl --user status obituary-tray.service` 可查看服務狀態。
 
 ## Ubuntu：小視窗打不開，或沒有系統匣圖示
 
@@ -73,7 +75,11 @@ sudo apt install libgtk-3-0t64 libwebkit2gtk-4.1-0 xdg-utils
 
 ## 到期的項目沒有被下葬
 
-檔案的壽命早就到了，卻還在原處，`obit daemon status` 裡 `runner:` 那一行寫著 `off`。到期清理靠一個每 5 分鐘執行一次的排程工作：Windows 是工作排程器裡的「Obituary Runner」，macOS 是 launchd 使用者代理，Linux 是 systemd 使用者計時器 `obituary.timer`。它沒裝、被關掉，或是裝給了另一個資料目錄，時間到了就沒人動手；這時到期的項目要等到下一次 `obit sweep`，或 agent 的 hook 觸發，才會被處理。
+執行 `obit daemon status` 查看排程工作。若要立即處理已到期的項目，請執行 `obit reap`。
+
+桌面版啟用監督後，由常駐托盤在到期時處理，另有獨立工作每小時檢查一次。無托盤版本仍每 5 分鐘檢查一次。
+
+`obit doctor` 會列出托盤的監督方式、近期失敗次數及上次結束原因，並區分等待重啟、暫停、主動停止、監督項目遺失或監督程序已結束。
 
 執行 `obit daemon enable` 裝上排程工作（在 Windows 上同時會裝登入時啟動的系統匣）；眼前就要清理，執行 `obit sweep`。Linux 上若沒有 systemd 使用者服務（有些容器和精簡系統是這樣），`obit daemon enable` 裝不上，就改用 cron，每 5 分鐘執行一次 `obitd --once --home <資料目錄> --config-dir <設定目錄>`，這兩個目錄 `obit config` 都會告訴你。`obit daemon status` 裡 `runner` 不再是 `off`，就是好了；Linux 上還可以用 `systemctl --user list-timers | grep obituary` 看到它。
 
@@ -111,7 +117,11 @@ obit doctor --verbose      # 每個 agent 的接入情況
 
 小視窗裡容器提議的「Approve」點不了，卡片上寫著「Docker is not running: start Docker to decide on this proposal.」，意思是 Docker 沒有執行，要先啟動它才能處理這則提議。登記容器要向 Docker 確認它完整的 ID 和建立時間，Docker 沒執行就確認不了。啟動 Docker Desktop 或 Docker Engine，再批准；「Approve」可以點了，`obit docker list` 裡列出這個容器，就是好了。
 
-容器到期時，訃告只是把它停掉，可寫層保留，復活時再重新啟動；保留期過後才會刪除已停止的容器。映像、磁碟區和網路從來不動。
+容器到期時，訃告只是把它停掉，可寫層保留，復活時再重新啟動；保留期過後才會刪除已停止的容器。
+
+## 無法確認 Docker 資料卷已下葬
+
+訃告在刪除前後核對 Docker 事件。若無法確認已刪除，請保留驗證過的封存檔並查看 `obit doctor`，不要視為下葬成功。 [Docker 容器與資料卷](./docker)
 
 ## 更新失敗，或在中國大陸下載很慢
 

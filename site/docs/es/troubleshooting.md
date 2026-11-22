@@ -4,6 +4,8 @@ Cuando algo falla, empieza por `obit doctor`. Solo lee y nunca escribe. Comprueb
 
 Cada apartado sigue el mismo orden: qué ves, por qué ocurre, qué hacer y cómo saber que está resuelto.
 
+Si tras actualizar todas las etiquetas del menú del Explorador aparecen en otro idioma admitido, el menú sigue funcionando. `obit doctor` lo indica como información (JSON: `installation: label-language-mismatch`). `obit init --context-menu --yes` aplica el idioma actual de la interfaz.
+
 ## La terminal no encuentra `obit`
 
 La terminal dice `command not found`, o PowerShell no reconoce `obit`. El programa está en el disco, pero su carpeta no está en tu PATH. El script de instalación de Windows añade `%LOCALAPPDATA%\Programs\obituary` al PATH de tu usuario, pero una terminal que ya estaba abierta no ve el PATH nuevo. `install.sh` deja los programas en `~/.local/bin` y nunca edita el PATH, y en algunos sistemas esa carpeta tampoco está en el PATH de partida. El `.deb` de Ubuntu los pone en `/usr/libexec/obituary/`, que tampoco está en el PATH.
@@ -56,9 +58,9 @@ La app del DMG no tiene firma de Developer ID ni está notarizada, así que Gate
 
 ## La bandeja no arranca al iniciar sesión (macOS, Ubuntu)
 
-Tras iniciar sesión no hay icono de Obituary en la barra de menús ni en la bandeja. El arranque al iniciar sesión depende de una entrada de inicio: en macOS, el LaunchAgent de usuario `site.woodfish.obituary.tray`; en Ubuntu, `~/.config/autostart/obituary.desktop`. Si el interruptor de Settings de la ventana está desactivado, o se movió la app, o el interruptor se activó mientras la app se ejecutaba directamente desde el DMG, la ruta guardada en la entrada ha quedado obsoleta y al iniciar sesión no se encuentra nada.
+Tras iniciar sesión no hay icono de Obituary en la barra de menús ni en la bandeja. El arranque al iniciar sesión depende de una entrada de inicio: en macOS, el LaunchAgent de usuario `site.woodfish.obituary.tray.supervised`; en Ubuntu, `obituary-tray.service`. Si el interruptor de Settings de la ventana está desactivado, o se movió la app, o el interruptor se activó mientras la app se ejecutaba directamente desde el DMG, la ruta guardada en la entrada ha quedado obsoleta y al iniciar sesión no se encuentra nada.
 
-Abre la ventana y, en Settings, desactiva y vuelve a activar «Start the tray at sign-in» para que Obituary reescriba la entrada. En macOS, `launchctl list | grep obituary` debería mostrar ahora `site.woodfish.obituary.tray`; en Ubuntu, `ls ~/.config/autostart/obituary.desktop` debería encontrar el archivo, y la bandeja aparecerá en tu próximo inicio de sesión.
+Abre la ventana y, en Settings, desactiva y vuelve a activar «Start the tray at sign-in» para que Obituary reescriba la entrada. En macOS, `launchctl list | grep obituary` debería mostrar ahora `site.woodfish.obituary.tray.supervised`; en Ubuntu, `systemctl --user status obituary-tray.service` muestra el estado del servicio.
 
 ## Ubuntu: la ventana no se abre, o no hay icono en la bandeja
 
@@ -73,7 +75,11 @@ Vuelve a abrir Obituary desde la lista de aplicaciones; cuando aparezca la venta
 
 ## Lo que ha caducado no se está enterrando
 
-La vida útil de un archivo se agotó hace tiempo y sigue donde estaba, y la línea `runner:` de `obit daemon status` dice `off`. De la caducidad se encarga una tarea programada que se ejecuta cada 5 minutos: «Obituary Runner» en el Programador de tareas de Windows, un agente de usuario de launchd en macOS, el temporizador de usuario de systemd `obituary.timer` en Linux. Si no está instalada, se desactivó o se instaló para otro directorio de datos, nadie actúa cuando llega la hora; en ese caso, lo caducado espera hasta el siguiente `obit sweep`, o hasta el hook de un agente, para que se ocupen de ello.
+Consulta `obit daemon status` para comprobar la tarea. Para procesar ahora los elementos caducados, usa `obit reap`.
+
+Con la supervisión de escritorio activada, el proceso de la bandeja atiende los vencimientos y una tarea independiente comprueba los pendientes cada hora. Las ediciones sin bandeja mantienen el intervalo de cinco minutos.
+
+`obit doctor` muestra quién supervisa la bandeja, los fallos recientes y el motivo del último cierre. Distingue entre espera de reinicio, pausa, parada voluntaria y supervisor ausente o detenido.
 
 Ejecuta `obit daemon enable` para instalar la tarea (en Windows también instala la bandeja al iniciar sesión), y `obit sweep` si quieres la limpieza ya. En un Linux sin servicio de usuario de systemd, como en algunos contenedores y sistemas mínimos, `obit daemon enable` no puede instalarla; usa cron para ejecutar `obitd --once --home <directorio de datos> --config-dir <directorio de configuración>` cada 5 minutos, y `obit config` te dice ambos directorios. Cuando la línea `runner` de `obit daemon status` deje de decir `off`, está resuelto; en Linux también puedes ver el temporizador con `systemctl --user list-timers | grep obituary`.
 
@@ -111,7 +117,11 @@ Cuando la línea del agente en `obit doctor` (por ejemplo `claude`) es `PASS` y 
 
 «Approve» en la propuesta de un contenedor aparece atenuado en la ventana, y la tarjeta dice «Docker is not running: start Docker to decide on this proposal.». Registrar un contenedor significa preguntarle a Docker su ID completo y su fecha de creación, y eso no se puede hacer con Docker apagado. Inicia Docker Desktop o Docker Engine y vuelve a aprobar; cuando se pueda hacer clic en «Approve» y `obit docker list` muestre el contenedor, ha funcionado.
 
-Cuando un contenedor caduca, Obituary solo lo detiene y conserva su capa de escritura, y resucitarlo lo vuelve a iniciar; un contenedor detenido se elimina únicamente después del periodo de retención. Las imágenes, los volúmenes y las redes no se tocan nunca.
+Cuando un contenedor caduca, Obituary solo lo detiene y conserva su capa de escritura, y resucitarlo lo vuelve a iniciar; un contenedor detenido se elimina únicamente después del periodo de retención.
+
+## No se ha confirmado el entierro de un volumen de Docker
+
+Se comprueban los eventos de Docker antes y después de eliminar el volumen. Si no se puede confirmar la eliminación, conserva el archivo verificado y consulta `obit doctor`; no des por hecho que se ha enterrado. [Contenedores y volúmenes de Docker](./docker)
 
 ## Falla una actualización, o las descargas desde China continental son lentas
 

@@ -191,7 +191,7 @@ export const de: Strings = {
       linux: "Das Installationsskript lädt das Archiv aus dem GitHub-Release und prüft vor dem Entpacken seine SHA-256-Summe.",
     } as Record<Os, string>,
     daemonHead: "Hintergrundprüfung einschalten",
-    daemonLine: "Prüft alle 5 Minuten auf abgelaufene Dateien: launchd unter macOS, systemd --user unter Linux (ohne systemd führt ein Benutzer-Crontab alle 5 Minuten obitd --once aus). Füge zuerst --dry-run hinzu, um zu sehen, was installiert wird.",
+    daemonLine: "Bei aktiver Desktop-Überwachung verarbeitet der Tray-Prozess fällige Einträge sofort; ein unabhängiger Auftrag prüft stündlich nach. Ausgaben ohne Tray prüfen weiterhin alle fünf Minuten. Füge zuerst --dry-run hinzu, um zu sehen, was installiert wird.",
     then: "Verbinde danach deine Agenten",
     init: [
       { label: "Claude Code", code: "obit init -g" },

@@ -6,6 +6,8 @@ Excluir uma pasta pessoal ou uma unidade inteira já não é uma hipótese. Com 
 obit init -g --guard-rm                 # Claude Code; add --agent codex for Codex. Off by default
 ```
 
+A proteção contra exclusão reconhece `docker volume rm`, `docker volume remove`, `docker volume prune`, `docker compose down -v` (ou `--volumes`) e `docker system prune --volumes`. Ela só sugere `obit bury --docker-volume` para um `docker volume rm` simples com nomes explícitos.
+
 ## Uma execução real
 
 Com o guardião ativo, o hook recebeu uma chamada Bash do Claude Code, `rm -rf build`, e respondeu assim; `rm` nunca foi executado:

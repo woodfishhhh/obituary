@@ -9,7 +9,7 @@ Windows 10 / 11, macOS et Linux (x64 et ARM64) :
 | | Windows | macOS | Linux |
 |---|---|---|---|
 | Installer avec | Scoop, le script `install.ps1` (winget en cours d’examen) | Homebrew, le script `install.sh` | le script `install.sh` |
-| Vérification de l’expiration toutes les 5 minutes | processus résident dans la zone de notification, Planificateur de tâches en secours | agent launchd de l’utilisateur | minuteur `systemd --user` ; crontab utilisateur sans systemd |
+| Vérification des échéances | processus résident dans la zone de notification, Planificateur de tâches en secours | agent launchd de l’utilisateur | minuteur `systemd --user` ; crontab utilisateur sans systemd |
 | CLI, cimetière et résurrection, enregistrement automatique (facultatif), garde de suppression, intégration aux agents (hooks, Skill, MCP), conteneurs Docker, politiques de dossiers | oui | oui | oui |
 | Zone de notification, petite fenêtre, menus contextuels, dates d’enterrement dans l’Explorateur, menu Démarrer et raccourcis du bureau | oui | utilisez plutôt la CLI : `obit list`, `obit graveyard`, `obit resurrect` | comme sur macOS |
 | Mode Corbeille | oui | cimetière uniquement | cimetière uniquement |
@@ -88,7 +88,7 @@ Redémarrez ensuite l’agent. Pour les autres agents, le serveur MCP et l’Age
 
 Sous macOS / Linux, Claude Code utilise `~/.claude`, Codex utilise `~/.codex` et les Skills partagées utilisent `~/.agents/skills`. Les remplacements `CLAUDE_CONFIG_DIR` et `CODEX_HOME` sont également pris en compte.
 
-Activez le planificateur utilisateur pour vérifier les expirations toutes les 5 minutes :
+Avec la supervision du bureau activée, le processus résident traite les échéances à temps et une tâche indépendante vérifie les retards toutes les heures. Sans icône de zone de notification, les éditions en ligne de commande gardent une vérification toutes les cinq minutes.
 
 ```bash
 obit daemon enable --dry-run

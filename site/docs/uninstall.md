@@ -15,7 +15,7 @@ obit uninstall                # 列出计划，确认后执行
 
 ## 会撤掉什么
 
-`obit uninstall` 处理的是用户级的和当前 Git 项目里的东西：各家 agent 的 hook、MCP 和 Skill，每 5 分钟运行一次的定时任务（Windows 的任务计划、macOS 的 launchd 用户代理、Linux 的 systemd 用户定时器），后台常驻进程和托盘，以及文件夹策略（策略下的文件留在原处）。Windows 上还会撤掉登录自启、资源管理器的右键菜单和日期标签。
+`obit uninstall` 处理的是用户级的和当前 Git 项目里的东西：各家 agent 的 hook、MCP 和 Skill，定时任务（Windows 的任务计划、macOS 的 launchd 用户代理、Linux 的 systemd 用户定时器），后台常驻进程和托盘，以及文件夹策略（策略下的文件留在原处）。Windows 上还会撤掉登录自启、资源管理器的右键菜单和日期标签。
 
 它只动讣告自己写下的东西。你改动过的条目，或者别的安装留下的条目，会原样保留，计划里写着保留了哪一项、为什么。在没有终端的环境里（脚本、agent 的命令行）要加 `--yes`，否则它会提示需要终端。
 

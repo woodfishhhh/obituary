@@ -4,6 +4,8 @@ Wenn etwas nicht stimmt, beginne mit `obit doctor`. Der Befehl liest nur und sch
 
 Jeder Abschnitt unten folgt derselben Reihenfolge: was du siehst, warum es so ist, was du tun kannst und woran du erkennst, dass es behoben ist.
 
+Erscheinen nach einem Upgrade alle Explorer-Menüeinträge in einer anderen unterstützten Sprache, funktioniert das Menü weiterhin. `obit doctor` meldet dies als Hinweis (JSON: `installation: label-language-mismatch`). `obit init --context-menu --yes` stellt die Beschriftung auf die aktuelle Oberflächensprache um.
+
 ## Die Shell findet `obit` nicht
 
 Das Terminal meldet `command not found`, oder PowerShell erkennt `obit` nicht. Das Programm liegt auf der Platte, aber sein Ordner steht nicht in deinem PATH. Das Windows-Installationsskript trägt `%LOCALAPPDATA%\Programs\obituary` in deinen Benutzer-PATH ein, aber ein bereits geöffnetes Terminal sieht den neuen PATH nicht. `install.sh` legt die Programme in `~/.local/bin` ab und ändert den PATH nie; auf manchen Systemen steht dieser Ordner ohnehin nicht im PATH. Das Ubuntu-`.deb` legt sie in `/usr/libexec/obituary/` ab, das ebenfalls nicht im PATH steht.
@@ -56,9 +58,9 @@ Die App im DMG hat keine Developer-ID-Signatur und ist nicht notarisiert, deshal
 
 ## Das Symbol startet nicht bei der Anmeldung (macOS, Ubuntu)
 
-Nach der Anmeldung ist kein Obituary-Symbol in der Menüleiste oder im Infobereich. Der Start bei der Anmeldung beruht auf einem Autostart-Eintrag: unter macOS dem Benutzer-LaunchAgent `site.woodfish.obituary.tray`, unter Ubuntu `~/.config/autostart/obituary.desktop`. Ist der Schalter in den Settings des Fensters aus, wurde die App verschoben oder wurde der Schalter eingeschaltet, während die App direkt aus dem DMG lief, ist der im Eintrag gespeicherte Pfad veraltet, und bei der Anmeldung wird nichts gefunden.
+Nach der Anmeldung ist kein Obituary-Symbol in der Menüleiste oder im Infobereich. Der Start bei der Anmeldung beruht auf einem Autostart-Eintrag: unter macOS dem Benutzer-LaunchAgent `site.woodfish.obituary.tray.supervised`, unter Ubuntu `obituary-tray.service`. Ist der Schalter in den Settings des Fensters aus, wurde die App verschoben oder wurde der Schalter eingeschaltet, während die App direkt aus dem DMG lief, ist der im Eintrag gespeicherte Pfad veraltet, und bei der Anmeldung wird nichts gefunden.
 
-Öffne das Fenster und schalte in den Settings „Start the tray at sign-in“ aus und wieder ein, damit Obituary den Eintrag neu schreibt. Unter macOS sollte `launchctl list | grep obituary` nun `site.woodfish.obituary.tray` zeigen; unter Ubuntu sollte `ls ~/.config/autostart/obituary.desktop` die Datei finden, und das Symbol erscheint bei deiner nächsten Anmeldung.
+Öffne das Fenster und schalte in den Settings „Start the tray at sign-in“ aus und wieder ein, damit Obituary den Eintrag neu schreibt. Unter macOS sollte `launchctl list | grep obituary` nun `site.woodfish.obituary.tray.supervised` zeigen; unter Ubuntu sollte `systemctl --user status obituary-tray.service` den Dienststatus anzeigen.
 
 ## Ubuntu: Das Fenster öffnet sich nicht, oder es gibt kein Symbol im Infobereich
 
@@ -73,7 +75,11 @@ sudo apt install libgtk-3-0t64 libwebkit2gtk-4.1-0 xdg-utils
 
 ## Abgelaufenes wird nicht begraben
 
-Die Lebensdauer einer Datei ist längst abgelaufen und sie liegt noch da, wo sie war, und die Zeile `runner:` von `obit daemon status` zeigt `off`. Für das Ablaufen ist eine geplante Aufgabe zuständig, die alle 5 Minuten läuft: „Obituary Runner“ in der Aufgabenplanung unter Windows, ein launchd-Benutzeragent unter macOS, der systemd-Benutzer-Timer `obituary.timer` unter Linux. Ist sie nicht installiert, wurde sie abgeschaltet oder für ein anderes Datenverzeichnis installiert, tut zur fälligen Zeit niemand etwas; Abgelaufenes wartet dann auf das nächste `obit sweep` oder den Hook eines Agenten, bevor es bearbeitet wird.
+`obit daemon status` zeigt den Zustand des Auftrags. Mit `obit reap` lassen sich fällige Einträge sofort verarbeiten.
+
+Bei aktiver Desktop-Überwachung verarbeitet der Tray-Prozess fällige Einträge sofort; ein unabhängiger Auftrag prüft stündlich nach. Ausgaben ohne Tray prüfen weiterhin alle fünf Minuten.
+
+`obit doctor` nennt den zuständigen Dienst, die letzten Fehler und den Grund für das letzte Beenden. Es unterscheidet zwischen Wartezeit bis zum Neustart, Pause, absichtlichem Stopp und fehlender oder ausgefallener Überwachung.
 
 Führe `obit daemon enable` aus, um die Aufgabe zu installieren (unter Windows wird dabei auch das Symbol im Infobereich für die Anmeldung eingerichtet), und `obit sweep`, wenn du die Bereinigung sofort willst. Unter Linux ohne systemd-Benutzerdienst, etwa in manchen Containern und minimalen Systemen, kann `obit daemon enable` sie nicht installieren; nimm stattdessen cron und führe alle 5 Minuten `obitd --once --home <Datenverzeichnis> --config-dir <Konfigurationsverzeichnis>` aus, beide Verzeichnisse nennt dir `obit config`. Sagt die Zeile `runner` von `obit daemon status` nicht mehr `off`, ist es behoben; unter Linux siehst du den Timer auch mit `systemctl --user list-timers | grep obituary`.
 
@@ -111,7 +117,11 @@ Ist die Zeile des Agenten in `obit doctor` (zum Beispiel `claude`) `PASS` und la
 
 „Approve“ bei einem Container-Vorschlag ist im Fenster ausgegraut, und die Karte sagt „Docker is not running: start Docker to decide on this proposal.“ Einen Container zu registrieren heißt, Docker nach seiner vollständigen ID und seiner Erstellungszeit zu fragen, und das geht nicht, solange Docker aus ist. Starte Docker Desktop oder die Docker Engine und genehmige erneut; lässt sich „Approve“ anklicken und zeigt `obit docker list` den Container, hat es geklappt.
 
-Läuft ein Container ab, hält Obituary ihn nur an und behält seine beschreibbare Schicht, und beim Wiederbeleben wird er neu gestartet; ein angehaltener Container wird erst nach der Aufbewahrungsfrist gelöscht. Images, Volumes und Netzwerke werden nie angerührt.
+Läuft ein Container ab, hält Obituary ihn nur an und behält seine beschreibbare Schicht, und beim Wiederbeleben wird er neu gestartet; ein angehaltener Container wird erst nach der Aufbewahrungsfrist gelöscht.
+
+## Die Bestattung eines Docker-Volumes ist unbestätigt
+
+Docker-Ereignisse werden vor und nach dem Löschen geprüft. Lässt sich die Löschung nicht bestätigen, bleibt das geprüfte Archiv erhalten. Prüfe `obit doctor`, statt von einer erfolgreichen Bestattung auszugehen. [Docker-Container und Volumes](./docker)
 
 ## Ein Update schlägt fehl, oder Downloads aus Festlandchina sind langsam
 

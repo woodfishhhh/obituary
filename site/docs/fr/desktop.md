@@ -11,7 +11,7 @@ La fenêtre, l’icône de notification et les notifications de bureau existent 
 | Fenêtre | `obit-gui.exe`, x64 uniquement | `Obituary.app`, universelle pour Intel et Apple Silicon | un paquet `.deb`, amd64 uniquement |
 | Icône | zone de notification | barre des menus | icône de notification ; nécessite un bureau qui fournit StatusNotifierItem |
 | Icône à l’ouverture de session | activée par défaut après `obit init` | interrupteur dans Settings | interrupteur dans Settings |
-| Vérification des expirations | processus résident de l’icône, Planificateur de tâches en secours | agent utilisateur launchd, toutes les 5 minutes | minuteur utilisateur systemd, toutes les 5 minutes |
+| Vérification des expirations | processus résident de l’icône | LaunchAgent | systemd |
 | Notifications de bureau | oui | oui | oui |
 | Menu contextuel | dans l’Explorateur | non | non |
 | Étiquettes de date dans l’Explorateur | oui | non | non |
@@ -20,11 +20,19 @@ La fenêtre, l’icône de notification et les notifications de bureau existent 
 | Première ouverture | une archive téléchargée à la main peut déclencher un avertissement SmartScreen | demande une autorisation manuelle, voir [plus bas](#premiere-ouverture-d-une-app-non-signee) | s’ouvre directement |
 | Prérequis | le runtime WebView2 | la 1.6.0 nécessite macOS 26 (corrigé dans la 1.6.1) | GTK 3 et WebKitGTK 4.1, installés par apt |
 
+Windows utilise une tâche à l’ouverture de session, macOS un LaunchAgent utilisateur et Linux un service systemd utilisateur dans la session graphique. Après un arrêt anormal, le redémarrage a lieu au bout de 60 secondes ; au troisième en 15 minutes, les tentatives cessent.
+
+Avec la supervision du bureau activée, le processus résident traite les échéances à temps et une tâche indépendante vérifie les retards toutes les heures. Sans icône de zone de notification, les éditions en ligne de commande gardent une vérification toutes les cinq minutes.
+
+Sous Windows, seules les anciennes tâches conformes à la définition créée pour cette installation sont migrées. La définition d’origine est conservée pour le retour en arrière ; les tâches modifiées ou désactivées restent intactes.
+
 ## Petite fenêtre et icône de barre des menus sur macOS
 
 Téléchargez le DMG universel (`obituary_<version>_darwin_universal.dmg`) et `checksums.txt` depuis la page de la version, vérifiez le SHA-256, ouvrez le DMG, faites glisser Obituary.app dans Applications, éjectez le DMG, puis ouvrez l’app depuis Applications. Faites-la glisser d’abord, parce que l’entrée de démarrage à l’ouverture de session enregistre l’emplacement de l’app, et une app lancée directement depuis le DMG n’y est plus une fois le DMG éjecté.
 
-L’app contient la fenêtre, l’icône de la barre des menus et les programmes `obit` et `obitd` qui l’accompagnent. Les expirations sont gérées par un autre agent utilisateur launchd qui s’exécute toutes les 5 minutes ; vous l’installez avec `obit daemon enable`, et fermer la fenêtre ou l’icône de la barre des menus ne l’affecte pas. Activer « Start the tray at sign-in » dans les Settings de la fenêtre installe le LaunchAgent utilisateur propre à Obituary, pour que l’icône de la barre des menus apparaisse à l’ouverture de session ; le désactiver supprime uniquement cette entrée.
+L’app contient la fenêtre, l’icône de la barre des menus et les programmes `obit` et `obitd` qui l’accompagnent. Activer « Start the tray at sign-in » dans les Settings de la fenêtre installe le LaunchAgent utilisateur propre à Obituary, pour que l’icône de la barre des menus apparaisse à l’ouverture de session ; le désactiver supprime uniquement cette entrée.
+
+Installez la tâche indépendante de vérification des échéances avec `obit daemon enable`. Fermer la fenêtre ou quitter l’icône de la barre des menus ne la désactive pas.
 
 Supprimer `Obituary.app` laisse vos données dans `~/Library/Application Support/obituary/` par défaut : `store.json` contient le registre, `config.toml` les réglages et `graveyard/` les fichiers enterrés sur ce volume.
 
@@ -99,6 +107,8 @@ Choisissez une apparence dans Settings → Appearance. Le changement est immédi
 - **Bury now (recoverable)** : l’élément part immédiatement au cimetière et reste récupérable pendant le délai de conservation (sept jours par défaut).
 
 Vous pouvez ajouter plusieurs fichiers en une fois. Une notification indique le nombre d’ajouts réussis, la date d’enterrement et le nombre d’échecs. Le nouveau menu de Windows 11 masque ces entrées : choisissez « Afficher plus d’options » ou maintenez Maj en faisant un clic droit. `obit init --dry-run` liste les entrées et leurs commandes ; `obit doctor` vérifie l’installation.
+
+Après une mise à niveau, si tous les libellés du menu de l’Explorateur sont dans une autre langue prise en charge, le menu reste utilisable. `obit doctor` le signale à titre informatif (JSON : `installation: label-language-mismatch`). `obit init --context-menu --yes` applique la langue actuelle de l’interface.
 
 macOS et Linux n’ont pas encore de menu contextuel. Utilisez `obit mark <path> 7d` pour ajouter un élément ou `obit bury <path>` pour l’enterrer immédiatement.
 

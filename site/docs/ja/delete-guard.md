@@ -6,6 +6,8 @@
 obit init -g --guard-rm                 # Claude Code; add --agent codex for Codex. Off by default
 ```
 
+削除ガードは `docker volume rm`、`docker volume remove`、`docker volume prune`、`docker compose down -v`（または `--volumes`）、`docker system prune --volumes` を認識します。単純な `docker volume rm` で名前が明示されている場合に限り、`obit bury --docker-volume` を提案します。
+
 ## 実際の実行例
 
 ガードを有効にすると、フックは Claude Code の Bash 呼び出し `rm -rf build` を受け取り、次のように返しました。`rm` は実行されていません。

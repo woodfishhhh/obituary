@@ -4,6 +4,8 @@
 
 아래 항목은 모두 같은 순서로 씁니다. 무엇이 보이는지, 왜 그런지, 어떻게 하는지, 해결됐는지 어떻게 확인하는지입니다.
 
+업그레이드 후 탐색기 메뉴 전체가 다른 지원 언어로 표시되더라도 메뉴는 정상 작동합니다. `obit doctor`는 정보로만 알립니다(JSON에서는 `installation: label-language-mismatch`). `obit init --context-menu --yes`를 실행하면 현재 인터페이스 언어로 바뀝니다.
+
 ## 터미널에서 `obit`을 찾지 못함
 
 터미널이 `command not found`라고 하거나 PowerShell이 `obit`을 인식하지 못한다면, 프로그램은 디스크에 있지만 그 폴더가 PATH에 없는 것입니다. Windows 설치 스크립트는 `%LOCALAPPDATA%\Programs\obituary`를 사용자 PATH에 추가하지만, 이미 열려 있는 터미널은 새 PATH를 읽지 못합니다. `install.sh`는 프로그램을 `~/.local/bin`에 두고 PATH는 절대 수정하지 않으며, 이 폴더가 처음부터 PATH에 없는 시스템도 있습니다. Ubuntu `.deb`는 `/usr/libexec/obituary/`에 두는데, 여기도 PATH에 들어 있지 않습니다.
@@ -56,9 +58,9 @@ DMG 안의 app에는 Developer ID 서명이 없고 공증도 되어 있지 않�
 
 ## 트레이가 로그인할 때 시작되지 않음(macOS, Ubuntu)
 
-로그인한 뒤에도 메뉴 막대나 트레이에 Obituary 아이콘이 없습니다. 로그인 시 시작은 시작 항목에 의존합니다. macOS에서는 사용자 LaunchAgent `site.woodfish.obituary.tray`, Ubuntu에서는 `~/.config/autostart/obituary.desktop`입니다. 작은 창 Settings의 스위치가 꺼져 있거나, app을 옮겼거나, DMG 안에서 직접 실행하는 동안 스위치를 켰다면, 항목에 기록된 경로가 낡아서 로그인할 때 아무것도 찾지 못합니다.
+로그인한 뒤에도 메뉴 막대나 트레이에 Obituary 아이콘이 없습니다. 로그인 시 시작은 시작 항목에 의존합니다. macOS에서는 사용자 LaunchAgent `site.woodfish.obituary.tray.supervised`, Ubuntu에서는 `obituary-tray.service`입니다. 작은 창 Settings의 스위치가 꺼져 있거나, app을 옮겼거나, DMG 안에서 직접 실행하는 동안 스위치를 켰다면, 항목에 기록된 경로가 낡아서 로그인할 때 아무것도 찾지 못합니다.
 
-작은 창을 열고 Settings에서 ‘Start the tray at sign-in’을 껐다가 다시 켜서 Obituary가 항목을 다시 쓰게 하세요. macOS에서는 `launchctl list | grep obituary`에 `site.woodfish.obituary.tray`가 보여야 하고, Ubuntu에서는 `ls ~/.config/autostart/obituary.desktop`으로 파일이 보이면 다음 로그인 때 트레이가 나타납니다.
+작은 창을 열고 Settings에서 ‘Start the tray at sign-in’을 껐다가 다시 켜서 Obituary가 항목을 다시 쓰게 하세요. macOS에서는 `launchctl list | grep obituary`에 `site.woodfish.obituary.tray.supervised`가 보여야 하고, Ubuntu에서는 `systemctl --user status obituary-tray.service`으로 서비스 상태를 확인하세요.
 
 ## Ubuntu: 작은 창이 열리지 않거나 트레이 아이콘이 없음
 
@@ -73,7 +75,11 @@ sudo apt install libgtk-3-0t64 libwebkit2gtk-4.1-0 xdg-utils
 
 ## 만료된 항목이 매장되지 않음
 
-파일의 수명은 한참 전에 끝났는데 아직 제자리에 있고, `obit daemon status`의 `runner:` 줄이 `off`입니다. 만료 처리는 5분마다 실행되는 예약 작업이 맡습니다. Windows에서는 작업 스케줄러의 ‘Obituary Runner’, macOS에서는 launchd 사용자 에이전트, Linux에서는 systemd 사용자 타이머 `obituary.timer`입니다. 설치되지 않았거나, 꺼졌거나, 다른 데이터 디렉터리용으로 설치되어 있으면 때가 되어도 아무도 움직이지 않습니다. 그러면 만료된 항목은 다음 `obit sweep`이나 에이전트의 훅이 동작할 때까지 기다립니다.
+`obit daemon status`로 예약 작업을 확인하세요. 만료된 항목을 지금 처리하려면 `obit reap`을 실행하세요.
+
+데스크톱에서 감독 기능을 켜면 트레이 프로세스가 만료 시점에 처리하고 별도 작업이 한 시간마다 누락된 항목을 확인합니다. 트레이가 없는 버전은 기존처럼 5분마다 확인합니다.
+
+`obit doctor`는 트레이 감독 주체와 최근 실패 횟수, 마지막 종료 이유를 보여 줍니다. 재시작 대기, 일시 정지, 의도적인 중지, 감독 항목 누락 및 감독 프로세스 종료를 구분합니다.
 
 `obit daemon enable`로 예약 작업을 설치하세요(Windows에서는 로그인 시 시작하는 트레이도 함께 설치됩니다). 지금 바로 정리하려면 `obit sweep`을 실행합니다. systemd 사용자 서비스가 없는 Linux(일부 컨테이너나 최소 구성 시스템)에서는 `obit daemon enable`로 설치할 수 없으므로, 대신 cron으로 5분마다 `obitd --once --home <데이터 디렉터리> --config-dir <설정 디렉터리>`를 실행하세요. 두 디렉터리는 `obit config`가 알려 줍니다. `obit daemon status`의 `runner` 줄이 더 이상 `off`가 아니면 해결된 것이며, Linux에서는 `systemctl --user list-timers | grep obituary`로도 타이머를 볼 수 있습니다.
 
@@ -111,7 +117,11 @@ obit doctor --verbose      # 각 에이전트의 연결 상태
 
 작은 창에서 컨테이너 제안의 ‘Approve’가 회색이고, 카드에 ‘Docker is not running: start Docker to decide on this proposal.’이라고 나옵니다. 컨테이너를 등록하려면 Docker에 전체 ID와 생성 시각을 물어봐야 하는데, Docker가 꺼져 있으면 할 수 없습니다. Docker Desktop이나 Docker Engine을 시작한 뒤 다시 승인하세요. ‘Approve’를 누를 수 있고 `obit docker list`에 그 컨테이너가 보이면 된 것입니다.
 
-컨테이너가 만료되면 Obituary는 그것을 멈추고 쓰기 가능한 레이어를 남겨 둘 뿐이며, 부활하면 다시 시작합니다. 멈춘 컨테이너는 보존 기간이 지난 뒤에야 삭제됩니다. 이미지, 볼륨, 네트워크는 전혀 건드리지 않습니다.
+컨테이너가 만료되면 Obituary는 그것을 멈추고 쓰기 가능한 레이어를 남겨 둘 뿐이며, 부활하면 다시 시작합니다. 멈춘 컨테이너는 보존 기간이 지난 뒤에야 삭제됩니다.
+
+## Docker 볼륨의 매장을 확인할 수 없음
+
+삭제 전후에 Docker 이벤트를 대조합니다. 삭제를 확인할 수 없다면 검증된 아카이브를 보관하고 `obit doctor`를 확인하세요. 매장이 성공했다고 간주하면 안 됩니다. [Docker 컨테이너와 볼륨](./docker)
 
 ## 업데이트가 실패하거나 중국 본토에서 다운로드가 느림
 

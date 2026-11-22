@@ -9,7 +9,7 @@ Windows 10 / 11、macOS、Linux（x64 と ARM64）：
 | | Windows | macOS | Linux |
 |---|---|---|---|
 | インストール方法 | Scoop、`install.ps1` スクリプト（winget は審査中） | Homebrew、`install.sh` スクリプト | `install.sh` スクリプト |
-| 5 分ごとの期限確認 | 常駐トレイプロセス、タスク スケジューラが代替 | ユーザーの launchd エージェント | `systemd --user` タイマー、systemd がない場合はユーザーの crontab |
+| 期限の確認 | 常駐トレイプロセス、タスク スケジューラが代替 | ユーザーの launchd エージェント | `systemd --user` タイマー、systemd がない場合はユーザーの crontab |
 | CLI、墓地と復活、自動登録（任意）、削除ガード、エージェント連携（hook、Skill、MCP）、Docker コンテナ、フォルダーポリシー | あり | あり | あり |
 | トレイ、小さなウィンドウ、コンテキストメニュー、Explorer の埋葬日時、スタートメニューとデスクトップショートカット | あり | CLI を使用：`obit list`、`obit graveyard`、`obit resurrect` | macOS と同じ |
 | ごみ箱モード | あり | 墓地のみ | 墓地のみ |
@@ -88,7 +88,7 @@ obit init -g --agent codex   # Codex
 
 macOS / Linux では、Claude Code は `~/.claude`、Codex は `~/.codex`、共有 Skill は `~/.agents/skills` を使用します。`CLAUDE_CONFIG_DIR` と `CODEX_HOME` による上書きも有効です。
 
-ユーザーのスケジューラを有効にして、5 分ごとに期限を確認します。
+デスクトップ版で監視が有効な場合、トレイの常駐プロセスが期限に合わせて処理し、独立したジョブが1時間ごとに取りこぼしを確認します。トレイのない版では従来どおり5分間隔です。
 
 ```bash
 obit daemon enable --dry-run

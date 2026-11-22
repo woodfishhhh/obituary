@@ -59,6 +59,8 @@ obit docker add web-1 3d
 obit docker list
 ```
 
+`obit mark --docker-volume cache 3d`(`add`도 가능)를 실행하면 `cache`를 3일 뒤에 매장합니다. 지금 매장하려면 `obit bury --docker-volume -- cache`를 실행하세요. [Docker 컨테이너와 볼륨](./docker)
+
 ## 에이전트 연동과 백그라운드 작업
 
 ```powershell
@@ -73,6 +75,8 @@ obit daemon enable              # tray at login plus the fallback scheduled task
 obit daemon status
 obit daemon disable
 ```
+
+데스크톱에서 감독 기능을 켜면 트레이 프로세스가 만료 시점에 처리하고 별도 작업이 한 시간마다 누락된 항목을 확인합니다. 트레이가 없는 버전은 기존처럼 5분마다 확인합니다.
 
 ## 조회 및 점검
 
@@ -123,6 +127,7 @@ Obituary (讣告), AI 에이전트를 위한 휴지통입니다. 파일에 수�
 | 매개변수 | 단축 | 기본값 | 설명 |
 | --- | --- | --- | --- |
 | `--at` | 없음 | `""` | 지정한 현지 시각에 만료됩니다: "2006-01-02 15:04", "2006-01-02" 또는 "15:04" |
+| `--docker-volume` | 없음 | `false` | 인수를 Docker 볼륨 이름으로 해석 |
 | `--force` | 없음 | `false` | .git 저장소가 들어 있는 폴더를 허용합니다 |
 | `--help` | `-h` | `false` | add 도움말 |
 | `--json` | 없음 | `false` | JSON으로 출력합니다 |
@@ -156,6 +161,7 @@ obit add report.zip --at "2026-12-01 18:00"
 
 | 매개변수 | 단축 | 기본값 | 설명 |
 | --- | --- | --- | --- |
+| `--docker-volume` | 없음 | `false` | 인수를 Docker 볼륨 이름으로 해석 |
 | `--force` | 없음 | `false` | .git 저장소가 들어 있는 폴더를 허용합니다 |
 | `--help` | `-h` | `false` | bury 도움말 |
 | `--json` | 없음 | `false` | JSON으로 출력합니다 |

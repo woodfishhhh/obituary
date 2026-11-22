@@ -191,7 +191,7 @@ export const zh = {
       linux: "安装脚本下载的是 GitHub Release 里的压缩包，安装前核对 SHA-256。",
     } as Record<Os, string>,
     daemonHead: "打开后台检查",
-    daemonLine: "每 5 分钟检查一次到期的文件：macOS 用 launchd，Linux 用 systemd --user（没有 systemd 时用用户 crontab 每 5 分钟运行 obitd --once）。先加 --dry-run 看看会装什么。",
+    daemonLine: "桌面版启用监督后，托盘常驻进程在到期时处理，另有独立任务每小时兜底一次。无托盘版本仍每 5 分钟检查一次。先加 --dry-run 看看会装什么。",
     then: "再接到 agent 身上",
     init: [
       { label: "Claude Code", code: "obit init -g" },

@@ -59,6 +59,8 @@ obit docker add web-1 3d
 obit docker list
 ```
 
+執行 `obit mark --docker-volume cache 3d`（也可以用 `add`）讓 `cache` 在三天後下葬；要立即下葬，請執行 `obit bury --docker-volume -- cache`。[Docker 容器與資料卷](./docker)
+
 ## 整合與背景服務
 
 ```powershell
@@ -73,6 +75,8 @@ obit daemon enable              # 系統匣隨登入啟動，並裝備援的排�
 obit daemon status
 obit daemon disable
 ```
+
+桌面版啟用監督後，由常駐托盤在到期時處理，另有獨立工作每小時檢查一次。無托盤版本仍每 5 分鐘檢查一次。
 
 ## 查詢與檢查
 
@@ -132,6 +136,7 @@ obit uninstall           # 撤掉訃告裝過的所有東西（先 --dry-run 看
 | 參數 | 簡寫 | 預設值 | 說明 |
 | --- | --- | --- | --- |
 | `--at` | 無 | `""` | 在指定的本機時間到期："2006-01-02 15:04"、"2006-01-02" 或 "15:04" |
+| `--docker-volume` | 無 | `false` | 將引數視為 Docker 資料卷名稱 |
 | `--force` | 無 | `false` | 允許處理含有 .git 儲存庫的資料夾 |
 | `--help` | `-h` | `false` | add 的說明 |
 | `--json` | 無 | `false` | 輸出 JSON |
@@ -165,6 +170,7 @@ obit add report.zip --at "2026-12-01 18:00"
 
 | 參數 | 簡寫 | 預設值 | 說明 |
 | --- | --- | --- | --- |
+| `--docker-volume` | 無 | `false` | 將引數視為 Docker 資料卷名稱 |
 | `--force` | 無 | `false` | 允許處理含有 .git 儲存庫的資料夾 |
 | `--help` | `-h` | `false` | bury 的說明 |
 | `--json` | 無 | `false` | 輸出 JSON |
