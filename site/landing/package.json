@@ -6,7 +6,9 @@
   "scripts": {
     "fonts": "node scripts/subset-fonts.mjs",
     "dev": "node scripts/subset-fonts.mjs && vite",
-    "build": "node scripts/subset-fonts.mjs && tsc --noEmit && vite build && vite build --ssr src/entry-server.tsx && node scripts/prerender.mjs"
+    "build": "node scripts/subset-fonts.mjs && tsc --noEmit && vite build && vite build --ssr src/entry-server.tsx && node scripts/prerender.mjs",
+    "playground": "vite --config vite.playground.config.ts",
+    "build:playground": "vite build --config vite.playground.config.ts"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.3.1",

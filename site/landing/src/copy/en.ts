@@ -143,6 +143,8 @@ export const en: Strings = {
   agents: {
     head: "Connect the agents you use",
     lead: "Each connects with one command. Pick yours.",
+    project: "Run this in the project you want to connect",
+    global: "Run this for your user account",
   },
   community: {
     head: "Make Obituary better with us",

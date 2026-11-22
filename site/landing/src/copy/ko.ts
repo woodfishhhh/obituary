@@ -139,6 +139,8 @@ export const ko: Strings = {
   agents: {
     head: "쓰고 있는 에이전트에 연결",
     lead: "모두 명령 하나로 연결됩니다. 쓰는 것을 클릭하세요.",
+    project: "연결할 프로젝트 폴더에서 실행하세요",
+    global: "현재 사용자 계정에서 실행하세요",
   },
   community: {
     head: "Obituary를 함께 만들어 가요",

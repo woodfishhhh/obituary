@@ -144,6 +144,8 @@ export const ptBR: Strings = {
   agents: {
     head: "Conecte os agentes que você usa",
     lead: "Cada um se conecta com um só comando. Escolha o seu.",
+    project: "Execute este comando na pasta do projeto",
+    global: "Execute este comando para sua conta de usuário",
   },
   community: {
     head: "Ajude a melhorar o Obituary",

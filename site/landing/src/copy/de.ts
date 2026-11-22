@@ -139,6 +139,8 @@ export const de: Strings = {
   agents: {
     head: "Verbinde die Agenten, die du nutzt",
     lead: "Jeder verbindet sich mit einem Befehl. Wähle deinen.",
+    project: "Führen Sie diesen Befehl im gewünschten Projektordner aus",
+    global: "Führen Sie diesen Befehl für Ihr Benutzerkonto aus",
   },
   community: {
     head: "Mach Obituary mit uns besser",

@@ -17,3 +17,5 @@ landing/src/generated/
 # The mainland China mirror build.
 dist-cn/
 landing/dist-ssr/
+# The logo-wall playground build (landing/playground/), with its screenshots.
+landing/dist-playground/
