@@ -3,6 +3,9 @@ package main
 import (
 	"bytes"
 	"os"
+	"os/exec"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -10,6 +13,9 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	if len(os.Args) == 2 && os.Args[1] == "catalog-init-trace" {
+		return // Package initializers have run; no test environment or child process is needed.
+	}
 	os.Exit(testenv.Main(m))
 }
 
@@ -31,5 +37,26 @@ func TestHookRootOnlyRegistersHookCommands(t *testing.T) {
 	commands := root.Commands()
 	if len(commands) != 1 || commands[0].Name() != "hook" {
 		t.Fatalf("hook root registered unrelated commands: %v", commands)
+	}
+}
+
+func TestStartupLeavesCatalogUnparsed(t *testing.T) {
+	exe, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.CommandContext(t.Context(), exe, "catalog-init-trace")
+	cmd.Env = append(os.Environ(), "GODEBUG=inittrace=1")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("startup trace: %v: %s", err, out)
+	}
+	m := regexp.MustCompile("(?m)^init github.com/woodfishhhh/obituary/internal/i18n @[^\n]+ clock, ([0-9]+) bytes,").FindSubmatch(out)
+	if m == nil {
+		t.Fatal("missing i18n startup trace")
+	}
+	n, err := strconv.Atoi(string(m[1]))
+	if err != nil || n > 1<<20 {
+		t.Fatalf("catalog parsed during startup: %s bytes", m[1])
 	}
 }
