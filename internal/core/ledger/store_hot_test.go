@@ -88,6 +88,53 @@ func TestReadViewsRejectCrossEntityIDConflict(t *testing.T) {
 	}
 }
 
+func TestReadActiveRetriesInterruptedMigration(t *testing.T) {
+	s, _, old := legacyLedgerVersion(t, 16, false)
+	old.Items = []Item{{ID: 90, Identity: benchmarkIdentity(1000)}, {ID: 91, Identity: benchmarkIdentity(1000)}}
+	raw, err := json.Marshal(old)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(s.statePath(), raw, 0600); err != nil {
+		t.Fatal(err)
+	}
+	blocked := s.statePath() + ".tmp"
+	if err := os.Mkdir(blocked, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.ReadActive(); err == nil {
+		t.Fatal("presentation skipped interrupted migration")
+	}
+	got, err := os.ReadFile(s.statePath())
+	if err != nil || !bytes.Equal(raw, got) {
+		t.Fatal("failed migration changed original", err)
+	}
+	if err := os.Rename(blocked, blocked+".held"); err != nil {
+		t.Fatal(err)
+	}
+	for range 2 {
+		st, err := s.ReadActive()
+		if err != nil || len(st.Items) != 1 || st.Items[0].ID != 90 {
+			t.Fatal("migration retry lost the merged item", err)
+		}
+	}
+	assertMigratedLedger(t, s, raw, old)
+	if err := s.FlushAudit(); err != nil {
+		t.Fatal(err)
+	}
+	events, err := s.History(10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	counts := map[string]int{}
+	for _, ev := range events {
+		counts[ev.Action]++
+	}
+	if counts["store-migrated"] != 1 || counts["merged"] != 1 {
+		t.Fatalf("duplicate or missing migration audit: %v", counts)
+	}
+}
+
 func TestHotLegacyNormalizationPreservesGraves(t *testing.T) {
 	store, _, state := legacyLedgerVersion(t, 16, false)
 	state.Burials[0].Identity.Volume = `\\?\c:\`
