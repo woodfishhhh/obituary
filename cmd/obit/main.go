@@ -82,5 +82,25 @@ func newRoot(args []string) *cobra.Command {
 		rmcmd.NewCmd(), rmdircmd.NewCmd(), removeitemcmd.NewCmd(),
 		gitcleancmd.NewCmd(), mcpcmd.NewCmd(buildinfo.Version),
 	)
+	help := root.HelpFunc()
+	root.SetHelpFunc(func(cmd *cobra.Command, args []string) {
+		if cmd == root {
+			localizeCommandList(root)
+		}
+		help(cmd, args)
+	})
+	if len(args) != 0 && args[0] == cobra.ShellCompRequestCmd {
+		localizeCommandList(root)
+	}
 	return root
+}
+
+func localizeCommandList(root *cobra.Command) {
+	language := cmdutil.Localizer()
+	for _, cmd := range root.Commands() {
+		switch cmd.Name() {
+		case "list", "bury":
+			cmd.Short = language.Text("cli."+cmd.Name()+".short", nil)
+		}
+	}
 }
