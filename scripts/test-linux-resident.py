@@ -33,8 +33,7 @@ def probe(root):
     home, cfg = root / "data", root / "config"
     cfg.mkdir()
     (cfg / "config.toml").write_text("[update]\ncheck=false\n[telemetry]\nenabled=false\n")
-    xdg = root / "xdg"
-    os.environ.update(OBIT_HOME=str(home), OBIT_CONFIG_DIR=str(cfg), XDG_CONFIG_HOME=str(xdg), OBIT_TELEMETRY="0", EVIDENCE=str(root))
+    os.environ.update(OBIT_HOME=str(home), OBIT_CONFIG_DIR=str(cfg), OBIT_TELEMETRY="0", EVIDENCE=str(root))
     unit = "obituary-tray.service"
     ctl = ["systemctl", "--user"]
     assert not run(*ctl, "show", unit, "--property=FragmentPath", "--value")
@@ -48,7 +47,7 @@ def probe(root):
         wait(lambda: bus.name_has_owner("org.kde.StatusNotifierWatcher"), 10)
         run(cli, "daemon", "enable", "--resident")
 
-        fallback = xdg / "systemd" / "user" / "obituary.timer"
+        fallback = Path.home() / ".config" / "systemd" / "user" / "obituary.timer"
         if not fallback.exists() or "OnCalendar=hourly" not in fallback.read_text():
             raise AssertionError("supervised desktop fallback is not hourly")
 
