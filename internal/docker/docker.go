@@ -44,6 +44,7 @@ type Container struct {
 	AutoRemove  bool
 	Labels      map[string]string
 	Binds       []string
+	Volumes     []string
 }
 
 type Client interface {
@@ -128,7 +129,11 @@ type inspection struct {
 		StopTimeout *int
 	}
 	HostConfig struct{ AutoRemove bool }
-	Mounts     []struct{ Type, Source string }
+	Mounts     []struct {
+		Type   string
+		Source string
+		Name   string
+	}
 }
 
 func (c CLI) Inspect(ctx context.Context, ref string) (Container, error) {
@@ -175,8 +180,13 @@ func (c CLI) inspectAll(ctx context.Context, refs []string) ([]Container, error)
 		id.ShortID = id.ID[:12]
 		result := Container{Identity: id, StopTimeout: row.Config.StopTimeout, Running: row.State.Running, AutoRemove: row.HostConfig.AutoRemove, Labels: row.Config.Labels}
 		for _, mount := range row.Mounts {
-			if mount.Type == "bind" {
+			switch mount.Type {
+			case "bind":
 				result.Binds = append(result.Binds, mount.Source)
+			case "volume":
+				if mount.Name != "" {
+					result.Volumes = append(result.Volumes, mount.Name)
+				}
 			}
 		}
 		containers = append(containers, result)
