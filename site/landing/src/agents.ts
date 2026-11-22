@@ -28,13 +28,10 @@ import lingma from "@/assets/agents/lingma.png";
 import ohMyPi from "@/assets/agents/oh-my-pi.svg?url";
 import pi from "@/assets/agents/pi.svg?url";
 
-import { agentData } from "./agents-data";
+import { agentData, type AgentData } from "./agents-data";
 export { agentDocLink } from "./agents-data";
 
-export interface Agent {
-  name: string;
-  // The value for obit init --agent.
-  id: string;
+export interface Agent extends AgentData {
   logo?: string;
   // A light mark that needs a dark tile.
   dark?: boolean;

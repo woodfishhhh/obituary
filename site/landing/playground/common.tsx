@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
-import { agentDocLink, agents, type Agent } from "@/agents";
+import { agents, type Agent } from "@/agents";
+import { agentDocLink, initCommand } from "@/agents-data";
 import { en } from "@/copy/en";
 import { zh } from "@/copy/zh";
 import { cn } from "@/lib/utils";
@@ -26,7 +27,8 @@ export const words = {
   en: { head: en.agents.head, lead: en.agents.lead, pick: "Pick the one you use.", copy: "Copy", copied: "Copied", docs: "Docs", flipBack: "Flip back", drag: "Drag me", filter: "type to filter…", none: "No match", run: "Run this" },
 } as const;
 
-export const commandOf = (id: string) => `obit init --agent ${id}`;
+// The command the agent's guide shows (scope and flags included).
+export const commandOf = (id: string) => initCommand(agents.find((a) => a.id === id)!);
 // In the playground the docs are the live site's.
 export const docUrl = (id: string, lang: Lang) => `https://obituary.woodfish.site/${agentDocLink(id, lang)}.html`;
 export const agentById = (id: string | null) => agents.find((a) => a.id === id);

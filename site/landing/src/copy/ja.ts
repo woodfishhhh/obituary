@@ -139,6 +139,8 @@ export const ja: Strings = {
   agents: {
     head: "使っているエージェントにつなぐ",
     lead: "どれも 1 つのコマンドでつながります。使っているものをクリック。",
+    project: "接続したいプロジェクトのディレクトリで実行します",
+    global: "現在のユーザー用に実行します",
   },
   community: {
     head: "Obituary を一緒によくする",

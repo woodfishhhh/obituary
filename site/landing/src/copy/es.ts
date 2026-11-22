@@ -144,6 +144,8 @@ export const es: Strings = {
   agents: {
     head: "Conecta los agentes que usas",
     lead: "Cada uno se conecta con un solo comando. Elige el tuyo.",
+    project: "Ejecuta este comando en la carpeta del proyecto",
+    global: "Ejecuta este comando para tu cuenta de usuario",
   },
   community: {
     head: "Mejoremos Obituary juntos",

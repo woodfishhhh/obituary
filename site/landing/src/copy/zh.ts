@@ -139,6 +139,8 @@ export const zh = {
   agents: {
     head: "接到你用的 agent 上",
     lead: "每一家都是一条命令。点你用的那个。",
+    project: "在要接入的项目目录里运行",
+    global: "为当前用户运行",
   },
   community: {
     head: "一起把讣告做好",

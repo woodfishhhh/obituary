@@ -139,6 +139,8 @@ export const zhTW: Strings = {
   agents: {
     head: "接到你用的 agent 上",
     lead: "每一家都只要一條命令。點你用的那一個。",
+    project: "在要連接的專案目錄中執行",
+    global: "為目前的使用者執行",
   },
   community: {
     head: "一起把讣告做好",

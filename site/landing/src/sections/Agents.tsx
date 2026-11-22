@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { agentDocLink, agents, type Agent } from "@/agents";
+import { Fragment, useState } from "react";
+import { agents, type Agent } from "@/agents";
+import { agentDocLink, initCommand } from "@/agents-data";
 import { AgentStream, streamDefaults, toneOf } from "@/components/agent-stream";
 import { Button } from "@/components/ui/button";
 import type { Copy } from "@/copy";
@@ -38,13 +39,14 @@ function Command({ c, agent }: { c: Copy; agent?: Agent }) {
       </div>
     );
   }
-  const command = `obit init --agent ${agent.id}`;
+  const command = initCommand(agent);
   return (
     <div className="flex min-h-[4.5rem] flex-wrap items-center gap-x-4 gap-y-3 rounded-3xl border border-line bg-paper/85 py-3 pr-3 pl-4 shadow-card backdrop-blur-md">
       {agent.logo && <img src={agent.logo} alt="" width={36} height={36} className="agent-logo" data-tone={toneOf(agent)} style={{ "--s": "50px" } as React.CSSProperties} />}
       <div className="min-w-0 flex-[1_1_15rem]">
-        <div className="text-sm text-muted">{agent.name}</div>
-        <code className="block font-mono text-[0.95rem] break-words text-ink"><span className="text-muted" aria-hidden="true">$ </span>{command}</code>
+        <div className="text-sm text-muted">{agent.name} · {agent.global ? c.agents.global : c.agents.project}</div>
+        {/* The command wraps only between its words, never inside an option or an id. */}
+        <code className="block font-mono text-[0.95rem] text-ink"><span className="text-muted" aria-hidden="true">$&nbsp;</span>{command.split(" ").map((word, i) => <Fragment key={i}>{i > 0 && " "}<span className="whitespace-nowrap">{word}</span></Fragment>)}</code>
       </div>
       <div className="flex flex-wrap gap-2">
         <CopyButton text={command} c={c.install} />
