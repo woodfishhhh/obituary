@@ -123,6 +123,20 @@ func (s *Service) sweepItems(state State, dryRun bool, roots []resolvedGraveyard
 		if blocked[snapshot.ID] || !snapshot.Due(s.now()) || awaitingWatchBurial(&state, snapshot) {
 			continue
 		}
+		if snapshot.Kind == KindDockerVolume {
+			out := s.settleDockerVolume(snapshot, dryRun, ReasonExpired)
+			outcomes = append(outcomes, out)
+			if dryRun || out.Action == ActionBuried || out.Action == ActionRefused {
+				continue
+			}
+			if err := s.commit(out); err != nil {
+				if commitFailed(err) {
+					return outcomes, err
+				}
+				auditErr = errors.Join(auditErr, err)
+			}
+			continue
+		}
 		if dryRun {
 			out := s.settle(snapshot, true, ReasonExpired, roots)
 			outcomes = append(outcomes, out)

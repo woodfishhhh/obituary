@@ -89,6 +89,12 @@ func (s *Service) checkItemMutation(st *State, idx int, path string, roots []res
 	if st.Items[idx].Kind == KindContainer {
 		return containerIdentity(st.Items[idx].Kind, st.Items[idx].Container)
 	}
+	if st.Items[idx].Kind == KindDockerVolume {
+		if st.Items[idx].Volume == nil {
+			return docker.ErrIdentity
+		}
+		return st.Items[idx].Volume.Check()
+	}
 	if err := s.checkBurying(st.Items[idx]); err != nil {
 		return err
 	}

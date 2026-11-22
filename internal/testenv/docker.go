@@ -59,6 +59,9 @@ func WriteDocker(t *testing.T, path string, rows ...docker.Container) {
 		for _, source := range row.Binds {
 			mounts = append(mounts, map[string]string{"Type": "bind", "Source": source})
 		}
+		for _, name := range row.Volumes {
+			mounts = append(mounts, map[string]string{"Type": "volume", "Name": name})
+		}
 		output = append(output, map[string]any{"Id": row.ID, "Created": row.Created, "Name": "/" + row.Name, "State": map[string]bool{"Running": row.Running}, "Config": map[string]any{"Labels": row.Labels, "StopTimeout": row.StopTimeout}, "HostConfig": map[string]bool{"AutoRemove": row.AutoRemove}, "Mounts": mounts})
 	}
 	data, err := json.Marshal(output)

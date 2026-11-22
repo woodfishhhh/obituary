@@ -288,3 +288,64 @@ func TestMigrationBackupsKeepTheNewest(t *testing.T) {
 		}
 	}
 }
+func TestV17SplitLedgerVolumeMigration(t *testing.T) {
+	s := snapshotTestStore(t)
+	st, err := s.ReadSnapshot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	coldPath := filepath.Join(s.Home, st.Graveyard.File)
+	cold, err := os.ReadFile(coldPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var snap graveyardSnapshot
+	if err := json.Unmarshal(cold, &snap); err != nil {
+		t.Fatal(err)
+	}
+	snap.Version = 17
+	cold, err = json.Marshal(snap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(coldPath, cold, 0600); err != nil {
+		t.Fatal(err)
+	}
+	st.Version = 17
+	st.Graveyard.Hash = fmt.Sprintf("%x", sha256.Sum256(cold))
+	hot, err := marshalHot(st)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(s.statePath(), hot, 0600); err != nil {
+		t.Fatal(err)
+	}
+	wantExpiry := st.Items[0].ExpiresAt.Add(24 * time.Hour)
+	if err = s.UpdateHot(func(state *State) error {
+		state.Items[0].ExpiresAt = wantExpiry
+		state.Items[0].Rev++
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.ReadSnapshot()
+	if err != nil || got.Version != 18 || !reflect.DeepEqual(st.Burials, got.Burials) {
+		t.Fatalf("cold records not preserved on first hot update: version=%d err=%v", got.Version, err)
+	}
+	if len(got.Items) != 1 || !got.Items[0].ExpiresAt.Equal(wantExpiry) || got.Items[0].Rev != st.Items[0].Rev+1 {
+		t.Fatal("first lifespan extension was not committed", got.Items)
+	}
+	backup, err := os.ReadFile(filepath.Join(s.Home, fmt.Sprintf("store.v17-%x.json.bak", sha256.Sum256(hot))))
+	if err != nil || !bytes.Equal(backup, hot) {
+		t.Fatal("v17 backup missing", err)
+	}
+	for range 4 {
+		if err := s.UpdateGraveyard(func(state *State) error { state.Burials[0].Note += "."; return nil }); err != nil {
+			t.Fatal(err)
+		}
+	}
+	kept, err := os.ReadFile(coldPath)
+	if err != nil || !bytes.Equal(kept, cold) {
+		t.Fatal("v17 rollback backup lost its cold reference", err)
+	}
+}

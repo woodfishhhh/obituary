@@ -228,6 +228,8 @@ func commandDeletion(words []string, powerShell bool) string {
 		return ""
 	case name == "git":
 		return gitDeletion(words[1:])
+	case name == "docker":
+		return dockerDeletion(words[1:])
 	case powerShell && removeItemAlias(name):
 		if name != base {
 			return name // a native rm.exe or rmdir.exe, not the alias
@@ -327,6 +329,10 @@ func (p *psScanner) code(close byte, table bool) {
 		case close != 0 && c == close:
 			p.i++
 			return
+		case c == '=' && len(words) > 1 && strings.TrimSuffix(commandBase(words[0]), ".exe") == "docker" && strings.HasPrefix(words[len(words)-1], "-"):
+			// Native Docker flags use --flag=value; this is not a PowerShell assignment.
+			p.i++
+			words[len(words)-1] += "=" + p.word()
 		case strings.HasPrefix(p.s[p.i:], "`\r\n"):
 			p.i += 3 // line continuation
 		case strings.HasPrefix(p.s[p.i:], "`\n") || strings.HasPrefix(p.s[p.i:], "`\r"):

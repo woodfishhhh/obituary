@@ -98,6 +98,8 @@ func replacementSummary(name string) string {
 	switch name {
 	case "git-clean":
 		original = "git clean"
+	case "bury --docker-volume":
+		original = "docker volume rm"
 	case "remove-item":
 		original = "Remove-Item"
 	}

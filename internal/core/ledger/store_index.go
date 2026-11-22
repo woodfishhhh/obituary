@@ -58,6 +58,9 @@ func buildGraveyardIndex(st State) *graveyardIndex {
 		if b.Identity != nil {
 			idx.Keys = append(idx.Keys, graveyardIdentityKey(*b.Identity))
 		}
+		if b.Kind == KindDockerVolume {
+			return
+		}
 		if b.Kind != KindContainer {
 			idx.Volumes = append(idx.Volumes, pathutil.VolumeRoot(b.Path))
 		}

@@ -263,6 +263,28 @@ jobs:
           OBIT_TEST_DELETE_MUTATIONS: "1"
         run: go test -count=1 -run '^TestDeleteGuardMutations/native-posix-' ./internal/cli/remove
 
+  docker-volume-e2e:
+    needs: changes
+    if: >-
+      github.event_name == 'push' || github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_dispatch' && inputs.full)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Require the runner Docker daemon
+        run: docker info
+      - name: Docker volume archive and restore end to end
+        env:
+          DO_NOT_TRACK: "1"
+          OBIT_TELEMETRY: "0"
+        run: go test -tags docker_e2e -count=1 -run '^TestDockerVolumeRealEngine$' ./internal/e2e
+
   macos:
     needs: changes
     if: >-

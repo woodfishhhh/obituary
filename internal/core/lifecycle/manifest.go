@@ -306,7 +306,7 @@ func (s *Service) pendingGraves(st State) ([]PendingGrave, error) {
 		}
 	}
 	for _, b := range st.Burials {
-		if b.Kind == KindContainer {
+		if b.Kind == KindContainer || b.Kind == KindDockerVolume {
 			continue
 		}
 		if slices.ContainsFunc(pending, func(p PendingGrave) bool { return p.Number() == b.ID }) {

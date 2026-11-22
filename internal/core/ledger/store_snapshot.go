@@ -88,7 +88,7 @@ func decodeGraveyard(data []byte, st State) (State, error) {
 	if err := json.Unmarshal(data, &snap); err != nil {
 		return State{}, err
 	}
-	if snap.Owner != graveyardSnapshotOwner || snap.Version != stateVersion || snap.DataID == "" || snap.DataID != st.DataID || snap.Generation != ref.Generation {
+	if snap.Owner != graveyardSnapshotOwner || snap.Version != st.Version || snap.DataID == "" || snap.DataID != st.DataID || snap.Generation != ref.Generation {
 		return State{}, errors.New("graveyard snapshot version, data owner or generation mismatch")
 	}
 	return snap.state()
@@ -118,7 +118,7 @@ func (s Store) loadGraveyard(st *State) error {
 		return errors.New("graveyard safety index does not match committed snapshot")
 	}
 	next.graveyardOriginal = sha256.Sum256(data)
-	if normalizeSnapshotIdentities(&next) {
+	if normalizeSnapshotIdentities(&next) || st.Version < stateVersion {
 		next.graveyardOriginal, err = graveyardFingerprint(next)
 	}
 	if err != nil {

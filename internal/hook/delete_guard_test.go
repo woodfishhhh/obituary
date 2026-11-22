@@ -1263,3 +1263,10 @@ func TestCodexWindowsEmbeddedDeletionDecision(t *testing.T) {
 		t.Fatalf("embedded deletion decision: %q, %v", got, err)
 	}
 }
+func TestDockerVolumePruneGuidance(t *testing.T) {
+	command := "docker volume prune --force"
+	got := deletionGuidance(Event{Command: command, Shell: guardrm.Bash}, "no exact equivalent", func() string { return "obit" })
+	if !strings.Contains(got, "explicit volume names") || strings.Contains(got, "<path>") || strings.Contains(got, "git-clean") {
+		t.Fatalf("Docker deletion received file guidance: %q", got)
+	}
+}

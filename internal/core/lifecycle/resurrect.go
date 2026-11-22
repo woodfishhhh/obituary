@@ -76,6 +76,9 @@ func (s *Service) resurrectLocked(ref string) (GraveResult, error) {
 // Existing intents are reconciled before a new move. Recovery transaction errors
 // abort; verification, manifest preparation and filesystem refusals stay here.
 func (s *Service) resurrectBurial(result *GraveResult, b Burial, state State) error {
+	if b.Kind == KindDockerVolume {
+		return s.resurrectDockerVolume(result, b)
+	}
 	if b.Kind == KindContainer {
 		return s.resurrectContainer(result, b)
 	}

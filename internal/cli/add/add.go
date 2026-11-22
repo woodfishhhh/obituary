@@ -12,9 +12,9 @@ import (
 
 func NewCmd() *cobra.Command {
 	var (
-		at, note      string
-		force, asJSON bool
-		noDaemon      bool
+		at, note               string
+		force, asJSON          bool
+		noDaemon, dockerVolume bool
 	)
 	cmd := &cobra.Command{
 		Use:     "add <path>... <duration> | add <path>... --at <time>",
@@ -33,7 +33,12 @@ func NewCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			results, err := svc.Add(paths, core.AddOptions{ExpiresAt: expires, Force: force, Note: note})
+			var results []core.Result
+			if dockerVolume {
+				results, err = svc.AddDockerVolume(paths, core.AddOptions{ExpiresAt: expires, Force: force, Note: note})
+			} else {
+				results, err = svc.Add(paths, core.AddOptions{ExpiresAt: expires, Force: force, Note: note})
+			}
 			if err := cmdutil.Committed(err); err != nil {
 				return err
 			}
@@ -49,6 +54,7 @@ func NewCmd() *cobra.Command {
 	cmd.Flags().StringVar(&note, "note", "", "free-text note shown in the list")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print JSON")
 	cmd.Flags().BoolVar(&noDaemon, "no-daemon", false, "do not start the background daemon")
+	cmd.Flags().BoolVar(&dockerVolume, "docker-volume", false, "treat operands as Docker volume names")
 	return cmd
 }
 

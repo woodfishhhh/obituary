@@ -101,6 +101,11 @@ func (s Store) updateHot(fn func(*State) error) error {
 		if err != nil {
 			return err
 		}
+		if st.Version < stateVersion && !st.graveyardLoaded {
+			if err := s.loadGraveyard(&st); err != nil {
+				return err
+			}
+		}
 		guard := guardHotGraveyard(&st)
 		before, err := marshalHot(st)
 		if err != nil {
@@ -133,7 +138,7 @@ func (s Store) commitHot(st State, before []byte, events []Event) error {
 	if err := s.Context().Err(); err != nil {
 		return err
 	}
-	if st.Graveyard == nil || st.Version < 17 {
+	if st.Graveyard == nil || st.Version < stateVersion {
 		err = s.save(st)
 	} else {
 		sort.Slice(st.Items, func(i, j int) bool { return st.Items[i].ExpiresAt.Before(st.Items[j].ExpiresAt) })

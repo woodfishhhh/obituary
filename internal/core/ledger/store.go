@@ -67,7 +67,8 @@ func (s Store) WithDeadline(deadline time.Time) Store {
 // Version 15 interns parent chains in the ledger; manifests stay self-contained.
 // Version 16 interns operations, origins and identity volumes only in the ledger.
 // Version 17 commits an immutable graveyard snapshot through the hot ledger.
-const stateVersion = 17
+// Version 18 reserves Docker volume identities, archive receipts and restore ownership.
+const stateVersion = 18
 
 func (s Store) statePath() string { return filepath.Join(s.Home, "store.json") }
 
@@ -383,14 +384,14 @@ func (s Store) save(state State) error {
 	if err != nil {
 		return err
 	}
-	if changed {
+	if changed || migrating {
 		if err := s.writeGraveyard(&state, migrating); err != nil {
 			return err
 		}
 	} else {
 		state.GraveyardIndex = buildGraveyardIndex(state)
 	}
-	return s.saveHot(state, changed)
+	return s.saveHot(state, changed || migrating)
 }
 
 func (s Store) saveHot(state State, graveyardChanged bool) error {

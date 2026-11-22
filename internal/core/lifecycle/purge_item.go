@@ -94,6 +94,9 @@ func (s *Service) requirePurgeAuditSpace(b Burial, dryRun bool) error {
 }
 
 func (s *Service) purgeBurial(r *GraveResult, state State, selected, all, dryRun bool) error {
+	if r.Burial.Kind == KindDockerVolume {
+		return s.purgeDockerVolume(r, dryRun)
+	}
 	if r.Burial.Kind == KindContainer {
 		return s.purgeContainer(r, dryRun)
 	}

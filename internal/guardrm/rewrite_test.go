@@ -617,3 +617,20 @@ func TestShellForms(t *testing.T) {
 		})
 	}
 }
+func TestSuggestDockerVolumeNames(t *testing.T) {
+	for _, shell := range []Shell{Bash, PowerShell} {
+		for command, want := range map[string]string{
+			"docker volume rm  'cache'   db_01": "obit bury --docker-volume  'cache'   db_01",
+			"docker volume rm -- cache":         "obit bury --docker-volume -- cache",
+			"docker volume rm -- $name":         "", "docker volume rm -f log": "", "docker -H tcp://server volume rm cache": "", "docker system prune --volumes": "", "docker volume prune": "", "docker compose down -v": "", "docker volume rm": "", "docker volume rm foo*": "",
+		} {
+			got, why := Suggest(command, Context{Shell: shell})
+			if want != "" && (got != want || why != "") || want == "" && (got != command || why == "") {
+				t.Errorf("%s %q: %q %q", shell, command, got, why)
+			}
+		}
+	}
+	if _, why := Suggest("docker volume rm cache", Context{Shell: Bash, WSL: true}); why == "" {
+		t.Fatal("WSL Docker may target another daemon")
+	}
+}

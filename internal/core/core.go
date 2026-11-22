@@ -48,6 +48,8 @@ type BurialOperation = lifecycle.BurialOperation
 
 const KindContainer = lifecycle.KindContainer
 
+const KindDockerVolume = lifecycle.KindDockerVolume
+
 type ContainerIntent = lifecycle.ContainerIntent
 
 const MaxLifespan = lifecycle.MaxLifespan

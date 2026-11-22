@@ -75,6 +75,9 @@ func deletionGuidance(ev Event, why string, resolve func() string) string {
 	if deletion == "" {
 		return ""
 	}
+	if strings.Contains(deletion, "docker ") {
+		return "Obituary's delete guard is on: this Docker command can delete volume data. No exact equivalent applies; review the explicit volume names on the intended Docker daemon."
+	}
 	executable := resolve()
 	// Statements, not instructions: the agent reads this as tool context.
 	const discovered = " For targets selected at runtime, the safe alternative is to list and review the paths first, then give them as explicit operands to `%s rm -- <path>...`."

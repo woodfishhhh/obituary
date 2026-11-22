@@ -71,7 +71,7 @@ func (s *Service) graveyardOriginalPrefixes(burials []*Burial, directory string)
 			continue // no known original location to include
 		}
 		original := b.Path
-		if b.Kind == KindContainer {
+		if b.Kind == KindContainer || b.Kind == KindDockerVolume {
 			if b.Project == "" {
 				continue
 			}

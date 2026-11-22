@@ -30,12 +30,12 @@ func TestStoreContainerIntentV14Compatibility(t *testing.T) {
 		t.Fatal("empty optional intent serialized", err)
 	}
 	st, err := f.svc.Store.ReadSnapshot()
-	if err != nil || st.Version != 17 || len(st.ContainerIntents) != 0 {
+	if err != nil || st.Version != 18 || len(st.ContainerIntents) != 0 {
 		t.Fatal(st, err)
 	}
 	saveContainerIntent(t, f, stopIntent(f, it))
 	st, err = f.svc.Store.ReadSnapshot()
-	if err != nil || st.Version != 17 || len(st.ContainerIntents) != 1 || st.ContainerIntents[0].Item.Rev != it.Rev {
+	if err != nil || st.Version != 18 || len(st.ContainerIntents) != 1 || st.ContainerIntents[0].Item.Rev != it.Rev {
 		t.Fatal("v14 intent did not round trip", st, err)
 	}
 	if err := f.svc.Store.Update(func(st *core.State) error { st.ContainerIntents = nil; return nil }); err != nil {
@@ -226,7 +226,7 @@ func TestStoreUpgradesLegacyBurials(t *testing.T) {
 				t.Fatalf("legacy burial failed to migrate: %+v %v", rows, err)
 			}
 			st, err = f.svc.Store.ReadSnapshot()
-			if err != nil || st.Version != 17 || len(st.Burials) != 0 || len(st.RestoreCleanups) != 0 {
+			if err != nil || st.Version != 18 || len(st.Burials) != 0 || len(st.RestoreCleanups) != 0 {
 				t.Fatalf("legacy store did not reach v17: %+v %v", st, err)
 			}
 		})
@@ -255,7 +255,7 @@ func TestStoreVersionTenRetainsWatchKeepDecisions(t *testing.T) {
 		t.Fatal(err)
 	}
 	st, err := f.svc.Store.Read()
-	if err != nil || st.Version != 17 || len(st.WatchExemptions) != 1 || st.WatchExemptions[0].Identity != id || len(st.AutoExemptions) != 0 {
+	if err != nil || st.Version != 18 || len(st.WatchExemptions) != 1 || st.WatchExemptions[0].Identity != id || len(st.AutoExemptions) != 0 {
 		t.Fatalf("v10 lost keep decisions on upgrade: %+v %v", st, err)
 	}
 }
@@ -296,7 +296,7 @@ func TestStoreVersionTwelveRetainsWatchBurialAndHookReceipts(t *testing.T) {
 		t.Fatal(err)
 	}
 	st, err := f.svc.Store.ReadSnapshot()
-	if err != nil || st.Version != 17 || len(st.Proposals) != 1 || st.Proposals[0].WatchBurial == nil || st.Proposals[0].WatchBurial.ItemID != legacy.Items[0].ID || st.Proposals[0].WatchBurial.Identity != *legacy.Items[0].Identity || core.ProposalFingerprint(st.Proposals[0]) != core.ProposalFingerprint(proposal) || !st.ObservationCompleted(&requests[0]) || !st.ObservationReceipts[requests[0].Token].Equal(requests[0].ObservedAt) || !exists(path) {
+	if err != nil || st.Version != 18 || len(st.Proposals) != 1 || st.Proposals[0].WatchBurial == nil || st.Proposals[0].WatchBurial.ItemID != legacy.Items[0].ID || st.Proposals[0].WatchBurial.Identity != *legacy.Items[0].Identity || core.ProposalFingerprint(st.Proposals[0]) != core.ProposalFingerprint(proposal) || !st.ObservationCompleted(&requests[0]) || !st.ObservationReceipts[requests[0].Token].Equal(requests[0].ObservedAt) || !exists(path) {
 		t.Fatalf("v12 migration lost watch burial review or hook receipt: %+v %v", st, err)
 	}
 	if _, err := f.svc.Add([]string{queued}, core.AddOptions{ExpiresAt: f.clock.Add(48 * time.Hour), Observed: &requests[0]}); err != nil {
@@ -326,7 +326,7 @@ func TestVersionTwoStoreRetainsSessionRejectionAfterUpgrade(t *testing.T) {
 		t.Fatal(err)
 	}
 	st, err := (core.Store{Home: f.svc.Store.Home}).Read()
-	if err != nil || st.Version != 17 || !st.LeftoverRejected(strings.ToUpper(f.dir), "s", strings.ToUpper(path)) {
+	if err != nil || st.Version != 18 || !st.LeftoverRejected(strings.ToUpper(f.dir), "s", strings.ToUpper(path)) {
 		t.Fatalf("upgraded rejection not durable: %+v, %v", st, err)
 	}
 }
@@ -465,7 +465,7 @@ func TestV4IntentFieldsAreIgnored(t *testing.T) {
 	var upgraded struct {
 		Version int `json:"version"`
 	}
-	if err != nil || json.Unmarshal(data, &upgraded) != nil || strings.Contains(string(data), "burying") || upgraded.Version != 17 {
+	if err != nil || json.Unmarshal(data, &upgraded) != nil || strings.Contains(string(data), "burying") || upgraded.Version != 18 {
 		t.Fatalf("upgraded ledger retained v4 intent: %s, %v", data, err)
 	}
 }
@@ -633,7 +633,7 @@ func TestStoreMigratesWatchTimingConservatively(t *testing.T) {
 		t.Fatalf("legacy watch bypassed fresh stability window: %+v", out)
 	}
 	st, err = f.svc.Store.Read()
-	if err != nil || st.Version != 17 || st.Items[0].Watch == nil {
+	if err != nil || st.Version != 18 || st.Items[0].Watch == nil {
 		t.Fatalf("watch migration: %+v %v", st, err)
 	}
 	out = f.sweepAt(core.WatchStableWindow + time.Minute)

@@ -209,6 +209,10 @@ func translateDeletion(command string, context Context, segments [][]word, segme
 	if why := deletionSyntax(command, context, segments, words[0]); why != "" {
 		return replacement{}, globCheck{}, why
 	}
+	if words[0].value == "docker" {
+		change, why := dockerReplacement(words, context, segments, segment)
+		return change, globCheck{}, why
+	}
 	d, why := parseDeletion(words, context)
 	if why != "" || d.name == "" {
 		return replacement{}, globCheck{}, why

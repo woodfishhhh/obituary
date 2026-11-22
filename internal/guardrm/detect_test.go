@@ -93,6 +93,32 @@ func TestDeletionFindsEveryCommandPosition(t *testing.T) {
 	}
 }
 
+func TestDockerVolumeDeletion(t *testing.T) {
+	for command, want := range map[string]string{
+		"docker volume rm cache":                               "docker volume rm",
+		"docker volume remove cache":                           "docker volume rm",
+		"docker volume prune -f":                               "docker volume prune",
+		"docker --context demo compose -f project.yml down -v": "docker compose down --volumes",
+		"docker compose down --volumes":                        "docker compose down --volumes",
+		"docker.exe system prune --volumes":                    "docker system prune --volumes",
+		"docker compose down --volumes=true":                   "docker compose down --volumes",
+		"docker compose --dry-run=false down -v":               "docker compose down --volumes",
+		"docker system prune --volumes=false":                  "", "docker compose down -v=false": "",
+		"docker compose down --file=other-v.yml": "", "docker volume rm -- --help": "docker volume rm",
+		"docker volume rm --help=false cache": "docker volume rm",
+		"docker volume ls":                    "", "docker compose down": "", "docker system prune -a": "",
+		"docker compose --dry-run down -v": "", "docker compose down -- --volumes": "",
+		"docker compose -f down config -v": "", "docker volume rm --help": "",
+		"docker system prune --filter label=volumes": "", "echo docker volume rm cache": "",
+	} {
+		for _, shell := range []Shell{Bash, PowerShell} {
+			if got := Deletion(command, shell); got != want {
+				t.Errorf("%s: %q = %q, want %q", shell, command, got, want)
+			}
+		}
+	}
+}
+
 // Strings, comments, arguments, other programs and previews never count.
 func TestDeletionIgnoresTextAndArguments(t *testing.T) {
 	t.Parallel()

@@ -11,8 +11,8 @@ import (
 
 func NewCmd() *cobra.Command {
 	var (
-		force, asJSON bool
-		note          string
+		force, asJSON, dockerVolume bool
+		note                        string
 	)
 	language := cmdutil.Localizer()
 	cmd := &cobra.Command{
@@ -28,7 +28,12 @@ func NewCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			results, err := svc.Bury(args, force, note)
+			var results []core.GraveResult
+			if dockerVolume {
+				results, err = svc.BuryDockerVolumes(args, note)
+			} else {
+				results, err = svc.Bury(args, force, note)
+			}
 			for _, r := range results {
 				if r.Action == core.ActionBuried || r.Action == core.ActionRecoveryPending {
 					cmdutil.EnsureDaemon(svc.Store.Home, asJSON)
@@ -58,6 +63,7 @@ func NewCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&force, "force", false, language.Text("cli.bury.force", nil))
+	cmd.Flags().BoolVar(&dockerVolume, "docker-volume", false, "treat operands as Docker volume names")
 	cmd.Flags().StringVar(&note, "note", "", language.Text("cli.bury.note", nil))
 	cmd.Flags().BoolVar(&asJSON, "json", false, language.Text("cli.bury.json", nil))
 	cmdutil.SetBurialHelp(cmd)

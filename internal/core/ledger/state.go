@@ -30,6 +30,7 @@ type Identity = corefs.Identity
 type Item struct {
 	Kind      string           `json:"kind,omitempty"`
 	Container *docker.Identity `json:"container,omitempty"`
+	Volume    *docker.Volume   `json:"volume,omitempty"`
 	ID        int64            `json:"id"`
 	// Rev changes on every modification; sweeps only apply results to the revision they processed.
 	Rev         int64        `json:"rev"`
@@ -65,11 +66,14 @@ func (it Item) Stuck() bool { return !it.NextAttempt.Before(RetryStopped) }
 // Burial is an item lying in the graveyard: moved out of the way, still
 // restorable until it is purged.
 type Burial struct {
-	Kind      string           `json:"kind,omitempty"`
-	Container *docker.Identity `json:"container,omitempty"`
-	ID        int64            `json:"id"` // same number the item had while tracked
-	Path      string           `json:"path"`
-	Grave     string           `json:"grave"` // where it lies now
+	Kind                string           `json:"kind,omitempty"`
+	Container           *docker.Identity `json:"container,omitempty"`
+	Volume              *docker.Volume   `json:"volume,omitempty"`
+	VolumeArchiveDigest string           `json:"volumeArchiveDigest,omitempty"`
+	VolumeHolderID      string           `json:"volumeHolderId,omitempty"`
+	ID                  int64            `json:"id"` // same number the item had while tracked
+	Path                string           `json:"path"`
+	Grave               string           `json:"grave"` // where it lies now
 	// GraveID pins the grave directory Obituary created, so a purge can tell
 	// it apart from anything swapped in or redirected to its path later.
 	GraveID          *Identity        `json:"graveId,omitempty"`
@@ -141,6 +145,7 @@ type Stats struct {
 type Candidate struct {
 	Kind      string           `json:"kind,omitempty"`
 	Container *docker.Identity `json:"container,omitempty"`
+	Volume    *docker.Volume   `json:"volume,omitempty"`
 	Reason    string           `json:"reason,omitempty"`
 	Rev       uint64           `json:"rev,omitempty"` // incremented whenever this path is proposed again
 	Path      string           `json:"path"`

@@ -19,7 +19,7 @@ type container struct {
 		StopTimeout *int
 	}
 	HostConfig struct{ AutoRemove bool }
-	Mounts     []struct{ Type, Source string }
+	Mounts     []struct{ Type, Source, Name string }
 	// PendingStop models work accepted by the engine surviving CLI termination.
 	PendingStop time.Time `json:",omitempty"`
 }
