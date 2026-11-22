@@ -173,6 +173,8 @@ func (s *Service) archiveAndRemoveVolume(client docker.VolumeClient, item Item, 
 	if err := writeManifest(manifest, b); err != nil {
 		return err
 	}
+	// From this point the archive and manifest are recovery evidence; keep them on any later failure.
+	cleanup = nil
 	if err := client.RemoveVolume(s.Store.Context(), item.Volume); err != nil {
 		return err
 	}
@@ -190,7 +192,6 @@ func (s *Service) archiveAndRemoveVolume(client docker.VolumeClient, item Item, 
 		return err
 	}
 	result.Action, result.Burial, result.Grave = ActionBuried, &b, b.Grave
-	cleanup = nil
 	_ = os.Remove(manifest)
 	return nil
 }
