@@ -88,7 +88,7 @@ obit init -g --agent codex   # Codex
 
 macOS / Linux에서 Claude Code는 `~/.claude`, Codex는 `~/.codex`, 공유 Skill은 `~/.agents/skills`를 사용합니다. `CLAUDE_CONFIG_DIR`와 `CODEX_HOME` 재정의도 적용됩니다.
 
-데스크톱에서 감독 기능을 켜면 트레이 프로세스가 만료 시점에 처리하고 별도 작업이 한 시간마다 누락된 항목을 확인합니다. 트레이가 없는 버전은 기존처럼 5분마다 확인합니다.
+데스크톱에서 감독 기능을 켜면 트레이 프로세스가 만료 시점에 처리하고 별도 작업이 한 시간마다 누락된 항목을 확인합니다. 이 데이터 디렉터리에 트레이 감독이 설정되지 않으면 5분마다 확인합니다.
 
 ```bash
 obit daemon enable --dry-run

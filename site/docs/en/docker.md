@@ -20,7 +20,7 @@ Leave room in the graveyard for a full archive. Obituary checks the archive befo
 
 `obit resurrect <id>` recreates the volume under its original name with a permanent `io.obituary.restore` label. If that name already exists, even on an empty volume, nothing is overwritten.
 
-Docker events are checked before and after removal. If deletion cannot be confirmed, keep the verified archive and check `obit doctor`; do not assume the volume was buried successfully.
+Docker events are checked before and after removal. If deletion cannot be confirmed, keep the verified archive and check `obit doctor`; do not assume the volume was buried successfully. Each `docker-volume-recovery` warning identifies one entry to check. Inspect the volume on the original Docker daemon as directed. Neither `obit resurrect` nor `obit purge` accepts an uncommitted archive.
 
 The delete guard recognizes `docker volume rm`, `docker volume remove`, `docker volume prune`, `docker compose down -v` (or `--volumes`) and `docker system prune --volumes`. It suggests `obit bury --docker-volume` only for a plain `docker volume rm` with explicit names; it does not guess what a prune would remove.
 

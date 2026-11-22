@@ -77,7 +77,7 @@ Rouvrez Obituary depuis la liste des applications ; quand la fenêtre apparaît,
 
 Consultez `obit daemon status` pour vérifier la tâche. Utilisez `obit reap` pour traiter immédiatement les éléments arrivés à échéance.
 
-Avec la supervision du bureau activée, le processus résident traite les échéances à temps et une tâche indépendante vérifie les retards toutes les heures. Sans icône de zone de notification, les éditions en ligne de commande gardent une vérification toutes les cinq minutes.
+Avec la supervision du bureau activée, le processus résident traite les échéances à temps et une tâche indépendante vérifie les retards toutes les heures. Sans supervision de l’icône pour ce répertoire de données, la tâche s’exécute toutes les cinq minutes.
 
 `obit doctor` indique qui supervise le processus, les échecs récents et le motif du dernier arrêt. Il distingue l’attente avant redémarrage, la pause, l’arrêt volontaire et l’absence ou l’arrêt du superviseur.
 
@@ -121,7 +121,7 @@ Quand un conteneur expire, Obituary se contente de l’arrêter et conserve sa c
 
 ## La mise au cimetière d’un volume Docker n’est pas confirmée
 
-Les événements Docker sont vérifiés avant et après la suppression. Si celle-ci ne peut pas être confirmée, gardez l’archive vérifiée et consultez `obit doctor` ; ne considérez pas le volume comme enterré. [Conteneurs et volumes Docker](./docker)
+Les événements Docker sont vérifiés avant et après la suppression. Si celle-ci ne peut pas être confirmée, gardez l’archive vérifiée et consultez `obit doctor` ; ne considérez pas le volume comme enterré. Chaque avertissement `docker-volume-recovery` signale une entrée à vérifier. Suivez les indications pour examiner le volume sur le démon Docker d’origine. Ni `obit resurrect` ni `obit purge` ne prennent en charge une archive non inscrite au registre. [Conteneurs et volumes Docker](./docker)
 
 ## Une mise à jour échoue, ou les téléchargements depuis la Chine continentale sont lents
 

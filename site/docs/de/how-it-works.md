@@ -35,7 +35,7 @@ Die Konfiguration steht in `%APPDATA%\obituary\config.toml`. `obit config` zeigt
 
 ## Hintergrundbetrieb
 
-Bei aktiver Desktop-Überwachung verarbeitet der Tray-Prozess fällige Einträge sofort; ein unabhängiger Auftrag prüft stündlich nach. Ausgaben ohne Tray prüfen weiterhin alle fünf Minuten.
+Bei aktiver Desktop-Überwachung verarbeitet der Tray-Prozess fällige Einträge sofort; ein unabhängiger Auftrag prüft stündlich nach. Ohne Tray-Überwachung für dieses Datenverzeichnis läuft der Auftrag alle fünf Minuten.
 
 Windows nutzt eine Aufgabe bei der Anmeldung, macOS einen Benutzer-LaunchAgent und Linux einen systemd-Benutzerdienst in der grafischen Sitzung. Nach einem Absturz erfolgt der Neustart nach 60 Sekunden; beim dritten Absturz innerhalb von 15 Minuten enden die Versuche.
 

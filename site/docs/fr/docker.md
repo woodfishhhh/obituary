@@ -20,7 +20,7 @@ Prévoyez assez de place au cimetière pour une archive complète. Le volume n�
 
 `obit resurrect <id>` recrée le volume sous son nom d’origine avec le label permanent `io.obituary.restore`. Si ce nom existe déjà, le volume n’est pas écrasé, même vide.
 
-Les événements Docker sont vérifiés avant et après la suppression. Si celle-ci ne peut pas être confirmée, gardez l’archive vérifiée et consultez `obit doctor` ; ne considérez pas le volume comme enterré.
+Les événements Docker sont vérifiés avant et après la suppression. Si celle-ci ne peut pas être confirmée, gardez l’archive vérifiée et consultez `obit doctor` ; ne considérez pas le volume comme enterré. Chaque avertissement `docker-volume-recovery` signale une entrée à vérifier. Suivez les indications pour examiner le volume sur le démon Docker d’origine. Ni `obit resurrect` ni `obit purge` ne prennent en charge une archive non inscrite au registre.
 
 La protection reconnaît `docker volume rm`, `docker volume remove`, `docker volume prune`, `docker compose down -v` (ou `--volumes`) et `docker system prune --volumes`. Elle ne propose `obit bury --docker-volume` que pour un simple `docker volume rm` avec des noms explicites.
 

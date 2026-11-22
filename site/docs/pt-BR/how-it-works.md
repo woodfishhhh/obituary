@@ -35,7 +35,7 @@ O arquivo de configuração é `%APPDATA%\obituary\config.toml`. `obit config` m
 
 ## Execução em segundo plano
 
-Com a supervisão de desktop ativa, a bandeja trata os vencimentos e uma tarefa independente verifica pendências a cada hora. Edições sem bandeja continuam verificando a cada cinco minutos.
+Com a supervisão de desktop ativa, a bandeja trata os vencimentos e uma tarefa independente verifica pendências a cada hora. Sem supervisão da bandeja para esse diretório de dados, a tarefa é executada a cada cinco minutos.
 
 O Windows usa uma tarefa no logon, o macOS usa um LaunchAgent do usuário e o Linux usa um serviço systemd do usuário na sessão gráfica. Depois de uma falha, o sistema aguarda 60 segundos para reiniciar; na terceira falha em 15 minutos, para de tentar.
 

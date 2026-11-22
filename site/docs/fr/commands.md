@@ -76,7 +76,7 @@ obit daemon status
 obit daemon disable
 ```
 
-Avec la supervision du bureau activée, le processus résident traite les échéances à temps et une tâche indépendante vérifie les retards toutes les heures. Sans icône de zone de notification, les éditions en ligne de commande gardent une vérification toutes les cinq minutes.
+Avec la supervision du bureau activée, le processus résident traite les échéances à temps et une tâche indépendante vérifie les retards toutes les heures. Sans supervision de l’icône pour ce répertoire de données, la tâche s’exécute toutes les cinq minutes.
 
 ## Requêtes et vérifications
 
@@ -287,7 +287,7 @@ Usage: `obit daemon disable [flags]`
 
 ### `obit daemon enable`
 
-Activer le planificateur utilisateur de 5 minutes (et, sous Windows, l’icône de la zone de notification lancée à l’ouverture de session)
+Activer la tâche utilisateur (toutes les heures si l’icône de notification est supervisée, sinon toutes les 5 minutes) et, sous Windows, l’icône à l’ouverture de session
 
 Usage: `obit daemon enable [flags]`
 

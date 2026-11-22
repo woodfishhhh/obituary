@@ -76,7 +76,7 @@ obit daemon status
 obit daemon disable
 ```
 
-With desktop supervision enabled, the tray handles expiries as they occur and an independent job checks once an hour. Editions without a tray check every five minutes.
+With desktop supervision enabled, the tray handles expiries as they occur and an independent job checks once an hour. Without tray supervision for this data directory, the job runs every five minutes.
 
 ## Queries and checks
 
@@ -287,7 +287,7 @@ Usage: `obit daemon disable [flags]`
 
 ### `obit daemon enable`
 
-Enable the 5-minute user scheduler (and the login tray on Windows)
+Enable the user scheduler (hourly with tray supervision, every 5 minutes otherwise) and the login tray on Windows
 
 Usage: `obit daemon enable [flags]`
 

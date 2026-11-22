@@ -20,7 +20,7 @@ Docker 必須使用 Linux 容器模式。僅支援本機範圍、採用 `local` 
 
 `obit resurrect <編號>` 以原名重建資料卷，並永久保留 `io.obituary.restore` 標籤。若同名資料卷已存在，即使是空的也不覆寫。
 
-訃告在刪除前後核對 Docker 事件。若無法確認已刪除，請保留驗證過的封存檔並查看 `obit doctor`，不要視為下葬成功。
+訃告在刪除前後核對 Docker 事件。若無法確認已刪除，請保留驗證過的封存檔並查看 `obit doctor`，不要視為下葬成功。 每條 `docker-volume-recovery` 警告對應一筆待核實的記錄。請依提示在原 Docker 常駐程式上檢查卷；未提交的封存檔不能用 `obit resurrect` 或 `obit purge` 處理。
 
 刪除防護能辨識 `docker volume rm`、`docker volume remove`、`docker volume prune`、`docker compose down -v`（或 `--volumes`）及 `docker system prune --volumes`。只有直接以 `docker volume rm` 指定卷名時才建議改用 `obit bury --docker-volume`，不會猜測批次清理的目標。
 

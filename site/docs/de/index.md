@@ -88,7 +88,7 @@ Starten Sie den Agenten danach neu. Weitere Agenten, den MCP-Server und den Agen
 
 Unter macOS / Linux verwendet Claude Code `~/.claude`, Codex `~/.codex` und gemeinsame Skills `~/.agents/skills`. Überschreibungen durch `CLAUDE_CONFIG_DIR` und `CODEX_HOME` werden ebenfalls berücksichtigt.
 
-Bei aktiver Desktop-Überwachung verarbeitet der Tray-Prozess fällige Einträge sofort; ein unabhängiger Auftrag prüft stündlich nach. Ausgaben ohne Tray prüfen weiterhin alle fünf Minuten.
+Bei aktiver Desktop-Überwachung verarbeitet der Tray-Prozess fällige Einträge sofort; ein unabhängiger Auftrag prüft stündlich nach. Ohne Tray-Überwachung für dieses Datenverzeichnis läuft der Auftrag alle fünf Minuten.
 
 ```bash
 obit daemon enable --dry-run

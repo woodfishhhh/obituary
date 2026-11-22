@@ -20,7 +20,7 @@ Reserve espaço no cemitério para um arquivo completo. O volume só é excluíd
 
 `obit resurrect <id>` recria o volume com o nome original e o rótulo permanente `io.obituary.restore`. Se o nome já estiver em uso, o volume existente não será sobrescrito, mesmo que esteja vazio.
 
-Os eventos do Docker são verificados antes e depois da exclusão. Se não for possível confirmá-la, mantenha o arquivo verificado e consulte `obit doctor`; não considere o volume enterrado.
+Os eventos do Docker são verificados antes e depois da exclusão. Se não for possível confirmá-la, mantenha o arquivo verificado e consulte `obit doctor`; não considere o volume enterrado. Cada aviso de `docker-volume-recovery` identifica uma entrada a verificar. Siga as instruções para consultar o volume no daemon Docker original. Nem `obit resurrect` nem `obit purge` aceitam arquivos ainda não registrados.
 
 A proteção contra exclusão reconhece `docker volume rm`, `docker volume remove`, `docker volume prune`, `docker compose down -v` (ou `--volumes`) e `docker system prune --volumes`. Ela só sugere `obit bury --docker-volume` para um `docker volume rm` simples com nomes explícitos.
 

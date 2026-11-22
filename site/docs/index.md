@@ -87,7 +87,7 @@ obit init -g --agent codex   # Codex
 
 macOS / Linux 的 agent 配置沿用各自目录：Claude Code 是 `~/.claude`，Codex 是 `~/.codex`，共享 Skill 是 `~/.agents/skills`；也支持 `CLAUDE_CONFIG_DIR` 和 `CODEX_HOME` 指定的目录。
 
-桌面版启用监督后，托盘常驻进程在到期时处理，另有独立任务每小时兜底一次。无托盘版本仍每 5 分钟检查一次。
+桌面版启用监督后，托盘常驻进程在到期时处理，另有独立任务每小时兜底一次。未启用托盘监督的数据目录每 5 分钟检查一次。
 
 ```bash
 obit daemon enable --dry-run

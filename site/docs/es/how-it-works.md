@@ -35,7 +35,7 @@ El archivo de configuración es `%APPDATA%\obituary\config.toml`. `obit config` 
 
 ## Ejecución en segundo plano
 
-Con la supervisión de escritorio activada, el proceso de la bandeja atiende los vencimientos y una tarea independiente comprueba los pendientes cada hora. Las ediciones sin bandeja mantienen el intervalo de cinco minutos.
+Con la supervisión de escritorio activada, el proceso de la bandeja atiende los vencimientos y una tarea independiente comprueba los pendientes cada hora. Sin supervisión de la bandeja para ese directorio de datos, la tarea se ejecuta cada cinco minutos.
 
 Windows usa una tarea al iniciar sesión, macOS un LaunchAgent de usuario y Linux un servicio systemd de usuario en la sesión gráfica. Tras un cierre inesperado, espera 60 segundos antes de reiniciar; al tercer fallo en 15 minutos deja de intentarlo.
 

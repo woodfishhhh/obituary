@@ -47,7 +47,7 @@ func validateManifestMetadata(m burialManifest, id int64) ([]*Identity, error) {
 	if m.Version != 3 && (m.WatchCheck != nil || m.WatchError != "") {
 		validVersion = false
 	}
-	if !validVersion || b.ID < 1 || b.ID != id || b.Identity == nil || b.GraveID == nil ||
+	if !validVersion || m.VolumePhase != "" || b.ID < 1 || b.ID != id || b.Identity == nil || b.GraveID == nil ||
 		b.BuriedAt.IsZero() || !b.PurgeAt.After(b.BuriedAt) || b.Size != 0 ||
 		(b.Reason != ReasonBury && b.Reason != ReasonExpired) {
 		return nil, errors.New("invalid manifest version, ID, identities, time or reason")

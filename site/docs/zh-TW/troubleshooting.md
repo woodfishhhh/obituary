@@ -77,7 +77,7 @@ sudo apt install libgtk-3-0t64 libwebkit2gtk-4.1-0 xdg-utils
 
 執行 `obit daemon status` 查看排程工作。若要立即處理已到期的項目，請執行 `obit reap`。
 
-桌面版啟用監督後，由常駐托盤在到期時處理，另有獨立工作每小時檢查一次。無托盤版本仍每 5 分鐘檢查一次。
+桌面版啟用監督後，由常駐托盤在到期時處理，另有獨立工作每小時檢查一次。資料目錄未啟用系統匣監督時，每 5 分鐘檢查一次。
 
 `obit doctor` 會列出托盤的監督方式、近期失敗次數及上次結束原因，並區分等待重啟、暫停、主動停止、監督項目遺失或監督程序已結束。
 
@@ -121,7 +121,7 @@ obit doctor --verbose      # 每個 agent 的接入情況
 
 ## 無法確認 Docker 資料卷已下葬
 
-訃告在刪除前後核對 Docker 事件。若無法確認已刪除，請保留驗證過的封存檔並查看 `obit doctor`，不要視為下葬成功。 [Docker 容器與資料卷](./docker)
+訃告在刪除前後核對 Docker 事件。若無法確認已刪除，請保留驗證過的封存檔並查看 `obit doctor`，不要視為下葬成功。 每條 `docker-volume-recovery` 警告對應一筆待核實的記錄。請依提示在原 Docker 常駐程式上檢查卷；未提交的封存檔不能用 `obit resurrect` 或 `obit purge` 處理。 [Docker 容器與資料卷](./docker)
 
 ## 更新失敗，或在中國大陸下載很慢
 

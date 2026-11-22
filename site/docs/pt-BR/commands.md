@@ -76,7 +76,7 @@ obit daemon status
 obit daemon disable
 ```
 
-Com a supervisão de desktop ativa, a bandeja trata os vencimentos e uma tarefa independente verifica pendências a cada hora. Edições sem bandeja continuam verificando a cada cinco minutos.
+Com a supervisão de desktop ativa, a bandeja trata os vencimentos e uma tarefa independente verifica pendências a cada hora. Sem supervisão da bandeja para esse diretório de dados, a tarefa é executada a cada cinco minutos.
 
 ## Consultas e verificações
 
@@ -287,7 +287,7 @@ Uso: `obit daemon disable [flags]`
 
 ### `obit daemon enable`
 
-Ativar o agendador de usuário de 5 minutos (e a bandeja iniciada no login, no Windows)
+Ativar a tarefa do usuário (a cada hora com supervisão da bandeja; caso contrário, a cada 5 minutos) e, no Windows, a bandeja ao entrar
 
 Uso: `obit daemon enable [flags]`
 

@@ -83,11 +83,13 @@ func readStatus(home string) (DaemonStatus, error) {
 }
 
 func printStatus(st DaemonStatus) {
-	mode := map[string]string{
-		"scheduled": fmt.Sprintf(cmdutil.Text("cli.daemon.scheduled_task_every_minutes"), int(app.Interval.Minutes()), app.TaskName),
-		"resident":  cmdutil.Text("cli.daemon.resident_tray_daemon_scheduled_fallback_is_reported"),
-		"off":       cmdutil.Text("cli.daemon.off_run_obit_daemon_enable"),
-	}[st.Mode]
+	mode := cmdutil.Text("cli.daemon.off_run_obit_daemon_enable")
+	switch st.Mode {
+	case "scheduled":
+		mode = fmt.Sprintf(cmdutil.Text("cli.daemon.scheduled_task_every_minutes"), int(app.ScheduleInterval(st.Home).Minutes()), app.TaskName)
+	case "resident":
+		mode = cmdutil.Text("cli.daemon.resident_tray_daemon_scheduled_fallback_is_reported")
+	}
 	running := cmdutil.Text("cli.daemon.not_running")
 	if st.Running {
 		running = cmdutil.Text("cli.daemon.running")

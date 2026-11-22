@@ -76,7 +76,7 @@ obit daemon status
 obit daemon disable
 ```
 
-Con la supervisión de escritorio activada, el proceso de la bandeja atiende los vencimientos y una tarea independiente comprueba los pendientes cada hora. Las ediciones sin bandeja mantienen el intervalo de cinco minutos.
+Con la supervisión de escritorio activada, el proceso de la bandeja atiende los vencimientos y una tarea independiente comprueba los pendientes cada hora. Sin supervisión de la bandeja para ese directorio de datos, la tarea se ejecuta cada cinco minutos.
 
 ## Consultas y comprobaciones
 
@@ -287,7 +287,7 @@ Uso: `obit daemon disable [flags]`
 
 ### `obit daemon enable`
 
-Activar el programador de usuario de 5 minutos (y, en Windows, la bandeja que se inicia con la sesión)
+Activar la tarea de usuario (cada hora con supervisión de la bandeja; cada 5 minutos sin ella) y, en Windows, la bandeja al iniciar sesión
 
 Uso: `obit daemon enable [flags]`
 

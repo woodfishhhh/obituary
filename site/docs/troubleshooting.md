@@ -77,7 +77,7 @@ sudo apt install libgtk-3-0t64 libwebkit2gtk-4.1-0 xdg-utils
 
 运行 `obit daemon status` 查看定时任务。要立即处理已到期的条目，运行 `obit reap`。
 
-桌面版启用监督后，托盘常驻进程在到期时处理，另有独立任务每小时兜底一次。无托盘版本仍每 5 分钟检查一次。
+桌面版启用监督后，托盘常驻进程在到期时处理，另有独立任务每小时兜底一次。未启用托盘监督的数据目录每 5 分钟检查一次。
 
 `obit doctor` 会列出谁在看管托盘、近期失败次数和上次退出原因，并区分等待重启、已暂停、主动停止，以及监督入口缺失或监督进程已退出。
 
@@ -121,7 +121,7 @@ obit doctor --verbose      # 每个 agent 的接入情况
 
 ## 无法确认 Docker 卷已下葬
 
-讣告在删除前后核对 Docker 事件。如果无法确认卷已删除，请保留已校验的归档，查看 `obit doctor` 的诊断，不要当作下葬成功。 [Docker 容器和卷](./docker)
+讣告在删除前后核对 Docker 事件。如果无法确认卷已删除，请保留已校验的归档，查看 `obit doctor` 的诊断，不要当作下葬成功。 `docker-volume-recovery` 的每条 WARN 对应一个待核实条目。按提示在原 Docker 守护进程上检查卷；未提交的归档不能用 `obit resurrect` 或 `obit purge` 处理。 [Docker 容器和卷](./docker)
 
 ## 更新失败，或国内下载很慢
 

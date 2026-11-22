@@ -77,7 +77,7 @@ Abra o Obituary de novo pela lista de aplicativos; quando a janela aparecer, est
 
 Confira a tarefa com `obit daemon status`. Para processar agora os itens vencidos, execute `obit reap`.
 
-Com a supervisão de desktop ativa, a bandeja trata os vencimentos e uma tarefa independente verifica pendências a cada hora. Edições sem bandeja continuam verificando a cada cinco minutos.
+Com a supervisão de desktop ativa, a bandeja trata os vencimentos e uma tarefa independente verifica pendências a cada hora. Sem supervisão da bandeja para esse diretório de dados, a tarefa é executada a cada cinco minutos.
 
 `obit doctor` mostra quem supervisiona a bandeja, as falhas recentes e o motivo da última saída. Ele distingue espera por reinício, pausa, parada intencional e supervisor ausente ou encerrado.
 
@@ -121,7 +121,7 @@ Quando um contêiner expira, o Obituary apenas o para e mantém sua camada grav�
 
 ## O enterro do volume do Docker não foi confirmado
 
-Os eventos do Docker são verificados antes e depois da exclusão. Se não for possível confirmá-la, mantenha o arquivo verificado e consulte `obit doctor`; não considere o volume enterrado. [Contêineres e volumes do Docker](./docker)
+Os eventos do Docker são verificados antes e depois da exclusão. Se não for possível confirmá-la, mantenha o arquivo verificado e consulte `obit doctor`; não considere o volume enterrado. Cada aviso de `docker-volume-recovery` identifica uma entrada a verificar. Siga as instruções para consultar o volume no daemon Docker original. Nem `obit resurrect` nem `obit purge` aceitam arquivos ainda não registrados. [Contêineres e volumes do Docker](./docker)
 
 ## Uma atualização falha, ou os downloads a partir da China continental são lentos
 

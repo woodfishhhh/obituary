@@ -76,7 +76,7 @@ obit daemon status
 obit daemon disable
 ```
 
-Bei aktiver Desktop-Überwachung verarbeitet der Tray-Prozess fällige Einträge sofort; ein unabhängiger Auftrag prüft stündlich nach. Ausgaben ohne Tray prüfen weiterhin alle fünf Minuten.
+Bei aktiver Desktop-Überwachung verarbeitet der Tray-Prozess fällige Einträge sofort; ein unabhängiger Auftrag prüft stündlich nach. Ohne Tray-Überwachung für dieses Datenverzeichnis läuft der Auftrag alle fünf Minuten.
 
 ## Abfragen und Prüfungen
 
@@ -287,7 +287,7 @@ Verwendung: `obit daemon disable [flags]`
 
 ### `obit daemon enable`
 
-Den 5-Minuten-Benutzerplaner aktivieren (und unter Windows das Tray-Symbol bei der Anmeldung)
+Benutzerzeitplan aktivieren (mit Tray-Überwachung stündlich, sonst alle 5 Minuten); unter Windows auch das Tray-Symbol bei der Anmeldung starten
 
 Verwendung: `obit daemon enable [flags]`
 

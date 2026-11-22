@@ -22,7 +22,7 @@ Fenster, Infobereichs-Symbol und Desktop-Benachrichtigungen gibt es unter Window
 
 Windows nutzt eine Aufgabe bei der Anmeldung, macOS einen Benutzer-LaunchAgent und Linux einen systemd-Benutzerdienst in der grafischen Sitzung. Nach einem Absturz erfolgt der Neustart nach 60 Sekunden; beim dritten Absturz innerhalb von 15 Minuten enden die Versuche.
 
-Bei aktiver Desktop-Überwachung verarbeitet der Tray-Prozess fällige Einträge sofort; ein unabhängiger Auftrag prüft stündlich nach. Ausgaben ohne Tray prüfen weiterhin alle fünf Minuten.
+Bei aktiver Desktop-Überwachung verarbeitet der Tray-Prozess fällige Einträge sofort; ein unabhängiger Auftrag prüft stündlich nach. Ohne Tray-Überwachung für dieses Datenverzeichnis läuft der Auftrag alle fünf Minuten.
 
 Unter Windows werden nur alte Aufgaben migriert, die der für diese Installation erzeugten Definition entsprechen. Das Original wird für eine Rückkehr zum alten Stand gesichert. Geänderte oder deaktivierte Aufgaben bleiben erhalten.
 

@@ -22,7 +22,7 @@ La fenêtre, l’icône de notification et les notifications de bureau existent 
 
 Windows utilise une tâche à l’ouverture de session, macOS un LaunchAgent utilisateur et Linux un service systemd utilisateur dans la session graphique. Après un arrêt anormal, le redémarrage a lieu au bout de 60 secondes ; au troisième en 15 minutes, les tentatives cessent.
 
-Avec la supervision du bureau activée, le processus résident traite les échéances à temps et une tâche indépendante vérifie les retards toutes les heures. Sans icône de zone de notification, les éditions en ligne de commande gardent une vérification toutes les cinq minutes.
+Avec la supervision du bureau activée, le processus résident traite les échéances à temps et une tâche indépendante vérifie les retards toutes les heures. Sans supervision de l’icône pour ce répertoire de données, la tâche s’exécute toutes les cinq minutes.
 
 Sous Windows, seules les anciennes tâches conformes à la définition créée pour cette installation sont migrées. La définition d’origine est conservée pour le retour en arrière ; les tâches modifiées ou désactivées restent intactes.
 

@@ -20,7 +20,7 @@ Docker가 Linux 컨테이너 모드여야 합니다. 추가 옵션 없이 `local
 
 `obit resurrect <ID>`는 원래 이름으로 볼륨을 다시 만들며, `io.obituary.restore` 레이블이 영구적으로 남습니다. 같은 이름의 볼륨이 이미 있으면 비어 있어도 덮어쓰지 않습니다.
 
-삭제 전후에 Docker 이벤트를 대조합니다. 삭제를 확인할 수 없다면 검증된 아카이브를 보관하고 `obit doctor`를 확인하세요. 매장이 성공했다고 간주하면 안 됩니다.
+삭제 전후에 Docker 이벤트를 대조합니다. 삭제를 확인할 수 없다면 검증된 아카이브를 보관하고 `obit doctor`를 확인하세요. 매장이 성공했다고 간주하면 안 됩니다. 확인이 필요한 항목마다 `docker-volume-recovery` 경고가 표시됩니다. 안내에 따라 원래 Docker 데몬에서 볼륨을 확인하세요. 장부에 기록되지 않은 아카이브에는 `obit resurrect`나 `obit purge`를 사용할 수 없습니다.
 
 삭제 가드는 `docker volume rm`, `docker volume remove`, `docker volume prune`, `docker compose down -v`(또는 `--volumes`), `docker system prune --volumes`를 인식합니다. 단순한 `docker volume rm` 명령에 볼륨 이름이 명시된 경우에만 `obit bury --docker-volume`를 제안합니다.
 

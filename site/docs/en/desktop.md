@@ -22,7 +22,7 @@ The window, the tray and desktop notifications exist on Windows, macOS and Ubunt
 
 Windows starts the tray with a scheduled task at sign-in, macOS uses a user LaunchAgent, and Linux uses a user systemd service in a graphical session. After a crash the system waits 60 seconds before restarting; after the third crash in 15 minutes, it stops trying.
 
-With desktop supervision enabled, the tray handles expiries as they occur and an independent job checks once an hour. Editions without a tray check every five minutes.
+With desktop supervision enabled, the tray handles expiries as they occur and an independent job checks once an hour. Without tray supervision for this data directory, the job runs every five minutes.
 
 On Windows, an old scheduled task is migrated only if it matches the one Obituary created for this installation. Its original definition is saved for rollback; modified or disabled tasks stay as they are.
 

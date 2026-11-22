@@ -35,7 +35,7 @@ Configuration is `%APPDATA%\obituary\config.toml`; `obit config` shows it and `o
 
 ## Background
 
-With desktop supervision enabled, the tray handles expiries as they occur and an independent job checks once an hour. Editions without a tray check every five minutes.
+With desktop supervision enabled, the tray handles expiries as they occur and an independent job checks once an hour. Without tray supervision for this data directory, the job runs every five minutes.
 
 Windows starts the tray with a scheduled task at sign-in, macOS uses a user LaunchAgent, and Linux uses a user systemd service in a graphical session. After a crash the system waits 60 seconds before restarting; after the third crash in 15 minutes, it stops trying.
 

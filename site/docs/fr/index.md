@@ -88,7 +88,7 @@ Redémarrez ensuite l’agent. Pour les autres agents, le serveur MCP et l’Age
 
 Sous macOS / Linux, Claude Code utilise `~/.claude`, Codex utilise `~/.codex` et les Skills partagées utilisent `~/.agents/skills`. Les remplacements `CLAUDE_CONFIG_DIR` et `CODEX_HOME` sont également pris en compte.
 
-Avec la supervision du bureau activée, le processus résident traite les échéances à temps et une tâche indépendante vérifie les retards toutes les heures. Sans icône de zone de notification, les éditions en ligne de commande gardent une vérification toutes les cinq minutes.
+Avec la supervision du bureau activée, le processus résident traite les échéances à temps et une tâche indépendante vérifie les retards toutes les heures. Sans supervision de l’icône pour ce répertoire de données, la tâche s’exécute toutes les cinq minutes.
 
 ```bash
 obit daemon enable --dry-run

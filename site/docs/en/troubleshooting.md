@@ -77,7 +77,7 @@ Open Obituary from the application list again; when the window appears, it is fi
 
 Check `obit daemon status` for the expiry job. Run `obit reap` to handle expired items now.
 
-With desktop supervision enabled, the tray handles expiries as they occur and an independent job checks once an hour. Editions without a tray check every five minutes.
+With desktop supervision enabled, the tray handles expiries as they occur and an independent job checks once an hour. Without tray supervision for this data directory, the job runs every five minutes.
 
 `obit doctor` shows who supervises the tray, recent failures and the last exit reason. It distinguishes waiting to restart, a pause or deliberate stop, and a missing or failed supervisor.
 
@@ -121,7 +121,7 @@ When a container expires, Obituary only stops it and keeps its writable layer, a
 
 ## The Docker volume was not confirmed as buried
 
-Docker events are checked before and after removal. If deletion cannot be confirmed, keep the verified archive and check `obit doctor`; do not assume the volume was buried successfully. [Docker containers and volumes](./docker)
+Docker events are checked before and after removal. If deletion cannot be confirmed, keep the verified archive and check `obit doctor`; do not assume the volume was buried successfully. Each `docker-volume-recovery` warning identifies one entry to check. Inspect the volume on the original Docker daemon as directed. Neither `obit resurrect` nor `obit purge` accepts an uncommitted archive. [Docker containers and volumes](./docker)
 
 ## An update fails, or downloads from mainland China are slow
 

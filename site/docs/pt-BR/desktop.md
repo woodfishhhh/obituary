@@ -22,7 +22,7 @@ A janela, o ícone da bandeja e as notificações de desktop existem no Windows,
 
 O Windows usa uma tarefa no logon, o macOS usa um LaunchAgent do usuário e o Linux usa um serviço systemd do usuário na sessão gráfica. Depois de uma falha, o sistema aguarda 60 segundos para reiniciar; na terceira falha em 15 minutos, para de tentar.
 
-Com a supervisão de desktop ativa, a bandeja trata os vencimentos e uma tarefa independente verifica pendências a cada hora. Edições sem bandeja continuam verificando a cada cinco minutos.
+Com a supervisão de desktop ativa, a bandeja trata os vencimentos e uma tarefa independente verifica pendências a cada hora. Sem supervisão da bandeja para esse diretório de dados, a tarefa é executada a cada cinco minutos.
 
 No Windows, uma tarefa antiga só é migrada se corresponder à definição criada para essa instalação. O original é guardado para reversão; tarefas alteradas ou desativadas permanecem como estão.
 

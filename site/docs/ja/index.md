@@ -88,7 +88,7 @@ obit init -g --agent codex   # Codex
 
 macOS / Linux では、Claude Code は `~/.claude`、Codex は `~/.codex`、共有 Skill は `~/.agents/skills` を使用します。`CLAUDE_CONFIG_DIR` と `CODEX_HOME` による上書きも有効です。
 
-デスクトップ版で監視が有効な場合、トレイの常駐プロセスが期限に合わせて処理し、独立したジョブが1時間ごとに取りこぼしを確認します。トレイのない版では従来どおり5分間隔です。
+デスクトップ版で監視が有効な場合、トレイの常駐プロセスが期限に合わせて処理し、独立したジョブが1時間ごとに取りこぼしを確認します。そのデータディレクトリでトレイの監視が無効なら、ジョブは5分ごとに実行されます。
 
 ```bash
 obit daemon enable --dry-run

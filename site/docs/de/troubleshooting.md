@@ -77,7 +77,7 @@ sudo apt install libgtk-3-0t64 libwebkit2gtk-4.1-0 xdg-utils
 
 `obit daemon status` zeigt den Zustand des Auftrags. Mit `obit reap` lassen sich fällige Einträge sofort verarbeiten.
 
-Bei aktiver Desktop-Überwachung verarbeitet der Tray-Prozess fällige Einträge sofort; ein unabhängiger Auftrag prüft stündlich nach. Ausgaben ohne Tray prüfen weiterhin alle fünf Minuten.
+Bei aktiver Desktop-Überwachung verarbeitet der Tray-Prozess fällige Einträge sofort; ein unabhängiger Auftrag prüft stündlich nach. Ohne Tray-Überwachung für dieses Datenverzeichnis läuft der Auftrag alle fünf Minuten.
 
 `obit doctor` nennt den zuständigen Dienst, die letzten Fehler und den Grund für das letzte Beenden. Es unterscheidet zwischen Wartezeit bis zum Neustart, Pause, absichtlichem Stopp und fehlender oder ausgefallener Überwachung.
 
@@ -121,7 +121,7 @@ Läuft ein Container ab, hält Obituary ihn nur an und behält seine beschreibba
 
 ## Die Bestattung eines Docker-Volumes ist unbestätigt
 
-Docker-Ereignisse werden vor und nach dem Löschen geprüft. Lässt sich die Löschung nicht bestätigen, bleibt das geprüfte Archiv erhalten. Prüfe `obit doctor`, statt von einer erfolgreichen Bestattung auszugehen. [Docker-Container und Volumes](./docker)
+Docker-Ereignisse werden vor und nach dem Löschen geprüft. Lässt sich die Löschung nicht bestätigen, bleibt das geprüfte Archiv erhalten. Prüfe `obit doctor`, statt von einer erfolgreichen Bestattung auszugehen. Jede Warnung unter `docker-volume-recovery` nennt einen zu prüfenden Eintrag. Prüfe das Volume wie angegeben auf dem ursprünglichen Docker-Daemon. Nicht verbuchte Archive lassen sich weder mit `obit resurrect` noch mit `obit purge` bearbeiten. [Docker-Container und Volumes](./docker)
 
 ## Ein Update schlägt fehl, oder Downloads aus Festlandchina sind langsam
 

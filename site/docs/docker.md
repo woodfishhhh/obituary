@@ -20,7 +20,7 @@ Docker 必须使用 Linux 容器模式。只支持本地作用域、使用 `loca
 
 `obit resurrect <编号>` 按原名重建卷，重建的卷会永久带有 `io.obituary.restore` 标签。原名已被占用时，即使同名卷是空的也不会覆盖。
 
-讣告在删除前后核对 Docker 事件。如果无法确认卷已删除，请保留已校验的归档，查看 `obit doctor` 的诊断，不要当作下葬成功。
+讣告在删除前后核对 Docker 事件。如果无法确认卷已删除，请保留已校验的归档，查看 `obit doctor` 的诊断，不要当作下葬成功。 `docker-volume-recovery` 的每条 WARN 对应一个待核实条目。按提示在原 Docker 守护进程上检查卷；未提交的归档不能用 `obit resurrect` 或 `obit purge` 处理。
 
 删除护栏能识别 `docker volume rm`、`docker volume remove`、`docker volume prune`、`docker compose down -v`（或 `--volumes`）和 `docker system prune --volumes`。只有直接用 `docker volume rm` 指定卷名时，才建议改用 `obit bury --docker-volume`；不会猜测批量清理会删哪些卷。
 

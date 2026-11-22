@@ -88,7 +88,7 @@ Reinicie o agente depois. Para outros agentes, o servidor MCP e o Agent Skill, c
 
 No macOS / Linux, o Claude Code usa `~/.claude`, o Codex usa `~/.codex` e as Skills compartilhadas usam `~/.agents/skills`. As substituições `CLAUDE_CONFIG_DIR` e `CODEX_HOME` também são respeitadas.
 
-Com a supervisão de desktop ativa, a bandeja trata os vencimentos e uma tarefa independente verifica pendências a cada hora. Edições sem bandeja continuam verificando a cada cinco minutos.
+Com a supervisão de desktop ativa, a bandeja trata os vencimentos e uma tarefa independente verifica pendências a cada hora. Sem supervisão da bandeja para esse diretório de dados, a tarefa é executada a cada cinco minutos.
 
 ```bash
 obit daemon enable --dry-run

@@ -20,7 +20,7 @@ Docker は Linux コンテナーモードで使ってください。対象は追
 
 `obit resurrect <ID>` は元の名前でボリュームを作り直します。復活したボリュームには `io.obituary.restore` ラベルが恒久的に付きます。同名のボリュームがあれば、空でも上書きしません。
 
-削除の前後に Docker のイベントを照合します。削除を確認できなければ、検証済みのアーカイブを残して `obit doctor` を確認してください。埋葬が済んだとはみなせません。
+削除の前後に Docker のイベントを照合します。削除を確認できなければ、検証済みのアーカイブを残して `obit doctor` を確認してください。埋葬が済んだとはみなせません。 `docker-volume-recovery` の警告は要確認の記録ごとに表示されます。指示に従い、元の Docker デーモンでボリュームを確認してください。未記帳のアーカイブは `obit resurrect` や `obit purge` では扱えません。
 
 削除ガードは `docker volume rm`、`docker volume remove`、`docker volume prune`、`docker compose down -v`（または `--volumes`）、`docker system prune --volumes` を認識します。単純な `docker volume rm` で名前が明示されている場合に限り、`obit bury --docker-volume` を提案します。
 

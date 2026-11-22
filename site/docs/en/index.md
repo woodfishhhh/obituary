@@ -88,7 +88,7 @@ Restart the agent afterwards. Other agents, the MCP server and the Agent Skill: 
 
 On macOS / Linux, Claude Code uses `~/.claude`, Codex uses `~/.codex`, and shared Skills use `~/.agents/skills`. `CLAUDE_CONFIG_DIR` and `CODEX_HOME` overrides are also respected.
 
-With desktop supervision enabled, the tray handles expiries as they occur and an independent job checks once an hour. Editions without a tray check every five minutes.
+With desktop supervision enabled, the tray handles expiries as they occur and an independent job checks once an hour. Without tray supervision for this data directory, the job runs every five minutes.
 
 ```bash
 obit daemon enable --dry-run

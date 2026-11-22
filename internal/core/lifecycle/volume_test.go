@@ -4,8 +4,11 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"testing"
 
 	core "github.com/woodfishhhh/obituary/internal/core/lifecycle"
@@ -13,10 +16,11 @@ import (
 )
 
 type fakeVolumeClient struct {
-	volume  docker.Volume
-	archive []byte
-	refs    []docker.Container
-	removed bool
+	volume    docker.Volume
+	archive   []byte
+	refs      []docker.Container
+	removed   bool
+	removeErr error
 }
 
 func (f *fakeVolumeClient) Inspect(context.Context, string) (docker.Container, error) {
@@ -47,7 +51,7 @@ func (f *fakeVolumeClient) ArchiveVolume(_ context.Context, _ *docker.Volume, ou
 }
 func (f *fakeVolumeClient) RemoveVolume(context.Context, *docker.Volume) error {
 	f.removed = true
-	return nil
+	return f.removeErr
 }
 func (f *fakeVolumeClient) ReleaseVolumeHolder(context.Context, *docker.Volume) error { return nil }
 func (f *fakeVolumeClient) CreateVolume(_ context.Context, want docker.Volume, token string) (docker.Volume, error) {
@@ -114,5 +118,33 @@ func TestDockerVolumeBuryAndResurrectRoundTrip(t *testing.T) {
 	rows, err = f.svc.Resurrect([]string{"#" + fmt.Sprint(burial.ID)})
 	if err != nil || len(rows) != 1 || rows[0].Action != core.ActionResurrected || client.removed {
 		t.Fatal(rows, err)
+	}
+}
+
+func TestDockerVolumeArchiveRetainsRemovalEvidence(t *testing.T) {
+	for _, tc := range []struct {
+		err   error
+		phase string
+	}{{io.ErrUnexpectedEOF, ""}, {docker.ErrVolumeEvents, "events-incomplete"}} {
+		f, c := volumeFixture(t)
+		c.removeErr = tc.err
+		rows, err := f.svc.BuryDockerVolumes([]string{"cache"}, "explicit")
+		if err != nil || len(rows) != 1 || rows[0].Action != core.ActionRetry {
+			t.Fatal(rows, err)
+		}
+		paths, err := filepath.Glob(filepath.Join(f.svc.Store.Home, "graveyard", "docker-volumes", "*", "volume.tar"))
+		if err != nil || len(paths) != 1 {
+			t.Fatal(paths, err)
+		}
+		data, err := os.ReadFile(paths[0] + ".json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		var m struct {
+			Phase string `json:"volumePhase"`
+		}
+		if err := json.Unmarshal(data, &m); err != nil || m.Phase != tc.phase {
+			t.Fatal(m, err)
+		}
 	}
 }

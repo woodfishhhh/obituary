@@ -20,7 +20,7 @@ Der Friedhof braucht Platz für ein vollständiges Archiv. Erst nach erfolgreich
 
 `obit resurrect <ID>` legt das Volume unter seinem ursprünglichen Namen mit dem dauerhaften Label `io.obituary.restore` neu an. Ist der Name belegt, wird auch ein leeres Volume nicht überschrieben.
 
-Docker-Ereignisse werden vor und nach dem Löschen geprüft. Lässt sich die Löschung nicht bestätigen, bleibt das geprüfte Archiv erhalten. Prüfe `obit doctor`, statt von einer erfolgreichen Bestattung auszugehen.
+Docker-Ereignisse werden vor und nach dem Löschen geprüft. Lässt sich die Löschung nicht bestätigen, bleibt das geprüfte Archiv erhalten. Prüfe `obit doctor`, statt von einer erfolgreichen Bestattung auszugehen. Jede Warnung unter `docker-volume-recovery` nennt einen zu prüfenden Eintrag. Prüfe das Volume wie angegeben auf dem ursprünglichen Docker-Daemon. Nicht verbuchte Archive lassen sich weder mit `obit resurrect` noch mit `obit purge` bearbeiten.
 
 Der Löschschutz erkennt `docker volume rm`, `docker volume remove`, `docker volume prune`, `docker compose down -v` (oder `--volumes`) und `docker system prune --volumes`. Nur bei einem einfachen `docker volume rm` mit ausdrücklichen Namen schlägt er `obit bury --docker-volume` vor.
 

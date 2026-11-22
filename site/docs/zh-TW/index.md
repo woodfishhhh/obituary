@@ -88,7 +88,7 @@ obit init -g --agent codex   # Codex
 
 在 macOS / Linux 上，Claude Code 使用 `~/.claude`，Codex 使用 `~/.codex`，共用 Skill 使用 `~/.agents/skills`。也會遵守 `CLAUDE_CONFIG_DIR` 和 `CODEX_HOME` 覆寫設定。
 
-桌面版啟用監督後，由常駐托盤在到期時處理，另有獨立工作每小時檢查一次。無托盤版本仍每 5 分鐘檢查一次。
+桌面版啟用監督後，由常駐托盤在到期時處理，另有獨立工作每小時檢查一次。資料目錄未啟用系統匣監督時，每 5 分鐘檢查一次。
 
 ```bash
 obit daemon enable --dry-run
