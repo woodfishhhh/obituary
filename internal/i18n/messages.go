@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 	"golang.org/x/text/language"
@@ -16,7 +17,7 @@ import (
 //go:embed messages/active.en.json messages/active.zh-CN.json
 var messageFS embed.FS
 
-var messageBundle = func() *goi18n.Bundle {
+var messageBundle = sync.OnceValue(func() *goi18n.Bundle {
 	bundle := goi18n.NewBundle(language.English)
 	if _, err := bundle.LoadMessageFileFS(messageFS, "messages/active.en.json"); err != nil {
 		panic(err)
@@ -25,7 +26,7 @@ var messageBundle = func() *goi18n.Bundle {
 		panic(err)
 	}
 	return bundle
-}()
+})
 
 // defaultMessages are deliberately kept in Go source. goi18n extract can
 // regenerate active.en.json from these literals, while the runtime still has
@@ -530,7 +531,7 @@ func NewLocalizer(language Language) *Localizer {
 	if language != English && language != Chinese {
 		panic("invalid localizer language: " + string(language))
 	}
-	return &Localizer{language: language, localizer: goi18n.NewLocalizer(messageBundle, string(language))}
+	return &Localizer{language: language, localizer: goi18n.NewLocalizer(messageBundle(), string(language))}
 }
 
 // Count formats the whole phrase, so the count need not precede the noun.
@@ -569,7 +570,7 @@ func (l *Localizer) Text(id string, data any) string {
 	config := &goi18n.LocalizeConfig{DefaultMessage: defaultMessage, TemplateData: data}
 	text, err := l.localizer.Localize(config)
 	if errors.As(err, new(*goi18n.MessageNotFoundErr)) {
-		return goi18n.NewLocalizer(messageBundle, string(English)).MustLocalize(config)
+		return goi18n.NewLocalizer(messageBundle(), string(English)).MustLocalize(config)
 	}
 	if err != nil {
 		panic(err)

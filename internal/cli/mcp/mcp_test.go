@@ -37,6 +37,9 @@ func TestMCPMutations(t *testing.T) {
 		goEnv = testenv.MutantGoEnv(t)
 	}
 	for i, tc := range []struct{ name, file, from, to, pkg, test, assertion string }{
+		{"presentation-eager-catalog", "internal/i18n/messages.go", "// defaultMessages are", "func init() { messageBundle() }\n\n// defaultMessages are", "./cmd/obit", "TestStartupLeavesCatalogUnparsed", "catalog parsed during startup"},
+		{"presentation-skip-migration", "internal/core/ledger/store_hot.go", "if fallback {\n\t\treturn s.Read()", "if false && fallback {\n\t\treturn s.Read()", "./internal/core/ledger", "TestReadActiveRetriesInterruptedMigration", "presentation skipped interrupted migration"},
+		{"presentation-skip-cold", "internal/core/ledger/store_hot.go", "if !fallback && st.Graveyard != nil {", "if false && !fallback && st.Graveyard != nil {", "./internal/core/ledger", "TestReadViewsRejectColdSnapshotIndexDamage", "active read accepted a damaged cold reference"},
 		{"snapshot-gc-budget", "internal/core/ledger/store_snapshot_gc.go", "min(len(names), snapshotCollectionLimit)", "len(names)", "./internal/core/ledger", "TestSnapshotCollectionBoundsCandidates", "snapshot candidate budget exceeded or order changed"},
 		{"snapshot-gc-progress", "internal/core/ledger/store_snapshot_gc.go", "slices.BinarySearch(names, st.GraveyardGCCursor)", "slices.BinarySearch(names, \"\")", "./internal/core/ledger", "TestSnapshotCollectionProgressAcrossStores", "snapshot collection starved later candidates"},
 		{"store-hot-reserve", "internal/core/lifecycle/bury.go", "s.Store.UpdateHot(", "s.Store.UpdateGraveyard(", "./internal/core/lifecycle", "TestBuryReservationUsesHotTransaction", "burial reservation read cold evidence"},

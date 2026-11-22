@@ -3,11 +3,16 @@ package ledger
 import (
 	"bytes"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
+	"path/filepath"
+	"reflect"
 	"slices"
 	"sort"
+	"time"
 )
 
 func newDataID() string { return rand.Text() }
@@ -46,6 +51,247 @@ func (s Store) ReadHot() (State, error) {
 		return err
 	})
 	return st, err
+}
+
+// ReadActive is the read-only view used by commands that only present active
+// entries. Legacy stores and pending normalisation still use the full read so
+// migration and audit semantics remain unchanged.
+func (s Store) ReadActive() (State, error) {
+	var st State
+	var fallback bool
+	err := s.withLock("store.lock", false, func() error {
+		var events []Event
+		var err error
+		st, events, err = s.loadHot()
+		if err != nil {
+			return err
+		}
+		fallback = st.Version < stateVersion || len(events) != 0
+		if !fallback && st.Graveyard != nil {
+			if err := s.verifyGraveyardReference(st); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		full, fullErr := s.Read()
+		if fullErr != nil {
+			return State{}, fullErr
+		}
+		return full, nil
+	}
+	if fallback {
+		return s.Read()
+	}
+	return st, nil
+}
+
+// GraveyardSummary contains only the fields needed by stats and summary UI.
+type GraveyardSummary struct {
+	Count     int
+	Bytes     int64
+	NextPurge time.Time
+}
+
+// ReadSummary avoids unpacking cold burial evidence. It still verifies the
+// immutable snapshot and falls back to Read for legacy or migrating stores.
+func (s Store) ReadSummary() (State, GraveyardSummary, error) {
+	var st State
+	var summary GraveyardSummary
+	var fallback bool
+	err := s.withLock("store.lock", false, func() error {
+		var events []Event
+		var err error
+		st, events, err = s.loadHot()
+		if err != nil {
+			return err
+		}
+		fallback = st.Version < stateVersion || len(events) != 0
+		if fallback || st.Graveyard == nil {
+			return nil
+		}
+		summary, err = s.readGraveyardSummary(st)
+		return err
+	})
+	if err != nil {
+		full, fullErr := s.Read()
+		if fullErr != nil {
+			return State{}, GraveyardSummary{}, fullErr
+		}
+		return full, summaryFromState(full), nil
+	}
+	if fallback {
+		full, err := s.Read()
+		if err != nil {
+			return State{}, GraveyardSummary{}, err
+		}
+		return full, summaryFromState(full), nil
+	}
+	return st, summary, nil
+}
+
+type graveyardSummarySnapshot struct {
+	Owner           string                    `json:"owner"`
+	Version         int                       `json:"version"`
+	DataID          string                    `json:"dataId"`
+	Generation      string                    `json:"generation"`
+	Burials         []graveyardSummaryBurial  `json:"burials,omitempty"`
+	RestoreCleanups []graveyardSummaryCleanup `json:"restoreCleanups,omitempty"`
+	Volumes         []*ledgerVolume           `json:"volumes,omitempty"`
+}
+
+type graveyardSummaryBurial struct {
+	Grave       string
+	IsDir       bool
+	BuriedAt    time.Time
+	Reason      string
+	Note        string
+	Source      string
+	GraveID     *ledgerIdentity
+	Kind        string          `json:"kind,omitempty"`
+	ID          int64           `json:"id"`
+	Path        string          `json:"path"`
+	Identity    *ledgerIdentity `json:"identity,omitempty"`
+	Size        int64           `json:"size"`
+	PurgeAt     time.Time       `json:"purgeAt"`
+	Contains    []int64         `json:"contains,omitempty"`
+	PurgeIntent *PurgeIntent    `json:"purgeIntent,omitempty"`
+}
+
+type graveyardSummaryCleanup struct {
+	Burial graveyardSummaryBurial `json:"burial"`
+}
+
+func summaryFromState(st State) GraveyardSummary {
+	var summary GraveyardSummary
+	for _, b := range st.Burials {
+		summary.Count++
+		summary.Bytes += b.Size
+		if summary.Count == 1 || b.PurgeAt.Before(summary.NextPurge) {
+			summary.NextPurge = b.PurgeAt
+		}
+	}
+	return summary
+}
+
+func (s Store) readGraveyardSummary(st State) (GraveyardSummary, error) {
+	data, err := readGraveyardSnapshot(filepath.Join(s.Home, st.Graveyard.File))
+	if err != nil {
+		return GraveyardSummary{}, fmt.Errorf("read referenced graveyard snapshot: %w", err)
+	}
+	if fmt.Sprintf("%x", sha256.Sum256(data)) != st.Graveyard.Hash {
+		return GraveyardSummary{}, errors.New("invalid referenced graveyard snapshot: graveyard snapshot hash or reference mismatch")
+	}
+	var snap graveyardSummarySnapshot
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&snap); err != nil {
+		return GraveyardSummary{}, fmt.Errorf("invalid referenced graveyard snapshot: %w", err)
+	}
+	if len(bytes.Trim(data[decoder.InputOffset():], " \t\n\r")) != 0 {
+		return GraveyardSummary{}, errors.New("trailing data in graveyard snapshot")
+	}
+	if snap.Owner != graveyardSnapshotOwner || snap.Version != stateVersion || snap.DataID == "" || snap.DataID != st.DataID || snap.Generation != st.Graveyard.Generation {
+		return GraveyardSummary{}, errors.New("invalid referenced graveyard snapshot: graveyard snapshot version, data owner or generation mismatch")
+	}
+	if err := validateSummaryIDs(s, st, snap); err != nil {
+		return GraveyardSummary{}, err
+	}
+	if err := validateSummaryIndex(st, snap); err != nil {
+		return GraveyardSummary{}, err
+	}
+	var summary GraveyardSummary
+	for _, b := range snap.Burials {
+		summary.Count++
+		summary.Bytes += b.Size
+		if summary.Count == 1 || b.PurgeAt.Before(summary.NextPurge) {
+			summary.NextPurge = b.PurgeAt
+		}
+	}
+	return summary, nil
+}
+
+func validateSummaryIndex(st State, snap graveyardSummarySnapshot) error {
+	idx := &graveyardIndex{}
+	wire := ledgerState{plainState: &plainState{Version: stateVersion}, Volumes: snap.Volumes}
+	add := func(b graveyardSummaryBurial) error {
+		if _, err := wire.unpackIdentity(b.GraveID); err != nil {
+			return err
+		}
+		if b.Kind != "" {
+			return errors.New("object kind requires full graveyard validation")
+		}
+		identity, err := wire.unpackIdentity(b.Identity)
+		if err != nil {
+			return err
+		}
+		idx.add(Burial{ID: b.ID, Path: b.Path, Identity: identity, Contains: b.Contains})
+		return nil
+	}
+	for _, b := range snap.Burials {
+		if err := add(b); err != nil {
+			return fmt.Errorf("invalid referenced graveyard snapshot: %w", err)
+		}
+		if b.PurgeIntent != nil && FindContainerIntent(&st, b.ID) == nil {
+			idx.ReservedAudit++
+		}
+	}
+	for _, c := range snap.RestoreCleanups {
+		if err := add(c.Burial); err != nil {
+			return fmt.Errorf("invalid referenced graveyard snapshot: %w", err)
+		}
+	}
+	idx.compact()
+	if !reflect.DeepEqual(idx, st.GraveyardIndex) {
+		return errors.New("graveyard safety index does not match committed snapshot")
+	}
+	return nil
+}
+
+func (s Store) verifyGraveyardReference(st State) error {
+	_, err := s.readGraveyardSummary(st)
+	return err
+}
+
+func validateSummaryIDs(s Store, st State, snap graveyardSummarySnapshot) error {
+	seen := make(map[int64]struct{}, len(st.Items)+len(st.Proposals)+len(st.Watches))
+	add := func(id int64) error {
+		if id < 1 {
+			return fmt.Errorf("store %s is corrupt: invalid or duplicate id #%d", s.statePath(), id)
+		}
+		if _, ok := seen[id]; ok {
+			return fmt.Errorf("store %s is corrupt: invalid or duplicate id #%d", s.statePath(), id)
+		}
+		seen[id] = struct{}{}
+		return nil
+	}
+	for _, item := range st.Items {
+		if err := add(item.ID); err != nil {
+			return err
+		}
+	}
+	for _, proposal := range st.Proposals {
+		if err := add(proposal.ID); err != nil {
+			return err
+		}
+	}
+	for _, watch := range st.Watches {
+		if err := add(watch.ID); err != nil {
+			return err
+		}
+	}
+	for _, burial := range snap.Burials {
+		if err := add(burial.ID); err != nil {
+			return err
+		}
+	}
+	for _, cleanup := range snap.RestoreCleanups {
+		if err := add(cleanup.Burial.ID); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func hotBoundary(st State) ([]byte, error) {

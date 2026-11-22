@@ -1,6 +1,7 @@
 package list
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"strings"
@@ -17,18 +18,17 @@ import (
 
 func NewCmd() *cobra.Command {
 	var asJSON bool
-	language := cmdutil.Localizer()
 	cmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
-		Short:   language.Text("cli.list.short", nil),
+		Short:   "Show tracked paths and Docker containers, soonest expiry first",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			svc, err := cmdutil.Open()
 			if err != nil {
 				return err
 			}
-			state, err := svc.Store.Read()
+			state, err := svc.Store.ReadActive()
 			if err != nil {
 				return err
 			}
@@ -39,7 +39,7 @@ func NewCmd() *cobra.Command {
 			return printItems(svc, state.Items, now, cmdutil.Localizer())
 		},
 	}
-	cmd.Flags().BoolVar(&asJSON, "json", false, language.Text("cli.list.json", nil))
+	cmd.Flags().BoolVar(&asJSON, "json", false, "print JSON")
 	cmdutil.SetLocalizedHelp(cmd, func(language *i18n.Localizer, command *cobra.Command) {
 		command.Short = language.Text("cli.list.short", nil)
 		command.Flags().Lookup("json").Usage = language.Text("cli.list.json", nil)
@@ -65,7 +65,8 @@ func printItems(svc *core.Service, items []ledger.Item, now time.Time, language 
 		fmt.Println(language.Text("cli.list.empty", nil))
 		return nil
 	}
-	w := cmdutil.Table(os.Stdout, language.Language())
+	out := bufio.NewWriter(os.Stdout)
+	w := cmdutil.Table(out, language.Language())
 	fmt.Fprintln(w, language.Text("cli.list.header", nil))
 	for _, item := range items {
 		note := item.Note
@@ -87,7 +88,10 @@ func printItems(svc *core.Service, items []ledger.Item, now time.Time, language 
 		fmt.Fprintf(w, "#%d\t%s\t%s\t%s\t%s\n", item.ID, item.ExpiresAt.Local().Format(cmdutil.TimeLayout),
 			lifespan.FormatRemaining(time.Until(item.ExpiresAt)), item.Path, note)
 	}
-	return w.Flush()
+	if err := w.Flush(); err != nil {
+		return err
+	}
+	return out.Flush()
 }
 
 func identityWarning(item ledger.Item) string {

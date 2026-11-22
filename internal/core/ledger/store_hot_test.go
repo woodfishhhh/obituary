@@ -2,14 +2,138 @@ package ledger
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 )
+
+func TestReadActiveAndSummaryAllowAnEmptyLedger(t *testing.T) {
+	store := Store{Home: t.TempDir()}
+	active, err := store.ReadActive()
+	if err != nil || len(active.Items) != 0 {
+		t.Fatalf("empty active read: %+v %v", active, err)
+	}
+	state, summary, err := store.ReadSummary()
+	if err != nil || len(state.Items) != 0 || summary != (GraveyardSummary{}) {
+		t.Fatalf("empty summary read: %+v %+v %v", state, summary, err)
+	}
+}
+
+func TestReadViewsRejectColdSnapshotIndexDamage(t *testing.T) {
+	store := snapshotTestStore(t)
+	st, err := store.ReadSnapshot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(store.Home, st.Graveyard.File)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		t.Fatal(err)
+	}
+	var rows []map[string]json.RawMessage
+	if err := json.Unmarshal(fields["burials"], &rows); err != nil {
+		t.Fatal(err)
+	}
+	rows[0]["parentRef"] = json.RawMessage("-1")
+	fields["burials"], err = json.Marshal(rows)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err = json.Marshal(fields)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	st.Graveyard.Hash = fmt.Sprintf("%x", sha256.Sum256(data))
+	hot, err := marshalHot(st)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(store.statePath(), hot, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.ReadActive(); err == nil {
+		t.Fatal("active read accepted a damaged cold reference")
+	}
+	if _, _, err := store.ReadSummary(); err == nil {
+		t.Fatal("summary read accepted a damaged cold reference")
+	}
+}
+
+func TestReadViewsRejectCrossEntityIDConflict(t *testing.T) {
+	store := snapshotTestStore(t)
+	if err := store.UpdateGraveyard(func(st *State) error {
+		st.Items[0].ID = st.Burials[0].ID
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.ReadActive(); err == nil {
+		t.Fatal("active read accepted an active/graveyard ID conflict")
+	}
+	if _, _, err := store.ReadSummary(); err == nil {
+		t.Fatal("summary read accepted an active/graveyard ID conflict")
+	}
+}
+
+func TestReadActiveRetriesInterruptedMigration(t *testing.T) {
+	s, _, old := legacyLedgerVersion(t, 16, false)
+	old.Items = []Item{{ID: 90, Identity: benchmarkIdentity(1000)}, {ID: 91, Identity: benchmarkIdentity(1000)}}
+	raw, err := json.Marshal(old)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(s.statePath(), raw, 0600); err != nil {
+		t.Fatal(err)
+	}
+	blocked := s.statePath() + ".tmp"
+	if err := os.Mkdir(blocked, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.ReadActive(); err == nil {
+		t.Fatal("presentation skipped interrupted migration")
+	}
+	got, err := os.ReadFile(s.statePath())
+	if err != nil || !bytes.Equal(raw, got) {
+		t.Fatal("failed migration changed original", err)
+	}
+	if err := os.Rename(blocked, blocked+".held"); err != nil {
+		t.Fatal(err)
+	}
+	for range 2 {
+		st, err := s.ReadActive()
+		if err != nil || len(st.Items) != 1 || st.Items[0].ID != 90 {
+			t.Fatal("migration retry lost the merged item", err)
+		}
+	}
+	assertMigratedLedger(t, s, raw, old)
+	if err := s.FlushAudit(); err != nil {
+		t.Fatal(err)
+	}
+	events, err := s.History(10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	counts := map[string]int{}
+	for _, ev := range events {
+		counts[ev.Action]++
+	}
+	if counts["store-migrated"] != 1 || counts["merged"] != 1 {
+		t.Fatalf("duplicate or missing migration audit: %v", counts)
+	}
+}
 
 func TestHotLegacyNormalizationPreservesGraves(t *testing.T) {
 	store, _, state := legacyLedgerVersion(t, 16, false)
