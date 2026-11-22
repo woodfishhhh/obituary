@@ -32,6 +32,11 @@ var messageBundle = sync.OnceValue(func() *goi18n.Bundle {
 // regenerate active.en.json from these literals, while the runtime still has
 // a safe English fallback if a translation file is incomplete.
 var defaultMessages = map[string]*goi18n.Message{
+	"cli.doctor.volume_entry_invalid":     &goi18n.Message{ID: "cli.doctor.volume_entry_invalid", Other: "invalid Docker volume entry %q"},
+	"cli.doctor.volume_manifest_invalid":  &goi18n.Message{ID: "cli.doctor.volume_manifest_invalid", Other: "invalid volume manifest: %s"},
+	"cli.doctor.volume_manifest_mismatch": &goi18n.Message{ID: "cli.doctor.volume_manifest_mismatch", Other: "volume manifest does not match archive %s"},
+	"cli.doctor.volume_phase_unknown":     &goi18n.Message{ID: "cli.doctor.volume_phase_unknown", Other: "unknown volume manifest phase %q"},
+
 	"telemetry.help":           &goi18n.Message{ID: "telemetry.help", Other: "Usage statistics: a random installation ID, version, OS, architecture, interface language and installation channel help measure installation counts and version use. No files, paths or commands are sent; IP addresses and user agents are not stored. Disable with obit config telemetry off or OBIT_TELEMETRY=0."},
 	"telemetry.syntax":         &goi18n.Message{ID: "telemetry.syntax", Other: "Use obit config telemetry on or obit config telemetry off."},
 	"cli.list.short":           &goi18n.Message{ID: "cli.list.short", Other: "Show tracked paths and Docker containers, soonest expiry first"},

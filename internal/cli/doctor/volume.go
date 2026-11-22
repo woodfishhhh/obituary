@@ -52,7 +52,7 @@ func (lang diagnostics) volumeArchiveDetail(root *os.Root, archive string, st le
 	prefix, _, _ := strings.Cut(filepath.Base(filepath.Dir(archive)), "-")
 	id, err := strconv.ParseInt(prefix, 10, 64)
 	if err != nil || id < 1 {
-		return "", fmt.Errorf("invalid Docker volume entry %q", prefix)
+		return "", fmt.Errorf(lang.Text("cli.doctor.volume_entry_invalid", nil), prefix)
 	}
 	full := filepath.Join(root.Name(), archive)
 	if recorded := st.BurialIndex(id); recorded >= 0 {
@@ -75,7 +75,7 @@ func (lang diagnostics) volumeManifest(root *os.Root, archive string, id int64, 
 		return "", err
 	}
 	if !info.Mode().IsRegular() || info.Size() > 1<<20 {
-		return "", fmt.Errorf("invalid volume manifest: %s", manifest)
+		return "", fmt.Errorf(lang.Text("cli.doctor.volume_manifest_invalid", nil), manifest)
 	}
 	data, err := root.ReadFile(manifest)
 	if err != nil {
@@ -90,7 +90,7 @@ func (lang diagnostics) volumeManifest(root *os.Root, archive string, id int64, 
 		return "", err
 	}
 	if m.Version != 1 || m.ID != id || m.Kind != ledger.KindDockerVolume || m.Grave != full || m.Volume == nil || m.Volume.Check() != nil || m.Volume.Name != m.Path {
-		return "", fmt.Errorf("volume manifest does not match archive %s", full)
+		return "", fmt.Errorf(lang.Text("cli.doctor.volume_manifest_mismatch", nil), full)
 	}
 	key := "cli.doctor.volume_unconfirmed"
 	switch m.Phase {
@@ -100,7 +100,7 @@ func (lang diagnostics) volumeManifest(root *os.Root, archive string, id int64, 
 	case "removed":
 		key = "cli.doctor.volume_commit"
 	default:
-		return "", fmt.Errorf("unknown volume manifest phase %q", m.Phase)
+		return "", fmt.Errorf(lang.Text("cli.doctor.volume_phase_unknown", nil), m.Phase)
 	}
 	return lang.Text(key, nil) + "; " + fmt.Sprintf(lang.Text("cli.doctor.volume_inspect", nil), m.Volume.Target.DaemonID, m.Volume.Name, full), nil
 }
