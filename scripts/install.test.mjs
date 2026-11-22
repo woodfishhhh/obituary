@@ -156,6 +156,9 @@ test('install verified snapshot releases without changing the user PATH', {
     assert.deepEqual([...manifest.architecture['64bit'].bin].sort(), ['obit-gui.exe', 'obit.exe', 'obitd.exe']);
     assert.deepEqual([...manifest.architecture.arm64.bin].sort(), ['obit.exe', 'obitd.exe']);
     assert.ok(manifest.notes.some(note => note.includes('obit uninstall --yes')));
+    const scoopTemplate = JSON.parse(await readFile(new URL('../packaging/scoop/obituary.json', import.meta.url), 'utf8'));
+    assert.ok(scoopTemplate.pre_uninstall.length > 0);
+    assert.deepEqual(manifest.pre_uninstall, scoopTemplate.pre_uninstall);
     assert.equal(manifest.notes.filter(note => note === updateNotice).length, 1);
     assert.deepEqual(manifest.architecture['64bit'].shortcuts, [['obit-gui.exe', 'Obituary', '', 'obit-gui.exe']]);
     assert.equal(manifest.architecture.arm64.shortcuts, undefined);

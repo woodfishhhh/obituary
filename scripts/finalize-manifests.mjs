@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 // GoReleaser v2.20.0 internal/pipe/scoop/scoop.go generates the architecture,
-// binaries, URLs and hashes, but its Manifest type has no notes field.
+// binaries, URLs and hashes, but its Manifest lacks notes and pre_uninstall.
 // Keep that implementation and apply only our static bucket metadata here.
 const dist = process.argv[2] ?? 'bin/release';
 const target = join(dist, 'scoop', 'obituary.json');
@@ -14,7 +14,7 @@ writeFileSync(target, JSON.stringify({
   architecture: Object.fromEntries(Object.entries(generated.architecture).map(([arch, value]) =>
     [arch, { ...value, ...template.architecture[arch] }])),
 }, null, 4) + '\n');
-console.log(`Scoop manifest with installation notes: ${target}`);
+console.log(`Scoop manifest with package metadata: ${target}`);
 
 // GoReleaser's Winget type also lacks ArchiveBinariesDependOnPath. The WinGet
 // 1.9+ installer schema supports it: obit locates obitd relative to os.Executable,
