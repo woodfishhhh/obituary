@@ -3,6 +3,7 @@
 package e2e_test
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -16,9 +17,102 @@ import (
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/daemonipc"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 	"golang.org/x/sys/windows"
 )
+
+// The subprocess exits inside the real request handler, before any ACK can be sent.
+func runInterruptedResident(stage string) int {
+	store := core.Store{Home: os.Getenv("OBIT_HOME")}
+	_, err := daemonipc.Serve(store.Home, func(rows []core.Observation) error {
+		if stage == "after-queue" {
+			if err := store.DeferObservations(rows); err != nil {
+				return err
+			}
+		}
+		os.Exit(83)
+		return nil
+	})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+	fmt.Println("ready")
+	select {}
+}
+
+func TestInterruptedResidentHookReplaysExactlyOnce(t *testing.T) {
+	for _, stage := range []string{"before-queue", "after-queue"} {
+		t.Run(stage, func(t *testing.T) {
+			exe := binaryPath(t, "obit")
+			root := t.TempDir()
+			repo := filepath.Join(root, "repo")
+			path := filepath.Join(repo, "debug.log")
+			writeFixture(t, path, "artifact")
+			testenv.InitRepo(t, repo)
+			t.Chdir(repo)
+			store := core.Store{Home: filepath.Join(root, "data")}
+			t.Setenv("OBIT_HOME", store.Home)
+			t.Setenv("OBIT_CONFIG_DIR", filepath.Join(root, "config"))
+			autoOn(t, "")
+			if err := store.Update(func(st *core.State) error {
+				st.Projects = map[string]core.ProjectState{core.ProjectKey(repo): {Consent: core.ConsentApproved}}
+				return nil
+			}); err != nil {
+				t.Fatal(err)
+			}
+			self, err := os.Executable()
+			if err != nil {
+				t.Fatal(err)
+			}
+			resident := exec.CommandContext(t.Context(), self, "ipc-crash-fixture", stage)
+			out, err := resident.StdoutPipe()
+			if err != nil {
+				t.Fatal(err)
+			}
+			resident.Stderr = os.Stderr
+			if err := resident.Start(); err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() {
+				if resident.ProcessState == nil {
+					_ = resident.Process.Kill()
+					_ = resident.Wait()
+				}
+			})
+			if line, err := bufio.NewReader(out).ReadString('\n'); err != nil || strings.TrimSpace(line) != "ready" {
+				t.Fatalf("resident startup %q: %v", line, err)
+			}
+			hook := exec.CommandContext(t.Context(), exe, "hook", "codex")
+			hook.Stdin = bytes.NewReader(queueHookInput(t, repo, path, 1))
+			if out, err := hook.CombinedOutput(); err != nil {
+				t.Fatal(string(out), err)
+			}
+			if err := resident.Wait(); err == nil || resident.ProcessState.ExitCode() != 83 {
+				t.Fatalf("resident never exited in handler: %v", err)
+			}
+			queued, err := store.DeferredObservations()
+			if err != nil || len(queued) != 1 {
+				t.Fatalf("lost or duplicated fallback observation: %d %v", len(queued), err)
+			}
+			svc, err := app.Open()
+			if err != nil {
+				t.Fatal(err)
+			}
+			svc.AfterChange = nil
+			for range 2 {
+				if err := app.Engine(svc).ReplayObservations(); err != nil {
+					t.Fatal(err)
+				}
+			}
+			st, err := store.ReadSnapshot()
+			if err != nil || len(st.Items) != 1 || st.Items[0].Path != path || st.Items[0].Rev != 1 || !st.ObservationCompleted(&queued[0]) || store.HasDeferredObservations() {
+				t.Fatalf("lost or repeated registration: %+v %v", st.Items, err)
+			}
+		})
+	}
+}
 
 func queueHookInput(t *testing.T, root, path string, i int) []byte {
 	t.Helper()
