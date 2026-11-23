@@ -64,8 +64,8 @@ function Assert-Equal($Expected, $Actual, [string]$Message) {
     if ($Expected -ne $Actual) { throw "$Message`nexpected: $Expected`nactual:   $Actual" }
 }
 
-function Invoke-Cli([string]$Exe, [string[]]$Args) {
-    $output = & $Exe @Args 2>&1
+function Invoke-Cli([string]$Exe, [string[]]$CommandArgs) {
+    $output = & $Exe @CommandArgs 2>&1
     if ($LASTEXITCODE -ne 0) { throw "CLI failed ($LASTEXITCODE): $($output -join "`n")" }
     return ($output -join "`n")
 }
@@ -245,13 +245,19 @@ function Set-Language([string]$Language) {
 }
 
 function Registry-Labels([string]$Language) {
-    $roots = @('HKCU:\Software\Classes\*\shell\Obituary.Mark', 'HKCU:\Software\Classes\Directory\shell\Obituary.Mark', 'HKCU:\Software\Classes\Directory\Background\shell\Obituary.Policy')
-    [array]$rows = foreach ($root in $roots) {
-        if (Test-Path -LiteralPath $root) {
-            $rootValue = Get-ItemProperty -LiteralPath $root
-            [pscustomobject]@{ Path = $root; Label = $rootValue.MUIVerb; Children = @((Get-ChildItem -LiteralPath "$root\shell" -ErrorAction SilentlyContinue | Sort-Object PSChildName | ForEach-Object { (Get-ItemProperty -LiteralPath $_.PSPath).MUIVerb })) }
+    $roots = @('Software\Classes\*\shell\Obituary.Mark', 'Software\Classes\Directory\shell\Obituary.Mark', 'Software\Classes\Directory\Background\shell\Obituary.Policy')
+    $rows = @(foreach ($root in $roots) {
+        $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($root)
+        if ($key) {
+            try {
+                $children = @($key.OpenSubKey('shell').GetSubKeyNames() | Sort-Object | ForEach-Object {
+                    $child = $key.OpenSubKey("shell\$_")
+                    try { $child.GetValue('MUIVerb') } finally { $child.Dispose() }
+                })
+                [pscustomobject]@{ Path = "HKCU:\$root"; Label = $key.GetValue('MUIVerb'); Children = $children }
+            } finally { $key.Dispose() }
         }
-    }
+    })
     $rows | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 (Join-Path $Evidence "registry-$Language.json")
     if ($rows.Count -eq 0) { throw "$Language context-menu registry roots were not installed" }
     Assert-Equal 3 $rows[0].Children.Count "$Language duration submenu count"
