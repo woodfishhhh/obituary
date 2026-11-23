@@ -100,6 +100,13 @@ func VerifyDataOwner(root *os.Root) error {
 			return errors.New("invalid SQLite version fence")
 		}
 		fence = parsed
+		dbInfo, dbErr := root.Lstat(sqliteDatabaseName)
+		if dbErr != nil {
+			return fmt.Errorf("data retained: SQLite ledger unavailable: %w", dbErr)
+		}
+		if !dbInfo.Mode().IsRegular() {
+			return errors.New("data retained: SQLite ledger is not a regular file")
+		}
 		state = State{Version: parsed.Version, DataID: parsed.DataID, NextID: parsed.NextID,
 			Graveyard: parsed.Graveyard, PreviousGraveyard: parsed.PreviousGraveyard,
 			GraveyardIndex: parsed.GraveyardIndex}

@@ -7,7 +7,7 @@ import (
 )
 
 func TestStoreDataOwnership(t *testing.T) {
-	for _, scenario := range []string{"owned", "missing marker", "missing snapshot", "foreign ledger", "copied directory"} {
+	for _, scenario := range []string{"owned", "missing marker", "missing snapshot", "missing database", "foreign ledger", "copied directory"} {
 		t.Run(scenario, func(t *testing.T) {
 			home := t.TempDir()
 			store := Store{Home: home}
@@ -31,6 +31,11 @@ func TestStoreDataOwnership(t *testing.T) {
 			if scenario == "missing snapshot" {
 				path := filepath.Join(home, state.Graveyard.File)
 				if err := os.Rename(path, path+".held"); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if scenario == "missing database" {
+				if err := os.Remove(filepath.Join(home, sqliteDatabaseName)); err != nil {
 					t.Fatal(err)
 				}
 			}
