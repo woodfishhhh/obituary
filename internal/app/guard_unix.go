@@ -18,5 +18,5 @@ func Guard(home string) core.Guard {
 			keep = append(keep, filepath.Join(user, name))
 		}
 	}
-	return (core.Guard{Keep: keep, System: []string{home, "/bin", "/sbin", "/usr", "/etc", "/var", "/proc", "/sys", "/dev", "/boot", "/run", "/System", "/Library"}}).WithCanonical(winfs.Canonical)
+	return (core.Guard{Keep: keep, System: []string{home, "/bin", "/sbin", "/usr", "/etc", "/var", "/proc", "/sys", "/dev", "/boot", "/run", "/System", "/Library"}}).WithCanonical(winfs.ManagedPath)
 }

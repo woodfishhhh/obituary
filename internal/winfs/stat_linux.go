@@ -14,9 +14,6 @@ import (
 
 func checkManagedPath(path string) error {
 	fd, err := unix.Open(path, unix.O_PATH|unix.O_CLOEXEC|unix.O_NOFOLLOW, 0)
-	if errors.Is(err, unix.ENOENT) { // LongPath also accepts a missing suffix.
-		return nil
-	}
 	if err != nil {
 		return err
 	}

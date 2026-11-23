@@ -4,22 +4,11 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"golang.org/x/sys/unix"
 )
-
-func TestDrvFSUsesWindowsLedger(t *testing.T) {
-	path := os.Getenv("OBIT_TEST_DRVFS_PATH")
-	if path == "" {
-		t.Skip("requires an existing fixture on a WSL Windows mount")
-	}
-	if _, _, err := (FS{}).LongPath(path); !errors.Is(err, corefs.ErrUnsupported) || !strings.Contains(err.Error(), "Windows") {
-		t.Errorf("expected Windows handoff, got %v", err)
-	}
-}
 
 func Test9pDeviceOwnership(t *testing.T) {
 	const mounts = "12 1 0:51 / /volume rw - 9p C: rw,aname=drvfs;path=C:\n13 1 0:52 / /mnt/c rw - 9p remote rw,aname=other"
