@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 	"golang.org/x/sys/windows"
@@ -45,7 +46,7 @@ type Plan struct {
 // win; reserved infrastructure names are skipped, other unrepresentable names
 // are refused. Authorization binds scope/Git discovery and ledger children to
 // the same directory identity, captured while that directory was pinned.
-func Prepare(dir string, authorized authorization, dates map[string]time.Time) (*Plan, error) {
+func Prepare(dir string, authorized authorization, dates map[string]time.Time, lang i18n.Language) (*Plan, error) {
 	expected := authorized.Identity
 	abs, err := pathutil.Abs(dir)
 	if err != nil {
@@ -71,14 +72,14 @@ func Prepare(dir string, authorized authorization, dates map[string]time.Time) (
 		return nil, err
 	}
 	defer root.Close()
-	p, err := preparePinned(abs, identity, root, dates)
+	p, err := preparePinned(abs, identity, root, dates, lang)
 	if err == nil {
 		p.authorized = authorized
 	}
 	return p, err
 }
 
-func preparePinned(abs string, identity core.Identity, root *os.Root, dates map[string]time.Time) (*Plan, error) {
+func preparePinned(abs string, identity core.Identity, root *os.Root, dates map[string]time.Time, lang i18n.Language) (*Plan, error) {
 	info, err := root.Stat(".")
 	if err != nil {
 		return nil, err
@@ -105,7 +106,7 @@ func preparePinned(abs string, identity core.Identity, root *os.Root, dates map[
 	if owned.Directory != identity {
 		return nil, errors.New("explorer receipt belongs to another directory")
 	}
-	labels, err := displayNames(root, dates)
+	labels, err := displayNames(root, dates, lang)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +154,7 @@ func (p *Plan) planAttributes(owned receipt) {
 	}
 }
 
-func displayNames(root *os.Root, dates map[string]time.Time) (map[string]string, error) {
+func displayNames(root *os.Root, dates map[string]time.Time, lang i18n.Language) (map[string]string, error) {
 	labels := make(map[string]string, len(dates))
 	for name, date := range dates {
 		if pathutil.IsExplorerMetadata(name) {
@@ -172,7 +173,7 @@ func displayNames(root *os.Root, dates map[string]time.Time) (map[string]string,
 				stem = base
 			}
 		}
-		labels[name] = stem + "（" + date.In(time.Local).Format("01-02") + " 下葬）"
+		labels[name] = fmt.Sprintf(lang.Text(i18n.ExplorerBurialLabel), stem, date.In(time.Local).Format("01-02"))
 	}
 	return labels, nil
 }

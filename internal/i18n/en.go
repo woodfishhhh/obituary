@@ -3,6 +3,7 @@ package i18n
 var english = map[Key]string{
 	StartDocker:          "Start Docker before handling this proposal.",
 	BuryNow:              "Bury now (recoverable)",
+	ExplorerBurialLabel:  "%s (%s burial)",
 	MenuMarked:           "Added %d items to Obituary; burial in %s; %d failed.",
 	MenuBuried:           "Buried %d items; %d failed.",
 	MenuResultDetails:    "Details: %s",

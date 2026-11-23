@@ -8,5 +8,6 @@ import (
 )
 
 // Explorer labels have no POSIX projection. CLI diagnostics disclose this.
-func syncExplorer(*core.Service, config.Explorer) bool { return true }
-func syncCurrentExplorer(*core.Service)                {}
+func syncExplorer(*core.Service, config.Config) {}
+func syncCurrentExplorer(*core.Service)         {}
+func explorerStale(string, string) bool         { return false }

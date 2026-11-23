@@ -8,7 +8,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/woodfishhhh/obituary/internal/config"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"github.com/woodfishhhh/obituary/internal/project"
 )
@@ -18,6 +20,7 @@ import (
 type Options struct {
 	Enabled, InGit, Everywhere bool
 	Folders                    []string
+	Language                   i18n.Language // Empty uses the current interface language.
 }
 
 type directory struct {
@@ -65,10 +68,13 @@ func Sync(svc *core.Service, options Options) error {
 	for _, old := range previous {
 		wanted.dirs[directoryKey(old.Identity)] = old
 	}
-	return syncDirectories(svc, index, wanted)
+	if options.Language == "" {
+		options.Language = config.UILanguage()
+	}
+	return syncDirectories(svc, index, wanted, options.Language)
 }
 
-func syncDirectories(svc *core.Service, index string, wanted projection) error {
+func syncDirectories(svc *core.Service, index string, wanted projection, lang i18n.Language) error {
 	var failures []error
 	for id, dir := range wanted.dirs {
 		path, err := svc.FS.Locate(dir.Identity)
@@ -79,7 +85,7 @@ func syncDirectories(svc *core.Service, index string, wanted projection) error {
 		if err == nil {
 			auth := wanted.auth[path]
 			auth.Identity = dir.Identity
-			err = reconcile(path, auth, wanted.dates[path], func() error {
+			err = reconcile(path, auth, wanted.dates[path], lang, func() error {
 				// Prepare has succeeded. Persist the cleanup target before Apply,
 				// whose failure may still mean publication needs confirmation.
 				dir.Candidate = false
@@ -178,8 +184,8 @@ func livePath(svc *core.Service, id core.Identity) (string, error) {
 	return path, err
 }
 
-func reconcile(path string, auth authorization, dates map[string]time.Time, beforeApply func() error) error {
-	p, err := Prepare(path, auth, dates)
+func reconcile(path string, auth authorization, dates map[string]time.Time, lang i18n.Language, beforeApply func() error) error {
+	p, err := Prepare(path, auth, dates, lang)
 	if err != nil {
 		return err
 	}

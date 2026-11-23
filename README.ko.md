@@ -60,7 +60,7 @@ Obituary는 에이전트가 필요해서 만들어졌습니다. 버전 0.0.1이 
 - **Claude Code와 Codex.** `obit init`은 hook과 Agent Skill을 등록합니다. MCP 서버는 선택 사항이며 `--uninstall`은 Obituary가 추가한 것만 제거합니다.
 - **Windows에서 Everything처럼 트레이에 상주합니다.** `obit init`은 로그인할 때 트레이 아이콘을 시작합니다. 메뉴에서 최근 매장을 보고 복원하거나 자동 정리를 일시 중지하고 Obituary의 작은 창을 열 수 있습니다. Windows 작업 스케줄러는 예비 수단으로 남습니다.
 - **작은 창(Windows / Ubuntu 24.04 amd64).** Expiring, Graveyard, For you, Settings, Logs에서 명령줄 없이 파일을 복원하고 제안을 승인하며 설정을 바꿀 수 있습니다(`obit-gui.exe` 또는 트레이 메뉴의 “Open Obituary”). 중국어와 영어, 8가지 외관을 제공합니다. Ubuntu에서는 앱 목록에서 Obituary를 엽니다.
-- **탐색기의 컨텍스트 메뉴와 날짜(Windows).** 파일이나 폴더를 오른쪽 클릭하고(여러 개 선택 가능) → “Add to Obituary” → 1일, 7일, 30일 또는 “Bury now (recoverable)”를 선택합니다. Windows 11에서는 “Show more options” 아래에 있습니다. Downloads와 Desktop의 추적 항목은 실제 파일명은 그대로 둔 채 “name (11-13 burial)”로 표시됩니다.
+- **탐색기의 컨텍스트 메뉴와 날짜(Windows).** 파일이나 폴더를 오른쪽 클릭하고(여러 개 선택 가능) → “Add to Obituary” → 1일, 7일, 30일 또는 “Bury now (recoverable)”를 선택합니다. Windows 11에서는 “Show more options” 아래에 있습니다. Downloads와 Desktop의 추적 항목은 실제 파일명은 그대로 둔 채 영어 인터페이스에서는 “name (11-13 burial)”로, 중국어 간체 인터페이스에서는 “name（11-13 下葬）”로 표시됩니다.
 - **Docker 컨테이너.** `obit docker add <container> 3d`는 컨테이너에 수명을 부여합니다. 만료되면 `docker stop`으로 중지하고(`obit resurrect`로 다시 시작), 보관 기간이 지난 뒤에만 `docker rm`으로 제거합니다. 자동 등록을 켜면 프로젝트용 에이전트 세션이 시작한 컨테이너도 등록되고 나중에 알려 줍니다.
 - `obit mark --docker-volume cache 3d`(`add`도 가능)를 실행하면 `cache`를 3일 뒤에 매장합니다. 지금 매장하려면 `obit bury --docker-volume -- cache`를 실행하세요. 볼륨은 자동으로 등록되지 않습니다. 직접 등록하거나 매장하도록 지정한 볼륨만 처리하며 이미지와 네트워크는 삭제하지 않습니다.
 - **폴더 정책.** `obit watch Downloads 2w`는 그곳에 들어오는 모든 파일을 2주 뒤 매장합니다. 만료된 하위 폴더는 제안만 만들고 승인한 뒤 매장합니다. 정책 자체도 승인이 필요합니다.

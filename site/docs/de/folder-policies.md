@@ -17,7 +17,7 @@ obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans 
 
 ## Datumsanzeige im Explorer {#dates-in-explorer}
 
-Im Downloadordner, auf dem Desktop und in Ordnern mit Richtlinie zeigt der Explorer registrierte Elemente etwa als „Name (Begräbnis am 13. November)“ an. Der tatsächliche Dateiname bleibt unverändert.
+Im Downloadordner, auf dem Desktop und in Ordnern mit Richtlinie zeigt der Explorer registrierte Elemente etwa als „name (11-13 burial)“ an. Der tatsächliche Dateiname bleibt unverändert. Der Zusatz folgt der Sprache von Obituary: Bei vereinfachtem Chinesisch erscheint „name（11-13 下葬）“, sonst die englische Form.
 
 - Die Datumsangaben stammen aus der versteckten Datei `desktop.ini` im jeweiligen Ordner.
 - Im Abschnitt `[explorer]` der Datei `config.toml` kannst du die Anzeige mit `enabled = false` abschalten oder mit `everywhere = true` überall einschalten.

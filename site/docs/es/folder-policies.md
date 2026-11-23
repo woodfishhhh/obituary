@@ -17,7 +17,7 @@ obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans 
 
 ## Fechas en el Explorador de archivos {#dates-in-explorer}
 
-En Descargas, en el Escritorio y en las carpetas con política, el Explorador muestra los elementos en seguimiento como «nombre (entierro el 13 de noviembre)». El nombre real del archivo no cambia.
+En Descargas, en el Escritorio y en las carpetas con política, el Explorador muestra los elementos en seguimiento como «name (11-13 burial)». El nombre real del archivo no cambia. La etiqueta sigue el idioma de Obituary: si la interfaz está en chino simplificado, se muestra «name（11-13 下葬）»; en los demás casos, se usa la forma inglesa.
 
 - Las fechas proceden del archivo oculto `desktop.ini` de la carpeta.
 - En la sección `[explorer]` de `config.toml`, usa `enabled = false` para ocultar las fechas o `everywhere = true` para mostrarlas en todas partes.

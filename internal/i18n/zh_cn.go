@@ -3,6 +3,7 @@ package i18n
 var chinese = map[Key]string{
 	StartDocker:          "需要先启动 Docker 才能处理这条提议。",
 	BuryNow:              "现在埋掉（可恢复）",
+	ExplorerBurialLabel:  "%s（%s 下葬）",
 	MenuMarked:           "已放进讣告 %d 项，%s后下葬，%d 项失败。",
 	MenuBuried:           "已下葬 %d 项，%d 项失败。",
 	MenuResultDetails:    "详情见 %s",

@@ -17,7 +17,7 @@ obit watch --remove C:\Users\你\Downloads    # 移除策略，它登记过的�
 
 ## 檔案總管中的日期 {#explorer-dates}
 
-在「下載」、桌面和套用策略的資料夾中，檔案總管會將追蹤中的項目顯示為「名稱（11-13 下葬）」，實際檔名不變。
+在「下載」、桌面和套用策略的資料夾中，檔案總管會將追蹤中的項目顯示為「name (11-13 burial)」，實際檔名不變。日期標籤跟隨訃告的介面語言：簡體中文介面顯示「name（11-13 下葬）」，其餘情況顯示英文。
 
 - 日期來自資料夾中的隱藏檔 `desktop.ini`。
 - 在 `config.toml` 的 `[explorer]` 區段中，可設定 `enabled = false` 關閉日期顯示，或設定 `everywhere = true` 在所有位置顯示。
