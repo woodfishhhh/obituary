@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -17,6 +18,7 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/core/internal/fileio"
+	"github.com/woodfishhhh/obituary/internal/pathutil"
 	_ "modernc.org/sqlite"
 )
 
@@ -195,9 +197,13 @@ func (s Store) readSQLiteFence() (*sqliteFence, error) {
 }
 
 func openSQLite(path, mode string) (*sql.DB, error) {
-	abs, err := filepath.Abs(path)
+	home, err := pathutil.Abs(filepath.Dir(path))
 	if err != nil {
 		return nil, err
+	}
+	abs := filepath.ToSlash(filepath.Join(home, filepath.Base(path)))
+	if !strings.HasPrefix(abs, "/") {
+		abs = "/" + abs
 	}
 	query := []string{"mode=" + mode, "_pragma=busy_timeout(0)"}
 	if mode == "ro" {
@@ -217,8 +223,8 @@ func openSQLite(path, mode string) (*sql.DB, error) {
 	if mode != "ro" {
 		query = append(query, "_pragma=journal_mode(WAL)", "_pragma=synchronous(FULL)")
 	}
-	dsn := "file:" + strings.ReplaceAll(filepath.ToSlash(abs), "#", "%23") + "?" + strings.Join(query, "&")
-	db, err := sql.Open("sqlite", dsn)
+	u := url.URL{Scheme: "file", Path: abs, RawQuery: strings.Join(query, "&")}
+	db, err := sql.Open("sqlite", u.String())
 	if err != nil {
 		return nil, err
 	}
