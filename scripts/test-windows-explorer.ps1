@@ -133,10 +133,9 @@ function Get-VisibleMenu([object]$Explorer) {
 }
 
 function Get-MenuItems([object]$Menu) {
-    $condition = New-Object System.Windows.Automation.PropertyCondition(
-        [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
-        [System.Windows.Automation.ControlType]::MenuItem)
-    @($Menu.FindAll([System.Windows.Automation.TreeScope]::Children, $condition) | ForEach-Object { $_.Current.Name })
+    @($Menu.FindAll([System.Windows.Automation.TreeScope]::Children,
+        [System.Windows.Automation.Condition]::TrueCondition) |
+        ForEach-Object { $_.Current.Name } | Where-Object { $_ })
 }
 
 function Open-ExplorerMenu([object]$Explorer, [string[]]$Names) {
@@ -148,13 +147,20 @@ function Open-ExplorerMenu([object]$Explorer, [string[]]$Names) {
         $item.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).AddToSelection()
     }
     [System.Windows.Forms.SendKeys]::SendWait('+{F10}')
-    return Get-VisibleMenu $Explorer
+    $menu = Get-VisibleMenu $Explorer
+    $labels = Get-MenuItems $menu
+    if (-not (($labels -join "`n") -match 'Obituary|讣告')) {
+        $more = @($labels | Where-Object { $_ -match 'Show more options|显示更多选项' } | Select-Object -First 1)
+        if (-not $more) { throw "Windows first-level menu lacks classic-menu entry; available: $($labels -join ' | ')" }
+        Invoke-MenuItem $menu $more
+        Start-Sleep -Milliseconds 500
+        $menu = Get-VisibleMenu $Explorer
+    }
+    return $menu
 }
 
 function Invoke-MenuItem([object]$Menu, [string]$Needle, [switch]$ExpandOnly) {
-    $condition = New-Object System.Windows.Automation.PropertyCondition(
-        [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
-        [System.Windows.Automation.ControlType]::MenuItem)
+    $condition = [System.Windows.Automation.Condition]::TrueCondition
     $item = @($Menu.FindAll([System.Windows.Automation.TreeScope]::Children, $condition) |
         Where-Object { $_.Current.Name -like "*$Needle*" } | Select-Object -First 1)
     if (-not $item) {
