@@ -54,3 +54,5 @@ Les commandes de consultation telles que `list`, `graveyard`, `stats` et `log` s
 Dans `%LOCALAPPDATA%\obituary` se trouvent `store.json` (registre), `audit.jsonl` (journal d’audit), `obitd.log` (journal du démon) et `graveyard\` (cimetière de ce disque).
 
 Vous pouvez modifier ces emplacements avec `OBIT_HOME` (données), `OBIT_CONFIG_DIR` (configuration) et `OBIT_USER_HOME` (répertoire personnel).
+
+Si vous relancez l’application avec le même répertoire de données, sa fenêtre revient au premier plan. Un autre `OBIT_HOME` ouvre une fenêtre distincte. Si le répertoire n’est pas celui par défaut, son chemin figure dans le titre.

@@ -54,3 +54,5 @@ obit daemon disable             # 撤掉定时任务和登录启动，并停掉�
 数据放在 `%LOCALAPPDATA%\obituary`：`store.json`（账本）、`audit.jsonl`（审计日志）、`obitd.log`（后台进程日志）、`graveyard\`（这块盘的墓地）。
 
 可以用环境变量 `OBIT_HOME`（数据目录）、`OBIT_CONFIG_DIR`（配置目录）、`OBIT_USER_HOME`（用户主目录）换位置。
+
+再次打开小窗口会唤起同一数据目录的窗口。用另一个 `OBIT_HOME` 启动，会另开窗口；非默认目录的路径显示在标题里。

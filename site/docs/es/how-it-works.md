@@ -54,3 +54,5 @@ Las consultas `list`, `graveyard`, `stats` y `log` son de solo lectura. No entie
 En `%LOCALAPPDATA%\obituary` se encuentran `store.json` (registro), `audit.jsonl` (log de auditoría), `obitd.log` (log del demonio) y `graveyard\` (cementerio de esta unidad).
 
 Puedes cambiar las ubicaciones con `OBIT_HOME` (datos), `OBIT_CONFIG_DIR` (configuración) y `OBIT_USER_HOME` (directorio personal).
+
+Si vuelves a abrir la ventana con el mismo directorio de datos, la ventana existente pasa al primer plano. Con otro `OBIT_HOME` se abre una ventana distinta. Si el directorio no es el predeterminado, su ruta aparece en el título.

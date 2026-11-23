@@ -54,3 +54,5 @@ Abfragen wie `list`, `graveyard`, `stats` und `log` lesen nur. Sie begraben nich
 In `%LOCALAPPDATA%\obituary` liegen `store.json` (Register), `audit.jsonl` (Auditprotokoll), `obitd.log` (Daemonprotokoll) und `graveyard\` (Friedhof dieses Laufwerks).
 
 Mit `OBIT_HOME` (Daten), `OBIT_CONFIG_DIR` (Konfiguration) und `OBIT_USER_HOME` (Home-Verzeichnis) kannst du die jeweiligen Speicherorte ändern.
+
+Beim erneuten Öffnen erscheint das Fenster für dasselbe Datenverzeichnis im Vordergrund. Ein anderes `OBIT_HOME` öffnet ein eigenes Fenster. Bei einem vom Standard abweichenden Verzeichnis steht der Pfad im Fenstertitel.

@@ -24,7 +24,7 @@ jobs:
         with:
           go-version-file: go.mod
       - name: Run macOS desktop tests
-        run: go test -tags desktop ./internal/app ./internal/gui ./internal/tray
+        run: go test -tags desktop ./cmd/obit-gui ./internal/app ./internal/gui ./internal/tray
       - name: Build universal app and DMG
         env:
           PACKAGE_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || format('0.0.{0}', github.run_number) }}

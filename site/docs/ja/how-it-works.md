@@ -54,3 +54,5 @@ obit daemon disable             # remove the scheduled task and login start, and
 `%LOCALAPPDATA%\obituary` に `store.json`（台帳）、`audit.jsonl`（監査ログ）、`obitd.log`（デーモンのログ）、`graveyard\`（このドライブの墓地）があります。
 
 保存先は `OBIT_HOME`（データ）、`OBIT_CONFIG_DIR`（設定）、`OBIT_USER_HOME`（ユーザーのホーム）で変更できます。
+
+同じデータディレクトリで再度起動すると、既存のウィンドウが前面に表示されます。別の `OBIT_HOME` を指定すると別のウィンドウが開きます。既定以外のディレクトリでは、タイトルにパスが表示されます。

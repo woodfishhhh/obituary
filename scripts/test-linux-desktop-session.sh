@@ -13,7 +13,7 @@ printf '[update]\ncheck=false\n' > "$OBIT_CONFIG_DIR/config.toml"
 dpkg-deb -x "$deb" "$root/pkg"
 export BIN=$root/pkg/usr/libexec/obituary
 xvfb-run -a -s '-screen 0 1440x960x24 -nolisten tcp' dbus-run-session -- bash -eu <<'SESSION'
-trap '"$BIN/obit" daemon stop; kill ${gui:-} ${host:-} 2>/dev/null || true' EXIT
+trap '"$BIN/obit" daemon stop; kill ${gui:-} ${other:-} ${host:-} 2>/dev/null || true' EXIT
 echo "Private X11 display $DISPLAY; runtime $XDG_RUNTIME_DIR"
 if [[ ${NO_WATCHER:-0} != 1 ]]; then
   /usr/bin/python3 scripts/test-linux-desktop-session.py host & host=$!
@@ -40,7 +40,9 @@ echo 'calendar fixture' > "$HOME/calendar-note"
 test ! -e "$HOME/restore-note"
 "$BIN/obit" list
 "$BIN/obit-gui" & gui=$!
-win=$(timeout 15 xdotool search --sync --onlyvisible --name '^Obituary$' | head -1)
+window_for() { timeout 20 xdotool search --sync --all --onlyvisible --pid "$1" --name '^Obituary' | head -1; }
+win=$(window_for "$gui")
+test "$(xdotool getwindowname "$win")" = "Obituary ($OBIT_HOME)"
 for _ in $(seq 1 80); do
   import -window "$win" "$EVIDENCE/calendar-live.png"
   pixels=$(identify -format '%[standard_deviation]' "$EVIDENCE/calendar-live.png" 2>/dev/null || true)
@@ -51,8 +53,17 @@ for _ in $(seq 1 80); do
 done
 test -s "$EVIDENCE/calendar-live.png"
 # Wails v2 exits 1 after forwarding a second launch to the running instance.
-rc=0; "$BIN/obit-gui" || rc=$?; test "$rc" = 1
-test "$(xdotool search --onlyvisible --name '^Obituary$')" = "$win"
+OBIT_HOME="$HOME/other" "$BIN/obit-gui" & other=$!
+otherwin=$(window_for "$other")
+test "$win" != "$otherwin"
+test "$(xdotool getwindowname "$otherwin")" = "Obituary ($HOME/other)"
+for home in "$OBIT_HOME" "$HOME/other"; do
+  rc=0; OBIT_HOME="$home" timeout 15 "$BIN/obit-gui" || rc=$?; test "$rc" = 1
+done
+test "$(window_for "$gui")" = "$win"
+test "$(window_for "$other")" = "$otherwin"
+echo "PASS: two ledger windows ($win, $otherwin); both repeat launches forwarded"
+kill -INT "$other"; wait "$other" || true; other=
 xdotool mousemove --window "$win" 449 25 click 1
 sleep 1
 import -window "$win" "$EVIDENCE/settings-live.png"

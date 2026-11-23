@@ -54,3 +54,5 @@ obit daemon disable             # 撤掉定时任务和登录启动，并停掉�
 `%LOCALAPPDATA%\obituary` 存放 `store.json`（帳本）、`audit.jsonl`（稽核日誌）、`obitd.log`（背景程式日誌）及 `graveyard\`（這個磁碟機的墓地）。
 
 可用 `OBIT_HOME` 指定資料目錄、`OBIT_CONFIG_DIR` 指定設定目錄、`OBIT_USER_HOME` 指定使用者家目錄。
+
+再次開啟小視窗會切回同一資料目錄的視窗。使用不同的 `OBIT_HOME` 啟動會另開視窗；非預設目錄的路徑會顯示在標題中。

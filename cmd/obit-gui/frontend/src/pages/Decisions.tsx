@@ -1,11 +1,12 @@
 import { Check, CheckCheck, EyeOff, FileCode2, Inbox, RotateCcw, ShieldCheck, ShieldOff, TimerReset, X } from "lucide-react";
 import { useState } from "react";
 import { errorText, useApi } from "../api";
+import { approvalReceipt } from "../approval";
 import { t } from "../i18n";
 import { bytes, extendedTo, lifespanText, ruleOrigin, rulePattern, underProject, when } from "../format";
 import { useLoad, useRefresh } from "../hooks";
 import { askDecisions, setAskDecisions } from "../prefs";
-import type { AutoHandled, Item, Proposal, ProposalMode, ProposalResult, RuleFile } from "../types";
+import type { AutoHandled, Item, Proposal, ProposalMode, RuleFile } from "../types";
 import { Button, Empty, Head, LifeLine, NameCell, Outcome, Seg, Skeleton, isContainer, useConfirm, useToast, type OutcomeNote } from "../ui";
 import { extendSpans, spanLabel } from "../variants/shared";
 
@@ -47,22 +48,25 @@ export default function Decisions() {
       remember: { label: t("dec.noAsk"), onRemember: () => { setAskDecisions(false); toast(t("dec.noAskToast")); } },
     });
     if (!ok) return;
-    const failed: [string, string][] = [];
+    const details: [string, string][] = [];
+    let failed = 0;
     let done = 0;
     for (const p of batchable) {
       try {
         const reply = await api.Approve([`#${p.id}`], [p.fingerprint]);
-        const errors = (reply.results ?? []).filter((r) => r.error);
-        if (reply.error || errors.length) failed.push([`#${p.id}`, reply.error ?? errors[0].error ?? ""]);
-        else done++;
+        const receipt = approvalReceipt(reply, t("dec.noReply"));
+        if (receipt.partial) failed++; else done++;
+        details.push(...candidateDetails(receipt).map(([path, why]): [string,string] => [`#${p.id}: ${path}`, why]));
+        if (receipt.error || !receipt.rows.length) details.push([`#${p.id}`, receipt.error || t("dec.appliedItem")]);
       } catch (error) {
-        failed.push([`#${p.id}`, errorText(error)]);
+        failed++;
+        details.push([`#${p.id}`, errorText(error)]);
       }
     }
     bump();
-    if (failed.length) {
-      setNote({ title: t("dec.allPartial", done, failed.length), text: t("dec.allPartialText"), items: failed });
-      toast(t("dec.allPartial", done, failed.length), "error");
+    if (failed) {
+      setNote({ title: t("dec.allPartial", done, failed), items: details });
+      toast(t("dec.allPartial", done, failed), "error");
     } else {
       setNote(null);
       toast(t("dec.allDone", done));
@@ -219,6 +223,10 @@ function HandledList({ handled }: { handled: AutoHandled[] }) {
 // that gained or lost candidates since is refused, never half-applied.
 const PROPOSAL_CHANGED = "proposal_changed";
 
+function candidateDetails(receipt: ReturnType<typeof approvalReceipt>): [string,string][] {
+  return receipt.rows.map(r => [r.ref, r.pending ? t("dec.pendingItem", r.error ?? "") : r.error ? t("dec.failedItem", r.error) : t("dec.appliedItem")]);
+}
+
 function ProposalCard({ p, onOutcome }: { p: Proposal; onOutcome: (note: OutcomeNote | null) => void }) {
   const api = useApi();
   const { bump } = useRefresh();
@@ -248,19 +256,24 @@ function ProposalCard({ p, onOutcome }: { p: Proposal; onOutcome: (note: Outcome
     });
     if (!ok) return;
     const ref = `#${p.id}`;
-    let result: ProposalResult | undefined;
+    let receipt: ReturnType<typeof approvalReceipt> | undefined;
     let failure: string | undefined;
     let failureCode: string | undefined;
     try {
       const reply = await (approve ? api.Approve : api.Reject)([ref], [p.fingerprint]);
-      const results = reply.results ?? [];
-      result = results.find((r) => r.ref === ref || r.ref === String(p.id)) ?? results[0];
-      failure = result?.error ?? reply.error ?? (result ? undefined : t("dec.noReply"));
-      failureCode = result?.errorCode ?? reply.errorCode;
+      receipt = approvalReceipt(reply, t("dec.noReply"));
+      failure = receipt.error;
+      failureCode = receipt.code;
     } catch (error) {
       failure = errorText(error);
     }
     bump();
+    if (approve && receipt?.partial && receipt.rows.length) {
+      const title = t("dec.partial", p.id);
+      onOutcome({ title, text: failure, items: candidateDetails(receipt) });
+      toast(title, "error");
+      return;
+    }
     if (failure) {
       const changed = failureCode === PROPOSAL_CHANGED;
       onOutcome(changed
@@ -269,15 +282,7 @@ function ProposalCard({ p, onOutcome }: { p: Proposal; onOutcome: (note: Outcome
       toast(changed ? t("dec.changedToast", p.id) : t("dec.failedToast", approve, failure), "error");
       return;
     }
-    // An approval reports each candidate; the proposal can succeed while some
-    // of its candidates fail, and that is not "done".
-    const failed = (result?.results ?? []).filter((r) => r.error);
-    const done = (result?.results?.length ?? p.candidates.length) - failed.length;
-    if (approve && failed.length) {
-      onOutcome({ title: t("dec.partial", p.id), text: t("dec.partialText", done, failed.length), items: failed.map((r) => [r.ref, r.error ?? ""]) });
-      toast(t("dec.partialToast", failed.length), "error");
-      return;
-    }
+    const done = receipt?.rows.length || p.candidates.length;
     onOutcome(null);
     toast(approve ? burial ? t("dec.buried") : t("dec.approved", done) : t("dec.rejected", p.id));
   }
