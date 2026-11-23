@@ -430,7 +430,7 @@ func (s Store) saveHot(state State, graveyardChanged bool) error {
 	if err != nil {
 		return err
 	}
-	if state.Version == stateVersion {
+	if state.Version == stateVersion && s.sqliteSupported() {
 		err = s.saveSQLite(state, false)
 		if err == nil || fileio.IsCommitUnconfirmed(err) {
 			if s.changed != nil {

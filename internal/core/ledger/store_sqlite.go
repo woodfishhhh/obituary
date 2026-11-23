@@ -22,6 +22,12 @@ import (
 
 const sqliteDatabaseName = "store.db"
 
+// modernc.org/sqlite's VFS rejects database paths at 512 bytes. Keep the
+// existing JSON v19 representation for only those homes; normal homes remain
+// SQLite-backed and long-home operations keep working until a shorter-path VFS
+// is available.
+const sqliteMaxPathBytes = 500
+
 const sqliteSchema = `
 CREATE TABLE IF NOT EXISTS ledger (
   kind TEXT NOT NULL,
@@ -81,6 +87,10 @@ var (
 )
 
 func (s Store) databasePath() string { return filepath.Join(s.Home, sqliteDatabaseName) }
+
+func (s Store) sqliteSupported() bool {
+	return len([]byte(filepath.ToSlash(s.databasePath()))) < sqliteMaxPathBytes
+}
 
 func sqliteFenceBytes(st State) []byte {
 	data, _ := json.Marshal(sqliteFence{
@@ -145,7 +155,7 @@ func openSQLite(path, mode string) (*sql.DB, error) {
 	if mode != "ro" {
 		query = append(query, "_pragma=journal_mode(WAL)", "_pragma=synchronous(FULL)")
 	}
-	dsn := "file:" + filepath.ToSlash(abs) + "?" + strings.Join(query, "&")
+	dsn := "file:" + strings.ReplaceAll(filepath.ToSlash(abs), "#", "%23") + "?" + strings.Join(query, "&")
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, err
@@ -508,7 +518,7 @@ func writeSQLiteRows(ctx context.Context, tx *sql.Tx, before, after sqliteRows) 
 		}
 		if !exists {
 			if _, err := tx.ExecContext(ctx, "INSERT INTO ledger(kind,key,position,rev,payload) VALUES(?,?,?,?,?)", key.kind, key.key, row.position, row.rev, row.payload); err != nil {
-				return err
+				return fmt.Errorf("insert ledger row %s/%s: %w", key.kind, key.key, err)
 			}
 			continue
 		}

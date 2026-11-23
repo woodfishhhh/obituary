@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	_ "modernc.org/sqlite"
@@ -41,6 +42,30 @@ func TestSQLiteLedgerUsesWALAndFullDurability(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(store.Home, "store.db")); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestSQLiteLedgerSupportsLongUnicodeHome(t *testing.T) {
+	home := t.TempDir()
+	for range 3 {
+		home = filepath.Join(home, strings.Repeat("长目录", 20))
+	}
+	if err := os.MkdirAll(home, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	store := Store{Home: home}
+	if err := store.Update(func(st *State) error {
+		st.Items = []Item{{ID: 1, Rev: 1, Path: "one"}}
+		st.NextID = 2
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(store.statePath()); err != nil {
+		t.Fatalf("long home did not retain JSON fallback: %v", err)
+	}
+	if _, err := os.Stat(store.databasePath()); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("long home unexpectedly created SQLite database: %v", err)
 	}
 }
 
