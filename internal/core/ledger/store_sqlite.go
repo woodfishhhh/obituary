@@ -14,7 +14,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/core/internal/fileio"
@@ -80,12 +79,7 @@ type sqliteFence struct {
 	GraveyardIndex    *graveyardIndex     `json:"graveyardIndex,omitempty"`
 }
 
-var (
-	commitSQLite = func(ctx context.Context, tx *sql.Tx) error { return tx.Commit() }
-
-	pendingSQLiteMu sync.Mutex
-	pendingSQLite   = map[string]State{}
-)
+var commitSQLite = func(ctx context.Context, tx *sql.Tx) error { return tx.Commit() }
 
 func (s Store) databasePath() string { return filepath.Join(s.Home, sqliteDatabaseName) }
 
@@ -660,11 +654,6 @@ func (s Store) saveSQLite(state State, migrating bool) error {
 	if _, err := tx.ExecContext(ctx, "INSERT OR IGNORE INTO receipts(id,result) VALUES(?,?)", receiptID, []byte("committed")); err != nil {
 		return err
 	}
-	if !migrating {
-		pendingSQLiteMu.Lock()
-		pendingSQLite[s.Home] = state
-		pendingSQLiteMu.Unlock()
-	}
 	if err := commitSQLite(ctx, tx); err != nil {
 		return fmt.Errorf("commit unconfirmed: %w", err)
 	}
@@ -675,11 +664,6 @@ func (s Store) saveSQLite(state State, migrating bool) error {
 			return errors.Join(fenceErr, fmt.Errorf("rollback unpublished SQLite commit: %w", err))
 		}
 	}
-	pendingSQLiteMu.Lock()
-	if fenceErr == nil || !fileio.IsCommitUnconfirmed(fenceErr) {
-		delete(pendingSQLite, s.Home)
-	}
-	pendingSQLiteMu.Unlock()
 	if fenceErr != nil {
 		if fileio.IsCommitUnconfirmed(fenceErr) {
 			return fenceErr
@@ -719,11 +703,4 @@ func (s Store) rollbackSQLiteCommit(ctx context.Context, after, before sqliteRow
 	}
 	rollback = false
 	return nil
-}
-
-func (s Store) stagedSQLiteState() (State, bool) {
-	pendingSQLiteMu.Lock()
-	defer pendingSQLiteMu.Unlock()
-	state, ok := pendingSQLite[s.Home]
-	return state, ok
 }

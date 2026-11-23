@@ -414,9 +414,15 @@ func sqliteDeltaReceiptID(delta sqliteRowDelta) string {
 	return fmt.Sprintf("delta:%x", hash.Sum(nil))
 }
 
-func (s Store) updateHotSQLiteSession(session *sqliteSession, fence sqliteFence, fn func(*State) error) error {
+func (s Store) updateHotSQLiteSession(session *sqliteSession, fence sqliteFence, fn func(*State) error) (err error) {
 	session.mu.Lock()
 	defer session.mu.Unlock()
+	defer func() {
+		if err != nil {
+			// The callback may have mutated the cache even when nothing committed.
+			s.ClosePersistentSQLite()
+		}
+	}()
 	if err := session.refresh(s); err != nil {
 		return err
 	}
@@ -474,9 +480,6 @@ func (s Store) commitSQLiteSession(session *sqliteSession, delta sqliteRowDelta)
 	if _, err := tx.ExecContext(ctx, "INSERT OR IGNORE INTO receipts(id,result) VALUES(?,?)", receiptID, []byte("committed")); err != nil {
 		return err
 	}
-	pendingSQLiteMu.Lock()
-	pendingSQLite[s.Home] = session.state
-	pendingSQLiteMu.Unlock()
 	if err := commitSQLite(ctx, tx); err != nil {
 		return fmt.Errorf("commit unconfirmed: %w", err)
 	}
@@ -487,11 +490,6 @@ func (s Store) commitSQLiteSession(session *sqliteSession, delta sqliteRowDelta)
 			return errors.Join(fenceErr, fmt.Errorf("rollback unpublished SQLite commit: %w", err))
 		}
 	}
-	pendingSQLiteMu.Lock()
-	if fenceErr == nil || !fileio.IsCommitUnconfirmed(fenceErr) {
-		delete(pendingSQLite, s.Home)
-	}
-	pendingSQLiteMu.Unlock()
 	if fenceErr != nil {
 		if fileio.IsCommitUnconfirmed(fenceErr) {
 			return fenceErr
