@@ -68,7 +68,9 @@ func (s Store) WithDeadline(deadline time.Time) Store {
 // Version 16 interns operations, origins and identity volumes only in the ledger.
 // Version 17 commits an immutable graveyard snapshot through the hot ledger.
 // Version 18 reserves Docker volume identities, archive receipts and restore ownership.
-const stateVersion = 18
+// Version 19 moves the hot ledger into a pure-Go SQLite database; cold graveyard
+// snapshots and the audit log remain independent recovery evidence.
+const stateVersion = 19
 
 func (s Store) statePath() string { return filepath.Join(s.Home, "store.json") }
 
@@ -170,6 +172,9 @@ func (s Store) update(fn func(*State) error, confirm bool) error {
 
 // ModTime reports when the state file last changed (zero if it does not exist).
 func (s Store) ModTime() time.Time {
+	if ok, _ := s.hasSQLiteFence(); ok {
+		return s.sqliteModTime()
+	}
 	info, err := os.Stat(s.statePath())
 	if err != nil {
 		return time.Time{}
@@ -240,10 +245,29 @@ func (s Store) load() (State, []Event, error) {
 func (s Store) loadHot() (State, []Event, error) {
 	data, err := readShared(s.statePath())
 	if errors.Is(err, os.ErrNotExist) {
+		if _, dbErr := os.Stat(s.databasePath()); dbErr == nil {
+			return State{}, nil, errors.New("SQLite ledger exists without its version fence")
+		}
 		return State{Version: stateVersion, NextID: 1}, nil, nil
 	}
 	if err != nil {
 		return State{}, nil, fmt.Errorf("read store: %w", err)
+	}
+	if fence, fenceErr := sqliteFenceFor(data); fenceErr == nil && fence.Storage == "sqlite" {
+		if fence.Version > stateVersion {
+			return State{}, nil, newerStoreError{fence.Version}
+		}
+		if fence.Version == stateVersion && fence.Database == sqliteDatabaseName {
+			return s.loadSQLiteHot()
+		}
+		return State{}, nil, errors.New("invalid SQLite version fence")
+	}
+	if version, versionErr := sqliteFileVersion(s.databasePath()); versionErr != nil {
+		return State{}, nil, fmt.Errorf("inspect SQLite ledger: %w", versionErr)
+	} else if version > stateVersion {
+		return State{}, nil, newerStoreError{version}
+	} else if version != 0 && version != stateVersion {
+		return State{}, nil, fmt.Errorf("unsupported SQLite ledger version %d", version)
 	}
 	state, err := unmarshalLedger(data)
 	if newer := (newerStoreError{}); errors.As(err, &newer) {
@@ -404,6 +428,21 @@ func (s Store) saveHot(state State, graveyardChanged bool) error {
 	}
 	data, err := marshalHot(state)
 	if err != nil {
+		return err
+	}
+	if state.Version == stateVersion {
+		err = s.saveSQLite(state, false)
+		if err == nil || fileio.IsCommitUnconfirmed(err) {
+			if s.changed != nil {
+				*s.changed = true
+			}
+			if graveyardChanged {
+				s.writeGraveNoticeIndex(state)
+				if err == nil {
+					s.collectGraveyardSnapshots(state, snapshots)
+				}
+			}
+		}
 		return err
 	}
 	err = writeDurably(s.statePath(), append(data, '\n'))

@@ -113,7 +113,7 @@ func (p *plan) requireEmptyGraveyard() error {
 // delete Home: OBIT_HOME may be a shared directory containing user files.
 var metadataNames = []string{
 	core.DataOwnerFile,
-	"store.json", "store.lock", "store.json.tmp", "sweep.lock", "graveyard.lock",
+	"store.json", "store.db", "store.db-wal", "store.db-shm", "store.lock", "store.json.tmp", "sweep.lock", "graveyard.lock",
 	"grave-notice-paths.json", "grave-notice-paths.json.tmp", "grave-notice-paths.lock",
 	"audit.jsonl", "audit.jsonl.1", "audit.lock", "audit-outbox.lock",
 	"explorer.json", "explorer.json.tmp", "explorer.lock", "explorer.log", "explorer.log.1", "explorer.stamp",

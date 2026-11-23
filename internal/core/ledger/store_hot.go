@@ -403,6 +403,13 @@ func (s Store) commitHot(st State, before []byte, events []Event) error {
 // after several commits; retry only when the hot reference actually changed.
 func (s Store) inspectSnapshot() (State, error) {
 	for range 4 {
+		if staged, ok := s.stagedSQLiteState(); ok {
+			if err := s.loadGraveyard(&staged); err != nil {
+				return State{}, err
+			}
+			staged, _, err := s.normalizeState(staged)
+			return staged, err
+		}
 		st, _, err := s.loadHot()
 		if err != nil {
 			return State{}, err

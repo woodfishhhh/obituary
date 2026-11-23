@@ -110,9 +110,15 @@ func OwnedLedgerFile(root *os.Root, name string) bool {
 	if err != nil {
 		return false
 	}
-	st, err := unmarshalLedger(data)
-	if err != nil {
-		return false
+	var dataID string
+	if fence, fenceErr := sqliteFenceFor(data); fenceErr == nil && fence.Storage == "sqlite" {
+		dataID = fence.DataID
+	} else {
+		st, decodeErr := unmarshalLedger(data)
+		if decodeErr != nil {
+			return false
+		}
+		dataID = st.DataID
 	}
-	return ownedGraveyardSnapshot(root, name, st.DataID)
+	return ownedGraveyardSnapshot(root, name, dataID)
 }

@@ -91,10 +91,25 @@ func VerifyDataOwner(root *os.Root) error {
 		return err
 	}
 	var state State
-	if err := json.Unmarshal(data, &state); err != nil {
+	var fence sqliteFence
+	if parsed, parseErr := sqliteFenceFor(data); parseErr == nil && parsed.Storage == "sqlite" {
+		if parsed.Version > stateVersion {
+			return newerStoreError{parsed.Version}
+		}
+		if parsed.Version != stateVersion || parsed.Database != sqliteDatabaseName {
+			return errors.New("invalid SQLite version fence")
+		}
+		fence = parsed
+		state = State{Version: parsed.Version, DataID: parsed.DataID, NextID: parsed.NextID,
+			Graveyard: parsed.Graveyard, PreviousGraveyard: parsed.PreviousGraveyard,
+			GraveyardIndex: parsed.GraveyardIndex}
+	} else if err := json.Unmarshal(data, &state); err != nil {
 		return err
 	}
 	if state.Version >= 17 {
+		if fence.Storage == "sqlite" && state.Graveyard == nil {
+			return errors.New("SQLite fence is missing graveyard ownership")
+		}
 		if err := validateHotLedger(state); err != nil {
 			return err
 		}

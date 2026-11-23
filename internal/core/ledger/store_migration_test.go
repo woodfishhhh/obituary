@@ -336,7 +336,7 @@ func TestV17SplitLedgerVolumeMigration(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, err := s.ReadSnapshot()
-	if err != nil || got.Version != 18 || !reflect.DeepEqual(st.Burials, got.Burials) {
+	if err != nil || got.Version != 19 || !reflect.DeepEqual(st.Burials, got.Burials) {
 		t.Fatalf("cold records not preserved on first hot update: version=%d err=%v", got.Version, err)
 	}
 	if len(got.Items) != 3 || !got.Items[0].ExpiresAt.Equal(wantExpiry) || got.Items[0].Rev != st.Items[0].Rev+1 {
