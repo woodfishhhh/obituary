@@ -14,6 +14,10 @@ func nativeMenus(exe string, lang i18n.Language) (map[string]Tree, error) {
 		return nil, err
 	}
 	files := map[string]Tree{}
+	env, err := userdirs.DesktopDirectoryEnv()
+	if err != nil {
+		return nil, err
+	}
 	type dict = map[string]any
 	for _, a := range menuActions {
 		label := a.label(lang)
@@ -22,7 +26,7 @@ func nativeMenus(exe string, lang i18n.Language) (map[string]Tree, error) {
 		if a.id == "policy" {
 			service["NSSendFileTypes"] = []string{"public.folder"}
 		}
-		params := dict{"COMMAND_STRING": a.command(shellQuote(exe), "\"$@\""), "inputMethod": 1, "shell": "/bin/sh", "source": ""}
+		params := dict{"COMMAND_STRING": a.command(launcher(exe, env, shellQuote), "\"$@\""), "inputMethod": 1, "shell": "/bin/sh", "source": ""}
 		inputType := "com.apple.Automator.fileSystemObject"
 		if a.id == "policy" {
 			inputType = "com.apple.Automator.folder"

@@ -338,3 +338,14 @@ func shellQuote(s string) string {
 	q := string(rune(39))
 	return q + strings.ReplaceAll(s, q, q+"\\"+q+q) + q
 }
+
+func launcher(exe string, env []string, quote func(string) string) string {
+	if len(env) == 0 {
+		return quote(exe)
+	}
+	words := []string{"/usr/bin/env"}
+	for _, value := range env {
+		words = append(words, quote(value))
+	}
+	return strings.Join(append(words, quote(exe)), " ")
+}

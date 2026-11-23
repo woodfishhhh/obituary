@@ -19,11 +19,31 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 )
 
 const dirName = "obituary"
+
+// DesktopDirectoryEnv binds a GUI launcher to any directories explicitly selected at installation.
+// Finder services and file managers need not inherit the installing shell environment.
+func DesktopDirectoryEnv() ([]string, error) {
+	var env []string
+	for _, k := range []string{"OBIT_HOME", "OBIT_CONFIG_DIR", "OBIT_USER_HOME"} {
+		if value := os.Getenv(k); value != "" {
+			if strings.ContainsAny(value, "\r\n") {
+				return nil, errors.New(k + " cannot contain a newline in a desktop action")
+			}
+			absolute, err := directoryAbs(value)
+			if err != nil {
+				return nil, err
+			}
+			env = append(env, k+"="+absolute)
+		}
+	}
+	return env, nil
+}
 
 // Data is where Obituary keeps its state: %LOCALAPPDATA%\obituary,
 // ~/Library/Application Support/obituary or $XDG_DATA_HOME/obituary.

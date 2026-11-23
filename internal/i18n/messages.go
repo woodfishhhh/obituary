@@ -356,7 +356,7 @@ var defaultMessages = map[string]*goi18n.Message{
 	"cli.uninstall.permanently_purge_the_listed_graves_and_remove":                   &goi18n.Message{ID: "cli.uninstall.permanently_purge_the_listed_graves_and_remove", Other: "Permanently purge the listed graves and remove Obituary data? [y/N] "},
 	"cli.uninstall.purge_permanent_requires_confirmation":                            &goi18n.Message{ID: "cli.uninstall.purge_permanent_requires_confirmation", Other: "PURGE (permanent; requires confirmation)"},
 	"cli.uninstall.remove_context_menu":                                              &goi18n.Message{ID: "cli.uninstall.remove_context_menu", Other: "  remove context menu"},
-	"cli.uninstall.remove_explorer_desktop_ini_labels":                               &goi18n.Message{ID: "cli.uninstall.remove_explorer_desktop_ini_labels", Other: "  remove Explorer desktop.ini labels"},
+	"cli.uninstall.remove_explorer_desktop_ini_labels":                               &goi18n.Message{ID: "cli.uninstall.remove_explorer_desktop_ini_labels", Other: "  remove owned burial date labels"},
 	"cli.uninstall.remove_folder_policy_files_stay_in_place":                         &goi18n.Message{ID: "cli.uninstall.remove_folder_policy_files_stay_in_place", Other: "  remove folder policy #%d %s (files stay in place)\n"},
 	"cli.uninstall.remove_hkcu_run":                                                  &goi18n.Message{ID: "cli.uninstall.remove_hkcu_run", Other: "  remove HKCU Run %s\n"},
 	"cli.uninstall.removed_owned_data":                                               &goi18n.Message{ID: "cli.uninstall.removed_owned_data", Other: "Removed owned data:"},
