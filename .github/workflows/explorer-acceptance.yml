@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 20
     env:
       OBIT_TELEMETRY: '0'
-      EXPECTED_VERSION: ${{ inputs.version }}
+      EXPECTED_VERSION: ${{ inputs.version || '1.7.0' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
