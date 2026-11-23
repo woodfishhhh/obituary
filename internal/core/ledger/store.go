@@ -173,9 +173,6 @@ func (s Store) update(fn func(*State) error, confirm bool) error {
 
 // ModTime reports when the state file last changed (zero if it does not exist).
 func (s Store) ModTime() time.Time {
-	if ok, _ := s.hasSQLiteFence(); ok {
-		return s.sqliteModTime()
-	}
 	info, err := os.Stat(s.statePath())
 	if err != nil {
 		return time.Time{}
@@ -259,7 +256,7 @@ func (s Store) loadHot() (State, []Event, error) {
 			return State{}, nil, newerStoreError{fence.Version}
 		}
 		if fence.Version == stateVersion && fence.Database == sqliteDatabaseName {
-			return s.loadSQLiteHot()
+			return s.loadSQLiteHot(fence)
 		}
 		return State{}, nil, errors.New("invalid SQLite version fence")
 	}

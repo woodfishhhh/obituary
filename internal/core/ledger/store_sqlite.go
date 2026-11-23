@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -92,13 +93,24 @@ func (s Store) sqliteSupported() bool {
 	return len([]byte(filepath.ToSlash(s.databasePath()))) < sqliteMaxPathBytes
 }
 
-func sqliteFenceBytes(st State) []byte {
-	data, _ := json.Marshal(sqliteFence{
+func sqliteFenceOf(st State) sqliteFence {
+	return sqliteFence{
 		Version: stateVersion, Storage: "sqlite", Database: sqliteDatabaseName,
 		DataID: st.DataID, NextID: st.NextID, Graveyard: st.Graveyard,
 		PreviousGraveyard: st.PreviousGraveyard, GraveyardIndex: st.GraveyardIndex,
-	})
+	}
+}
+
+func sqliteFenceBytes(st State) []byte {
+	data, _ := json.Marshal(sqliteFenceOf(st))
 	return append(data, '\n')
+}
+
+func (f sqliteFence) check(st State) error {
+	if !reflect.DeepEqual(f, sqliteFenceOf(st)) {
+		return errors.New("SQLite version fence disagrees with ledger metadata")
+	}
+	return validateHotLedger(st)
 }
 
 func sqliteFenceFor(data []byte) (sqliteFence, error) {
@@ -109,40 +121,40 @@ func sqliteFenceFor(data []byte) (sqliteFence, error) {
 	return fence, nil
 }
 
-func (s Store) hasSQLiteFence() (bool, error) {
+func (s Store) readSQLiteFence() (*sqliteFence, error) {
 	data, err := readShared(s.statePath())
 	if errors.Is(err, os.ErrNotExist) {
 		if _, dbErr := os.Stat(s.databasePath()); dbErr == nil {
-			return false, errors.New("SQLite ledger exists without its version fence")
+			return nil, errors.New("SQLite ledger exists without its version fence")
 		}
-		return false, nil
+		return nil, nil
 	}
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	fence, err := sqliteFenceFor(data)
 	if err != nil {
-		return false, nil
+		return nil, err
 	}
 	if fence.Version > stateVersion {
-		return false, newerStoreError{fence.Version}
+		return nil, newerStoreError{fence.Version}
 	}
 	if fence.Version != stateVersion {
-		return false, nil
+		return nil, nil
 	}
 	if fence.Storage == "" && !s.sqliteSupported() {
 		// Long homes keep the full v19 JSON ledger, not a SQLite fence.
 		if _, err := os.Lstat(s.databasePath()); errors.Is(err, os.ErrNotExist) {
-			return false, nil
+			return nil, nil
 		}
 	}
 	if fence.Storage != "sqlite" || fence.Database != sqliteDatabaseName {
-		return false, errors.New("invalid SQLite version fence")
+		return nil, errors.New("invalid SQLite version fence")
 	}
 	if _, err := os.Stat(s.databasePath()); err != nil {
-		return false, fmt.Errorf("SQLite ledger is missing: %w", err)
+		return nil, fmt.Errorf("SQLite ledger is missing: %w", err)
 	}
-	return true, nil
+	return &fence, nil
 }
 
 func openSQLite(path, mode string) (*sql.DB, error) {
@@ -574,7 +586,7 @@ func sqliteRowsReceiptID(rows sqliteRows) string {
 	return fmt.Sprintf("%x", hash.Sum(nil))
 }
 
-func (s Store) loadSQLiteHot() (State, []Event, error) {
+func (s Store) loadSQLiteHot(fence sqliteFence) (State, []Event, error) {
 	db, err := openSQLite(s.databasePath(), "ro")
 	if err != nil {
 		return State{}, nil, fmt.Errorf("open SQLite ledger: %w", err)
@@ -590,6 +602,9 @@ func (s Store) loadSQLiteHot() (State, []Event, error) {
 	}
 	if state.Version != stateVersion {
 		return State{}, nil, newerStoreError{state.Version}
+	}
+	if err := fence.check(state); err != nil {
+		return State{}, nil, err
 	}
 	state, events, err := s.normalizeState(state)
 	return state, events, err
@@ -711,12 +726,4 @@ func (s Store) stagedSQLiteState() (State, bool) {
 	defer pendingSQLiteMu.Unlock()
 	state, ok := pendingSQLite[s.Home]
 	return state, ok
-}
-
-func (s Store) sqliteModTime() time.Time {
-	info, err := os.Stat(s.statePath())
-	if err != nil {
-		return time.Time{}
-	}
-	return info.ModTime()
 }

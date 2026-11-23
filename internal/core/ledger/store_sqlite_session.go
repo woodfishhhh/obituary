@@ -414,10 +414,13 @@ func sqliteDeltaReceiptID(delta sqliteRowDelta) string {
 	return fmt.Sprintf("delta:%x", hash.Sum(nil))
 }
 
-func (s Store) updateHotSQLiteSession(session *sqliteSession, fn func(*State) error) error {
+func (s Store) updateHotSQLiteSession(session *sqliteSession, fence sqliteFence, fn func(*State) error) error {
 	session.mu.Lock()
 	defer session.mu.Unlock()
 	if err := session.refresh(s); err != nil {
+		return err
+	}
+	if err := fence.check(session.state); err != nil {
 		return err
 	}
 	base, err := session.baseline()
