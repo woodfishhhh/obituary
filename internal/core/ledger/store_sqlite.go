@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -140,13 +141,23 @@ func (s Store) hasSQLiteFence() (bool, error) {
 }
 
 func openSQLite(path, mode string) (*sql.DB, error) {
+	return openSQLiteMode(path, mode, false)
+}
+
+func openSQLiteMode(path, mode string, immutable bool) (*sql.DB, error) {
 	abs, err := filepath.Abs(path)
 	if err != nil {
 		return nil, err
 	}
 	query := []string{"mode=" + mode, "_pragma=busy_timeout(0)"}
 	if mode == "ro" {
-		if _, err := os.Stat(path + "-wal"); errors.Is(err, os.ErrNotExist) {
+		walEmpty := false
+		if info, err := os.Stat(path + "-wal"); err == nil {
+			walEmpty = info.Size() == 0
+		} else if errors.Is(err, os.ErrNotExist) {
+			walEmpty = true
+		}
+		if walEmpty || immutable && runtime.GOOS != "windows" {
 			// A checkpointed database has no sidecar to observe. Immutable read
 			// mode keeps diagnostics from creating a new SHM file.
 			query = append(query, "immutable=1")
@@ -216,13 +227,6 @@ func checkSQLiteSchema(ctx context.Context, db *sql.DB) error {
 	}
 	if version != stateVersion {
 		return fmt.Errorf("unsupported SQLite ledger version %d", version)
-	}
-	var journal string
-	if err := db.QueryRowContext(ctx, "PRAGMA journal_mode").Scan(&journal); err != nil {
-		return err
-	}
-	if strings.ToLower(journal) != "wal" {
-		return fmt.Errorf("ledger requires SQLite WAL; got %s", journal)
 	}
 	var synchronous int
 	if err := db.QueryRowContext(ctx, "PRAGMA synchronous").Scan(&synchronous); err != nil {
@@ -585,7 +589,7 @@ func sqliteRowsReceiptID(rows sqliteRows) string {
 }
 
 func (s Store) loadSQLiteHot() (State, []Event, error) {
-	db, err := openSQLite(s.databasePath(), "ro")
+	db, err := openSQLiteMode(s.databasePath(), "ro", s.inspectOnly)
 	if err != nil {
 		return State{}, nil, fmt.Errorf("open SQLite ledger: %w", err)
 	}

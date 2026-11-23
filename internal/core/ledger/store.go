@@ -23,6 +23,7 @@ type Store struct {
 	auditPending *bool
 	auditLines   *int                // batch delivery upper bound for recovery log advice
 	observeLock  func(time.Duration) // serial test measurement of store.lock ownership
+	inspectOnly  bool
 }
 
 func (s Store) WithContext(ctx context.Context) Store { s.ctx = ctx; return s }
@@ -104,6 +105,7 @@ func (s Store) ReadSnapshot() (State, error) {
 // Inspect reads a snapshot without creating a directory or lock file. It is
 // intended for read-only diagnostics, never for a read-modify-write operation.
 func (s Store) Inspect() (State, error) {
+	s.inspectOnly = true
 	return s.inspectSnapshot()
 }
 
