@@ -27,7 +27,7 @@ Obituary의 설정은 설정 디렉터리에 있는 `config.toml`에 씁니다. 
 
 기본적으로 수명이 다한 항목은 Obituary의 묘지로 들어갑니다. `graveyard.retention_days`일 동안(기본 7일)은 `obit resurrect`로 원래 자리에 되돌릴 수 있고, 그 기간이 지나야 영구적으로 삭제됩니다. 이 일수는 1에서 3650 사이에서 바꿀 수 있습니다.
 
-`graveyard.mode`를 `recycle`로 바꾸면 만료된 항목은 시스템 휴지통으로 넘어가고, 그 뒤는 Windows가 관리합니다. 이 모드는 Windows에만 있으며 macOS와 Linux에는 묘지만 있습니다. 휴지통에 들어간 항목은 휴지통에서 복원해야 하고, `obit resurrect`로는 찾을 수 없습니다.
+Windows와 Linux에서는 `graveyard.mode = "recycle"`로 시스템 휴지통을 사용할 수 있습니다. `obit resurrect`가 아니라 휴지통에서 복원하세요. macOS에서는 묘지만 지원합니다.
 
 ## 자동 등록과 에이전트 세션
 

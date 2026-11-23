@@ -8,6 +8,14 @@ obit watch --list                           # folder policies, their exemptions 
 obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans it registered
 ```
 
+En macOS y Linux, tras aprobar la política, cada elemento de primer nivel tiene su propio plazo, que por defecto empieza al detectarlo por primera vez. La carpeta vigilada sigue protegida; las subcarpetas caducadas solo generan propuestas y se omiten los archivos temporales de descarga. Si no se pueden impedir las escrituras, el archivo permanece en su sitio incluso tras diez minutos sin cambios.
+
+**En macOS y Linux la política todavía no puede enterrar archivos caducados ni mover una subcarpeta después de su aprobación.**
+
+```sh
+obit watch "$HOME/Downloads" 2w
+```
+
 ## Cómo se aplica
 
 - **La política necesita tu aprobación.** `obit watch` crea una propuesta. La política entra en vigor cuando ejecutas `obit approve` o la apruebas en la página «Para ti» de la ventana.

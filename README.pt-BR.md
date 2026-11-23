@@ -90,7 +90,7 @@ Cada plataforma de relance:
 | Verificação de vencimentos | processo residente na bandeja, Agendador de Tarefas como alternativa | agente launchd do usuário | timer `systemd --user`; crontab do usuário sem systemd |
 | CLI, cemitério e ressurreição, registro automático opcional, guardião de exclusão, integração com agentes(hooks, Skill, MCP), contêineres Docker, políticas de pastas | sim | sim | sim |
 | Bandeja, janela pequena, menus de contexto, datas de enterro no Explorer, atalhos do menu Iniciar e da área de trabalho | sim | Janela pequena e ícone da barra de menus no macOS por DMG universal; ainda sem menu de contexto | Janela e bandeja no Ubuntu 24.04 amd64 (deb) |
-| Modo Lixeira | sim | somente cemitério | somente cemitério |
+| Modo Lixeira | sim | somente cemitério | sim |
 
 Com a supervisão de desktop ativa, a bandeja trata os vencimentos e uma tarefa independente verifica pendências a cada hora. Edições sem bandeja continuam verificando a cada cinco minutos.
 

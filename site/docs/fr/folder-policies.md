@@ -8,6 +8,14 @@ obit watch --list                           # folder policies, their exemptions 
 obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans it registered
 ```
 
+Sous macOS et Linux, après approbation, chaque élément directement présent dans le dossier a sa propre durée de vie, calculée par défaut à partir de sa première détection. Le dossier surveillé reste protégé. Les sous-dossiers expirés donnent uniquement lieu à une proposition et les fichiers de téléchargement temporaires sont ignorés. Si une écriture ne peut être exclue, le fichier reste en place même après dix minutes sans modification.
+
+**Sous macOS et Linux, l’enterrement automatique par politique n’est pas pris en charge : les fichiers expirés restent en place, même les sous-dossiers approuvés ne sont pas déplacés.**
+
+```sh
+obit watch "$HOME/Downloads" 2w
+```
+
 ## Conditions d’application
 
 - **La règle doit être approuvée.** `obit watch` crée une proposition. La règle prend effet une fois que vous l’avez approuvée avec `obit approve` ou sur la page « Pour vous » de la petite fenêtre.

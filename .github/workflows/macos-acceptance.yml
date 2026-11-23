@@ -41,6 +41,9 @@ jobs:
         run: |
           export OBIT_HOME="$RUNNER_TEMP/data" OBIT_USER_HOME="$RUNNER_TEMP/user" OBIT_CONFIG_DIR="$RUNNER_TEMP/config"
           go test -count=1 ./internal/watch ./internal/winfs ./internal/cli/watch
+          go test -v -count=1 ./internal/core/lifecycle -run "TestWatch(FirstSeenRequiresApproval|FirstSeenPreservesExpiryAcrossScansAndRenames|ExistingParentLifespanCannotBuryPolicy|DirectoryRequiresBurialApproval|DownloadCompletionStartsObservation|ExpiryAlwaysUsesRestorableGraveyard)$"
+          go build -o "$RUNNER_TEMP/obit" ./cmd/obit
+          go build -o "$RUNNER_TEMP/obitd" ./cmd/obitd
   candidate:
     if: ${{ !inputs.release_tag && !inputs.posix_files }}
     uses: ./.github/workflows/macos-desktop.yml

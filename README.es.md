@@ -90,7 +90,7 @@ Cada plataforma de un vistazo:
 | Comprobación de caducidad | proceso residente en la bandeja, Programador de tareas como respaldo | agente launchd de usuario | temporizador `systemd --user`; crontab de usuario sin systemd |
 | CLI, cementerio y resurrección, registro automático opcional, guardia de eliminación, integración con agentes(hooks, Skill, MCP), contenedores Docker, políticas de carpetas | sí | sí | sí |
 | Bandeja, ventana pequeña, menús contextuales, fechas de entierro en el Explorador, accesos del menú Inicio y del escritorio | sí | Ventana y bandeja en macOS mediante DMG universal; todavía sin menú contextual | Ventana y bandeja en Ubuntu 24.04 amd64 (deb) |
-| Modo Papelera de reciclaje | sí | solo cementerio | solo cementerio |
+| Modo Papelera de reciclaje | sí | solo cementerio | sí |
 
 Con la supervisión de escritorio activada, el proceso de la bandeja atiende los vencimientos y una tarea independiente comprueba los pendientes cada hora. Las ediciones sin bandeja mantienen el intervalo de cinco minutos.
 

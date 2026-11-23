@@ -28,10 +28,6 @@ func (fs FS) MovePinnedInto(path string, want corefs.Identity, parent corefs.Res
 	return fs.moveInto(path, want, p, name, true)
 }
 
-func (FS) Recycle(string, corefs.Identity) error {
-	return fmt.Errorf("this platform supports only the graveyard; set mode = \"graveyard\" to bury files: %w", corefs.ErrUnsupported)
-}
-
 func (FS) MakeGrave(dir string) error {
 	if err := os.MkdirAll(filepath.Dir(dir), 0o700); err != nil {
 		return err

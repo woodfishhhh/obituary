@@ -16,7 +16,7 @@ func TestLinuxSettingsExposeOnlyPortableEntryCapabilities(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if settings.Capabilities != (Capabilities{}) {
+	if settings.Capabilities != (Capabilities{Recycle: true}) {
 		t.Fatalf("Windows-only capabilities exposed on Linux: %+v", settings.Capabilities)
 	}
 	for _, plan := range []func(bool) (Plan, error){a.PlanContextMenu, a.PlanTaskbar, a.PlanStartMenu, a.PlanDesktopShortcut, a.PlanTrayIcon} {
@@ -24,7 +24,7 @@ func TestLinuxSettingsExposeOnlyPortableEntryCapabilities(t *testing.T) {
 			t.Fatalf("unsupported desktop operation: %v", err)
 		}
 	}
-	if _, err := a.PlanSettings("recycle", 7); !errors.Is(err, core.ErrUnsupported) {
+	if _, err := a.PlanSettings("recycle", 7); err != nil {
 		t.Fatalf("recycle mode: %v", err)
 	}
 }

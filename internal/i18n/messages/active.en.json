@@ -124,7 +124,7 @@
   "cli.doctor.path_resolves_to_the_current_executable": "PATH resolves to the current executable: ",
   "cli.doctor.obit_is_not_found_on_path_hooks": "obit is not found on PATH; hooks use an absolute path (%s); typing obit will fail: %v",
   "cli.doctor.path_resolves_to_hooks_use_an_absolute": "PATH resolves to %s; hooks use an absolute path (%s); typing obit runs another executable",
-  "cli.doctor.graveyard_burial_and_resurrection_use_a_no": "graveyard burial and resurrection use a no-replace rename, then verify the moved object; mismatches are kept for manual recovery and never purged; recycle mode is Windows-only",
+  "cli.doctor.graveyard_burial_and_resurrection_use_a_no": "graveyard burial and resurrection use a no-replace rename, then verify the moved object; mismatches are kept for manual recovery and never purged; recycle mode is available on Windows and Linux",
   "cli.doctor.companion_executable_exists": "companion executable exists: ",
   "cli.doctor.store_json_and_its_referenced_graveyard_snapshot": "store.json and its referenced graveyard snapshot are readable (absent store means empty)",
   "cli.doctor.trusted_rules_json_is_readable_absence_means": "trusted_rules.json is readable (absence means no trusted rules)",

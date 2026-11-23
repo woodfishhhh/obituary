@@ -90,7 +90,7 @@ Chaque plateforme en bref :
 | Vérification des échéances | processus résident dans la barre système, Planificateur des tâches en secours | agent launchd utilisateur | minuteur `systemd --user` ; crontab utilisateur sans systemd |
 | CLI, cimetière et résurrection, enregistrement automatique optionnel, garde de suppression, intégration agent(hooks, Skill, MCP), conteneurs Docker, politiques de dossiers | oui | oui | oui |
 | Barre système, petite fenêtre, menus contextuels, dates d’enterrement dans l’Explorateur, raccourcis du menu Démarrer et du bureau | oui | Petite fenêtre et icône de barre des menus macOS via DMG universel; pas encore de menu contextuel | Fenêtre et icône de notification sur Ubuntu 24.04 amd64 (deb) |
-| Mode Corbeille | oui | cimetière uniquement | cimetière uniquement |
+| Mode Corbeille | oui | cimetière uniquement | oui |
 
 Avec la supervision du bureau activée, le processus résident traite les échéances à temps et une tâche indépendante vérifie les retards toutes les heures. Sans icône de zone de notification, les éditions en ligne de commande gardent une vérification toutes les cinq minutes.
 

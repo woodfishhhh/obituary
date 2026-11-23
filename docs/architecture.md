@@ -379,7 +379,7 @@ POSIX 没有「在同一个源句柄上改名」，所以换一种做法：先�
 - 文件系统不支持不覆盖改名（WSL 的 DrvFS、部分网络盘返回 `EINVAL` / `ENOTSUP`）时返回 `ErrUnsupported`，不退回普通 `rename`。
 - `MkdirRestoreParent` 在父目录 fd 上 `mkdirat` / `openat`，不跟随最后一级符号链接。POSIX 不能按创建 fd 删除目录，按路径复查再删可能删到别人的目录，所以复活失败时**保留**本次新建的空父目录并报告路径，不删。
 - `FindRestored` / `LocateIn`：没有全卷按 inode 打开的能力，只在已知的父目录或坟墓树里（`os.Root` + `WalkDir`）按完整身份找；找不到只说明「不确定」，条目保留，绝不当成已消失。
-- 回收站模式只在 Windows 上有；POSIX 上 `Recycle` 返回 `ErrUnsupported`，提示改用墓地。
+- Linux 系统回收站使用 freedesktop 的 `files/` 和 `info/*.trashinfo`。家目录卷记录绝对路径；其他卷使用带 sticky bit 的 `.Trash/<uid>` 或私有 `.Trash-<uid>`，记录卷内相对路径。先在私有暂存目录核验移动的对象，再以不覆盖的改名发布；失败不复制、不永久删除，回滚冲突则保留内容并报告位置。恢复交给系统回收站。macOS 仅支持墓地。
 
 ## 数据布局
 

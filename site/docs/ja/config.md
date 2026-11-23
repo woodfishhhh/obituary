@@ -27,7 +27,7 @@ Obituary の設定は、設定ディレクトリにある `config.toml` に書�
 
 既定では、寿命が尽きたものは Obituary 自身の墓地に入ります。`graveyard.retention_days` 日の間（既定は 7 日）は `obit resurrect` で元の場所に戻せて、それを過ぎてはじめて完全に削除されます。日数は 1 から 3650 の範囲で変えられます。
 
-`graveyard.mode` を `recycle` にすると、期限が切れたものはシステムのごみ箱に渡され、Windows が管理します。この設定があるのは Windows だけで、macOS と Linux には墓地しかありません。ごみ箱に入ったものはごみ箱から元に戻します。`obit resurrect` では見つかりません。
+Windows と Linux では `graveyard.mode = "recycle"` でシステムのごみ箱を使えます。復元には `obit resurrect` ではなく、ごみ箱の復元機能を使います。macOS では墓地のみ対応しています。
 
 ## 自動登録とエージェントのセッション
 

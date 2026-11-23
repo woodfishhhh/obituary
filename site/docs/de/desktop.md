@@ -4,7 +4,7 @@ Dateien wiederbeleben, Vorschläge genehmigen und Einstellungen ändern geht auc
 
 ## Was jede der drei Plattformen bietet
 
-Fenster, Infobereichs-Symbol und Desktop-Benachrichtigungen gibt es unter Windows, macOS und Ubuntu 24.04; das Kontextmenü, die Datumsmarkierungen im Explorer und der Papierkorbmodus existieren nur unter Windows. Die Desktop-Ausgaben für macOS und Ubuntu sind vorerst Vorabversionen. Andere Linux-Distributionen haben keine Desktop-Ausgabe und nutzen die Befehlszeile.
+Fenster, Infobereichs-Symbol und Desktop-Benachrichtigungen gibt es unter Windows, macOS und Ubuntu 24.04; das Kontextmenü und die Datumsmarkierungen im Explorer existieren nur unter Windows. Die Desktop-Ausgaben für macOS und Ubuntu sind vorerst Vorabversionen. Andere Linux-Distributionen haben keine Desktop-Ausgabe und nutzen die Befehlszeile.
 
 | | Windows | macOS | Ubuntu 24.04 |
 | --- | --- | --- | --- |
@@ -15,7 +15,7 @@ Fenster, Infobereichs-Symbol und Desktop-Benachrichtigungen gibt es unter Window
 | Desktop-Benachrichtigungen | ja | ja | ja |
 | Kontextmenü | im Explorer | nein | nein |
 | Datumsmarkierungen im Explorer | ja | nein | nein |
-| Papierkorbmodus | ja | nein, nur Friedhof | nein, nur Friedhof |
+| Papierkorbmodus | ja | nein, nur Friedhof | ja |
 | Installiert mit | dem Installationsskript, Scoop, winget oder dem Archiv | dem DMG | dem `.deb` |
 | Erster Start | ein von Hand heruntergeladenes Archiv kann eine SmartScreen-Warnung auslösen | braucht eine manuelle Freigabe, siehe [unten](#erste-offnung-einer-unsignierten-app) | öffnet sich direkt |
 | Voraussetzungen | die WebView2-Runtime | 1.6.0 braucht macOS 26 (behoben in 1.6.1) | GTK 3 und WebKitGTK 4.1, von apt installiert |

@@ -6,7 +6,7 @@ Se você excluir de vez um arquivo e perceber depois que precisava dele, não po
 
 ## Funciona no macOS e no Linux?
 
-Sim. Ambos oferecem a linha de comando e programas em segundo plano para x64 e ARM64, com cemitério, ressurreição e enterro automático. Para verificar os vencimentos, o macOS usa o launchd e o Linux, um temporizador de usuário do systemd. Os hooks do agente também iniciam verificações quando necessário. Veja o [guia de início rápido](./index). O modo de lixeira, a janela, a bandeja do sistema e os menus de contexto são exclusivos do Windows.
+Sim. Ambos oferecem a linha de comando e programas em segundo plano para x64 e ARM64, com cemitério, ressurreição e enterro automático. Para verificar os vencimentos, o macOS usa o launchd e o Linux, um temporizador de usuário do systemd. Os hooks do agente também iniciam verificações quando necessário. Veja o [guia de início rápido](./index). No Windows e no Linux, `graveyard.mode = "recycle"` usa a Lixeira do sistema. Restaure os arquivos pela Lixeira, não com `obit resurrect`. O macOS só oferece o cemitério.
 
 ## E se aparecer “O Windows protegeu o computador”?
 

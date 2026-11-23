@@ -4,7 +4,7 @@ Resurrect files, approve proposals and change settings without the command line.
 
 ## What each of the three platforms has
 
-The window, the tray and desktop notifications exist on Windows, macOS and Ubuntu 24.04; the context menu, the date labels in Explorer and Recycle Bin mode exist only on Windows. The desktop editions for macOS and Ubuntu are previews for now. Other Linux distributions have no desktop edition and use the command line.
+The window, the tray and desktop notifications exist on Windows, macOS and Ubuntu 24.04; the context menu and date labels in Explorer exist only on Windows. The desktop editions for macOS and Ubuntu are previews for now. Other Linux distributions have no desktop edition and use the command line.
 
 | | Windows | macOS | Ubuntu 24.04 |
 | --- | --- | --- | --- |
@@ -15,7 +15,7 @@ The window, the tray and desktop notifications exist on Windows, macOS and Ubunt
 | Desktop notifications | yes | yes | yes |
 | Context menu | in Explorer | no | no |
 | Date labels in Explorer | yes | no | no |
-| Recycle Bin mode | yes | no, graveyard only | no, graveyard only |
+| Recycle Bin mode | yes | no, graveyard only | yes |
 | Installed with | the install script, Scoop, winget or the archive | the DMG | the `.deb` |
 | First opening | an archive downloaded by hand may meet a SmartScreen warning | needs manual approval, see [below](#first-opening-an-unsigned-app) | opens directly |
 | Requirements | the WebView2 runtime | 1.6.0 needs macOS 26, fixed in 1.6.1 | GTK 3 and WebKitGTK 4.1, installed by apt |

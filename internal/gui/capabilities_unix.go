@@ -2,4 +2,6 @@
 
 package gui
 
-func platformCapabilities() Capabilities { return Capabilities{} }
+import "runtime"
+
+func platformCapabilities() Capabilities { return Capabilities{Recycle: runtime.GOOS == "linux"} }

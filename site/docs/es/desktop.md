@@ -4,7 +4,7 @@ Puedes resucitar archivos, aprobar propuestas y cambiar ajustes sin usar la lín
 
 ## Qué tiene cada una de las tres plataformas
 
-La ventana, la bandeja y las notificaciones de escritorio existen en Windows, macOS y Ubuntu 24.04; el menú contextual, las etiquetas de fecha del Explorador y el modo Papelera de reciclaje existen solo en Windows. Las ediciones de escritorio para macOS y Ubuntu son, por ahora, versiones preliminares. Otras distribuciones de Linux no tienen edición de escritorio y usan la línea de comandos.
+La ventana, la bandeja y las notificaciones de escritorio existen en Windows, macOS y Ubuntu 24.04; el menú contextual y las etiquetas de fecha del Explorador existen solo en Windows. Las ediciones de escritorio para macOS y Ubuntu son, por ahora, versiones preliminares. Otras distribuciones de Linux no tienen edición de escritorio y usan la línea de comandos.
 
 | | Windows | macOS | Ubuntu 24.04 |
 | --- | --- | --- | --- |
@@ -15,7 +15,7 @@ La ventana, la bandeja y las notificaciones de escritorio existen en Windows, ma
 | Notificaciones de escritorio | sí | sí | sí |
 | Menú contextual | en el Explorador | no | no |
 | Etiquetas de fecha en el Explorador | sí | no | no |
-| Modo Papelera de reciclaje | sí | no, solo cementerio | no, solo cementerio |
+| Modo Papelera de reciclaje | sí | no, solo cementerio | sí |
 | Se instala con | el script de instalación, Scoop, winget o el archivo comprimido | el DMG | el `.deb` |
 | Primera apertura | un archivo descargado a mano puede mostrar un aviso de SmartScreen | requiere aprobación manual, ver [más abajo](#primer-inicio-de-una-app-sin-firma) | se abre directamente |
 | Requisitos | el runtime de WebView2 | la 1.6.0 necesita macOS 26 (corregido en la 1.6.1) | GTK 3 y WebKitGTK 4.1, que instala apt |

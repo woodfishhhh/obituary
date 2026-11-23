@@ -4,7 +4,7 @@ Você pode ressuscitar arquivos, aprovar propostas e alterar as configurações 
 
 ## O que cada uma das três plataformas oferece
 
-A janela, o ícone da bandeja e as notificações de desktop existem no Windows, no macOS e no Ubuntu 24.04; o menu de contexto, as etiquetas de data do Explorador de Arquivos e o modo Lixeira existem só no Windows. As edições de desktop para macOS e Ubuntu são, por enquanto, versões de pré-lançamento. Outras distribuições Linux não têm edição de desktop e usam a linha de comando.
+A janela, o ícone da bandeja e as notificações de desktop existem no Windows, no macOS e no Ubuntu 24.04; o menu de contexto e as etiquetas de data do Explorador de Arquivos existem só no Windows. As edições de desktop para macOS e Ubuntu são, por enquanto, versões de pré-lançamento. Outras distribuições Linux não têm edição de desktop e usam a linha de comando.
 
 | | Windows | macOS | Ubuntu 24.04 |
 | --- | --- | --- | --- |
@@ -15,7 +15,7 @@ A janela, o ícone da bandeja e as notificações de desktop existem no Windows,
 | Notificações de desktop | sim | sim | sim |
 | Menu de contexto | no Explorador de Arquivos | não | não |
 | Etiquetas de data no Explorador | sim | não | não |
-| Modo Lixeira | sim | não, só cemitério | não, só cemitério |
+| Modo Lixeira | sim | não, só cemitério | sim |
 | Instalado com | o script de instalação, Scoop, winget ou o arquivo compactado | o DMG | o `.deb` |
 | Primeira abertura | um arquivo baixado à mão pode gerar um aviso do SmartScreen | exige aprovação manual, veja [abaixo](#primeira-abertura-de-um-app-sem-assinatura) | abre direto |
 | Requisitos | o runtime do WebView2 | a 1.6.0 exige macOS 26 (corrigido na 1.6.1) | GTK 3 e WebKitGTK 4.1, instalados pelo apt |

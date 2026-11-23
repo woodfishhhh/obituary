@@ -27,7 +27,7 @@
 
 預設情況下，壽命用完的項目會進訃告自己的墓地，在 `graveyard.retention_days` 天內（預設 7 天）可以用 `obit resurrect` 放回原處，超過這個期限才會被永久刪除。天數可以在 1 到 3650 之間調整。
 
-把 `graveyard.mode` 改成 `recycle`，到期的項目就會交給系統資源回收筒，由 Windows 自己管理；這個模式只有 Windows 才有，macOS 和 Linux 只有墓地。進了資源回收筒的項目要從資源回收筒還原，`obit resurrect` 找不到它們。
+Windows 和 Linux 可將 `graveyard.mode` 設為 `recycle`。請從系統資源回收筒還原，不能用 `obit resurrect`。macOS 僅支援墓地。
 
 ## 自動登記與 agent 工作階段
 
