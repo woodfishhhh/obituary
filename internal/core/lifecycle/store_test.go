@@ -93,7 +93,7 @@ func TestStoreContainerMigration(t *testing.T) {
 	if !bytes.Equal(beforeFile, afterFile) {
 		t.Fatal("container migration changed file record")
 	}
-	read.Version = 19
+	read.Version = 20 // deliberately newer than the SQLite ledger
 	data, _ = json.Marshal(read)
 	if err := os.WriteFile(path, data, 0o600); err != nil {
 		t.Fatal(err)
@@ -146,7 +146,12 @@ func TestLegacyWatchApprovalRequiresNewDecision(t *testing.T) {
 				t.Fatal(err)
 			}
 			storePath := filepath.Join(f.svc.Store.Home, "store.json")
-			data, err := os.ReadFile(storePath)
+			current, err := f.svc.Store.ReadSnapshot()
+			if err != nil {
+				t.Fatal(err)
+			}
+			current.Version = version
+			data, err := json.Marshal(current)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -442,7 +447,12 @@ func TestV4IntentFieldsAreIgnored(t *testing.T) {
 	path := f.file("keep.txt")
 	item := f.add(path, time.Hour)
 	storePath := filepath.Join(f.svc.Store.Home, "store.json")
-	data, err := os.ReadFile(storePath)
+	current, err := f.svc.Store.ReadSnapshot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	current.Version = 4
+	data, err := json.Marshal(current)
 	if err != nil {
 		t.Fatal(err)
 	}
