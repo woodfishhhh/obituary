@@ -240,18 +240,20 @@ New-Item -ItemType Directory -Force -Path $sample, (Join-Path $sample 'folder') 
 
 function Set-Language([string]$Language) {
     Set-Content -Encoding utf8 (Join-Path $env:OBIT_CONFIG_DIR 'config.toml') "[ui]`nlanguage = '$Language'`n[explorer]`nenabled = true`neverywhere = true`n"
-    Invoke-Cli $Obit @('init', '--yes', '--no-shortcuts', '--no-skill') | Out-Host
+    $output = Invoke-Cli $Obit @('init', '--yes', '--no-shortcuts', '--no-skill')
+    $output | Set-Content -Encoding utf8 (Join-Path $Evidence "init-$Language.txt")
 }
 
 function Registry-Labels([string]$Language) {
     $roots = @('HKCU:\Software\Classes\*\shell\Obituary.Mark', 'HKCU:\Software\Classes\Directory\shell\Obituary.Mark', 'HKCU:\Software\Classes\Directory\Background\shell\Obituary.Policy')
-    $rows = foreach ($root in $roots) {
-        if (Test-Path $root) {
-            $rootValue = Get-ItemProperty $root
-            [pscustomobject]@{ Path = $root; Label = $rootValue.MUIVerb; Children = @((Get-ChildItem "$root\shell" -ErrorAction SilentlyContinue | Sort-Object PSChildName | ForEach-Object { (Get-ItemProperty $_.PSPath).MUIVerb })) }
+    [array]$rows = foreach ($root in $roots) {
+        if (Test-Path -LiteralPath $root) {
+            $rootValue = Get-ItemProperty -LiteralPath $root
+            [pscustomobject]@{ Path = $root; Label = $rootValue.MUIVerb; Children = @((Get-ChildItem -LiteralPath "$root\shell" -ErrorAction SilentlyContinue | Sort-Object PSChildName | ForEach-Object { (Get-ItemProperty -LiteralPath $_.PSPath).MUIVerb })) }
         }
     }
     $rows | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 (Join-Path $Evidence "registry-$Language.json")
+    if ($rows.Count -eq 0) { throw "$Language context-menu registry roots were not installed" }
     Assert-Equal 3 $rows[0].Children.Count "$Language duration submenu count"
     Assert-Equal $rows[0].Children[0] ($(if ($Language -eq 'zh-CN') { '1 天' } else { '1 day' })) "$Language first duration label"
     Assert-Equal $rows[0].Children[1] ($(if ($Language -eq 'zh-CN') { '7 天' } else { '7 days' })) "$Language second duration label"
