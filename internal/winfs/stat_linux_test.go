@@ -1,11 +1,38 @@
 package winfs
 
 import (
-	"golang.org/x/sys/unix"
+	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"golang.org/x/sys/unix"
 )
+
+func TestDrvFSUsesWindowsLedger(t *testing.T) {
+	path := os.Getenv("OBIT_TEST_DRVFS_PATH")
+	if path == "" {
+		t.Skip("requires an existing fixture on a WSL Windows mount")
+	}
+	if _, _, err := (FS{}).LongPath(path); !errors.Is(err, corefs.ErrUnsupported) || !strings.Contains(err.Error(), "Windows") {
+		t.Errorf("expected Windows handoff, got %v", err)
+	}
+}
+
+func Test9pDeviceOwnership(t *testing.T) {
+	const mounts = "12 1 0:51 / /volume rw - 9p C: rw,aname=drvfs;path=C:\n13 1 0:52 / /mnt/c rw - 9p remote rw,aname=other"
+	if err := check9pDevice(mounts, "0:51"); !errors.Is(err, corefs.ErrUnsupported) {
+		t.Fatalf("DrvFS accepted: %v", err)
+	}
+	if err := check9pDevice(mounts, "0:52"); err != nil {
+		t.Fatalf("other 9p share rejected: %v", err)
+	}
+	if err := check9pDevice(mounts, "0:53"); err == nil {
+		t.Fatal("unidentified 9p device accepted")
+	}
+}
 
 func TestPOSIXIdentityRefusesInodeOnlyFID(t *testing.T) {
 	// Linux UAPI AT_HANDLE_FID (0x200) is not exposed by x/sys/unix yet.

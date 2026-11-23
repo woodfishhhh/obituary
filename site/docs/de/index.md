@@ -42,7 +42,9 @@ Das Skript installiert standardmäßig die neueste Version (`--version <version>
 
 Führen Sie Obituary bei der ersten Verwendung unter macOS mit `obit --version` und `obitd --help` aus. Wenn Gatekeeper eine Genehmigung verlangt, öffnen Sie Systemeinstellungen → Datenschutz & Sicherheit, wählen Sie für jede ausführbare Datei mit geprüfter Herkunft „Trotzdem öffnen“ und versuchen Sie den Befehl erneut.
 
-Legen Sie Projekte und Agent-Konfiguration unter WSL im Linux-Dateisystem ab (zum Beispiel in `~/projects`). Windows-Einhängungen wie `/mnt/c` unterstützen die für die Installation nötige sichere Umbenennung möglicherweise nicht; der Vorgang meldet einen Fehler und bewahrt die ursprüngliche Konfiguration. Sie können auch direkt die Windows-Version von Obituary verwenden.
+Unter WSL gehören Projekte und Agent-Konfiguration in das native Linux-Dateisystem, etwa nach `~/projects`. DrvFS-Laufwerke wie `/mnt/c` unterstützen möglicherweise nicht das sichere Umbenennen bei der Installation. Verwenden Sie ausschließlich die Windows-Version, um Dateien auf diesen Laufwerken eine Lebensdauer zu geben, sie zu begraben oder wiederherzustellen.
+
+Liefert das overlayfs eines Docker-Containers keine dauerhaften Dateikennungen, lehnt `obit mark` die Registrierung ab und lässt die Datei an ihrem Platz. Für Lebensdauer und Wiederherstellung legen Sie die Dateien und das Obituary-Datenverzeichnis auf einem Volume oder Bind-Mount mit dauerhaften Kennungen ab, etwa auf ext4.
 
 ### Windows
 

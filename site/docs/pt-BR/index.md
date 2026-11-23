@@ -42,7 +42,9 @@ O script instala a versão mais recente por padrão (`--version <version>` escol
 
 Na primeira utilização no macOS, execute `obit --version` e `obitd --help`. Se o Gatekeeper pedir aprovação, abra Ajustes do Sistema → Privacidade e Segurança, escolha “Abrir Mesmo Assim” para cada executável cuja origem você verificou e tente novamente.
 
-No WSL, mantenha os projetos e a configuração do agente no sistema de arquivos Linux (por exemplo, em `~/projects`). Montagens do Windows, como `/mnt/c`, podem não aceitar as renomeações seguras necessárias para a instalação; a operação informa um erro e preserva a configuração original. Você também pode usar diretamente a edição do Obituary para Windows.
+No WSL, mantenha os projetos e a configuração do agente no sistema de arquivos nativo do Linux, por exemplo em `~/projects`. Montagens DrvFS como `/mnt/c` podem não oferecer a renomeação segura exigida pela instalação. Use apenas a edição para Windows para definir a vida útil, enterrar ou restaurar arquivos nessas unidades.
+
+No Docker, se o overlayfs do contêiner não fornecer identificadores persistentes de arquivo, `obit mark` recusa o registro e deixa o arquivo no lugar. Para restaurar os arquivos após a expiração, coloque-os e o diretório de dados do Obituary em um volume ou uma montagem do tipo bind com um sistema de arquivos que forneça esses identificadores, como ext4.
 
 ### Windows
 

@@ -105,6 +105,9 @@ func Canonical(path string) (string, error) {
 func (FS) RealPath(path string) (string, error) { return Canonical(path) }
 func (FS) LongPath(path string) (string, bool, error) {
 	p, err := pathutil.Abs(path)
+	if err == nil {
+		err = checkManagedPath(p)
+	}
 	return p, err == nil, err
 }
 func (FS) SameName(a, b string) (bool, error) { return a == b, nil }

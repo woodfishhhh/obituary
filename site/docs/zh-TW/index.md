@@ -42,7 +42,9 @@ bash install.sh
 
 在 macOS 首次使用時，請執行 `obit --version` 和 `obitd --help`。如果 Gatekeeper 要求核准，請開啟「系統設定 → 隱私權與安全性」，對每個已核對來源的執行檔選擇「強制打開」，然後重試命令。
 
-在 WSL 中，請把專案和 agent 設定放在 Linux 檔案系統（例如 `~/projects`）中。`/mnt/c` 等 Windows 掛載路徑可能不支援安裝所需的安全改名；操作會回報錯誤並保留原始設定。你也可以直接使用 Windows 版 Obituary。
+在 WSL 中，請把專案和 agent 設定放在 Linux 原生目錄（如 `~/projects`）。`/mnt/c` 等 DrvFS 掛載磁碟可能不支援安裝所需的安全重新命名。磁碟上的檔案只用 Windows 版 Obituary 設定壽命、下葬與復活，不要交給兩份帳本。
+
+在 Docker 中，若容器的 overlayfs 無法提供持久的檔案識別碼，`obit mark` 會拒絕登記，檔案留在原處。若要讓到期下葬的檔案能夠復活，請把檔案和 Obituary 資料目錄放在支援持久識別碼的磁碟區或繫結掛載中，例如 ext4 目錄。
 
 ### Windows
 
