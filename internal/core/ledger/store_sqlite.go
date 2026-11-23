@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/core/internal/fileio"
-	_ "modernc.org/sqlite"
+	"modernc.org/sqlite"
 )
 
 const sqliteDatabaseName = "store.db"
@@ -193,6 +193,22 @@ func ensureSQLiteSchema(ctx context.Context, db *sql.DB) error {
 	return nil
 }
 
+func persistSQLiteWAL(ctx context.Context, db *sql.DB) error {
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	return conn.Raw(func(driverConn any) error {
+		fileControl, ok := driverConn.(sqlite.FileControl)
+		if !ok {
+			return errors.New("SQLite driver does not support persistent WAL")
+		}
+		_, err := fileControl.FileControlPersistWAL("main", 1)
+		return err
+	})
+}
+
 func checkSQLiteSchema(ctx context.Context, db *sql.DB) error {
 	var version int
 	if err := db.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
@@ -200,6 +216,13 @@ func checkSQLiteSchema(ctx context.Context, db *sql.DB) error {
 	}
 	if version != stateVersion {
 		return fmt.Errorf("unsupported SQLite ledger version %d", version)
+	}
+	var journal string
+	if err := db.QueryRowContext(ctx, "PRAGMA journal_mode").Scan(&journal); err != nil {
+		return err
+	}
+	if strings.ToLower(journal) != "wal" {
+		return fmt.Errorf("ledger requires SQLite WAL; got %s", journal)
 	}
 	var synchronous int
 	if err := db.QueryRowContext(ctx, "PRAGMA synchronous").Scan(&synchronous); err != nil {
@@ -599,6 +622,9 @@ func (s Store) saveSQLite(state State, migrating bool) error {
 	if err := ensureSQLiteSchema(ctx, db); err != nil {
 		return err
 	}
+	if err := persistSQLiteWAL(ctx, db); err != nil {
+		return fmt.Errorf("persist SQLite WAL: %w", err)
+	}
 	before := make(sqliteRows)
 	if _, err := os.Stat(s.databasePath()); err == nil {
 		if current, rows, readErr := decodeSQLiteRows(ctx, db); readErr == nil && current.Version == stateVersion {
@@ -632,41 +658,27 @@ func (s Store) saveSQLite(state State, migrating bool) error {
 	if _, err := tx.ExecContext(ctx, "INSERT OR IGNORE INTO receipts(id,result) VALUES(?,?)", receiptID, []byte("committed")); err != nil {
 		return err
 	}
-	if migrating {
-		if err := writeDurably(s.statePath(), sqliteFenceBytes(state)); err != nil {
-			if !fileio.IsCommitUnconfirmed(err) {
-				return err
-			}
-			if err := commitSQLite(ctx, tx); err != nil {
-				return fmt.Errorf("commit unconfirmed: %w", err)
-			}
-			rollback = false
-			return err
-		}
-	} else {
+	if !migrating {
 		pendingSQLiteMu.Lock()
 		pendingSQLite[s.Home] = state
 		pendingSQLiteMu.Unlock()
-		fenceErr := writeDurably(s.statePath(), sqliteFenceBytes(state))
-		pendingSQLiteMu.Lock()
-		delete(pendingSQLite, s.Home)
-		pendingSQLiteMu.Unlock()
-		if fenceErr != nil && !fileio.IsCommitUnconfirmed(fenceErr) {
-			return fenceErr
-		}
-		if err := commitSQLite(ctx, tx); err != nil {
-			return fmt.Errorf("commit unconfirmed: %w", err)
-		}
-		rollback = false
-		if fenceErr != nil {
-			return fenceErr
-		}
-		return nil
 	}
 	if err := commitSQLite(ctx, tx); err != nil {
 		return fmt.Errorf("commit unconfirmed: %w", err)
 	}
 	rollback = false
+	fenceErr := writeDurably(s.statePath(), sqliteFenceBytes(state))
+	pendingSQLiteMu.Lock()
+	if fenceErr == nil {
+		delete(pendingSQLite, s.Home)
+	}
+	pendingSQLiteMu.Unlock()
+	if fenceErr != nil {
+		if fileio.IsCommitUnconfirmed(fenceErr) {
+			return fenceErr
+		}
+		return fmt.Errorf("publish SQLite version fence: %w", fenceErr)
+	}
 	return nil
 }
 
