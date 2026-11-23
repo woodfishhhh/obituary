@@ -245,7 +245,7 @@ function Set-Language([string]$Language) {
 }
 
 function Registry-Labels([string]$Language) {
-    $roots = @('Software\Classes\*\shell\Obituary.Mark', 'Software\Classes\Directory\shell\Obituary.Mark', 'Software\Classes\Directory\Background\shell\Obituary.Policy')
+    $roots = @('Software\Classes\Obituary.ContextMenu', 'Software\Classes\*\shell\Obituary.Mark', 'Software\Classes\Directory\shell\Obituary.Mark', 'Software\Classes\Directory\Background\shell\Obituary.Policy')
     $rows = @(foreach ($root in $roots) {
         $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($root)
         if ($key) {
@@ -265,10 +265,11 @@ function Registry-Labels([string]$Language) {
     })
     $rows | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 (Join-Path $Evidence "registry-$Language.json")
     if ($rows.Count -eq 0) { throw "$Language context-menu registry roots were not installed" }
-    Assert-Equal 3 $rows[0].Children.Count "$Language duration submenu count"
-    Assert-Equal $rows[0].Children[0] ($(if ($Language -eq 'zh-CN') { '1 天' } else { '1 day' })) "$Language first duration label"
-    Assert-Equal $rows[0].Children[1] ($(if ($Language -eq 'zh-CN') { '7 天' } else { '7 days' })) "$Language second duration label"
-    Assert-Equal $rows[0].Children[2] ($(if ($Language -eq 'zh-CN') { '30 天' } else { '30 days' })) "$Language third duration label"
+    $children = @($rows[0].Children)
+    Assert-Equal 3 $children.Count "$Language duration submenu count"
+    Assert-Equal $children[0] ($(if ($Language -eq 'zh-CN') { '1 天' } else { '1 day' })) "$Language first duration label"
+    Assert-Equal $children[1] ($(if ($Language -eq 'zh-CN') { '7 天' } else { '7 days' })) "$Language second duration label"
+    Assert-Equal $children[2] ($(if ($Language -eq 'zh-CN') { '30 天' } else { '30 days' })) "$Language third duration label"
 }
 
 foreach ($language in @('zh-CN', 'en')) {
