@@ -110,7 +110,7 @@ Vous pouvez ajouter plusieurs fichiers en une fois. Une notification indique le 
 
 Après une mise à niveau, si tous les libellés du menu de l’Explorateur sont dans une autre langue prise en charge, le menu reste utilisable. `obit doctor` le signale à titre informatif (JSON : `installation: label-language-mismatch`). `obit init --context-menu --yes` applique la langue actuelle de l’interface.
 
-Dans Finder, ouvrez Actions rapides ; dans Nautilus, Scripts → Obituary ; dans Dolphin, Obituary. Sélectionnez un dossier pour définir sa politique.
+Dans Finder, ouvrez Actions rapides ; dans Nautilus, Scripts → Obituary ; dans Dolphin, Obituary. Sélectionnez un dossier pour définir sa politique. Dans Dolphin, un clic droit dans une zone vide agit sur le dossier courant. Pour enterrer un fichier, faites un clic droit sur le fichier lui-même.
 
 ## Icônes et menus
 
