@@ -6,6 +6,10 @@ on:
   workflow_call:
   workflow_dispatch:
     inputs:
+      posix_files:
+        description: Exercise folder policies and inspect Trash in an isolated home
+        type: boolean
+        default: false
       release_tag:
         description: Published tag to check instead of building a candidate
         type: string
@@ -15,8 +19,30 @@ permissions:
   contents: read
 
 jobs:
+  posix-files:
+    if: ${{ inputs.posix_files }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15, macos-26]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+      - run: bash scripts/probe-macos-files.sh
+      - env:
+          CGO_ENABLED: "0"
+          OBIT_TELEMETRY: "0"
+        run: |
+          export OBIT_HOME="$RUNNER_TEMP/data" OBIT_USER_HOME="$RUNNER_TEMP/user" OBIT_CONFIG_DIR="$RUNNER_TEMP/config"
+          go test -count=1 ./internal/watch ./internal/winfs ./internal/cli/watch
   candidate:
-    if: ${{ !inputs.release_tag }}
+    if: ${{ !inputs.release_tag && !inputs.posix_files }}
     uses: ./.github/workflows/macos-desktop.yml
   release:
     needs: candidate
