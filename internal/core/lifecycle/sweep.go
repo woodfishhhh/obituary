@@ -200,6 +200,9 @@ func (s *Service) commit(o Outcome) error {
 	if o.err != nil || o.Action == ActionBuried || o.Action == ActionSkipped || o.Action == ActionProposed {
 		return o.err // burial was committed in the same transaction as its move
 	}
+	if o.Action == ActionRetry {
+		return s.Store.UpdateItem(o.Item.ID, o.Item.Rev, func(current *Item) { s.recordRetry(current, o) })
+	}
 	return s.Store.UpdateHot(func(st *State) error {
 		s.commitOutcome(st, o)
 		return nil
@@ -223,6 +226,10 @@ func (s *Service) commitOutcome(st *State, o Outcome) {
 		st.Items = append(st.Items[:idx], st.Items[idx+1:]...)
 		return
 	}
+	s.recordRetry(current, o)
+}
+
+func (s *Service) recordRetry(current *Item, o Outcome) {
 	current.Path = o.Path
 	current.Attempts++
 	current.LastError = o.Detail

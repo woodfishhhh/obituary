@@ -351,7 +351,9 @@ func (s Store) updateHot(fn func(*State) error) error {
 				return err
 			}
 			if err == nil {
-				return s.updateHotSQLiteSession(session, *fence, fn)
+				if err := s.updateHotSQLiteSession(session, *fence, fn); !errors.Is(err, errSQLiteSessionFallback) {
+					return err
+				}
 			}
 		}
 		st, events, err := s.loadHot()

@@ -233,6 +233,14 @@ func TestSQLiteLedgerMigratesV18AndRefusesV20(t *testing.T) {
 }
 
 func BenchmarkSQLiteSparseUpdate10K(b *testing.B) {
+	benchmarkSQLiteItemUpdate(b, false)
+}
+
+func BenchmarkSQLiteItemRevision10K(b *testing.B) {
+	benchmarkSQLiteItemUpdate(b, true)
+}
+
+func benchmarkSQLiteItemUpdate(b *testing.B, keyed bool) {
 	b.Cleanup(SetFileSyncForTesting((*os.File).Sync))
 	store := (Store{Home: b.TempDir()}).WithPersistentSQLite()
 	b.Cleanup(store.ClosePersistentSQLite)
@@ -243,16 +251,26 @@ func BenchmarkSQLiteSparseUpdate10K(b *testing.B) {
 	if err := store.Update(func(st *State) error { st.Items, st.NextID = items, int64(len(items)+1); return nil }); err != nil {
 		b.Fatal(err)
 	}
-	if err := store.UpdateHot(func(*State) error { return nil }); err != nil {
+	warm := func() error { return store.UpdateHot(func(*State) error { return nil }) }
+	if keyed {
+		warm = func() error { return store.UpdateItem(1, 1, func(*Item) {}) }
+	}
+	if err := warm(); err != nil {
 		b.Fatal(err)
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		id := int64(i%len(items) + 1)
+		change := func(item *Item) { item.Rev++; item.Note = "changed" }
+		if keyed {
+			if err := store.UpdateItem(id, 1+int64(i/len(items)), change); err != nil {
+				b.Fatal(err)
+			}
+			continue
+		}
 		if err := store.UpdateHot(func(st *State) error {
 			idx := st.Index(id)
-			st.Items[idx].Rev++
-			st.Items[idx].Note = "changed"
+			change(&st.Items[idx])
 			return nil
 		}); err != nil {
 			b.Fatal(err)

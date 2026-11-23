@@ -76,17 +76,7 @@ func (s Store) sqliteHotSession() (*sqliteSession, error) {
 	if err != nil {
 		return nil, fmtSQLiteSessionError("open", err)
 	}
-	st, rows, err := s.loadSQLiteSessionState(db)
-	if err != nil {
-		_ = db.Close()
-		return nil, err
-	}
-	info, err := os.Stat(s.statePath())
-	if err != nil {
-		_ = db.Close()
-		return nil, err
-	}
-	session := &sqliteSession{db: db, state: st, rows: rows, modTime: info.ModTime().UnixNano()}
+	session := &sqliteSession{db: db}
 	sqliteSessions.byHome[s.Home] = session
 	return session, nil
 }
@@ -124,7 +114,7 @@ func (session *sqliteSession) refresh(s Store) error {
 		return err
 	}
 	modTime := info.ModTime().UnixNano()
-	if modTime == session.modTime {
+	if session.rows != nil && modTime == session.modTime {
 		return nil
 	}
 	state, rows, err := s.loadSQLiteSessionState(session.db)
@@ -444,15 +434,19 @@ func (s Store) updateHotSQLiteSession(session *sqliteSession, fence sqliteFence,
 	if delta.empty() {
 		return nil
 	}
-	if err := s.commitSQLiteSession(session, delta); err != nil {
+	if err := s.commitSQLiteDelta(session.db, session.state, delta, true); err != nil {
 		return err
+	}
+	applySQLiteDelta(session.rows, delta)
+	if info, err := os.Stat(s.statePath()); err == nil {
+		session.modTime = info.ModTime().UnixNano()
 	}
 	return nil
 }
 
-func (s Store) commitSQLiteSession(session *sqliteSession, delta sqliteRowDelta) error {
+func (s Store) commitSQLiteDelta(db *sql.DB, state State, delta sqliteRowDelta, publishFence bool) error {
 	ctx := s.Context()
-	tx, err := session.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+	tx, err := db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
 		return err
 	}
@@ -465,7 +459,7 @@ func (s Store) commitSQLiteSession(session *sqliteSession, delta sqliteRowDelta)
 	if err := writeSQLiteDelta(ctx, tx, delta); err != nil {
 		return err
 	}
-	transition, err := rememberFenceTransition(ctx, tx, delta.changes[sqliteKey{"meta", "state"}].before, session.state)
+	transition, err := rememberFenceTransition(ctx, tx, delta.changes[sqliteKey{"meta", "state"}].before, state)
 	if err != nil {
 		return err
 	}
@@ -477,9 +471,12 @@ func (s Store) commitSQLiteSession(session *sqliteSession, delta sqliteRowDelta)
 		return fmt.Errorf("commit unconfirmed: %w", err)
 	}
 	rollback = false
-	fenceErr := writeDurably(s.statePath(), sqliteFenceBytes(session.state))
+	var fenceErr error
+	if publishFence {
+		fenceErr = writeDurably(s.statePath(), sqliteFenceBytes(state))
+	}
 	if fenceErr != nil && !fileio.IsCommitUnconfirmed(fenceErr) {
-		if err := s.rollbackSQLiteDelta(ctx, session, delta, receiptID, transition); err != nil {
+		if err := s.rollbackSQLiteDelta(ctx, db, delta, receiptID, transition); err != nil {
 			return errors.Join(fenceErr, fmt.Errorf("rollback unpublished SQLite commit: %w", err))
 		}
 	}
@@ -489,18 +486,14 @@ func (s Store) commitSQLiteSession(session *sqliteSession, delta sqliteRowDelta)
 		}
 		return fmt.Errorf("publish SQLite version fence: %w", fenceErr)
 	}
-	applySQLiteDelta(session.rows, delta)
-	if info, err := os.Stat(s.statePath()); err == nil {
-		session.modTime = info.ModTime().UnixNano()
-	}
 	if s.changed != nil {
 		*s.changed = true
 	}
 	return nil
 }
 
-func (s Store) rollbackSQLiteDelta(ctx context.Context, session *sqliteSession, delta sqliteRowDelta, receiptID, transition string) error {
-	tx, err := session.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+func (s Store) rollbackSQLiteDelta(ctx context.Context, db *sql.DB, delta sqliteRowDelta, receiptID, transition string) error {
+	tx, err := db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
 		return err
 	}
