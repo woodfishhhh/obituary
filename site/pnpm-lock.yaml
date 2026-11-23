@@ -11,6 +11,9 @@ importers:
       '@vue/compiler-dom':
         specifier: 3.5.45
         version: 3.5.45
+      lightningcss:
+        specifier: 1.33.0
+        version: 1.33.0
 
   blog:
     devDependencies:
