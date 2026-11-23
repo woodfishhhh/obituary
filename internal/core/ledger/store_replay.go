@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"os"
+	"slices"
 	"sort"
 	"sync"
+	"time"
 )
 
 // replayCache is the hot ledger as the resident last committed it, with the
@@ -16,18 +18,52 @@ type replayCache struct {
 	mu    sync.Mutex
 	wire  []byte
 	state State
+	quiet quietMark
 }
 
-func (c *replayCache) put(wire []byte, st State) {
+// quietMark identifies the store.json the resident committed when that ledger
+// had nothing to tell an agent.
+type quietMark struct {
+	ok   bool
+	size int64
+	mod  time.Time
+}
+
+// put keeps what the resident just committed; path is where it was written.
+func (c *replayCache) put(path string, wire []byte, st State) {
 	c.mu.Lock()
-	c.wire, c.state = wire, st
-	c.mu.Unlock()
+	defer c.mu.Unlock()
+	c.wire, c.state, c.quiet = wire, st, quietMark{}
+	if info, err := os.Stat(path); err == nil && noticesQuiet(st) {
+		c.quiet = quietMark{true, info.Size(), info.ModTime()}
+	}
+}
+
+// noticesQuiet: no proposal at all and no automatic registration an agent has
+// not been told about. Deliberately stricter than what a hook would deliver.
+func noticesQuiet(st State) bool {
+	return len(st.Proposals) == 0 && !slices.ContainsFunc(st.AutoReceipts, func(r AutoReceipt) bool { return !r.Told })
+}
+
+// NoticesQuiet reports that the ledger on disk is the one this resident last
+// committed and that it holds nothing to tell an agent, so a hook can skip
+// reading it. It is false for any other file: another process committed since,
+// or nothing has been committed yet.
+func (s Store) NoticesQuiet() bool {
+	if s.resident == nil {
+		return false
+	}
+	s.resident.mu.Lock()
+	quiet := s.resident.quiet
+	s.resident.mu.Unlock()
+	info, err := os.Stat(s.statePath())
+	return quiet.ok && err == nil && info.Size() == quiet.size && info.ModTime().Equal(quiet.mod)
 }
 
 // take hands the cached state to exactly one caller, and only when raw is the
 // very bytes it was committed as. A failed or conflicting callback may already
 // have changed a map or slice the cached copy shares, so the cache is spent
-// whatever the answer.
+// whatever the answer. The quiet mark is not spent: it describes the file.
 func (c *replayCache) take(raw []byte) (State, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()

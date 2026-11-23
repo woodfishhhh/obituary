@@ -269,3 +269,42 @@ func TestAcceptObservationsSurvivesWriteFaults(t *testing.T) {
 		})
 	}
 }
+
+func TestNoticesQuietOnlyForTheLedgerTheResidentCommitted(t *testing.T) {
+	s := snapshotTestStore(t).WithResidentReplay()
+	if s.NoticesQuiet() {
+		t.Fatal("nothing has been committed yet")
+	}
+	touch := func(change func(*State)) func(Store) error {
+		return func(tx Store) error { return tx.UpdateHot(func(st *State) error { change(st); return nil }) }
+	}
+	if err := s.ReplayBatch(touch(func(st *State) { st.Items[0].Note = "a" })); err != nil {
+		t.Fatal(err)
+	}
+	if !s.NoticesQuiet() {
+		t.Fatal("a ledger with no proposal and no untold receipt is quiet")
+	}
+	// Another process commits: the resident cannot vouch for that file.
+	direct := Store{Home: s.Home}
+	if err := direct.UpdateHot(func(st *State) error { st.Items[0].Note = "b"; return nil }); err != nil {
+		t.Fatal(err)
+	}
+	if s.NoticesQuiet() {
+		t.Fatal("quiet survived another process's commit")
+	}
+	if err := s.ReplayBatch(touch(func(st *State) { st.AutoReceipts = []AutoReceipt{{ID: st.Items[0].ID}} })); err != nil {
+		t.Fatal(err)
+	}
+	if s.NoticesQuiet() {
+		t.Fatal("an automatic registration nobody was told about is news")
+	}
+	if err := s.ReplayBatch(touch(func(st *State) { st.AutoReceipts[0].Told = true; st.Proposals = []Proposal{{ID: 99}} })); err != nil {
+		t.Fatal(err)
+	}
+	if s.NoticesQuiet() {
+		t.Fatal("a proposal is news for any session that has not heard of it")
+	}
+	if (Store{Home: s.Home}).NoticesQuiet() {
+		t.Fatal("only the resident's store may claim quiet")
+	}
+}

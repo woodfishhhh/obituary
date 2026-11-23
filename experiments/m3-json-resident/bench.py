@@ -39,7 +39,7 @@ CPU = os.cpu_count()
 
 class Bench:
     def __init__(self, bins: Path, out: Path):
-        self.bin = {"old": bins / "bin-old", "new": bins / "bin-new"}
+        self.bin = {p.name[4:]: p for p in bins.glob("bin-*")}  # bin-old, bin-new, bin-<variant>
         self.root = Path(tempfile.gettempdir()) / ("obit-resident-bench-" + uuid.uuid4().hex[:8])
         self.root.mkdir()
         self.out = out
@@ -156,7 +156,7 @@ class System:
         (self.home / "migrated-1.3-auto-off").touch()
         self.expected = n
         self.daemon = None
-        if name == "old":
+        if name.startswith("old"):
             self.mutex = mutex(self.e)  # a background process "is present", as in the audit
         else:
             self.start()
@@ -184,8 +184,8 @@ class System:
         """Block until every accepted write is in the ledger; returns when it is."""
         until = time.monotonic() + timeout
         while True:
-            if self.name == "old":
-                self.b.run("old", "probe", ["replay"], self.e)
+            if self.name.startswith("old"):
+                self.b.run(self.name, "probe", ["replay"], self.e)
             items = len(read_state(self.home).get("items", []))
             if items == self.expected and queued(self.home) == 0:
                 return
@@ -210,7 +210,11 @@ class System:
         assert len(items) == len(got) == len(paths) and got == {str(p) for p in paths}, (self.name, len(items), len(paths))
         assert all(i["rev"] == 1 for i in items), "an item was registered twice"
         log = self.home / "hook.log"
-        assert not log.exists() or not log.read_text(encoding="utf8").strip(), log.read_text(encoding="utf8")[-800:]
+        lines = log.read_text(encoding="utf8").splitlines() if log.exists() else []
+        # The baseline gives up on a busy ledger after one second and queues the write: a logged,
+        # recovered outcome. The resident path must never log one.
+        assert self.name.startswith("old") or not lines, " | ".join(lines[-3:])
+        return len(lines)
 
 
 def wave(b: Bench, s: System, k, j):
@@ -249,12 +253,13 @@ def cmd_wave(a):
     b = Bench(Path(a.bins), Path(a.out))
     print("OS", platform.platform(), "CPU", CPU, "root", b.root, "n", a.n, "waves", a.waves, flush=True)
     for k in [int(x) for x in a.conc.split(",")]:
-        systems = {nm: System(b, nm, a.n, f"-{k}") for nm in ("old", "new")}
+        names = a.systems.split(",")
+        systems = {nm: System(b, nm, a.n, f"-{k}") for nm in names}
         acc = {nm: dict(hook=[], wave=[], list=[], backlog=[], drain=[], cpu=[]) for nm in systems}
         allp = {nm: [] for nm in systems}
         try:
             for j in range(a.waves):
-                for nm in (["old", "new"] if j % 2 == 0 else ["new", "old"]):  # interleave
+                for nm in (names[j % len(names):] + names[:j % len(names)]):  # rotate the order every wave
                     paths, hooks, group, listed, backlog, drained, cpu = wave(b, systems[nm], k, j)
                     allp[nm] += paths
                     m = acc[nm]
@@ -262,9 +267,10 @@ def cmd_wave(a):
                     m["backlog"].append(backlog); m["drain"].append(drained); m["cpu"].append(cpu)
                     print(f"k={k} wave={j} {nm} wave={group:.0f} list={listed:.0f} hookmax={max(hooks):.0f} backlog={backlog} drain={drained:.0f} cpu={cpu:.0f}%", flush=True)
             for nm in systems:
-                systems[nm].verify(allp[nm])
                 for key, vs in acc[nm].items():
                     b.record(f"n={a.n}/k={k}/{nm}/{key}", vs)
+                logged = systems[nm].verify(allp[nm])
+                print(f"n={a.n}/k={k}/{nm}: {len(allp[nm])} writes registered once each (rev 1); hook.log lines={logged}", flush=True)
         finally:
             for s in systems.values():
                 s.stop()
@@ -338,6 +344,7 @@ if __name__ == "__main__":
     ap.add_argument("--waves", type=int, default=7)
     ap.add_argument("--conc", default="4,8,16")
     ap.add_argument("--pairs", type=int, default=21)
+    ap.add_argument("--systems", default="old,new")
     ap.add_argument("--rounds", type=int, default=30)
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--out", default="bench-raw.jsonl")

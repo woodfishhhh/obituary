@@ -418,7 +418,7 @@ func (s Store) saveHot(state State, graveyardChanged bool) error {
 	data = append(data, '\n')
 	err = writeDurably(s.statePath(), data)
 	if err == nil && s.rememberReplay && !graveyardChanged && !state.graveyardLoaded {
-		s.resident.put(data, state)
+		s.resident.put(s.statePath(), data, state)
 	}
 	if err == nil || fileio.IsCommitUnconfirmed(err) {
 		// The new state is visible on disk even when its flush is unconfirmed.

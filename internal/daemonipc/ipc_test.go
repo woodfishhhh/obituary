@@ -19,14 +19,15 @@ func TestSubmitWaitsForResidentQueueAcceptance(t *testing.T) {
 		got = append(got, rows...)
 		mu.Unlock()
 		return nil
-	})
+	}, func() bool { return true })
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer stop()
 	rows := []core.Observation{{Token: "token", Session: "session", Path: "/tmp/file", ObservedAt: time.Now(), Identity: &core.Identity{FileID: "id"}}}
-	if err := Submit(context.Background(), home, rows); err != nil {
-		t.Fatal(err)
+	receipt, err := Submit(context.Background(), home, rows)
+	if err != nil || !receipt.Quiet {
+		t.Fatalf("receipt %+v: %v", receipt, err)
 	}
 	mu.Lock()
 	defer mu.Unlock()
@@ -37,7 +38,7 @@ func TestSubmitWaitsForResidentQueueAcceptance(t *testing.T) {
 
 func TestSubmitWithoutResidentIsUnavailable(t *testing.T) {
 	rows := []core.Observation{{Token: "token"}}
-	if err := Submit(context.Background(), t.TempDir(), rows); !errors.Is(err, ErrUnavailable) {
+	if _, err := Submit(context.Background(), t.TempDir(), rows); !errors.Is(err, ErrUnavailable) {
 		t.Fatalf("got %v, want ErrUnavailable so the hook registers directly", err)
 	}
 }
@@ -51,19 +52,19 @@ func TestSubmitDistinguishesRefusalAndSilenceFromAbsence(t *testing.T) {
 		}
 		<-block // an acknowledgement that never comes
 		return nil
-	})
+	}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer stop()
 	defer close(block) // runs first: stop waits for handlers still blocked on it
-	err = Submit(context.Background(), home, []core.Observation{{Token: "refuse"}})
+	_, err = Submit(context.Background(), home, []core.Observation{{Token: "refuse"}})
 	if err == nil || errors.Is(err, ErrUnavailable) {
 		t.Fatalf("a refusal is an answer from a resident that is there: %v", err)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
-	err = Submit(ctx, home, []core.Observation{{Token: "silent"}})
+	_, err = Submit(ctx, home, []core.Observation{{Token: "silent"}})
 	if err == nil || errors.Is(err, ErrUnavailable) {
 		t.Fatalf("a silent resident must be queued around, not treated as absent: %v", err)
 	}

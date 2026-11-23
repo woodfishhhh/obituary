@@ -45,7 +45,7 @@ func runInterruptedResident(stage string) int {
 			select {} // the acknowledgement never comes
 		}
 		return errors.New("resident refuses requests") // "refused"
-	})
+	}, nil)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1

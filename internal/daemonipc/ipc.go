@@ -29,18 +29,25 @@ type response struct {
 	Version  int
 	Accepted int
 	Error    string
+	// Quiet: the ledger holds nothing to tell an agent, so the hook need not read
+	// it. Absent (false) means "read it", which is what an older resident implies.
+	Quiet bool `json:",omitempty"`
 }
 
 type Handler func([]core.Observation) error
 
+// Receipt is what a hook learns from an accepted request besides the fact.
+type Receipt struct{ Quiet bool }
+
 // Serve starts the local resident endpoint and returns its shutdown function.
-func Serve(home string, handler Handler) (func() error, error) {
+// quiet, if not nil, is asked after each accepted request.
+func Serve(home string, handler Handler, quiet func() bool) (func() error, error) {
 	listener, cleanup, err := listen(home)
 	if err != nil {
 		return nil, err
 	}
 	done := make(chan struct{})
-	go serveListener(listener, handler, done)
+	go serveListener(listener, handler, quiet, done)
 	return func() error {
 		err := listener.Close()
 		<-done
@@ -50,13 +57,13 @@ func Serve(home string, handler Handler) (func() error, error) {
 
 // Submit waits only for durable queue acceptance. A missing or stopped
 // resident is reported distinctly so callers can use their direct-write path.
-func Submit(ctx context.Context, home string, observations []core.Observation) error {
+func Submit(ctx context.Context, home string, observations []core.Observation) (Receipt, error) {
 	if len(observations) == 0 {
-		return nil
+		return Receipt{}, nil
 	}
 	conn, err := dial(ctx, home)
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrUnavailable, err)
+		return Receipt{}, fmt.Errorf("%w: %w", ErrUnavailable, err)
 	}
 	defer conn.Close()
 	deadline, ok := ctx.Deadline()
@@ -65,25 +72,25 @@ func Submit(ctx context.Context, home string, observations []core.Observation) e
 	}
 	_ = conn.SetDeadline(deadline)
 	if err := json.NewEncoder(conn).Encode(request{Version: protocolVersion, Observations: observations}); err != nil {
-		return fmt.Errorf("resident IPC request: %w", err)
+		return Receipt{}, fmt.Errorf("resident IPC request: %w", err)
 	}
 	var reply response
 	if err := json.NewDecoder(io.LimitReader(conn, 64<<10)).Decode(&reply); err != nil {
-		return fmt.Errorf("resident IPC response: %w", err)
+		return Receipt{}, fmt.Errorf("resident IPC response: %w", err)
 	}
 	if reply.Version != protocolVersion {
-		return fmt.Errorf("resident IPC protocol version %d", reply.Version)
+		return Receipt{}, fmt.Errorf("resident IPC protocol version %d", reply.Version)
 	}
 	if reply.Error != "" {
-		return errors.New(reply.Error)
+		return Receipt{}, errors.New(reply.Error)
 	}
 	if reply.Accepted != len(observations) {
-		return fmt.Errorf("resident IPC accepted %d of %d observations", reply.Accepted, len(observations))
+		return Receipt{}, fmt.Errorf("resident IPC accepted %d of %d observations", reply.Accepted, len(observations))
 	}
-	return nil
+	return Receipt{Quiet: reply.Quiet}, nil
 }
 
-func serveListener(listener net.Listener, handler Handler, done chan<- struct{}) {
+func serveListener(listener net.Listener, handler Handler, quiet func() bool, done chan<- struct{}) {
 	defer close(done)
 	var clients sync.WaitGroup
 	defer clients.Wait()
@@ -92,11 +99,11 @@ func serveListener(listener net.Listener, handler Handler, done chan<- struct{})
 		if err != nil {
 			return
 		}
-		clients.Go(func() { serveConn(conn, handler) })
+		clients.Go(func() { serveConn(conn, handler, quiet) })
 	}
 }
 
-func serveConn(conn net.Conn, handler Handler) {
+func serveConn(conn net.Conn, handler Handler, quiet func() bool) {
 	defer conn.Close()
 	_ = conn.SetDeadline(time.Now().Add(2 * time.Second))
 	var req request
@@ -112,7 +119,7 @@ func serveConn(conn net.Conn, handler Handler) {
 		_ = writeResponse(conn, response{Version: protocolVersion, Error: err.Error()})
 		return
 	}
-	_ = writeResponse(conn, response{Version: protocolVersion, Accepted: len(req.Observations)})
+	_ = writeResponse(conn, response{Version: protocolVersion, Accepted: len(req.Observations), Quiet: quiet != nil && quiet()})
 }
 
 func writeResponse(conn net.Conn, reply response) error {

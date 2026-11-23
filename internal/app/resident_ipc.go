@@ -16,7 +16,7 @@ func serveHookEndpoint(svc *core.Service, logger *log.Logger) func() error {
 	if os.Getenv("OBIT_TEST_NO_RESIDENT_IPC") == "1" { // tests of the direct-write fallback
 		return nil
 	}
-	stop, err := daemonipc.Serve(svc.Store.Home, daemonipc.Batch(svc.Store.AcceptObservations))
+	stop, err := daemonipc.Serve(svc.Store.Home, daemonipc.Batch(svc.Store.AcceptObservations), svc.Store.NoticesQuiet)
 	if err != nil {
 		logger.Printf("hook endpoint unavailable, hooks register directly: %v", err)
 		return nil

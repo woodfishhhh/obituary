@@ -203,13 +203,16 @@ func postToolContext(e *auto.Engine, ev Event, runner *Runner, pendingNotices bo
 	if err := e.RecordWrites(observations); err != nil {
 		Logf(e.Svc.Store.Home, "record session writes: %v", err)
 	}
-	if ev.Name == "PostToolUse" && len(observations) > 0 && handedToResident(e.Svc.Store, observations) {
-		// Git, consent and registration are the resident's job from here; what it
-		// finished earlier is told now, from the last committed ledger.
-		if captureErr != nil || ev.DeferContext {
-			return delivery{}, captureErr
+	if ev.Name == "PostToolUse" && len(observations) > 0 {
+		if handed, quiet := handedToResident(e.Svc.Store, observations); handed {
+			// Git, consent and registration are the resident's job from here. What it
+			// finished earlier is told now, from the last committed ledger, unless the
+			// resident knows there is nothing to tell.
+			if captureErr != nil || ev.DeferContext || quiet {
+				return delivery{}, captureErr
+			}
+			return observationContext(e, ev, proj, inProject, pendingNotices, nil)
 		}
-		return observationContext(e, ev, proj, inProject, pendingNotices, nil)
 	}
 	replayPending(e)
 	if len(paths) == 0 && !pendingNotices && ev.Name != "Context" {
@@ -249,15 +252,16 @@ const residentAckBudget = 250 * time.Millisecond
 // write, or its endpoint was there but silent and the writes were queued as
 // per-request files instead. Without a resident it returns false and the caller
 // registers directly. An unacknowledged request may still reach the resident, so
-// the same token can arrive twice; replays register a token once.
-func handedToResident(store core.Store, observations []core.Observation) bool {
+// the same token can arrive twice; replays register a token once. quiet is the
+// resident's word that the ledger has nothing to tell an agent.
+func handedToResident(store core.Store, observations []core.Observation) (handed, quiet bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), residentAckBudget)
 	defer cancel()
-	err := daemonipc.Submit(ctx, store.Home, observations)
+	receipt, err := daemonipc.Submit(ctx, store.Home, observations)
 	if err == nil {
-		return true
+		return true, receipt.Quiet
 	}
-	return !errors.Is(err, daemonipc.ErrUnavailable) && store.DeferObservations(observations) == nil
+	return !errors.Is(err, daemonipc.ErrUnavailable) && store.DeferObservations(observations) == nil, false
 }
 
 func observationContext(e *auto.Engine, ev Event, proj project.Project, inProject, pendingNotices bool, notices []auto.Notice) (delivery, error) {
