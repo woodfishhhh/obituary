@@ -87,25 +87,39 @@ type GraveyardSummary struct {
 // back to the locked Read for legacy or migrating stores, a corrupt ledger, or a
 // snapshot that was replaced while it was being read.
 func (s Store) ReadSummary() (State, GraveyardSummary, error) {
-	if st, events, err := s.loadHot(); err == nil && st.Version == stateVersion && len(events) == 0 {
-		if st.Graveyard == nil {
-			return st, GraveyardSummary{}, nil
-		}
-		if summary, err := s.readGraveyardSummary(st); err == nil {
-			return st, summary, nil
-		}
-		// A record the summary projection cannot hold is still immutable cold evidence.
-		if err := s.loadGraveyard(&st); err == nil {
-			if full, more, err := s.normalizeState(st); err == nil && len(more) == 0 {
-				return full, summaryFromState(full), nil
-			}
-		}
+	if st, summary, ok := s.readCommittedSummary(); ok {
+		return st, summary, nil
 	}
 	full, err := s.Read()
 	if err != nil {
 		return State{}, GraveyardSummary{}, err
 	}
 	return full, summaryFromState(full), nil
+}
+
+// readCommittedSummary reads without a lock; ok is false whenever the locked
+// Read has to decide: a legacy or migrating ledger, corruption, or a snapshot
+// replaced during the read.
+func (s Store) readCommittedSummary() (State, GraveyardSummary, bool) {
+	st, events, err := s.loadHot()
+	if err != nil || st.Version != stateVersion || len(events) != 0 {
+		return State{}, GraveyardSummary{}, false
+	}
+	if st.Graveyard == nil {
+		return st, GraveyardSummary{}, true
+	}
+	if summary, err := s.readGraveyardSummary(st); err == nil {
+		return st, summary, true
+	}
+	// A record the summary projection cannot hold is still immutable cold evidence.
+	if err := s.loadGraveyard(&st); err != nil {
+		return State{}, GraveyardSummary{}, false
+	}
+	full, more, err := s.normalizeState(st)
+	if err != nil || len(more) != 0 {
+		return State{}, GraveyardSummary{}, false
+	}
+	return full, summaryFromState(full), true
 }
 
 type graveyardSummarySnapshot struct {

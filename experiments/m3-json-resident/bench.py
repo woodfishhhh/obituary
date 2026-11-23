@@ -205,7 +205,7 @@ class System:
                 self.daemon.terminate()
                 self.daemon.wait()
 
-    def verify(self, paths):
+    def verify(self, paths, strict_log=True):
         items = [i for i in read_state(self.home)["items"] if Path(i["path"]).parent == self.b.repo]
         got = {i["path"] for i in items}
         assert len(items) == len(got) == len(paths) and got == {str(p) for p in paths}, (self.name, len(items), len(paths))
@@ -214,11 +214,11 @@ class System:
         lines = log.read_text(encoding="utf8").splitlines() if log.exists() else []
         # The baseline gives up on a busy ledger after one second and queues the write: a logged,
         # recovered outcome. The resident path must never log one.
-        assert self.name.startswith("old") or not lines, " | ".join(lines[-3:])
+        assert self.name.startswith("old") or not strict_log or not lines, " | ".join(lines[-3:])
         return len(lines)
 
 
-def wave(b: Bench, s: System, k, j):
+def wave(b: Bench, s: System, k, j, kind="post"):
     paths = [b.repo / f"debug-{s.name}-{k}-{j}-{i}.log" for i in range(k)]
     for p in paths:
         p.write_text("x", encoding="utf8")
@@ -227,7 +227,10 @@ def wave(b: Bench, s: System, k, j):
     def hook(i):
         barrier.wait()
         time.sleep(.005 * (i % 4))
-        return b.run(s.name, "obit", ["hook", "claude"], s.e, b.payload(f"session-{s.name}-{k}-{i}", paths[i]))[0]
+        payload = b.payload(f"session-{s.name}-{k}-{i}", paths[i])
+        if kind == "pre":  # an ordinary command: no ledger, no Git, no write
+            payload.update(hook_event_name="PreToolUse", tool_name="Bash", tool_input={"command": "git status --short"})
+        return b.run(s.name, "obit", ["hook", "claude"], s.e, payload)[0]
 
     def reader():
         barrier.wait()
@@ -243,6 +246,8 @@ def wave(b: Bench, s: System, k, j):
         group = (time.perf_counter() - t0) * 1000
         listed = rd.result()
     backlog = queued(s.home)
+    if kind == "pre":
+        return paths, hooks, group, listed, backlog, 0.0, cpu.pct
     s.expected += k
     s.drain()
     drained = (time.perf_counter() - t0) * 1000
@@ -302,11 +307,10 @@ def cmd_chaos(a):
     rng = random.Random(a.seed)
     allp, hook_ms, kills = [], [], 0
     for rnd in range(a.rounds):
-        paths = [b.repo / f"debug-chaos-{rnd}-{i}.log" for i in range(a.conc)]
+        paths = [b.repo / f"debug-chaos-{rnd}-{i}.log" for i in range(int(a.conc.split(",")[0]))]
         for p in paths:
             p.write_text("x", encoding="utf8")
         plan = dict(hook=[rng.uniform(0, .8) for _ in paths], die=rng.uniform(0, 1.2), down=rng.uniform(0, .5))
-        stop = threading.Event()
 
         def killer():
             nonlocal kills
@@ -331,9 +335,11 @@ def cmd_chaos(a):
         s.expected += len(paths)
         print(f"round {rnd} killed at {plan['die']:.2f}s, down {plan['down']:.2f}s", flush=True)
     s.drain(timeout=180)
-    s.verify(allp)
+    # With the resident dead a hook registers directly and gives up after its one-second
+    # lock/Git budget under load, which it logs and queues; that is a recovered outcome here.
+    logged = s.verify(allp, strict_log=False)
     b.record(f"chaos/n={a.n}/hooks={len(allp)}/kills={kills}/hook", hook_ms)
-    print("chaos ok: every write registered exactly once (rev 1), queue empty, no hook.log entries", flush=True)
+    print(f"chaos ok: {len(allp)} writes, {kills} kills; every write registered exactly once (rev 1), queue empty; hook.log lines={logged}", flush=True)
     s.stop()
 
 
@@ -378,9 +384,27 @@ def cmd_compat(a):
     print("compat ok", flush=True)
 
 
+def cmd_floor(a):
+    """Concurrent `obit list` next to 16 hooks that do nothing with the ledger: the launch-contention floor."""
+    b = Bench(Path(a.bins), Path(a.out))
+    print("OS", platform.platform(), "CPU", CPU, "root", b.root, "n", a.n, flush=True)
+    s = System(b, "new", a.n, "-floor")
+    k = int(a.conc.split(",")[0])
+    acc = dict(hook=[], wave=[], list=[], cpu=[])
+    try:
+        for j in range(a.waves):
+            _, hooks, group, listed, _, _, cpu = wave(b, s, k, j, kind="pre")
+            acc["hook"] += hooks; acc["wave"].append(group); acc["list"].append(listed); acc["cpu"].append(cpu)
+            time.sleep(.6)
+        for key, vs in acc.items():
+            b.record(f"floor/n={a.n}/k={k}/pre-hooks/{key}", vs)
+    finally:
+        s.stop()
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("mode", choices=["wave", "paired", "chaos", "compat"])
+    ap.add_argument("mode", choices=["wave", "paired", "chaos", "compat", "floor"])
     ap.add_argument("bins")
     ap.add_argument("--n", type=int, default=1000)
     ap.add_argument("--waves", type=int, default=7)
@@ -392,4 +416,4 @@ if __name__ == "__main__":
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--out", default="bench-raw.jsonl")
     args = ap.parse_args()
-    {"wave": cmd_wave, "paired": cmd_paired, "chaos": cmd_chaos, "compat": cmd_compat}[args.mode](args)
+    {"wave": cmd_wave, "paired": cmd_paired, "chaos": cmd_chaos, "compat": cmd_compat, "floor": cmd_floor}[args.mode](args)
