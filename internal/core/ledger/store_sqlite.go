@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -18,7 +17,7 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/core/internal/fileio"
-	"modernc.org/sqlite"
+	_ "modernc.org/sqlite"
 )
 
 const sqliteDatabaseName = "store.db"
@@ -147,10 +146,6 @@ func (s Store) hasSQLiteFence() (bool, error) {
 }
 
 func openSQLite(path, mode string) (*sql.DB, error) {
-	return openSQLiteMode(path, mode, false)
-}
-
-func openSQLiteMode(path, mode string, immutable bool) (*sql.DB, error) {
 	abs, err := filepath.Abs(path)
 	if err != nil {
 		return nil, err
@@ -209,22 +204,6 @@ func ensureSQLiteSchema(ctx context.Context, db *sql.DB) error {
 		return fmt.Errorf("ledger requires SQLite synchronous=FULL; got %d", synchronous)
 	}
 	return nil
-}
-
-func persistSQLiteWAL(ctx context.Context, db *sql.DB) error {
-	conn, err := db.Conn(ctx)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-	return conn.Raw(func(driverConn any) error {
-		fileControl, ok := driverConn.(sqlite.FileControl)
-		if !ok {
-			return errors.New("SQLite driver does not support persistent WAL")
-		}
-		_, err := fileControl.FileControlPersistWAL("main", 1)
-		return err
-	})
 }
 
 func checkSQLiteSchema(ctx context.Context, db *sql.DB) error {
@@ -596,10 +575,7 @@ func sqliteRowsReceiptID(rows sqliteRows) string {
 }
 
 func (s Store) loadSQLiteHot() (State, []Event, error) {
-	// shortcut: POSIX diagnostics and short-lived readers use immutable mode to
-	// avoid mutating SQLite's shared-memory sidecar; upgrade to a pinned WAL
-	// reader before enabling concurrent external writers.
-	db, err := openSQLiteMode(s.databasePath(), "ro", s.inspectOnly || runtime.GOOS != "windows")
+	db, err := openSQLite(s.databasePath(), "ro")
 	if err != nil {
 		return State{}, nil, fmt.Errorf("open SQLite ledger: %w", err)
 	}
@@ -635,9 +611,6 @@ func (s Store) saveSQLite(state State, migrating bool) error {
 	defer db.Close()
 	if err := ensureSQLiteSchema(ctx, db); err != nil {
 		return err
-	}
-	if err := persistSQLiteWAL(ctx, db); err != nil {
-		return fmt.Errorf("persist SQLite WAL: %w", err)
 	}
 	before := make(sqliteRows)
 	if _, err := os.Stat(s.databasePath()); err == nil {
