@@ -50,6 +50,40 @@ func TestReconcileTopLevelAndOfflineArrivals(t *testing.T) {
 	}
 }
 
+func TestReconcileFirstSeenStartsAfterDownload(t *testing.T) {
+	svc, dir := fixture(t)
+	now := time.Now().UTC()
+	svc.Now = func() time.Time { return now }
+	part := filepath.Join(dir, "file.crdownload")
+	write(t, part)
+	old := now.Add(-365 * 24 * time.Hour)
+	if err := os.Chtimes(part, old, old); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.SetWatch(dir, "2h", core.WatchFirstSeen); err != nil {
+		t.Fatal(err)
+	}
+	approvePolicies(t, svc)
+	if err := watch.Reconcile(svc); err != nil {
+		t.Fatal(err)
+	}
+	st, err := svc.Store.Read()
+	if err != nil || len(st.Items) != 0 {
+		t.Fatal(st.Items, err)
+	}
+	now = now.Add(time.Hour)
+	if err := os.Rename(part, filepath.Join(dir, "file.zip")); err != nil {
+		t.Fatal(err)
+	}
+	if err := watch.Reconcile(svc); err != nil {
+		t.Fatal(err)
+	}
+	st, err = svc.Store.Read()
+	if err != nil || len(st.Items) != 1 || !st.Items[0].CreatedAt.Equal(now) || !st.Items[0].ExpiresAt.Equal(now.Add(2*time.Hour)) {
+		t.Fatal(st.Items, err)
+	}
+}
+
 func TestReconcileSkipsLabelInfrastructure(t *testing.T) {
 	testenv.WindowsOnly(t, "Explorer label projection is Windows-only")
 	svc, dir := fixture(t)
