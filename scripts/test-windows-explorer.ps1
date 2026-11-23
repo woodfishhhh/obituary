@@ -30,33 +30,13 @@ public static class ObitInput {
 function Save-Screenshot([string]$Name) {
     try {
         Add-Type -AssemblyName System.Drawing
-        try { Add-Type @'
-using System;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Windows.Forms;
-using System.Runtime.InteropServices;
-public static class ObitScreen {
-  [DllImport("user32.dll")] static extern IntPtr GetDesktopWindow();
-  [DllImport("user32.dll")] static extern IntPtr GetWindowDC(IntPtr hWnd);
-  [DllImport("user32.dll")] static extern int ReleaseDC(IntPtr hWnd, IntPtr hDc);
-  [DllImport("gdi32.dll")] static extern IntPtr CreateCompatibleDC(IntPtr hDc);
-  [DllImport("gdi32.dll")] static extern IntPtr CreateCompatibleBitmap(IntPtr hDc, int w, int h);
-  [DllImport("gdi32.dll")] static extern IntPtr SelectObject(IntPtr hDc, IntPtr hObject);
-  [DllImport("gdi32.dll")] static extern bool BitBlt(IntPtr dst, int x, int y, int w, int h, IntPtr src, int sx, int sy, int rop);
-  [DllImport("gdi32.dll")] static extern bool DeleteObject(IntPtr hObject);
-  [DllImport("gdi32.dll")] static extern bool DeleteDC(IntPtr hDc);
-  public static void Capture(string path) {
-    var screen = Screen.PrimaryScreen.Bounds;
-    var desktop = GetDesktopWindow(); var src = GetWindowDC(desktop);
-    var dc = CreateCompatibleDC(src); var bmp = CreateCompatibleBitmap(src, screen.Width, screen.Height);
-    var old = SelectObject(dc, bmp); BitBlt(dc, 0, 0, screen.Width, screen.Height, src, 0, 0, 0x00CC0020);
-    SelectObject(dc, old); using (var image = Image.FromHbitmap(bmp)) image.Save(path, ImageFormat.Png);
-    DeleteObject(bmp); DeleteDC(dc); ReleaseDC(desktop, src);
-  }
-}
-'@ } catch { }
-        [ObitScreen]::Capture((Join-Path $Evidence $Name))
+        $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+        $bitmap = New-Object System.Drawing.Bitmap($bounds.Width, $bounds.Height)
+        $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+        $graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
+        $bitmap.Save((Join-Path $Evidence $Name), [System.Drawing.Imaging.ImageFormat]::Png)
+        $graphics.Dispose()
+        $bitmap.Dispose()
     } catch { Write-Warning "screenshot $Name failed: $($_.Exception.Message)" }
 }
 
@@ -245,6 +225,8 @@ function Set-Language([string]$Language) {
     Set-Content -Encoding utf8 (Join-Path $env:OBIT_CONFIG_DIR 'config.toml') "[ui]`nlanguage = '$Language'`n[explorer]`nenabled = true`neverywhere = true`n"
     $output = Invoke-Cli $Obit @('init', '--yes', '--no-shortcuts', '--no-skill')
     $output | Set-Content -Encoding utf8 (Join-Path $Evidence "init-$Language.txt")
+    Get-Process explorer -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 1
 }
 
 function Registry-Labels([string]$Language) {
