@@ -12,4 +12,5 @@ run("pnpm --filter landing build");
 run("pnpm --filter docs build");
 run("pnpm --filter blog build");
 run("node scripts/assemble.mjs");
+run("node --test scripts/check-links.test.mjs");
 run("node scripts/check-docs.mjs");
