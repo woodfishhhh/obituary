@@ -668,8 +668,13 @@ func (s Store) saveSQLite(state State, migrating bool) error {
 	}
 	rollback = false
 	fenceErr := writeDurably(s.statePath(), sqliteFenceBytes(state))
+	if fenceErr != nil && !fileio.IsCommitUnconfirmed(fenceErr) {
+		if err := s.rollbackSQLiteCommit(ctx, after, before, receiptID); err != nil {
+			return errors.Join(fenceErr, fmt.Errorf("rollback unpublished SQLite commit: %w", err))
+		}
+	}
 	pendingSQLiteMu.Lock()
-	if fenceErr == nil {
+	if fenceErr == nil || !fileio.IsCommitUnconfirmed(fenceErr) {
 		delete(pendingSQLite, s.Home)
 	}
 	pendingSQLiteMu.Unlock()
@@ -679,6 +684,38 @@ func (s Store) saveSQLite(state State, migrating bool) error {
 		}
 		return fmt.Errorf("publish SQLite version fence: %w", fenceErr)
 	}
+	return nil
+}
+
+func (s Store) rollbackSQLiteCommit(ctx context.Context, after, before sqliteRows, receiptID string) error {
+	db, err := openSQLite(s.databasePath(), "rwc")
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	if err := ensureSQLiteSchema(ctx, db); err != nil {
+		return err
+	}
+	tx, err := db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+	if err != nil {
+		return err
+	}
+	rollback := true
+	defer func() {
+		if rollback {
+			_ = tx.Rollback()
+		}
+	}()
+	if err := writeSQLiteRows(ctx, tx, after, before); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, "DELETE FROM receipts WHERE id=?", receiptID); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	rollback = false
 	return nil
 }
 
