@@ -15,6 +15,7 @@ sudo dscl . -create /Users/$user NFSHomeDirectory "$home"
 sudo chown "$uid":20 "$home"
 run=(sudo -u "$user" env HOME="$home" OBIT_HOME="$home/data" OBIT_CONFIG_DIR="$home/config" OBIT_USER_HOME="$home" OBIT_TELEMETRY=0)
 "${run[@]}" mkdir -m 700 "$home/.Trash" "$home/source" "$home/locked"
+"${run[@]}" /usr/bin/python3 - < scripts/probe-posix-writer.py
 for method in direct trash; do
   if [[ $method == trash && ! -x /usr/bin/trash ]]; then echo "trash: unavailable"; continue; fi
   src="$home/source/$method"
