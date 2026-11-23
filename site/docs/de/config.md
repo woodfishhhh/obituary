@@ -27,7 +27,7 @@ Das Konfigurationsverzeichnis ist unter Windows `%APPDATA%\obituary`, unter macO
 
 Standardmäßig landet etwas, dessen Lebensdauer abgelaufen ist, auf dem Friedhof von Obituary. `graveyard.retention_days` Tage lang (7, wenn du nichts änderst) kannst du es mit `obit resurrect` an seinen Platz zurückholen; erst danach wird es endgültig gelöscht. Die Zahl kann zwischen 1 und 3650 liegen.
 
-Setzt du `graveyard.mode` auf `recycle`, wandert Abgelaufenes stattdessen in den Papierkorb des Systems, um den sich dann Windows kümmert. Das gibt es nur unter Windows; macOS und Linux kennen nur den Friedhof. Was im Papierkorb liegt, stellst du aus dem Papierkorb wieder her, und `obit resurrect` findet es nicht.
+Unter Windows und Linux aktiviert `graveyard.mode = "recycle"` den Systempapierkorb. Stelle die Dateien dort wieder her, nicht mit `obit resurrect`. Unter macOS gibt es nur den Friedhof.
 
 ## Automatische Registrierung und Agentensitzungen
 

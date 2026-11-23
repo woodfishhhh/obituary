@@ -176,7 +176,7 @@
   "cli.doctor.first_unavailable_reconnect_the_folder_or_review": "；首个不可用的：%s（%s）；请重新连接该文件夹，或检查并替换它的策略",
   "cli.doctor.git_verification_timeouts_in_the_last_hours": "最近 24 小时有 %d 次 Git 核对超时（来自可用的审计日志）",
   "cli.doctor.global": " 全局：",
-  "cli.doctor.graveyard_burial_and_resurrection_use_a_no": "墓地的下葬和复活都用不覆盖的改名，再核对移动后的对象；对不上的保留下来等人工恢复，绝不火化；回收站模式只在 Windows 上有",
+  "cli.doctor.graveyard_burial_and_resurrection_use_a_no": "墓地的下葬和复活都用不覆盖的改名，再核对移动后的对象；对不上的保留下来等人工恢复，绝不火化；Windows 和 Linux 支持系统回收站模式",
   "cli.doctor.graveyard_records_need_attention": "%d 条墓地记录需要处理",
   "cli.doctor.gui_companion_exists_alongside_obitd": "GUI 配套程序就在 obitd 旁边：",
   "cli.doctor.gui_version_differs_from_obitd_reinstall_both": "GUI 版本 %s 与 obitd %s 不一致；请用同一个发布版重新安装这两个程序",

@@ -27,7 +27,7 @@ The configuration directory is `%APPDATA%\obituary` on Windows, `~/Library/Appli
 
 By default an item whose lifespan has run out goes into Obituary's own graveyard. For `graveyard.retention_days` days (7 unless you change it) you can put it back with `obit resurrect`; only after that is it deleted for good. The number can be anything from 1 to 3650.
 
-Set `graveyard.mode` to `recycle` and expired items go to the system Recycle Bin instead, where Windows looks after them. This exists only on Windows; macOS and Linux have the graveyard only. Something in the Recycle Bin is restored from the Recycle Bin, and `obit resurrect` will not find it.
+On Windows and Linux, set `graveyard.mode` to `recycle` to use the system Trash. Restore from the Trash, not with `obit resurrect`. macOS supports the graveyard only.
 
 ## Automatic registration and agent sessions
 

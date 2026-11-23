@@ -6,7 +6,7 @@ Si eliminas un archivo y luego resulta que lo necesitabas, no puedes recuperarlo
 
 ## ¿Funciona en macOS y Linux?
 
-Sí. Ambos cuentan con programas de línea de comandos y en segundo plano para x64 y ARM64, con cementerio, resurrección y entierro automático. macOS usa launchd y Linux un temporizador de usuario de systemd para comprobar los vencimientos. Los hooks del agente también inician comprobaciones cuando hace falta. Consulta el [inicio rápido](./index). El modo de papelera, la ventana, la bandeja del sistema y el menú contextual son exclusivos de Windows.
+Sí. Ambos cuentan con programas de línea de comandos y en segundo plano para x64 y ARM64, con cementerio, resurrección y entierro automático. macOS usa launchd y Linux un temporizador de usuario de systemd para comprobar los vencimientos. Los hooks del agente también inician comprobaciones cuando hace falta. Consulta el [inicio rápido](./index). En Windows y Linux, `graveyard.mode = "recycle"` usa la papelera del sistema. Restaura los archivos desde la papelera, no con `obit resurrect`. macOS solo admite el cementerio.
 
 ## ¿Qué hago si Windows dice que protegió mi equipo?
 

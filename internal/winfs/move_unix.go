@@ -42,11 +42,14 @@ func (fs FS) moveInto(path string, want corefs.Identity, parent *restoreParent, 
 		return "", err
 	}
 	defer source.Close()
-	from := source.(*restoreParent)
+	return fs.moveFrom(source.(*restoreParent), filepath.Base(path), want, parent, name, restore)
+}
+
+func (fs FS) moveFrom(from *restoreParent, old string, want corefs.Identity, parent *restoreParent, name string, restore bool) (string, error) {
 	if parent.id.Serial != want.Serial || from.id.Serial != want.Serial {
 		return "", fmt.Errorf("move parents are not on the object's device: %w", corefs.ErrUnsafe)
 	}
-	fd, before, err := fs.pinMoveSource(from, filepath.Base(path), want)
+	fd, before, err := fs.pinMoveSource(from, old, want)
 	if err != nil {
 		return "", err
 	}
@@ -54,11 +57,11 @@ func (fs FS) moveInto(path string, want corefs.Identity, parent *restoreParent, 
 	if fs.beforeRename != nil {
 		fs.beforeRename()
 	}
-	if err := fs.renameNoReplace(from.fd(), filepath.Base(path), parent.fd(), name); err != nil {
+	if err := fs.renameNoReplace(from.fd(), old, parent.fd(), name); err != nil {
 		return "", err
 	}
 	if err := fs.verifyMoved(parent.fd(), name, &before); err != nil {
-		return "", fs.rollbackMove(from, filepath.Base(path), parent, name, restore, err)
+		return "", fs.rollbackMove(from, old, parent, name, restore, err)
 	}
 	return fs.verifiedChildPath(parent, name, want), nil
 }

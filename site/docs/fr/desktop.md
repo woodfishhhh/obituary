@@ -4,7 +4,7 @@ Ressuscitez des fichiers, approuvez les propositions et modifiez les réglages s
 
 ## Ce que propose chacune des trois plateformes
 
-La fenêtre, l’icône de notification et les notifications de bureau existent sous Windows, macOS et Ubuntu 24.04 ; le menu contextuel, les étiquettes de date de l’Explorateur et le mode Corbeille n’existent que sous Windows. Les éditions de bureau pour macOS et Ubuntu sont pour l’instant des préversions. Les autres distributions Linux n’ont pas d’édition de bureau et utilisent la ligne de commande.
+La fenêtre, l’icône de notification et les notifications de bureau existent sous Windows, macOS et Ubuntu 24.04 ; le menu contextuel et les étiquettes de date de l’Explorateur n’existent que sous Windows. Les éditions de bureau pour macOS et Ubuntu sont pour l’instant des préversions. Les autres distributions Linux n’ont pas d’édition de bureau et utilisent la ligne de commande.
 
 | | Windows | macOS | Ubuntu 24.04 |
 | --- | --- | --- | --- |
@@ -15,7 +15,7 @@ La fenêtre, l’icône de notification et les notifications de bureau existent 
 | Notifications de bureau | oui | oui | oui |
 | Menu contextuel | dans l’Explorateur | non | non |
 | Étiquettes de date dans l’Explorateur | oui | non | non |
-| Mode Corbeille | oui | non, cimetière seulement | non, cimetière seulement |
+| Mode Corbeille | oui | non, cimetière seulement | oui |
 | Installé avec | le script d’installation, Scoop, winget ou l’archive | le DMG | le `.deb` |
 | Première ouverture | une archive téléchargée à la main peut déclencher un avertissement SmartScreen | demande une autorisation manuelle, voir [plus bas](#premiere-ouverture-d-une-app-non-signee) | s’ouvre directement |
 | Prérequis | le runtime WebView2 | la 1.6.0 nécessite macOS 26 (corrigé dans la 1.6.1) | GTK 3 et WebKitGTK 4.1, installés par apt |

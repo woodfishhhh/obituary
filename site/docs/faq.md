@@ -6,7 +6,7 @@
 
 ## 支持 macOS 和 Linux 吗？
 
-支持，macOS 和 Linux 都提供 x64 / ARM64 命令行与后台程序，支持墓地、复活和自动下葬。macOS 通过 launchd、Linux 通过 systemd 用户定时器检查到期文件，agent hook 也会按需启动检查。安装方法见[快速开始](./index)。回收站模式、小窗口、托盘和右键菜单由 Windows 版提供。
+支持，macOS 和 Linux 都提供 x64 / ARM64 命令行与后台程序，支持墓地、复活和自动下葬。macOS 通过 launchd、Linux 通过 systemd 用户定时器检查到期文件，agent hook 也会按需启动检查。安装方法见[快速开始](./index)。 Windows 和 Linux 可把 `graveyard.mode` 设为 `recycle`。从系统回收站还原，不能用 `obit resurrect`。macOS 仅支持墓地。
 
 ## 下载时 Windows 说「已保护你的电脑」？
 

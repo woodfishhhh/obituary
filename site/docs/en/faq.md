@@ -6,7 +6,7 @@ Something you are not sure about cannot come back once deleted. Obituary buries 
 
 ## macOS and Linux?
 
-Yes. Both provide x64 / ARM64 command-line and background programs with a graveyard, resurrection and automatic burial. macOS uses launchd and Linux uses a systemd user timer to check expiries; agent hooks also start checks when needed. See [Quick start](./index). Recycle Bin mode, the small window, tray and context menus are provided by the Windows edition.
+Yes. Both provide x64 / ARM64 command-line and background programs with a graveyard, resurrection and automatic burial. macOS uses launchd and Linux uses a systemd user timer to check expiries; agent hooks also start checks when needed. See [Quick start](./index). On Windows and Linux, set `graveyard.mode` to `recycle` to use the system Trash. Restore from the Trash, not with `obit resurrect`. macOS supports the graveyard only.
 
 ## Windows says "Windows protected your PC"?
 

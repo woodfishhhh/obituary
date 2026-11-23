@@ -6,7 +6,7 @@ Löschst du eine Datei endgültig und brauchst sie doch noch, kannst du sie nich
 
 ## Läuft Obituary unter macOS und Linux?
 
-Ja. Beide Systeme haben Kommandozeilen- und Hintergrundprogramme für x64 und ARM64, mit Friedhof, Wiederbelebung und automatischem Begraben. Fällige Einträge prüft unter macOS launchd, unter Linux ein systemd-Benutzertimer. Auch die Agenten-Hooks stoßen bei Bedarf eine Prüfung an. Siehe [Schnellstart](./index). Papierkorbmodus, kleines Fenster, Tray und Kontextmenüs gibt es nur unter Windows.
+Ja. Beide Systeme haben Kommandozeilen- und Hintergrundprogramme für x64 und ARM64, mit Friedhof, Wiederbelebung und automatischem Begraben. Fällige Einträge prüft unter macOS launchd, unter Linux ein systemd-Benutzertimer. Auch die Agenten-Hooks stoßen bei Bedarf eine Prüfung an. Siehe [Schnellstart](./index). Unter Windows und Linux aktiviert `graveyard.mode = "recycle"` den Systempapierkorb. Stelle die Dateien dort wieder her, nicht mit `obit resurrect`. Unter macOS gibt es nur den Friedhof.
 
 ## Windows meldet, der Computer sei geschützt worden. Was tun?
 

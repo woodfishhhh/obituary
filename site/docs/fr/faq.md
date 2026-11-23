@@ -6,7 +6,7 @@ Si vous supprimez un fichier dont vous aurez finalement besoin, vous ne pourrez 
 
 ## Obituary fonctionne-t-il sous macOS et Linux ?
 
-Oui. Les deux systèmes disposent d’un outil en ligne de commande et d’un programme d’arrière-plan pour x64 et ARM64, avec cimetière, résurrection et enterrement automatique. Pour vérifier les échéances, macOS utilise launchd et Linux un minuteur systemd de l’utilisateur. Les hooks de l’agent peuvent aussi lancer une vérification si nécessaire. Voir le [démarrage rapide](./index). Le mode corbeille, la petite fenêtre, l’icône de notification et les menus contextuels sont propres à Windows.
+Oui. Les deux systèmes disposent d’un outil en ligne de commande et d’un programme d’arrière-plan pour x64 et ARM64, avec cimetière, résurrection et enterrement automatique. Pour vérifier les échéances, macOS utilise launchd et Linux un minuteur systemd de l’utilisateur. Les hooks de l’agent peuvent aussi lancer une vérification si nécessaire. Voir le [démarrage rapide](./index). Sous Windows et Linux, `graveyard.mode = "recycle"` utilise la Corbeille du système. Restaurez les fichiers depuis celle-ci, et non avec `obit resurrect`. Sous macOS, seul le cimetière est disponible.
 
 ## Windows indique « Windows a protégé votre ordinateur » ?
 

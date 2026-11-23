@@ -27,7 +27,7 @@ El directorio de configuración es `%APPDATA%\obituary` en Windows, `~/Library/A
 
 De forma predeterminada, lo que agota su vida útil va al cementerio de Obituary. Durante `graveyard.retention_days` días (7 si no lo cambias) puedes devolverlo a su sitio con `obit resurrect`; solo pasado ese plazo se elimina para siempre. El número puede ser cualquiera entre 1 y 3650.
 
-Si pones `graveyard.mode` en `recycle`, lo que caduca va a la Papelera de reciclaje del sistema, y de ella se encarga Windows. Esta opción solo existe en Windows; macOS y Linux tienen únicamente el cementerio. Lo que está en la Papelera se restaura desde la Papelera, y `obit resurrect` no lo encontrará.
+En Windows y Linux, `graveyard.mode = "recycle"` usa la papelera del sistema. Restaura los archivos desde la papelera, no con `obit resurrect`. macOS solo admite el cementerio.
 
 ## Registro automático y sesiones de agentes
 

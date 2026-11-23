@@ -9,4 +9,4 @@ Start with [AGENTS.md](https://github.com/woodfishhhh/obituary/blob/main/AGENTS.
 | The desktop window or a host adapter | [Desktop window](./gui) · [Add an agent](./agent-integration) |
 | Translations, documentation or release artifacts | [Internationalization](./i18n) · [Writing docs and blog posts](./docs-and-blog) · [Releases and mirrors](./release) |
 
-The CLI and daemon target Windows, macOS and Linux. Desktop packages cover Windows amd64, Ubuntu 24.04 amd64 and a universal macOS app. Explorer integration and system Recycle Bin mode are Windows-only.
+The CLI and daemon target Windows, macOS and Linux. Desktop packages cover Windows amd64, Ubuntu 24.04 amd64 and a universal macOS app. Explorer integration is Windows-only. System Trash is available on Windows and Linux.

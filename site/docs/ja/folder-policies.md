@@ -8,6 +8,14 @@ obit watch --list                           # folder policies, their exemptions 
 obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans it registered
 ```
 
+macOS と Linux でも、承認後は直下の項目が個別に登録され、既定では最初に検出した時点から期限を数えます。監視フォルダー自体は保護され、期限の切れたサブフォルダーには提案だけが作られます。ダウンロード中の一時ファイルは対象外です。書き込みを排除できない場合は、10 分間変更がなくても元の場所に残ります。
+
+**現在、macOS と Linux ではポリシーによる自動埋葬に対応していません。期限切れのファイルも、承認したサブフォルダーも移動されません。**
+
+```sh
+obit watch "$HOME/Downloads" 2w
+```
+
 ## 適用条件
 
 - **ポリシー自体に承認が必要です。** `obit watch` は提案を作成します。`obit approve` を実行するか、小ウィンドウの「For you」で承認すると有効になります。

@@ -90,7 +90,7 @@ Read https://obituary.woodfish.site/agent-install.md and follow it to install Ob
 | 到期檢查 | 常駐系統匣程序，工作排程器作為備援 | 使用者 launchd agent | `systemd --user` 計時器；沒有 systemd 時使用使用者 crontab |
 | CLI、墓地與復活、選用的自動登記、刪除護欄、agent 整合（hook、Skill、MCP）、Docker 容器、資料夾政策 | 有 | 有 | 有 |
 | 系統匣、小視窗、右鍵選單、檔案總管中的下葬日期、開始選單和桌面捷徑 | 有 | macOS 通用 DMG 提供小視窗與選單列托盤，暫不提供右鍵選單 | Ubuntu 24.04 amd64 桌面套件（deb）提供小視窗與系統匣 |
-| 資源回收筒模式 | 有 | 僅墓地 | 僅墓地 |
+| 資源回收筒模式 | 有 | 僅墓地 | 有 |
 
 桌面版啟用監督後，由常駐托盤在到期時處理，另有獨立工作每小時檢查一次。無托盤版本仍每 5 分鐘檢查一次。
 

@@ -27,7 +27,7 @@ Le répertoire de configuration est `%APPDATA%\obituary` sous Windows, `~/Librar
 
 Par défaut, un élément dont la durée de vie est écoulée entre dans le cimetière d’Obituary. Pendant `graveyard.retention_days` jours (7 si vous ne changez rien), vous pouvez le remettre à sa place avec `obit resurrect` ; c’est seulement après ce délai qu’il est supprimé définitivement. Ce nombre peut aller de 1 à 3650.
 
-Avec `graveyard.mode` à `recycle`, ce qui expire part dans la Corbeille du système, que Windows gère ensuite. Cette option n’existe que sous Windows ; macOS et Linux n’ont que le cimetière. Ce qui est dans la Corbeille se restaure depuis la Corbeille, et `obit resurrect` ne le trouvera pas.
+Sous Windows et Linux, `graveyard.mode = "recycle"` utilise la Corbeille du système. Restaurez les fichiers depuis celle-ci, et non avec `obit resurrect`. Sous macOS, seul le cimetière est disponible.
 
 ## Enregistrement automatique et sessions d’agent
 

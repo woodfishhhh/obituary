@@ -27,7 +27,7 @@
 
 默认情况下，寿命用完的东西进讣告自己的墓地，`graveyard.retention_days` 天内（默认 7 天）可以用 `obit resurrect` 放回原处，过了这个期限才被永久删除。这个天数可以在 1 到 3650 之间调整。
 
-把 `graveyard.mode` 改成 `recycle`，到期的东西就交给系统回收站，由 Windows 自己管；它只在 Windows 上有，macOS 和 Linux 只有墓地。进了回收站的东西要在回收站里还原，`obit resurrect` 找不到它们。
+Windows 和 Linux 可把 `graveyard.mode` 设为 `recycle`。从系统回收站还原，不能用 `obit resurrect`。macOS 仅支持墓地。
 
 ## 自动登记和 agent 会话
 

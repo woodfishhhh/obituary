@@ -9,4 +9,4 @@
 | 修改桌面界面或适配一个宿主 | [小窗口](./gui) · [接入新 agent](./agent-integration) |
 | 更新翻译、文档或发布产物 | [国际化](./i18n) · [文档与博客规范](./docs-and-blog) · [发版和镜像](./release) |
 
-CLI 和后台进程面向 Windows、macOS 和 Linux。桌面包的范围更窄：Windows amd64、Ubuntu 24.04 amd64，以及 macOS 通用应用。资源管理器菜单和系统回收站模式是 Windows 功能。
+CLI 和后台进程面向 Windows、macOS 和 Linux。桌面包的范围更窄：Windows amd64、Ubuntu 24.04 amd64，以及 macOS 通用应用。资源管理器菜单仅限 Windows；系统回收站模式支持 Windows 和 Linux。

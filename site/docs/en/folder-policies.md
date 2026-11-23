@@ -8,6 +8,14 @@ obit watch --list                           # folder policies, their exemptions 
 obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans it registered
 ```
 
+On macOS and Linux, approving a policy registers each top-level item separately. By default, its age starts when first seen. The policy folder is protected, expired subfolders only generate proposals, and download temporary files are skipped. If writers cannot be excluded, the item stays in place even after ten quiet minutes.
+
+**Automatic policy burial is not supported on macOS or Linux: expired files stay in place, and approving an expired subfolder does not move it.**
+
+```sh
+obit watch "$HOME/Downloads" 2w
+```
+
 ## How it takes effect
 
 - **The policy itself needs your approval.** `obit watch` creates a proposal; it takes effect after `obit approve` or approval in the small window's "For you" page.
