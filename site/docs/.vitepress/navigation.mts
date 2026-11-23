@@ -26,7 +26,7 @@ const devPages = ['index','architecture','repository','build-test','gui','safety
 const blogLabels: Record<Lang,string> = {zh:'博客',en:'Blog','zh-TW':'部落格',ja:'ブログ',ko:'블로그',es:'Blog',fr:'Blog',de:'Blog','pt-BR':'Blog',ru:'Блог'};
 
 export function docLocales(site: string, repo: string): LocaleConfig<DefaultTheme.Config> {
-  return Object.fromEntries(locales.map(({ id, path, html, name }) => {
+  return Object.fromEntries(locales.map(({ id, path, html }) => {
     const [home,docs,download,start,agents,more,reference,outline,prev,next,,language,menu,top,edit] = labels[id];
     const sidebar = groups.map((pages, i) => ({ text: [start,agents,more,reference][i], items: pages.map(page => {
       const text = readFileSync(new URL(`../${path}${page}.md`, import.meta.url), 'utf8').match(/^# (.+)$/m)![1].trim();
@@ -40,7 +40,8 @@ export function docLocales(site: string, repo: string): LocaleConfig<DefaultThem
       link: dev + (page === 'index' ? '' : page),
     })) }] } : {};
     return [id === 'zh' ? 'root' : id, {
-      label: name, lang: html, title: `${brand} · ${docs}`, titleTemplate: `:title · ${brand}`,
+      // An empty label disables VitePress's built-in picker; LanguageMenu knows which pages are translated.
+      label: '', lang: html, title: `${brand} · ${docs}`, titleTemplate: `:title · ${brand}`,
       description: `${docs} · ${brand}: ${sidebar[0].items.map(p => p.text).join(' · ')}`,
       themeConfig: { siteTitle: brand, logoLink: site+path, sidebar: { [`/${path}`]: sidebar, ...section },
         nav: [{text:home,link:site+path,target:'_self',noIcon:true}, sidebar[0].items[0], {text:docs,link:`/${path}how-it-works`}, {text:devLabels[id],link:dev}, {text:blogLabels[id],link:site+(id === 'zh' ? 'blog/' : 'blog/en/'),target:'_self',noIcon:true}, {text:download,link:`${repo}/releases`}],

@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import { readdir, readFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { locales } from '../landing/src/locales.ts';
+import { locales, siteOrigin } from '../landing/src/locales.ts';
 import { agentData, agentDocLink } from '../landing/src/agents-data.ts';
+import { findBrokenLinks } from './check-links.mjs';
 
 const root = new URL('../docs/', import.meta.url);
 const output = new URL(process.env.VITE_SITE === 'cn' ? '../dist-cn/docs/' : '../dist/docs/', import.meta.url);
@@ -100,3 +101,7 @@ for (const l of locales) {
   }
 }
 console.log(`Checked ${pages.length} docs and ${agentData.length} agent guides × ${locales.length} languages, landing links, directories, alternate links, sitemap and installers.`);
+const site = new URL(process.env.SITE_BASE ?? '/', process.env.SITE_URL ?? siteOrigin);
+const broken = await findBrokenLinks(new URL('../', output), site);
+console.log(`Checked site links: ${broken.length} broken (distinct source page + href).`);
+assert.ok(!broken.length, `Broken site links:\n${broken.join('\n')}`);
