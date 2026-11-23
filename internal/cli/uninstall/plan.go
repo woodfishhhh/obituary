@@ -152,7 +152,11 @@ func (p *plan) print(out io.Writer, purge bool) {
 		fmt.Fprintln(out, cmdutil.Text("cli.uninstall.remove_context_menu"), menu.Path)
 	}
 	for _, dir := range p.labels {
-		fmt.Fprintln(out, cmdutil.Text("cli.uninstall.remove_explorer_desktop_ini_labels"), dir)
+		label := cmdutil.Text("cli.uninstall.remove_explorer_desktop_ini_labels")
+		if runtime.GOOS == "windows" {
+			label += " (desktop.ini)"
+		}
+		fmt.Fprintln(out, label, dir)
 	}
 	for _, watch := range p.state.Watches {
 		fmt.Fprintf(out, cmdutil.Text("cli.uninstall.remove_folder_policy_files_stay_in_place"), watch.ID, watch.Path)
