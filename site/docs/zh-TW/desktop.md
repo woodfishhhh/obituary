@@ -4,7 +4,7 @@
 
 ## 三個平台上有什麼
 
-小視窗、系統匣和桌面通知，Windows、macOS 和 Ubuntu 24.04 上都有；右鍵選單和檔案總管裡的日期標籤只有 Windows 才有。macOS 和 Ubuntu 的桌面版目前是預覽版。其他 Linux 發行版沒有桌面版，請使用命令列。
+小視窗、系統匣和桌面通知，Windows、macOS 和 Ubuntu 24.04 上都有。macOS 和 Ubuntu 的桌面版目前是預覽版。其他 Linux 發行版沒有桌面版，請使用命令列。
 
 | | Windows | macOS | Ubuntu 24.04 |
 | --- | --- | --- | --- |
@@ -13,8 +13,8 @@
 | 登入時啟動系統匣 | `obit init` 預設開啟 | 在設定裡切換 | 在設定裡切換 |
 | 到期清理 | 系統匣常駐程式 | LaunchAgent | systemd |
 | 桌面通知 | 有 | 有 | 有 |
-| 右鍵選單 | 檔案總管 | 無 | 無 |
-| 檔案總管裡的日期標籤 | 有 | 無 | 無 |
+| 右鍵選單 | 檔案總管 | Finder: 快速動作 | Nautilus: 指令稿 · Dolphin |
+| 日期標籤 | 有 | Finder | Dolphin |
 | 資源回收筒模式 | 有 | 無，只有墓地 | 有 |
 | 安裝方式 | 安裝腳本、Scoop、winget 或壓縮檔 | DMG | `.deb` |
 | 第一次開啟 | 手動下載的壓縮檔可能遇到 SmartScreen 提示 | 要手動放行，見[下文](#第一次開啟未簽名的-app) | 直接開啟 |
@@ -112,7 +112,7 @@ grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt insta
 
 升級後，若檔案總管整套右鍵選單標籤使用另一種支援的語言，選單仍可正常使用。`obit doctor` 只會顯示資訊提示（JSON 為 `installation: label-language-mismatch`）。執行 `obit init --context-menu --yes` 即可換成目前的介面語言。
 
-macOS 和 Linux 目前沒有右鍵選單。請用 `obit mark <路径> 7d` 登記，或用 `obit bury <路径>` 立即下葬。
+在 Finder 的「快速動作」、Nautilus 的「指令稿 → Obituary」或 Dolphin 的 Obituary 選單中選取動作。設定資料夾策略時，請先選取資料夾。
 
 ## 圖示和選單
 

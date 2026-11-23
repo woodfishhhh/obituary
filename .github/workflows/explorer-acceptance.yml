@@ -23,7 +23,7 @@ jobs:
       matrix:
         runner: [ubuntu-24.04, macos-15]
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -37,8 +37,9 @@ jobs:
           CGO_ENABLED=0 go build -o "$RUNNER_TEMP/tools/" ./cmd/obit ./cmd/obitd
       - if: runner.os == 'Linux'
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y nautilus dolphin xvfb dbus-x11 openbox xdotool imagemagick tesseract-ocr qtbase5-dev libkf5filemetadata-dev
+          apt_options=(-o Dir::Etc::sourcelist=sources.list.d/ubuntu.sources -o Dir::Etc::sourceparts=- -o Acquire::Retries=2)
+          sudo apt-get "${apt_options[@]}" update -qq
+          sudo apt-get "${apt_options[@]}" install -y --no-install-recommends nautilus dolphin xvfb xauth dbus-x11 openbox xdotool imagemagick tesseract-ocr tesseract-ocr-eng qtbase5-dev libkf5filemetadata-dev
       - if: runner.os == 'Linux'
         run: xvfb-run -a -s "-screen 0 1280x960x24" dbus-run-session -- bash scripts/accept-file-managers.sh
       - if: runner.os == 'macOS'

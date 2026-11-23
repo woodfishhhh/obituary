@@ -14,11 +14,11 @@ func nativeMenus(exe string, lang i18n.Language) (map[string]Tree, error) {
 	}
 	files := map[string]Tree{}
 	// The desktop entry reader unescapes before Exec tokenization. Percent is a field code even inside quotes.
-	quoted := strings.NewReplacer("\\", "\\\\", "\"", "\\\"", "\u0060", "\\u0060", "\u0024", "\\u0024", "%", "%%").Replace(exe)
+	quoted := strings.NewReplacer("\\", "\\\\", "\"", "\\\"", "`", "\\`", "$", "\\$", "%", "%%").Replace(exe)
 	quoted = "\"" + strings.ReplaceAll(quoted, "\\", "\\\\") + "\""
 	for _, a := range menuActions {
 		label := a.label(lang)
-		script := "#!/bin/sh\n# Obituary file action\n[ \"\u0024#\" -gt 0 ] || exit 1\nexec " + a.command(shellQuote(exe), "\"\u0024@\"") + "\n"
+		script := "#!/bin/sh\n# Obituary file action\n[ \"$#\" -gt 0 ] || exit 1\nexec " + a.command(shellQuote(exe), "\"$@\"") + "\n"
 		files[filepath.Join(base, "nautilus/scripts/Obituary", label)] = menuFile(script, 0700)
 		mime := "application/octet-stream;inode/directory;"
 		if a.id == "policy" {

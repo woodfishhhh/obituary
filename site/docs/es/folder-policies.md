@@ -30,3 +30,5 @@ En Descargas, en el Escritorio y en las carpetas con política, el Explorador mu
 - Las fechas proceden del archivo oculto `desktop.ini` de la carpeta.
 - En la sección `[explorer]` de `config.toml`, usa `enabled = false` para ocultar las fechas o `everywhere = true` para mostrarlas en todas partes.
 - El Explorador guarda en caché las vistas de carpeta. Al ampliar la vida útil, la misma ventana puede seguir mostrando la fecha anterior hasta un minuto.
+
+Finder y Dolphin muestran la fecha de entierro en una etiqueta sin cambiar el nombre del archivo. Al ampliar el plazo, cambia la fecha. Al dejar de seguir el archivo o desinstalar, solo se eliminan las etiquetas de Obituary. En Nautilus consulta `obit list`.

@@ -30,3 +30,5 @@ obit watch "$HOME/Downloads" 2w
 - 날짜 정보는 폴더의 숨김 파일 `desktop.ini`에서 가져옵니다.
 - `config.toml`의 `[explorer]` 섹션에서 `enabled = false`로 날짜 표시를 끄거나 `everywhere = true`로 모든 위치에서 표시할 수 있습니다.
 - 파일 탐색기는 폴더 보기를 캐시하므로 수명을 늘린 뒤 같은 창에 최대 1분 동안 이전 날짜가 남을 수 있습니다.
+
+Finder와 Dolphin은 파일 이름을 바꾸지 않고 매장 날짜를 태그로 표시합니다. 수명을 연장하면 날짜도 바뀌며, 추적을 해제하거나 프로그램을 제거하면 Obituary가 추가한 태그만 지웁니다. Nautilus에서는 `obit list` 명령으로 확인하세요.

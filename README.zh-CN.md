@@ -90,7 +90,7 @@ Read https://obituary.woodfish.site/agent-install.md and follow it to install Ob
 | 怎么装 | Scoop、安装脚本 `install.ps1`（winget 审核中） | Homebrew、安装脚本 `install.sh` | 安装脚本 `install.sh` |
 | 到期检查 | 托盘常驻进程，任务计划程序兜底 | launchd 用户代理 | `systemd --user` 定时器；没有 systemd 时用用户 crontab |
 | 命令行、墓地与复活、自动登记（可选）、删除护栏、agent 集成（hook、Skill、MCP）、Docker 容器、文件夹策略 | 有 | 有 | 有 |
-| 托盘、小窗口、右键菜单、资源管理器里的下葬日期、开始菜单和桌面快捷方式 | 有 | macOS 通用 DMG 提供小窗口和菜单栏托盘，暂不提供右键菜单 | Ubuntu 24.04 amd64 桌面包（deb）提供小窗口和托盘 |
+| 托盘、小窗口、右键菜单、资源管理器里的下葬日期、开始菜单和桌面快捷方式 | 有 | macOS 通用 DMG 提供小窗口和菜单栏托盘 · Finder: 快速操作, 日期标签 | Ubuntu 24.04 amd64 桌面包（deb）提供小窗口和托盘 · Nautilus: 脚本 · Dolphin: 日期标签 |
 | 回收站模式 | 有 | 只用墓地 | 有 |
 
 桌面版启用监督后，托盘常驻进程在到期时处理，另有独立任务每小时兜底一次。无托盘版本仍每 5 分钟检查一次。

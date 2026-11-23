@@ -777,14 +777,14 @@ agent hook 的進入點（由 agent 呼叫，不是給人用的）
 | 參數 | 簡寫 | 預設值 | 說明 |
 | --- | --- | --- | --- |
 | `--agent` | 無 | `[claude]` | 要整合的 agent（可重複指定，也可用逗號分隔；預設為 claude） |
-| `--context-menu` | 無 | `false` | 安裝傳統的檔案總管右鍵選單（預設啟用） |
+| `--context-menu` | 無 | `false` | 安裝檔案管理員右鍵選單（預設啟用） |
 | `--dry-run` | 無 | `false` | 只列印變更內容 |
 | `--format` | 無 | `"text"` | --show 的輸出格式：text 或 markdown（agent 支援範圍） |
 | `--global` | `-g` | `false` | 對目前使用者生效，而不是只對這個專案生效 |
 | `--guard-rm` | 無 | `false` | 拒絕受支援的刪除指令，並提供可以復活的 obit 替代指令 |
 | `--help` | `-h` | `false` | init 的說明 |
 | `--mcp` | 無 | `false` | 註冊訃告的 MCP stdio 伺服器 |
-| `--no-context-menu` | 無 | `false` | 不安裝檔案總管右鍵選單 |
+| `--no-context-menu` | 無 | `false` | 略過檔案管理員右鍵選單 |
 | `--no-shortcuts` | 無 | `false` | 不建立開始功能表和桌面捷徑 |
 | `--no-skill` | 無 | `false` | 不更動訃告的 Agent Skill |
 | `--show` | 無 | `false` | 顯示已安裝的項目 |

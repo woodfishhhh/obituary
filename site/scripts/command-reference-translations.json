@@ -2869,17 +2869,17 @@
       }
     },
     "--context-menu": {
-      "source": "install classic Explorer context menus (enabled by default)",
+      "source": "install file manager context menus (enabled by default)",
       "translations": {
-        "zh": "安装经典的资源管理器右键菜单（默认启用）",
-        "zh-TW": "安裝傳統的檔案總管右鍵選單（預設啟用）",
-        "ja": "クラシックなエクスプローラーのコンテキストメニューをインストールする（既定で有効）",
-        "ko": "클래식 파일 탐색기 상황에 맞는 메뉴를 설치합니다(기본적으로 활성화)",
-        "es": "Instalar los menús contextuales clásicos del Explorador (activado por defecto)",
-        "fr": "Installer les menus contextuels classiques de l’Explorateur (activé par défaut)",
-        "de": "Klassische Explorer-Kontextmenüs installieren (standardmäßig aktiviert)",
-        "pt-BR": "Instalar os menus de contexto clássicos do Explorador de Arquivos (ativado por padrão)",
-        "ru": "Установить классические контекстные меню Проводника (включено по умолчанию)"
+        "zh": "安装文件管理器右键菜单（默认启用）",
+        "zh-TW": "安裝檔案管理員右鍵選單（預設啟用）",
+        "ja": "ファイルマネージャーのコンテキストメニューを追加する（既定で有効）",
+        "ko": "파일 관리자의 컨텍스트 메뉴를 설치합니다(기본값)",
+        "es": "Instalar los menús contextuales del gestor de archivos (activado por defecto)",
+        "fr": "Installer les menus contextuels du gestionnaire de fichiers (activé par défaut)",
+        "de": "Kontextmenüs im Dateimanager installieren (standardmäßig aktiviert)",
+        "pt-BR": "Instalar os menus de contexto do gerenciador de arquivos (ativado por padrão)",
+        "ru": "Установить контекстные меню файлового менеджера (по умолчанию)"
       }
     },
     "--dry-run": {
@@ -2967,17 +2967,17 @@
       }
     },
     "--no-context-menu": {
-      "source": "skip Explorer context menus",
+      "source": "skip file manager context menus",
       "translations": {
-        "zh": "不安装资源管理器右键菜单",
-        "zh-TW": "不安裝檔案總管右鍵選單",
-        "ja": "エクスプローラーのコンテキストメニューをインストールしない",
-        "ko": "파일 탐색기 상황에 맞는 메뉴를 설치하지 않습니다",
-        "es": "Omitir los menús contextuales del Explorador",
-        "fr": "Ne pas installer les menus contextuels de l’Explorateur",
-        "de": "Explorer-Kontextmenüs überspringen",
-        "pt-BR": "Pular os menus de contexto do Explorador de Arquivos",
-        "ru": "Не устанавливать контекстные меню Проводника"
+        "zh": "跳过文件管理器右键菜单",
+        "zh-TW": "略過檔案管理員右鍵選單",
+        "ja": "ファイルマネージャーのコンテキストメニューを変更しない",
+        "ko": "파일 관리자 컨텍스트 메뉴를 건너뜁니다",
+        "es": "Omitir los menús contextuales del gestor de archivos",
+        "fr": "Ignorer les menus contextuels du gestionnaire de fichiers",
+        "de": "Kontextmenüs des Dateimanagers überspringen",
+        "pt-BR": "Pular os menus de contexto do gerenciador de arquivos",
+        "ru": "Пропустить контекстные меню файлового менеджера"
       }
     },
     "--no-shortcuts": {

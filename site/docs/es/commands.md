@@ -777,14 +777,14 @@ Uso: `obit init [flags]`
 | Parámetro | Corto | Valor predeterminado | Descripción |
 | --- | --- | --- | --- |
 | `--agent` | ninguno | `[claude]` | Agentes con los que integrar (repetir la opción o separarlos con comas; predeterminado: claude) |
-| `--context-menu` | ninguno | `false` | Instalar los menús contextuales clásicos del Explorador (activado por defecto) |
+| `--context-menu` | ninguno | `false` | Instalar los menús contextuales del gestor de archivos (activado por defecto) |
 | `--dry-run` | ninguno | `false` | Solo mostrar los cambios |
 | `--format` | ninguno | `"text"` | Formato de salida de --show: text o markdown (cobertura de agentes) |
 | `--global` | `-g` | `false` | Para todo el usuario, en lugar de solo este proyecto |
 | `--guard-rm` | ninguno | `false` | Denegar los comandos de eliminación admitidos y sugerir alternativas de obit restaurables |
 | `--help` | `-h` | `false` | Ayuda de init |
 | `--mcp` | ninguno | `false` | Registrar el servidor MCP stdio de Obituary |
-| `--no-context-menu` | ninguno | `false` | Omitir los menús contextuales del Explorador |
+| `--no-context-menu` | ninguno | `false` | Omitir los menús contextuales del gestor de archivos |
 | `--no-shortcuts` | ninguno | `false` | Omitir los accesos directos del menú Inicio y del escritorio |
 | `--no-skill` | ninguno | `false` | Dejar sin cambios la Agent Skill de Obituary |
 | `--show` | ninguno | `false` | Mostrar lo que está instalado |

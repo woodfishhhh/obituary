@@ -4,7 +4,7 @@
 
 ## 三个平台上有什么
 
-小窗口、托盘和桌面通知，Windows、macOS 和 Ubuntu 24.04 上都有；右键菜单和资源管理器里的日期标签只有 Windows 有。macOS 和 Ubuntu 的桌面版目前是预览版。其他 Linux 发行版没有桌面版，用命令行。
+小窗口、托盘和桌面通知，Windows、macOS 和 Ubuntu 24.04 上都有。macOS 和 Ubuntu 的桌面版目前是预览版。其他 Linux 发行版没有桌面版，用命令行。
 
 | | Windows | macOS | Ubuntu 24.04 |
 | --- | --- | --- | --- |
@@ -13,8 +13,8 @@
 | 登录时启动托盘 | `obit init` 默认开启 | 设置里开关 | 设置里开关 |
 | 到期清理 | 托盘常驻进程 | LaunchAgent | systemd |
 | 桌面通知 | 有 | 有 | 有 |
-| 右键菜单 | 资源管理器 | 无 | 无 |
-| 资源管理器里的日期标签 | 有 | 无 | 无 |
+| 右键菜单 | 资源管理器 | Finder: 快速操作 | Nautilus: 脚本 · Dolphin |
+| 日期标签 | 有 | Finder | Dolphin |
 | 回收站模式 | 有 | 无，只有墓地 | 有 |
 | 安装方式 | 安装脚本、Scoop、winget 或压缩包 | DMG | `.deb` |
 | 第一次打开 | 手动下载的压缩包可能遇到 SmartScreen 提示 | 要手动放行，见[下文](#第一次打开未签名-app) | 直接打开 |
@@ -113,7 +113,7 @@ grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt insta
 
 如果升级后资源管理器的整套右键菜单标签用了另一种受支持的语言，菜单仍能正常使用。`obit doctor` 只给信息提示（JSON 中为 `installation: label-language-mismatch`）。运行 `obit init --context-menu --yes` 可把标签换成当前界面语言。
 
-macOS 和 Linux 还没有右键菜单，先用命令：`obit mark <路径> 7d` 放进讣告，`obit bury <路径>` 现在埋掉。
+在 Finder 的「快速操作」、Nautilus 的「脚本 → Obituary」或 Dolphin 的「讣告 Obituary」中选择动作。要设置文件夹策略，请先选中文件夹。
 
 ## 图标和菜单
 

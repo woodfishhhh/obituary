@@ -777,14 +777,14 @@ Verwendung: `obit init [flags]`
 | Parameter | Kurz | Standardwert | Beschreibung |
 | --- | --- | --- | --- |
 | `--agent` | keiner | `[claude]` | Agenten, die eingebunden werden (Option wiederholen oder mit Komma trennen; Standard: claude) |
-| `--context-menu` | keiner | `false` | Klassische Explorer-Kontextmenüs installieren (standardmäßig aktiviert) |
+| `--context-menu` | keiner | `false` | Kontextmenüs im Dateimanager installieren (standardmäßig aktiviert) |
 | `--dry-run` | keiner | `false` | Nur die Änderungen ausgeben |
 | `--format` | keiner | `"text"` | Ausgabeformat für --show: text oder markdown (Agentenabdeckung) |
 | `--global` | `-g` | `false` | Für den ganzen Benutzer statt nur für dieses Projekt |
 | `--guard-rm` | keiner | `false` | Unterstützte Löschbefehle verweigern und wiederherstellbare obit-Alternativen vorschlagen |
 | `--help` | `-h` | `false` | Hilfe zu init |
 | `--mcp` | keiner | `false` | Den MCP-stdio-Server von Obituary registrieren |
-| `--no-context-menu` | keiner | `false` | Explorer-Kontextmenüs überspringen |
+| `--no-context-menu` | keiner | `false` | Kontextmenüs des Dateimanagers überspringen |
 | `--no-shortcuts` | keiner | `false` | Startmenü- und Desktopverknüpfungen überspringen |
 | `--no-skill` | keiner | `false` | Den Obituary-Agent-Skill unverändert lassen |
 | `--show` | keiner | `false` | Anzeigen, was installiert ist |

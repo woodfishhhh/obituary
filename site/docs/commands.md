@@ -777,14 +777,14 @@ agent hook 的入口（由 agent 调用，不是给人用的）
 | 参数 | 简写 | 默认值 | 说明 |
 | --- | --- | --- | --- |
 | `--agent` | 无 | `[claude]` | 要接入的 agent（可重复指定，也可用逗号分隔；默认 claude） |
-| `--context-menu` | 无 | `false` | 安装经典的资源管理器右键菜单（默认启用） |
+| `--context-menu` | 无 | `false` | 安装文件管理器右键菜单（默认启用） |
 | `--dry-run` | 无 | `false` | 只打印改动 |
 | `--format` | 无 | `"text"` | --show 的输出格式：text 或 markdown（agent 支持范围） |
 | `--global` | `-g` | `false` | 对当前用户生效，而不是只对这个项目生效 |
 | `--guard-rm` | 无 | `false` | 拒绝受支持的删除命令，并给出可以复活的 obit 替代命令 |
 | `--help` | `-h` | `false` | init 的帮助 |
 | `--mcp` | 无 | `false` | 注册讣告的 MCP stdio 服务 |
-| `--no-context-menu` | 无 | `false` | 不安装资源管理器右键菜单 |
+| `--no-context-menu` | 无 | `false` | 跳过文件管理器右键菜单 |
 | `--no-shortcuts` | 无 | `false` | 不创建开始菜单和桌面快捷方式 |
 | `--no-skill` | 无 | `false` | 不改动讣告的 Agent Skill |
 | `--show` | 无 | `false` | 显示已安装的内容 |

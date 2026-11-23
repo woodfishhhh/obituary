@@ -43,7 +43,7 @@ func TestUserMenuInstallAndRemove(t *testing.T) {
 	if err := os.WriteFile(modified, []byte("mine"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	foreign := filepath.Join(filepath.Dir(changes[0].Path), "user-note")
+	foreign := filepath.Join(filepath.Dir(modified), "user-note")
 	if err := os.WriteFile(foreign, []byte("mine"), 0600); err != nil {
 		t.Fatal(err)
 	}

@@ -10,8 +10,10 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"slices"
 	"strings"
+	"syscall"
 
 	"github.com/woodfishhhh/obituary/internal/config"
 	"github.com/woodfishhhh/obituary/internal/core"
@@ -20,6 +22,81 @@ import (
 )
 
 type menuFiles struct{}
+
+// Only these private containers may disappear; the surrounding desktop directories are shared.
+func containerFor(path string) string {
+	p := filepath.Dir(path)
+	if runtime.GOOS == "darwin" {
+		return filepath.Dir(p)
+	}
+	if filepath.Base(p) == "Obituary" {
+		return p
+	}
+	return ""
+}
+
+const directoryOwner = ".obituary-menu-owner"
+const directorySignature = "Obituary file actions v1\n"
+
+func prepareContainer(dir string) error {
+	if dir == "" {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(dir), 0700); err != nil {
+		return err
+	}
+	if err := os.Mkdir(dir, 0700); err != nil {
+		if !errors.Is(err, os.ErrExist) {
+			return err
+		}
+		info, err := os.Lstat(dir)
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			return fmt.Errorf("preserved non-directory %s", dir)
+		}
+		return nil
+	}
+	return os.WriteFile(filepath.Join(dir, directoryOwner), []byte(directorySignature), 0600)
+}
+func pruneContainer(path string) error {
+	dir := containerFor(path)
+	if dir == "" {
+		return nil
+	}
+	marker := filepath.Join(dir, directoryOwner)
+	data, err := os.ReadFile(marker)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if string(data) != directorySignature {
+		return nil
+	}
+	if runtime.GOOS == "darwin" {
+		if err := os.Remove(filepath.Dir(path)); err != nil && !errors.Is(err, os.ErrNotExist) && !errors.Is(err, syscall.ENOTEMPTY) {
+			return err
+		}
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+	if len(entries) != 1 || entries[0].Name() != directoryOwner {
+		return nil
+	}
+	if err := os.Remove(marker); err != nil {
+		return err
+	}
+	err = os.Remove(dir)
+	if errors.Is(err, syscall.ENOTEMPTY) {
+		return nil
+	}
+	return err
+}
 
 func UserRegistry() Registry {
 	if Current != nil {
@@ -93,7 +170,13 @@ func (r menuFiles) CompareAndSwap(c Change) error {
 		return fmt.Errorf("preserved changed file %s", c.Path)
 	}
 	if c.After == nil {
-		return os.Remove(c.Path)
+		if err := os.Remove(c.Path); err != nil {
+			return err
+		}
+		return pruneContainer(c.Path)
+	}
+	if err := prepareContainer(containerFor(c.Path)); err != nil {
+		return err
 	}
 	parent := filepath.Dir(c.Path)
 	if err = os.MkdirAll(parent, 0700); err != nil {
@@ -189,18 +272,33 @@ func PlanLanguage(reg Registry, exe string, remove bool, lang i18n.Language) ([]
 	}
 	all := maps.Clone(alt)
 	maps.Copy(all, want)
-	var changes []Change
-	for _, path := range slices.Sorted(maps.Keys(all)) {
+	beforeSet := map[string]Tree{}
+	preservedBundle := map[string]bool{}
+	for path := range all {
 		before, err := reg.ReadTree(path)
 		if err != nil {
 			return nil, err
 		}
+		beforeSet[path] = before
+		if runtime.GOOS == "darwin" && before != nil && !ownedFile(before) {
+			preservedBundle[containerFor(path)] = true
+		}
+	}
+	var changes []Change
+	for _, path := range slices.Sorted(maps.Keys(all)) {
+		before := beforeSet[path]
 		after := want[path]
 		if remove {
 			after = nil
 		}
 		if reflect.DeepEqual(before, after) {
 			continue
+		}
+		if preservedBundle[containerFor(path)] {
+			if after == nil {
+				continue
+			}
+			return nil, fmt.Errorf("preserved modified workflow: %s", containerFor(path))
 		}
 		if before != nil && !ownedFile(before) {
 			if remove || after == nil {

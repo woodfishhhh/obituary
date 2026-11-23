@@ -777,14 +777,14 @@ Usage: `obit init [flags]`
 | Option | Short | Default | Description |
 | --- | --- | --- | --- |
 | `--agent` | none | `[claude]` | agents to integrate with (repeat or comma-separate; default: claude) |
-| `--context-menu` | none | `false` | install classic Explorer context menus (enabled by default) |
+| `--context-menu` | none | `false` | install file manager context menus (enabled by default) |
 | `--dry-run` | none | `false` | only print the changes |
 | `--format` | none | `"text"` | output format for --show: text or markdown (agent coverage) |
 | `--global` | `-g` | `false` | user-wide instead of this project |
 | `--guard-rm` | none | `false` | deny supported deletion commands with restorable obit alternatives |
 | `--help` | `-h` | `false` | help for init |
 | `--mcp` | none | `false` | register the Obituary MCP stdio server |
-| `--no-context-menu` | none | `false` | skip Explorer context menus |
+| `--no-context-menu` | none | `false` | skip file manager context menus |
 | `--no-shortcuts` | none | `false` | skip Start menu and desktop shortcuts |
 | `--no-skill` | none | `false` | leave the Obituary Agent Skill unchanged |
 | `--show` | none | `false` | show what is installed |

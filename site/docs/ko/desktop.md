@@ -4,7 +4,7 @@
 
 ## 세 플랫폼에서 되는 것
 
-작은 창, 트레이, 데스크톱 알림은 Windows, macOS, Ubuntu 24.04 모두에 있습니다. 컨텍스트 메뉴와 탐색기의 날짜 레이블는 Windows에만 있습니다. macOS와 Ubuntu의 데스크톱 버전은 아직 미리 보기입니다. 다른 Linux 배포판에는 데스크톱 버전이 없으므로 명령줄을 쓰세요.
+작은 창, 트레이, 데스크톱 알림은 Windows, macOS, Ubuntu 24.04 모두에 있습니다. macOS와 Ubuntu의 데스크톱 버전은 아직 미리 보기입니다. 다른 Linux 배포판에는 데스크톱 버전이 없으므로 명령줄을 쓰세요.
 
 | | Windows | macOS | Ubuntu 24.04 |
 | --- | --- | --- | --- |
@@ -13,8 +13,8 @@
 | 로그인 시 트레이 시작 | `obit init`에서 기본으로 켜짐 | 설정에서 전환 | 설정에서 전환 |
 | 만료 처리 | 상주하는 트레이 | LaunchAgent | systemd |
 | 데스크톱 알림 | 있음 | 있음 | 있음 |
-| 컨텍스트 메뉴 | 탐색기 | 없음 | 없음 |
-| 탐색기의 날짜 레이블 | 있음 | 없음 | 없음 |
+| 컨텍스트 메뉴 | 탐색기 | Finder: 빠른 동작 | Nautilus: 스크립트 · Dolphin |
+| 날짜 태그 | 있음 | Finder | Dolphin |
 | 휴지통 모드 | 있음 | 없음(묘지만) | 있음 |
 | 설치 방법 | 설치 스크립트, Scoop, winget, 압축 파일 | DMG | `.deb` |
 | 처음 열 때 | 직접 내려받은 압축 파일은 SmartScreen 경고가 나올 수 있음 | 수동 허용이 필요함. [아래](#서명되지-않은-app을-처음-열기) 참고 | 바로 열림 |
@@ -110,7 +110,7 @@ grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt insta
 
 업그레이드 후 탐색기 메뉴 전체가 다른 지원 언어로 표시되더라도 메뉴는 정상 작동합니다. `obit doctor`는 정보로만 알립니다(JSON에서는 `installation: label-language-mismatch`). `obit init --context-menu --yes`를 실행하면 현재 인터페이스 언어로 바뀝니다.
 
-macOS와 Linux에는 아직 상황에 맞는 메뉴가 없습니다. 등록할 때는 `obit mark <path> 7d`, 바로 매장할 때는 `obit bury <path>`을 사용하세요.
+Finder에서는 빠른 동작, Nautilus에서는 스크립트 → Obituary, Dolphin에서는 Obituary 메뉴를 엽니다. 폴더 정책을 설정하려면 해당 폴더를 선택하세요.
 
 ## 아이콘과 메뉴
 

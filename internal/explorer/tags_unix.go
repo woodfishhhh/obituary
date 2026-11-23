@@ -52,6 +52,7 @@ func projectLabels(svc *core.Service, index string, state core.State, receipts m
 			}
 			key := directoryKey(*it.Identity)
 			r := receipts[key]
+			r.Candidate = r.Tag == "" && r.PreviousTag == ""
 			r.Path = it.Path
 			r.Identity = *it.Identity
 			receipts[key] = r
@@ -87,6 +88,7 @@ func projectLabels(svc *core.Service, index string, state core.State, receipts m
 			if next == "" && old == "" {
 				delete(receipts, key)
 			} else {
+				r.Candidate = false
 				r.Tag = next
 				r.PreviousTag = old
 				r.Path = path

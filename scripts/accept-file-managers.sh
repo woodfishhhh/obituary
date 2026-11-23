@@ -16,21 +16,24 @@ mkdir -p "$HOME/Downloads/Nautilus" "$HOME/Desktop/Dolphin"
 if [[ $RUNNER_OS == Linux ]]; then
   export GDK_BACKEND=x11 QT_QPA_PLATFORM=xcb LC_ALL=C.UTF-8
   openbox >"$EVIDENCE/openbox.log" 2>&1 &
+  failed=0
   for manager in Nautilus Dolphin; do
     folder="$HOME/Downloads/Nautilus"; [[ $manager != Dolphin ]] || folder="$HOME/Desktop/Dolphin"
     sample="$folder/Sample.txt"; touch "$sample"
     python3 -c "import os,sys;os.setxattr(sys.argv[1], b\"user.xdg.tags\", b\"work\")" "$sample"
-    python3 scripts/file-manager-menu.py "$manager" "$folder"
+    if ! python3 scripts/file-manager-menu.py "$manager" "$folder"; then failed=1; continue; fi
     python3 -c "import os,sys,time; f=sys.argv[1]; end=time.monotonic()+10
 while time.monotonic()<end and b\"burial\" not in os.getxattr(f,b\"user.xdg.tags\"): time.sleep(.2)
-v=os.getxattr(f,b\"user.xdg.tags\");print(f,v);assert v.startswith(b\"work,\") and b\"burial\" in v" "$sample"
+v=os.getxattr(f,b\"user.xdg.tags\");print(f,v);assert v.startswith(b\"work,\") and b\"burial\" in v" "$sample" || failed=1
   done
   g++ -fPIC scripts/read-kde-tags.cpp -I/usr/include/KF5/KFileMetaData -o "$RUNNER_TEMP/tools/read-kde-tags" $(pkg-config --cflags --libs Qt5Core) -lKF5FileMetaData
-  read-kde-tags "$sample"
+  read-kde-tags "$sample" || failed=1
+  xdotool key Escape F11; sleep 1
+  import -window root "$EVIDENCE/dolphin-information.png"
 else
   sample="$HOME/Downloads/Sample.txt"; touch "$sample"
   tag=com.apple.metadata:_kMDItemUserTags
-  python3 -c "import os,plistlib,sys;os.setxattr(sys.argv[1],sys.argv[2],plistlib.dumps([\"work\n6\"],fmt=plistlib.FMT_BINARY))" "$sample" "$tag"
+  xattr -wx "$tag" "$(python3 -c "import plistlib;print(plistlib.dumps([\"work\n6\"],fmt=plistlib.FMT_BINARY).hex())")" "$sample"
   workflow="$HOME/Library/Services/Add to Obituary · 7 days.workflow"
   plutil -lint "$workflow/Contents/Info.plist" "$workflow/Contents/document.wflow"
   for key in OBIT_USER_HOME OBIT_CONFIG_DIR OBIT_HOME CODEX_HOME OBIT_LANG OBIT_TELEMETRY; do launchctl setenv "$key" "${!key}"; done
@@ -41,7 +44,8 @@ else
   /usr/bin/automator -i "$sample" "$workflow"
   xattr -px "$tag" "$sample" | tee "$EVIDENCE/xattr.txt"
   mdls -name kMDItemUserTags "$sample" | tee "$EVIDENCE/spotlight.txt"
-  python3 -c "import os,plistlib,sys;v=plistlib.loads(os.getxattr(sys.argv[1],sys.argv[2]));print(v);assert v[0]==\"work\n6\" and any(\"burial\" in t for t in v)" "$sample" "$tag"
+  xattr -px "$tag" "$sample" | python3 -c "import plistlib,sys;v=plistlib.loads(bytes.fromhex(sys.stdin.read()));print(v);assert v[0]==\"work\n6\" and any(\"burial\" in t for t in v)"
+  swift -e "import Foundation; let t=try URL(fileURLWithPath:CommandLine.arguments[1]).resourceValues(forKeys:[.tagNamesKey]).tagNames ?? []; print(t); precondition(t.contains(\"work\") && t.contains(where:{ name in name.hasSuffix(\" burial\")}))" "$sample" | tee "$EVIDENCE/finder-tags.txt"
   open -R "$sample"; sleep 2; screencapture -x "$EVIDENCE/finder.png" || true
 fi
 obit list --json | tee "$EVIDENCE/tracked.json"
@@ -50,5 +54,6 @@ obit uninstall --yes
 if [[ $RUNNER_OS == Linux ]]; then
   python3 -c "import os,sys;assert os.getxattr(sys.argv[1], b\"user.xdg.tags\")==b\"work\"" "$sample"
 else
-  python3 -c "import os,plistlib,sys;assert plistlib.loads(os.getxattr(sys.argv[1],sys.argv[2]))==[\"work\n6\"]" "$sample" "$tag"
+  xattr -px "$tag" "$sample" | python3 -c "import plistlib,sys;assert plistlib.loads(bytes.fromhex(sys.stdin.read()))==[\"work\n6\"]"
 fi
+exit "${failed:-0}"

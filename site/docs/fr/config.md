@@ -39,7 +39,7 @@ Sous Windows et Linux, `graveyard.mode = "recycle"` utilise la Corbeille du syst
 
 `watch.stable_window` est la patience d’une règle de dossier : un nouveau fichier doit rester inchangé pendant cette durée avant d’être déplacé, afin qu’un fichier encore en cours de téléchargement ne soit pas emporté. Elle utilise le format de durée de Go, un nombre suivi de `s`, `m` ou `h`, que l’on peut enchaîner comme dans `1h30m`, et elle doit être supérieure à zéro.
 
-Les réglages `explorer.*` ne comptent que sous Windows. Obituary fait afficher à l’Explorateur la date d’enterrement à côté du nom du fichier, sans changer le nom réel. Par défaut, cela se produit dans Téléchargements, sur le Bureau (sous-dossiers compris) et dans les emplacements gérés par une règle de dossier. Avec `explorer.everywhere` activé, les autres emplacements suivis l’affichent aussi ; les espaces de travail Git sont exclus, sauf si vous mettez `explorer.in_git` à `true` ; et `explorer.enabled = false` le désactive complètement. Voir [Règles de dossier](./folder-policies).
+Les réglages `explorer.*` contrôlent la date dans le nom affiché par l’Explorateur Windows et les étiquettes de date dans Finder et Dolphin. Le nom réel ne change pas. Par défaut, cela se produit dans Téléchargements, sur le Bureau (sous-dossiers compris) et dans les emplacements gérés par une règle de dossier. Avec `explorer.everywhere` activé, les autres emplacements suivis l’affichent aussi ; les espaces de travail Git sont exclus, sauf si vous mettez `explorer.in_git` à `true` ; et `explorer.enabled = false` le désactive complètement. Voir [Règles de dossier](./folder-policies).
 
 ## Interface
 
