@@ -153,7 +153,7 @@ function Open-ExplorerMenu([object]$Explorer, [string[]]$Names) {
         $more = @($labels | Where-Object { $_ -match 'Show more options|显示更多选项|^Popup$' } | Select-Object -First 1)
         if (-not $more) { throw "Windows first-level menu lacks classic-menu entry; available: $($labels -join ' | ')" }
         if ($more -eq 'Popup') {
-            [System.Windows.Forms.SendKeys]::SendWait('{END}{ENTER}')
+            Click-MenuItem $menu $more
         } else {
             Invoke-MenuItem $menu $more
         }
@@ -189,6 +189,17 @@ function Invoke-MenuItem([object]$Menu, [string]$Needle, [switch]$ExpandOnly) {
     } catch {
         $item.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
     }
+}
+
+function Click-MenuItem([object]$Menu, [string]$Needle) {
+    $item = @($Menu.FindAll([System.Windows.Automation.TreeScope]::Children,
+        [System.Windows.Automation.Condition]::TrueCondition) |
+        Where-Object { $_.Current.Name -like "*$Needle*" } | Select-Object -First 1)
+    if (-not $item) { throw "UI menu item not found: $Needle; available: $((Get-MenuItems $Menu) -join ' | ')" }
+    $rect = $item.Current.BoundingRectangle
+    [ObitInput]::SetCursorPos([int]($rect.X + $rect.Width / 2), [int]($rect.Y + $rect.Height / 2)) | Out-Null
+    [ObitInput]::mouse_event(0x0002, 0, 0, 0, [UIntPtr]::Zero)
+    [ObitInput]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero)
 }
 
 function Rename-ExplorerItem([object]$Explorer, [string]$OldName, [string]$NewName) {
