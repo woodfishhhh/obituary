@@ -1,6 +1,6 @@
 # Changelog / 更新日志
 
-## Unreleased / 未发布
+## 1.7.0 - 2026-11-23
 
 - 新增：Docker 本地卷可以用 `obit mark --docker-volume` 设寿命，也可以用 `obit bury --docker-volume` 立即下葬；讣告先归档并校验，再删除未被使用的卷，复活时不覆盖同名卷。
 - New: give a local Docker volume a lifespan with `obit mark --docker-volume` or bury it now with `obit bury --docker-volume`; Obituary archives and verifies an unused volume before removing it and never overwrites a volume of the same name on restore.
