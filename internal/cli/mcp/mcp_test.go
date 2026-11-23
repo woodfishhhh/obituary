@@ -708,6 +708,9 @@ func TestMCPMutations(t *testing.T) {
 		{"recycle-description", "internal/cli/mcp/tools.go", "if svc.Mode == core.ModeRecycle {", "if false && svc.Mode == core.ModeRecycle {",
 			"./internal/cli/mcp", "TestMCPRecycleModeDescriptionAndReceipt", "recycle description promises wrong recovery"},
 		{"doctor-skip-volume-recovery", "internal/cli/doctor/volume.go", `const dir = "graveyard/docker-volumes"`, `const dir = "graveyard/no-volume-entries"`, "./internal/cli/doctor", "TestDoctorVolumeRecovery", "volume recovery warnings"},
+		{"sqlite-item-revision", "internal/core/ledger/store_item.go", "if item.Rev != rev {", "if false && item.Rev != rev {", "./internal/core/ledger", "TestItemRevisionUpdateDoesNotLoadResidentState", "stale retry changed item"},
+		{"sqlite-item-full-state", "internal/core/ledger/store_item.go", "if fence == nil {", "if true || fence == nil {", "./internal/core/ledger", "TestItemRevisionUpdateDoesNotLoadResidentState", "single-row update materialized"},
+		{"ipc-drop-ambiguous-handoff", "internal/hook/event.go", "if queueErr := e.Svc.Store.DeferObservations(observations); queueErr == nil {", "if true {", "./internal/e2e", "TestInterruptedResidentHookReplaysExactlyOnce/before-queue", "lost or duplicated fallback observation"},
 	} {
 		if !testenv.InMutationShard(t, i) {
 			continue
@@ -760,6 +763,9 @@ func TestMCPMutations(t *testing.T) {
 			defer cancel()
 			cmd := exec.CommandContext(ctx, "go", "test", "-overlay", overlayPath, tc.pkg, "-run", "^"+tc.test+"$", "-count=1")
 			cmd.Env = append(os.Environ(), goEnv...)
+			if tc.pkg == "./internal/e2e" {
+				cmd.Env = append(cmd.Env, "OBIT_E2E_OVERLAY="+overlayPath)
+			}
 			if tc.pkg == "./cmd/obitd" {
 				cmd.Env = append(cmd.Env, "OBIT_TEST_BUILD_OVERLAY="+overlayPath)
 			}
