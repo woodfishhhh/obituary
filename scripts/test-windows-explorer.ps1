@@ -150,7 +150,7 @@ function Open-ExplorerMenu([object]$Explorer, [string[]]$Names) {
     $menu = Get-VisibleMenu $Explorer
     $labels = Get-MenuItems $menu
     if (-not (($labels -join "`n") -match 'Obituary|讣告')) {
-        $more = @($labels | Where-Object { $_ -match 'Show more options|显示更多选项' } | Select-Object -First 1)
+        $more = @($labels | Where-Object { $_ -match 'Show more options|显示更多选项|^Popup$' } | Select-Object -First 1)
         if (-not $more) { throw "Windows first-level menu lacks classic-menu entry; available: $($labels -join ' | ')" }
         Invoke-MenuItem $menu $more
         Start-Sleep -Milliseconds 500
