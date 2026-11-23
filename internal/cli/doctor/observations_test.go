@@ -42,3 +42,19 @@ func TestDoctorObservationQueueIsReadOnly(t *testing.T) {
 		t.Fatal("doctor created queue", err)
 	}
 }
+
+func TestDoctorYoungQueueIsNormal(t *testing.T) {
+	home := t.TempDir()
+	store := ledger.Store{Home: home}
+	now := time.Now()
+	row := core.Observation{Path: filepath.Join(home, "debug.log"), Session: "s", Token: "request", Identity: &core.Identity{}, ObservedAt: now.Add(-5 * time.Second)}
+	if err := store.DeferObservations([]core.Observation{row}); err != nil {
+		t.Fatal(err)
+	}
+	if check := english.diagnoseHookQueue(home, now); check.Status != "PASS" || check.Queue.Pending != 1 {
+		t.Fatalf("a request handed over seconds ago is not stuck: %+v", check)
+	}
+	if check := english.diagnoseHookQueue(home, now.Add(2*time.Minute)); check.Status != "WARN" {
+		t.Fatalf("a request waiting minutes is: %+v", check)
+	}
+}

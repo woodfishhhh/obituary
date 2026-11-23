@@ -11,6 +11,7 @@ Two systems are driven side by side and interleaved wave by wave:
 usage: python bench.py wave  <bin-root> --n 1000 --waves 7 --conc 4,8,16
        python bench.py paired <bin-root> --n 1000 --pairs 21
        python bench.py chaos  <bin-root> --n 1000 --rounds 30 --conc 8
+       python bench.py compat <bin-root> --n 1000 --release v170
 bin-root holds bin-old/ and bin-new/ (obit.exe, obitd.exe, probe.exe).
 """
 import argparse
@@ -336,17 +337,59 @@ def cmd_chaos(a):
     s.stop()
 
 
+def cmd_compat(a):
+    """The ledger and queue this branch writes stay readable and replayable by a released build.
+
+    bin-<release> (for example bin-v170) holds that release's obit.exe and obitd.exe.
+    """
+    b = Bench(Path(a.bins), Path(a.out))
+    rel = a.release
+    print("OS", platform.platform(), "root", b.root, "release", rel, flush=True)
+    s = System(b, "new", a.n, "-compat")
+    paths = [b.repo / f"debug-compat-{i}.log" for i in range(6)]
+    for p in paths:
+        p.write_text("x", encoding="utf8")
+    with cf.ThreadPoolExecutor(len(paths)) as pool:  # acknowledged together, well inside the resident's 300 ms quiet window
+        for f in [pool.submit(b.run, "new", "obit", ["hook", "claude"], s.e, b.payload(f"session-compat-{i}", p))
+                  for i, p in enumerate(paths)]:
+            f.result()
+    s.kill()  # ... then it dies before registering any
+    assert len(read_state(s.home)["items"]) == a.n and queued(s.home) >= 1, "setup: writes must be accepted but unregistered"
+    print("queue after the resident was killed:", queued(s.home), flush=True)
+    # 1. the release opens the ledger the resident wrote
+    out = b.run(rel, "obit", ["list"], s.e)[1].decode("utf8")
+    assert len(out.splitlines()) >= a.n, "release could not list the ledger"
+    # 2. the release replays what the resident accepted, through its own one-shot daemon
+    b.run(rel, "obitd", ["--once", "--home", str(s.home), "--config-dir", b.base["OBIT_CONFIG_DIR"]], s.e)
+    s.expected += len(paths)
+    s.drain()
+    s.verify(paths)
+    st = read_state(s.home)
+    print("release replayed the resident's queue:", len(st["items"]), "items, every write once, queue empty", flush=True)
+    # 3. the resident reopens the ledger the release wrote
+    s.start()
+    extra = b.repo / "debug-compat-after.log"
+    extra.write_text("x", encoding="utf8")
+    b.run("new", "obit", ["hook", "claude"], s.e, b.payload("session-compat-after", extra))
+    s.expected += 1
+    s.drain()
+    s.verify(paths + [extra])
+    s.stop()
+    print("compat ok", flush=True)
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("mode", choices=["wave", "paired", "chaos"])
+    ap.add_argument("mode", choices=["wave", "paired", "chaos", "compat"])
     ap.add_argument("bins")
     ap.add_argument("--n", type=int, default=1000)
     ap.add_argument("--waves", type=int, default=7)
     ap.add_argument("--conc", default="4,8,16")
     ap.add_argument("--pairs", type=int, default=21)
     ap.add_argument("--systems", default="old,new")
+    ap.add_argument("--release", default="v170")
     ap.add_argument("--rounds", type=int, default=30)
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--out", default="bench-raw.jsonl")
     args = ap.parse_args()
-    {"wave": cmd_wave, "paired": cmd_paired, "chaos": cmd_chaos}[args.mode](args)
+    {"wave": cmd_wave, "paired": cmd_paired, "chaos": cmd_chaos, "compat": cmd_compat}[args.mode](args)
