@@ -5,7 +5,8 @@
   "type": "module",
   "packageManager": "pnpm@11.11.0",
   "devDependencies": {
-    "@vue/compiler-dom": "3.5.45"
+    "@vue/compiler-dom": "3.5.45",
+    "lightningcss": "1.33.0"
   },
   "scripts": {
     "dev": "node scripts/community.mjs && pnpm --filter landing dev",

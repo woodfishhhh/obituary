@@ -1,4 +1,5 @@
 import { fileURLToPath, URL } from "node:url";
+import { posix } from "node:path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
@@ -13,12 +14,17 @@ const base = process.env.SITE_BASE ?? "/";
 // running on its mock data. Its stylesheet assumes it owns the page, so the page-level rules
 // are dropped here and its font files are read from where they live.
 const guiRoot = fileURLToPath(new URL("../../cmd/obit-gui/frontend", import.meta.url));
+const serifFont = "noto-serif-sc-subset.woff2";
 const guiStyles = () => ({
   name: "obit-gui-styles",
   enforce: "pre" as const,
   transform(code: string, id: string) {
     const file = id.replaceAll("\\", "/").split("?")[0];
     const root = guiRoot.replaceAll("\\", "/");
+    if (file.startsWith(root + "/src/variants/") && file.endsWith(".css")) {
+      const font = posix.relative(posix.dirname(file), root + "/public/fonts/" + serifFont);
+      return code.replaceAll("/fonts/" + serifFont, font);
+    }
     if (file.startsWith(`${root}/src/`) && /\.tsx$/.test(file)) return code.replaceAll('src="icon.png"', `src="${base}icon-128.png"`);
     if (file !== `${root}/src/styles.css`) return null;
     // In its own cascade layer, below Tailwind's utilities: its bare `button { color: inherit; font: inherit }`
@@ -66,7 +72,12 @@ export default defineConfig(({ isSsrBuild }) => ({
     // every repeat is in the HTML, which the first paint has to read before anything shows.
     assetsInlineLimit: (file: string) => (/icons-static-svg|\/assets\/agents\//.test(file.replaceAll("\\", "/")) ? false : undefined),
     // One template: scripts/prerender.mjs writes a page per language from it. The server build starts from its own entry.
-    rollupOptions: isSsrBuild ? {} : { input: fileURLToPath(new URL("./index.html", import.meta.url)) },
+    rolldownOptions: isSsrBuild ? {} : {
+      input: fileURLToPath(new URL("./index.html", import.meta.url)),
+      output: {
+        assetFileNames: ({ names }) => names.includes(serifFont) ? "fonts/" + serifFont : "assets/[name]-[hash].[ext]",
+      },
+    },
   },
   server: { port: 5192, strictPort: true, fs: { allow: [fileURLToPath(new URL("../..", import.meta.url))] } },
 }));

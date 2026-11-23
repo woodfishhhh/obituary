@@ -25,6 +25,7 @@ for (const [from] of parts) {
 }
 await rm(out, { recursive: true, force: true });
 for (const [from, to] of parts) await cp(from, to, { recursive: true });
+await cp(new URL("cmd/obit-gui/frontend/public/fonts/OFL-NotoSerifSC.txt", repo), new URL("fonts/OFL-NotoSerifSC.txt", out));
 
 // A bundled stylesheet holds no @import: one left behind makes the browser ask for the file beside it, get the
 // 404 page, and fail the script chunk that loads the stylesheet (the landing page's window demo, for one).
