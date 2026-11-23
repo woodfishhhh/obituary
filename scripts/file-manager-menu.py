@@ -87,6 +87,12 @@ with (out / f"{manager}.log").open("w") as log:
             print(f"{error}; trying the native Nautilus script accelerator", flush=True)
             sp.run(["xdotool","key","Escape","Escape","Escape","ctrl+a","F12"],check=True)
     else:
+        # Dolphin exposes the same services on its background, where %F is the directory.
+        try:
+            view("selection-check", ["rename"], timeout=2)
+        except RuntimeError:
+            sp.run(["xdotool", "key", "Escape", "ctrl+a", "shift+F10"], check=True)
+            view("selection-check", ["rename"])
         first = click("context", ["obituary", "actions"], "1")
         if first == "actions":
             click("actions", ["obituary"], "1")
