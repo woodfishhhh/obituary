@@ -170,7 +170,24 @@ func injectDeliveryDeadline(t *testing.T, store core.Store, stage string) func()
 		return func() {}
 	}
 	delayed := false
-	restore := core.SetFileSyncForTesting(func(*os.File) error {
+	restore := core.SetFileSyncForTesting(func(f *os.File) error {
+		if filepath.Base(f.Name()) != "store.json.tmp" {
+			return nil
+		}
+		current, err := os.Stat(filepath.Join(store.Home, "store.json"))
+		if os.IsNotExist(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		replacement, err := f.Stat()
+		if err != nil {
+			return err
+		}
+		if !os.SameFile(current, replacement) {
+			return nil
+		} // pre-rename flush
 		st, err := store.Inspect()
 		if err != nil {
 			return err
