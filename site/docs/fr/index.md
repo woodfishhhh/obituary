@@ -42,7 +42,9 @@ Le script installe la dernière version par défaut (`--version <version>` perme
 
 Lors de la première utilisation sur macOS, exécutez `obit --version` et `obitd --help`. Si Gatekeeper demande une autorisation, ouvrez Réglages Système → Confidentialité et sécurité, choisissez « Ouvrir quand même » pour chaque exécutable dont vous avez vérifié la provenance, puis réessayez.
 
-Sous WSL, gardez les projets et la configuration de l’agent sur le système de fichiers Linux (par exemple sous `~/projects`). Les montages Windows tels que `/mnt/c` ne prennent pas toujours en charge les renommages sécurisés nécessaires à l’installation ; l’opération signale une erreur et conserve la configuration d’origine. Vous pouvez aussi utiliser directement la version Windows d’Obituary.
+Sous WSL, gardez les projets et la configuration de l’agent sur le système de fichiers natif de Linux, par exemple dans `~/projects`. Les montages DrvFS comme `/mnt/c` ne prennent pas toujours en charge les renommages sûrs nécessaires à l’installation. Utilisez uniquement la version Windows pour attribuer une durée de vie aux fichiers de ces montages, les enterrer ou les restaurer.
+
+Dans Docker, si overlayfs ne fournit pas d’identifiants de fichiers persistants, `obit mark` refuse l’enregistrement et laisse le fichier en place. Pour pouvoir restaurer les fichiers après expiration, placez-les, ainsi que le répertoire de données d’Obituary, sur un volume ou un montage lié reposant sur un système de fichiers comme ext4 qui fournit ces identifiants.
 
 ### Windows
 

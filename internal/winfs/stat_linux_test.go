@@ -1,11 +1,27 @@
 package winfs
 
 import (
-	"golang.org/x/sys/unix"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
+
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"golang.org/x/sys/unix"
 )
+
+func Test9pDeviceOwnership(t *testing.T) {
+	const mounts = "12 1 0:51 / /volume rw - 9p C: rw,aname=drvfs;path=C:\n13 1 0:52 / /mnt/c rw - 9p remote rw,aname=other"
+	if err := check9pDevice(mounts, "0:51"); !errors.Is(err, corefs.ErrUnsupported) {
+		t.Fatalf("DrvFS accepted: %v", err)
+	}
+	if err := check9pDevice(mounts, "0:52"); err != nil {
+		t.Fatalf("other 9p share rejected: %v", err)
+	}
+	if err := check9pDevice(mounts, "0:53"); err == nil {
+		t.Fatal("unidentified 9p device accepted")
+	}
+}
 
 func TestPOSIXIdentityRefusesInodeOnlyFID(t *testing.T) {
 	// Linux UAPI AT_HANDLE_FID (0x200) is not exposed by x/sys/unix yet.

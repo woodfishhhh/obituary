@@ -103,6 +103,15 @@ func Canonical(path string) (string, error) {
 }
 
 func (FS) RealPath(path string) (string, error) { return Canonical(path) }
+
+// ManagedPath applies ownership only to Guard targets, not read-only project lookups.
+func ManagedPath(path string) (string, error) {
+	if err := checkManagedPath(path); err != nil {
+		return "", err
+	}
+	return Canonical(path)
+}
+
 func (FS) LongPath(path string) (string, bool, error) {
 	p, err := pathutil.Abs(path)
 	return p, err == nil, err

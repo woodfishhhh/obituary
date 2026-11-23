@@ -31,7 +31,9 @@ The script installs the latest release by default (`--version <version>` picks a
 
 On first use in macOS, run `obit --version` and `obitd --help`. If Gatekeeper asks for approval, open System Settings → Privacy & Security, choose Open Anyway for each executable whose source you verified, then retry the command.
 
-In WSL, keep projects and agent configuration on the Linux filesystem (for example, under `~/projects`). Windows mounts such as `/mnt/c` may not support the safe renames required for installation; the operation reports an error and preserves the original configuration. You can also use the Windows edition directly.
+In WSL, keep projects and agent configuration on the native Linux filesystem, for example under `~/projects`. DrvFS mounts such as `/mnt/c` may not support the safe renames needed for installation. Use only the Windows edition to mark, bury or restore files on those mounts.
+
+In Docker, if the container’s overlayfs cannot provide persistent file identities, `obit mark` refuses to register the file and leaves it in place. For lifespans and restoration, keep the files and the Obituary data directory on a volume or bind mount backed by a filesystem such as ext4 that provides persistent identities.
 
 On Windows, pick one of the three:
 

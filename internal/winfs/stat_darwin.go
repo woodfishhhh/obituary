@@ -2,6 +2,8 @@ package winfs
 
 import "golang.org/x/sys/unix"
 
+func checkManagedPath(string) error { return nil }
+
 func readPOSIXStat(fd int, name string) (posixStat, error) {
 	var st unix.Stat_t
 	var err error

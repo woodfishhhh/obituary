@@ -4,9 +4,60 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
+	"fmt"
+	"os"
+	"strings"
 
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"golang.org/x/sys/unix"
 )
+
+func checkManagedPath(path string) error {
+	fd, err := unix.Open(path, unix.O_PATH|unix.O_CLOEXEC|unix.O_NOFOLLOW, 0)
+	if err != nil {
+		return err
+	}
+	defer unix.Close(fd)
+	var info unix.Statfs_t
+	if err := unix.Fstatfs(fd, &info); err != nil {
+		return err
+	}
+	if info.Type != unix.V9FS_MAGIC {
+		return nil
+	}
+	var st unix.Stat_t
+	if err := unix.Fstat(fd, &st); err != nil {
+		return err
+	}
+	entries, err := os.ReadFile("/proc/self/mountinfo")
+	if err != nil {
+		return err
+	}
+	// Match the device, not /mnt/c: DrvFS may be mounted elsewhere or bind-mounted.
+	device := fmt.Sprintf("%d:%d", unix.Major(st.Dev), unix.Minor(st.Dev))
+	return check9pDevice(string(entries), device)
+}
+
+func check9pDevice(entries, device string) error {
+	for line := range strings.SplitSeq(entries, "\n") {
+		left, right, ok := strings.Cut(line, " - 9p ")
+		if !ok {
+			continue
+		}
+		fields := strings.Fields(left)
+		if len(fields) < 3 || fields[2] != device {
+			continue
+		}
+		_, opts, _ := strings.Cut(right, " ")
+		for opt := range strings.SplitSeq(opts, ",") {
+			if opt == "aname=drvfs" || strings.HasPrefix(opt, "aname=drvfs;") {
+				return fmt.Errorf("WSL DrvFS: use the Windows edition of Obituary for this path: %w", corefs.ErrUnsupported)
+			}
+		}
+		return nil
+	}
+	return fmt.Errorf("cannot identify 9p device %s", device)
+}
 
 func readPOSIXStat(fd int, name string) (posixStat, error) {
 	st, err := readLinuxMetadata(fd, name)
