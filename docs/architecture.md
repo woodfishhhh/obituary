@@ -232,6 +232,8 @@ flowchart TD
 
 ### Docker 容器（D-0042）
 
+火化前比较原 daemon 报告的 `State.StartedAt` 与发送 stop 前持久化的运行时间戳（不和本机时钟比较）。时间戳改变即视为外部接管：即便又停下也不删除、不启动；缺少时间戳的旧墓地记录保留待复活。Docker CLI 没有按运行时间戳原子删除的操作：最后一次 inspect 后才完成整次启动和停止仍属并发边界。
+
 - 容器是第二种条目（`kind: "container"`），和文件共用编号序列；账本 v14 起保存完整容器 ID 和创建时间。文件的下葬、复活、火化路径遇到容器条目一律跳过，容器走 `internal/core/lifecycle/container*.go` 和 `internal/docker`。
 - 到期是 `docker stop`（保留可写层），复活是 `docker start`，保留期过后火化是 `docker rm`（不带 `-v`、`-f`）。每次动手前都重新 inspect，完整 ID 和创建时间对不上就不动；火化时正在运行的当作复活。AutoRemove 容器拒绝登记。
 - 会话差分在后台的 `obit hook finish` 里按会话时间窗找新建的容器，生成提议；hook 进程本身从不调用 docker。docker stop 等待容器自己的 StopTimeout 再加 5 秒（不给 docker stop 传 `--timeout`，尊重用户设的宽限期），其他调用 5 秒。

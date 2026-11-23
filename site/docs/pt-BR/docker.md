@@ -28,7 +28,7 @@ A proteção contra exclusão reconhece `docker volume rm`, `docker volume remov
 
 - Depois de `docker stop`, o contêiner e sua camada gravável continuam intactos. `obit resurrect <id>` executa `docker start` e encerra o acompanhamento da vida útil.
 - O contêiner só é removido com `docker rm` após o período de retenção (`[graveyard] retention_days`, 7 dias por padrão). As opções `-v` e `-f` nunca são usadas.
-- Se já estiver em execução nesse momento, não importa quem o tenha iniciado: ele é considerado ressuscitado e é preservado.
+- Se você iniciar o contêiner durante o período de retenção, o Obituary o mantém e deixa de acompanhá-lo, mesmo que você o pare novamente. As versões anteriores não registravam a hora de início: esses contêineres não são removidos e ainda podem ser recuperados com `obit resurrect <id>`.
 - `obit purge` e `--all` também respeitam o período de retenção dos contêineres. O modo de lixeira não se aplica: eles são parados primeiro e removidos só após o fim do prazo.
 
 ## Identificação pelo ID completo

@@ -21,6 +21,17 @@ func sameTarget(a, b *Target) bool {
 	return a.Endpoint == b.Endpoint && a.DaemonID == b.DaemonID
 }
 
+// Reclaimed compares daemon timestamps, never the local clock of a remote client.
+func (c Container) Reclaimed(stopped Identity) (bool, error) {
+	if c.Running {
+		return true, nil
+	}
+	if stopped.StartedAt == "" || c.StartedAt == "" {
+		return false, errors.New("cannot verify container start time at burial; container kept; use obit resurrect to reclaim it")
+	}
+	return c.StartedAt != stopped.StartedAt, nil
+}
+
 func (c Container) StopWait() time.Duration {
 	seconds := 30
 	if c.Target != nil && c.Target.OSType == "linux" {

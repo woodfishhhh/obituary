@@ -28,7 +28,7 @@ Der Löschschutz erkennt `docker volume rm`, `docker volume remove`, `docker vol
 
 - Nach `docker stop` bleiben der Container und seine beschreibbare Schicht erhalten. `obit resurrect <id>` startet ihn mit `docker start` und beendet die Überwachung seiner Lebensdauer.
 - Erst nach der Aufbewahrungsfrist (`[graveyard] retention_days`, standardmäßig 7 Tage) wird der Container mit `docker rm` entfernt, niemals mit `-v` oder `-f`.
-- Läuft er zu diesem Zeitpunkt wieder, weil du oder jemand anders ihn gestartet hat, gilt er als wiederbelebt und bleibt erhalten.
+- Startest du den Container während der Aufbewahrungsfrist, bleibt er erhalten und wird nicht weiter verfolgt, auch wenn du ihn wieder stoppst. Bei Containern aus älteren Versionen fehlt die Startzeit zum Vergleich. Obituary löscht sie nicht; mit `obit resurrect <id>` kannst du sie wieder starten.
 - Auch `obit purge` und `--all` müssen bei Containern die Aufbewahrungsfrist abwarten. Der Papierkorbmodus gilt nicht für Container: Sie werden zuerst gestoppt und erst nach Ablauf der Frist entfernt.
 
 ## Identifikation anhand der vollständigen ID

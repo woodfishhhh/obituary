@@ -20,11 +20,12 @@ const StopTimeout = 35 * time.Second
 
 // Identity is immutable across renames and pins a container across daemon changes.
 type Identity struct {
-	Target  *Target   `json:"target,omitempty"`
-	ID      string    `json:"id"`
-	Created time.Time `json:"created"`
-	Name    string    `json:"name"`
-	ShortID string    `json:"shortId"`
+	StartedAt string    `json:"startedAt,omitempty"` // Run observed at stop; not part of immutable identity.
+	Target    *Target   `json:"target,omitempty"`
+	ID        string    `json:"id"`
+	Created   time.Time `json:"created"`
+	Name      string    `json:"name"`
+	ShortID   string    `json:"shortId"`
 }
 
 func (id Identity) Valid() bool {
@@ -123,8 +124,11 @@ type inspection struct {
 	ID      string `json:"Id"`
 	Created time.Time
 	Name    string
-	State   struct{ Running bool }
-	Config  struct {
+	State   struct {
+		Running   bool
+		StartedAt *time.Time
+	}
+	Config struct {
 		Labels      map[string]string
 		StopTimeout *int
 	}
@@ -178,6 +182,9 @@ func (c CLI) inspectAll(ctx context.Context, refs []string) ([]Container, error)
 			return nil, ErrIdentity
 		}
 		id.ShortID = id.ID[:12]
+		if row.State.StartedAt != nil {
+			id.StartedAt = row.State.StartedAt.UTC().Format(time.RFC3339Nano)
+		}
 		result := Container{Identity: id, StopTimeout: row.Config.StopTimeout, Running: row.State.Running, AutoRemove: row.HostConfig.AutoRemove, Labels: row.Config.Labels}
 		for _, mount := range row.Mounts {
 			switch mount.Type {
@@ -314,8 +321,8 @@ func (c CLI) Remove(ctx context.Context, want Identity, beforeSend func([]string
 	if err != nil {
 		return false, err
 	}
-	if got.Running {
-		return true, nil
+	if reclaimed, err := got.Reclaimed(want); reclaimed || err != nil {
+		return reclaimed, err
 	}
 	if err := c.noNameCollision(ctx, want); err != nil {
 		return false, err

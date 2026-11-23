@@ -68,6 +68,15 @@ func (s *Service) settleContainerGrave(p ContainerIntent, r *GraveResult) error 
 		return nil
 	case got.Running:
 		action, detail = ActionResurrected, "container running; resurrection confirmed"
+	case p.Operation == "rm":
+		reclaimed, err := got.Reclaimed(*p.Burial.Container)
+		if err != nil {
+			r.Error = err.Error()
+		} else if reclaimed {
+			action, detail = ActionResurrected, "container restarted since burial; kept stopped"
+		} else {
+			r.Error = "container remains stopped; operation cleared for retry"
+		}
 	default:
 		r.Error = "container remains stopped; operation cleared for retry"
 	}
