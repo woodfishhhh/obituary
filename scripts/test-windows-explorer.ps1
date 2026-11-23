@@ -158,7 +158,13 @@ function Open-ExplorerMenu([object]$Explorer, [string[]]$Names) {
             Invoke-MenuItem $menu $more
         }
         Start-Sleep -Milliseconds 500
-        $menu = Get-VisibleMenu $Explorer
+        try {
+            $menu = Get-VisibleMenu $Explorer
+        } catch {
+            [System.Windows.Forms.SendKeys]::SendWait('+{F10}')
+            Start-Sleep -Milliseconds 500
+            $menu = Get-VisibleMenu $Explorer
+        }
     }
     return $menu
 }
