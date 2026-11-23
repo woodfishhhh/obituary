@@ -119,15 +119,17 @@ function Invoke-ExplorerVerb([object]$Item, [string]$Needle) {
 }
 
 function Find-UiItem([object]$Explorer, [string]$Name) {
-    $nameCondition = New-Object System.Windows.Automation.PropertyCondition(
-        [System.Windows.Automation.AutomationElement]::NameProperty, $Name)
-    $typeCondition = New-Object System.Windows.Automation.PropertyCondition(
-        [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
-        [System.Windows.Automation.ControlType]::ListItem)
-    $condition = New-Object System.Windows.Automation.AndCondition($nameCondition, $typeCondition)
     for ($i = 0; $i -lt 20; $i++) {
-        $item = $Explorer.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
-        if ($item -and -not $item.Current.IsOffscreen) { return $item }
+        foreach ($candidate in @($Name, [IO.Path]::GetFileNameWithoutExtension($Name) | Where-Object { $_ -ne $Name })) {
+            $nameCondition = New-Object System.Windows.Automation.PropertyCondition(
+                [System.Windows.Automation.AutomationElement]::NameProperty, $candidate)
+            $item = $Explorer.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $nameCondition)
+            if (-not $item) {
+                $item = [System.Windows.Automation.AutomationElement]::RootElement.FindFirst(
+                    [System.Windows.Automation.TreeScope]::Descendants, $nameCondition)
+            }
+            if ($item -and -not $item.Current.IsOffscreen) { return $item }
+        }
         Start-Sleep -Milliseconds 250
     }
     throw "UI Automation item not found: $Name"
