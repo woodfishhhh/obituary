@@ -589,7 +589,10 @@ func sqliteRowsReceiptID(rows sqliteRows) string {
 }
 
 func (s Store) loadSQLiteHot() (State, []Event, error) {
-	db, err := openSQLiteMode(s.databasePath(), "ro", s.inspectOnly)
+	// shortcut: POSIX diagnostics and short-lived readers use immutable mode to
+	// avoid mutating SQLite's shared-memory sidecar; upgrade to a pinned WAL
+	// reader before enabling concurrent external writers.
+	db, err := openSQLiteMode(s.databasePath(), "ro", s.inspectOnly || runtime.GOOS != "windows")
 	if err != nil {
 		return State{}, nil, fmt.Errorf("open SQLite ledger: %w", err)
 	}
