@@ -15,6 +15,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/daemonipc"
 	"golang.org/x/sys/windows"
 )
 
@@ -37,6 +38,7 @@ type Resident struct {
 	graves *graves
 	// stopFolderWatch stops the live obit watch policies.
 	stopFolderWatch func()
+	stopIPC         func() error
 	runErr          error
 }
 
@@ -56,6 +58,7 @@ var publishDaemonStart = func(home string) error { return writeDaemonProcess(hom
 
 // NewResident returns nil without error when this user's store is served already.
 func NewResident(svc *core.Service, logger *log.Logger) (r *Resident, err error) {
+	svc.Store = svc.Store.WithPersistentSQLite()
 	if err := os.MkdirAll(svc.Store.Home, 0o700); err != nil {
 		return nil, err
 	}
@@ -99,6 +102,13 @@ func NewResident(svc *core.Service, logger *log.Logger) (r *Resident, err error)
 	watchObservations(svc, w, logger)
 	r = resident(svc, logger)
 	r.watcher, r.mutex = w, mutex
+	r.stopIPC, err = daemonipc.Serve(svc.Store.Home, func(rows []core.Observation) error {
+		return svc.Store.DeferObservations(rows)
+	})
+	if err != nil {
+		_ = w.Close()
+		return nil, err
+	}
 	r.stopFolderWatch = startFolderWatch(svc, logger)
 	return r, nil
 }
@@ -124,6 +134,10 @@ func (r *Resident) Close() {
 	if r.stopFolderWatch != nil {
 		r.stopFolderWatch()
 	}
+	if r.stopIPC != nil {
+		_ = r.stopIPC()
+	}
+	r.Service.Store.ClosePersistentSQLite()
 	err := r.watcher.Close()
 	if writeErr := writeDaemonProcess(r.Service.Store.Home, true, errors.Join(r.runErr, err)); writeErr != nil {
 		r.logger.Printf("shutdown receipt: %v", writeErr)

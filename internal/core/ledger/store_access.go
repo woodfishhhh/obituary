@@ -38,6 +38,13 @@ func (s Store) WithChangeFlag(changed *bool) Store { s.changed = changed; return
 // WithLockObserver measures this store's lock ownership without changing its scope.
 func (s Store) WithLockObserver(observe func(time.Duration)) Store { s.observeLock = observe; return s }
 
+// WithPersistentSQLite lets a resident own one SQLite connection across hot
+// transactions. Short-lived callers deliberately keep the legacy lifecycle.
+func (s Store) WithPersistentSQLite() Store { s.persistentSQLite = true; return s }
+
+// ClosePersistentSQLite releases the resident-owned connection and its cache.
+func (s Store) ClosePersistentSQLite() { closeSQLiteSession(s.Home) }
+
 // LoadGraveyard joins the snapshot while the caller holds the hot transaction lock.
 func (s Store) LoadGraveyard(st *State) error { return s.loadGraveyard(st) }
 

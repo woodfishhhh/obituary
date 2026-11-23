@@ -14,6 +14,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/daemonipc"
 )
 
 // Resident owns the long-lived Service. Menu actions and scheduled work share
@@ -35,11 +36,13 @@ type Resident struct {
 	graves *graves
 	// stopFolderWatch stops the live obit watch policies.
 	stopFolderWatch func()
+	stopIPC         func() error
 	runErr          error
 }
 
 // NewResident returns nil without error when this user's store is served already.
 func NewResident(svc *core.Service, logger *log.Logger) (r *Resident, err error) {
+	svc.Store = svc.Store.WithPersistentSQLite()
 	if err := os.MkdirAll(svc.Store.Home, 0o700); err != nil {
 		return nil, err
 	}
@@ -65,6 +68,14 @@ func NewResident(svc *core.Service, logger *log.Logger) (r *Resident, err error)
 	watchObservations(svc, w, logger)
 	r = resident(svc, logger)
 	r.watcher, r.release = w, release
+	r.stopIPC, err = daemonipc.Serve(svc.Store.Home, func(rows []core.Observation) error {
+		return svc.Store.DeferObservations(rows)
+	})
+	if err != nil {
+		_ = w.Close()
+		release()
+		return nil, err
+	}
 	r.stopFolderWatch = startFolderWatch(svc, logger)
 	return r, nil
 }
@@ -90,6 +101,10 @@ func (r *Resident) Close() {
 	if r.stopFolderWatch != nil {
 		r.stopFolderWatch()
 	}
+	if r.stopIPC != nil {
+		_ = r.stopIPC()
+	}
+	r.Service.Store.ClosePersistentSQLite()
 	_ = r.watcher.Close()
 	if r.release != nil {
 		r.release()

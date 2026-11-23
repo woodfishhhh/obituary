@@ -16,7 +16,7 @@ import (
 )
 
 func TestSQLiteLedgerUsesWALAndFullDurability(t *testing.T) {
-	store := Store{Home: t.TempDir()}
+	store := (Store{Home: t.TempDir()}).WithPersistentSQLite()
 	if err := store.Update(func(st *State) error {
 		st.Items = []Item{{ID: 1, Rev: 1, Path: "one"}, {ID: 2, Rev: 1, Path: "two"}}
 		st.NextID = 3
@@ -137,7 +137,7 @@ CREATE TRIGGER changed_rows AFTER UPDATE ON ledger BEGIN INSERT INTO changed VAL
 }
 
 func TestSQLiteHotSessionDecodesOnce(t *testing.T) {
-	store := Store{Home: t.TempDir()}
+	store := (Store{Home: t.TempDir()}).WithPersistentSQLite()
 	items := make([]Item, 10000)
 	for i := range items {
 		items[i] = Item{ID: int64(i + 1), Rev: 1, Path: fmt.Sprintf("item-%d", i)}
@@ -223,7 +223,7 @@ func TestSQLiteLedgerMigratesV18AndRefusesV20(t *testing.T) {
 }
 
 func BenchmarkSQLiteSparseUpdate10K(b *testing.B) {
-	store := Store{Home: b.TempDir()}
+	store := (Store{Home: b.TempDir()}).WithPersistentSQLite()
 	items := make([]Item, 10000)
 	for i := range items {
 		items[i] = Item{ID: int64(i + 1), Rev: 1, Path: fmt.Sprintf("item-%d", i)}

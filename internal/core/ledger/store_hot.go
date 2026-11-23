@@ -345,7 +345,7 @@ func (s Store) updateHot(fn func(*State) error) error {
 	return s.withLock("store.lock", true, func() error {
 		if hasSQLite, err := s.hasSQLiteFence(); err != nil {
 			return err
-		} else if hasSQLite {
+		} else if hasSQLite && s.persistentSQLite {
 			session, err := s.sqliteHotSession()
 			if err != nil && !errors.Is(err, errSQLiteSessionFallback) {
 				return err

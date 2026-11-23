@@ -16,14 +16,15 @@ import (
 // Store persists State as JSON under a home directory. Every mutation runs
 // under an exclusive lock file so the CLI and the daemon can share it.
 type Store struct {
-	changed      *bool // request-local commit tracking for presentation callbacks
-	Home         string
-	lockDeadline time.Time
-	ctx          context.Context
-	auditPending *bool
-	auditLines   *int                // batch delivery upper bound for recovery log advice
-	observeLock  func(time.Duration) // serial test measurement of store.lock ownership
-	inspectOnly  bool
+	changed          *bool // request-local commit tracking for presentation callbacks
+	Home             string
+	lockDeadline     time.Time
+	ctx              context.Context
+	auditPending     *bool
+	auditLines       *int                // batch delivery upper bound for recovery log advice
+	observeLock      func(time.Duration) // serial test measurement of store.lock ownership
+	inspectOnly      bool
+	persistentSQLite bool // resident-owned connection; short-lived callers close per operation
 }
 
 func (s Store) WithContext(ctx context.Context) Store { s.ctx = ctx; return s }

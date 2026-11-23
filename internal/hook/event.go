@@ -1,6 +1,7 @@
 package hook
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/auto"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/daemonipc"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 	"github.com/woodfishhhh/obituary/internal/project"
 )
@@ -200,6 +202,19 @@ func postToolContext(e *auto.Engine, ev Event, runner *Runner, pendingNotices bo
 	observations, captureErr := captureEventObservations(e, ev, proj, paths)
 	if err := e.RecordWrites(observations); err != nil {
 		Logf(e.Svc.Store.Home, "record session writes: %v", err)
+	}
+	if ev.Name == "PostToolUse" && len(observations) > 0 {
+		ctx, cancel := context.WithTimeout(context.Background(), 250*time.Millisecond)
+		err := daemonipc.Submit(ctx, e.Svc.Store.Home, observations)
+		cancel()
+		if err == nil {
+			return delivery{}, captureErr
+		}
+		if !errors.Is(err, daemonipc.ErrUnavailable) {
+			if queueErr := e.Svc.Store.DeferObservations(observations); queueErr == nil {
+				return delivery{}, captureErr
+			}
+		}
 	}
 	replayPending(e)
 	if len(paths) == 0 && !pendingNotices && ev.Name != "Context" {

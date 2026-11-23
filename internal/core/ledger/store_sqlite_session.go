@@ -42,7 +42,19 @@ func sqliteSessionDecodeCount() int64 { return sqliteSessionLoads.Load() }
 
 func clearSQLiteSessionsForTest(home string) {
 	sqliteSessions.Lock()
+	if session := sqliteSessions.byHome[home]; session != nil {
+		_ = session.db.Close()
+	}
 	delete(sqliteSessions.byHome, home)
+	sqliteSessions.Unlock()
+}
+
+func closeSQLiteSession(home string) {
+	sqliteSessions.Lock()
+	if session := sqliteSessions.byHome[home]; session != nil {
+		_ = session.db.Close()
+		delete(sqliteSessions.byHome, home)
+	}
 	sqliteSessions.Unlock()
 }
 
