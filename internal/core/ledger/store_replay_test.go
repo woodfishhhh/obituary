@@ -83,7 +83,7 @@ func TestResidentReplayPreservesOtherWriters(t *testing.T) {
 		t.Fatal(err)
 	}
 	if st, err := direct.ReadSnapshot(); err != nil || st.Items[0].Note != "direct+second" {
-		t.Fatal(st.Items, err)
+		t.Fatalf("a cached ledger replaced another process's commit: %+v %v", st.Items, err)
 	}
 }
 

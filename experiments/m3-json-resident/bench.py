@@ -402,9 +402,41 @@ def cmd_floor(a):
         s.stop()
 
 
+def cmd_timeline(a):
+    """Where does the time between a hook's exit and the registration go? Samples the queue and the ledger."""
+    b = Bench(Path(a.bins), Path(a.out))
+    print("OS", platform.platform(), "CPU", CPU, "root", b.root, "n", a.n, flush=True)
+    s = System(b, "new", a.n, "-timeline")
+    k = int(a.conc.split(",")[0])
+    try:
+        time.sleep(3)  # let the resident's first reconciliation finish: its start-up cost is not the steady state
+        for j in range(a.waves):
+            t0 = time.perf_counter()
+            events, seen, done = [], None, False
+
+            def sampler():
+                nonlocal seen
+                while not done:
+                    state = (queued(s.home), len(list((s.home / "observations").glob("*.json"))), len(read_state(s.home).get("items", [])))
+                    if state != seen:
+                        events.append(((time.perf_counter() - t0) * 1000, state))
+                        seen = state
+                    time.sleep(.02)
+            th = threading.Thread(target=sampler)
+            th.start()
+            paths, hooks, group, listed, backlog, drained, cpu = wave(b, s, k, j)
+            done = True
+            th.join()
+            print(f"wave {j}: hooks done at {group:.0f} ms, registered at {drained:.0f} ms", flush=True)
+            for at, (q, files, items) in events:
+                print(f"   t={at:7.0f} ms queued={q:3d} per-request-files={files:3d} items={items}", flush=True)
+    finally:
+        s.stop()
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("mode", choices=["wave", "paired", "chaos", "compat", "floor"])
+    ap.add_argument("mode", choices=["wave", "paired", "chaos", "compat", "floor", "timeline"])
     ap.add_argument("bins")
     ap.add_argument("--n", type=int, default=1000)
     ap.add_argument("--waves", type=int, default=7)
@@ -416,4 +448,4 @@ if __name__ == "__main__":
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--out", default="bench-raw.jsonl")
     args = ap.parse_args()
-    {"wave": cmd_wave, "paired": cmd_paired, "chaos": cmd_chaos, "compat": cmd_compat, "floor": cmd_floor}[args.mode](args)
+    {"wave": cmd_wave, "paired": cmd_paired, "chaos": cmd_chaos, "compat": cmd_compat, "floor": cmd_floor, "timeline": cmd_timeline}[args.mode](args)
