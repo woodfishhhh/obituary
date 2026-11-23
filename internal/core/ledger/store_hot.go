@@ -343,6 +343,17 @@ func checkHotMutation(st State, boundary []byte, guard hotGraveyardGuard) error 
 
 func (s Store) updateHot(fn func(*State) error) error {
 	return s.withLock("store.lock", true, func() error {
+		if hasSQLite, err := s.hasSQLiteFence(); err != nil {
+			return err
+		} else if hasSQLite {
+			session, err := s.sqliteHotSession()
+			if err != nil && !errors.Is(err, errSQLiteSessionFallback) {
+				return err
+			}
+			if err == nil {
+				return s.updateHotSQLiteSession(session, fn)
+			}
+		}
 		st, events, err := s.loadHot()
 		if err != nil {
 			return err

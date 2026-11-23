@@ -136,6 +136,39 @@ CREATE TRIGGER changed_rows AFTER UPDATE ON ledger BEGIN INSERT INTO changed VAL
 	}
 }
 
+func TestSQLiteHotSessionDecodesOnce(t *testing.T) {
+	store := Store{Home: t.TempDir()}
+	items := make([]Item, 10000)
+	for i := range items {
+		items[i] = Item{ID: int64(i + 1), Rev: 1, Path: fmt.Sprintf("item-%d", i)}
+	}
+	if err := store.Update(func(st *State) error {
+		st.Items, st.NextID = items, int64(len(items)+1)
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	clearSQLiteSessionsForTest(store.Home)
+	start := sqliteSessionDecodeCount()
+	if err := store.UpdateHot(func(st *State) error {
+		st.Items[0].Rev++
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	first := sqliteSessionDecodeCount()
+	if err := store.UpdateHot(func(st *State) error {
+		st.Items[0].Rev++
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	second := sqliteSessionDecodeCount()
+	if first != start+1 || second != first {
+		t.Fatalf("SQLite hot session decodes=%d then %d, want one decode", first-start, second-first)
+	}
+}
+
 func TestSQLiteLedgerMigratesV18AndRefusesV20(t *testing.T) {
 	store := snapshotTestStore(t)
 	want, err := store.ReadSnapshot()

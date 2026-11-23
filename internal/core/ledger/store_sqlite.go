@@ -157,9 +157,10 @@ func openSQLiteMode(path, mode string, immutable bool) (*sql.DB, error) {
 		} else if errors.Is(err, os.ErrNotExist) {
 			walEmpty = true
 		}
-		if walEmpty || immutable && runtime.GOOS != "windows" {
+		if walEmpty {
 			// A checkpointed database has no sidecar to observe. Immutable read
-			// mode keeps diagnostics from creating a new SHM file.
+			// mode keeps diagnostics from creating a new SHM file. A live WAL must
+			// be opened normally so readers see the committed frames.
 			query = append(query, "immutable=1")
 		}
 	}
