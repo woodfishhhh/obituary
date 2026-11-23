@@ -250,10 +250,15 @@ function Registry-Labels([string]$Language) {
         $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($root)
         if ($key) {
             try {
-                $children = @($key.OpenSubKey('shell').GetSubKeyNames() | Sort-Object | ForEach-Object {
-                    $child = $key.OpenSubKey("shell\$_")
-                    try { $child.GetValue('MUIVerb') } finally { $child.Dispose() }
-                })
+                $shellKey = $key.OpenSubKey('shell')
+                try {
+                    $children = if ($shellKey) {
+                        @($shellKey.GetSubKeyNames() | Sort-Object | ForEach-Object {
+                            $child = $shellKey.OpenSubKey($_)
+                            try { $child.GetValue('MUIVerb') } finally { $child.Dispose() }
+                        })
+                    } else { @() }
+                } finally { if ($shellKey) { $shellKey.Dispose() } }
                 [pscustomobject]@{ Path = "HKCU:\$root"; Label = $key.GetValue('MUIVerb'); Children = $children }
             } finally { $key.Dispose() }
         }
