@@ -2,6 +2,7 @@ package regtxn_test
 
 import (
 	"errors"
+	"path/filepath"
 	"testing"
 
 	"github.com/woodfishhhh/obituary/internal/regtxn"
@@ -44,6 +45,36 @@ func TestPinnedValueOrdinaryWriteAndRollback(t *testing.T) {
 	if err := ordinary.SetStringValue("value", "after"); err != nil {
 		t.Fatalf("ordinary writer still blocked after rollback: %v", err)
 	}
+}
+
+func TestFailedCommitPreservesPublishedValue(t *testing.T) {
+	root := testenv.ClassesKey(t)
+	ordinary := testenv.ClassesSubkey(t, root, "receipt")
+	if err := ordinary.SetStringValue("value", "published"); err != nil {
+		t.Fatal(err)
+	}
+	err := regtxn.Do(func(tx *regtxn.Transaction) error {
+		key, err := tx.OpenPinned(registry.CURRENT_USER, filepath.Join(root, "receipt"), registry.QUERY_VALUE|registry.SET_VALUE)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer key.Close()
+		if err := key.SetStringValue("value", "staged"); err != nil {
+			t.Fatal(err)
+		}
+		if err := tx.AbortForTest(); err != nil {
+			t.Fatal(err)
+		}
+		return nil // Exercise the commit error, not the callback error path.
+	})
+	if !errors.Is(err, windows.ERROR_TRANSACTION_ALREADY_ABORTED) {
+		t.Fatalf("expected a failed native commit, got %v", err)
+	}
+	got, typ, readErr := ordinary.GetStringValue("value")
+	if readErr != nil || typ != registry.SZ || got != "published" {
+		t.Fatalf("after failed commit: value=%q type=%d error=%v", got, typ, readErr)
+	}
+	t.Logf("%v; ordinary handle reads %q", err, got)
 }
 
 func TestTransactionRollback(t *testing.T) {
