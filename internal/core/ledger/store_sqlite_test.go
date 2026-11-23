@@ -67,6 +67,16 @@ func TestSQLiteLedgerSupportsLongUnicodeHome(t *testing.T) {
 	if _, err := os.Stat(store.databasePath()); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("long home unexpectedly created SQLite database: %v", err)
 	}
+	if err := store.UpdateHot(func(st *State) error {
+		st.Items[0].Rev++
+		return nil
+	}); err != nil {
+		t.Fatalf("update long-home JSON: %v", err)
+	}
+	st, err := store.ReadHot()
+	if err != nil || len(st.Items) != 1 || st.Items[0].Rev != 2 {
+		t.Fatalf("long-home update did not survive reopen: %+v, %v", st.Items, err)
+	}
 }
 
 func TestSQLiteLedgerUpdatesOnlyChangedRowsAndReplaysReceipt(t *testing.T) {

@@ -131,6 +131,12 @@ func (s Store) hasSQLiteFence() (bool, error) {
 	if fence.Version != stateVersion {
 		return false, nil
 	}
+	if fence.Storage == "" && !s.sqliteSupported() {
+		// Long homes keep the full v19 JSON ledger, not a SQLite fence.
+		if _, err := os.Lstat(s.databasePath()); errors.Is(err, os.ErrNotExist) {
+			return false, nil
+		}
+	}
 	if fence.Storage != "sqlite" || fence.Database != sqliteDatabaseName {
 		return false, errors.New("invalid SQLite version fence")
 	}
