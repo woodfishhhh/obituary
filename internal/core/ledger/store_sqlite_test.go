@@ -231,6 +231,9 @@ func BenchmarkSQLiteSparseUpdate10K(b *testing.B) {
 	if err := store.Update(func(st *State) error { st.Items, st.NextID = items, int64(len(items)+1); return nil }); err != nil {
 		b.Fatal(err)
 	}
+	if err := store.UpdateHot(func(*State) error { return nil }); err != nil {
+		b.Fatal(err)
+	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		id := int64(i%len(items) + 1)
