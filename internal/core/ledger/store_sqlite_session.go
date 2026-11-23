@@ -36,18 +36,7 @@ var sqliteSessions = struct {
 
 var sqliteSessionLoads atomic.Int64
 
-// sqliteSessionDecodeCount and clearSQLiteSessionsForTest keep the regression
-// test focused on the production property without exposing test-only state.
 func sqliteSessionDecodeCount() int64 { return sqliteSessionLoads.Load() }
-
-func clearSQLiteSessionsForTest(home string) {
-	sqliteSessions.Lock()
-	if session := sqliteSessions.byHome[home]; session != nil {
-		_ = session.db.Close()
-	}
-	delete(sqliteSessions.byHome, home)
-	sqliteSessions.Unlock()
-}
 
 func closeSQLiteSession(home string) {
 	sqliteSessions.Lock()

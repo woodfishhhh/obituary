@@ -148,6 +148,7 @@ CREATE TRIGGER changed_rows AFTER UPDATE ON ledger BEGIN INSERT INTO changed VAL
 
 func TestSQLiteHotSessionDecodesOnce(t *testing.T) {
 	store := (Store{Home: t.TempDir()}).WithPersistentSQLite()
+	t.Cleanup(store.ClosePersistentSQLite)
 	items := make([]Item, 10000)
 	for i := range items {
 		items[i] = Item{ID: int64(i + 1), Rev: 1, Path: fmt.Sprintf("item-%d", i)}
@@ -158,7 +159,6 @@ func TestSQLiteHotSessionDecodesOnce(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	clearSQLiteSessionsForTest(store.Home)
 	start := sqliteSessionDecodeCount()
 	if err := store.UpdateHot(func(st *State) error {
 		st.Items[0].Rev++
@@ -233,7 +233,9 @@ func TestSQLiteLedgerMigratesV18AndRefusesV20(t *testing.T) {
 }
 
 func BenchmarkSQLiteSparseUpdate10K(b *testing.B) {
+	b.Cleanup(SetFileSyncForTesting((*os.File).Sync))
 	store := (Store{Home: b.TempDir()}).WithPersistentSQLite()
+	b.Cleanup(store.ClosePersistentSQLite)
 	items := make([]Item, 10000)
 	for i := range items {
 		items[i] = Item{ID: int64(i + 1), Rev: 1, Path: fmt.Sprintf("item-%d", i)}
