@@ -17,7 +17,7 @@ obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans 
 
 ## Datas no Explorador de Arquivos {#dates-in-explorer}
 
-Em Downloads, na Área de Trabalho e nas pastas com uma política, o Explorador exibe os itens monitorados como “nome (enterro em 13 de novembro)”. O nome real do arquivo não muda.
+Em Downloads, na Área de Trabalho e nas pastas com uma política, o Explorador exibe os itens monitorados como “name (11-13 burial)”. O nome real do arquivo não muda. O rótulo segue o idioma da interface do Obituary: em chinês simplificado, aparece como “name（11-13 下葬）”; nos demais casos, fica em inglês.
 
 - As datas vêm do arquivo oculto `desktop.ini` da pasta.
 - Na seção `[explorer]` de `config.toml`, use `enabled = false` para ocultar as datas ou `everywhere = true` para exibi-las em todos os locais.

@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/woodfishhhh/obituary/internal/config"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 	"golang.org/x/sys/windows"
 )
@@ -90,7 +91,7 @@ func prepareLabels(t *testing.T, dir string, dates map[string]time.Time) (*Plan,
 	if err != nil {
 		t.Fatal(err)
 	}
-	return Prepare(dir, authorization{Identity: id}, dates)
+	return Prepare(dir, authorization{Identity: id}, dates, config.UILanguage())
 }
 
 func readINI(t *testing.T, dir string) []byte {
@@ -117,6 +118,7 @@ func fixture(t *testing.T) (string, map[string]time.Time) {
 func TestLabelsMergeAndRestore(t *testing.T) {
 	for _, kind := range []string{"absent", "utf8", "utf16", "readonly"} {
 		t.Run(kind, func(t *testing.T) {
+			t.Setenv("OBIT_LANG", "zh-CN")
 			dir, dates := fixture(t)
 			path := filepath.Join(dir, iniName)
 			original := []byte("; keep comment\n[.ShellClassInfo]\nIconResource = own.ico,0\n[LocalizedFileNames]\nexisting.txt = User name\n[Other]\nX=1")
@@ -165,6 +167,12 @@ func TestLabelsMergeAndRestore(t *testing.T) {
 			applyDates(t, dir, dates)
 			if !bytes.Equal(data, readINI(t, dir)) {
 				t.Fatal("same dates rewrote content")
+			}
+			t.Setenv("OBIT_LANG", "en")
+			applyDates(t, dir, dates)
+			text, err = decode(readINI(t, dir))
+			if err != nil || !strings.Contains(text, "report.log=report (11-13 burial)\r\n") {
+				t.Fatal("owned label did not change language", err)
 			}
 			applyDates(t, dir, nil)
 			afterDir, _ := attributes(dir)
@@ -454,6 +462,7 @@ func TestLabelsPreserveExistingDACL(t *testing.T) {
 }
 
 func TestLabelsRejectEditedOwnershipAndInvalidNames(t *testing.T) {
+	t.Setenv("OBIT_LANG", "zh-CN")
 	dir, dates := fixture(t)
 	applyDates(t, dir, dates)
 	text, _ := decode(readINI(t, dir))
@@ -461,7 +470,8 @@ func TestLabelsRejectEditedOwnershipAndInvalidNames(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, iniName), encode(text), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := prepareLabels(t, dir, nil); err == nil {
+	t.Setenv("OBIT_LANG", "en")
+	if _, err := prepareLabels(t, dir, dates); err == nil || !bytes.Equal(readINI(t, dir), encode(text)) {
 		t.Fatal("edited ownership accepted")
 	}
 	for _, name := range []string{"../outside", "bad=name", "[x]", " x"} {

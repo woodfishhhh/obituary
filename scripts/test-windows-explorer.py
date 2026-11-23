@@ -158,7 +158,10 @@ def exercise(language):
     record(language + '-policy-proposals', watches)
     assert any(w['path'] == str(samples) and w['consent'] == 'pending' for w in watches), watches
     labelled = ini.read_bytes().decode('utf-16')
-    assert file.name + '=' in labelled and ' 下葬）' in labelled and 'InfoTip=original' in labelled, labelled
+    expiry = dt.datetime.fromisoformat(rows[str(file)]['expiresAt'].replace('Z', '+00:00')).astimezone()
+    day = expiry.strftime('%m-%d')
+    label = f'{file.stem}（{day} 下葬）' if language == 'zh-CN' else f'{file.stem} ({day} burial)'
+    assert f'{file.name}={label}' in labelled.splitlines() and 'InfoTip=original' in labelled, labelled
     during = attrs(paths)
     output = command([cli, 'uninstall', '--yes'])
     (evidence / f'{language}-uninstall.txt').write_text(output, encoding='utf-8')

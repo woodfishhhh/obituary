@@ -17,7 +17,7 @@ obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans 
 
 ## 파일 탐색기의 날짜 표시 {#dates-in-explorer}
 
-다운로드 폴더, 바탕 화면, 정책을 적용한 폴더에서 추적 중인 항목은 파일 탐색기에 ‘이름 (11-13 매장)’처럼 표시됩니다. 실제 파일 이름은 바뀌지 않습니다.
+다운로드 폴더, 바탕 화면, 정책을 적용한 폴더에서 추적 중인 항목은 파일 탐색기에 ‘name (11-13 burial)’처럼 표시됩니다. 실제 파일 이름은 바뀌지 않습니다. 날짜 표시는 Obituary의 표시 언어를 따릅니다. 중국어 간체에서는 ‘name（11-13 下葬）’로, 그 외에는 영어로 표시됩니다.
 
 - 날짜 정보는 폴더의 숨김 파일 `desktop.ini`에서 가져옵니다.
 - `config.toml`의 `[explorer]` 섹션에서 `enabled = false`로 날짜 표시를 끄거나 `everywhere = true`로 모든 위치에서 표시할 수 있습니다.

@@ -10,28 +10,27 @@ import (
 	"github.com/woodfishhhh/obituary/internal/config"
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/explorer"
+	"github.com/woodfishhhh/obituary/internal/i18n"
 )
 
 // Watcher/GUI services outlive configuration edits, so every notification
 // reads the current snapshot. A bad configuration preserves existing labels.
 func syncCurrentExplorer(svc *core.Service) {
-	// Stamp the ledger as it was before syncing: a change committed during
-	// the sync leaves the stamp stale, so the next tick syncs again.
-	stamp := ledgerStamp(svc.Store.Home)
 	cfg, err := config.Load()
 	if err != nil {
 		logExplorerError(svc, err)
 		return
 	}
-	if syncExplorer(svc, cfg.Explorer) {
-		writeExplorerStamp(svc.Store.Home, stamp)
-	}
+	syncExplorer(svc, cfg)
 }
 
-func syncExplorer(svc *core.Service, cfg config.Explorer) bool {
-	options := explorer.Options{Enabled: cfg.Enabled, InGit: cfg.InGit, Everywhere: cfg.Everywhere}
+func syncExplorer(svc *core.Service, cfg config.Config) {
+	lang := i18n.Resolve(cfg.UI.Language, i18n.SystemLanguage)
+	// Stamp the input snapshot, not a ledger or language changed during sync.
+	stamp := explorerStamp(svc.Store.Home, lang)
+	options := explorer.Options{Enabled: cfg.Explorer.Enabled, InGit: cfg.Explorer.InGit, Everywhere: cfg.Explorer.Everywhere, Language: lang}
 	var err error
-	if cfg.Enabled && !cfg.Everywhere {
+	if options.Enabled && !options.Everywhere {
 		options.Folders, err = explorerFolders()
 	}
 	if err == nil {
@@ -39,9 +38,9 @@ func syncExplorer(svc *core.Service, cfg config.Explorer) bool {
 	}
 	if err != nil {
 		logExplorerError(svc, err)
-		return false
+		return
 	}
-	return true
+	writeExplorerStamp(svc.Store.Home, stamp)
 }
 
 // Same bound as hook.log: a folder that keeps failing adds a line per sync.

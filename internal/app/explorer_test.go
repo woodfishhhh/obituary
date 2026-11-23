@@ -4,6 +4,7 @@ package app
 
 import (
 	"encoding/binary"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -134,6 +135,7 @@ func TestExplorerOldServiceUsesCurrentConfig(t *testing.T) {
 }
 
 func TestExplorerLifespanChangesAndRename(t *testing.T) {
+	t.Setenv("OBIT_LANG", "zh-CN")
 	svc, dir := explorerService(t)
 	path := filepath.Join(dir, "report.log")
 	id := addLabel(t, svc, path)
@@ -168,6 +170,62 @@ func TestExplorerLifespanChangesAndRename(t *testing.T) {
 	data, err := os.ReadFile(renamed)
 	if err != nil || string(data) != "payload" {
 		t.Fatalf("real file changed: %q %v", data, err)
+	}
+}
+
+func TestExplorerLabelLanguages(t *testing.T) {
+	for _, locale := range []string{"zh-CN", "en", "zh-TW", "ja", "ko", "es", "fr", "de", "pt-BR", "ru"} {
+		t.Run(locale, func(t *testing.T) {
+			t.Setenv("OBIT_LANG", locale)
+			svc, dir := explorerService(t)
+			addLabel(t, svc, filepath.Join(dir, "report.log"))
+			want := "report.log=report (11-13 burial)\r\n"
+			if locale == "zh-CN" {
+				want = "report.log=report（11-13 下葬）\r\n"
+			}
+			if !strings.Contains(labelText(t, dir), want) {
+				t.Errorf("missing %q in desktop.ini", want)
+			}
+		})
+	}
+}
+
+func TestExplorerTickRefreshesLabelLanguage(t *testing.T) {
+	for _, previous := range []string{"language switch", "1.7.0 stamp"} {
+		t.Run(previous, func(t *testing.T) {
+			t.Setenv("OBIT_LANG", "")
+			svc, dir := explorerService(t)
+			setLanguage := func(lang string) {
+				t.Helper()
+				cfg := fmt.Sprintf("[explorer]\neverywhere=true\n[ui]\nlanguage=%q\n", lang)
+				if err := os.WriteFile(filepath.Join(os.Getenv("OBIT_CONFIG_DIR"), "config.toml"), []byte(cfg), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			setLanguage("zh-CN")
+			addLabel(t, svc, filepath.Join(dir, "report.log"))
+			if !strings.Contains(labelText(t, dir), "report.log=report（11-13 下葬）\r\n") {
+				t.Fatal("missing original Chinese label")
+			}
+			if previous == "1.7.0 stamp" {
+				// 1.7.0 used the same Chinese receipt but stamped only the ledger.
+				info, err := os.Stat(filepath.Join(svc.Store.Home, "store.json"))
+				if err != nil {
+					t.Fatal(err)
+				}
+				stamp := fmt.Sprintf("%d %d", info.Size(), info.ModTime().UnixNano())
+				if err := os.WriteFile(filepath.Join(svc.Store.Home, explorerStampFile), []byte(stamp), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			setLanguage("en")
+			if _, _, err := Tick(svc); err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(labelText(t, dir), "report.log=report (11-13 burial)\r\n") {
+				t.Fatal("unchanged ledger kept Chinese label after refresh")
+			}
+		})
 	}
 }
 
@@ -232,7 +290,7 @@ func TestExplorerGitOptInAndDisableCleanup(t *testing.T) {
 	addLabel(t, svc, filepath.Join(dir, "report.log"))
 	assertNoINI(t, dir)
 	svc.AfterChange = func(current *core.Service) {
-		syncExplorer(current, config.Explorer{Enabled: true, InGit: true, Everywhere: true})
+		syncExplorer(current, config.Config{Explorer: config.Explorer{Enabled: true, InGit: true, Everywhere: true}})
 	}
 	svc.AfterChange(svc)
 	if !strings.Contains(labelText(t, dir), "report.log=") {
@@ -244,7 +302,7 @@ func TestExplorerGitOptInAndDisableCleanup(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "another.txt"), []byte("keep"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	svc.AfterChange = func(current *core.Service) { syncExplorer(current, config.Explorer{}) }
+	svc.AfterChange = func(current *core.Service) { syncExplorer(current, config.Config{}) }
 	svc.AfterChange(svc)
 	assertNoINI(t, dir)
 }

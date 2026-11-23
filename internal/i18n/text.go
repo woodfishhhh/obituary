@@ -62,6 +62,7 @@ const (
 	MenuBuried
 	MenuResultDetails
 	MenuSelectionHandler
+	ExplorerBurialLabel
 	keyCount
 )
 

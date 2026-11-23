@@ -60,7 +60,7 @@ Obituary はエージェントに必要とされて生まれました。バー�
 - **Claude Code と Codex。** `obit init` は hook と Agent Skill を登録します。MCP サーバーは任意で、`--uninstall` は Obituary が追加したものだけを削除します。
 - **Everything のように Windows のトレイに常駐。** `obit init` はログイン時にトレイアイコンを起動します。メニューから最近の埋葬を確認して復活し、自動整理を一時停止し、小さな Obituary ウィンドウを開けます。Windows のタスクスケジューラも予備として残ります。
 - **小さなウィンドウ（Windows / Ubuntu 24.04 amd64）。** Expiring、Graveyard、For you、Settings、Logs から、コマンドラインを使わずにファイルを復活し、提案を承認し、設定を変更できます（`obit-gui.exe`、または「Open Obituary」）。中国語と英語、8 種類の見た目に対応します。 Ubuntu ではアプリ一覧から Obituary を開きます。
-- **エクスプローラーのコンテキストメニューと日付（Windows）。** ファイルやフォルダーを右クリック（複数選択可）→「Add to Obituary」→ 1、7、30 日、または「Bury now (recoverable)」。Windows 11 では「Show more options」の中にあります。Downloads とデスクトップの追跡項目は「name (11-13 burial)」と表示され、実際のファイル名は変わりません。
+- **エクスプローラーのコンテキストメニューと日付（Windows）。** ファイルやフォルダーを右クリック（複数選択可）→「Add to Obituary」→ 1、7、30 日、または「Bury now (recoverable)」。Windows 11 では「Show more options」の中にあります。Downloads とデスクトップの追跡項目は「name (11-13 burial)」（簡体字中国語のインターフェースでは「name（11-13 下葬）」）と表示され、実際のファイル名は変わりません。
 - **Docker コンテナ。** `obit docker add <container> 3d` はコンテナに寿命を設定します。期限になると `docker stop` で停止し（`obit resurrect` で再起動）、保持期間後に `docker rm` で削除します。自動登録を有効にすると、プロジェクト用にエージェントのセッションが起動したコンテナも登録され、後で伝えられます。
 - `obit mark --docker-volume cache 3d`（`add` も可）で `cache` を3日後に埋葬できます。すぐに埋葬するには `obit bury --docker-volume -- cache` を実行します。ボリュームは自動登録されません。明示的に登録または埋葬したものだけが対象です。イメージやネットワークは削除しません。
 - **フォルダーポリシー。** `obit watch Downloads 2w` は、そこに入ったすべてのファイルを 2 週間後に埋葬します。期限切れのサブフォルダーは提案だけを出し、承認後に埋葬されます。ポリシー自体にも承認が必要です。

@@ -48,22 +48,22 @@ func Engine(svc *core.Service) *auto.Engine {
 // configured takes one fresh configuration snapshot, as the resident can
 // outlive a GUI configuration edit, without mutating the service shared with
 // the folder watcher. A malformed configuration stops the work.
-func configured(svc *core.Service) (*core.Service, error) {
+func configured(svc *core.Service) (*core.Service, config.Config, error) {
 	cfg, err := config.Load()
 	if err != nil {
-		return nil, err
+		return nil, cfg, err
 	}
 	svc = svc.WithContext(svc.Store.Context())
 	svc.Mode, svc.Retention = cfg.Graveyard.Mode, cfg.Graveyard.Retention()
 	svc.WatchStableWindow = cfg.Watch.Stability()
 	svc.ProposalMode = cfg.Proposals.Mode
-	return svc, nil
+	return svc, cfg, nil
 }
 
 // ReplayObservations absorbs the writes hooks queued while the ledger was
 // busy, without the rest of a tick.
 func ReplayObservations(svc *core.Service) error {
-	svc, err := configured(svc)
+	svc, _, err := configured(svc)
 	if err != nil {
 		return err
 	}
@@ -78,16 +78,16 @@ func Tick(svc *core.Service) ([]core.Outcome, []core.GraveResult, error) {
 	}
 	// Before the configuration is read: it may switch automatic registration off.
 	migrateErr := migrateAutoOff(svc)
-	svc, err = configured(svc)
+	svc, cfg, err := configured(svc)
 	if err != nil {
 		return nil, nil, err
 	}
 	// Hooks and other processes commit ledger changes and defer the Explorer
 	// refresh to this tick, whose own sweep may change nothing. Notify once
-	// when the ledger differs from the one Explorer labels were last synced
+	// when the ledger or language differs from what Explorer labels were last synced
 	// against; an idle tick stays silent.
 	defer func() {
-		if svc.AfterChange != nil && svc.Store.Context().Err() == nil && explorerStale(svc.Store.Home) {
+		if svc.AfterChange != nil && svc.Store.Context().Err() == nil && explorerStale(svc.Store.Home, cfg.UI.Language) {
 			svc.AfterChange(svc)
 		}
 	}()

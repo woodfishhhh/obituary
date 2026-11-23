@@ -17,7 +17,7 @@ obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans 
 
 ## Dates dans l’Explorateur de fichiers {#dates-in-explorer}
 
-Dans Téléchargements, sur le Bureau et dans les dossiers soumis à une règle, l’Explorateur affiche les éléments suivis sous la forme « nom (enterrement le 13 novembre) ». Le nom réel du fichier ne change pas.
+Dans Téléchargements, sur le Bureau et dans les dossiers soumis à une règle, l’Explorateur affiche les éléments suivis sous la forme « name (11-13 burial) ». Le nom réel du fichier ne change pas. Le libellé suit la langue d’Obituary : si l’interface est en chinois simplifié, il prend la forme « name（11-13 下葬） » ; sinon, il reste en anglais.
 
 - Les dates proviennent du fichier caché `desktop.ini` du dossier.
 - Dans la section `[explorer]` de `config.toml`, utilisez `enabled = false` pour masquer les dates ou `everywhere = true` pour les afficher partout.

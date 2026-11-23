@@ -10,6 +10,8 @@ func TestResolveLanguage(t *testing.T) {
 	}{
 		{Auto, "zh-CN", Chinese}, {Auto, "zh-TW", English}, {Auto, "ZH-Hant-HK", English},
 		{Auto, "en-US", English}, {Auto, "ja-JP", English}, {Auto, "", English},
+		{Auto, "ko", English}, {Auto, "es", English}, {Auto, "fr", English},
+		{Auto, "de", English}, {Auto, "pt-BR", English}, {Auto, "ru", English},
 		{"en", "zh-CN", English}, {"zh-CN", "en-US", Chinese},
 	} {
 		t.Run(tc.setting+"/"+tc.system, func(t *testing.T) {

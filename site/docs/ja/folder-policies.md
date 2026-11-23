@@ -17,7 +17,7 @@ obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans 
 
 ## エクスプローラーの日付表示 {#dates-in-explorer}
 
-「ダウンロード」、デスクトップ、ポリシーの対象フォルダーでは、追跡中の項目がエクスプローラーで「名前（11-13 埋葬）」のように表示されます。実際のファイル名は変わりません。
+「ダウンロード」、デスクトップ、ポリシーの対象フォルダーでは、追跡中の項目がエクスプローラーで「name (11-13 burial)」のように表示されます。実際のファイル名は変わりません。日付の表記は Obituary の表示言語に従い、簡体字中国語では「name（11-13 下葬）」、それ以外では英語になります。
 
 - 日付の表示には、フォルダー内の隠しファイル `desktop.ini` を使います。
 - `config.toml` の `[explorer]` セクションで、`enabled = false` にすると日付を非表示に、`everywhere = true` にするとすべての場所で表示できます。
