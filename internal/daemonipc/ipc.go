@@ -55,7 +55,7 @@ func Submit(ctx context.Context, home string, observations []core.Observation) e
 	}
 	conn, err := dial(ctx, home)
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrUnavailable, err)
+		return fmt.Errorf("%w: %w", ErrUnavailable, err)
 	}
 	defer conn.Close()
 	deadline, ok := ctx.Deadline()
