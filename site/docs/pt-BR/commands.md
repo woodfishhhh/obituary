@@ -59,6 +59,8 @@ obit docker add web-1 3d
 obit docker list
 ```
 
+Use `obit mark --docker-volume cache 3d` (ou `add`) para enterrar `cache` em três dias, ou `obit bury --docker-volume -- cache` para enterrá-lo agora. [Contêineres e volumes do Docker](./docker)
+
 ## Integração e execução em segundo plano
 
 ```powershell
@@ -73,6 +75,8 @@ obit daemon enable              # tray at login plus the fallback scheduled task
 obit daemon status
 obit daemon disable
 ```
+
+Com a supervisão de desktop ativa, a bandeja trata os vencimentos e uma tarefa independente verifica pendências a cada hora. Sem supervisão da bandeja para esse diretório de dados, a tarefa é executada a cada cinco minutos.
 
 ## Consultas e verificações
 
@@ -132,6 +136,7 @@ Uso: `obit add <path>... <duration> | add <path>... --at <time> [flags]`
 | Parâmetro | Curto | Padrão | Descrição |
 | --- | --- | --- | --- |
 | `--at` | nenhum | `""` | Expirar em um horário local: "2006-01-02 15:04", "2006-01-02" ou "15:04" |
+| `--docker-volume` | nenhum | `false` | Interpretar os argumentos como nomes de volumes do Docker |
 | `--force` | nenhum | `false` | Permitir pastas que contêm um repositório .git |
 | `--help` | `-h` | `false` | Ajuda de add |
 | `--json` | nenhum | `false` | Exibir JSON |
@@ -165,6 +170,7 @@ Uso: `obit bury <path>... [flags]`
 
 | Parâmetro | Curto | Padrão | Descrição |
 | --- | --- | --- | --- |
+| `--docker-volume` | nenhum | `false` | Interpretar os argumentos como nomes de volumes do Docker |
 | `--force` | nenhum | `false` | Permitir pastas que contêm um repositório .git |
 | `--help` | `-h` | `false` | Ajuda de bury |
 | `--json` | nenhum | `false` | Exibir JSON |
@@ -281,7 +287,7 @@ Uso: `obit daemon disable [flags]`
 
 ### `obit daemon enable`
 
-Ativar o agendador de usuário de 5 minutos (e a bandeja iniciada no login, no Windows)
+Ativar a tarefa do usuário (a cada hora com supervisão da bandeja; caso contrário, a cada 5 minutos) e, no Windows, a bandeja ao entrar
 
 Uso: `obit daemon enable [flags]`
 

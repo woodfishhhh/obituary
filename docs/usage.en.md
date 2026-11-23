@@ -123,10 +123,24 @@ obit docker list               # registered containers (--json works too)
 obit resurrect <id>            # start a container that was stopped at expiry
 ```
 
-- Obituary manages containers only. Volumes hold data and removing one is permanent, so volumes, images and networks are never touched.
+Volumes are never registered automatically. Obituary only handles a volume you explicitly mark or bury; it does not remove images or networks.
 - **Expiry means stopping.** After `docker stop` the container and its writable layer remain; `obit resurrect <id>` runs `docker start` and stops tracking its lifespan. Only after the retention period (`[graveyard] retention_days`, 7 days by default) is it removed with `docker rm`, never with `-v` or `-f`; if it is running by then (you or someone started it), it counts as resurrected and is kept. `obit purge` and `--all` also wait for the retention period for containers. Recycle mode does not apply to containers: they are still stopped first and removed after retention.
 - **Containers are identified by full ID.** Names are only for display; before every stop, start or remove the full ID and creation time are checked again, and nothing happens if they differ. Obituary also records the Docker context and daemon a container lives on and only ever acts on that daemon, so switching `docker context` cannot redirect it. A container you removed outside Obituary is recorded as removed externally and its record is cleared. A container started with `--rm` (AutoRemove) would be deleted by Docker when stopped, so Obituary refuses to register it.
 - **With automatic registration on, containers from an agent session are registered too.** While it is off (the default) Obituary does not look for containers; `obit docker add` registers one by hand. With it on, when a session ends Obituary looks in the background for the containers created during it: only those whose compose working directory or bind mounts are inside the project; others may be ones you started elsewhere and are left alone. Those found get a 3-day lifespan and you are told afterwards; after `obit spare <id>` the session does not register that container again. When the session did not run in a Git project (one opened in your home folder, say), or several sessions claim the same container, it is unclear who started it, so it waits as a proposal for your approval. With `[proposals] mode = "ask"` they are proposed instead and tracked only after `obit approve`. Each container gets one proposal at most. Hooks never call Docker; if Docker is not installed or not running, this is skipped quietly and `obit doctor` explains why; a container proposal cannot be approved while Docker is not running, `obit proposals` and the For you page say so, and it can be approved once Docker is up.
+
+### Give a volume a lifespan or bury it now
+
+Use `obit mark --docker-volume cache 3d` (`add` is an alias) to bury `cache` in three days, or `obit bury --docker-volume -- cache` to bury it now.
+
+Docker must be in Linux container mode. Only local volumes using the `local` driver without extra options are supported. On first use, Docker pulls a pinned Debian helper image if it is not already available.
+
+Leave room in the graveyard for a full archive. Obituary checks the archive before removing the volume; if archiving fails, the volume stays. A volume referenced even by a stopped container, or whose path overlaps a bind mount, is left alone.
+
+`obit resurrect <id>` recreates the volume under its original name with a permanent `io.obituary.restore` label. If that name already exists, even on an empty volume, nothing is overwritten.
+
+Docker events are checked before and after removal. If deletion cannot be confirmed, keep the verified archive and check `obit doctor`; do not assume the volume was buried successfully.
+
+The delete guard recognizes `docker volume rm`, `docker volume remove`, `docker volume prune`, `docker compose down -v` (or `--volumes`) and `docker system prune --volumes`. It suggests `obit bury --docker-volume` only for a plain `docker volume rm` with explicit names; it does not guess what a prune would remove.
 
 ## Delete guard: anything an agent deletes can come back
 
@@ -237,10 +251,16 @@ On a local Windows drive, `obit bury ./NUL` buries the actual file named `NUL` i
 
 ## Background
 
-By default `obitd.exe` lives in the tray, starts at login and buries things on time to the second; the tray icon is its only interface. A Windows scheduled task also runs `obitd --once` every 5 minutes (and at each login) as a fallback, so expired items are still reaped and old graves purged if the tray is closed or never started. The task is hidden, runs on battery, and catches up on missed runs (shutdown, sleep). Agent hooks also do a round at session start and end; `obit reap` runs one now. Queries such as `list`, `graveyard`, `stats` and `log` are read-only and never bury anything.
+With desktop supervision enabled, the tray handles expiries as they occur and an independent job checks once an hour. Editions without a tray check every five minutes.
+
+Windows starts the tray with a scheduled task at sign-in, macOS uses a user LaunchAgent, and Linux uses a user systemd service in a graphical session. After a crash the system waits 60 seconds before restarting; after the third crash in 15 minutes, it stops trying.
+
+On Windows, an old scheduled task is migrated only if it matches the one Obituary created for this installation. Its original definition is saved for rollback; modified or disabled tasks stay as they are.
+
+The task is hidden, runs on battery, and catches up on missed runs (shutdown, sleep). Agent hooks also do a round at session start and end; `obit reap` runs one now. Queries such as `list`, `graveyard`, `stats` and `log` are read-only and never bury anything.
 
 ```powershell
-obit init                       # tray starts at login (HKCU\...\Run); --uninstall removes it
+obit init                       # tray starts at login; --uninstall removes it
 obit daemon enable              # tray at login plus the fallback scheduled task (--dry-run lists what would be installed)
 obit daemon status              # current mode and the next expiry (--json)
 obit daemon disable             # remove the scheduled task and login start, and stop the running daemon (--dry-run previews)

@@ -6,6 +6,8 @@ Effacer un dossier personnel ou un disque entier n’est plus une hypothèse. Lo
 obit init -g --guard-rm                 # Claude Code; add --agent codex for Codex. Off by default
 ```
 
+La protection reconnaît `docker volume rm`, `docker volume remove`, `docker volume prune`, `docker compose down -v` (ou `--volumes`) et `docker system prune --volumes`. Elle ne propose `obit bury --docker-volume` que pour un simple `docker volume rm` avec des noms explicites.
+
 ## Un cas réel
 
 Garde activée, le hook a reçu un appel Bash de Claude Code, `rm -rf build`, et a répondu comme suit ; `rm` n’a jamais été exécuté :

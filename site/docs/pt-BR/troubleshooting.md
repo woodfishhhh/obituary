@@ -4,6 +4,8 @@ Quando algo der errado, comece por `obit doctor`. Ele só lê e nunca escreve. V
 
 Cada seção abaixo segue a mesma ordem: o que você vê, por que acontece, o que fazer e como saber que foi resolvido.
 
+Se após uma atualização todos os rótulos do menu do Explorer estiverem em outro idioma compatível, o menu continua funcionando. `obit doctor` mostra um aviso informativo (JSON: `installation: label-language-mismatch`). Execute `obit init --context-menu --yes` para aplicar o idioma atual da interface.
+
 ## O shell não encontra `obit`
 
 O terminal diz `command not found`, ou o PowerShell não reconhece `obit`. O programa está no disco, mas a pasta dele não está no seu PATH. O script de instalação do Windows adiciona `%LOCALAPPDATA%\Programs\obituary` ao PATH do seu usuário, mas um terminal que já estava aberto não enxerga o PATH novo. O `install.sh` coloca os programas em `~/.local/bin` e nunca edita o PATH, e em alguns sistemas essa pasta nem está no PATH de início. O `.deb` do Ubuntu os coloca em `/usr/libexec/obituary/`, que também não está no PATH.
@@ -56,9 +58,9 @@ O app do DMG não tem assinatura Developer ID nem notarização, por isso o Gate
 
 ## A bandeja não inicia no login (macOS, Ubuntu)
 
-Depois do login, não há ícone do Obituary na barra de menus nem na bandeja. A inicialização no login depende de uma entrada de inicialização: no macOS, o LaunchAgent de usuário `site.woodfish.obituary.tray`; no Ubuntu, `~/.config/autostart/obituary.desktop`. Se o interruptor em Settings na janela estiver desativado, ou o app tiver sido movido, ou o interruptor tiver sido ativado enquanto o app rodava direto do DMG, o caminho gravado na entrada ficou obsoleto e nada é encontrado no login.
+Depois do login, não há ícone do Obituary na barra de menus nem na bandeja. A inicialização no login depende de uma entrada de inicialização: no macOS, o LaunchAgent de usuário `site.woodfish.obituary.tray.supervised`; no Ubuntu, `obituary-tray.service`. Se o interruptor em Settings na janela estiver desativado, ou o app tiver sido movido, ou o interruptor tiver sido ativado enquanto o app rodava direto do DMG, o caminho gravado na entrada ficou obsoleto e nada é encontrado no login.
 
-Abra a janela e, em Settings, desative e ative de novo “Start the tray at sign-in”, para que o Obituary reescreva a entrada. No macOS, `launchctl list | grep obituary` deve agora mostrar `site.woodfish.obituary.tray`; no Ubuntu, `ls ~/.config/autostart/obituary.desktop` deve encontrar o arquivo, e o ícone aparecerá no seu próximo login.
+Abra a janela e, em Settings, desative e ative de novo “Start the tray at sign-in”, para que o Obituary reescreva a entrada. No macOS, `launchctl list | grep obituary` deve agora mostrar `site.woodfish.obituary.tray.supervised`; no Ubuntu, `systemctl --user status obituary-tray.service` mostra o estado do serviço.
 
 ## Ubuntu: a janela não abre, ou não há ícone na bandeja
 
@@ -73,7 +75,11 @@ Abra o Obituary de novo pela lista de aplicativos; quando a janela aparecer, est
 
 ## O que expirou não está sendo enterrado
 
-A vida útil de um arquivo acabou há muito tempo e ele continua onde estava, e a linha `runner:` de `obit daemon status` diz `off`. A expiração é tratada por uma tarefa agendada que roda a cada 5 minutos: “Obituary Runner” no Agendador de Tarefas do Windows, um agente de usuário do launchd no macOS, o timer de usuário do systemd `obituary.timer` no Linux. Se ela não estiver instalada, tiver sido desligada ou tiver sido instalada para outro diretório de dados, ninguém age quando chega a hora; nesse caso, o que expirou espera o próximo `obit sweep`, ou o hook de um agente, para ser tratado.
+Confira a tarefa com `obit daemon status`. Para processar agora os itens vencidos, execute `obit reap`.
+
+Com a supervisão de desktop ativa, a bandeja trata os vencimentos e uma tarefa independente verifica pendências a cada hora. Sem supervisão da bandeja para esse diretório de dados, a tarefa é executada a cada cinco minutos.
+
+`obit doctor` mostra quem supervisiona a bandeja, as falhas recentes e o motivo da última saída. Ele distingue espera por reinício, pausa, parada intencional e supervisor ausente ou encerrado.
 
 Execute `obit daemon enable` para instalar a tarefa (no Windows isso também instala a bandeja no login) e `obit sweep` se quiser a limpeza agora. Num Linux sem serviço de usuário do systemd, como em alguns contêineres e sistemas mínimos, `obit daemon enable` não consegue instalá-la; use o cron para executar `obitd --once --home <diretório de dados> --config-dir <diretório de configuração>` a cada 5 minutos, e `obit config` informa os dois diretórios. Quando a linha `runner` de `obit daemon status` deixar de dizer `off`, está resolvido; no Linux você também pode ver o timer com `systemctl --user list-timers | grep obituary`.
 
@@ -111,7 +117,11 @@ Quando a linha do agente no `obit doctor` (por exemplo `claude`) é `PASS` e diz
 
 “Approve” na proposta de um contêiner aparece esmaecido na janela, e o cartão diz “Docker is not running: start Docker to decide on this proposal.” Registrar um contêiner significa perguntar ao Docker o ID completo e a hora de criação dele, o que não dá para fazer com o Docker desligado. Inicie o Docker Desktop ou o Docker Engine e aprove de novo; quando for possível clicar em “Approve” e `obit docker list` mostrar o contêiner, funcionou.
 
-Quando um contêiner expira, o Obituary apenas o para e mantém sua camada gravável, e ressuscitá-lo o inicia de novo; um contêiner parado só é excluído depois do período de retenção. Imagens, volumes e redes nunca são tocados.
+Quando um contêiner expira, o Obituary apenas o para e mantém sua camada gravável, e ressuscitá-lo o inicia de novo; um contêiner parado só é excluído depois do período de retenção.
+
+## O enterro do volume do Docker não foi confirmado
+
+Os eventos do Docker são verificados antes e depois da exclusão. Se não for possível confirmá-la, mantenha o arquivo verificado e consulte `obit doctor`; não considere o volume enterrado. Cada aviso de `docker-volume-recovery` identifica uma entrada a verificar. Siga as instruções para consultar o volume no daemon Docker original. Nem `obit resurrect` nem `obit purge` aceitam arquivos ainda não registrados. [Contêineres e volumes do Docker](./docker)
 
 ## Uma atualização falha, ou os downloads a partir da China continental são lentos
 

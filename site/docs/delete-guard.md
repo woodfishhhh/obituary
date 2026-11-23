@@ -6,6 +6,8 @@ agent 删光用户目录、删空整块盘，这样的事故已经有人贴出�
 obit init -g --guard-rm                 # Claude Code；Codex 加 --agent codex。默认不开
 ```
 
+删除护栏能识别 `docker volume rm`、`docker volume remove`、`docker volume prune`、`docker compose down -v`（或 `--volumes`）和 `docker system prune --volumes`。只有直接用 `docker volume rm` 指定卷名时，才建议改用 `obit bury --docker-volume`；不会猜测批量清理会删哪些卷。
+
 ## 一次真实的输出
 
 删除护栏打开时，hook 收到 Claude Code 的一次 Bash 调用 `rm -rf build`，回复如下，`rm` 没有执行：

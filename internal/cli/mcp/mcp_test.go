@@ -707,6 +707,7 @@ func TestMCPMutations(t *testing.T) {
 		{"canceled-ledger-commit", "internal/core/ledger/store.go", "if err := s.Context().Err(); err != nil {\n\t\t\treturn err\n\t\t}\n\t\tif confirm {", "if confirm {", "./internal/core/ledger", "TestStoreCancellationBeforeCommit", "canceled update committed"},
 		{"recycle-description", "internal/cli/mcp/tools.go", "if svc.Mode == core.ModeRecycle {", "if false && svc.Mode == core.ModeRecycle {",
 			"./internal/cli/mcp", "TestMCPRecycleModeDescriptionAndReceipt", "recycle description promises wrong recovery"},
+		{"doctor-skip-volume-recovery", "internal/cli/doctor/volume.go", `const dir = "graveyard/docker-volumes"`, `const dir = "graveyard/no-volume-entries"`, "./internal/cli/doctor", "TestDoctorVolumeRecovery", "volume recovery warnings"},
 	} {
 		if !testenv.InMutationShard(t, i) {
 			continue

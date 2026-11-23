@@ -9,7 +9,7 @@ Windows 10 / 11、macOS 和 Linux（x64 和 ARM64）：
 | | Windows | macOS | Linux |
 |---|---|---|---|
 | 安裝方式 | Scoop、`install.ps1` 指令碼（winget 審核中） | Homebrew、`install.sh` 指令碼 | `install.sh` 指令碼 |
-| 每 5 分鐘檢查到期 | 常駐系統匣程序，工作排程器作為備援 | 使用者的 launchd 代理程式 | `systemd --user` 計時器；沒有 systemd 時使用使用者 crontab |
+| 到期檢查 | 常駐系統匣程序，工作排程器作為備援 | 使用者的 launchd 代理程式 | `systemd --user` 計時器；沒有 systemd 時使用使用者 crontab |
 | 命令列、墓地與復活、自動登記（可選）、刪除護欄、agent 整合（hook、Skill、MCP）、Docker 容器、資料夾策略 | 有 | 有 | 有 |
 | 系統匣、小視窗、內容功能表、檔案總管中的下葬日期、開始功能表和桌面捷徑 | 有 | 改用命令列：`obit list`、`obit graveyard`、`obit resurrect` | 與 macOS 相同 |
 | 資源回收筒模式 | 有 | 僅墓地 | 僅墓地 |
@@ -88,7 +88,7 @@ obit init -g --agent codex   # Codex
 
 在 macOS / Linux 上，Claude Code 使用 `~/.claude`，Codex 使用 `~/.codex`，共用 Skill 使用 `~/.agents/skills`。也會遵守 `CLAUDE_CONFIG_DIR` 和 `CODEX_HOME` 覆寫設定。
 
-啟用使用者排程器，每 5 分鐘檢查一次到期項目：
+桌面版啟用監督後，由常駐托盤在到期時處理，另有獨立工作每小時檢查一次。資料目錄未啟用系統匣監督時，每 5 分鐘檢查一次。
 
 ```bash
 obit daemon enable --dry-run

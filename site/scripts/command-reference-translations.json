@@ -72,6 +72,20 @@
         "ru": "Задать местное время истечения срока: \"2006-01-02 15:04\", \"2006-01-02\" или \"15:04\""
       }
     },
+    "--docker-volume": {
+      "source": "treat operands as Docker volume names",
+      "translations": {
+        "zh": "把参数当作 Docker 卷名",
+        "zh-TW": "將引數視為 Docker 資料卷名稱",
+        "ja": "引数を Docker ボリューム名として扱う",
+        "ko": "인수를 Docker 볼륨 이름으로 해석",
+        "es": "Interpretar los argumentos como nombres de volúmenes de Docker",
+        "fr": "Interpréter les arguments comme des noms de volumes Docker",
+        "de": "Argumente als Docker-Volume-Namen behandeln",
+        "pt-BR": "Interpretar os argumentos como nomes de volumes do Docker",
+        "ru": "Считать аргументы именами томов Docker"
+      }
+    },
     "--force": {
       "source": "allow folders that contain a .git repository",
       "translations": {
@@ -200,6 +214,20 @@
         "de": "Pfade sofort auf den Friedhof verschieben (Wiederherstellung mit obit resurrect)",
         "pt-BR": "Mover caminhos para o cemitério agora (restaure com obit resurrect)",
         "ru": "Переместить пути на кладбище сейчас (восстановление — obit resurrect)"
+      }
+    },
+    "--docker-volume": {
+      "source": "treat operands as Docker volume names",
+      "translations": {
+        "zh": "把参数当作 Docker 卷名",
+        "zh-TW": "將引數視為 Docker 資料卷名稱",
+        "ja": "引数を Docker ボリューム名として扱う",
+        "ko": "인수를 Docker 볼륨 이름으로 해석",
+        "es": "Interpretar los argumentos como nombres de volúmenes de Docker",
+        "fr": "Interpréter les arguments comme des noms de volumes Docker",
+        "de": "Argumente als Docker-Volume-Namen behandeln",
+        "pt-BR": "Interpretar os argumentos como nomes de volumes do Docker",
+        "ru": "Считать аргументы именами томов Docker"
       }
     },
     "--force": {
@@ -673,17 +701,17 @@
   },
   "obit daemon enable": {
     "summary": {
-      "source": "Enable the 5-minute user scheduler (and the login tray on Windows)",
+      "source": "Enable the user scheduler (hourly with tray supervision, every 5 minutes otherwise) and the login tray on Windows",
       "translations": {
-        "zh": "启用每 5 分钟运行一次的用户级定时任务（Windows 上同时启用随登录启动的托盘）",
-        "zh-TW": "啟用每 5 分鐘執行一次的使用者層級排程（Windows 上同時啟用隨登入啟動的系統匣）",
-        "ja": "5 分ごとに動くユーザー単位のスケジューラーを有効にする（Windows ではログイン時に起動するトレイも有効にする）",
-        "ko": "5분마다 실행되는 사용자 스케줄러를 활성화합니다(Windows에서는 로그인 시 시작되는 트레이도 활성화)",
-        "es": "Activar el programador de usuario de 5 minutos (y, en Windows, la bandeja que se inicia con la sesión)",
-        "fr": "Activer le planificateur utilisateur de 5 minutes (et, sous Windows, l’icône de la zone de notification lancée à l’ouverture de session)",
-        "de": "Den 5-Minuten-Benutzerplaner aktivieren (und unter Windows das Tray-Symbol bei der Anmeldung)",
-        "pt-BR": "Ativar o agendador de usuário de 5 minutos (e a bandeja iniciada no login, no Windows)",
-        "ru": "Включить пользовательский планировщик с интервалом 5 минут (и значок в области уведомлений при входе в систему в Windows)"
+        "zh": "启用用户定时任务（启用托盘监督后每小时一次，否则每 5 分钟一次）；在 Windows 上同时启用登录托盘",
+        "zh-TW": "啟用使用者排程（啟用系統匣監督後每小時一次，否則每 5 分鐘一次）；在 Windows 上同時啟用登入時的系統匣",
+        "ja": "ユーザーの定期実行を有効にする（トレイの監視が有効なら毎時、それ以外は 5 分ごと）。Windows ではログイン時のトレイも有効にする",
+        "ko": "사용자 예약 작업을 활성화합니다(트레이 감독 시 매시간, 그 외에는 5분마다). Windows에서는 로그인 시 트레이도 활성화합니다",
+        "es": "Activar la tarea de usuario (cada hora con supervisión de la bandeja; cada 5 minutos sin ella) y, en Windows, la bandeja al iniciar sesión",
+        "fr": "Activer la tâche utilisateur (toutes les heures si l’icône de notification est supervisée, sinon toutes les 5 minutes) et, sous Windows, l’icône à l’ouverture de session",
+        "de": "Benutzerzeitplan aktivieren (mit Tray-Überwachung stündlich, sonst alle 5 Minuten); unter Windows auch das Tray-Symbol bei der Anmeldung starten",
+        "pt-BR": "Ativar a tarefa do usuário (a cada hora com supervisão da bandeja; caso contrário, a cada 5 minutos) e, no Windows, a bandeja ao entrar",
+        "ru": "Включить задачу пользователя (раз в час при включённом надзоре за процессом в трее, иначе каждые 5 минут), а в Windows также запуск значка при входе"
       }
     },
     "--dry-run": {

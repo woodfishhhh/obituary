@@ -4,6 +4,8 @@ Quand quelque chose ne va pas, commencez par `obit doctor`. La commande ne fait 
 
 Chaque rubrique ci-dessous suit le même ordre : ce que vous voyez, pourquoi, ce qu’il faut faire et comment savoir que c’est réglé.
 
+Après une mise à niveau, si tous les libellés du menu de l’Explorateur sont dans une autre langue prise en charge, le menu reste utilisable. `obit doctor` le signale à titre informatif (JSON : `installation: label-language-mismatch`). `obit init --context-menu --yes` applique la langue actuelle de l’interface.
+
 ## Le shell ne trouve pas `obit`
 
 Le terminal affiche `command not found`, ou PowerShell ne reconnaît pas `obit`. Le programme est bien sur le disque, mais son dossier n’est pas dans votre PATH. Le script d’installation Windows ajoute `%LOCALAPPDATA%\Programs\obituary` au PATH de votre utilisateur, mais un terminal déjà ouvert ne voit pas le nouveau PATH. `install.sh` place les programmes dans `~/.local/bin` et ne modifie jamais le PATH, et sur certains systèmes ce dossier n’est de toute façon pas dans le PATH. Le `.deb` d’Ubuntu les place dans `/usr/libexec/obituary/`, qui n’est pas non plus dans le PATH.
@@ -56,9 +58,9 @@ L’app du DMG n’a pas de signature Developer ID et n’est pas notarisée ; G
 
 ## L’icône ne démarre pas à l’ouverture de session (macOS, Ubuntu)
 
-Après l’ouverture de session, il n’y a pas d’icône Obituary dans la barre des menus ou la zone de notification. Le démarrage à l’ouverture de session repose sur une entrée de démarrage : sous macOS, le LaunchAgent utilisateur `site.woodfish.obituary.tray` ; sous Ubuntu, `~/.config/autostart/obituary.desktop`. Si l’interrupteur des Settings de la fenêtre est désactivé, si l’app a été déplacée, ou si l’interrupteur a été activé pendant que l’app tournait directement depuis le DMG, le chemin enregistré dans l’entrée est périmé et rien n’est trouvé à l’ouverture de session.
+Après l’ouverture de session, il n’y a pas d’icône Obituary dans la barre des menus ou la zone de notification. Le démarrage à l’ouverture de session repose sur une entrée de démarrage : sous macOS, le LaunchAgent utilisateur `site.woodfish.obituary.tray.supervised` ; sous Ubuntu, `obituary-tray.service`. Si l’interrupteur des Settings de la fenêtre est désactivé, si l’app a été déplacée, ou si l’interrupteur a été activé pendant que l’app tournait directement depuis le DMG, le chemin enregistré dans l’entrée est périmé et rien n’est trouvé à l’ouverture de session.
 
-Ouvrez la fenêtre et, dans Settings, désactivez puis réactivez « Start the tray at sign-in » pour qu’Obituary réécrive l’entrée. Sous macOS, `launchctl list | grep obituary` doit maintenant afficher `site.woodfish.obituary.tray` ; sous Ubuntu, `ls ~/.config/autostart/obituary.desktop` doit trouver le fichier, et l’icône apparaîtra à votre prochaine ouverture de session.
+Ouvrez la fenêtre et, dans Settings, désactivez puis réactivez « Start the tray at sign-in » pour qu’Obituary réécrive l’entrée. Sous macOS, `launchctl list | grep obituary` doit maintenant afficher `site.woodfish.obituary.tray.supervised` ; sous Ubuntu, `systemctl --user status obituary-tray.service` indique l’état du service.
 
 ## Ubuntu : la fenêtre ne s’ouvre pas, ou il n’y a pas d’icône de notification
 
@@ -73,7 +75,11 @@ Rouvrez Obituary depuis la liste des applications ; quand la fenêtre apparaît,
 
 ## Ce qui a expiré n’est pas enterré
 
-La durée de vie d’un fichier est écoulée depuis longtemps et il est toujours là, et la ligne `runner:` de `obit daemon status` indique `off`. L’expiration est gérée par une tâche planifiée qui s’exécute toutes les 5 minutes : « Obituary Runner » dans le Planificateur de tâches sous Windows, un agent utilisateur launchd sous macOS, le minuteur utilisateur systemd `obituary.timer` sous Linux. Si elle n’est pas installée, a été désactivée ou a été installée pour un autre répertoire de données, personne n’agit quand l’heure arrive ; ce qui a expiré attend alors le prochain `obit sweep`, ou le hook d’un agent, pour être traité.
+Consultez `obit daemon status` pour vérifier la tâche. Utilisez `obit reap` pour traiter immédiatement les éléments arrivés à échéance.
+
+Avec la supervision du bureau activée, le processus résident traite les échéances à temps et une tâche indépendante vérifie les retards toutes les heures. Sans supervision de l’icône pour ce répertoire de données, la tâche s’exécute toutes les cinq minutes.
+
+`obit doctor` indique qui supervise le processus, les échecs récents et le motif du dernier arrêt. Il distingue l’attente avant redémarrage, la pause, l’arrêt volontaire et l’absence ou l’arrêt du superviseur.
 
 Lancez `obit daemon enable` pour installer la tâche (sous Windows, cela installe aussi l’icône au démarrage de session), et `obit sweep` si vous voulez le nettoyage tout de suite. Sur un Linux sans service utilisateur systemd, comme dans certains conteneurs et systèmes minimaux, `obit daemon enable` ne peut pas l’installer ; utilisez cron pour exécuter `obitd --once --home <répertoire de données> --config-dir <répertoire de configuration>` toutes les 5 minutes, et `obit config` vous donne les deux répertoires. Quand la ligne `runner` de `obit daemon status` n’indique plus `off`, c’est réglé ; sous Linux, vous pouvez aussi voir le minuteur avec `systemctl --user list-timers | grep obituary`.
 
@@ -111,7 +117,11 @@ Quand la ligne de l’agent dans `obit doctor` (par exemple `claude`) est en `PA
 
 Dans la fenêtre, « Approve » est grisé sur la proposition d’un conteneur, et la carte indique « Docker is not running: start Docker to decide on this proposal. ». Enregistrer un conteneur revient à demander à Docker son identifiant complet et sa date de création, ce qui est impossible tant que Docker est arrêté. Démarrez Docker Desktop ou Docker Engine et approuvez de nouveau ; quand on peut cliquer sur « Approve » et que `obit docker list` affiche le conteneur, c’est bon.
 
-Quand un conteneur expire, Obituary se contente de l’arrêter et conserve sa couche inscriptible, et le ressusciter le redémarre ; un conteneur arrêté n’est supprimé qu’après la période de rétention. Les images, volumes et réseaux ne sont jamais touchés.
+Quand un conteneur expire, Obituary se contente de l’arrêter et conserve sa couche inscriptible, et le ressusciter le redémarre ; un conteneur arrêté n’est supprimé qu’après la période de rétention.
+
+## La mise au cimetière d’un volume Docker n’est pas confirmée
+
+Les événements Docker sont vérifiés avant et après la suppression. Si celle-ci ne peut pas être confirmée, gardez l’archive vérifiée et consultez `obit doctor` ; ne considérez pas le volume comme enterré. Chaque avertissement `docker-volume-recovery` signale une entrée à vérifier. Suivez les indications pour examiner le volume sur le démon Docker d’origine. Ni `obit resurrect` ni `obit purge` ne prennent en charge une archive non inscrite au registre. [Conteneurs et volumes Docker](./docker)
 
 ## Une mise à jour échoue, ou les téléchargements depuis la Chine continentale sont lents
 

@@ -1,4 +1,4 @@
-# Docker 容器
+# Docker 容器與資料卷
 
 在 agent 工作階段中啟動的容器也可以設定壽命。
 
@@ -8,9 +8,21 @@ obit docker list               # 登记了哪些容器（--json 可用）
 obit resurrect <编号>          # 到期被停下的容器重新启动
 ```
 
-## 只管容器
+## 為資料卷設定壽命或立即下葬
 
-訃告只管理容器。資料卷存放資料，一旦刪除便無法復原，因此訃告一律不動資料卷、映像檔和網路。
+資料卷不會自動登記。訃告只處理你明確登記或下葬的資料卷，不會刪除映像檔或網路。
+
+執行 `obit mark --docker-volume cache 3d`（也可以用 `add`）讓 `cache` 在三天後下葬；要立即下葬，請執行 `obit bury --docker-volume -- cache`。
+
+Docker 必須使用 Linux 容器模式。僅支援本機範圍、採用 `local` 驅動程式且沒有額外選項的資料卷。首次使用時，若本機沒有輔助映像檔，Docker 會下載固定版本的 Debian 映像檔。
+
+墓地必須有足夠空間存放完整封存檔。訃告先封存並驗證，再刪除資料卷；封存失敗就不刪。只要還有容器參照資料卷（即使容器已停止），或路徑與 bind 掛載重疊，訃告就不會動它。
+
+`obit resurrect <編號>` 以原名重建資料卷，並永久保留 `io.obituary.restore` 標籤。若同名資料卷已存在，即使是空的也不覆寫。
+
+訃告在刪除前後核對 Docker 事件。若無法確認已刪除，請保留驗證過的封存檔並查看 `obit doctor`，不要視為下葬成功。 每條 `docker-volume-recovery` 警告對應一筆待核實的記錄。請依提示在原 Docker 常駐程式上檢查卷；未提交的封存檔不能用 `obit resurrect` 或 `obit purge` 處理。
+
+刪除防護能辨識 `docker volume rm`、`docker volume remove`、`docker volume prune`、`docker compose down -v`（或 `--volumes`）及 `docker system prune --volumes`。只有直接以 `docker volume rm` 指定卷名時才建議改用 `obit bury --docker-volume`，不會猜測批次清理的目標。
 
 ## 到期只停止容器
 

@@ -195,7 +195,7 @@ export const en: Strings = {
       linux: "The install script downloads the archive from the GitHub release and checks its SHA-256 before unpacking.",
     },
     daemonHead: "Turn on background checks",
-    daemonLine: "Checks for expired files every 5 minutes: launchd on macOS, systemd --user on Linux (without systemd, a user crontab runs obitd --once every 5 minutes). Add --dry-run first to see what it installs.",
+    daemonLine: "With desktop supervision enabled, the tray handles expiries as they occur and an independent job checks once an hour. Editions without a tray check every five minutes. Add --dry-run first to see what it installs.",
     then: "Then connect your agents",
     init: [
       { label: "Claude Code", code: "obit init -g" },

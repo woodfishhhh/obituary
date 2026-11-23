@@ -1,4 +1,4 @@
-# Docker-Container
+# Docker-Container und Volumes
 
 Container, die in einer Agentensitzung gestartet werden, können auch eine Lebensdauer haben.
 
@@ -8,9 +8,21 @@ obit docker list               # registered containers (--json works too)
 obit resurrect <id>            # start a container that was stopped at expiry
 ```
 
-## Nur für Container
+## Ein Volume vormerken oder sofort begraben
 
-Obituary verwaltet nur Container. Volumes enthalten Daten; das Löschen eines Volumes ist endgültig. Volumes, Images und Netzwerke bleiben daher unangetastet.
+Volumes werden nie automatisch registriert. Obituary verarbeitet nur ausdrücklich registrierte oder begrabene Volumes und löscht weder Images noch Netzwerke.
+
+Mit `obit mark --docker-volume cache 3d` (auch `add`) wird `cache` in drei Tagen begraben, mit `obit bury --docker-volume -- cache` sofort.
+
+Docker muss Linux-Container verwenden. Unterstützt werden nur lokale Volumes mit dem Treiber `local` ohne zusätzliche Optionen. Fehlt das Hilfsimage beim ersten Einsatz, lädt Docker eine festgelegte Debian-Version herunter.
+
+Der Friedhof braucht Platz für ein vollständiges Archiv. Erst nach erfolgreicher Archivierung und Prüfung wird das Volume gelöscht. Verweist noch ein Container darauf, selbst ein gestoppter, oder überschneidet sich der Pfad mit einem Bind-Mount, bleibt das Volume unangetastet.
+
+`obit resurrect <ID>` legt das Volume unter seinem ursprünglichen Namen mit dem dauerhaften Label `io.obituary.restore` neu an. Ist der Name belegt, wird auch ein leeres Volume nicht überschrieben.
+
+Docker-Ereignisse werden vor und nach dem Löschen geprüft. Lässt sich die Löschung nicht bestätigen, bleibt das geprüfte Archiv erhalten. Prüfe `obit doctor`, statt von einer erfolgreichen Bestattung auszugehen. Jede Warnung unter `docker-volume-recovery` nennt einen zu prüfenden Eintrag. Prüfe das Volume wie angegeben auf dem ursprünglichen Docker-Daemon. Nicht verbuchte Archive lassen sich weder mit `obit resurrect` noch mit `obit purge` bearbeiten.
+
+Der Löschschutz erkennt `docker volume rm`, `docker volume remove`, `docker volume prune`, `docker compose down -v` (oder `--volumes`) und `docker system prune --volumes`. Nur bei einem einfachen `docker volume rm` mit ausdrücklichen Namen schlägt er `obit bury --docker-volume` vor.
 
 ## Beim Ablauf wird der Container gestoppt
 

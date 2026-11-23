@@ -1,4 +1,4 @@
-# Docker 컨테이너
+# Docker 컨테이너와 볼륨
 
 에이전트 세션에서 시작된 컨테이너도 수명을 가질 수 있습니다.
 
@@ -8,9 +8,21 @@ obit docker list               # registered containers (--json works too)
 obit resurrect <id>            # start a container that was stopped at expiry
 ```
 
-## 관리 대상은 컨테이너뿐입니다
+## 볼륨에 수명을 지정하거나 바로 매장하기
 
-Obituary는 컨테이너만 관리합니다. 데이터를 보관하는 볼륨은 삭제하면 복구할 수 없으므로 볼륨, 이미지, 네트워크는 건드리지 않습니다.
+볼륨은 자동으로 등록되지 않습니다. 직접 등록하거나 매장하도록 지정한 볼륨만 처리하며 이미지와 네트워크는 삭제하지 않습니다.
+
+`obit mark --docker-volume cache 3d`(`add`도 가능)를 실행하면 `cache`를 3일 뒤에 매장합니다. 지금 매장하려면 `obit bury --docker-volume -- cache`를 실행하세요.
+
+Docker가 Linux 컨테이너 모드여야 합니다. 추가 옵션 없이 `local` 드라이버를 사용하는 로컬 범위의 볼륨만 지원합니다. 처음 사용할 때 보조 이미지가 없으면 고정 버전의 Debian 이미지를 받습니다.
+
+묘지에 볼륨 전체를 보관할 공간이 필요합니다. 아카이브를 만들고 검증한 뒤에만 볼륨을 삭제합니다. 중지된 컨테이너라도 볼륨을 참조하거나 볼륨 경로가 바인드 마운트와 겹치면 그대로 둡니다.
+
+`obit resurrect <ID>`는 원래 이름으로 볼륨을 다시 만들며, `io.obituary.restore` 레이블이 영구적으로 남습니다. 같은 이름의 볼륨이 이미 있으면 비어 있어도 덮어쓰지 않습니다.
+
+삭제 전후에 Docker 이벤트를 대조합니다. 삭제를 확인할 수 없다면 검증된 아카이브를 보관하고 `obit doctor`를 확인하세요. 매장이 성공했다고 간주하면 안 됩니다. 확인이 필요한 항목마다 `docker-volume-recovery` 경고가 표시됩니다. 안내에 따라 원래 Docker 데몬에서 볼륨을 확인하세요. 장부에 기록되지 않은 아카이브에는 `obit resurrect`나 `obit purge`를 사용할 수 없습니다.
+
+삭제 가드는 `docker volume rm`, `docker volume remove`, `docker volume prune`, `docker compose down -v`(또는 `--volumes`), `docker system prune --volumes`를 인식합니다. 단순한 `docker volume rm` 명령에 볼륨 이름이 명시된 경우에만 `obit bury --docker-volume`를 제안합니다.
 
 ## 만료되면 먼저 중지합니다
 

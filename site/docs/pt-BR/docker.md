@@ -1,4 +1,4 @@
-# Contêineres Docker
+# Contêineres e volumes do Docker
 
 Os contêineres iniciados em uma sessão do agente também podem ter uma vida útil.
 
@@ -8,9 +8,21 @@ obit docker list               # registered containers (--json works too)
 obit resurrect <id>            # start a container that was stopped at expiry
 ```
 
-## Somente contêineres
+## Definir um prazo para um volume ou enterrá-lo agora
 
-O Obituary só gerencia contêineres. Os volumes armazenam dados e sua exclusão é permanente. Por isso, volumes, imagens e redes nunca são alterados.
+Volumes nunca são registrados automaticamente. O Obituary só trata os que você registra ou enterra explicitamente e não exclui imagens nem redes.
+
+Use `obit mark --docker-volume cache 3d` (ou `add`) para enterrar `cache` em três dias, ou `obit bury --docker-volume -- cache` para enterrá-lo agora.
+
+O Docker precisa estar no modo de contêineres Linux. Só são aceitos volumes locais com o driver `local` e sem opções extras. No primeiro uso, se a imagem auxiliar ainda não estiver disponível, o Docker baixa uma versão fixa do Debian.
+
+Reserve espaço no cemitério para um arquivo completo. O volume só é excluído depois de arquivado e verificado. Se algum contêiner fizer referência a ele, mesmo parado, ou se o caminho se sobrepuser a uma montagem bind, o volume permanece intacto.
+
+`obit resurrect <id>` recria o volume com o nome original e o rótulo permanente `io.obituary.restore`. Se o nome já estiver em uso, o volume existente não será sobrescrito, mesmo que esteja vazio.
+
+Os eventos do Docker são verificados antes e depois da exclusão. Se não for possível confirmá-la, mantenha o arquivo verificado e consulte `obit doctor`; não considere o volume enterrado. Cada aviso de `docker-volume-recovery` identifica uma entrada a verificar. Siga as instruções para consultar o volume no daemon Docker original. Nem `obit resurrect` nem `obit purge` aceitam arquivos ainda não registrados.
+
+A proteção contra exclusão reconhece `docker volume rm`, `docker volume remove`, `docker volume prune`, `docker compose down -v` (ou `--volumes`) e `docker system prune --volumes`. Ela só sugere `obit bury --docker-volume` para um `docker volume rm` simples com nomes explícitos.
 
 ## Ao expirar, o contêiner para
 

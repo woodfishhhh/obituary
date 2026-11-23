@@ -61,7 +61,8 @@ Agents pushed us into writing it. As soon as version 0.0.1 ran we installed it o
 - **Lives in the tray, like Everything (Windows).** `obit init` starts a tray icon at login. Its menu shows recent burials (click one to resurrect it), lets you pause automatic cleanup, and opens Obituary's small window. A Windows scheduled task remains as a fallback.
 - **A small window (Windows / Ubuntu 24.04 amd64).** Expiring, Graveyard, For you, Settings and Logs: resurrect files, approve proposals and change settings without the command line (`obit-gui.exe`, or "Open Obituary" in the tray menu). Chinese and English, eight looks. On Ubuntu, open Obituary from Applications.
 - **Context menu and dates in Explorer (Windows).** Right-click files or folders (several at once is fine) → "Add to Obituary" → 1, 7 or 30 days, or "Bury now (recoverable)"; on Windows 11 it is under "Show more options". Tracked items in Downloads and on the Desktop show as "name (11-13 burial)" while the real file name stays the same.
-- **Docker containers.** `obit docker add <container> 3d` gives a container a lifespan; at expiry it is stopped with `docker stop` (`obit resurrect` starts it again) and removed with `docker rm` only after the retention period. Volumes and images are never touched. With automatic registration on, containers an agent session started for the project are registered too, and you are told afterwards.
+- **Docker containers.** `obit docker add <container> 3d` gives a container a lifespan; at expiry it is stopped with `docker stop` (`obit resurrect` starts it again) and removed with `docker rm` only after the retention period. With automatic registration on, containers an agent session started for the project are registered too, and you are told afterwards.
+- Use `obit mark --docker-volume cache 3d` (`add` is an alias) to bury `cache` in three days, or `obit bury --docker-volume -- cache` to bury it now. Volumes are never registered automatically. Obituary only handles a volume you explicitly mark or bury; it does not remove images or networks.
 - **Folder policies.** `obit watch Downloads 2w`: every file that lands there is buried two weeks later. An expired subfolder only produces a proposal and is buried after you approve it. The policy itself needs your approval too.
 
 ## Install
@@ -86,10 +87,12 @@ Each platform at a glance:
 | | Windows | macOS | Linux |
 |---|---|---|---|
 | Install with | Scoop, the `install.ps1` script (winget in review) | Homebrew, the `install.sh` script | the `install.sh` script |
-| Checks for expiry every 5 minutes | resident tray process, Task Scheduler as a fallback | user launchd agent | `systemd --user` timer; a user crontab without systemd |
+| Expiry checks | resident tray process, Task Scheduler as a fallback | user launchd agent | `systemd --user` timer; a user crontab without systemd |
 | CLI, graveyard and resurrection, automatic registration (optional), delete guard, agent integration (hooks, Skill, MCP), Docker containers, folder policies | yes | yes | yes |
 | Tray, small window, context menus, burial dates in Explorer, Start menu and desktop shortcuts | yes | Window and tray on macOS (universal DMG); no context menu yet | Window and tray on Ubuntu 24.04 amd64 (deb) |
 | Recycle Bin mode | yes | graveyard only | graveyard only |
+
+With desktop supervision enabled, the tray handles expiries as they occur and an independent job checks once an hour. Editions without a tray check every five minutes.
 
 Installing by hand, updating and uninstalling: see the [install guide](docs/install.en.md).
 

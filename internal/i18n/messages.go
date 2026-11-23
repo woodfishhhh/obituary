@@ -32,6 +32,11 @@ var messageBundle = sync.OnceValue(func() *goi18n.Bundle {
 // regenerate active.en.json from these literals, while the runtime still has
 // a safe English fallback if a translation file is incomplete.
 var defaultMessages = map[string]*goi18n.Message{
+	"cli.doctor.volume_entry_invalid":     &goi18n.Message{ID: "cli.doctor.volume_entry_invalid", Other: "invalid Docker volume entry %q"},
+	"cli.doctor.volume_manifest_invalid":  &goi18n.Message{ID: "cli.doctor.volume_manifest_invalid", Other: "invalid volume manifest: %s"},
+	"cli.doctor.volume_manifest_mismatch": &goi18n.Message{ID: "cli.doctor.volume_manifest_mismatch", Other: "volume manifest does not match archive %s"},
+	"cli.doctor.volume_phase_unknown":     &goi18n.Message{ID: "cli.doctor.volume_phase_unknown", Other: "unknown volume manifest phase %q"},
+
 	"telemetry.help":           &goi18n.Message{ID: "telemetry.help", Other: "Usage statistics: a random installation ID, version, OS, architecture, interface language and installation channel help measure installation counts and version use. No files, paths or commands are sent; IP addresses and user agents are not stored. Disable with obit config telemetry off or OBIT_TELEMETRY=0."},
 	"telemetry.syntax":         &goi18n.Message{ID: "telemetry.syntax", Other: "Use obit config telemetry on or obit config telemetry off."},
 	"cli.list.short":           &goi18n.Message{ID: "cli.list.short", Other: "Show tracked paths and Docker containers, soonest expiry first"},
@@ -83,7 +88,7 @@ var defaultMessages = map[string]*goi18n.Message{
 	"cli.daemon.launchctl_bootout_gui_if_loaded":                               &goi18n.Message{ID: "cli.daemon.launchctl_bootout_gui_if_loaded", Other: "  launchctl bootout gui/%d/%s (if loaded)\n"},
 	"cli.daemon.launchd_user_agent":                                            &goi18n.Message{ID: "cli.daemon.launchd_user_agent", Other: "  %-9s launchd user agent %s\n"},
 	"cli.daemon.next":                                                          &goi18n.Message{ID: "cli.daemon.next", Other: "next:      %s\n"},
-	"cli.daemon.no_timer":                                                      &goi18n.Message{ID: "cli.daemon.no_timer", Other: "note: no background timer serves this data directory, so lifespans run out at the next `obit reap` or agent hook; `obit daemon enable` installs a 5-minute user timer"},
+	"cli.daemon.no_timer":                                                      &goi18n.Message{ID: "cli.daemon.no_timer", Other: "note: no background timer serves this data directory, so lifespans run out at the next `obit reap` or agent hook; `obit daemon enable` installs a user timer (hourly with tray supervision, every 5 minutes otherwise)"},
 	"cli.daemon.not_running":                                                   &goi18n.Message{ID: "cli.daemon.not_running", Other: "not running"},
 	"cli.daemon.off_run_obit_daemon_enable":                                    &goi18n.Message{ID: "cli.daemon.off_run_obit_daemon_enable", Other: "off (run `obit daemon enable`)"},
 	"cli.daemon.pending_recovery":                                              &goi18n.Message{ID: "cli.daemon.pending_recovery", Other: "pending recovery: %d\n"},
@@ -101,7 +106,7 @@ var defaultMessages = map[string]*goi18n.Message{
 	"cli.daemon.set":                                                           &goi18n.Message{ID: "cli.daemon.set", Other: "set"},
 	"cli.daemon.start":                                                         &goi18n.Message{ID: "cli.daemon.start", Other: "start"},
 	"cli.daemon.start_failed":                                                  &goi18n.Message{ID: "cli.daemon.start_failed", Other: "warning: could not start the daemon (%v); run `obit reap` or `obit daemon enable`\n"},
-	"cli.daemon.started_temporarily":                                           &goi18n.Message{ID: "cli.daemon.started_temporarily", Other: "started a daemon for now; `obit daemon enable` sets up the hidden 5-minute runner that survives restarts"},
+	"cli.daemon.started_temporarily":                                           &goi18n.Message{ID: "cli.daemon.started_temporarily", Other: "started a daemon for now; `obit daemon enable` sets up a persistent runner (hourly with tray supervision, every 5 minutes otherwise)"},
 	"cli.daemon.status":                                                        &goi18n.Message{ID: "cli.daemon.status", Other: "runner:    %s\ndaemon:    %s\ndata:      %s\ntracked:   %d\n"},
 	"cli.daemon.stop":                                                          &goi18n.Message{ID: "cli.daemon.stop", Other: "stop"},
 	"cli.daemon.tray_daemon_running_it_also_starts_when":                       &goi18n.Message{ID: "cli.daemon.tray_daemon_running_it_also_starts_when", Other: "tray daemon running; it also starts when you sign in; any scheduled fallback is preserved"},
@@ -113,6 +118,11 @@ var defaultMessages = map[string]*goi18n.Message{
 	"cli.daemon.user_unit":                                                     &goi18n.Message{ID: "cli.daemon.user_unit", Other: "  %-9s user unit %s\n"},
 	"cli.docker.expires":                                                       &goi18n.Message{ID: "cli.docker.expires", Other: "#%d %s  expires %s\n"},
 	"cli.docker.no_containers_are_tracked":                                     &goi18n.Message{ID: "cli.docker.no_containers_are_tracked", Other: "no containers are tracked"},
+	"cli.doctor.volume_unconfirmed":                                            &goi18n.Message{ID: "cli.doctor.volume_unconfirmed", Other: "Archive verified, removal unconfirmed"},
+	"cli.doctor.volume_events":                                                 &goi18n.Message{ID: "cli.doctor.volume_events", Other: "Archive verified, removal event evidence incomplete"},
+	"cli.doctor.volume_commit":                                                 &goi18n.Message{ID: "cli.doctor.volume_commit", Other: "Removal confirmed, ledger commit unconfirmed"},
+	"cli.doctor.volume_inspect":                                                &goi18n.Message{ID: "cli.doctor.volume_inspect", Other: "On the original Docker daemon (%s), run docker volume inspect -- %s. Keep %s and its manifest; only committed burials appear in obit graveyard."},
+	"cli.doctor.volume_incomplete":                                             &goi18n.Message{ID: "cli.doctor.volume_incomplete", Other: "%s: archive incomplete or missing its manifest. Check obit list on this installation; keep %s and do not restore from an unverified archive."},
 	"cli.doctor.a_hook_account_reported_denied_access":                         &goi18n.Message{ID: "cli.doctor.a_hook_account_reported_denied_access", Other: "; a hook account reported denied access. "},
 	"cli.doctor.a_resident_daemon_currently_serves_this_directory":             &goi18n.Message{ID: "cli.doctor.a_resident_daemon_currently_serves_this_directory", Other: "; a resident daemon currently serves this directory"},
 	"cli.doctor.agent_shells_codex_or_codex_windows_shell":                     &goi18n.Message{ID: "cli.doctor.agent_shells_codex_or_codex_windows_shell", Other: " (agent_shells.codex or codex_windows_shell); declaration used for ambiguous native Windows commands; actual per-call shell is not reported by Codex"},

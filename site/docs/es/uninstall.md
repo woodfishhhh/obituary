@@ -15,7 +15,7 @@ Si instalaste con el script en Windows, basta un comando:
 
 ## Qué se retira
 
-`obit uninstall` actúa sobre el nivel de usuario y sobre el proyecto Git actual: los hooks, MCP y Skill de cada agente, la tarea programada que se ejecuta cada 5 minutos (el Programador de tareas en Windows, un agente de usuario de launchd en macOS, un temporizador de usuario de systemd en Linux), el proceso residente y la bandeja, y las políticas de carpetas (los archivos bajo una política se quedan donde están). En Windows también retira la entrada de inicio al iniciar sesión, el menú contextual del Explorador y las etiquetas de fecha del Explorador.
+`obit uninstall` actúa sobre el nivel de usuario y sobre el proyecto Git actual: los hooks, MCP y Skill de cada agente, la tarea programada (el Programador de tareas en Windows, un agente de usuario de launchd en macOS, un temporizador de usuario de systemd en Linux), el proceso residente y la bandeja, y las políticas de carpetas (los archivos bajo una política se quedan donde están). En Windows también retira la entrada de inicio al iniciar sesión, el menú contextual del Explorador y las etiquetas de fecha del Explorador.
 
 Solo toca lo que escribió Obituary. Una entrada que hayas editado, o una que dejó otra instalación, se conserva tal cual, y el plan dice cuál y por qué. Donde no hay terminal (un script, la línea de comandos de un agente) añade `--yes`; sin él, el comando se detiene y te dice que necesita una terminal.
 

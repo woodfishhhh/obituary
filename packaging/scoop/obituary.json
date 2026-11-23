@@ -6,6 +6,19 @@
     "architecture": {
         "64bit": { "shortcuts": [["obit-gui.exe", "Obituary", "", "obit-gui.exe"]] }
     },
+    "pre_uninstall": [
+        "try { Start-Process -FilePath (Join-Path $dir 'obit.exe') -ArgumentList 'daemon','stop' -WindowStyle Hidden -Wait -ErrorAction Stop } catch { Write-Warning $_ }",
+        "$current = Join-Path (Split-Path -Parent $dir) 'current'",
+        "Get-Process -Name obitd,obit-gui -ErrorAction Ignore | ForEach-Object {",
+        "    try {",
+        "        $exe = $_.ProcessName + '.exe'",
+        "        if ($_.Path -in @((Join-Path $dir $exe), (Join-Path $current $exe))) {",
+        "            Stop-Process -InputObject $_ -Force -ErrorAction Stop",
+        "            if (-not $_.WaitForExit(5000)) { Write-Warning ('Still running: ' + $exe) }",
+        "        }",
+        "    } catch { Write-Warning $_ }",
+        "}"
+    ],
     "notes": [
         "Obituary checks for updates at most once a day, reading only public release information. You can turn off \"Check for updates automatically\" in Settings or set check = false under [update] in config.toml. Privacy: https://obituary.woodfish.site/docs/en/privacy",
         "Before removing binaries, run obit uninstall --yes in the current project; data is kept by default.",

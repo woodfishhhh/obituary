@@ -11,7 +11,7 @@
 | 小視窗 | `obit-gui.exe`，只有 x64 | `Obituary.app`，Intel 與 Apple 晶片通用 | `.deb` 安裝包，只有 amd64 |
 | 系統匣 | 工作列通知區 | 選單列 | 系統匣，需要桌面提供 StatusNotifierItem |
 | 登入時啟動系統匣 | `obit init` 預設開啟 | 在設定裡切換 | 在設定裡切換 |
-| 到期清理 | 系統匣常駐程式，工作排程器備援 | launchd 使用者代理，每 5 分鐘 | systemd 使用者計時器，每 5 分鐘 |
+| 到期清理 | 系統匣常駐程式 | LaunchAgent | systemd |
 | 桌面通知 | 有 | 有 | 有 |
 | 右鍵選單 | 檔案總管 | 無 | 無 |
 | 檔案總管裡的日期標籤 | 有 | 無 | 無 |
@@ -20,11 +20,19 @@
 | 第一次開啟 | 手動下載的壓縮檔可能遇到 SmartScreen 提示 | 要手動放行，見[下文](#第一次開啟未簽名的-app) | 直接開啟 |
 | 系統需求 | WebView2 執行階段 | 1.6.0 需要 macOS 26，1.6.1 修正 | GTK 3、WebKitGTK 4.1，由 apt 自動安裝 |
 
+Windows 由登入時啟動的排程工作看管托盤，macOS 使用使用者 LaunchAgent，Linux 則使用圖形工作階段的使用者 systemd 服務。異常結束後等 60 秒重新啟動；15 分鐘內第三次異常結束就停止重試。
+
+桌面版啟用監督後，由常駐托盤在到期時處理，另有獨立工作每小時檢查一次。資料目錄未啟用系統匣監督時，每 5 分鐘檢查一次。
+
+Windows 的舊排程工作只有在定義符合訃告為目前安裝建立的版本時才會移轉。移轉前保留原始定義以供還原；已修改或停用的工作維持原樣。
+
 ## macOS 小視窗與選單列圖示
 
 從發行頁下載通用 DMG（`obituary_<版本>_darwin_universal.dmg`）和 `checksums.txt`，核對 SHA-256 之後開啟 DMG，把 Obituary.app 拖進「應用程式」，退出 DMG，再從「應用程式」裡開啟它。先拖出來再開，是因為登入啟動項目記的是 app 所在的位置，如果直接在 DMG 裡執行，退出 DMG 之後這個位置就不存在了。
 
-app 裡有小視窗、選單列圖示，以及配套的 `obit` 和 `obitd`。到期清理由另一個 launchd 使用者代理負責，每 5 分鐘執行一次，用 `obit daemon enable` 安裝，關掉視窗和選單列圖示不影響它。在小視窗的 Settings 裡開啟「Start the tray at sign-in」，會安裝訃告自己的使用者 LaunchAgent，讓選單列圖示隨登入出現；關閉它，只會移除這一項。
+app 裡有小視窗、選單列圖示，以及配套的 `obit` 和 `obitd`。在小視窗的 Settings 裡開啟「Start the tray at sign-in」，會安裝訃告自己的使用者 LaunchAgent，讓選單列圖示隨登入出現；關閉它，只會移除這一項。
+
+執行 `obit daemon enable` 安裝獨立的到期檢查工作。關閉視窗或選單列圖示不影響這項工作。
 
 移除 `Obituary.app` 不會刪除使用者資料。預設目錄為 `~/Library/Application Support/obituary/`：`store.json` 是帳本，`config.toml` 是設定，同一卷宗內下葬的檔案保留在 `graveyard/`。
 
@@ -101,6 +109,8 @@ grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt insta
 ![檔案總管的訃告右鍵選單：立即下葬、設定 1 天、7 天或 30 天的壽命，以及復活最近下葬的項目](/context-menu-zh.png)
 
 可一次選取多個檔案加入。通知會列出成功項目數、預定下葬時間及失敗項目數。Windows 11 的新選單不顯示這些項目；點「顯示其他選項」，或按住 Shift 再按右鍵。`obit init --dry-run` 可列出各選單項目及其指令；`obit doctor` 可檢查是否安裝正確。
+
+升級後，若檔案總管整套右鍵選單標籤使用另一種支援的語言，選單仍可正常使用。`obit doctor` 只會顯示資訊提示（JSON 為 `installation: label-language-mismatch`）。執行 `obit init --context-menu --yes` 即可換成目前的介面語言。
 
 macOS 和 Linux 目前沒有右鍵選單。請用 `obit mark <路径> 7d` 登記，或用 `obit bury <路径>` 立即下葬。
 

@@ -6,6 +6,8 @@
 obit init -g --guard-rm                 # Claude Code; add --agent codex for Codex. Off by default
 ```
 
+Защита от удаления распознаёт `docker volume rm`, `docker volume remove`, `docker volume prune`, `docker compose down -v` (или `--volumes`) и `docker system prune --volumes`. Замена на `obit bury --docker-volume` предлагается только для простой команды `docker volume rm` с явными именами.
+
 ## Реальный запуск
 
 При включённой защите хук получил Bash-вызов Claude Code, `rm -rf build`, и ответил следующим образом; `rm` не выполнялась:

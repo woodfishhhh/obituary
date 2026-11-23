@@ -68,6 +68,7 @@ func previewSchedule(out io.Writer, daemon, home, config string, enabled, reside
 	if installed {
 		action = cmdutil.Text("cli.daemon.update")
 	}
-	fmt.Fprintf(out, cmdutil.Text("cli.daemon.scheduled_task_every_minutes_and_at_sign"), cmdutil.Column(cmdutil.Localizer(), action), app.TaskName, int(app.Interval.Minutes()))
+	// A successful Windows enable installs the supervisor before the final fallback.
+	fmt.Fprintf(out, cmdutil.Text("cli.daemon.scheduled_task_every_minutes_and_at_sign"), cmdutil.Column(cmdutil.Localizer(), action), app.TaskName, int(app.FallbackInterval.Minutes()))
 	fmt.Fprintln(out, "    "+windows.ComposeCommandLine([]string{daemon, "--once", "--home", home, "--config-dir", config}))
 }

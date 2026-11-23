@@ -36,6 +36,8 @@ obit extend 12 1w        # keep it longer
 - **O Git é consultado outra vez antes do enterro.** Um item registrado por regra ou proposta não é enterrado se já estiver em um commit quando expirar.
 - **As propostas expiram sozinhas.** Itens confirmados ou excluídos são removidos; propostas vazias são retiradas, registradas no log de auditoria e não contam como rejeição.
 
+Volumes nunca são registrados automaticamente. O Obituary só trata os que você registra ou enterra explicitamente e não exclui imagens nem redes.
+
 ## Regras
 
 ```powershell

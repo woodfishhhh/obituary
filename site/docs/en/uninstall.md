@@ -15,7 +15,7 @@ If you installed with the script on Windows, one command is enough:
 
 ## What gets removed
 
-`obit uninstall` works on the user level and on the current Git project: the hooks, MCP and Skill of each agent, the scheduled job that runs every 5 minutes (Task Scheduler on Windows, a launchd user agent on macOS, a systemd user timer on Linux), the resident process and the tray, and folder policies (the files under a policy stay where they are). On Windows it also removes the login startup entry, the Explorer context menu and the date labels in Explorer.
+`obit uninstall` works on the user level and on the current Git project: the hooks, MCP and Skill of each agent, the scheduled job (Task Scheduler on Windows, a launchd user agent on macOS, a systemd user timer on Linux), the resident process and the tray, and folder policies (the files under a policy stay where they are). On Windows it also removes the login startup entry, the Explorer context menu and the date labels in Explorer.
 
 It touches only what Obituary itself wrote. An entry you edited, or one left by another installation, is kept as it is, and the plan says which one and why. Where there is no terminal (a script, an agent's command line) add `--yes`; without it the command stops and tells you it needs a terminal.
 

@@ -15,7 +15,7 @@ obit uninstall                # 列出計畫，確認後執行
 
 ## 會撤掉什麼
 
-`obit uninstall` 處理的是使用者層級和目前 Git 專案裡的東西：各家 agent 的 hook、MCP 和 Skill，每 5 分鐘執行一次的排程工作（Windows 的工作排程器、macOS 的 launchd 使用者代理、Linux 的 systemd 使用者計時器），常駐的背景程式和系統匣，以及資料夾策略（策略底下的檔案留在原處）。在 Windows 上還會撤掉登入時自動啟動的設定、檔案總管的右鍵選單和日期標籤。
+`obit uninstall` 處理的是使用者層級和目前 Git 專案裡的東西：各家 agent 的 hook、MCP 和 Skill，排程工作（Windows 的工作排程器、macOS 的 launchd 使用者代理、Linux 的 systemd 使用者計時器），常駐的背景程式和系統匣，以及資料夾策略（策略底下的檔案留在原處）。在 Windows 上還會撤掉登入時自動啟動的設定、檔案總管的右鍵選單和日期標籤。
 
 它只動訃告自己寫下的東西。你改過的項目，或是別的安裝留下的項目，會原樣保留，計畫裡會寫出保留了哪一項、為什麼。在沒有終端機的環境（腳本、agent 的命令列）要加上 `--yes`，否則它會提示需要終端機。
 

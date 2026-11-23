@@ -59,6 +59,8 @@ obit docker add web-1 3d
 obit docker list
 ```
 
+Con `obit mark --docker-volume cache 3d` (también `add`), `cache` se enterrará dentro de tres días. Para enterrarlo ahora, usa `obit bury --docker-volume -- cache`. [Contenedores y volúmenes de Docker](./docker)
+
 ## Integración y tareas en segundo plano
 
 ```powershell
@@ -73,6 +75,8 @@ obit daemon enable              # tray at login plus the fallback scheduled task
 obit daemon status
 obit daemon disable
 ```
+
+Con la supervisión de escritorio activada, el proceso de la bandeja atiende los vencimientos y una tarea independiente comprueba los pendientes cada hora. Sin supervisión de la bandeja para ese directorio de datos, la tarea se ejecuta cada cinco minutos.
 
 ## Consultas y comprobaciones
 
@@ -132,6 +136,7 @@ Uso: `obit add <path>... <duration> | add <path>... --at <time> [flags]`
 | Parámetro | Corto | Valor predeterminado | Descripción |
 | --- | --- | --- | --- |
 | `--at` | ninguno | `""` | Caducar en una hora local concreta: "2006-01-02 15:04", "2006-01-02" o "15:04" |
+| `--docker-volume` | ninguno | `false` | Interpretar los argumentos como nombres de volúmenes de Docker |
 | `--force` | ninguno | `false` | Permitir carpetas que contienen un repositorio .git |
 | `--help` | `-h` | `false` | Ayuda de add |
 | `--json` | ninguno | `false` | Imprimir JSON |
@@ -165,6 +170,7 @@ Uso: `obit bury <path>... [flags]`
 
 | Parámetro | Corto | Valor predeterminado | Descripción |
 | --- | --- | --- | --- |
+| `--docker-volume` | ninguno | `false` | Interpretar los argumentos como nombres de volúmenes de Docker |
 | `--force` | ninguno | `false` | Permitir carpetas que contienen un repositorio .git |
 | `--help` | `-h` | `false` | Ayuda de bury |
 | `--json` | ninguno | `false` | Imprimir JSON |
@@ -281,7 +287,7 @@ Uso: `obit daemon disable [flags]`
 
 ### `obit daemon enable`
 
-Activar el programador de usuario de 5 minutos (y, en Windows, la bandeja que se inicia con la sesión)
+Activar la tarea de usuario (cada hora con supervisión de la bandeja; cada 5 minutos sin ella) y, en Windows, la bandeja al iniciar sesión
 
 Uso: `obit daemon enable [flags]`
 

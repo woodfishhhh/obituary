@@ -52,7 +52,7 @@ func enableCmd(home func() (string, error), self cmdutil.Executable) *cobra.Comm
 	var resident, dryRun bool
 	cmd := &cobra.Command{
 		Use:   "enable",
-		Short: "Enable the 5-minute user scheduler (and the login tray on Windows)",
+		Short: "Enable the user scheduler (hourly with tray supervision, every 5 minutes otherwise) and the login tray on Windows",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			h, err := home()
@@ -78,7 +78,7 @@ func enable(home string, resident bool) error {
 		if err := app.InstallSchedule(home); err != nil {
 			return err
 		}
-		fmt.Printf(cmdutil.Text("cli.daemon.user_scheduler_enabled_checks_expiries_every_minutes"), int(app.Interval.Minutes()))
+		fmt.Printf(cmdutil.Text("cli.daemon.user_scheduler_enabled_checks_expiries_every_minutes"), int(app.ScheduleInterval(home).Minutes()))
 		return nil
 	}
 	if !resident {
@@ -98,9 +98,9 @@ func enable(home string, resident bool) error {
 	if resident {
 		fmt.Println(cmdutil.Text("cli.daemon.tray_daemon_running_it_also_starts_when"))
 	} else if runtime.GOOS != "windows" {
-		fmt.Printf(cmdutil.Text("cli.daemon.user_scheduler_enabled_checks_expiries_every_minutes"), int(app.Interval.Minutes()))
+		fmt.Printf(cmdutil.Text("cli.daemon.user_scheduler_enabled_checks_expiries_every_minutes"), int(app.ScheduleInterval(home).Minutes()))
 	} else {
-		fmt.Printf(cmdutil.Text("cli.daemon.tray_running_and_enabled_at_sign_in"), app.TaskName, int(app.Interval.Minutes()))
+		fmt.Printf(cmdutil.Text("cli.daemon.tray_running_and_enabled_at_sign_in"), app.TaskName, int(app.ScheduleInterval(home).Minutes()))
 	}
 	return nil
 }

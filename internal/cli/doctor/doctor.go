@@ -204,6 +204,7 @@ func (lang diagnostics) diagnose(now time.Time, executable cmdutil.Executable, a
 		}
 		checks = append(checks, lang.diagnoseExplorer(home))
 		checks = append(checks, lang.diagnoseRecovery(home))
+		checks = append(checks, lang.diagnoseVolumeRecovery(home, state)...)
 		check("trust", lang.Text("cli.doctor.trusted_rules_json_is_readable_absence_means", nil),
 			(rules.TrustStore{Path: filepath.Join(home, "trusted_rules.json")}).Inspect())
 		checks = append(checks, lang.diagnoseProjectRules(home)...)

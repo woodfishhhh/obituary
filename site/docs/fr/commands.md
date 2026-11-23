@@ -59,6 +59,8 @@ obit docker add web-1 3d
 obit docker list
 ```
 
+Avec `obit mark --docker-volume cache 3d` (ou `add`), le volume `cache` sera enterré dans trois jours. Pour l’enterrer maintenant, utilisez `obit bury --docker-volume -- cache`. [Conteneurs et volumes Docker](./docker)
+
 ## Intégration et tâches en arrière-plan
 
 ```powershell
@@ -73,6 +75,8 @@ obit daemon enable              # tray at login plus the fallback scheduled task
 obit daemon status
 obit daemon disable
 ```
+
+Avec la supervision du bureau activée, le processus résident traite les échéances à temps et une tâche indépendante vérifie les retards toutes les heures. Sans supervision de l’icône pour ce répertoire de données, la tâche s’exécute toutes les cinq minutes.
 
 ## Requêtes et vérifications
 
@@ -132,6 +136,7 @@ Usage: `obit add <path>... <duration> | add <path>... --at <time> [flags]`
 | Paramètre | Court | Valeur par défaut | Description |
 | --- | --- | --- | --- |
 | `--at` | aucun | `""` | Expirer à une heure locale donnée : "2006-01-02 15:04", "2006-01-02" ou "15:04" |
+| `--docker-volume` | aucun | `false` | Interpréter les arguments comme des noms de volumes Docker |
 | `--force` | aucun | `false` | Autoriser les dossiers qui contiennent un dépôt .git |
 | `--help` | `-h` | `false` | Aide pour add |
 | `--json` | aucun | `false` | Afficher le JSON |
@@ -165,6 +170,7 @@ Usage: `obit bury <path>... [flags]`
 
 | Paramètre | Court | Valeur par défaut | Description |
 | --- | --- | --- | --- |
+| `--docker-volume` | aucun | `false` | Interpréter les arguments comme des noms de volumes Docker |
 | `--force` | aucun | `false` | Autoriser les dossiers qui contiennent un dépôt .git |
 | `--help` | `-h` | `false` | Aide pour bury |
 | `--json` | aucun | `false` | Afficher le JSON |
@@ -281,7 +287,7 @@ Usage: `obit daemon disable [flags]`
 
 ### `obit daemon enable`
 
-Activer le planificateur utilisateur de 5 minutes (et, sous Windows, l’icône de la zone de notification lancée à l’ouverture de session)
+Activer la tâche utilisateur (toutes les heures si l’icône de notification est supervisée, sinon toutes les 5 minutes) et, sous Windows, l’icône à l’ouverture de session
 
 Usage: `obit daemon enable [flags]`
 

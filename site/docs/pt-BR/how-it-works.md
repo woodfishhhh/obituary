@@ -35,7 +35,11 @@ O arquivo de configuração é `%APPDATA%\obituary\config.toml`. `obit config` m
 
 ## Execução em segundo plano
 
-Por padrão, `obitd.exe` inicia no login, fica na bandeja e enterra os itens na hora prevista, com precisão de segundos. O ícone da bandeja é sua única interface. Como alternativa, uma tarefa agendada do Windows executa `obitd --once` a cada cinco minutos e em cada login. Assim, mesmo que a bandeja seja fechada ou nunca tenha sido iniciada, os itens vencidos são enterrados e os túmulos cujo período de retenção terminou são excluídos permanentemente. Os hooks também executam uma verificação no início e no fim da sessão. Para fazer isso agora, use `obit reap`.
+Com a supervisão de desktop ativa, a bandeja trata os vencimentos e uma tarefa independente verifica pendências a cada hora. Sem supervisão da bandeja para esse diretório de dados, a tarefa é executada a cada cinco minutos.
+
+O Windows usa uma tarefa no logon, o macOS usa um LaunchAgent do usuário e o Linux usa um serviço systemd do usuário na sessão gráfica. Depois de uma falha, o sistema aguarda 60 segundos para reiniciar; na terceira falha em 15 minutos, para de tentar.
+
+Os hooks também executam uma verificação no início e no fim da sessão.
 
 ```powershell
 obit daemon enable              # tray at login plus the fallback scheduled task (--dry-run lists what would be installed)

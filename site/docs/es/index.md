@@ -9,7 +9,7 @@ Windows 10 / 11, macOS y Linux (x64 y ARM64):
 | | Windows | macOS | Linux |
 |---|---|---|---|
 | Instalar con | Scoop, el script `install.ps1` (winget en revisión) | Homebrew, el script `install.sh` | el script `install.sh` |
-| Comprobar la caducidad cada 5 minutos | proceso residente de la bandeja, Programador de tareas como alternativa | agente launchd del usuario | temporizador `systemd --user`; crontab de usuario si no hay systemd |
+| Comprobación de caducidad | proceso residente de la bandeja, Programador de tareas como alternativa | agente launchd del usuario | temporizador `systemd --user`; crontab de usuario si no hay systemd |
 | CLI, cementerio y resurrección, registro automático (opcional), guardia de eliminación, integración con agentes (hooks, Skill, MCP), contenedores Docker, políticas de carpetas | sí | sí | sí |
 | Bandeja, ventana pequeña, menús contextuales, fechas de entierro en el Explorador, menú Inicio y accesos directos del escritorio | sí | en su lugar, la CLI: `obit list`, `obit graveyard`, `obit resurrect` | como en macOS |
 | Modo de papelera de reciclaje | sí | solo el cementerio | solo el cementerio |
@@ -88,7 +88,7 @@ Reinicia el agente después. Para otros agentes, el servidor MCP y Agent Skill, 
 
 En macOS / Linux, Claude Code usa `~/.claude`, Codex usa `~/.codex` y las Skills compartidas usan `~/.agents/skills`. También se respetan las anulaciones `CLAUDE_CONFIG_DIR` y `CODEX_HOME`.
 
-Activa el programador del usuario para comprobar los vencimientos cada 5 minutos:
+Con la supervisión de escritorio activada, el proceso de la bandeja atiende los vencimientos y una tarea independiente comprueba los pendientes cada hora. Sin supervisión de la bandeja para ese directorio de datos, la tarea se ejecuta cada cinco minutos.
 
 ```bash
 obit daemon enable --dry-run

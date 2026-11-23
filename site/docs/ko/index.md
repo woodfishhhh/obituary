@@ -9,7 +9,7 @@ Windows 10 / 11, macOS 및 Linux(x64 및 ARM64):
 | | Windows | macOS | Linux |
 |---|---|---|---|
 | 설치 방법 | Scoop, `install.ps1` 스크립트(winget은 검토 중) | Homebrew, `install.sh` 스크립트 | `install.sh` 스크립트 |
-| 5분마다 만료 확인 | 상주 트레이 프로세스, 작업 스케줄러를 대체 수단으로 사용 | 사용자 launchd 에이전트 | `systemd --user` 타이머, systemd가 없으면 사용자 crontab |
+| 만료 확인 | 상주 트레이 프로세스, 작업 스케줄러를 대체 수단으로 사용 | 사용자 launchd 에이전트 | `systemd --user` 타이머, systemd가 없으면 사용자 crontab |
 | CLI, 묘지와 부활, 자동 등록(선택 사항), 삭제 가드, 에이전트 연동(hook, Skill, MCP), Docker 컨테이너, 폴더 정책 | 지원 | 지원 | 지원 |
 | 트레이, 작은 창, 컨텍스트 메뉴, Explorer의 매장 날짜, 시작 메뉴와 바탕 화면 바로 가기 | 지원 | 대신 CLI 사용: `obit list`, `obit graveyard`, `obit resurrect` | macOS와 동일 |
 | 휴지통 모드 | 지원 | 묘지만 사용 | 묘지만 사용 |
@@ -88,7 +88,7 @@ obit init -g --agent codex   # Codex
 
 macOS / Linux에서 Claude Code는 `~/.claude`, Codex는 `~/.codex`, 공유 Skill은 `~/.agents/skills`를 사용합니다. `CLAUDE_CONFIG_DIR`와 `CODEX_HOME` 재정의도 적용됩니다.
 
-사용자 스케줄러를 활성화해 5분마다 만료를 확인하세요.
+데스크톱에서 감독 기능을 켜면 트레이 프로세스가 만료 시점에 처리하고 별도 작업이 한 시간마다 누락된 항목을 확인합니다. 이 데이터 디렉터리에 트레이 감독이 설정되지 않으면 5분마다 확인합니다.
 
 ```bash
 obit daemon enable --dry-run

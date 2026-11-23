@@ -4,6 +4,8 @@
 
 以下の各項目は、見えること、理由、対処、直ったかどうかの確かめ方、の順に書いています。
 
+更新後にエクスプローラーの右クリックメニュー全体が別の対応言語になっていても、メニューはそのまま使えます。`obit doctor` は情報として表示します（JSON では `installation: label-language-mismatch`）。`obit init --context-menu --yes` で現在の表示言語に合わせられます。
+
 ## ターミナルで `obit` が見つからない
 
 ターミナルに `command not found` と出る、あるいは PowerShell が `obit` を認識しない場合、プログラムはディスクにあるものの、そのフォルダーが PATH に入っていません。Windows のインストールスクリプトは `%LOCALAPPDATA%\Programs\obituary` をユーザーの PATH に追加しますが、すでに開いているターミナルには新しい PATH が反映されません。`install.sh` はプログラムを `~/.local/bin` に置き、PATH は一切変更しません。このフォルダーが最初から PATH に入っていないシステムもあります。Ubuntu の `.deb` は `/usr/libexec/obituary/` に置きますが、ここも PATH には入りません。
@@ -56,9 +58,9 @@ DMG の app には Developer ID の署名がなく、公証もされていない
 
 ## トレイがログイン時に起動しない（macOS、Ubuntu）
 
-ログインしても、メニューバーやトレイに Obituary のアイコンが出ません。ログイン時の起動は、起動エントリに頼っています。macOS ではユーザーの LaunchAgent `site.woodfish.obituary.tray`、Ubuntu では `~/.config/autostart/obituary.desktop` です。小窓の Settings のスイッチがオフだったり、app を移動したり、DMG の中から直接実行している間にオンにしたりすると、エントリに記録されたパスが古くなり、ログイン時に何も見つからなくなります。
+ログインしても、メニューバーやトレイに Obituary のアイコンが出ません。ログイン時の起動は、起動エントリに頼っています。macOS ではユーザーの LaunchAgent `site.woodfish.obituary.tray.supervised`、Ubuntu では `obituary-tray.service` です。小窓の Settings のスイッチがオフだったり、app を移動したり、DMG の中から直接実行している間にオンにしたりすると、エントリに記録されたパスが古くなり、ログイン時に何も見つからなくなります。
 
-小窓を開き、Settings で「Start the tray at sign-in」を一度オフにして、もう一度オンにしてください。Obituary がエントリを書き直します。macOS では `launchctl list | grep obituary` に `site.woodfish.obituary.tray` が表示されるはずです。Ubuntu では `ls ~/.config/autostart/obituary.desktop` でファイルが見つかり、次のログインでトレイが現れます。
+小窓を開き、Settings で「Start the tray at sign-in」を一度オフにして、もう一度オンにしてください。Obituary がエントリを書き直します。macOS では `launchctl list | grep obituary` に `site.woodfish.obituary.tray.supervised` が表示されるはずです。Ubuntu では `systemctl --user status obituary-tray.service`でサービスの状態を確認できます。
 
 ## Ubuntu: 小窓が開かない、またはトレイアイコンがない
 
@@ -73,7 +75,11 @@ sudo apt install libgtk-3-0t64 libwebkit2gtk-4.1-0 xdg-utils
 
 ## 期限が切れたものが埋葬されない
 
-ファイルの寿命はとっくに切れているのに元の場所にあり、`obit daemon status` の `runner:` の行が `off` になっています。期限の処理は、5 分ごとに動く定期ジョブが担当します。Windows ではタスク スケジューラの「Obituary Runner」、macOS では launchd のユーザーエージェント、Linux では systemd のユーザータイマー `obituary.timer` です。これがインストールされていない、オフになっている、別のデータディレクトリ向けに入っている、という状態では、時間が来ても誰も動きません。その場合、期限切れのものは、次の `obit sweep` かエージェントのフックが動くまで待たされます。
+`obit daemon status` でジョブを確認できます。期限切れの項目をすぐに処理するには `obit reap` を実行します。
+
+デスクトップ版で監視が有効な場合、トレイの常駐プロセスが期限に合わせて処理し、独立したジョブが1時間ごとに取りこぼしを確認します。そのデータディレクトリでトレイの監視が無効なら、ジョブは5分ごとに実行されます。
+
+`obit doctor` で監視元、最近の失敗回数、前回の終了理由を確認できます。再起動待ち、一時停止、意図した停止、監視設定の欠落、監視プロセスの終了を区別して表示します。
 
 `obit daemon enable` で定期ジョブをインストールしてください（Windows ではログイン時のトレイも入ります）。今すぐ片付けたい場合は `obit sweep` を実行します。systemd のユーザーサービスがない Linux（一部のコンテナーや最小構成のシステムなど）では `obit daemon enable` でインストールできないので、代わりに cron で 5 分ごとに `obitd --once --home <データディレクトリ> --config-dir <設定ディレクトリ>` を実行します。2 つのディレクトリは `obit config` で分かります。`obit daemon status` の `runner` の行が `off` でなくなれば直っています。Linux では `systemctl --user list-timers | grep obituary` でもタイマーを確認できます。
 
@@ -111,7 +117,11 @@ obit doctor --verbose      # 各エージェントの接続状況
 
 小窓で、コンテナーの提案の「Approve」がグレーアウトし、カードに「Docker is not running: start Docker to decide on this proposal.」と出ています。コンテナーを登録するには、Docker にそのフル ID と作成時刻を問い合わせる必要があり、Docker が止まっているとそれができません。Docker Desktop か Docker Engine を起動してから、もう一度承認してください。「Approve」がクリックでき、`obit docker list` にそのコンテナーが表示されれば、成功です。
 
-コンテナーの期限が切れると、Obituary はそれを停止して書き込み可能レイヤーを残すだけで、復活すると再び起動します。停止したコンテナーが削除されるのは、保持期間が過ぎてからです。イメージ、ボリューム、ネットワークには一切触れません。
+コンテナーの期限が切れると、Obituary はそれを停止して書き込み可能レイヤーを残すだけで、復活すると再び起動します。停止したコンテナーが削除されるのは、保持期間が過ぎてからです。
+
+## Docker ボリュームの埋葬を確認できない
+
+削除の前後に Docker のイベントを照合します。削除を確認できなければ、検証済みのアーカイブを残して `obit doctor` を確認してください。埋葬が済んだとはみなせません。 `docker-volume-recovery` の警告は要確認の記録ごとに表示されます。指示に従い、元の Docker デーモンでボリュームを確認してください。未記帳のアーカイブは `obit resurrect` や `obit purge` では扱えません。 [Docker コンテナーとボリューム](./docker)
 
 ## 更新に失敗する、または中国本土でのダウンロードが遅い
 

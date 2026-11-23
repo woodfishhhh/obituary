@@ -196,7 +196,7 @@ export const fr: Strings = {
       linux: "Le script d’installation télécharge l’archive depuis la version GitHub et vérifie son SHA-256 avant de la décompresser.",
     } as Record<Os, string>,
     daemonHead: "Activer la vérification en arrière-plan",
-    daemonLine: "Vérifie toutes les 5 minutes les fichiers expirés : launchd sur macOS, systemd --user sur Linux (sans systemd, un crontab utilisateur lance obitd --once toutes les 5 minutes). Ajoutez d’abord --dry-run pour voir ce qui sera installé.",
+    daemonLine: "Avec la supervision du bureau activée, le processus résident traite les échéances à temps et une tâche indépendante vérifie les retards toutes les heures. Sans icône de zone de notification, les éditions en ligne de commande gardent une vérification toutes les cinq minutes. Ajoutez d’abord --dry-run pour voir ce qui sera installé.",
     then: "Connectez ensuite vos agents",
     init: [
       { label: "Claude Code", code: "obit init -g" },

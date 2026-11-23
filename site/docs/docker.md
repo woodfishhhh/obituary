@@ -1,4 +1,4 @@
-# Docker 容器
+# Docker 容器和卷
 
 agent 会话里起的容器，也可以有寿命。
 
@@ -8,9 +8,21 @@ obit docker list               # 登记了哪些容器（--json 可用）
 obit resurrect <编号>          # 到期被停下的容器重新启动
 ```
 
-## 只管容器
+## 给卷设寿命，或立即下葬
 
-讣告只管容器。卷里是数据，删卷就是永久删除，所以卷、镜像和网络一律不碰。
+卷不会自动登记。讣告只处理你明确登记或下葬的卷，不删除镜像和网络。
+
+运行 `obit mark --docker-volume cache 3d`（也可用 `add`）让 `cache` 三天后下葬；要立即下葬，运行 `obit bury --docker-volume -- cache`。
+
+Docker 必须使用 Linux 容器模式。只支持本地作用域、使用 `local` 驱动且没有额外选项的卷。首次使用时，如果本地还没有辅助镜像，Docker 会拉取固定版本的 Debian 镜像。
+
+请给墓地留够存放完整归档的空间。讣告先归档、校验，再删卷；归档失败就不删。只要还有容器引用这个卷（即使容器已停止），或卷路径与 bind 挂载路径重叠，讣告就不会动它。
+
+`obit resurrect <编号>` 按原名重建卷，重建的卷会永久带有 `io.obituary.restore` 标签。原名已被占用时，即使同名卷是空的也不会覆盖。
+
+讣告在删除前后核对 Docker 事件。如果无法确认卷已删除，请保留已校验的归档，查看 `obit doctor` 的诊断，不要当作下葬成功。 `docker-volume-recovery` 的每条 WARN 对应一个待核实条目。按提示在原 Docker 守护进程上检查卷；未提交的归档不能用 `obit resurrect` 或 `obit purge` 处理。
+
+删除护栏能识别 `docker volume rm`、`docker volume remove`、`docker volume prune`、`docker compose down -v`（或 `--volumes`）和 `docker system prune --volumes`。只有直接用 `docker volume rm` 指定卷名时，才建议改用 `obit bury --docker-volume`；不会猜测批量清理会删哪些卷。
 
 ## 到期 = 停下
 

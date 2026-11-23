@@ -25,6 +25,7 @@ type VolumeClient interface {
 }
 
 var ErrVolumeReferenced = errors.New("docker volume is referenced by a container")
+var ErrVolumeEvents = errors.New("volume removal event evidence incomplete")
 
 func (c CLI) ListVolumeReferences(ctx context.Context, want Volume) ([]Container, error) {
 	bound, err := c.bind(WithTarget(ctx, &want.Target))
@@ -138,9 +139,12 @@ func (c CLI) RemoveVolume(ctx context.Context, want *Volume) error {
 	}
 	rows, eventErr := bound.VolumeEvents(ctx, want.Name, want.EventStarted, time.Now().UTC())
 	if eventErr != nil {
-		return eventErr
+		return errors.Join(ErrVolumeEvents, eventErr)
 	}
-	return CheckVolumeEvents(rows, want.Name, "", true)
+	if err := CheckVolumeEvents(rows, want.Name, "", true); err != nil {
+		return errors.Join(ErrVolumeEvents, err)
+	}
+	return nil
 }
 
 func (c CLI) ReleaseVolumeHolder(ctx context.Context, want *Volume) error {

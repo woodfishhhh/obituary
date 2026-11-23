@@ -1,4 +1,4 @@
-# Docker containers
+# Docker containers and volumes
 
 Containers started in an agent session can have a lifespan too.
 
@@ -8,9 +8,21 @@ obit docker list               # registered containers (--json works too)
 obit resurrect <id>            # start a container that was stopped at expiry
 ```
 
-## Containers only
+## Give a volume a lifespan or bury it now
 
-Obituary manages containers only. Volumes hold data and removing one is permanent, so volumes, images and networks are never touched.
+Volumes are never registered automatically. Obituary only handles a volume you explicitly mark or bury; it does not remove images or networks.
+
+Use `obit mark --docker-volume cache 3d` (`add` is an alias) to bury `cache` in three days, or `obit bury --docker-volume -- cache` to bury it now.
+
+Docker must be in Linux container mode. Only local volumes using the `local` driver without extra options are supported. On first use, Docker pulls a pinned Debian helper image if it is not already available.
+
+Leave room in the graveyard for a full archive. Obituary checks the archive before removing the volume; if archiving fails, the volume stays. A volume referenced even by a stopped container, or whose path overlaps a bind mount, is left alone.
+
+`obit resurrect <id>` recreates the volume under its original name with a permanent `io.obituary.restore` label. If that name already exists, even on an empty volume, nothing is overwritten.
+
+Docker events are checked before and after removal. If deletion cannot be confirmed, keep the verified archive and check `obit doctor`; do not assume the volume was buried successfully. Each `docker-volume-recovery` warning identifies one entry to check. Inspect the volume on the original Docker daemon as directed. Neither `obit resurrect` nor `obit purge` accepts an uncommitted archive.
+
+The delete guard recognizes `docker volume rm`, `docker volume remove`, `docker volume prune`, `docker compose down -v` (or `--volumes`) and `docker system prune --volumes`. It suggests `obit bury --docker-volume` only for a plain `docker volume rm` with explicit names; it does not guess what a prune would remove.
 
 ## Expiry means stopping
 

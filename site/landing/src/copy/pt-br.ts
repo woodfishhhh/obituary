@@ -196,7 +196,7 @@ export const ptBR: Strings = {
       linux: "O script de instalação baixa o arquivo da versão do GitHub e confere o SHA-256 antes de descompactar.",
     } as Record<Os, string>,
     daemonHead: "Ligar a verificação em segundo plano",
-    daemonLine: "Verifica a cada 5 minutos se há arquivos expirados: launchd no macOS, systemd --user no Linux (sem systemd, um crontab do usuário roda obitd --once a cada 5 minutos). Adicione --dry-run antes para ver o que será instalado.",
+    daemonLine: "Com a supervisão de desktop ativa, a bandeja trata os vencimentos e uma tarefa independente verifica pendências a cada hora. Edições sem bandeja continuam verificando a cada cinco minutos. Adicione --dry-run antes para ver o que será instalado.",
     then: "Depois, conecte seus agentes",
     init: [
       { label: "Claude Code", code: "obit init -g" },

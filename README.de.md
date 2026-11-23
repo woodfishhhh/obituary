@@ -61,7 +61,8 @@ Obituary entstand, weil Agenten uns dazu gedrängt haben. Sobald Version 0.0.1 l
 - **Wie Everything im Windows-Infobereich.** `obit init` startet beim Anmelden ein Tray-Symbol. Das Menü zeigt letzte Begräbnisse, erlaubt die Wiederbelebung, pausiert die automatische Bereinigung und öffnet das kleine Obituary-Fenster. Eine geplante Windows-Aufgabe bleibt als Fallback.
 - **Ein kleines Fenster (Windows / Ubuntu 24.04 amd64).** Expiring, Graveyard, For you, Settings und Logs ermöglichen Wiederbelebung, Vorschlagsfreigaben und Einstellungen ohne Kommandozeile(`obit-gui.exe` oder „Open Obituary“ im Tray). Chinesisch und Englisch, acht Oberflächen. Unter Ubuntu lässt sich Obituary über das Anwendungsmenü öffnen.
 - **Kontextmenü und Daten im Explorer (Windows).** Rechtsklick → „Add to Obituary“ → 1, 7 oder 30 Tage oder „Bury now (recoverable)“. Unter Windows 11 liegt es unter „Show more options“. Verfolgte Elemente in Downloads und Desktop erscheinen als „name (11-13 burial)“, der echte Dateiname bleibt gleich.
-- **Docker-Container.** `obit docker add <container> 3d` gibt einem Container eine Lebensdauer. Bei Ablauf stoppt `docker stop` ihn(`obit resurrect` startet ihn wieder), und erst nach der Aufbewahrung entfernt `docker rm` ihn. Volumes und Images werden nie angefasst. Bei automatischer Registrierung werden auch Container registriert, die eine Agent-Sitzung für das Projekt startet.
+- **Docker-Container.** `obit docker add <container> 3d` gibt einem Container eine Lebensdauer. Bei Ablauf stoppt `docker stop` ihn(`obit resurrect` startet ihn wieder), und erst nach der Aufbewahrung entfernt `docker rm` ihn. Bei automatischer Registrierung werden auch Container registriert, die eine Agent-Sitzung für das Projekt startet.
+- Mit `obit mark --docker-volume cache 3d` (auch `add`) wird `cache` in drei Tagen begraben, mit `obit bury --docker-volume -- cache` sofort. Volumes werden nie automatisch registriert. Obituary verarbeitet nur ausdrücklich registrierte oder begrabene Volumes und löscht weder Images noch Netzwerke.
 - **Ordner-Richtlinien.** `obit watch Downloads 2w` begräbt jede dort eintreffende Datei zwei Wochen später. Ein abgelaufener Unterordner erzeugt nur einen Vorschlag und wird nach deiner Zustimmung begraben; die Richtlinie selbst braucht ebenfalls deine Zustimmung.
 
 ## Installation
@@ -86,10 +87,12 @@ Die Plattformen im Überblick:
 | | Windows | macOS | Linux |
 |---|---|---|---|
 | Installation | Scoop, das `install.ps1`-Skript(winget wird geprüft) | Homebrew, das `install.sh`-Skript | das `install.sh`-Skript |
-| Ablaufprüfung alle 5 Minuten | residenter Tray-Prozess, Aufgabenplanung als Fallback | Benutzer-agent von launchd | `systemd --user`-Timer; Benutzer-crontab ohne systemd |
+| Ablaufprüfung | residenter Tray-Prozess, Aufgabenplanung als Fallback | Benutzer-agent von launchd | `systemd --user`-Timer; Benutzer-crontab ohne systemd |
 | CLI, Friedhof und Wiederbelebung, optionale automatische Registrierung, Löschschutz, Agent-Integration(Hooks, Skill, MCP), Docker-Container, Ordner-Richtlinien | ja | ja | ja |
 | Tray, kleines Fenster, Kontextmenüs, Begräbnisdaten im Explorer, Startmenü- und Desktop-Verknüpfungen | ja | Kleines Fenster und Menüsymbol unter macOS per universellem DMG; noch kein Kontextmenü | Fenster und Tray unter Ubuntu 24.04 amd64 (deb) |
 | Papierkorbmodus | ja | nur Friedhof | nur Friedhof |
+
+Bei aktiver Desktop-Überwachung verarbeitet der Tray-Prozess fällige Einträge sofort; ein unabhängiger Auftrag prüft stündlich nach. Ausgaben ohne Tray prüfen weiterhin alle fünf Minuten.
 
 Manuelle Installation, Aktualisierung und Deinstallation stehen im [Installationsleitfaden](docs/install.en.md).
 

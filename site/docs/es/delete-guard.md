@@ -6,6 +6,8 @@ Borrar el directorio personal o una unidad completa ya no es una hipótesis. Con
 obit init -g --guard-rm                 # Claude Code; add --agent codex for Codex. Off by default
 ```
 
+La protección contra borrados reconoce `docker volume rm`, `docker volume remove`, `docker volume prune`, `docker compose down -v` (o `--volumes`) y `docker system prune --volumes`. Solo sugiere `obit bury --docker-volume` para un `docker volume rm` sencillo con nombres explícitos.
+
 ## Una ejecución real
 
 Con la guardia activa, el hook recibió una llamada Bash de Claude Code, `rm -rf build`, y respondió así; `rm` nunca se ejecutó:

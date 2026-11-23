@@ -9,7 +9,7 @@
 | | Windows | macOS | Linux |
 |---|---|---|---|
 | 怎么装 | Scoop、安装脚本 `install.ps1`（winget 审核中） | Homebrew、安装脚本 `install.sh` | 安装脚本 `install.sh` |
-| 每 5 分钟检查到期 | 托盘常驻进程，任务计划程序兜底 | launchd 用户代理 | `systemd --user` 定时器；没有 systemd 时用用户 crontab |
+| 到期检查 | 托盘常驻进程，任务计划程序兜底 | launchd 用户代理 | `systemd --user` 定时器；没有 systemd 时用用户 crontab |
 | 命令行、墓地与复活、自动登记（可选）、删除护栏、agent 集成（hook、Skill、MCP）、Docker 容器、文件夹策略 | 有 | 有 | 有 |
 | 托盘、小窗口、右键菜单、资源管理器里的下葬日期、开始菜单和桌面快捷方式 | 有 | 用命令行代替：`obit list`、`obit graveyard`、`obit resurrect` | Ubuntu 24.04 amd64：[小窗口和托盘](./desktop) |
 | 回收站模式 | 有 | 只用墓地 | 只用墓地 |
@@ -87,7 +87,7 @@ obit init -g --agent codex   # Codex
 
 macOS / Linux 的 agent 配置沿用各自目录：Claude Code 是 `~/.claude`，Codex 是 `~/.codex`，共享 Skill 是 `~/.agents/skills`；也支持 `CLAUDE_CONFIG_DIR` 和 `CODEX_HOME` 指定的目录。
 
-启用每 5 分钟检查到期文件的用户级运行器：
+桌面版启用监督后，托盘常驻进程在到期时处理，另有独立任务每小时兜底一次。未启用托盘监督的数据目录每 5 分钟检查一次。
 
 ```bash
 obit daemon enable --dry-run

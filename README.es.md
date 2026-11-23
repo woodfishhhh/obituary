@@ -61,7 +61,8 @@ Los agentes nos llevaron a escribirlo. En cuanto la versión 0.0.1 funcionó, la
 - **Vive en la bandeja, como Everything (Windows).** `obit init` inicia un icono en la bandeja al entrar. Su menú muestra entierros recientes, permite resucitarlos, pausar la limpieza automática y abrir la ventana pequeña de Obituary. El Programador de tareas de Windows queda como respaldo.
 - **Una ventana pequeña (Windows / Ubuntu 24.04 amd64).** Expiring, Graveyard, For you, Settings y Logs permiten resucitar archivos, aprobar propuestas y cambiar ajustes sin la línea de comandos(`obit-gui.exe` o “Open Obituary” en la bandeja). Incluye chino y español, con ocho aspectos. En Ubuntu, abre Obituary desde Aplicaciones.
 - **Menú contextual y fechas en el Explorador (Windows).** Haz clic derecho en archivos o carpetas → “Add to Obituary” → 1, 7 o 30 días, o “Bury now (recoverable)”. En Windows 11 está en “Show more options”. Los elementos seguidos en Downloads y Desktop aparecen como “name (11-13 burial)” y el nombre real no cambia.
-- **Contenedores Docker.** `obit docker add <container> 3d` da una vida útil al contenedor; al caducar se detiene con `docker stop`(`obit resurrect` lo inicia de nuevo) y solo se elimina con `docker rm` después de la retención. Los volúmenes e imágenes nunca se tocan. Con el registro automático, también se registran los contenedores que una sesión del agente inicia para el proyecto.
+- **Contenedores Docker.** `obit docker add <container> 3d` da una vida útil al contenedor; al caducar se detiene con `docker stop`(`obit resurrect` lo inicia de nuevo) y solo se elimina con `docker rm` después de la retención. Con el registro automático, también se registran los contenedores que una sesión del agente inicia para el proyecto.
+- Con `obit mark --docker-volume cache 3d` (también `add`), `cache` se enterrará dentro de tres días. Para enterrarlo ahora, usa `obit bury --docker-volume -- cache`. Los volúmenes nunca se registran automáticamente. Obituary solo trata los que registres o entierres expresamente y no elimina imágenes ni redes.
 - **Políticas de carpetas.** `obit watch Downloads 2w` entierra cada archivo que llega allí dos semanas después. Una subcarpeta caducada solo crea una propuesta y se entierra cuando la apruebas; la política también necesita tu aprobación.
 
 ## Instalación
@@ -86,10 +87,12 @@ Cada plataforma de un vistazo:
 | | Windows | macOS | Linux |
 |---|---|---|---|
 | Instalación | Scoop, el script `install.ps1`(winget en revisión) | Homebrew, el script `install.sh` | el script `install.sh` |
-| Comprueba la caducidad cada 5 minutos | proceso residente en la bandeja, Programador de tareas como respaldo | agente launchd de usuario | temporizador `systemd --user`; crontab de usuario sin systemd |
+| Comprobación de caducidad | proceso residente en la bandeja, Programador de tareas como respaldo | agente launchd de usuario | temporizador `systemd --user`; crontab de usuario sin systemd |
 | CLI, cementerio y resurrección, registro automático opcional, guardia de eliminación, integración con agentes(hooks, Skill, MCP), contenedores Docker, políticas de carpetas | sí | sí | sí |
 | Bandeja, ventana pequeña, menús contextuales, fechas de entierro en el Explorador, accesos del menú Inicio y del escritorio | sí | Ventana y bandeja en macOS mediante DMG universal; todavía sin menú contextual | Ventana y bandeja en Ubuntu 24.04 amd64 (deb) |
 | Modo Papelera de reciclaje | sí | solo cementerio | solo cementerio |
+
+Con la supervisión de escritorio activada, el proceso de la bandeja atiende los vencimientos y una tarea independiente comprueba los pendientes cada hora. Las ediciones sin bandeja mantienen el intervalo de cinco minutos.
 
 Para instalar manualmente, actualizar y desinstalar, consulta la [guía de instalación](docs/install.en.md).
 

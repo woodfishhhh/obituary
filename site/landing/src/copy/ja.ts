@@ -191,7 +191,7 @@ export const ja: Strings = {
       linux: "インストールスクリプトは GitHub リリースのアーカイブを取得し、展開前に SHA-256 を確認します。",
     } as Record<Os, string>,
     daemonHead: "バックグラウンドの確認をオンにする",
-    daemonLine: "5 分ごとに期限切れのファイルを確認します。macOS は launchd、Linux は systemd --user を使います（systemd がなければ、ユーザーの crontab で 5 分ごとに obitd --once を実行）。先に --dry-run で何がインストールされるか確認できます。",
+    daemonLine: "デスクトップ版で監視が有効な場合、トレイの常駐プロセスが期限に合わせて処理し、独立したジョブが1時間ごとに取りこぼしを確認します。トレイのない版では従来どおり5分間隔です。先に --dry-run で何がインストールされるか確認できます。",
     then: "続けてエージェントにつなぐ",
     init: [
       { label: "Claude Code", code: "obit init -g" },

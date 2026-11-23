@@ -35,7 +35,11 @@ retention_days = 7      # days the graveyard keeps things
 
 ## バックグラウンド処理
 
-既定では `obitd.exe` はログイン時に起動してトレイに常駐し、秒単位で期限どおりに埋葬します。インターフェースはトレイアイコンだけです。予備として Windows のスケジュールされたタスクも 5 分ごととログイン時に `obitd --once` を実行します。トレイを閉じた場合や一度も起動していない場合でも、期限切れの項目は埋葬し、保持期間が過ぎた墓は永久削除します。セッションの開始時と終了時にもエージェントのフックが処理を一巡させます。今すぐ行うには `obit reap` を実行します。
+デスクトップ版で監視が有効な場合、トレイの常駐プロセスが期限に合わせて処理し、独立したジョブが1時間ごとに取りこぼしを確認します。そのデータディレクトリでトレイの監視が無効なら、ジョブは5分ごとに実行されます。
+
+Windows はログオン時のスケジュールタスク、macOS はユーザーの LaunchAgent、Linux はグラフィカルセッションの systemd ユーザーサービスでトレイを監視します。異常終了後は60秒待って再起動し、15分以内に3回異常終了すると再試行を止めます。
+
+`obit daemon status` でジョブを確認できます。期限切れの項目をすぐに処理するには `obit reap` を実行します。
 
 ```powershell
 obit daemon enable              # tray at login plus the fallback scheduled task (--dry-run lists what would be installed)

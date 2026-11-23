@@ -6,6 +6,8 @@
 obit init -g --guard-rm                 # Claude Code; add --agent codex for Codex. Off by default
 ```
 
+삭제 가드는 `docker volume rm`, `docker volume remove`, `docker volume prune`, `docker compose down -v`(또는 `--volumes`), `docker system prune --volumes`를 인식합니다. 단순한 `docker volume rm` 명령에 볼륨 이름이 명시된 경우에만 `obit bury --docker-volume`를 제안합니다.
+
 ## 실제 실행 예
 
 삭제 가드를 켜면 훅이 Claude Code의 Bash 호출 `rm -rf build`을 받아 다음과 같이 응답합니다. `rm`은 실행되지 않습니다.

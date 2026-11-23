@@ -9,10 +9,12 @@
 | | Windows | macOS | Linux |
 |---|---|---|---|
 | 怎么装 | Scoop、安装脚本 `install.ps1`（winget 审核中） | Homebrew、安装脚本 `install.sh` | 安装脚本 `install.sh` |
-| 每 5 分钟检查到期 | 托盘常驻进程，任务计划程序兜底 | launchd 用户代理 | `systemd --user` 定时器；没有 systemd 时用用户 crontab |
+| 到期检查 | 托盘常驻进程，任务计划程序兜底 | launchd 用户代理 | `systemd --user` 定时器；没有 systemd 时用用户 crontab |
 | 命令行、墓地与复活、自动登记（可选）、删除护栏、agent 集成（hook、Skill、MCP）、Docker 容器、文件夹策略 | 有 | 有 | 有 |
 | 托盘、小窗口、右键菜单、资源管理器里的下葬日期、开始菜单和桌面快捷方式 | 有 | 用命令行代替：`obit list`、`obit graveyard`、`obit resurrect` | 同 macOS |
 | 回收站模式 | 有 | 只用墓地 | 只用墓地 |
+
+桌面版启用监督后，托盘常驻进程在到期时处理，另有独立任务每小时兜底一次。无托盘版本仍每 5 分钟检查一次。
 
 ## 1. 装程序
 
@@ -72,7 +74,7 @@ obit init -g --agent claude --guard-rm --yes   # 同时打开删除护栏：rm -
 
 macOS / Linux 上使用相同的 `obit init` 命令。Claude Code 的目录是 `~/.claude`，Codex 是 `~/.codex`，共享 Skill 是 `~/.agents/skills`；`CLAUDE_CONFIG_DIR` / `CODEX_HOME` 可覆盖配置位置。
 
-运行 `obit daemon enable --dry-run` 查看后台计划，再用 `obit daemon enable` 启用每 5 分钟检查：macOS 用用户级 launchd，Linux 用 `systemd --user`。没有 systemd 时，可在用户 crontab 中每 5 分钟运行一次绝对路径的 `obitd --once --home <数据目录> --config-dir <配置目录>`。agent hook 也会按需触发后台检查。
+运行 `obit daemon enable --dry-run` 查看后台计划，再用 `obit daemon enable` 启用到期检查：macOS 用用户级 launchd，Linux 用 `systemd --user`。没有 systemd 时，可在用户 crontab 中每 5 分钟运行一次绝对路径的 `obitd --once --home <数据目录> --config-dir <配置目录>`。agent hook 也会按需触发后台检查。
 
 ## 3. 体检
 

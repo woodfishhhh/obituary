@@ -16,9 +16,10 @@ import (
 type burialManifest struct {
 	Version int `json:"version"`
 	Burial
-	Resurrect  *restoreIntent `json:"resurrect,omitempty"`
-	WatchCheck *WatchSnapshot `json:"watchCheck,omitempty"`
-	WatchError string         `json:"watchError,omitempty"`
+	Resurrect   *restoreIntent `json:"resurrect,omitempty"`
+	WatchCheck  *WatchSnapshot `json:"watchCheck,omitempty"`
+	WatchError  string         `json:"watchError,omitempty"`
+	VolumePhase string         `json:"volumePhase,omitempty"`
 }
 
 const manifestBytes = 1 << 20

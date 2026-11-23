@@ -4,6 +4,8 @@
 
 下面每一条按同样的顺序写：你会看到什么，为什么，怎么办，怎么确认已经好了。
 
+如果升级后资源管理器的整套右键菜单标签用了另一种受支持的语言，菜单仍能正常使用。`obit doctor` 只给信息提示（JSON 中为 `installation: label-language-mismatch`）。运行 `obit init --context-menu --yes` 可把标签换成当前界面语言。
+
 ## 终端里找不到 `obit`
 
 终端提示 `command not found`，PowerShell 说无法识别 `obit`，原因是程序在磁盘上，但它所在的文件夹不在 PATH 里。Windows 的安装脚本会把 `%LOCALAPPDATA%\Programs\obituary` 加进用户 PATH，不过已经打开的终端读不到新的 PATH。`install.sh` 把程序放进 `~/.local/bin`，从来不改 PATH，有的系统默认也没有这个文件夹。Ubuntu 的 `.deb` 把程序放在 `/usr/libexec/obituary/`，同样不在 PATH 里。
@@ -56,9 +58,9 @@ DMG 里的 app 没有 Developer ID 签名，也没有公证，所以第一次打
 
 ## 托盘没有随登录启动（macOS、Ubuntu）
 
-登录之后菜单栏或托盘里没有讣告的图标。随登录启动靠一个自启项：macOS 上是用户 LaunchAgent `site.woodfish.obituary.tray`，Ubuntu 上是 `~/.config/autostart/obituary.desktop`。小窗口设置里的开关没开，或者 app 挪过位置、是在 DMG 里直接运行时开的，自启项里记的路径就失效了，登录时找不到程序。
+登录之后菜单栏或托盘里没有讣告的图标。随登录启动靠一个自启项：macOS 上是用户 LaunchAgent `site.woodfish.obituary.tray.supervised`，Ubuntu 上是 `obituary-tray.service`。小窗口设置里的开关没开，或者 app 挪过位置、是在 DMG 里直接运行时开的，自启项里记的路径就失效了，登录时找不到程序。
 
-打开小窗口，在设置里把「开机启动托盘」关掉再打开，让讣告重写这一项。macOS 上运行 `launchctl list | grep obituary`，能看到 `site.woodfish.obituary.tray`；Ubuntu 上 `ls ~/.config/autostart/obituary.desktop` 能找到文件，下次登录托盘就会出现。
+打开小窗口，在设置里把「开机启动托盘」关掉再打开，让讣告重写这一项。macOS 上运行 `launchctl list | grep obituary`，能看到 `site.woodfish.obituary.tray.supervised`；Ubuntu 上 `systemctl --user status obituary-tray.service` 可查看服务状态。
 
 ## Ubuntu：小窗口打不开，或没有托盘图标
 
@@ -73,7 +75,11 @@ sudo apt install libgtk-3-0t64 libwebkit2gtk-4.1-0 xdg-utils
 
 ## 到期的东西没有被下葬
 
-文件寿命早到了，却还在原处，`obit daemon status` 里「运行方式」一行写着「未开启」。到期清理靠一个每 5 分钟运行一次的定时任务：Windows 是任务计划里的「Obituary Runner」，macOS 是 launchd 用户代理，Linux 是 systemd 用户定时器 `obituary.timer`。它没装、被关了，或者装给了另一个数据目录，时间到了就没人动手；这时到期的东西要等到下一次 `obit sweep`，或者 agent 的 hook 触发，才会被处理。
+运行 `obit daemon status` 查看定时任务。要立即处理已到期的条目，运行 `obit reap`。
+
+桌面版启用监督后，托盘常驻进程在到期时处理，另有独立任务每小时兜底一次。未启用托盘监督的数据目录每 5 分钟检查一次。
+
+`obit doctor` 会列出谁在看管托盘、近期失败次数和上次退出原因，并区分等待重启、已暂停、主动停止，以及监督入口缺失或监督进程已退出。
 
 运行 `obit daemon enable` 装上定时任务（Windows 上同时装登录托盘）；眼前就要清理，运行 `obit sweep`。Linux 上如果没有 systemd 用户服务（有些容器和精简系统是这样），`obit daemon enable` 装不上，就改用 cron，每 5 分钟运行一次 `obitd --once --home <数据目录> --config-dir <配置目录>`，这两个目录 `obit config` 都会告诉你。`obit daemon status` 里 `runner` 不再是 `off`，就是好了；Linux 上还可以用 `systemctl --user list-timers | grep obituary` 看到它。
 
@@ -111,7 +117,11 @@ obit doctor --verbose      # 每个 agent 的接入情况
 
 小窗口里容器提议的「批准」点不了，卡片上写着「Docker 没有运行：先启动 Docker，才能处理这条提议」。登记容器要向 Docker 确认它完整的 ID 和创建时间，Docker 没运行就确认不了。启动 Docker Desktop 或 Docker Engine，再批准；「批准」可以点了，`obit docker list` 里列出这个容器，就是好了。
 
-容器到期时讣告只是把它停掉，可写层留着，复活时重新启动；保留期过后才删除已停止的容器。镜像、卷和网络从来不动。
+容器到期时讣告只是把它停掉，可写层留着，复活时重新启动；保留期过后才删除已停止的容器。
+
+## 无法确认 Docker 卷已下葬
+
+讣告在删除前后核对 Docker 事件。如果无法确认卷已删除，请保留已校验的归档，查看 `obit doctor` 的诊断，不要当作下葬成功。 `docker-volume-recovery` 的每条 WARN 对应一个待核实条目。按提示在原 Docker 守护进程上检查卷；未提交的归档不能用 `obit resurrect` 或 `obit purge` 处理。 [Docker 容器和卷](./docker)
 
 ## 更新失败，或国内下载很慢
 

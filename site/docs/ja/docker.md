@@ -1,4 +1,4 @@
-# Docker コンテナ
+# Docker コンテナーとボリューム
 
 エージェントのセッション中に起動したコンテナにも寿命を設定できます。
 
@@ -8,9 +8,21 @@ obit docker list               # registered containers (--json works too)
 obit resurrect <id>            # start a container that was stopped at expiry
 ```
 
-## 対象はコンテナのみ
+## ボリュームに寿命を設定する・すぐに埋葬する
 
-Obituary が管理するのはコンテナだけです。データを保存するボリュームを削除すると元に戻せないため、ボリューム、イメージ、ネットワークには一切手を加えません。
+ボリュームは自動登録されません。明示的に登録または埋葬したものだけが対象です。イメージやネットワークは削除しません。
+
+`obit mark --docker-volume cache 3d`（`add` も可）で `cache` を3日後に埋葬できます。すぐに埋葬するには `obit bury --docker-volume -- cache` を実行します。
+
+Docker は Linux コンテナーモードで使ってください。対象は追加オプションのない `local` ドライバーのローカルボリュームだけです。初回は補助イメージが手元になければ、固定バージョンの Debian イメージを取得します。
+
+墓地には完全なアーカイブを保存できる空き容量が必要です。アーカイブを作成して検証できた場合にのみボリュームを削除します。停止中も含めてコンテナーから参照されている場合や、パスが bind マウントと重なる場合はそのまま残します。
+
+`obit resurrect <ID>` は元の名前でボリュームを作り直します。復活したボリュームには `io.obituary.restore` ラベルが恒久的に付きます。同名のボリュームがあれば、空でも上書きしません。
+
+削除の前後に Docker のイベントを照合します。削除を確認できなければ、検証済みのアーカイブを残して `obit doctor` を確認してください。埋葬が済んだとはみなせません。 `docker-volume-recovery` の警告は要確認の記録ごとに表示されます。指示に従い、元の Docker デーモンでボリュームを確認してください。未記帳のアーカイブは `obit resurrect` や `obit purge` では扱えません。
+
+削除ガードは `docker volume rm`、`docker volume remove`、`docker volume prune`、`docker compose down -v`（または `--volumes`）、`docker system prune --volumes` を認識します。単純な `docker volume rm` で名前が明示されている場合に限り、`obit bury --docker-volume` を提案します。
 
 ## 期限が切れたら停止
 

@@ -11,7 +11,7 @@ Fenster, Infobereichs-Symbol und Desktop-Benachrichtigungen gibt es unter Window
 | Fenster | `obit-gui.exe`, nur x64 | `Obituary.app`, universell für Intel und Apple Silicon | ein `.deb`-Paket, nur amd64 |
 | Symbol | Infobereich | Menüleiste | Symbol im Infobereich; braucht einen Desktop mit StatusNotifierItem |
 | Symbol bei der Anmeldung | nach `obit init` standardmäßig an | Schalter in den Settings | Schalter in den Settings |
-| Prüfung auf Abgelaufenes | residenter Prozess des Symbols, Aufgabenplanung als Rückfall | launchd-Benutzeragent, alle 5 Minuten | systemd-Benutzer-Timer, alle 5 Minuten |
+| Prüfung auf Abgelaufenes | residenter Prozess des Symbols | LaunchAgent | systemd |
 | Desktop-Benachrichtigungen | ja | ja | ja |
 | Kontextmenü | im Explorer | nein | nein |
 | Datumsmarkierungen im Explorer | ja | nein | nein |
@@ -20,11 +20,19 @@ Fenster, Infobereichs-Symbol und Desktop-Benachrichtigungen gibt es unter Window
 | Erster Start | ein von Hand heruntergeladenes Archiv kann eine SmartScreen-Warnung auslösen | braucht eine manuelle Freigabe, siehe [unten](#erste-offnung-einer-unsignierten-app) | öffnet sich direkt |
 | Voraussetzungen | die WebView2-Runtime | 1.6.0 braucht macOS 26 (behoben in 1.6.1) | GTK 3 und WebKitGTK 4.1, von apt installiert |
 
+Windows nutzt eine Aufgabe bei der Anmeldung, macOS einen Benutzer-LaunchAgent und Linux einen systemd-Benutzerdienst in der grafischen Sitzung. Nach einem Absturz erfolgt der Neustart nach 60 Sekunden; beim dritten Absturz innerhalb von 15 Minuten enden die Versuche.
+
+Bei aktiver Desktop-Überwachung verarbeitet der Tray-Prozess fällige Einträge sofort; ein unabhängiger Auftrag prüft stündlich nach. Ohne Tray-Überwachung für dieses Datenverzeichnis läuft der Auftrag alle fünf Minuten.
+
+Unter Windows werden nur alte Aufgaben migriert, die der für diese Installation erzeugten Definition entsprechen. Das Original wird für eine Rückkehr zum alten Stand gesichert. Geänderte oder deaktivierte Aufgaben bleiben erhalten.
+
 ## Kleines Fenster und Menüsymbol unter macOS
 
 Lade das universelle DMG (`obituary_<Version>_darwin_universal.dmg`) und `checksums.txt` von der Release-Seite herunter, prüfe den SHA-256, öffne das DMG, ziehe Obituary.app in „Programme“, wirf das DMG aus und öffne die App aus „Programme“. Ziehe sie zuerst heraus, weil der Autostart-Eintrag bei der Anmeldung festhält, wo die App liegt, und eine direkt aus dem DMG gestartete App nach dem Auswerfen dort nicht mehr ist.
 
-Die App enthält das Fenster, das Menüsymbol und die dazugehörigen Programme `obit` und `obitd`. Um das Ablaufen kümmert sich ein eigener launchd-Benutzeragent, der alle 5 Minuten läuft; du installierst ihn mit `obit daemon enable`, und das Schließen des Fensters oder des Menüsymbols berührt ihn nicht. Schaltest du in den Settings des Fensters „Start the tray at sign-in“ ein, wird der eigene Benutzer-LaunchAgent von Obituary installiert, damit das Menüsymbol bei der Anmeldung erscheint; schaltest du es aus, wird nur dieser Eintrag entfernt.
+Die App enthält das Fenster, das Menüsymbol und die dazugehörigen Programme `obit` und `obitd`. Schaltest du in den Settings des Fensters „Start the tray at sign-in“ ein, wird der eigene Benutzer-LaunchAgent von Obituary installiert, damit das Menüsymbol bei der Anmeldung erscheint; schaltest du es aus, wird nur dieser Eintrag entfernt.
+
+Mit `obit daemon enable` installierst du den unabhängigen Prüfauftrag. Er läuft auch bei geschlossenem Fenster oder beendeter Menüleisten-App weiter.
 
 Wenn du `Obituary.app` entfernst, bleiben deine Daten standardmäßig unter `~/Library/Application Support/obituary/`: das Register in `store.json`, die Einstellungen in `config.toml` und die auf diesem Volume begrabenen Dateien in `graveyard/`.
 
@@ -99,6 +107,8 @@ Unter Settings → Appearance wechselst du die Ansicht. Das wirkt sofort und nur
 - **Bury now (recoverable)**: Der Eintrag kommt sofort auf den Friedhof. Während der Aufbewahrungsfrist (standardmäßig sieben Tage) kannst du ihn wiederbeleben.
 
 Du kannst mehrere Dateien gleichzeitig auswählen und hinzufügen. Ein Hinweis nennt die Anzahl der hinzugefügten Einträge, den Zeitpunkt des Begrabens und die Zahl der Fehler. Im neuen Kontextmenü von Windows 11 fehlen die Einträge: Wähle „Weitere Optionen anzeigen“ oder halte beim Rechtsklick die Umschalttaste gedrückt. `obit init --dry-run` listet die Menüeinträge mit den zugehörigen Befehlen auf. `obit doctor` prüft die Installation.
+
+Erscheinen nach einem Upgrade alle Explorer-Menüeinträge in einer anderen unterstützten Sprache, funktioniert das Menü weiterhin. `obit doctor` meldet dies als Hinweis (JSON: `installation: label-language-mismatch`). `obit init --context-menu --yes` stellt die Beschriftung auf die aktuelle Oberflächensprache um.
 
 Unter macOS und Linux gibt es noch kein Kontextmenü. Nutze `obit mark <path> 7d` zum Registrieren oder `obit bury <path>` zum sofortigen Begraben.
 

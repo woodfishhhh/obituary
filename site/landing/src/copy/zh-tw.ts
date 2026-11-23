@@ -191,7 +191,7 @@ export const zhTW: Strings = {
       linux: "安裝腳本下載的是 GitHub Release 裡的壓縮檔，安裝前核對 SHA-256。",
     } as Record<Os, string>,
     daemonHead: "開啟背景檢查",
-    daemonLine: "每 5 分鐘檢查一次到期的檔案：macOS 用 launchd，Linux 用 systemd --user（沒有 systemd 時用使用者 crontab 每 5 分鐘執行 obitd --once）。先加 --dry-run 看看會安裝什麼。",
+    daemonLine: "桌面版啟用監督後，由常駐托盤在到期時處理，另有獨立工作每小時檢查一次。無托盤版本仍每 5 分鐘檢查一次。先加 --dry-run 看看會安裝什麼。",
     then: "再接到 agent 身上",
     init: [
       { label: "Claude Code", code: "obit init -g" },

@@ -196,7 +196,7 @@ export const es: Strings = {
       linux: "El script de instalación descarga el archivo de la versión de GitHub y comprueba su SHA-256 antes de descomprimir.",
     } as Record<Os, string>,
     daemonHead: "Activar la comprobación en segundo plano",
-    daemonLine: "Comprueba cada 5 minutos si hay archivos caducados: launchd en macOS, systemd --user en Linux (sin systemd, un crontab de usuario ejecuta obitd --once cada 5 minutos). Añade antes --dry-run para ver qué instala.",
+    daemonLine: "Con la supervisión de escritorio activada, el proceso de la bandeja atiende los vencimientos y una tarea independiente comprueba los pendientes cada hora. Las ediciones sin bandeja mantienen el intervalo de cinco minutos. Añade antes --dry-run para ver qué instala.",
     then: "Luego conecta tus agentes",
     init: [
       { label: "Claude Code", code: "obit init -g" },

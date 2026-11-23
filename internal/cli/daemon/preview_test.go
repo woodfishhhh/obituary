@@ -22,8 +22,8 @@ func TestDaemonDryRun(t *testing.T) {
 		installed  bool
 		args, want []string
 	}{
-		{"enable", false, []string{"enable", "--dry-run"}, []string{"create", "every 5 minutes and at sign-in", "--once", "HKCU Run Obituary-", "--tray", "start", "resident obitd"}},
-		{"refresh", true, []string{"enable", "--dry-run"}, []string{"update", "every 5 minutes and at sign-in", "unchanged"}},
+		{"enable", false, []string{"enable", "--dry-run"}, []string{"create", "every 60 minutes and at sign-in", "--once", "HKCU Run Obituary-", "--tray", "start", "resident obitd"}},
+		{"refresh", true, []string{"enable", "--dry-run"}, []string{"update", "every 60 minutes and at sign-in", "unchanged"}},
 		{"resident", false, []string{"enable", "--resident", "--dry-run"}, []string{"preserve", "HKCU Run Obituary-", "--tray", "start"}},
 		{"disable", true, []string{"disable", "--dry-run"}, []string{"remove", "every 5 minutes and at sign-in", "HKCU Run Obituary-", "--tray", "stop", "resident obitd"}},
 		{"disabled", false, []string{"disable", "--dry-run"}, []string{"unchanged", "HKCU Run Obituary-", "resident obitd"}},

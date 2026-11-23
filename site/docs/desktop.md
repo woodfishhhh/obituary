@@ -11,7 +11,7 @@
 | 小窗口 | `obit-gui.exe`，只有 x64 | `Obituary.app`，Intel 和 Apple 芯片通用 | `.deb` 安装包，只有 amd64 |
 | 托盘 | 任务栏通知区 | 菜单栏 | 托盘，需要桌面提供 StatusNotifierItem |
 | 登录时启动托盘 | `obit init` 默认开启 | 设置里开关 | 设置里开关 |
-| 到期清理 | 托盘常驻进程，任务计划兜底 | launchd 用户代理，每 5 分钟 | systemd 用户定时器，每 5 分钟 |
+| 到期清理 | 托盘常驻进程 | LaunchAgent | systemd |
 | 桌面通知 | 有 | 有 | 有 |
 | 右键菜单 | 资源管理器 | 无 | 无 |
 | 资源管理器里的日期标签 | 有 | 无 | 无 |
@@ -20,11 +20,19 @@
 | 第一次打开 | 手动下载的压缩包可能遇到 SmartScreen 提示 | 要手动放行，见[下文](#第一次打开未签名-app) | 直接打开 |
 | 系统要求 | WebView2 运行时 | 1.6.0 需要 macOS 26，1.6.1 修复 | GTK 3、WebKitGTK 4.1，apt 自动安装 |
 
+Windows 用登录时启动的计划任务看管托盘，macOS 用用户 LaunchAgent，Linux 在图形会话中用用户 systemd 服务。异常退出后等 60 秒重新启动；15 分钟内第三次异常退出后停止重启。
+
+桌面版启用监督后，托盘常驻进程在到期时处理，另有独立任务每小时兜底一次。未启用托盘监督的数据目录每 5 分钟检查一次。
+
+Windows 旧计划任务只有与讣告为当前安装生成的定义一致才会迁移。迁移前保存原始定义，供回滚使用；改过或已停用的任务保持原样。
+
 ## macOS 小窗口和菜单栏图标
 
 从发布页下载通用 DMG（`obituary_<版本>_darwin_universal.dmg`）和 `checksums.txt`，核对 SHA-256 之后打开 DMG，把 Obituary.app 拖进「应用程序」，弹出 DMG，再从「应用程序」里打开它。先拖出来再打开，是因为登录启动项记的是 app 所在的位置，从 DMG 里直接运行的话，弹出 DMG 之后这个位置就不存在了。
 
-app 里有小窗口、菜单栏图标，以及配套的 `obit` 和 `obitd`。到期清理由另一个 launchd 用户代理负责，每 5 分钟运行一次，用 `obit daemon enable` 安装，关掉窗口和菜单栏图标不影响它。在设置页打开「开机启动托盘」，会安装讣告自己的用户 LaunchAgent，让菜单栏图标随登录出现；关掉它，只移除这一项。
+app 里有小窗口、菜单栏图标，以及配套的 `obit` 和 `obitd`。在设置页打开「开机启动托盘」，会安装讣告自己的用户 LaunchAgent，让菜单栏图标随登录出现；关掉它，只移除这一项。
+
+运行 `obit daemon enable` 安装独立的到期检查任务。关闭窗口或菜单栏图标不影响这项任务。
 
 移除 `Obituary.app` 不会删除用户数据。默认目录是 `~/Library/Application Support/obituary/`：`store.json` 是账本，`config.toml` 是设置，同卷下葬的文件保留在 `graveyard/`。
 
@@ -102,6 +110,8 @@ grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt insta
 ![资源管理器右键菜单：现在埋掉（可恢复）、放进讣告（1 天、7 天、30 天）、复活最近下葬的](/context-menu-zh.png)
 
 可以一次选中很多个文件一起放。做完弹一条通知：放进了几项、多久后下葬、失败几项。Windows 11 的新菜单里没有它，点「显示更多选项」（或按住 Shift 再右键）就能看到。`obit init --dry-run` 会列出每一项菜单名和命令，`obit doctor` 检查它装得对不对。
+
+如果升级后资源管理器的整套右键菜单标签用了另一种受支持的语言，菜单仍能正常使用。`obit doctor` 只给信息提示（JSON 中为 `installation: label-language-mismatch`）。运行 `obit init --context-menu --yes` 可把标签换成当前界面语言。
 
 macOS 和 Linux 还没有右键菜单，先用命令：`obit mark <路径> 7d` 放进讣告，`obit bury <路径>` 现在埋掉。
 

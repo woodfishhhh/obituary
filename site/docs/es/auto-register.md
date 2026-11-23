@@ -36,6 +36,8 @@ obit extend 12 1w        # keep it longer
 - **Git se consulta de nuevo antes del entierro.** Lo registrado por regla o propuesta no se entierra si ya está en un commit cuando caduca.
 - **Las propuestas caducan solas.** Los elementos confirmados o eliminados se quitan, y una propuesta vacía se retira, queda en el registro de auditoría y no cuenta como rechazo.
 
+Los volúmenes nunca se registran automáticamente. Obituary solo trata los que registres o entierres expresamente y no elimina imágenes ni redes.
+
 ## Reglamento
 
 ```powershell

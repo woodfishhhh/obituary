@@ -35,7 +35,11 @@ retention_days = 7      # days the graveyard keeps things
 
 ## 백그라운드 실행
 
-기본적으로 `obitd.exe`는 로그인 시 트레이에 상주해 만료 시각에 맞춰 초 단위로 매장합니다. 트레이 아이콘이 유일한 인터페이스입니다. 보완책으로 Windows 예약 작업이 5분마다, 그리고 로그인할 때마다 `obitd --once`를 실행합니다. 트레이가 종료됐거나 한 번도 시작하지 않았어도 만료 항목은 매장되고 보관 기간이 지난 항목은 영구 삭제됩니다. 에이전트 훅도 세션 시작과 종료 시 한 차례 처리하며 `obit reap`로 지금 실행할 수 있습니다.
+데스크톱에서 감독 기능을 켜면 트레이 프로세스가 만료 시점에 처리하고 별도 작업이 한 시간마다 누락된 항목을 확인합니다. 이 데이터 디렉터리에 트레이 감독이 설정되지 않으면 5분마다 확인합니다.
+
+Windows에서는 로그인 시 시작하는 예약 작업, macOS에서는 사용자 LaunchAgent, Linux에서는 그래픽 세션의 사용자 systemd 서비스가 트레이를 감독합니다. 비정상 종료 후 60초 뒤에 재시작하며, 15분 안에 세 번째로 비정상 종료하면 재시도를 중단합니다.
+
+`obit daemon status`로 예약 작업을 확인하세요. 만료된 항목을 지금 처리하려면 `obit reap`을 실행하세요.
 
 ```powershell
 obit daemon enable              # tray at login plus the fallback scheduled task (--dry-run lists what would be installed)

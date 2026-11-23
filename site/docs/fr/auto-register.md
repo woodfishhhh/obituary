@@ -36,6 +36,8 @@ obit extend 12 1w        # keep it longer
 - **Git est consulté une nouvelle fois avant l’enterrement.** Un élément enregistré par règle ou proposition n’est pas enterré s’il figure dans un commit à l’échéance.
 - **Les propositions expirent automatiquement.** Les éléments validés ou supprimés sont retirés ; une proposition vide est supprimée, inscrite dans le journal d’audit et ne compte pas comme un refus.
 
+Les volumes ne sont jamais enregistrés automatiquement. Obituary ne traite que ceux que vous enregistrez ou enterrez explicitement et ne supprime ni les images ni les réseaux.
+
 ## Règles
 
 ```powershell

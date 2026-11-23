@@ -185,6 +185,12 @@ func (s *Service) archiveAndRemoveVolume(client docker.VolumeClient, item Item, 
 	cleanup = nil
 	releaseHolder = false
 	if err := client.RemoveVolume(s.Store.Context(), item.Volume); err != nil {
+		if errors.Is(err, docker.ErrVolumeEvents) {
+			return errors.Join(err, writeGraveManifest(manifest, burialManifest{Version: 1, Burial: b, VolumePhase: "events-incomplete"}))
+		}
+		return err
+	}
+	if err := writeGraveManifest(manifest, burialManifest{Version: 1, Burial: b, VolumePhase: "removed"}); err != nil {
 		return err
 	}
 	err = s.Store.UpdateGraveyard(func(st *State) error {

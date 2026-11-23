@@ -11,7 +11,7 @@ A janela, o ícone da bandeja e as notificações de desktop existem no Windows,
 | Janela | `obit-gui.exe`, só x64 | `Obituary.app`, universal para Intel e Apple Silicon | um pacote `.deb`, só amd64 |
 | Ícone | área de notificação | barra de menus | ícone na bandeja; exige um desktop que ofereça StatusNotifierItem |
 | Ícone no login | ativado por padrão após `obit init` | interruptor em Settings | interruptor em Settings |
-| Verificação de expiração | processo residente do ícone, com o Agendador de Tarefas como reserva | agente de usuário do launchd, a cada 5 minutos | timer de usuário do systemd, a cada 5 minutos |
+| Verificação de expiração | processo residente do ícone | LaunchAgent | systemd |
 | Notificações de desktop | sim | sim | sim |
 | Menu de contexto | no Explorador de Arquivos | não | não |
 | Etiquetas de data no Explorador | sim | não | não |
@@ -20,11 +20,19 @@ A janela, o ícone da bandeja e as notificações de desktop existem no Windows,
 | Primeira abertura | um arquivo baixado à mão pode gerar um aviso do SmartScreen | exige aprovação manual, veja [abaixo](#primeira-abertura-de-um-app-sem-assinatura) | abre direto |
 | Requisitos | o runtime do WebView2 | a 1.6.0 exige macOS 26 (corrigido na 1.6.1) | GTK 3 e WebKitGTK 4.1, instalados pelo apt |
 
+O Windows usa uma tarefa no logon, o macOS usa um LaunchAgent do usuário e o Linux usa um serviço systemd do usuário na sessão gráfica. Depois de uma falha, o sistema aguarda 60 segundos para reiniciar; na terceira falha em 15 minutos, para de tentar.
+
+Com a supervisão de desktop ativa, a bandeja trata os vencimentos e uma tarefa independente verifica pendências a cada hora. Sem supervisão da bandeja para esse diretório de dados, a tarefa é executada a cada cinco minutos.
+
+No Windows, uma tarefa antiga só é migrada se corresponder à definição criada para essa instalação. O original é guardado para reversão; tarefas alteradas ou desativadas permanecem como estão.
+
 ## Janela pequena e ícone da barra de menus no macOS
 
 Baixe o DMG universal (`obituary_<versão>_darwin_universal.dmg`) e o `checksums.txt` da página da versão, confira o SHA-256, abra o DMG, arraste o Obituary.app para Aplicativos, ejete o DMG e abra o app a partir de Aplicativos. Arraste primeiro porque a entrada de inicialização no login guarda onde o app está, e um app executado direto do DMG deixa de estar lá quando o DMG é ejetado.
 
-O app contém a janela, o ícone da barra de menus e os programas `obit` e `obitd` que o acompanham. A expiração fica a cargo de outro agente de usuário do launchd que roda a cada 5 minutos; você o instala com `obit daemon enable`, e fechar a janela ou o ícone da barra de menus não o afeta. Ativar “Start the tray at sign-in” em Settings na janela instala o LaunchAgent de usuário do próprio Obituary, para que o ícone da barra de menus apareça quando você fizer login; desativá-lo remove apenas essa entrada.
+O app contém a janela, o ícone da barra de menus e os programas `obit` e `obitd` que o acompanham. Ativar “Start the tray at sign-in” em Settings na janela instala o LaunchAgent de usuário do próprio Obituary, para que o ícone da barra de menus apareça quando você fizer login; desativá-lo remove apenas essa entrada.
+
+Instale a tarefa independente com `obit daemon enable`. Fechar a janela ou sair pelo ícone da barra de menus não desativa a tarefa.
 
 Remover `Obituary.app` mantém seus dados no diretório padrão `~/Library/Application Support/obituary/`: `store.json` contém o registro, `config.toml` guarda as configurações e `graveyard/` contém os arquivos enterrados nesse volume.
 
@@ -99,6 +107,8 @@ Escolha o tema em Settings → Appearance. A mudança é imediata e afeta apenas
 - **Bury now (recoverable)**: envia o item ao cemitério imediatamente. É possível ressuscitá-lo durante o período de retenção (7 dias por padrão).
 
 Você pode selecionar vários arquivos e adicioná-los de uma vez. A notificação informa quantos entraram, quando serão enterrados e quantos falharam. O novo menu do Windows 11 não mostra essas opções: clique em “Mostrar mais opções” ou mantenha Shift pressionado ao clicar com o botão direito. `obit init --dry-run` lista cada entrada com o comando correspondente; `obit doctor` verifica se a instalação está correta.
+
+Se após uma atualização todos os rótulos do menu do Explorer estiverem em outro idioma compatível, o menu continua funcionando. `obit doctor` mostra um aviso informativo (JSON: `installation: label-language-mismatch`). Execute `obit init --context-menu --yes` para aplicar o idioma atual da interface.
 
 O macOS e o Linux ainda não têm menu de contexto. Use `obit mark <path> 7d` para registrar um item ou `obit bury <path>` para enterrá-lo agora.
 
