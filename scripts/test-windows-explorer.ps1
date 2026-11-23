@@ -174,7 +174,11 @@ function Invoke-MenuItem([object]$Menu, [string]$Needle, [switch]$ExpandOnly) {
         $item.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
         return
     }
-    $item.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+    try {
+        $item.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+    } catch {
+        $item.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
+    }
 }
 
 function Rename-ExplorerItem([object]$Explorer, [string]$OldName, [string]$NewName) {
