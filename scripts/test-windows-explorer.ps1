@@ -85,6 +85,7 @@ function Get-MenuLabels([object]$Item) {
 
 function Find-Explorer([string]$Path) {
     $shell = New-Object -ComObject Shell.Application
+    Start-Process explorer.exe -ArgumentList "`"$Path`""
     for ($i = 0; $i -lt 30; $i++) {
         foreach ($window in @($shell.Windows())) {
             if ($window.FullName -and $window.Document.Folder.Self.Path -eq $Path) { return $window }
