@@ -63,10 +63,8 @@ func prepare(d dependencies) (*plan, error) {
 		daemon += ".exe"
 	}
 	p.schedule = d.previewSchedule(filepath.Join(filepath.Dir(exe), daemon), svc.Store.Home, p.config)
-	if runtime.GOOS == "windows" {
-		if err := p.prepareDesktop(d, exe); err != nil {
-			return nil, err
-		}
+	if err := p.prepareDesktop(d, exe); err != nil {
+		return nil, err
 	}
 	p.integrations, err = integrationPlans(initcmd.Planner{Executable: d.executable})
 	return p, err
@@ -75,7 +73,9 @@ func prepare(d dependencies) (*plan, error) {
 func (p *plan) prepareDesktop(d dependencies, exe string) error {
 	var err error
 	svc := p.svc
-	p.startup, err = app.PlanAutostart(d.runRegistry, filepath.Join(filepath.Dir(exe), "obitd.exe"), svc.Store.Home, p.config, false)
+	if runtime.GOOS == "windows" {
+		p.startup, err = app.PlanAutostart(d.runRegistry, filepath.Join(filepath.Dir(exe), "obitd.exe"), svc.Store.Home, p.config, false)
+	}
 	if err != nil {
 		return err
 	}
@@ -173,7 +173,7 @@ func (p *plan) apply(d dependencies, out io.Writer, purge bool) error {
 	for _, entry := range p.integrations {
 		failures = append(failures, initcmd.ApplyUninstall(entry.changes))
 	}
-	if runtime.GOOS == "windows" {
+	if len(p.menus) > 0 {
 		failures = append(failures, contextmenu.Apply(d.menuRegistry, p.menus))
 	}
 	if serviceErr != nil {
