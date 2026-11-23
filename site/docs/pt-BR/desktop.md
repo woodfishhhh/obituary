@@ -110,7 +110,7 @@ Você pode selecionar vários arquivos e adicioná-los de uma vez. A notificaç�
 
 Se após uma atualização todos os rótulos do menu do Explorer estiverem em outro idioma compatível, o menu continua funcionando. `obit doctor` mostra um aviso informativo (JSON: `installation: label-language-mismatch`). Execute `obit init --context-menu --yes` para aplicar o idioma atual da interface.
 
-No Finder, abra Ações Rápidas; no Nautilus, Scripts → Obituary; no Dolphin, Obituary. Selecione a pasta para definir sua política. No Dolphin, o menu de uma área vazia age sobre a pasta atual. Para enterrar um arquivo, clique com o botão direito no próprio arquivo.
+No Finder, use Ações Rápidas; no Nautilus, Scripts → Obituary. O Dolphin passa o mesmo destino para uma área vazia e para uma única pasta selecionada; nenhum dos dois casos oferece ações do Obituary. O submenu aparece para um arquivo ou para uma seleção múltipla. Uma política exige pelo menos duas pastas selecionadas; para uma só, use a linha de comando. Atualize um menu existente com `obit init --context-menu --yes`.
 
 ## Ícones e menus
 

@@ -69,7 +69,33 @@ def click(stage, phrases, button):
     return phrase
 
 
+def verify_background(log):
+    # An explicitly empty directory cannot contain a selected item. Require a readable Qt popup, not negative OCR.
+    empty = Path(folder).parent / "Empty-background-fixture"
+    empty.mkdir()
+    def ledger():
+        return sp.check_output(["obit", "list", "--json"])
+    before = ledger()
+    sp.Popen(["dolphin", "--new-window", str(empty)], stdout=log, stderr=log)
+    time.sleep(2)
+    sp.run(["xdotool", "key", "Menu"], check=True)
+    view("empty-background", ["create new"])
+    def menus(node):
+        if node.getRole() in (pyatspi.ROLE_MENU, pyatspi.ROLE_POPUP_MENU) and node.getState().contains(pyatspi.STATE_SHOWING):
+            yield [(child.name or "").replace("&", "").strip().lower() for child in node if child]
+        for child in node:
+            if child: yield from menus(child)
+    available = [names for app in pyatspi.Registry.getDesktop(0) if "dolphin" in (app.name or "").lower() for names in menus(app) if "create new" in names and "properties" in names]
+    assert len(available) == 1, ("background menu not identified", available)
+    names = available[0]
+    assert not any("obituary" in n or n in ("actions", "bury now (recoverable)", "set folder policy", "resurrect the most recent burial") for n in names), names
+    (out / "Dolphin-background-items.txt").write_text("\n".join(names))
+    sp.run(["xdotool", "key", "Escape"], check=True)
+    assert ledger() == before and empty.is_dir() and not list(empty.iterdir())
+
+
 with (out / f"{manager}.log").open("w") as log:
+    if manager == "Dolphin": verify_background(log)
     sp.Popen([manager.lower(), "--new-window", "--select", str(Path(folder)/"Sample.txt")], stdout=log, stderr=log)
     time.sleep(2)
     try:
@@ -79,13 +105,9 @@ with (out / f"{manager}.log").open("w") as log:
         sp.run(["xdotool","key","Menu"],check=True)
     time.sleep(.8)
     if manager == "Nautilus":
-        try:
-            click("scripts", ["scripts"], "1")
-            click("obituary", ["obituary"], "1")
-            click("select", ["7 days", "7days"], "1")
-        except RuntimeError as error:
-            print(f"{error}; trying the native Nautilus script accelerator", flush=True)
-            sp.run(["xdotool","key","Escape","Escape","Escape","ctrl+a","F12"],check=True)
+        click("scripts", ["scripts"], "1")
+        click("obituary", ["obituary"], "1")
+        click("select", ["7 days", "7days"], "1")
     else:
         # Dolphin exposes the same services on its background, where %F is the directory.
         try:

@@ -110,7 +110,7 @@ grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt insta
 
 업그레이드 후 탐색기 메뉴 전체가 다른 지원 언어로 표시되더라도 메뉴는 정상 작동합니다. `obit doctor`는 정보로만 알립니다(JSON에서는 `installation: label-language-mismatch`). `obit init --context-menu --yes`를 실행하면 현재 인터페이스 언어로 바뀝니다.
 
-Finder에서는 빠른 동작, Nautilus에서는 스크립트 → Obituary, Dolphin에서는 Obituary 메뉴를 엽니다. 폴더 정책을 설정하려면 해당 폴더를 선택하세요. Dolphin에서 빈 공간을 오른쪽 클릭하면 현재 폴더에 작업이 적용됩니다. 파일을 매장하려면 파일 자체를 오른쪽 클릭하세요.
+Finder에서는 빠른 동작, Nautilus에서는 스크립트 → Obituary를 사용하세요. Dolphin의 서비스 메뉴는 빈 공간과 선택한 폴더 하나를 구분할 수 없어 두 경우 모두 작업을 표시하지 않습니다. 파일 하나 또는 여러 항목을 선택하면 Obituary 메뉴가 나타납니다. 폴더 정책은 폴더를 두 개 이상 선택해야 합니다. 폴더 하나에는 CLI를 사용하세요. 기존 메뉴는 `obit init --context-menu --yes` 명령으로 갱신하세요.
 
 ## 아이콘과 메뉴
 

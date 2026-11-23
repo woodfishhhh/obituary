@@ -112,7 +112,7 @@ grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt insta
 
 升級後，若檔案總管整套右鍵選單標籤使用另一種支援的語言，選單仍可正常使用。`obit doctor` 只會顯示資訊提示（JSON 為 `installation: label-language-mismatch`）。執行 `obit init --context-menu --yes` 即可換成目前的介面語言。
 
-在 Finder 的「快速動作」、Nautilus 的「指令稿 → Obituary」或 Dolphin 的 Obituary 選單中選取動作。設定資料夾策略時，請先選取資料夾。在 Dolphin 中，對空白處按右鍵會操作目前的資料夾；要下葬單一檔案，請對檔案本身按右鍵。
+在 Finder 的「快速動作」、Nautilus 的「指令稿 → Obituary」或 Dolphin 的 Obituary 選單中選取動作。Dolphin 的靜態服務選單無法區分空白處和單一資料夾，因此兩者都不提供訃告動作。可對單一檔案或多選項目操作；設定資料夾策略須選取至少兩個資料夾。單一資料夾請用命令列。原有安裝請執行 `obit init --context-menu --yes` 更新選單。
 
 ## 圖示和選單
 

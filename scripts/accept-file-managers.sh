@@ -17,8 +17,7 @@ if [[ $RUNNER_OS == Linux ]]; then
   export GDK_BACKEND=x11 QT_QPA_PLATFORM=xcb LC_ALL=C.UTF-8
   export GTK_A11Y=atspi QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
   dbus-update-activation-environment DISPLAY HOME XDG_DATA_HOME XDG_CONFIG_HOME OBIT_HOME OBIT_CONFIG_DIR OBIT_USER_HOME GTK_A11Y QT_LINUX_ACCESSIBILITY_ALWAYS_ON
-  mkdir -p "$XDG_CONFIG_HOME/nautilus"
-  printf "%s\n" "F12 Add to Obituary · 7 days" > "$XDG_CONFIG_HOME/nautilus/scripts-accels"
+  python3 scripts/test-dolphin-selection.py "$RUNNER_TEMP/tools/obit" "$HOME/menu-registration-fixture"
   openbox >"$EVIDENCE/openbox.log" 2>&1 &
   failed=0
   for manager in Nautilus Dolphin; do
@@ -56,6 +55,9 @@ else
 fi
 obit list --json | tee "$EVIDENCE/tracked.json"
 jq -e --arg file "$sample" 'any(.[]; .path == $file)' "$EVIDENCE/tracked.json"
+if [[ $RUNNER_OS == Linux ]]; then
+  jq -e --arg a "$HOME/Downloads/Nautilus/Sample.txt" --arg b "$HOME/Desktop/Dolphin/Sample.txt" 'map(.path) | sort == ([$a, $b] | sort)' "$EVIDENCE/tracked.json"
+fi
 obit init -g --agent codex --uninstall --yes
 obit uninstall --yes
 if [[ $RUNNER_OS == Linux ]]; then

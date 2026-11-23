@@ -28,12 +28,17 @@ func nativeMenus(exe string, lang i18n.Language) (map[string]Tree, error) {
 		label := a.label(lang)
 		script := "#!/bin/sh\n# Obituary file action\n[ \"$#\" -gt 0 ] || exit 1\nexec " + a.command(launcher(exe, env, shellQuote), "\"$@\"") + "\n"
 		files[filepath.Join(base, "nautilus/scripts/Obituary", label)] = menuFile(script, 0700)
-		mime := "application/octet-stream;inode/directory;"
-		if a.id == "policy" {
-			mime = "inode/directory;"
+		register := func(id, filters string) {
+			desktop := "[Desktop Entry]\nType=Service\n" + filters + "\nActions=obituary;\nX-KDE-Protocol=file\nX-KDE-Submenu=" + lang.Text(i18n.AppName) + "\n\n[Desktop Action obituary]\nName=" + label + "\nExec=" + a.command(desktopExe, "%F") + "\n"
+			files[filepath.Join(base, "kio/servicemenus/obituary-"+id+".desktop")] = menuFile(desktop, 0700)
 		}
-		desktop := "[Desktop Entry]\nType=Service\nMimeType=" + mime + "\nActions=obituary;\nX-KDE-Protocol=file\nX-KDE-Submenu=" + lang.Text(i18n.AppName) + "\n\n[Desktop Action obituary]\nName=" + label + "\nExec=" + a.command(desktopExe, "%F") + "\n"
-		files[filepath.Join(base, "kio/servicemenus/obituary-"+a.id+".desktop")] = menuFile(desktop, 0700)
+		// Dolphin passes the current directory as one URL for a background click, exactly like a selected folder.
+		if a.id == "policy" {
+			register(a.id, "MimeType=inode/directory;\nX-KDE-MinNumberOfUrls=2")
+		} else {
+			register(a.id, "MimeType=all/allfiles;\nExcludeServiceTypes=inode/directory\nX-KDE-MinNumberOfUrls=1\nX-KDE-MaxNumberOfUrls=1")
+			register(a.id+"-multi", "MimeType=all/all;\nX-KDE-MinNumberOfUrls=2")
+		}
 	}
 	return files, nil
 }
