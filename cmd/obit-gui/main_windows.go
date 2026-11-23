@@ -17,9 +17,12 @@ import (
 	"github.com/woodfishhhh/obituary/internal/desktop"
 	"github.com/woodfishhhh/obituary/internal/gui"
 	"github.com/woodfishhhh/obituary/internal/i18n"
+	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
-func windowOptions(api *gui.API, width, height int) *options.App {
+func windowPath(path string) (string, error) { return winfs.Resolve(path) }
+
+func platformOptions(api *gui.API, width, height int) *options.App {
 	var mu sync.Mutex
 	var window context.Context
 	gui.SetFolderPicker(api, func() (string, error) {
@@ -53,7 +56,6 @@ func windowOptions(api *gui.API, width, height int) *options.App {
 			app.ObserveUsage()
 		},
 		SingleInstanceLock: &options.SingleInstanceLock{
-			UniqueId: "c36c42b1-df66-43e4-b909-obituary-gui",
 			OnSecondInstanceLaunch: func(options.SecondInstanceData) {
 				mu.Lock()
 				defer mu.Unlock()

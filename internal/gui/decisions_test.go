@@ -187,6 +187,64 @@ func TestProposalDecisionRejectsUnseenCandidates(t *testing.T) {
 	}
 }
 
+func TestCandidateReceiptMatchesPartialApproval(t *testing.T) {
+	a, root := fixture(t)
+	repo := repository(t, root)
+	p := propose(t, a, repo, "ok.log")
+	for _, name := range []string{"gone.log", "retry.log"} {
+		path := filepath.Join(repo, name)
+		write(t, path, "candidate")
+		var err error
+		p, _, _, err = a.deps.Service.Propose(p.Kind, repo, p.Session, []core.Candidate{{Path: path, Lifespan: "2d"}})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	rows, err := a.Proposals()
+	if err != nil || len(rows.Proposals) != 1 || len(rows.Proposals[0].Candidates) != 3 {
+		t.Fatalf("preview: %+v %v", rows, err)
+	}
+	if err := os.Rename(filepath.Join(repo, "gone.log"), filepath.Join(repo, "away.log")); err != nil {
+		t.Fatal(err)
+	}
+	retry := filepath.Join(repo, "retry.log")
+	a.deps.Service.FS = denyCandidateFS{FS: a.deps.Service.FS, path: retry}
+	reply, err := a.Approve([]string{ref(p.ID)}, []string{rows.Proposals[0].Fingerprint})
+	if err != nil || len(reply.Results) != 1 {
+		t.Fatalf("reply: %+v %v", reply, err)
+	}
+	state, err := a.deps.Service.Store.Read()
+	if err != nil || len(state.Items) != 1 || len(state.Proposals) != 1 || len(state.Proposals[0].Candidates) != 1 || state.Proposals[0].Candidates[0].Path != retry {
+		t.Fatalf("state: %+v %v", state, err)
+	}
+	raw, err := json.Marshal(reply.Results[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	var receipt struct {
+		Remaining []string
+		Results   []core.Result
+	}
+	if err := json.Unmarshal(raw, &receipt); err != nil {
+		t.Fatal(err)
+	}
+	if len(receipt.Results) != 3 || receipt.Results[0].Action != core.ActionAdded || receipt.Results[1].Error == "" || receipt.Results[2].Error == "" || !reflect.DeepEqual(receipt.Remaining, []string{retry}) {
+		t.Fatalf("candidate receipt: %s", raw)
+	}
+}
+
+type denyCandidateFS struct {
+	core.FS
+	path string
+}
+
+func (f denyCandidateFS) Identify(path string) (core.Identity, error) {
+	if path == f.path {
+		return core.Identity{}, os.ErrPermission
+	}
+	return f.FS.Identify(path)
+}
+
 func refBool(b bool) string {
 	if b {
 		return "reject"

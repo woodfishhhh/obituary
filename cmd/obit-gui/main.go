@@ -51,5 +51,9 @@ func run(args []string, output io.Writer) error {
 		}
 		return json.NewEncoder(output).Encode(summary)
 	}
-	return wails.Run(windowOptions(api, *width, *height))
+	opts, err := windowOptions(api, *width, *height)
+	if err != nil {
+		return err
+	}
+	return wails.Run(opts)
 }

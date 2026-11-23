@@ -28,19 +28,23 @@ const dirName = "obituary"
 // Data is where Obituary keeps its state: %LOCALAPPDATA%\obituary,
 // ~/Library/Application Support/obituary or $XDG_DATA_HOME/obituary.
 func Data() (string, error) {
-	dir := os.Getenv("OBIT_HOME")
-	if dir == "" {
-		base, err := dataBase()
-		if err != nil {
-			return "", err
-		}
-		base, err = directoryAbs(base)
-		if err != nil {
-			return "", err
-		}
-		dir = filepath.Join(base, dirName)
+	if dir := os.Getenv("OBIT_HOME"); dir != "" {
+		return directoryAbs(dir)
 	}
-	return directoryAbs(dir)
+	return DefaultData()
+}
+
+// DefaultData resolves the platform default independently of OBIT_HOME.
+func DefaultData() (string, error) {
+	base, err := dataBase()
+	if err != nil {
+		return "", err
+	}
+	base, err = directoryAbs(base)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(base, dirName), nil
 }
 
 // RegistryLocks is per user even when installers select different ledgers.
