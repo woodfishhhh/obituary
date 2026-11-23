@@ -1,6 +1,8 @@
 name: Windows Explorer acceptance
 
 on:
+  push:
+    branches: [woodfishhhh/m6-04-explorer]
   workflow_dispatch:
     inputs:
       version:
