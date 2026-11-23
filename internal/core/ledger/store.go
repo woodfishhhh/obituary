@@ -16,6 +16,7 @@ import (
 // Store persists State as JSON under a home directory. Every mutation runs
 // under an exclusive lock file so the CLI and the daemon can share it.
 type Store struct {
+	inspectOnly      bool
 	changed          *bool // request-local commit tracking for presentation callbacks
 	Home             string
 	lockDeadline     time.Time
@@ -105,6 +106,7 @@ func (s Store) ReadSnapshot() (State, error) {
 // Inspect reads a snapshot without creating a directory or lock file. It is
 // intended for read-only diagnostics, never for a read-modify-write operation.
 func (s Store) Inspect() (State, error) {
+	s.inspectOnly = true
 	return s.inspectSnapshot()
 }
 

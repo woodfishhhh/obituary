@@ -415,7 +415,7 @@ func (s Store) updateHotSQLiteSession(session *sqliteSession, fence sqliteFence,
 	if err := session.refresh(s); err != nil {
 		return err
 	}
-	if err := fence.check(session.state); err != nil {
+	if err := s.checkSQLiteFence(session.db, fence, session.state); err != nil {
 		return err
 	}
 	base, err := session.baseline()
@@ -465,6 +465,10 @@ func (s Store) commitSQLiteSession(session *sqliteSession, delta sqliteRowDelta)
 	if err := writeSQLiteDelta(ctx, tx, delta); err != nil {
 		return err
 	}
+	transition, err := rememberFenceTransition(ctx, tx, delta.changes[sqliteKey{"meta", "state"}].before, session.state)
+	if err != nil {
+		return err
+	}
 	receiptID := sqliteDeltaReceiptID(delta)
 	if _, err := tx.ExecContext(ctx, "INSERT OR IGNORE INTO receipts(id,result) VALUES(?,?)", receiptID, []byte("committed")); err != nil {
 		return err
@@ -475,7 +479,7 @@ func (s Store) commitSQLiteSession(session *sqliteSession, delta sqliteRowDelta)
 	rollback = false
 	fenceErr := writeDurably(s.statePath(), sqliteFenceBytes(session.state))
 	if fenceErr != nil && !fileio.IsCommitUnconfirmed(fenceErr) {
-		if err := s.rollbackSQLiteDelta(ctx, session, delta, receiptID); err != nil {
+		if err := s.rollbackSQLiteDelta(ctx, session, delta, receiptID, transition); err != nil {
 			return errors.Join(fenceErr, fmt.Errorf("rollback unpublished SQLite commit: %w", err))
 		}
 	}
@@ -495,7 +499,7 @@ func (s Store) commitSQLiteSession(session *sqliteSession, delta sqliteRowDelta)
 	return nil
 }
 
-func (s Store) rollbackSQLiteDelta(ctx context.Context, session *sqliteSession, delta sqliteRowDelta, receiptID string) error {
+func (s Store) rollbackSQLiteDelta(ctx context.Context, session *sqliteSession, delta sqliteRowDelta, receiptID, transition string) error {
 	tx, err := session.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
 		return err
@@ -509,7 +513,7 @@ func (s Store) rollbackSQLiteDelta(ctx context.Context, session *sqliteSession, 
 	if err := writeSQLiteDelta(ctx, tx, inverseSQLiteDelta(delta)); err != nil {
 		return err
 	}
-	if _, err := tx.ExecContext(ctx, "DELETE FROM receipts WHERE id=?", receiptID); err != nil {
+	if _, err := tx.ExecContext(ctx, "DELETE FROM receipts WHERE id IN (?,?)", receiptID, transition); err != nil {
 		return err
 	}
 	if err := tx.Commit(); err != nil {

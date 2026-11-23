@@ -100,11 +100,54 @@ func sqliteFenceBytes(st State) []byte {
 	return append(data, '\n')
 }
 
-func (f sqliteFence) check(st State) error {
-	if !reflect.DeepEqual(f, sqliteFenceOf(st)) {
-		return errors.New("SQLite version fence disagrees with ledger metadata")
+func (s Store) checkSQLiteFence(db *sql.DB, f sqliteFence, st State) error {
+	current := sqliteFenceOf(st)
+	if !reflect.DeepEqual(f, current) {
+		var result string
+		// Only a lock-holding reader can distinguish an interrupted publication from a live writer.
+		if s.inspectOnly {
+			return errors.New("SQLite version fence disagrees with ledger metadata")
+		}
+		err := db.QueryRowContext(s.Context(), "SELECT result FROM receipts WHERE id=?", fenceTransitionID(f, current)).Scan(&result)
+		if errors.Is(err, sql.ErrNoRows) || err == nil && result != "committed" {
+			return errors.New("SQLite version fence disagrees with ledger metadata")
+		}
+		if err != nil {
+			return err
+		}
 	}
 	return validateHotLedger(st)
+}
+
+func fenceTransitionID(from, to sqliteFence) string {
+	data, _ := json.Marshal([2]sqliteFence{from, to})
+	return fmt.Sprintf("fence:%x", sha256.Sum256(data))
+}
+
+// The exact predecessor proves which fence may be visible after a lost replacement.
+func rememberFenceTransition(ctx context.Context, tx *sql.Tx, previous *sqliteRow, st State) (string, error) {
+	if previous == nil {
+		return "", nil
+	}
+	var from sqliteFence
+	if err := json.Unmarshal(previous.payload, &from); err != nil {
+		return "", err
+	}
+	from.Storage, from.Database = "sqlite", sqliteDatabaseName
+	to := sqliteFenceOf(st)
+	if reflect.DeepEqual(from, to) {
+		return "", nil
+	}
+	id := fenceTransitionID(from, to)
+	r, err := tx.ExecContext(ctx, "INSERT OR IGNORE INTO receipts(id,result) VALUES(?,?)", id, []byte("committed"))
+	if err != nil {
+		return "", err
+	}
+	n, err := r.RowsAffected()
+	if err != nil || n == 0 {
+		return "", err
+	}
+	return id, nil
 }
 
 func sqliteFenceFor(data []byte) (sqliteFence, error) {
@@ -597,7 +640,7 @@ func (s Store) loadSQLiteHot(fence sqliteFence) (State, []Event, error) {
 	if state.Version != stateVersion {
 		return State{}, nil, newerStoreError{state.Version}
 	}
-	if err := fence.check(state); err != nil {
+	if err := s.checkSQLiteFence(db, fence, state); err != nil {
 		return State{}, nil, err
 	}
 	state, events, err := s.normalizeState(state)
@@ -650,6 +693,13 @@ func (s Store) saveSQLite(state State, migrating bool) error {
 	if err := writeSQLiteRows(ctx, tx, before, after); err != nil {
 		return err
 	}
+	var transition string
+	if prior, ok := before[sqliteKey{"meta", "state"}]; ok {
+		transition, err = rememberFenceTransition(ctx, tx, &prior, state)
+		if err != nil {
+			return err
+		}
+	}
 	receiptID := sqliteRowsReceiptID(after)
 	if _, err := tx.ExecContext(ctx, "INSERT OR IGNORE INTO receipts(id,result) VALUES(?,?)", receiptID, []byte("committed")); err != nil {
 		return err
@@ -660,7 +710,7 @@ func (s Store) saveSQLite(state State, migrating bool) error {
 	rollback = false
 	fenceErr := writeDurably(s.statePath(), sqliteFenceBytes(state))
 	if fenceErr != nil && !fileio.IsCommitUnconfirmed(fenceErr) {
-		if err := s.rollbackSQLiteCommit(ctx, after, before, receiptID); err != nil {
+		if err := s.rollbackSQLiteCommit(ctx, after, before, receiptID, transition); err != nil {
 			return errors.Join(fenceErr, fmt.Errorf("rollback unpublished SQLite commit: %w", err))
 		}
 	}
@@ -673,7 +723,7 @@ func (s Store) saveSQLite(state State, migrating bool) error {
 	return nil
 }
 
-func (s Store) rollbackSQLiteCommit(ctx context.Context, after, before sqliteRows, receiptID string) error {
+func (s Store) rollbackSQLiteCommit(ctx context.Context, after, before sqliteRows, receiptID, transition string) error {
 	db, err := openSQLite(s.databasePath(), "rwc")
 	if err != nil {
 		return err
@@ -695,7 +745,7 @@ func (s Store) rollbackSQLiteCommit(ctx context.Context, after, before sqliteRow
 	if err := writeSQLiteRows(ctx, tx, after, before); err != nil {
 		return err
 	}
-	if _, err := tx.ExecContext(ctx, "DELETE FROM receipts WHERE id=?", receiptID); err != nil {
+	if _, err := tx.ExecContext(ctx, "DELETE FROM receipts WHERE id IN (?,?)", receiptID, transition); err != nil {
 		return err
 	}
 	if err := tx.Commit(); err != nil {
