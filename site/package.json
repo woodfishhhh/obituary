@@ -4,6 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "packageManager": "pnpm@11.11.0",
+  "devDependencies": {
+    "@vue/compiler-dom": "3.5.45"
+  },
   "scripts": {
     "dev": "node scripts/community.mjs && pnpm --filter landing dev",
     "dev:docs": "pnpm --filter docs dev",
