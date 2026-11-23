@@ -44,6 +44,9 @@ func validateHotLedger(st State) error {
 // operations must use ReadSnapshot/Read; safety-sensitive hot transactions
 // load the referenced snapshot under their existing store lock on an index hit.
 func (s Store) ReadHot() (State, error) {
+	if s.replayState != nil {
+		return *s.replayState, nil
+	}
 	var st State
 	err := s.withLock("store.lock", false, func() error {
 		var err error
@@ -53,38 +56,23 @@ func (s Store) ReadHot() (State, error) {
 	return st, err
 }
 
+// ReadCommittedHot is ReadHot for callers that only present the ledger. It
+// never waits for a writer: every commit replaces store.json atomically, so one
+// read returns one whole committed version. A ledger that still needs migration
+// or normalisation is read under the lock, which is where those are done.
+func (s Store) ReadCommittedHot() (State, error) {
+	if st, events, err := s.loadHot(); err == nil && st.Version == stateVersion && len(events) == 0 {
+		return st, nil
+	}
+	return s.ReadHot()
+}
+
 // ReadActive is the read-only view used by commands that only present active
 // entries. Legacy stores and pending normalisation still use the full read so
 // migration and audit semantics remain unchanged.
 func (s Store) ReadActive() (State, error) {
-	var st State
-	var fallback bool
-	err := s.withLock("store.lock", false, func() error {
-		var events []Event
-		var err error
-		st, events, err = s.loadHot()
-		if err != nil {
-			return err
-		}
-		fallback = st.Version < stateVersion || len(events) != 0
-		if !fallback && st.Graveyard != nil {
-			if err := s.verifyGraveyardReference(st); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		full, fullErr := s.Read()
-		if fullErr != nil {
-			return State{}, fullErr
-		}
-		return full, nil
-	}
-	if fallback {
-		return s.Read()
-	}
-	return st, nil
+	st, _, err := s.ReadSummary()
+	return st, err
 }
 
 // GraveyardSummary contains only the fields needed by stats and summary UI.
@@ -94,41 +82,30 @@ type GraveyardSummary struct {
 	NextPurge time.Time
 }
 
-// ReadSummary avoids unpacking cold burial evidence. It still verifies the
-// immutable snapshot and falls back to Read for legacy or migrating stores.
+// ReadSummary avoids unpacking cold burial evidence and, like ReadCommittedHot,
+// never waits for a writer. It still verifies the immutable snapshot, and falls
+// back to the locked Read for legacy or migrating stores, a corrupt ledger, or a
+// snapshot that was replaced while it was being read.
 func (s Store) ReadSummary() (State, GraveyardSummary, error) {
-	var st State
-	var summary GraveyardSummary
-	var fallback bool
-	err := s.withLock("store.lock", false, func() error {
-		var events []Event
-		var err error
-		st, events, err = s.loadHot()
-		if err != nil {
-			return err
+	if st, events, err := s.loadHot(); err == nil && st.Version == stateVersion && len(events) == 0 {
+		if st.Graveyard == nil {
+			return st, GraveyardSummary{}, nil
 		}
-		fallback = st.Version < stateVersion || len(events) != 0
-		if fallback || st.Graveyard == nil {
-			return nil
+		if summary, err := s.readGraveyardSummary(st); err == nil {
+			return st, summary, nil
 		}
-		summary, err = s.readGraveyardSummary(st)
-		return err
-	})
+		// A record the summary projection cannot hold is still immutable cold evidence.
+		if err := s.loadGraveyard(&st); err == nil {
+			if full, more, err := s.normalizeState(st); err == nil && len(more) == 0 {
+				return full, summaryFromState(full), nil
+			}
+		}
+	}
+	full, err := s.Read()
 	if err != nil {
-		full, fullErr := s.Read()
-		if fullErr != nil {
-			return State{}, GraveyardSummary{}, fullErr
-		}
-		return full, summaryFromState(full), nil
+		return State{}, GraveyardSummary{}, err
 	}
-	if fallback {
-		full, err := s.Read()
-		if err != nil {
-			return State{}, GraveyardSummary{}, err
-		}
-		return full, summaryFromState(full), nil
-	}
-	return st, summary, nil
+	return full, summaryFromState(full), nil
 }
 
 type graveyardSummarySnapshot struct {
@@ -249,11 +226,6 @@ func validateSummaryIndex(st State, snap graveyardSummarySnapshot) error {
 	return nil
 }
 
-func (s Store) verifyGraveyardReference(st State) error {
-	_, err := s.readGraveyardSummary(st)
-	return err
-}
-
 func validateSummaryIDs(s Store, st State, snap graveyardSummarySnapshot) error {
 	seen := make(map[int64]struct{}, len(st.Items)+len(st.Proposals)+len(st.Watches))
 	add := func(id int64) error {
@@ -342,6 +314,9 @@ func checkHotMutation(st State, boundary []byte, guard hotGraveyardGuard) error 
 }
 
 func (s Store) updateHot(fn func(*State) error) error {
+	if s.replayState != nil {
+		return fn(s.replayState)
+	}
 	return s.withLock("store.lock", true, func() error {
 		st, events, err := s.loadHot()
 		if err != nil {

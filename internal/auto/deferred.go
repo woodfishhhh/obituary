@@ -18,6 +18,9 @@ func (e *Engine) ReplayObservations() error {
 func (e *Engine) replayObservations() error {
 	rows, failures := e.Svc.Store.DeferredObservations()
 	e.sets = nil
+	if e.Svc.Store.ResidentReplay() {
+		return errors.Join(failures, e.replayBatches(rows))
+	}
 	for _, row := range rows {
 		if err := e.Svc.Store.Context().Err(); err != nil {
 			return errors.Join(failures, err)
@@ -33,15 +36,25 @@ func (e *Engine) replayObservations() error {
 }
 
 func (e *Engine) replayObservation(row core.Observation) error {
+	if err := e.applyObservation(row); err != nil {
+		return err
+	}
+	return e.Svc.Store.AcknowledgeObservation(row)
+}
+
+func (e *Engine) applyObservation(row core.Observation) error {
 	state, err := e.Svc.Store.ReadHot()
 	if err != nil {
 		return err
 	} // lock contention does not consume a request's retry budget
 	if state.ObservationCompleted(&row) {
-		return e.Svc.Store.AcknowledgeObservation(row)
+		return nil
 	}
 	skip, retry := e.observationDecision(row)
 	if retry != nil {
+		if e.Svc.Store.ResidentReplay() {
+			return decisionRetry{retry} // counted after the batch is abandoned
+		}
 		_, err := e.Svc.Store.RetryObservation(row, e.now(), retry)
 		return errors.Join(fmt.Errorf("observe %s: %w", row.Path, retry), err)
 	}
@@ -56,7 +69,7 @@ func (e *Engine) replayObservation(row core.Observation) error {
 			return err
 		}
 	}
-	return e.Svc.Store.AcknowledgeObservation(row)
+	return nil
 }
 
 func (e *Engine) observationDecision(row core.Observation) (string, error) {

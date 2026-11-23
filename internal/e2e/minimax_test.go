@@ -21,7 +21,7 @@ func TestMiniMaxInstalledCommandWindows(t *testing.T) {
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}
-	repo, store := commandRepo(t)
+	repo, store := commandRepoDirect(t)
 	node, err := exec.LookPath("node")
 	if err != nil {
 		t.Skip("node unavailable")

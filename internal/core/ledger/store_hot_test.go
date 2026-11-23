@@ -16,6 +16,22 @@ import (
 	"time"
 )
 
+func TestPresentationReadsCommittedStateDuringWriter(t *testing.T) {
+	s := snapshotTestStore(t)
+	release, err := LockFile(filepath.Join(s.Home, "store.lock"), true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer release()
+	s = s.WithDeadline(time.Now().Add(150 * time.Millisecond))
+	if _, err := s.ReadActive(); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := s.ReadSummary(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestReadActiveAndSummaryAllowAnEmptyLedger(t *testing.T) {
 	store := Store{Home: t.TempDir()}
 	active, err := store.ReadActive()

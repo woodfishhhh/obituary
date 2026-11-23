@@ -45,7 +45,24 @@ func writeFixture(t *testing.T, path, data string) {
 	}
 }
 
+// commandRepo is the production arrangement: a resident serves this home, and
+// hooks hand their writes to it. A hook's response then carries no news of the
+// registration it caused; the next callback does.
 func commandRepo(t *testing.T) (string, core.Store) {
+	t.Helper()
+	return startedRepo(t)
+}
+
+// commandRepoDirect runs the resident without its hook endpoint, so hooks use
+// the direct-write path they fall back to whenever no resident is reachable.
+// Tests of that path and of host protocols that read the first response use it.
+func commandRepoDirect(t *testing.T) (string, core.Store) {
+	t.Helper()
+	t.Setenv("OBIT_TEST_NO_RESIDENT_IPC", "1")
+	return startedRepo(t)
+}
+
+func startedRepo(t *testing.T) (string, core.Store) {
 	t.Helper()
 	obit, obitd := binaryPath(t, "obit"), binaryPath(t, "obitd")
 	root := t.TempDir()

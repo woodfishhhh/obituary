@@ -20,7 +20,7 @@ func TestInstalledPluginDenialAndObservation(t *testing.T) {
 	}
 	for _, agent := range []string{"pi", "omp", "opencode", "openclaw"} {
 		t.Run(agent, func(t *testing.T) {
-			repo, _ := commandRepo(t)
+			repo, _ := commandRepoDirect(t)
 			node, err := exec.LookPath("node")
 			if err != nil {
 				t.Fatal(err)

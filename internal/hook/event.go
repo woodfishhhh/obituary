@@ -1,6 +1,7 @@
 package hook
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/auto"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/daemonipc"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 	"github.com/woodfishhhh/obituary/internal/project"
 )
@@ -201,6 +203,14 @@ func postToolContext(e *auto.Engine, ev Event, runner *Runner, pendingNotices bo
 	if err := e.RecordWrites(observations); err != nil {
 		Logf(e.Svc.Store.Home, "record session writes: %v", err)
 	}
+	if ev.Name == "PostToolUse" && len(observations) > 0 && handedToResident(e.Svc.Store, observations) {
+		// Git, consent and registration are the resident's job from here; what it
+		// finished earlier is told now, from the last committed ledger.
+		if captureErr != nil || ev.DeferContext {
+			return delivery{}, captureErr
+		}
+		return observationContext(e, ev, proj, inProject, pendingNotices, nil)
+	}
 	replayPending(e)
 	if len(paths) == 0 && !pendingNotices && ev.Name != "Context" {
 		return delivery{}, nil
@@ -229,6 +239,27 @@ func postToolContext(e *auto.Engine, ev Event, runner *Runner, pendingNotices bo
 	return observationContext(e, ev, proj, inProject, pendingNotices, notices)
 }
 
+// residentAckBudget is how long a hook waits for the resident's receipt. A
+// healthy resident answers after one durable write; waiting longer would only
+// move the delay from the resident to the agent.
+const residentAckBudget = 250 * time.Millisecond
+
+// handedToResident gives the captured writes to the resident process and
+// reports whether they are now safe: either it acknowledged them after a durable
+// write, or its endpoint was there but silent and the writes were queued as
+// per-request files instead. Without a resident it returns false and the caller
+// registers directly. An unacknowledged request may still reach the resident, so
+// the same token can arrive twice; replays register a token once.
+func handedToResident(store core.Store, observations []core.Observation) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), residentAckBudget)
+	defer cancel()
+	err := daemonipc.Submit(ctx, store.Home, observations)
+	if err == nil {
+		return true
+	}
+	return !errors.Is(err, daemonipc.ErrUnavailable) && store.DeferObservations(observations) == nil
+}
+
 func observationContext(e *auto.Engine, ev Event, proj project.Project, inProject, pendingNotices bool, notices []auto.Notice) (delivery, error) {
 	// A callback need not write another matching file to deliver earlier
 	// observations. The ledger is the queue, scoped to the current project
@@ -236,7 +267,7 @@ func observationContext(e *auto.Engine, ev Event, proj project.Project, inProjec
 	var state core.State
 	if pendingNotices || ev.Name == "Context" {
 		var err error
-		if state, err = e.Svc.Store.ReadHot(); err != nil {
+		if state, err = e.Svc.Store.ReadCommittedHot(); err != nil {
 			return delivery{}, err
 		}
 		for _, p := range core.ExistingProposals(state.Proposals) {

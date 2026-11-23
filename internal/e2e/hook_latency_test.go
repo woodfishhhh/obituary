@@ -104,11 +104,16 @@ func processLatencyPayload(t *testing.T, root, event string) ([]byte, string) {
 
 func checkProcessLatencyState(t *testing.T, store core.Store, event string) {
 	t.Helper()
-	state, err := store.ReadSnapshot()
 	want := 100
 	if event == "PostToolUse" {
 		want++
+		// The hook exits once the resident has the write; registration follows.
+		waitFor(t, func() bool {
+			st, err := store.Inspect()
+			return err == nil && len(st.Items) == want && !store.HasDeferredObservations()
+		})
 	}
+	state, err := store.ReadSnapshot()
 	if err != nil || len(state.Items) != want || len(state.Proposals) != 0 {
 		t.Fatalf("hook registration: items=%d want=%d proposals=%d err=%v", len(state.Items), want, len(state.Proposals), err)
 	}

@@ -35,6 +35,7 @@ type Resident struct {
 	graves *graves
 	// stopFolderWatch stops the live obit watch policies.
 	stopFolderWatch func()
+	stopIPC         func() error
 	runErr          error
 }
 
@@ -63,8 +64,10 @@ func NewResident(svc *core.Service, logger *log.Logger) (r *Resident, err error)
 	}
 	logger.Printf("obitd started (pid %d, home %s)", os.Getpid(), svc.Store.Home)
 	watchObservations(svc, w, logger)
+	svc.Store = svc.Store.WithResidentReplay()
 	r = resident(svc, logger)
 	r.watcher, r.release = w, release
+	r.stopIPC = serveHookEndpoint(svc, logger)
 	r.stopFolderWatch = startFolderWatch(svc, logger)
 	return r, nil
 }
@@ -89,6 +92,9 @@ func resident(svc *core.Service, logger *log.Logger) *Resident {
 func (r *Resident) Close() {
 	if r.stopFolderWatch != nil {
 		r.stopFolderWatch()
+	}
+	if r.stopIPC != nil {
+		_ = r.stopIPC()
 	}
 	_ = r.watcher.Close()
 	if r.release != nil {
@@ -179,6 +185,8 @@ func (r *Resident) wakes(event fsnotify.Event) bool {
 	switch filepath.Base(event.Name) {
 	case "store.json":
 		return !r.Service.Store.ModTime().Equal(r.read)
+	case "observations.jsonl":
+		return event.Has(fsnotify.Create) || event.Has(fsnotify.Write)
 	case "obitd.stop", "obitd.paused", "update.json":
 		return true
 	}
