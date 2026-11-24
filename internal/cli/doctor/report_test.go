@@ -97,7 +97,7 @@ func trackedReport(t *testing.T, out string) (string, ledger.Item) {
 	return "", ledger.Item{}
 }
 
-func TestDoctorSavesTheReportWithASevenDayLifespan(t *testing.T) {
+func TestDoctorSavesTheReportWithAOneDayLifespan(t *testing.T) {
 	root, executable := clitest.DoctorFixture(t)
 	before := time.Now()
 	out, stderr, err := runDoctor(t, executable)
@@ -108,7 +108,7 @@ func TestDoctorSavesTheReportWithASevenDayLifespan(t *testing.T) {
 	if filepath.Dir(path) != app.ReportsDir(filepath.Join(root, "data")) || !strings.HasPrefix(filepath.Base(path), "doctor-") {
 		t.Errorf("report location: %s", path)
 	}
-	if got := item.ExpiresAt.Sub(before); got < app.ReportLifespan || got > app.ReportLifespan+time.Minute || app.ReportLifespan != 7*24*time.Hour {
+	if got := item.ExpiresAt.Sub(before); got < app.ReportLifespan || got > app.ReportLifespan+time.Minute || app.ReportLifespan != 24*time.Hour {
 		t.Errorf("lifespan %v", got)
 	}
 	page, err := os.ReadFile(path)

@@ -32,7 +32,7 @@ func TestSummaryOfAHealthyMachineIsOneLinePerCategory(t *testing.T) {
 	want := []string{
 		"Everything looks fine (6 checks).", "",
 		"PASS  Installation", "PASS  Background runner", "PASS  Agents", "PASS  Data and settings", "",
-		"Full report (removed after 7 days): /data/reports/doctor.html",
+		"Full report (removed after 1 day): /data/reports/doctor.html",
 	}
 	lines := strings.Split(strings.TrimSpace(out), "\n")
 	if len(lines) != len(want)+1 {
@@ -100,7 +100,7 @@ func TestSummaryFollowsTheInterfaceLanguage(t *testing.T) {
 		{Name: "runner", Status: "WARN", Detail: "计划任务服务的不是这个数据目录；其余"},
 		{Name: "store", Status: "PASS"},
 	}, reportNote{Path: "/r.html"})
-	for _, want := range []string{"发现 1 个问题（共检查 2 项）。", "警告  后台运行", "       runner: 计划任务服务的不是这个数据目录\n", "修复：obit daemon enable", "通过  数据与设置", "完整报告（7 天后自动清理）：/r.html"} {
+	for _, want := range []string{"发现 1 个问题（共检查 2 项）。", "警告  后台运行", "       runner: 计划任务服务的不是这个数据目录\n", "修复：obit daemon enable", "通过  数据与设置", "完整报告（1 天后自动清理）：/r.html"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in:\n%s", want, out)
 		}
