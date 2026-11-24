@@ -75,7 +75,7 @@ irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/instal
 装好后先体检一遍：
 
 ```powershell
-obit doctor              # 只读体检：PATH、obitd、运行器、Claude Code / Codex 集成、数据目录、账本、配置（支持 --json）
+obit doctor              # 体检：一行一个方面，完整报告存成 HTML（--open 打开，--verbose 看全文，--json）
 ```
 
 ## 2. 接到 agent 身上

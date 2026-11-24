@@ -310,9 +310,10 @@ func (p Planner) showAgents(scope integrate.Scope, names []string, summary bool)
 		statuses = append(statuses, status)
 	}
 	if summary {
-		fmt.Println(cmdutil.Text("cli.init.installation_summary"))
-		for i, name := range names {
-			fmt.Printf("  %s: %s\n", name, installationSummary(statuses[i].Installation))
+		p.printSummary(names, statuses)
+		if !p.Verbose {
+			fmt.Println(cmdutil.Text("cli.init.show_details_hint"))
+			return firstErr
 		}
 		fmt.Println(cmdutil.Text("cli.init.capability_details"))
 	}
@@ -321,6 +322,23 @@ func (p Planner) showAgents(scope integrate.Scope, names []string, summary bool)
 		p.printSkillTarget(scope, name)
 	}
 	return firstErr
+}
+
+// printSummary lists each agent that needs a word; unless Verbose, the agents
+// that simply are not installed share one line.
+func (p Planner) printSummary(names []string, statuses []AgentStatus) {
+	fmt.Println(cmdutil.Text("cli.init.installation_summary"))
+	var missing []string
+	for i, name := range names {
+		if !p.Verbose && statuses[i].Installation == "missing" {
+			missing = append(missing, name)
+			continue
+		}
+		fmt.Printf("  %s: %s\n", name, installationSummary(statuses[i].Installation))
+	}
+	if len(missing) > 0 {
+		fmt.Println(cmdutil.Localizer().Text("cli.init.not_installed_list", map[string]any{"Count": len(missing), "Names": strings.Join(missing, ", ")}))
+	}
 }
 
 func installationSummary(state string) string {

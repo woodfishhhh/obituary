@@ -81,7 +81,7 @@ Bei aktiver Desktop-Überwachung verarbeitet der Tray-Prozess fällige Einträge
 ## Abfragen und Prüfungen
 
 ```powershell
-obit doctor              # read-only check (--json)
+obit doctor              # health check: short summary, full HTML report (--open, --verbose, --json)
 obit stats               # eulogy: how much was buried, space freed, resurrections (alias: eulogy)
 obit log                 # the full record of everything done
 obit config              # show the configuration; --create writes a commented default
@@ -362,7 +362,7 @@ Verwendung: `obit docker list [flags]`
 
 ### `obit doctor`
 
-Installation, Integrationen und Daten prüfen, ohne etwas zu ändern
+Installation, Integrationen und Daten prüfen; geschrieben wird nur der eigene Bericht
 
 Verwendung: `obit doctor [flags]`
 
@@ -370,7 +370,8 @@ Verwendung: `obit doctor [flags]`
 | --- | --- | --- | --- |
 | `--help` | `-h` | `false` | Hilfe zu doctor |
 | `--json` | keiner | `false` | JSON ausgeben |
-| `--verbose` | keiner | `false` | Details zu den Fähigkeiten der Agenten einbeziehen |
+| `--open` | keiner | `false` | Den vollständigen HTML-Bericht im Standardbrowser öffnen |
+| `--verbose` | keiner | `false` | Alle Prüfungen als vollständigen Text ausgeben, mit Details zu den Fähigkeiten der Agenten |
 
 ### `obit extend`
 
@@ -790,6 +791,7 @@ Verwendung: `obit init [flags]`
 | `--show` | keiner | `false` | Anzeigen, was installiert ist |
 | `--skill` | keiner | `false` | Den Obituary-Agent-Skill installieren (standardmäßig aktiviert) |
 | `--uninstall` | keiner | `false` | Entfernen, was Obituary hinzugefügt hat |
+| `--verbose` | keiner | `false` | Mit --show: die Fähigkeiten jedes Agenten im Detail auflisten |
 | `--yes` | keiner | `false` | Ohne Nachfrage anwenden |
 
 Beispiele:

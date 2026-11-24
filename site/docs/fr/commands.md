@@ -81,7 +81,7 @@ Avec la supervision du bureau activée, le processus résident traite les éché
 ## Requêtes et vérifications
 
 ```powershell
-obit doctor              # read-only check (--json)
+obit doctor              # health check: short summary, full HTML report (--open, --verbose, --json)
 obit stats               # eulogy: how much was buried, space freed, resurrections (alias: eulogy)
 obit log                 # the full record of everything done
 obit config              # show the configuration; --create writes a commented default
@@ -362,7 +362,7 @@ Usage: `obit docker list [flags]`
 
 ### `obit doctor`
 
-Vérifier l’installation, les intégrations et les données sans rien modifier
+Vérifier l’installation, les intégrations et les données ; la seule chose qu’elle écrit est son rapport
 
 Usage: `obit doctor [flags]`
 
@@ -370,7 +370,8 @@ Usage: `obit doctor [flags]`
 | --- | --- | --- | --- |
 | `--help` | `-h` | `false` | Aide pour doctor |
 | `--json` | aucun | `false` | Afficher le JSON |
-| `--verbose` | aucun | `false` | Inclure les détails des capacités des agents |
+| `--open` | aucun | `false` | Ouvrir le rapport HTML complet dans le navigateur par défaut |
+| `--verbose` | aucun | `false` | Afficher tous les contrôles en texte complet, avec les détails des capacités des agents |
 
 ### `obit extend`
 
@@ -790,6 +791,7 @@ Usage: `obit init [flags]`
 | `--show` | aucun | `false` | Afficher ce qui est installé |
 | `--skill` | aucun | `false` | Installer l’Agent Skill d’Obituary (activé par défaut) |
 | `--uninstall` | aucun | `false` | Retirer ce qu’Obituary a ajouté |
+| `--verbose` | aucun | `false` | Avec --show : lister les détails des capacités de chaque agent |
 | `--yes` | aucun | `false` | Appliquer sans demander |
 
 Exemples :

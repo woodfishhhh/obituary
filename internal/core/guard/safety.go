@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/woodfishhhh/obituary/internal/core/internal/pathcheck"
@@ -23,6 +24,9 @@ type Guard struct {
 	WatchAllowed []string
 	// System holds trees that are refused together with everything inside them.
 	System []string
+	// Exempt holds folders inside a System tree whose contents may still be
+	// registered (the folder itself stays refused), such as Obituary's reports.
+	Exempt []string
 	// Canonical resolves a path to its real location (short names expanded,
 	// links in parent folders resolved). Nil means paths are compared as given.
 	Canonical func(string) (string, error)
@@ -79,7 +83,7 @@ func (g Guard) WithCanonical(canonical func(string) (string, error)) Guard {
 		}
 		return out
 	}
-	g.Keep, g.System, g.Canonical = expand(g.Keep), expand(g.System), canonical
+	g.Keep, g.System, g.Exempt, g.Canonical = expand(g.Keep), expand(g.System), expand(g.Exempt), canonical
 	return g
 }
 
@@ -161,7 +165,7 @@ func (g Guard) ProtectedReason(path string) string {
 		return "it is inside Obituary's graveyard (" + graves + ")"
 	}
 	for _, root := range g.System {
-		if pathcheck.SamePath(path, root) || pathcheck.IsInside(path, root) {
+		if (pathcheck.SamePath(path, root) || pathcheck.IsInside(path, root)) && !g.exempt(path, root) {
 			return "it is inside a system or Obituary location (" + root + ")"
 		}
 	}
@@ -171,6 +175,14 @@ func (g Guard) ProtectedReason(path string) string {
 		}
 	}
 	return ""
+}
+
+// exempt reports whether path lies inside an Exempt folder that is itself part
+// of the protected tree root. The folder is compared strictly: only its contents.
+func (g Guard) exempt(path, root string) bool {
+	return slices.ContainsFunc(g.Exempt, func(folder string) bool {
+		return pathcheck.IsInside(path, folder) && pathcheck.IsInside(folder, root)
+	})
 }
 
 // findRepository walks dir (without following links) and returns the first

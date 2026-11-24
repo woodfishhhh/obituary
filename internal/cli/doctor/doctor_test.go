@@ -97,8 +97,13 @@ func TestDoctorNewChecksJSONAndTextReadOnly(t *testing.T) {
 	if checks["gui"].GUI == nil || checks["gui"].Status != "PASS" || checks["registry-transactions"].KTM == nil || checks["registry-transactions"].KTM.Available {
 		t.Fatalf("companion/KTM JSON: %+v", checks)
 	}
-	out, _, err := clitest.Execute(t, NewCmdWithExecutable(executable, "claude", "codex"))
-	lines := strings.Split(strings.TrimSpace(out), "\n")
+	out, _, err := clitest.Execute(t, NewCmdWithExecutable(executable, "claude", "codex"), "--verbose")
+	var lines []string
+	for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
+		if !strings.HasPrefix(line, "  ") { // capability details follow their agent
+			lines = append(lines, line)
+		}
+	}
 	// The context-menu check includes 15 individual registration statuses.
 	if err != nil || len(lines) != 47 || calls != 2 {
 		t.Fatalf("doctor text/probe count: %d lines, %d probes, %v: %s", len(lines), calls, err, out)
@@ -322,7 +327,7 @@ func TestDoctorReadOnlyAndIntegrationLifecycle(t *testing.T) {
 	if err != nil || checks["claude"].Status != "PASS" || checks["codex"].Status != "PASS" {
 		t.Fatalf("installed: %+v: %v", checks, err)
 	}
-	out, _, err := clitest.Execute(t, NewCmdWithExecutable(executable, "claude", "codex"))
+	out, _, err := clitest.Execute(t, NewCmdWithExecutable(executable, "claude", "codex"), "--verbose")
 	if err != nil || !strings.Contains(out, "PASS") || !strings.Contains(out, "WARN") {
 		t.Fatalf("text: %s: %v", out, err)
 	}
@@ -374,7 +379,7 @@ func TestDoctorFailuresAreReportedWithoutWrites(t *testing.T) {
 			if !errors.Is(err, cmdutil.ErrReported) || checks[tc.check].Status != "FAIL" || !strings.Contains(checks[tc.check].Detail, tc.detail) {
 				t.Fatalf("%+v: %v", checks, err)
 			}
-			out, _, err := clitest.Execute(t, NewCmdWithExecutable(executable, "claude", "codex"))
+			out, _, err := clitest.Execute(t, NewCmdWithExecutable(executable, "claude", "codex"), "--verbose")
 			if !errors.Is(err, cmdutil.ErrReported) || !strings.Contains(out, "FAIL") || !strings.Contains(out, tc.detail) {
 				t.Fatalf("%s: %v", out, err)
 			}

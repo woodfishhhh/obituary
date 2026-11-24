@@ -3,6 +3,7 @@ package doctor
 import (
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -98,4 +99,14 @@ func (lang diagnostics) diagnoseData(home string) DoctorCheck {
 		}
 	}
 	return c
+}
+
+// openFile hands the file to its default program through the system's own
+// explorer.exe, as the tray opens folders.
+func openFile(path string) error {
+	dir, err := windows.GetWindowsDirectory()
+	if err != nil {
+		return err
+	}
+	return startDetached(exec.Command(filepath.Join(dir, "explorer.exe"), path))
 }

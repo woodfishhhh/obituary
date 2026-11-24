@@ -81,7 +81,7 @@ Con la supervisión de escritorio activada, el proceso de la bandeja atiende los
 ## Consultas y comprobaciones
 
 ```powershell
-obit doctor              # read-only check (--json)
+obit doctor              # health check: short summary, full HTML report (--open, --verbose, --json)
 obit stats               # eulogy: how much was buried, space freed, resurrections (alias: eulogy)
 obit log                 # the full record of everything done
 obit config              # show the configuration; --create writes a commented default
@@ -362,7 +362,7 @@ Uso: `obit docker list [flags]`
 
 ### `obit doctor`
 
-Comprobar la instalación, las integraciones y los datos sin cambiar nada
+Comprobar la instalación, las integraciones y los datos; solo escribe su propio informe
 
 Uso: `obit doctor [flags]`
 
@@ -370,7 +370,8 @@ Uso: `obit doctor [flags]`
 | --- | --- | --- | --- |
 | `--help` | `-h` | `false` | Ayuda de doctor |
 | `--json` | ninguno | `false` | Imprimir JSON |
-| `--verbose` | ninguno | `false` | Incluir los detalles de las capacidades del agente |
+| `--open` | ninguno | `false` | Abrir el informe HTML completo en el navegador predeterminado |
+| `--verbose` | ninguno | `false` | Imprimir todas las comprobaciones en texto completo, con los detalles de las capacidades del agente |
 
 ### `obit extend`
 
@@ -790,6 +791,7 @@ Uso: `obit init [flags]`
 | `--show` | ninguno | `false` | Mostrar lo que está instalado |
 | `--skill` | ninguno | `false` | Instalar la Agent Skill de Obituary (activado por defecto) |
 | `--uninstall` | ninguno | `false` | Quitar lo que Obituary ha añadido |
+| `--verbose` | ninguno | `false` | Con --show: enumerar los detalles de las capacidades de cada agente |
 | `--yes` | ninguno | `false` | Aplicar sin preguntar |
 
 Ejemplos:

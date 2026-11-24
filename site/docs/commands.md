@@ -81,7 +81,7 @@ obit daemon disable
 ## 查询与体检
 
 ```powershell
-obit doctor              # 只读体检（支持 --json）
+obit doctor              # 体检：一行一个方面，完整报告存成 HTML（--open 打开，--verbose 看全文，--json）
 obit stats               # 悼词：埋了多少、腾出多少空间、复活过几次（同 eulogy）
 obit log                 # 生平记录：做过的所有事
 obit config              # 查看配置；--create 生成带注释的默认配置
@@ -362,7 +362,7 @@ obit add report.zip --at "2026-12-01 18:00"
 
 ### `obit doctor`
 
-检查安装、集成和数据，不做任何改动
+检查安装、集成和数据，只会写下自己的报告
 
 用法: `obit doctor [flags]`
 
@@ -370,7 +370,8 @@ obit add report.zip --at "2026-12-01 18:00"
 | --- | --- | --- | --- |
 | `--help` | `-h` | `false` | doctor 的帮助 |
 | `--json` | 无 | `false` | 输出 JSON |
-| `--verbose` | 无 | `false` | 包含 agent 的能力详情 |
+| `--open` | 无 | `false` | 用默认浏览器打开完整的 HTML 报告 |
+| `--verbose` | 无 | `false` | 在终端打印完整文字版：每项检查的详情和 agent 的能力详情 |
 
 ### `obit extend`
 
@@ -790,6 +791,7 @@ agent hook 的入口（由 agent 调用，不是给人用的）
 | `--show` | 无 | `false` | 显示已安装的内容 |
 | `--skill` | 无 | `false` | 安装讣告的 Agent Skill（默认启用） |
 | `--uninstall` | 无 | `false` | 移除讣告添加的内容 |
+| `--verbose` | 无 | `false` | 与 --show 一起用：列出每个 agent 的能力详情 |
 | `--yes` | 无 | `false` | 不询问，直接执行 |
 
 示例：

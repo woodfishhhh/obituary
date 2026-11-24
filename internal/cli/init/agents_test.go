@@ -38,7 +38,7 @@ func TestShowRegisteredCapabilitiesWithoutInstalling(t *testing.T) {
 	}
 	clitest.WriteFixture(t, oldHooks, strings.ReplaceAll(string(data), filepath.ToSlash(currentExe), testenv.NativeFixture("C:/old/obit.exe")))
 	before := clitest.TreeSnapshot(t, root)
-	out, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "-g", "--show")
+	out, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "-g", "--show", "--verbose")
 	if err != nil {
 		t.Fatal(out, err)
 	}
@@ -321,5 +321,37 @@ func TestManualStatusFollowsInstallationEvidence(t *testing.T) {
 				t.Fatal("inspection wrote configuration")
 			}
 		})
+	}
+}
+
+// Without --verbose the inventory is a short summary: agents that are not
+// installed share one line and capability details wait for --agent or --verbose.
+func TestShowIsCompactUnlessVerbose(t *testing.T) {
+	_, executable := clitest.DoctorFixture(t)
+	if _, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "-g", "--agent", "claude", "--yes"); err != nil {
+		t.Fatal(err)
+	}
+	out, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "-g", "--show")
+	if err != nil {
+		t.Fatal(out, err)
+	}
+	wantMissing := fmt.Sprintf("  not installed (%d): ", len(initcmd.AgentNames())-1)
+	for _, want := range []string{"Installation summary:\n  claude: installed, current\n" + wantMissing, "codex", "obit init --show --agent <name>", "obit init --show --verbose"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("compact output lacks %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "Capability details:") || strings.Contains(out, "delete guard: supported") || strings.Contains(out, "windsurf: not installed") {
+		t.Errorf("compact output carries the per-agent details:\n%s", out)
+	}
+	if lines := strings.Count(out, "\n"); lines > 40 {
+		t.Errorf("%d lines", lines)
+	}
+	verbose, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "-g", "--show", "--verbose")
+	if err != nil || !strings.Contains(verbose, "windsurf: not installed") || !strings.Contains(verbose, "Capability details:") || strings.Count(verbose, "\n") < 200 {
+		t.Errorf("--verbose lost the full inventory (%d lines): %v", strings.Count(verbose, "\n"), err)
+	}
+	if _, _, err := clitest.Execute(t, initcmd.NewCmdWithExecutable(executable), "-g", "--verbose"); err == nil {
+		t.Error("--verbose without --show was accepted")
 	}
 }

@@ -76,7 +76,7 @@ irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/instal
 Then check the installation:
 
 ```powershell
-obit doctor              # read-only check: PATH, obitd, runner, Claude Code / Codex integration, data directory, ledger, config (--json)
+obit doctor              # health check: short summary, full HTML report (--open, --verbose, --json)
 ```
 
 ## 2. Connect your agents

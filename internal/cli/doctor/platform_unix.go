@@ -5,6 +5,7 @@ package doctor
 import (
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 
@@ -76,4 +77,11 @@ func checkDataChildren(home string) error {
 		}
 	}
 	return nil
+}
+
+func openFile(path string) error {
+	if runtime.GOOS == "darwin" {
+		return startDetached(exec.Command("/usr/bin/open", path))
+	}
+	return startDetached(exec.Command("xdg-open", path))
 }
