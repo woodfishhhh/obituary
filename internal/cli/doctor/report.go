@@ -65,7 +65,7 @@ func (lang diagnostics) reportView(checks []DoctorCheck, now time.Time, home, ex
 		},
 		CheckHead: lang.Text("cli.doctor.html.check", nil), StatusHead: lang.Text("cli.doctor.html.status", nil),
 		DetailHead: lang.Text("cli.doctor.html.details", nil),
-		Privacy:    lang.Text("cli.doctor.html.privacy", nil), Expires: lang.Text("cli.doctor.html.expires", nil),
+		Privacy:    lang.Text("cli.doctor.html.privacy", nil), Expires: lang.Text("cli.doctor.html.expires", map[string]any{"Lifespan": lang.lifespan()}),
 	}
 	for _, c := range groupChecks(checks) {
 		group := reportCategory{

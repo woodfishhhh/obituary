@@ -11,7 +11,7 @@ import (
 
 // ReportLifespan is how long a report stays before it is buried; the
 // graveyard keeps it for its usual retention after that.
-const ReportLifespan = 7 * 24 * time.Hour
+const ReportLifespan = 24 * time.Hour
 
 // ReportsDir is the one folder inside the protected data directory whose
 // files may be given a lifespan (the guards exempt it), so reports written

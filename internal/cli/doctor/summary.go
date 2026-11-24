@@ -5,8 +5,10 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/rivo/uniseg"
+	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/integrate"
 )
@@ -208,10 +210,15 @@ func (lang diagnostics) writeSummary(w io.Writer, checks []DoctorCheck, note rep
 	}
 	fmt.Fprintln(w)
 	if note.Path != "" {
-		fmt.Fprintln(w, lang.Text("cli.doctor.summary.report", map[string]any{"Path": note.Path}))
+		fmt.Fprintln(w, lang.Text("cli.doctor.summary.report", map[string]any{"Path": note.Path, "Lifespan": lang.lifespan()}))
 		fmt.Fprintln(w, lang.Text("cli.doctor.summary.report_commands", nil))
 		return
 	}
 	fmt.Fprintln(w, lang.Text("cli.doctor.summary.no_report", map[string]any{"Reason": note.Reason}))
 	fmt.Fprintln(w, lang.Text("cli.doctor.summary.no_report_commands", nil))
+}
+
+// lifespan is how long a saved report stays, spelled out in whole days.
+func (lang diagnostics) lifespan() string {
+	return lang.Count("cli.doctor.lifespan", int(app.ReportLifespan/(24*time.Hour)))
 }
