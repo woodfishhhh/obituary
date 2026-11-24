@@ -1,25 +1,21 @@
 package ledger
 
 import (
-	"bytes"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
 )
 
-// viewEntry is the hot ledger the resident decoded for its last presentation
-// request, with the exact store.json bytes it came from.
-type viewEntry struct {
-	mu sync.Mutex
-	viewData
-}
-
-type viewData struct {
-	wire     []byte
-	state    State
-	snapshot string // the graveyard snapshot that was verified; empty when the ledger has none
-	stamp    snapshotStamp
+// snapshotMemo is the verified projection of the graveyard snapshot the resident
+// last read, with the reference that vouched for it and the file's size and time
+// when it was read.
+type snapshotMemo struct {
+	mu    sync.Mutex
+	ref   GraveyardReference
+	stamp snapshotStamp
+	snap  graveyardSummarySnapshot
+	ok    bool
 }
 
 type snapshotStamp struct {
@@ -36,12 +32,13 @@ func stampOf(path string) (snapshotStamp, bool) {
 }
 
 // ReadActiveView is ReadActive for the resident, which answers many
-// presentation requests between two commits. It decodes store.json only when its
-// bytes differ from the ones decoded last, and it verifies the immutable
-// graveyard snapshot once per size and modification time instead of per request.
-// Anything it cannot vouch for (a ledger that needs migration, a snapshot that
-// does not verify) is read by ReadActive, so the answer is the one a separate
-// process would give. The state is shared with later requests: callers only read it.
+// presentation requests while hooks commit. Every call decodes the store.json it
+// finds, so the answer is always the latest commit, but the immutable graveyard
+// snapshot (most of the cold bytes ReadActive would read and hash again) is
+// parsed once per file: the memo is used only while the hot ledger still
+// references the same snapshot (same hash) and the file has the same size and
+// modification time. The hot ledger is still checked against it on every call.
+// Everything else is ReadActive, which a process that is not the resident uses.
 func (s Store) ReadActiveView() (State, error) {
 	if s.resident == nil {
 		return s.ReadActive()
@@ -50,47 +47,45 @@ func (s Store) ReadActiveView() (State, error) {
 	if err != nil {
 		return s.ReadActive()
 	}
-	if st, ok := s.resident.view.hit(raw); ok {
-		return st, nil
-	}
 	decoded, events, err := s.decodeHot(raw)
 	if err != nil {
 		return s.ReadActive()
 	}
-	entry := viewData{wire: raw}
-	if decoded.Graveyard != nil {
-		// Stamped before it is verified: a change in between only costs a re-read.
-		var ok bool
-		entry.snapshot = filepath.Join(s.Home, decoded.Graveyard.File)
-		if entry.stamp, ok = stampOf(entry.snapshot); !ok {
-			return s.ReadActive()
-		}
-	}
-	st, _, ok := s.committedSummary(decoded, events, nil)
+	st, _, ok := s.committedSummary(decoded, events, nil, s.memoSummary)
 	if !ok {
 		return s.ReadActive()
 	}
-	entry.state = st
-	s.resident.view.put(entry)
 	return st, nil
 }
 
-func (v *viewEntry) hit(raw []byte) (State, bool) {
-	v.mu.Lock()
-	defer v.mu.Unlock()
-	if v.wire == nil || !bytes.Equal(raw, v.wire) {
-		return State{}, false
-	}
-	if v.snapshot != "" {
-		if stamp, ok := stampOf(v.snapshot); !ok || stamp != v.stamp {
-			return State{}, false
+func (s Store) memoSummary(st State) (GraveyardSummary, error) {
+	memo := &s.resident.snapshot
+	path := filepath.Join(s.Home, st.Graveyard.File)
+	stamp, stamped := stampOf(path) // before the read: a change in between only costs a re-read
+	snap, hit := memo.get(*st.Graveyard, stamp, stamped)
+	if !hit {
+		var err error
+		if snap, err = s.loadSummarySnapshot(st); err != nil {
+			return GraveyardSummary{}, err
+		}
+		if stamped {
+			memo.put(*st.Graveyard, stamp, snap)
 		}
 	}
-	return v.state, true
+	return s.summarize(st, snap)
 }
 
-func (v *viewEntry) put(entry viewData) {
-	v.mu.Lock()
-	defer v.mu.Unlock()
-	v.viewData = entry
+func (m *snapshotMemo) get(ref GraveyardReference, stamp snapshotStamp, stamped bool) (graveyardSummarySnapshot, bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if !stamped || !m.ok || m.ref != ref || m.stamp != stamp {
+		return graveyardSummarySnapshot{}, false
+	}
+	return m.snap, true
+}
+
+func (m *snapshotMemo) put(ref GraveyardReference, stamp snapshotStamp, snap graveyardSummarySnapshot) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.ref, m.stamp, m.snap, m.ok = ref, stamp, snap, true
 }

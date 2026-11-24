@@ -63,6 +63,7 @@ func NewResident(svc *core.Service, logger *log.Logger) (r *Resident, err error)
 		return nil, err
 	}
 	logger.Printf("obitd started (pid %d, home %s)", os.Getpid(), svc.Store.Home)
+	fitMemoryLimit(svc.Store.Home)
 	watchObservations(svc, w, logger)
 	svc.Store = svc.Store.WithResidentReplay()
 	r = resident(svc, logger)
@@ -197,6 +198,7 @@ func (r *Resident) step(interval time.Duration) (time.Duration, bool, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	home := r.Service.Store.Home
+	fitMemoryLimit(home)
 	if _, err := os.Stat(stopPath(home)); err == nil {
 		return 0, true, nil
 	} else if !errors.Is(err, os.ErrNotExist) {

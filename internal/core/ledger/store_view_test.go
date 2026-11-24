@@ -8,38 +8,49 @@ import (
 	"testing"
 )
 
-func TestReadActiveViewDecodesOncePerCommit(t *testing.T) {
+func countSnapshotReads(t *testing.T) *int {
+	t.Helper()
+	reads, old := 0, readGraveyardSnapshot
+	readGraveyardSnapshot = func(path string) ([]byte, error) { reads++; return old(path) }
+	t.Cleanup(func() { readGraveyardSnapshot = old })
+	return &reads
+}
+
+func TestReadActiveViewParsesTheSnapshotOncePerFile(t *testing.T) {
 	s := snapshotTestStore(t).WithResidentReplay()
+	reads := countSnapshotReads(t)
 	first, err := s.ReadActiveView()
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := s.ReadActiveView()
-	if err != nil || &first.Items[0] != &second.Items[0] {
-		t.Fatalf("store.json did not change, so the decoded items are reused: %v", err)
-	}
-	if want, err := s.ReadActive(); err != nil || !reflect.DeepEqual(want.Items, second.Items) {
+	if want, err := s.ReadActive(); err != nil || !reflect.DeepEqual(want.Items, first.Items) {
 		t.Fatalf("the view differs from ReadActive: %v", err)
 	}
-	// Another process commits: the next read is that commit, never the old copy.
+	// Another process commits the hot ledger: the next read is that commit, never an old copy,
+	// and the snapshot it still references is not parsed again.
 	if err := (Store{Home: s.Home}).UpdateHot(func(st *State) error { st.Items[0].Rev += 5; return nil }); err != nil {
 		t.Fatal(err)
 	}
-	third, err := s.ReadActiveView()
-	if err != nil || third.Items[0].Rev != first.Items[0].Rev+5 {
-		t.Fatalf("stale view after another process committed: %+v %v", third.Items[0], err)
+	*reads = 0
+	second, err := s.ReadActiveView()
+	if err != nil || second.Items[0].Rev != first.Items[0].Rev+5 {
+		t.Fatalf("stale view after another process committed: %+v %v", second.Items[0], err)
+	}
+	if _, err := s.ReadActiveView(); err != nil || *reads != 0 {
+		t.Fatalf("the snapshot was read %d times for a snapshot that did not change: %v", *reads, err)
 	}
 }
 
 func TestReadActiveViewIsReadActiveOutsideTheResident(t *testing.T) {
 	s := snapshotTestStore(t)
-	a, err := s.ReadActiveView()
-	if err != nil {
-		t.Fatal(err)
+	reads := countSnapshotReads(t)
+	for range 2 {
+		if _, err := s.ReadActiveView(); err != nil {
+			t.Fatal(err)
+		}
 	}
-	b, err := s.ReadActiveView()
-	if err != nil || &a.Items[0] == &b.Items[0] {
-		t.Fatalf("a process that is not the resident keeps no copy: %v", err)
+	if *reads != 2 {
+		t.Fatalf("a process that is not the resident keeps nothing between reads: %d snapshot reads", *reads)
 	}
 }
 

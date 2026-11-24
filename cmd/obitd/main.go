@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"runtime/debug"
 	"sync"
 
 	"github.com/woodfishhhh/obituary/internal/app"
@@ -86,7 +85,6 @@ func runDaemon(once, withTray bool) error {
 		return nil
 	}
 	serve := app.Serve
-	debug.SetMemoryLimit(12 << 20)
 	if withTray {
 		serve = tray.Run
 	}

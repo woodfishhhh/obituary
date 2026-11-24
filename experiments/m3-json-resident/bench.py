@@ -153,7 +153,8 @@ class System:
         self.b, self.name, self.n = b, name, n
         self.e = b.env(name + tag)
         self.home = Path(self.e["OBIT_HOME"])
-        b.run(name, "probe", ["seed", str(n), str(b.repo)], self.e)
+        # OBIT_BENCH_SEED_REAL=1: burials as `obit bury` writes them (the earlier gate runs used bare ones)
+        b.run(name, "probe", ["seed", str(n), str(b.repo), *(["real"] if os.environ.get("OBIT_BENCH_SEED_REAL") else [])], self.e)
         (self.home / "migrated-1.3-auto-off").touch()
         self.expected = n
         self.daemon = None

@@ -102,19 +102,19 @@ func (s Store) ReadSummary() (State, GraveyardSummary, error) {
 // replaced during the read.
 func (s Store) readCommittedSummary() (State, GraveyardSummary, bool) {
 	st, events, err := s.loadHot()
-	return s.committedSummary(st, events, err)
+	return s.committedSummary(st, events, err, s.readGraveyardSummary)
 }
 
 // committedSummary finishes readCommittedSummary for a hot ledger that was
 // already read; a caller that holds the bytes it decoded shares the decision.
-func (s Store) committedSummary(st State, events []Event, err error) (State, GraveyardSummary, bool) {
+func (s Store) committedSummary(st State, events []Event, err error, summarize func(State) (GraveyardSummary, error)) (State, GraveyardSummary, bool) {
 	if err != nil || st.Version != stateVersion || len(events) != 0 {
 		return State{}, GraveyardSummary{}, false
 	}
 	if st.Graveyard == nil {
 		return st, GraveyardSummary{}, true
 	}
-	if summary, err := s.readGraveyardSummary(st); err == nil {
+	if summary, err := summarize(st); err == nil {
 		return st, summary, true
 	}
 	// A record the summary projection cannot hold is still immutable cold evidence.
@@ -136,24 +136,34 @@ type graveyardSummarySnapshot struct {
 	Burials         []graveyardSummaryBurial  `json:"burials,omitempty"`
 	RestoreCleanups []graveyardSummaryCleanup `json:"restoreCleanups,omitempty"`
 	Volumes         []*ledgerVolume           `json:"volumes,omitempty"`
+	// Tables the burials point into. A summary never needs their rows, only that
+	// every reference lands on one (checked in validateSummaryRefs); the hash the hot
+	// ledger holds already proves the rows are the ones that were committed.
+	ParentChains []json.RawMessage `json:"parentChains,omitempty"`
+	Operations   []json.RawMessage `json:"operations,omitempty"`
+	Origins      []json.RawMessage `json:"origins,omitempty"`
 }
 
 type graveyardSummaryBurial struct {
-	Grave       string
-	IsDir       bool
-	BuriedAt    time.Time
-	Reason      string
-	Note        string
-	Source      string
-	GraveID     *ledgerIdentity
-	Kind        string          `json:"kind,omitempty"`
-	ID          int64           `json:"id"`
-	Path        string          `json:"path"`
-	Identity    *ledgerIdentity `json:"identity,omitempty"`
-	Size        int64           `json:"size"`
-	PurgeAt     time.Time       `json:"purgeAt"`
-	Contains    []int64         `json:"contains,omitempty"`
-	PurgeIntent *PurgeIntent    `json:"purgeIntent,omitempty"`
+	Grave        string
+	IsDir        bool
+	BuriedAt     time.Time
+	Reason       string
+	Note         string
+	Source       string
+	GraveID      *ledgerIdentity
+	LongNames    bool            `json:"longNames,omitempty"`
+	ParentRef    *int            `json:"parentRef,omitempty"`
+	OperationRef *int            `json:"operationRef,omitempty"`
+	OriginRef    *int            `json:"originRef,omitempty"`
+	Kind         string          `json:"kind,omitempty"`
+	ID           int64           `json:"id"`
+	Path         string          `json:"path"`
+	Identity     *ledgerIdentity `json:"identity,omitempty"`
+	Size         int64           `json:"size"`
+	PurgeAt      time.Time       `json:"purgeAt"`
+	Contains     []int64         `json:"contains,omitempty"`
+	PurgeIntent  *PurgeIntent    `json:"purgeIntent,omitempty"`
 }
 
 type graveyardSummaryCleanup struct {
@@ -173,25 +183,76 @@ func summaryFromState(st State) GraveyardSummary {
 }
 
 func (s Store) readGraveyardSummary(st State) (GraveyardSummary, error) {
+	snap, err := s.loadSummarySnapshot(st)
+	if err != nil {
+		return GraveyardSummary{}, err
+	}
+	return s.summarize(st, snap)
+}
+
+// loadSummarySnapshot reads and verifies the immutable snapshot the hot ledger
+// references. It depends on nothing else in the hot ledger, so a resident can keep
+// its result for as long as the same file is still there.
+func (s Store) loadSummarySnapshot(st State) (graveyardSummarySnapshot, error) {
 	data, err := readGraveyardSnapshot(filepath.Join(s.Home, st.Graveyard.File))
 	if err != nil {
-		return GraveyardSummary{}, fmt.Errorf("read referenced graveyard snapshot: %w", err)
+		return graveyardSummarySnapshot{}, fmt.Errorf("read referenced graveyard snapshot: %w", err)
 	}
 	if fmt.Sprintf("%x", sha256.Sum256(data)) != st.Graveyard.Hash {
-		return GraveyardSummary{}, errors.New("invalid referenced graveyard snapshot: graveyard snapshot hash or reference mismatch")
+		return graveyardSummarySnapshot{}, errors.New("invalid referenced graveyard snapshot: graveyard snapshot hash or reference mismatch")
 	}
 	var snap graveyardSummarySnapshot
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&snap); err != nil {
-		return GraveyardSummary{}, fmt.Errorf("invalid referenced graveyard snapshot: %w", err)
+		return graveyardSummarySnapshot{}, fmt.Errorf("invalid referenced graveyard snapshot: %w", err)
 	}
 	if len(bytes.Trim(data[decoder.InputOffset():], " \t\n\r")) != 0 {
-		return GraveyardSummary{}, errors.New("trailing data in graveyard snapshot")
+		return graveyardSummarySnapshot{}, errors.New("trailing data in graveyard snapshot")
 	}
 	if snap.Owner != graveyardSnapshotOwner || snap.Version != stateVersion || snap.DataID == "" || snap.DataID != st.DataID || snap.Generation != st.Graveyard.Generation {
-		return GraveyardSummary{}, errors.New("invalid referenced graveyard snapshot: graveyard snapshot version, data owner or generation mismatch")
+		return graveyardSummarySnapshot{}, errors.New("invalid referenced graveyard snapshot: graveyard snapshot version, data owner or generation mismatch")
 	}
+	if err := validateSummaryRefs(snap); err != nil {
+		return graveyardSummarySnapshot{}, fmt.Errorf("invalid referenced graveyard snapshot: %w", err)
+	}
+	return snap, nil
+}
+
+// validateSummaryRefs holds the summary to the references the full decoder
+// enforces: each one is in range and points at a row, not at null.
+func validateSummaryRefs(snap graveyardSummarySnapshot) error {
+	check := func(b graveyardSummaryBurial) error {
+		for _, ref := range []struct {
+			name  string
+			index *int
+			table []json.RawMessage
+		}{{"parentRef", b.ParentRef, snap.ParentChains}, {"operationRef", b.OperationRef, snap.Operations}, {"originRef", b.OriginRef, snap.Origins}} {
+			if ref.index == nil {
+				continue
+			}
+			if *ref.index < 0 || *ref.index >= len(ref.table) || string(ref.table[*ref.index]) == "null" {
+				return fmt.Errorf("burial #%d has invalid %s %d", b.ID, ref.name, *ref.index)
+			}
+		}
+		return nil
+	}
+	for _, b := range snap.Burials {
+		if err := check(b); err != nil {
+			return err
+		}
+	}
+	for _, c := range snap.RestoreCleanups {
+		if err := check(c.Burial); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// summarize checks the verified snapshot against the hot ledger, which changes
+// with every commit, and totals it. It only reads snap.
+func (s Store) summarize(st State, snap graveyardSummarySnapshot) (GraveyardSummary, error) {
 	if err := validateSummaryIDs(s, st, snap); err != nil {
 		return GraveyardSummary{}, err
 	}

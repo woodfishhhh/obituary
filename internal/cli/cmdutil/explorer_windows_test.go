@@ -4,7 +4,6 @@ package cmdutil_test
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -46,7 +45,7 @@ func TestExplorerCheckLauncher(t *testing.T) {
 	if err != nil {
 		t.Fatalf("child: %v\n%s", err, out)
 	}
-	_, _ = io.WriteString(os.Stdout, string(out))
+	_, _ = os.Stdout.Write(out)
 }
 
 func TestSkipExplorerCheckParentImage(t *testing.T) {

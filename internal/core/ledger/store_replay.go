@@ -15,11 +15,11 @@ import (
 // store.json still holds those bytes: other processes may replace a v18 file, so
 // a modification time alone cannot prove a hit.
 type replayCache struct {
-	mu    sync.Mutex
-	wire  []byte
-	state State
-	quiet quietMark
-	view  viewEntry
+	mu       sync.Mutex
+	wire     []byte
+	state    State
+	quiet    quietMark
+	snapshot snapshotMemo
 }
 
 // quietMark identifies the store.json the resident committed when that ledger

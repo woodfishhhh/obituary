@@ -31,9 +31,9 @@ func main() {
 	}
 	store := core.Store{Home: home}
 	switch os.Args[1] {
-	case "seed": // seed N <repo>: N live items and, from 1000 up, N buried entries
+	case "seed": // seed N <repo> [real]: N live items and, from 1000 up, N buried entries
 		n, _ := strconv.Atoi(os.Args[2])
-		seed(store, home, n, os.Args[3])
+		seed(store, home, n, os.Args[3], len(os.Args) > 4 && os.Args[4] == "real")
 	case "due": // move item 1's expiry: one targeted write by a short process
 		must(store.UpdateHot(func(st *core.State) error {
 			for i := range st.Items {
@@ -52,7 +52,10 @@ func main() {
 	}
 }
 
-func seed(store core.Store, home string, n int, repo string) {
+// seed writes the benchmark ledger. Bare burials are what the earlier gate runs used; with real,
+// each burial carries what `obit bury` writes (expanded long names, a parent chain, the deletion
+// operation and its origin), so list reads the ledger a real user has.
+func seed(store core.Store, home string, n int, repo string, real bool) {
 	fs, now := winfs.FS{}, time.Now()
 	root := filepath.Join(filepath.Dir(home), "data")
 	must(os.MkdirAll(root, 0o700))
@@ -74,7 +77,15 @@ func seed(store core.Store, home string, n int, repo string) {
 		must(err)
 		obj, err := fs.Identify(g)
 		must(err)
-		st.Burials = append(st.Burials, core.Burial{ID: j, Path: filepath.Join(root, fmt.Sprintf("old-%d", j), "buried"), Grave: g, Identity: &obj, GraveID: &gid, BuriedAt: now, PurgeAt: now.Add(24 * time.Hour), Reason: core.ReasonBury})
+		b := core.Burial{ID: j, Path: filepath.Join(root, fmt.Sprintf("old-%d", j), "buried"), Grave: g, Identity: &obj, GraveID: &gid, BuriedAt: now, PurgeAt: now.Add(24 * time.Hour), Reason: core.ReasonBury}
+		if real {
+			b.LongNames, b.Source, b.Project, b.Session = true, "cli", repo, "bench-session"
+			b.Operation = &core.BurialOperation{ID: fmt.Sprintf("batch-%04d", i/80), StartedAt: now, Project: repo, Session: "bench-session"}
+			for dir := filepath.Dir(b.Path); len(b.Parents) < 4 && dir != filepath.Dir(dir); dir = filepath.Dir(dir) {
+				b.Parents = append(b.Parents, core.BurialParent{Path: dir, Identity: gid})
+			}
+		}
+		st.Burials = append(st.Burials, b)
 	}
 	must(store.Update(func(v *core.State) error { *v = st; return nil }))
 	fmt.Println(n, len(st.Burials))

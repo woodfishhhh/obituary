@@ -45,19 +45,19 @@ def one_wave(b, s, hook_sys, k, j):
         barrier.wait()
         time.sleep(.065)
         ms, out, err = b.run(s.name, "obit", ["list"], s.e)
-        return ms, len(out), len(out.splitlines()), len(err)
+        return ms, len(out), len(out.splitlines()), len(err), err[:200].decode("utf8", "replace").strip()
 
     with cf.ThreadPoolExecutor(k + 1) as pool, bench.CPUWindow() as cpu:
         fs = [pool.submit(hook, i) for i in range(k)]
         rd = pool.submit(reader)
         barrier.wait()
         hooks = [f.result() for f in fs]
-        ms, size, rows, errlen = rd.result()
+        ms, size, rows, errlen, errtext = rd.result()
     if k:
         s.expected += k
         s.drain()
     time.sleep(.6)
-    return paths, dict(arm=s.name, k=k, wave=j, list_ms=ms, stdout_bytes=size, rows=rows, stderr_bytes=errlen,
+    return paths, dict(arm=s.name, k=k, wave=j, list_ms=ms, stdout_bytes=size, rows=rows, stderr_bytes=errlen, stderr=errtext,
                        hook_ms=hooks, cpu=cpu.pct)
 
 
