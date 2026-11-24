@@ -89,7 +89,7 @@ Cada plataforma de un vistazo:
 | Instalación | Scoop, el script `install.ps1`(winget en revisión) | Homebrew, el script `install.sh` | el script `install.sh` |
 | Comprobación de caducidad | proceso residente en la bandeja, Programador de tareas como respaldo | agente launchd de usuario | temporizador `systemd --user`; crontab de usuario sin systemd |
 | CLI, cementerio y resurrección, registro automático opcional, guardia de eliminación, integración con agentes(hooks, Skill, MCP), contenedores Docker, políticas de carpetas | sí | sí | sí |
-| Bandeja, ventana pequeña, menús contextuales, fechas de entierro en el Explorador, accesos del menú Inicio y del escritorio | sí | Ventana y bandeja en macOS mediante DMG universal · Finder: Acciones rápidas, Etiquetas de fecha | Ventana y bandeja en Ubuntu 24.04 amd64 (deb) · Nautilus: Scripts · Dolphin: Etiquetas de fecha |
+| Bandeja, ventana pequeña, menús contextuales, fechas de entierro en el Explorador, accesos del menú Inicio y del escritorio | sí | Ventana y bandeja en macOS mediante DMG universal · Finder: Acciones rápidas, Etiquetas de fecha | Ventana y bandeja en Ubuntu 24.04 amd64 (deb) · Nautilus: Scripts · Dolphin: menú, Etiquetas de fecha |
 | Modo Papelera de reciclaje | sí | solo cementerio | sí |
 
 Con la supervisión de escritorio activada, el proceso de la bandeja atiende los vencimientos y una tarea independiente comprueba los pendientes cada hora. Las ediciones sin bandeja mantienen el intervalo de cinco minutos.

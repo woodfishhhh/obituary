@@ -89,7 +89,7 @@ Read https://obituary.woodfish.site/agent-install.md and follow it to install Ob
 | インストール | Scoop、`install.ps1` スクリプト（winget は審査中） | Homebrew、`install.sh` スクリプト | `install.sh` スクリプト |
 | 期限の確認 | 常駐トレイプロセス、予備としてタスクスケジューラ | ユーザー launchd エージェント | `systemd --user` タイマー、systemd がない場合はユーザー crontab |
 | CLI、墓地と復活、任意の自動登録、削除ガード、エージェント連携（hook、Skill、MCP）、Docker コンテナ、フォルダーポリシー | あり | あり | あり |
-| トレイ、小さなウィンドウ、コンテキストメニュー、エクスプローラーの埋葬日、スタートメニューとデスクトップショートカット | あり | macOS の universal DMG で小窓とメニューバーのトレイを利用可能 · Finder: クイックアクション, 日付タグ | Ubuntu 24.04 amd64 の deb でウィンドウとトレイを利用可能 · Nautilus: スクリプト · Dolphin: 日付タグ |
+| トレイ、小さなウィンドウ、コンテキストメニュー、エクスプローラーの埋葬日、スタートメニューとデスクトップショートカット | あり | macOS の universal DMG で小窓とメニューバーのトレイを利用可能 · Finder: クイックアクション, 日付タグ | Ubuntu 24.04 amd64 の deb でウィンドウとトレイを利用可能 · Nautilus: スクリプト · Dolphin: メニュー、日付タグ |
 | ごみ箱モード | あり | 墓地のみ | あり |
 
 デスクトップ版で監視が有効な場合、トレイの常駐プロセスが期限に合わせて処理し、独立したジョブが1時間ごとに取りこぼしを確認します。トレイのない版では従来どおり5分間隔です。

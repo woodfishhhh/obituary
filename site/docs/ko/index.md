@@ -11,7 +11,8 @@ Windows 10 / 11, macOS 및 Linux(x64 및 ARM64):
 | 설치 방법 | Scoop, `install.ps1` 스크립트(winget은 검토 중) | Homebrew, `install.sh` 스크립트 | `install.sh` 스크립트 |
 | 만료 확인 | 상주 트레이 프로세스, 작업 스케줄러를 대체 수단으로 사용 | 사용자 launchd 에이전트 | `systemd --user` 타이머, systemd가 없으면 사용자 crontab |
 | CLI, 묘지와 부활, 자동 등록(선택 사항), 삭제 가드, 에이전트 연동(hook, Skill, MCP), Docker 컨테이너, 폴더 정책 | 지원 | 지원 | 지원 |
-| 트레이, 작은 창, 컨텍스트 메뉴, Explorer의 매장 날짜, 시작 메뉴와 바탕 화면 바로 가기 | 지원 | 대신 CLI 사용: `obit list`, `obit graveyard`, `obit resurrect` | macOS와 동일 |
+| 트레이, 작은 창, 시작 메뉴와 바탕 화면 바로 가기 | 지원 | 대신 CLI 사용: `obit list`, `obit graveyard`, `obit resurrect` | macOS와 동일 |
+| 파일 관리자의 컨텍스트 메뉴와 매장 날짜 | 탐색기 | Finder: 빠른 동작, 날짜 태그 | Nautilus: 스크립트 · Dolphin: 메뉴, 날짜 태그 |
 | 휴지통 모드 | 지원 | 묘지만 사용 | 묘지만 사용 |
 
 **가장 쉬운 방법: 에이전트에게 맡기세요.** 사용하는 에이전트(Claude Code, Codex, Cursor 등)에게 이 문장을 보내세요. Obituary를 설치하고 자신에게 연결한 뒤, 사용자의 결정이 필요한 곳에서 멈춥니다.

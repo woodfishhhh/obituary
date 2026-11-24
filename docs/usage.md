@@ -14,7 +14,7 @@ obit watch --list                           # 有哪些文件夹策略，各自�
 obit watch --remove C:\Users\你\Downloads    # 移除策略，它登记过的寿命一起取消
 ```
 
-- 右键菜单：在资源管理器里右键文件或文件夹（可以多选），选「放进讣告」再选 1 天、7 天或 30 天，或者「现在埋掉（可恢复）」；Windows 11 在「显示更多选项」里。做完弹一条通知，说放进了几项、失败几项。macOS 和 Linux 没有右键菜单，先用命令：`obit mark <路径> 7d`、`obit bury <路径>`。
+- 右键菜单：在资源管理器里右键文件或文件夹（可以多选），选「放进讣告」再选 1 天、7 天或 30 天，或者「现在埋掉（可恢复）」；Windows 11 在「显示更多选项」里。做完弹一条通知，说放进了几项、失败几项。macOS 在 Finder 的「快速操作」里，Linux 在 Nautilus 的「脚本 → Obituary」或 Dolphin 的讣告菜单里；Dolphin 单独选中一个文件夹时没有入口，请改用命令（`obit mark <路径> 7d`、`obit bury <路径>`）或 Nautilus。
 
   <img alt="资源管理器右键菜单：现在埋掉（可恢复）、放进讣告（1 天、7 天、30 天）、复活最近下葬的" src="assets/readme/context-menu-zh.png" width="420">
 

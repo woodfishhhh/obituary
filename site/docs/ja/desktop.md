@@ -110,7 +110,7 @@ grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt insta
 
 更新後にエクスプローラーの右クリックメニュー全体が別の対応言語になっていても、メニューはそのまま使えます。`obit doctor` は情報として表示します（JSON では `installation: label-language-mismatch`）。`obit init --context-menu --yes` で現在の表示言語に合わせられます。
 
-Finder では「クイックアクション」、Nautilus では「スクリプト → Obituary」を使います。Dolphin のサービスメニューは余白と単一フォルダーの選択を区別できないため、どちらにも操作を表示しません。ファイルを一つ、または複数の項目を選ぶと操作できます。ポリシーの設定にはフォルダーを二つ以上選んでください。単一フォルダーには CLI を使います。既存のメニューは `obit init --context-menu --yes` で更新してください。
+Finder では「クイックアクション」、Nautilus では「スクリプト → Obituary」を使います。Dolphin のサービスメニューは余白と単一フォルダーの選択を区別できないため、どちらにも操作を表示しません。Dolphin では、ファイルを一つ、または複数の項目を選ぶと操作でき、ポリシーの設定にはフォルダーを二つ以上選ぶ必要があります。フォルダーを一つだけ選んだ場合は、CLI か Nautilus を使います。既存のメニューは `obit init --context-menu --yes` で更新してください。
 
 ## アイコンとメニュー
 

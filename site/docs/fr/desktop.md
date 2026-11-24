@@ -110,7 +110,7 @@ Vous pouvez ajouter plusieurs fichiers en une fois. Une notification indique le 
 
 Après une mise à niveau, si tous les libellés du menu de l’Explorateur sont dans une autre langue prise en charge, le menu reste utilisable. `obit doctor` le signale à titre informatif (JSON : `installation: label-language-mismatch`). `obit init --context-menu --yes` applique la langue actuelle de l’interface.
 
-Dans Finder, ouvrez Actions rapides ; dans Nautilus, Scripts → Obituary. Dolphin transmet la même cible pour une zone vide et pour un seul dossier sélectionné : aucune action Obituary dans ces deux cas. Le sous-menu reste disponible pour un fichier ou une sélection multiple. Une règle de dossier nécessite au moins deux dossiers sélectionnés ; pour un seul, utilisez la ligne de commande. Mettez à jour un menu existant avec `obit init --context-menu --yes`.
+Dans Finder, ouvrez Actions rapides ; dans Nautilus, Scripts → Obituary. Dolphin transmet la même cible pour une zone vide et pour un seul dossier sélectionné : aucune action Obituary dans ces deux cas. Dans Dolphin, le sous-menu reste disponible pour un fichier ou une sélection multiple, et une règle de dossier nécessite au moins deux dossiers sélectionnés. Pour un seul dossier sélectionné, utilisez la ligne de commande ou Nautilus. Mettez à jour un menu existant avec `obit init --context-menu --yes`.
 
 ## Icônes et menus
 

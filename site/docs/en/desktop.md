@@ -110,7 +110,7 @@ Select many files and add them at once. A notification says how many went in, wh
 
 If all Explorer menu labels are in another supported language after an upgrade, the menu still works. `obit doctor` reports this as information (`installation: label-language-mismatch` in JSON). Run `obit init --context-menu --yes` to switch the labels to the current interface language.
 
-Use Quick Actions in Finder or Scripts → Obituary in Nautilus. Dolphin passes the same target for empty space and a single selected folder, so neither offers Obituary actions. Use the Obituary submenu on a file or a multiple selection. A folder policy requires at least two selected folders; for one folder, use the CLI. Run `obit init --context-menu --yes` to update an existing menu.
+Use Quick Actions in Finder or Scripts → Obituary in Nautilus. Dolphin passes the same target for empty space and a single selected folder, so neither offers Obituary actions. In Dolphin, the Obituary submenu appears for a file or a multiple selection, and a folder policy requires at least two selected folders. For a single selected folder, use the CLI or Nautilus. Run `obit init --context-menu --yes` to update an existing menu.
 
 ## Icons and menus
 

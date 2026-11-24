@@ -113,7 +113,7 @@ grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt insta
 
 如果升级后资源管理器的整套右键菜单标签用了另一种受支持的语言，菜单仍能正常使用。`obit doctor` 只给信息提示（JSON 中为 `installation: label-language-mismatch`）。运行 `obit init --context-menu --yes` 可把标签换成当前界面语言。
 
-在 Finder 的「快速操作」、Nautilus 的「脚本 → Obituary」或 Dolphin 的「讣告 Obituary」中选择动作。Dolphin 的静态服务菜单不能区分右键空白处和选中单个文件夹，所以两处都不提供讣告动作。可对单个文件或多选项目登记、下葬和复活；文件夹策略要求至少选中两个文件夹。只处理一个文件夹时请用命令行。已有安装请运行 `obit init --context-menu --yes` 更新菜单。
+在 Finder 的「快速操作」、Nautilus 的「脚本 → Obituary」或 Dolphin 的「讣告 Obituary」中选择动作。Dolphin 的静态服务菜单不能区分右键空白处和选中单个文件夹，所以两处都没有讣告入口。在 Dolphin 里，可对单个文件或多选项目登记、下葬和复活，文件夹策略要求至少选中两个文件夹；单独选中一个文件夹时，请改用命令行或 Nautilus。已有安装请运行 `obit init --context-menu --yes` 更新菜单。
 
 ## 图标和菜单
 

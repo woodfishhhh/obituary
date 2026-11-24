@@ -110,7 +110,7 @@ Du kannst mehrere Dateien gleichzeitig auswählen und hinzufügen. Ein Hinweis n
 
 Erscheinen nach einem Upgrade alle Explorer-Menüeinträge in einer anderen unterstützten Sprache, funktioniert das Menü weiterhin. `obit doctor` meldet dies als Hinweis (JSON: `installation: label-language-mismatch`). `obit init --context-menu --yes` stellt die Beschriftung auf die aktuelle Oberflächensprache um.
 
-Im Finder stehen die Aktionen unter Schnellaktionen, in Nautilus unter Skripte → Obituary. Dolphin kann in statischen Dienstmenüs eine freie Fläche nicht von einem einzelnen ausgewählten Ordner unterscheiden; in beiden Fällen fehlen die Obituary-Aktionen. Das Untermenü ist für eine Datei oder eine Mehrfachauswahl verfügbar. Ordnerrichtlinien erfordern mindestens zwei ausgewählte Ordner; für einen Ordner die Befehlszeile verwenden. Bestehende Menüs mit `obit init --context-menu --yes` aktualisieren.
+Im Finder stehen die Aktionen unter Schnellaktionen, in Nautilus unter Skripte → Obituary. Dolphin kann in statischen Dienstmenüs eine freie Fläche nicht von einem einzelnen ausgewählten Ordner unterscheiden; in beiden Fällen fehlen die Obituary-Aktionen. In Dolphin ist das Untermenü für eine Datei oder eine Mehrfachauswahl verfügbar, und Ordnerrichtlinien erfordern mindestens zwei ausgewählte Ordner. Für einen einzelnen ausgewählten Ordner die Befehlszeile oder Nautilus verwenden. Bestehende Menüs mit `obit init --context-menu --yes` aktualisieren.
 
 ## Symbole und Menüs
 

@@ -110,7 +110,7 @@ Puedes seleccionar varios archivos a la vez. Una notificación muestra cuántos 
 
 Si tras actualizar todas las etiquetas del menú del Explorador aparecen en otro idioma admitido, el menú sigue funcionando. `obit doctor` lo indica como información (JSON: `installation: label-language-mismatch`). `obit init --context-menu --yes` aplica el idioma actual de la interfaz.
 
-En Finder usa Acciones rápidas; en Nautilus, Scripts → Obituary. Dolphin pasa el mismo destino al pulsar un espacio vacío o una sola carpeta, por lo que no ofrece acciones en ninguno de esos casos. El submenú Obituary está disponible para un archivo o una selección múltiple. Una política requiere al menos dos carpetas seleccionadas; para una sola, usa la línea de comandos. Actualiza el menú existente con `obit init --context-menu --yes`.
+En Finder usa Acciones rápidas; en Nautilus, Scripts → Obituary. Dolphin pasa el mismo destino al pulsar un espacio vacío o una sola carpeta, por lo que no ofrece acciones en ninguno de esos casos. En Dolphin, el submenú Obituary está disponible para un archivo o una selección múltiple, y una política requiere al menos dos carpetas seleccionadas. Para una sola carpeta seleccionada, usa la línea de comandos o Nautilus. Actualiza el menú existente con `obit init --context-menu --yes`.
 
 ## Iconos y menús
 

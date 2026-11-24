@@ -27,6 +27,7 @@ type Status struct {
 	LabelLanguageMismatch bool
 	Detail                string
 }
+
 func unsupported() error {
 	return fmt.Errorf("the Explorer context menu and notifications are Windows-only: %w", core.ErrUnsupported)
 }

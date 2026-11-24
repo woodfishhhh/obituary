@@ -11,7 +11,8 @@ Windows 10 / 11, macOS e Linux (x64 e ARM64):
 | Instalar com | Scoop, o script `install.ps1` (winget em revisão) | Homebrew, o script `install.sh` | o script `install.sh` |
 | Verificação de vencimentos | processo residente na bandeja, Agendador de Tarefas como alternativa | agente launchd do usuário | temporizador `systemd --user`; crontab do usuário sem systemd |
 | CLI, cemitério e ressurreição, registro automático (opcional), guardião de exclusão, integração com agentes (hooks, Skill, MCP), contêineres Docker, políticas de pastas | sim | sim | sim |
-| Bandeja, janela pequena, menus de contexto, datas de enterro no Explorer, menu Iniciar e atalhos da área de trabalho | sim | use a CLI: `obit list`, `obit graveyard`, `obit resurrect` | como no macOS |
+| Bandeja, janela pequena, menu Iniciar e atalhos da área de trabalho | sim | use a CLI: `obit list`, `obit graveyard`, `obit resurrect` | como no macOS |
+| Menu de contexto e datas de enterro no gerenciador de arquivos | Explorador de Arquivos | Finder: Ações Rápidas, Etiquetas de data | Nautilus: Scripts · Dolphin: menu, Etiquetas de data |
 | Modo Lixeira | sim | apenas o cemitério | apenas o cemitério |
 
 **O jeito mais fácil: deixe o agente fazer isso.** Envie esta frase para o agente que você usa (Claude Code, Codex, Cursor e outros). Ele instala o Obituary, conecta-o a si mesmo e para quando a decisão for sua.

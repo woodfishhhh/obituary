@@ -89,7 +89,7 @@ Die Plattformen im Überblick:
 | Installation | Scoop, das `install.ps1`-Skript(winget wird geprüft) | Homebrew, das `install.sh`-Skript | das `install.sh`-Skript |
 | Ablaufprüfung | residenter Tray-Prozess, Aufgabenplanung als Fallback | Benutzer-agent von launchd | `systemd --user`-Timer; Benutzer-crontab ohne systemd |
 | CLI, Friedhof und Wiederbelebung, optionale automatische Registrierung, Löschschutz, Agent-Integration(Hooks, Skill, MCP), Docker-Container, Ordner-Richtlinien | ja | ja | ja |
-| Tray, kleines Fenster, Kontextmenüs, Begräbnisdaten im Explorer, Startmenü- und Desktop-Verknüpfungen | ja | Kleines Fenster und Menüsymbol unter macOS per universellem DMG · Finder: Schnellaktionen, Datums-Tags | Fenster und Tray unter Ubuntu 24.04 amd64 (deb) · Nautilus: Skripte · Dolphin: Datums-Tags |
+| Tray, kleines Fenster, Kontextmenüs, Begräbnisdaten im Explorer, Startmenü- und Desktop-Verknüpfungen | ja | Kleines Fenster und Menüsymbol unter macOS per universellem DMG · Finder: Schnellaktionen, Datums-Tags | Fenster und Tray unter Ubuntu 24.04 amd64 (deb) · Nautilus: Skripte · Dolphin: Menü, Datums-Tags |
 | Papierkorbmodus | ja | nur Friedhof | ja |
 
 Bei aktiver Desktop-Überwachung verarbeitet der Tray-Prozess fällige Einträge sofort; ein unabhängiger Auftrag prüft stündlich nach. Ausgaben ohne Tray prüfen weiterhin alle fünf Minuten.
