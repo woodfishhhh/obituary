@@ -105,12 +105,16 @@ func TestDoctorSummarizesUninstalledAgents(t *testing.T) {
 	if check := checks["registration-identities"]; check.Status != "PASS" || check.Errors != 0 {
 		t.Fatalf("fresh identity diagnostic: %+v", check)
 	}
-	out, _, err := clitest.Execute(t, NewCmdWithExecutable(executable))
-	if err != nil || !strings.HasSuffix(strings.TrimSpace(out), want) || strings.Contains(out, "delete guard:") || strings.Contains(out, "verified on:") {
-		t.Fatalf("default text is noisy: %s %v", out, err)
+	out, _, err := clitest.Execute(t, NewCmdWithExecutable(executable), "--verbose")
+	if err != nil || !strings.HasSuffix(strings.TrimSpace(out), want) || !strings.Contains(out, "delete guard:") {
+		t.Fatalf("verbose text: %s %v", out, err)
 	}
 	if !reflect.DeepEqual(before, clitest.TreeSnapshot(t, root)) {
 		t.Fatal("doctor changed installation files")
+	}
+	compact, _, err := clitest.Execute(t, NewCmdWithExecutable(executable))
+	if lines := strings.Count(compact, "\n"); err != nil || lines > 25 || strings.Contains(compact, "delete guard:") || strings.Contains(compact, "verified on:") {
+		t.Fatalf("default text is noisy (%d lines): %s %v", lines, compact, err)
 	}
 	t.Logf("fresh doctor: %d checks, %d bytes, %d extra agents summarized", len(rows), len(out), len(initcmd.AgentNames())-2)
 }

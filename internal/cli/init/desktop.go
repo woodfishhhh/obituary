@@ -7,6 +7,7 @@ import (
 	"os"
 	"runtime"
 	"slices"
+	"strings"
 
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/config"
@@ -97,7 +98,7 @@ func (p desktopPlan) apply(out io.Writer) error {
 	return integrate.Apply(p.shortcuts)
 }
 
-func showDesktop(out io.Writer, self cmdutil.Executable) error {
+func showDesktop(out io.Writer, self cmdutil.Executable, verbose bool) error {
 	if runtime.GOOS != "windows" {
 		return nil
 	}
@@ -109,7 +110,11 @@ func showDesktop(out io.Writer, self cmdutil.Executable) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(out, cmdutil.Text("cli.init.context_menu_showdesktop"), menu.Detail)
+	detail := menu.Detail
+	if !verbose { // the per-entry registration rows follow the first line
+		detail, _, _ = strings.Cut(detail, "\n")
+	}
+	fmt.Fprintf(out, cmdutil.Text("cli.init.context_menu_showdesktop"), detail)
 	for _, place := range []shortcut.Location{shortcut.StartMenu, shortcut.Desktop} {
 		path, err := shortcut.Inspect(ShortcutCodec, exe, place)
 		if err != nil {

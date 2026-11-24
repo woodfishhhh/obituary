@@ -20,6 +20,6 @@ func Guard(home string) core.Guard {
 			keep = append(keep, filepath.Join(user, name))
 		}
 	}
-	g := (core.Guard{Keep: keep, System: []string{home, "/bin", "/sbin", "/usr", "/etc", "/var", "/proc", "/sys", "/dev", "/boot", "/run", "/System", "/Library"}}).WithCanonical(winfs.ManagedPath)
+	g := (core.Guard{Keep: keep, System: []string{home, "/bin", "/sbin", "/usr", "/etc", "/var", "/proc", "/sys", "/dev", "/boot", "/run", "/System", "/Library"}, Exempt: []string{ReportsDir(home)}}).WithCanonical(winfs.ManagedPath)
 	return allowDownloads(g, watchAllowed)
 }

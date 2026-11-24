@@ -81,7 +81,7 @@ obit daemon disable
 ## 조회 및 점검
 
 ```powershell
-obit doctor              # read-only check (--json)
+obit doctor              # health check: short summary, full HTML report (--open, --verbose, --json)
 obit stats               # eulogy: how much was buried, space freed, resurrections (alias: eulogy)
 obit log                 # the full record of everything done
 obit config              # show the configuration; --create writes a commented default
@@ -353,7 +353,7 @@ Docker 컨테이너 하나를 등록합니다. 만료되면 컨테이너를 중�
 
 ### `obit doctor`
 
-아무것도 변경하지 않고 설치, 연동, 데이터를 점검합니다
+설치, 연동, 데이터를 점검합니다. 쓰는 것은 자체 보고서뿐입니다
 
 사용법: `obit doctor [flags]`
 
@@ -361,7 +361,8 @@ Docker 컨테이너 하나를 등록합니다. 만료되면 컨테이너를 중�
 | --- | --- | --- | --- |
 | `--help` | `-h` | `false` | doctor 도움말 |
 | `--json` | 없음 | `false` | JSON으로 출력합니다 |
-| `--verbose` | 없음 | `false` | 에이전트 기능 세부 정보를 포함합니다 |
+| `--open` | 없음 | `false` | 전체 HTML 보고서를 기본 브라우저로 엽니다 |
+| `--verbose` | 없음 | `false` | 모든 점검 항목과 에이전트 기능 세부 정보를 텍스트로 전부 출력합니다 |
 
 ### `obit extend`
 
@@ -781,6 +782,7 @@ stdin으로 들어온 zcode 훅 이벤트 하나를 처리합니다. 오류가 �
 | `--show` | 없음 | `false` | 설치된 항목을 표시합니다 |
 | `--skill` | 없음 | `false` | Obituary Agent Skill을 설치합니다(기본적으로 활성화) |
 | `--uninstall` | 없음 | `false` | Obituary가 추가한 항목을 제거합니다 |
+| `--verbose` | 없음 | `false` | --show와 함께 사용: 모든 에이전트의 기능 세부 정보를 나열합니다 |
 | `--yes` | 없음 | `false` | 묻지 않고 적용합니다 |
 
 예시:

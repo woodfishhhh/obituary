@@ -76,7 +76,7 @@ irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/instal
 然後檢查安裝：
 
 ```powershell
-obit doctor              # read-only check: PATH, obitd, runner, Claude Code / Codex integration, data directory, ledger, config (--json)
+obit doctor              # 檢查：一行一個面向，完整報告存成 HTML（--open 開啟，--verbose 看全文，--json）
 ```
 
 ## 2. 連接你的 agent

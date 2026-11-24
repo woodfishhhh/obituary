@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="{{.Lang}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex">
+<title>{{.Title}}</title>
+<style>
+:root{--bg:#f6f5f2;--card:#fff;--ink:#1c1b19;--muted:#6b6862;--line:#e4e1da;--ok:#1f7a45;--ok-bg:#e3f3ea;--warn:#8a5a00;--warn-bg:#fdf0d2;--fail:#a52a2a;--fail-bg:#fbe2e0;--info:#4a5568;--info-bg:#e8ebf0;--code:#f1efea}
+@media (prefers-color-scheme:dark){:root{--bg:#161614;--card:#201f1d;--ink:#ecebe7;--muted:#a09d95;--line:#33312d;--ok:#6fd49a;--ok-bg:#16301f;--warn:#f0c15a;--warn-bg:#3a2d0c;--fail:#ff938c;--fail-bg:#401b19;--info:#aab3c2;--info-bg:#262b33;--code:#2a2926}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+main{max-width:980px;margin:0 auto;padding:32px 20px 48px}
+h1{margin:0 0 6px;font-size:26px;letter-spacing:-.01em}
+.headline{display:inline-block;margin:0 0 18px;padding:4px 14px;border-radius:999px;font-weight:600}
+.headline.pass{background:var(--ok-bg);color:var(--ok)}.headline.warn{background:var(--warn-bg);color:var(--warn)}.headline.fail{background:var(--fail-bg);color:var(--fail)}.headline.info{background:var(--info-bg);color:var(--info)}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px 24px;margin:0 0 26px;padding:16px 18px;background:var(--card);border:1px solid var(--line);border-radius:12px}
+.meta div{min-width:0}.meta dt{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}.meta dd{margin:0;overflow-wrap:anywhere}
+details.cat{margin:0 0 12px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+details.cat>summary{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;list-style:none}
+details.cat>summary::-webkit-details-marker{display:none}
+details.cat>summary::after{content:"+";margin-left:auto;color:var(--muted);font-size:18px}
+details.cat[open]>summary::after{content:"\2212"}
+.cname{font-weight:600}.count{color:var(--muted);font-size:13px}
+.badge{display:inline-block;min-width:3.6em;padding:1px 9px;border-radius:6px;font-size:12px;font-weight:700;text-align:center;letter-spacing:.03em}
+.badge.pass{background:var(--ok-bg);color:var(--ok)}.badge.warn{background:var(--warn-bg);color:var(--warn)}.badge.fail{background:var(--fail-bg);color:var(--fail)}.badge.info{background:var(--info-bg);color:var(--info)}
+table{width:100%;border-collapse:collapse;border-top:1px solid var(--line)}
+th{padding:8px 16px;color:var(--muted);font-size:12px;font-weight:600;text-align:left;text-transform:uppercase;letter-spacing:.04em}
+td{padding:10px 16px;border-top:1px solid var(--line);vertical-align:top}
+td.n{width:20%;font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;font-size:13px;overflow-wrap:anywhere}
+td.s{width:1%;white-space:nowrap}
+pre{margin:0;font:13px/1.5 ui-monospace,"Cascadia Mono",Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+pre.caps{margin-top:8px;padding:8px 10px;background:var(--code);border-radius:8px;color:var(--muted)}
+.fix{margin:8px 0 0;padding:6px 10px;border-left:3px solid var(--warn);background:var(--warn-bg);border-radius:0 8px 8px 0;font-size:14px}
+footer{margin-top:28px;color:var(--muted);font-size:13px}footer p{margin:4px 0}
+@media (max-width:640px){td.n{width:auto}th:nth-child(1),td.n{display:block;border-top:0;padding-bottom:0}}
+</style>
+</head>
+<body>
+<main>
+<h1>{{.Title}}</h1>
+<p class="headline {{.HeadlineClass}}">{{.Headline}}</p>
+<dl class="meta">{{range .Meta}}
+<div><dt>{{.Label}}</dt><dd>{{.Value}}</dd></div>{{end}}
+</dl>
+{{range .Categories}}<details class="cat"{{if .Open}} open{{end}}>
+<summary><span class="badge {{.Class}}">{{.Status}}</span><span class="cname">{{.Name}}</span><span class="count">{{.Count}}</span></summary>
+<table>
+<thead><tr><th>{{$.CheckHead}}</th><th>{{$.StatusHead}}</th><th>{{$.DetailHead}}</th></tr></thead>
+<tbody>{{range .Checks}}
+<tr><td class="n">{{.Name}}</td><td class="s"><span class="badge {{.Class}}">{{.Status}}</span></td><td><pre>{{.Detail}}</pre>{{if .Fix}}
+<p class="fix">{{.Fix}}</p>{{end}}{{if .Capabilities}}
+<pre class="caps">{{.Capabilities}}</pre>{{end}}</td></tr>{{end}}
+</tbody>
+</table>
+</details>
+{{end}}<footer>
+<p>{{.Privacy}}</p>
+<p>{{.Expires}}</p>
+</footer>
+</main>
+</body>
+</html>

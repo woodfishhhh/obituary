@@ -81,7 +81,7 @@ obit daemon disable
 ## 状態の照会と診断
 
 ```powershell
-obit doctor              # read-only check (--json)
+obit doctor              # health check: short summary, full HTML report (--open, --verbose, --json)
 obit stats               # eulogy: how much was buried, space freed, resurrections (alias: eulogy)
 obit log                 # the full record of everything done
 obit config              # show the configuration; --create writes a commented default
@@ -353,7 +353,7 @@ Docker コンテナを 1 つ登録する。期限が切れると停止する
 
 ### `obit doctor`
 
-インストール、連携、データを確認する。何も変更しない
+インストール、連携、データを確認する。書き込むのは自分のレポートだけ
 
 使い方: `obit doctor [flags]`
 
@@ -361,7 +361,8 @@ Docker コンテナを 1 つ登録する。期限が切れると停止する
 | --- | --- | --- | --- |
 | `--help` | `-h` | `false` | doctor のヘルプ |
 | `--json` | なし | `false` | JSON を出力する |
-| `--verbose` | なし | `false` | エージェントの機能の詳細を含める |
+| `--open` | なし | `false` | 完全な HTML レポートを既定のブラウザーで開く |
+| `--verbose` | なし | `false` | 各チェックの詳細とエージェントの機能の詳細を、テキストですべて出力する |
 
 ### `obit extend`
 
@@ -781,6 +782,7 @@ stdin から zcode のフックイベントを 1 件処理する。エラー時�
 | `--show` | なし | `false` | インストール済みの内容を表示する |
 | `--skill` | なし | `false` | Obituary の Agent Skill をインストールする（既定で有効） |
 | `--uninstall` | なし | `false` | Obituary が追加したものを削除する |
+| `--verbose` | なし | `false` | --show と併用：すべてのエージェントの機能の詳細を一覧する |
 | `--yes` | なし | `false` | 確認せずに適用する |
 
 例：
