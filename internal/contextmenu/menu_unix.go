@@ -272,6 +272,11 @@ func PlanLanguage(reg Registry, exe string, remove bool, lang i18n.Language) ([]
 	}
 	all := maps.Clone(alt)
 	maps.Copy(all, want)
+	return planChanges(reg, all, want, remove)
+}
+
+// planChanges diffs what is installed against the wanted menus, preserving anything the user modified.
+func planChanges(reg Registry, all, want map[string]Tree, remove bool) ([]Change, error) {
 	beforeSet := map[string]Tree{}
 	preservedBundle := map[string]bool{}
 	for path := range all {
