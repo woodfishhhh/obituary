@@ -30,7 +30,9 @@ export default defineConfig({
   },
   locales: Object.fromEntries(devLocales.map(l => {
     const en = l.id === 'en';
-    return [en ? 'en' : 'root', {label:l.name, lang:l.html, title:en ? 'Obituary · Development blog' : '讣告 · 开发博客', themeConfig:{
+    // The pages that carry no description of their own (the two home pages) fall back to the blog's title.
+    const title = en ? 'Obituary · Development blog' : '讣告 · 开发博客';
+    return [en ? 'en' : 'root', {label:l.name, lang:l.html, title, description:title, themeConfig:{
       langMenuLabel:en ? 'Language' : '语言', outline:{label:en ? 'On this page' : '本页内容'},
     }}];
   })),
