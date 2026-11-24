@@ -33,14 +33,13 @@ const minutes = computed(() => list.value.reduce((sum, p) => sum + p.minutes, 0)
       </div>
       <p class="eyebrow rise" style="--i: 0"><span class="star" aria-hidden="true" />{{ c.section }}</p>
       <h1 class="rise" style="--i: 1">{{ c.heroTitle[0] }}<span class="brand-text">{{ c.heroTitle[1] }}</span>{{ c.heroTitle[2] }}</h1>
-      <p class="lede rise" style="--i: 2">{{ c.lede }}</p>
-      <div class="actions rise" style="--i: 3">
+      <div class="actions rise" style="--i: 2">
         <a class="btn primary" :href="withBase(first.url)">{{ c.first }} <span aria-hidden="true">→</span></a>
         <a class="btn" :href="withBase(en ? '/en/feed.xml' : '/feed.xml')" target="_self">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16" /><circle cx="5" cy="19" r="1" fill="currentColor" /></svg>{{ c.rss }}
         </a>
       </div>
-      <ul class="stats rise" style="--i: 4">
+      <ul class="stats rise" style="--i: 3">
         <li>{{ c.count(list.length) }}</li><li>{{ span }}</li><li>{{ c.total(minutes) }}</li>
       </ul>
     </header>
@@ -87,7 +86,6 @@ const minutes = computed(() => list.value.reduce((sum, p) => sum + p.minutes, 0)
 .star { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--obit-gold); box-shadow: 0 0 0 3px color-mix(in oklab, var(--obit-gold) 30%, transparent); }
 h1 { max-width: 16ch; margin: 1.5rem 0 0; font-size: clamp(2.5rem, 6.4vw, 4.75rem); font-weight: 600; line-height: 1.06; letter-spacing: -0.035em; text-wrap: balance; color: var(--vp-c-text-1); }
 .brand-text { background-image: linear-gradient(100deg, var(--vp-c-brand-1) 10%, var(--vp-c-brand-3) 90%); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.lede { max-width: 38rem; margin: 1.4rem 0 0; font-size: clamp(1.05rem, 1.6vw, 1.2rem); line-height: 1.75; text-wrap: balance; color: var(--vp-c-text-2); }
 .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin-top: 2rem; }
 .btn { display: inline-flex; align-items: center; gap: 0.5rem; height: 3rem; padding: 0 1.5rem; border: 1px solid var(--vp-c-divider); border-radius: 999px; background: color-mix(in oklab, var(--b-card) 70%, transparent); font-size: 0.9375rem; font-weight: 600; color: var(--vp-c-text-1); backdrop-filter: blur(8px); transition: transform 250ms var(--b-ease), border-color 250ms, background-color 250ms; }
 .btn:hover { transform: translateY(-1px); border-color: var(--b-line-hover); }
