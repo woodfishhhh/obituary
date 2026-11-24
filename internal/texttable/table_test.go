@@ -1,4 +1,4 @@
-package cmdutil
+package texttable
 
 import (
 	"bytes"
@@ -14,7 +14,7 @@ func TestTableAndActionTerminalWidths(t *testing.T) {
 		table, cell string
 	}{{i18n.Chinese, "路径  备注\na     b\n", "对象    |"}, {i18n.English, "路径  备注\na   b\n", "对象      |"}} {
 		var out bytes.Buffer
-		w := Table(&out, tc.lang)
+		w := New(&out, tc.lang)
 		fmt.Fprint(w, "路径\t备注\na\tb\n")
 		if err := w.Flush(); err != nil || out.String() != tc.table {
 			t.Fatalf("%s: %q %v", tc.lang, out.String(), err)

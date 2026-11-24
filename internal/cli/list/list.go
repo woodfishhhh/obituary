@@ -1,20 +1,22 @@
 package list
 
 import (
-	"bufio"
-	"fmt"
+	"context"
 	"os"
-	"strings"
-
 	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
-	"github.com/woodfishhhh/obituary/internal/core/ledger"
-	"github.com/woodfishhhh/obituary/internal/core/lifespan"
+	"github.com/woodfishhhh/obituary/internal/config"
+	"github.com/woodfishhhh/obituary/internal/daemonipc"
 	"github.com/woodfishhhh/obituary/internal/i18n"
+	"github.com/woodfishhhh/obituary/internal/listing"
+	"github.com/woodfishhhh/obituary/internal/userdirs"
 )
+
+// residentTimeout is how long the command waits for a resident before it reads
+// the ledger itself. An answer normally takes a few milliseconds.
+const residentTimeout = 2 * time.Second
 
 func NewCmd() *cobra.Command {
 	var asJSON bool
@@ -24,19 +26,10 @@ func NewCmd() *cobra.Command {
 		Short:   "Show tracked paths and Docker containers, soonest expiry first",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			svc, err := cmdutil.Open()
-			if err != nil {
+			if printed, err := printedByResident(asJSON); printed {
 				return err
 			}
-			state, err := svc.Store.ReadActive()
-			if err != nil {
-				return err
-			}
-			now := time.Now()
-			if asJSON {
-				return printItemsJSON(svc, state.Items, now)
-			}
-			return printItems(svc, state.Items, now, cmdutil.Localizer())
+			return printLocally(asJSON)
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print JSON")
@@ -47,58 +40,43 @@ func NewCmd() *cobra.Command {
 	return cmd
 }
 
-func printItemsJSON(svc *core.Service, items []ledger.Item, now time.Time) error {
-	type row struct {
-		ledger.Item
-		Stability       *core.WatchStatus `json:"stability,omitempty"`
-		IdentityWarning string            `json:"identityWarning,omitempty"`
+// printedByResident has a running resident print the list from the ledger it
+// already holds, which spares this process opening and decoding the ledger. It
+// reports false, having written nothing, whenever there is no resident or it
+// does not answer; the caller then reads the ledger itself.
+func printedByResident(asJSON bool) (bool, error) {
+	cfg, err := config.Load()
+	if err != nil {
+		return false, nil // the local path reports a bad configuration
 	}
-	rows := make([]row, 0, len(items))
-	for _, it := range items {
-		rows = append(rows, row{it, svc.WatchStatus(it, now), identityWarning(it)})
+	home, err := userdirs.Data()
+	if err != nil {
+		return false, nil
 	}
-	return cmdutil.PrintJSON(rows)
+	ctx, cancel := context.WithTimeout(context.Background(), residentTimeout)
+	defer cancel()
+	out, err := daemonipc.List(ctx, home, daemonipc.ListRequest{
+		Language:     string(i18n.Resolve(cfg.UI.Language, i18n.SystemLanguage)),
+		JSON:         asJSON,
+		StableWindow: cfg.Watch.Stability(),
+	})
+	if err != nil {
+		return false, nil
+	}
+	_, err = os.Stdout.Write(out)
+	return true, err
 }
 
-func printItems(svc *core.Service, items []ledger.Item, now time.Time, language *i18n.Localizer) error {
-	if len(items) == 0 {
-		fmt.Println(language.Text("cli.list.empty", nil))
-		return nil
-	}
-	out := bufio.NewWriter(os.Stdout)
-	w := cmdutil.Table(out, language.Language())
-	fmt.Fprintln(w, language.Text("cli.list.header", nil))
-	for _, item := range items {
-		note := item.Note
-		if item.Stuck() {
-			// Extend clears the failure count, so it is the command-line Retry.
-			note = language.Text("cli.list.stopped", map[string]any{"Attempts": item.Attempts, "Error": item.LastError, "ID": item.ID})
-		} else if item.LastError != "" {
-			note = language.Text("cli.list.retry", map[string]any{"Attempts": item.Attempts, "Error": item.LastError})
-		}
-		if warning := identityWarning(item); warning != "" {
-			note += "; " + warning
-		}
-		if status := svc.WatchStatus(item, now); status != nil {
-			if strings.HasPrefix(item.LastError, "folder child is still active") {
-				note = fmt.Sprintf(language.Text("cli.list.retry_count", nil), item.Attempts)
-			}
-			note += "; " + language.Text("cli.list.quiet", map[string]any{"QuietFor": status.QuietFor, "StableWindow": status.StableWindow, "NextCheck": status.NextCheck.Format(time.RFC3339)})
-		}
-		fmt.Fprintf(w, "#%d\t%s\t%s\t%s\t%s\n", item.ID, item.ExpiresAt.Local().Format(cmdutil.TimeLayout),
-			lifespan.FormatRemaining(time.Until(item.ExpiresAt)), item.Path, note)
-	}
-	if err := w.Flush(); err != nil {
+func printLocally(asJSON bool) error {
+	svc, err := cmdutil.Open()
+	if err != nil {
 		return err
 	}
-	return out.Flush()
-}
-
-func identityWarning(item ledger.Item) string {
-	if item.Identity != nil {
-		if err := item.Identity.RequirePersistent(); err != nil {
-			return err.Error()
-		}
+	state, err := svc.Store.ReadActive()
+	if err != nil {
+		return err
 	}
-	return ""
+	return listing.Write(os.Stdout, state.Items, time.Now(), listing.Options{
+		Language: cmdutil.Language(), JSON: asJSON, StableWindow: svc.WatchStableWindow,
+	})
 }

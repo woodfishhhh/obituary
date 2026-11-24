@@ -1,18 +1,22 @@
 package list
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/daemonipc"
+	"github.com/woodfishhhh/obituary/internal/userdirs"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
@@ -127,4 +131,54 @@ func BenchmarkList(b *testing.B) {
 	slices.Sort(samples)
 	b.ReportMetric((samples[(len(samples)-1)/2]+samples[len(samples)/2])/2, "p50-ms")
 	b.ReportMetric(samples[(95*len(samples)+99)/100-1], "p95-ms")
+}
+
+func TestListIsPrintedByTheResidentWhenOneAnswers(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("OBIT_HOME", filepath.Join(root, "data"))
+	t.Setenv("OBIT_CONFIG_DIR", filepath.Join(root, "config"))
+	t.Setenv("OBIT_LANG", "zh-CN")
+	clitest.WriteFixture(t, filepath.Join(root, "config", "config.toml"), "[watch]\nstable_window = \"30m\"\n")
+	store := ledger.Store{Home: os.Getenv("OBIT_HOME")}
+	if err := store.Update(func(st *ledger.State) error {
+		st.Items = []ledger.Item{{ID: 1, Path: filepath.Join(root, "kept-by-the-ledger"), ExpiresAt: time.Now().Add(time.Hour)}}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	home, err := userdirs.Data()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var mu sync.Mutex
+	var asked daemonipc.ListRequest
+	stop, err := daemonipc.Serve(home, nil, nil, daemonipc.WithList(func(req daemonipc.ListRequest) ([]byte, error) {
+		if !req.JSON { // the second command below: a resident that cannot answer
+			return nil, errors.New("not now")
+		}
+		mu.Lock()
+		defer mu.Unlock()
+		asked = req
+		return []byte("printed by the resident\n"), nil
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer stop()
+
+	out, _, err := clitest.Execute(t, NewCmd(), "--json")
+	if err != nil || out != "printed by the resident\n" {
+		t.Fatalf("the resident's answer is the output: %q %v", out, err)
+	}
+	mu.Lock()
+	if want := (daemonipc.ListRequest{Language: "zh-CN", JSON: true, StableWindow: 30 * time.Minute}); asked != want {
+		t.Fatalf("the resident must be told this process's language, format and quiet window: %+v", asked)
+	}
+	mu.Unlock()
+
+	// A resident that cannot answer leaves the command to read the ledger, as before.
+	out, _, err = clitest.Execute(t, NewCmd())
+	if err != nil || !strings.Contains(out, "kept-by-the-ledger") {
+		t.Fatalf("fallback output: %q %v", out, err)
+	}
 }

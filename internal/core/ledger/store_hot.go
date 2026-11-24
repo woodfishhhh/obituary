@@ -102,6 +102,12 @@ func (s Store) ReadSummary() (State, GraveyardSummary, error) {
 // replaced during the read.
 func (s Store) readCommittedSummary() (State, GraveyardSummary, bool) {
 	st, events, err := s.loadHot()
+	return s.committedSummary(st, events, err)
+}
+
+// committedSummary finishes readCommittedSummary for a hot ledger that was
+// already read; a caller that holds the bytes it decoded shares the decision.
+func (s Store) committedSummary(st State, events []Event, err error) (State, GraveyardSummary, bool) {
 	if err != nil || st.Version != stateVersion || len(events) != 0 {
 		return State{}, GraveyardSummary{}, false
 	}

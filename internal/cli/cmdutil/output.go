@@ -9,6 +9,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/lifespan"
+	"github.com/woodfishhhh/obituary/internal/listing"
 )
 
 func OnlyAuditErrors(err error) bool {
@@ -100,7 +101,7 @@ func printBuryResult(r core.GraveResult, describe func(core.GraveResult) string)
 // errReported marks failures whose details were already printed.
 var ErrReported = errors.New("one or more items failed")
 
-const TimeLayout = "2006-01-02 15:04"
+const TimeLayout = listing.TimeLayout
 
 // committed turns an audit-log failure into a warning: the change itself was saved.
 func Committed(err error) error {

@@ -19,6 +19,7 @@ type replayCache struct {
 	wire  []byte
 	state State
 	quiet quietMark
+	view  viewEntry
 }
 
 // quietMark identifies the store.json the resident committed when that ledger
