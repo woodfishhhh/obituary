@@ -1,11 +1,11 @@
 """Drive the real Nautilus and Dolphin on the private Xvfb session of the hosted Ubuntu runner.
 
 Every step leaves a numbered screenshot; every ledger read is saved as ledger-<step>.json and logged with the paths
-actually registered. Nautilus (GTK4) is navigated through AT-SPI, whose menu items have no names, so the row to
-press is the one text recognition places at that position and the ledger proves which lifespan ran. Dolphin (Qt5)
-does not connect to AT-SPI on the runner: it is driven by keyboard and pointer, and each popup is located by
-diffing screenshots before and after it opens. Text recognition only reads those popups; it never decides alone
-that something is absent without also reading a control entry from the same popup.
+actually registered. Nautilus (GTK4) is navigated through AT-SPI, but its popover items have no accessible names or
+usable coordinates, so the row to press is the one text recognition places at that position and the ledger proves
+which lifespan ran. Dolphin (Qt5) never appears in the AT-SPI registry with these packages: it is driven by keyboard
+and pointer, and each popup is located as the new top-level X window. Text recognition only reads those popups; it
+never decides alone that something is absent without also reading ordinary entries from the same popup.
 """
 import csv
 import datetime
@@ -468,7 +468,7 @@ def main():
     for sample in (NSAMPLE, DSAMPLE):
         sample.touch()
         os.setxattr(sample, "user.xdg.tags", b"work")  # a tag the user already had; it must survive every step
-    pyatspi.Registry.getDesktop(0)  # start the registry before any application, or Qt and GTK never register
+    pyatspi.Registry.getDesktop(0)  # bring the registry up now so the first lookup after Nautilus starts does not wait for it
     for first, flow in [("nautilus-menu", nautilus), ("dolphin-background", dolphin_background), ("dolphin-one-dir", dolphin_one_dir),
                         ("dolphin-file-menu", dolphin_file), ("dolphin-two-dirs-menu", dolphin_two_dirs), ("dolphin-info", dolphin_info),
                         ("uninstall", uninstall)]:
