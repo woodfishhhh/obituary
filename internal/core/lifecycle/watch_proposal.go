@@ -169,7 +169,7 @@ func watchBurialItem(st *State, p Proposal) (Item, error) {
 		return Item{}, ErrProposalChanged
 	}
 	it := st.Items[i]
-	if it.Rev != p.WatchBurial.ItemRev || it.Identity == nil || *it.Identity != p.WatchBurial.Identity || !it.IsDir || it.Source != "watch" || it.WatchID != p.WatchID {
+	if it.Rev != p.WatchBurial.ItemRev || it.Identity == nil || *it.Identity != p.WatchBurial.Identity || (!it.IsDir && !posixWatchFile(it)) || it.Source != "watch" || it.WatchID != p.WatchID {
 		return Item{}, ErrProposalChanged
 	}
 	return it, nil

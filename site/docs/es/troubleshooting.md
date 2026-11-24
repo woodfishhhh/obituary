@@ -126,3 +126,7 @@ Se comprueban los eventos de Docker antes y después de eliminar el volumen. Si 
 ## Falla una actualización, o las descargas desde China continental son lentas
 
 `obit update --check` da un error, o el script de instalación va lento o falla; lo más probable es que este equipo no llegue a GitHub. Cuando GitHub tarda en responder, `obit update --check` y el script de instalación cambian por su cuenta al espejo de China continental. Para usar el espejo desde el principio, ejecuta `bash install.sh --mirror cn` en macOS y Linux, o `.\install.ps1 -Mirror cn` en Windows. Si descargas a mano, toma el archivo y `checksums.txt` de la misma versión y de la misma fuente. Cuando `obit update --check` imprima una línea `Latest:`, está resuelto.
+
+## Un archivo caducado sigue en su sitio
+
+Consulta el tiempo de espera con `obit watch --list` y el modo activo con `obit doctor --verbose`. Cierra los programas que tengan abierto el archivo. Si tu cuenta no puede inspeccionar los descriptores de otro proceso, el archivo permanece en su sitio incluso después de aprobarlo.

@@ -8,9 +8,11 @@ obit watch --list                           # folder policies, their exemptions 
 obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans it registered
 ```
 
-No macOS e no Linux, depois da aprovação, cada item diretamente na pasta tem seu próprio prazo, contado por padrão desde a primeira detecção. A pasta monitorada permanece protegida; subpastas vencidas só geram propostas, e arquivos temporários de download são ignorados. Se não for possível impedir gravações, o item permanece no lugar mesmo após dez minutos sem alterações.
+No macOS e no Linux, depois da aprovação, cada item diretamente na pasta tem seu próprio prazo, contado por padrão desde a primeira detecção. A pasta monitorada permanece protegida; subpastas vencidas só geram propostas, e arquivos temporários de download são ignorados.
 
-**No macOS e no Linux, a política ainda não pode enterrar arquivos vencidos nem mover uma subpasta após a aprovação.**
+Por padrão, um arquivo comum precisa ficar sem alterações por mais dez minutos após vencer. Se o tamanho ou a data de modificação mudar, se o arquivo estiver aberto ou se um processo não puder ser consultado, a contagem recomeça. O Windows bloqueia gravações durante a movimentação. No macOS e no Linux, um processo ainda pode abrir o arquivo entre a verificação e a renomeação.
+
+Para aprovar cada arquivo, defina `file_expiry = "propose"` em `[watch]`. Consulte `obit proposals` e aprove com `obit approve <ID>`. Subpastas vencidas continuam gerando propostas e permanecem no local mesmo após aprovação no macOS e no Linux.
 
 ```sh
 obit watch "$HOME/Downloads" 2w

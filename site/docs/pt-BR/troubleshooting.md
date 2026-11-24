@@ -126,3 +126,7 @@ Os eventos do Docker são verificados antes e depois da exclusão. Se não for p
 ## Uma atualização falha, ou os downloads a partir da China continental são lentos
 
 `obit update --check` informa um erro, ou o script de instalação está lento ou falha; o mais provável é que este computador não alcance o GitHub. Quando o GitHub demora a responder, `obit update --check` e o script de instalação passam sozinhos para o espelho da China continental. Para usar o espelho desde o começo, execute `bash install.sh --mirror cn` no macOS e no Linux, ou `.\install.ps1 -Mirror cn` no Windows. Se você baixar à mão, pegue o arquivo compactado e o `checksums.txt` da mesma versão e da mesma origem. Quando `obit update --check` imprimir uma linha `Latest:`, está resolvido.
+
+## Um arquivo vencido continua no lugar
+
+Veja o tempo de espera com `obit watch --list` e o modo ativo com `obit doctor --verbose`. Feche os programas que abriram o arquivo. Se sua conta não puder consultar os descritores de outro processo, o arquivo permanecerá no lugar mesmo após a aprovação.

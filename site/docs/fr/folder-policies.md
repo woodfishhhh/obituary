@@ -8,9 +8,11 @@ obit watch --list                           # folder policies, their exemptions 
 obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans it registered
 ```
 
-Sous macOS et Linux, après approbation, chaque élément directement présent dans le dossier a sa propre durée de vie, calculée par défaut à partir de sa première détection. Le dossier surveillé reste protégé. Les sous-dossiers expirés donnent uniquement lieu à une proposition et les fichiers de téléchargement temporaires sont ignorés. Si une écriture ne peut être exclue, le fichier reste en place même après dix minutes sans modification.
+Sous macOS et Linux, après approbation, chaque élément directement présent dans le dossier a sa propre durée de vie, calculée par défaut à partir de sa première détection. Le dossier surveillé reste protégé. Les sous-dossiers expirés donnent uniquement lieu à une proposition et les fichiers de téléchargement temporaires sont ignorés.
 
-**Sous macOS et Linux, l’enterrement automatique par politique n’est pas pris en charge : les fichiers expirés restent en place, même les sous-dossiers approuvés ne sont pas déplacés.**
+Par défaut, un fichier ordinaire doit rester inchangé dix minutes après expiration. Si sa taille ou sa date de modification change, si le fichier est ouvert ou si un processus ne peut pas être inspecté, le délai repart de zéro. Windows bloque les écritures pendant le déplacement. Sous macOS et Linux, un processus peut ouvrir le fichier entre la vérification et le renommage.
+
+Pour approuver chaque fichier, réglez `file_expiry = "propose"` dans `[watch]`. Consultez les propositions avec `obit proposals` et approuvez avec `obit approve <ID>`. Les sous-dossiers expirés donnent toujours lieu à une proposition et restent en place même après approbation sous macOS et Linux.
 
 ```sh
 obit watch "$HOME/Downloads" 2w

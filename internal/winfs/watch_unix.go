@@ -5,11 +5,14 @@ package winfs
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"golang.org/x/sys/unix"
 )
+
+var errWatchFileOpen = errors.New("file is open")
 
 func (fs FS) ObserveWatch(path string, hold bool) (corefs.WatchSnapshot, func(), error) {
 	if hold {
@@ -39,4 +42,17 @@ func (fs FS) ObserveWatch(path string, hold bool) (corefs.WatchSnapshot, func(),
 		return corefs.WatchSnapshot{}, nil, err
 	}
 	return corefs.WatchSnapshot{Identity: id, Size: stat.Size, Modified: time.Unix(0, stat.Mtim.Nano()).UTC(), Directory: directory}, release, nil
+}
+
+// Compare kernel device/inode pairs, also for renamed files. The pinned move
+// separately checks the durable identity, including generation/birth time.
+func (FS) CheckWatchClosed(id corefs.Identity) error {
+	if len(id.FileID) != 32 {
+		return fmt.Errorf("invalid POSIX watch identity")
+	}
+	ino, err := strconv.ParseUint(id.FileID[16:], 16, 64)
+	if err != nil {
+		return err
+	}
+	return checkOpenFiles(id.Serial, ino)
 }

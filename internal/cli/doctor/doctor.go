@@ -270,8 +270,12 @@ func (lang diagnostics) diagnose(now time.Time, executable cmdutil.Executable, a
 		checks = append(checks, lang.diagnoseSlowGit(home, now))
 		checks = append(checks, lang.diagnoseIdentities(home))
 	}
-	_, err := config.Load()
-	check("config", lang.Text("cli.doctor.config_toml_is_valid_defaults_apply_when", nil), err)
+	cfg, err := config.Load()
+	detail := lang.Text("cli.doctor.config_toml_is_valid_defaults_apply_when", nil)
+	if err == nil && runtime.GOOS != "windows" {
+		detail += fmt.Sprintf(" (watch.file_expiry = %q)", cfg.Watch.FileExpiry)
+	}
+	check("config", detail, err)
 	checks = append(checks, lang.diagnoseCodexWindowsShell(), lang.diagnoseDocker())
 	if available > 0 {
 		checks = append(checks, DoctorCheck{Name: "agents", Status: "INFO", Detail: fmt.Sprintf(lang.Text("cli.doctor.additional_agents", nil), available)})

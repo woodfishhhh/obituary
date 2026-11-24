@@ -23,6 +23,9 @@ type FS interface {
 	// ObserveWatch reads identity, size and mtime on one handle. With hold set,
 	// writers are excluded until release; sharing/metadata failures retry.
 	ObserveWatch(path string, hold bool) (WatchSnapshot, func(), error)
+	// CheckWatchClosed inspects POSIX descriptors for this identity. An open file
+	// or incomplete inventory is an error. This does not hold a lock.
+	CheckWatchClosed(Identity) error
 	// IdentifyFollowing and Resolve inspect destination ancestors, following
 	// reparse points, so resurrection can compare the original parent objects.
 	IdentifyFollowing(path string) (Identity, error)

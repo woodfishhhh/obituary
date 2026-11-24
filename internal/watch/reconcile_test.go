@@ -157,7 +157,7 @@ func TestReconcileGitConsentTrackedChildrenAndLaterTracking(t *testing.T) {
 	outcomes, err := svc.Sweep(false)
 	want := core.ActionRefused
 	if runtime.GOOS != "windows" {
-		want = core.ActionRetry // Writer exclusion is unsupported; the tracked file stays put.
+		want = core.ActionRetry // The post-expiry quiet window starts before the final Git check.
 	}
 	if err != nil || len(outcomes) != 1 || outcomes[0].Action != want {
 		t.Fatalf("later Git tracking was not protected: %+v %v", outcomes, err)

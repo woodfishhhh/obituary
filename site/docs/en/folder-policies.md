@@ -8,9 +8,11 @@ obit watch --list                           # folder policies, their exemptions 
 obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans it registered
 ```
 
-On macOS and Linux, approving a policy registers each top-level item separately. By default, its age starts when first seen. The policy folder is protected, expired subfolders only generate proposals, and download temporary files are skipped. If writers cannot be excluded, the item stays in place even after ten quiet minutes.
+On macOS and Linux, approving a policy registers each top-level item separately. By default, its age starts when first seen. The policy folder is protected, expired subfolders only generate proposals, and download temporary files are skipped.
 
-**Automatic policy burial is not supported on macOS or Linux: expired files stay in place, and approving an expired subfolder does not move it.**
+By default, a regular file must stay quiet for ten minutes after expiry. A change in size or modification time, an open descriptor, or an unreadable process restarts the timer and keeps the file in place. Windows holds a handle that excludes writers during the move. On macOS and Linux a writer can still open the file between the check and the rename.
+
+For individual approval, set `file_expiry = "propose"` under `[watch]`. Use `obit proposals` to review and `obit approve <ID>` to approve. Expired subfolders still produce proposals and stay in place even after approval on macOS and Linux.
 
 ```sh
 obit watch "$HOME/Downloads" 2w

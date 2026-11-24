@@ -126,3 +126,7 @@ Docker-Ereignisse werden vor und nach dem Löschen geprüft. Lässt sich die Lö
 ## Ein Update schlägt fehl, oder Downloads aus Festlandchina sind langsam
 
 `obit update --check` meldet einen Fehler, oder das Installationsskript ist langsam oder scheitert; am wahrscheinlichsten erreicht dieser Rechner GitHub nicht. Antwortet GitHub nur zögerlich, wechseln `obit update --check` und das Installationsskript von selbst zum Mirror in Festlandchina. Willst du den Mirror von Anfang an nutzen, führe unter macOS und Linux `bash install.sh --mirror cn` aus, unter Windows `.\install.ps1 -Mirror cn`. Lädst du von Hand herunter, nimm Archiv und `checksums.txt` aus demselben Release und von derselben Quelle. Gibt `obit update --check` eine Zeile `Latest:` aus, ist es behoben.
+
+## Eine abgelaufene Datei bleibt liegen
+
+`obit watch --list` zeigt die Wartezeit, `obit doctor --verbose` den aktiven Modus. Programme schließen, die die Datei geöffnet haben. Fehlen dem Konto die Rechte zum Prüfen fremder Dateideskriptoren, bleibt die Datei auch nach Bestätigung liegen.

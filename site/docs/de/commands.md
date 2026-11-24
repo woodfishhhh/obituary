@@ -1049,6 +1049,8 @@ Verwendung: `obit update [flags]`
 
 ### `obit watch`
 
+Zur Einzelbestätigung unter `[watch]` die Einstellung `file_expiry = "propose"` setzen. Mit `obit proposals` prüfen und mit `obit approve <ID>` bestätigen. Abgelaufene Unterordner erzeugen weiterhin Vorschläge und bleiben unter macOS und Linux auch nach Bestätigung am alten Ort.
+
 Jedem Element auf oberster Ebene eines Ordners eine eigene Lebensdauer geben
 
 Verwendung: `obit watch <directory> <lifespan> | watch --list | watch --remove <directory> [flags]`

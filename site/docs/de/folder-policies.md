@@ -8,9 +8,11 @@ obit watch --list                           # folder policies, their exemptions 
 obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans it registered
 ```
 
-Unter macOS und Linux wird nach der Freigabe jeder direkte Eintrag einzeln erfasst. Die Frist beginnt standardmäßig beim ersten Erkennen. Der überwachte Ordner bleibt geschützt; für abgelaufene Unterordner gibt es nur Vorschläge. Temporäre Downloads werden übersprungen. Lassen sich Schreibzugriffe nicht ausschließen, bleibt der Eintrag auch nach zehn ruhigen Minuten liegen.
+Unter macOS und Linux wird nach der Freigabe jeder direkte Eintrag einzeln erfasst. Die Frist beginnt standardmäßig beim ersten Erkennen. Der überwachte Ordner bleibt geschützt; für abgelaufene Unterordner gibt es nur Vorschläge. Temporäre Downloads werden übersprungen.
 
-**Unter macOS und Linux werden abgelaufene Dateien derzeit nicht automatisch begraben; auch ein genehmigter Unterordner bleibt liegen.**
+Nach Ablauf bleibt eine reguläre Datei standardmäßig weitere zehn Minuten liegen. Ändern sich Größe oder Änderungszeit, ist die Datei geöffnet oder lässt sich ein Prozess nicht prüfen, beginnt die Wartezeit von vorn. Windows sperrt Schreibzugriffe während des Verschiebens. Unter macOS und Linux kann ein Prozess die Datei zwischen Prüfung und Umbenennung öffnen.
+
+Zur Einzelbestätigung unter `[watch]` die Einstellung `file_expiry = "propose"` setzen. Mit `obit proposals` prüfen und mit `obit approve <ID>` bestätigen. Abgelaufene Unterordner erzeugen weiterhin Vorschläge und bleiben unter macOS und Linux auch nach Bestätigung am alten Ort.
 
 ```sh
 obit watch "$HOME/Downloads" 2w

@@ -126,3 +126,7 @@ obit doctor --verbose      # 각 에이전트의 연결 상태
 ## 업데이트가 실패하거나 중국 본토에서 다운로드가 느림
 
 `obit update --check`가 오류를 내거나 설치 스크립트가 느리거나 실패한다면, 대개 이 컴퓨터가 GitHub에 닿지 못하는 것입니다. GitHub의 응답이 늦으면 `obit update --check`와 설치 스크립트는 스스로 중국 본토 미러로 바꿉니다. 처음부터 미러를 쓰려면 macOS와 Linux에서는 `bash install.sh --mirror cn`, Windows에서는 `.\install.ps1 -Mirror cn`을 실행하세요. 직접 내려받는다면 압축 파일과 `checksums.txt`를 같은 릴리스, 같은 출처에서 받아야 합니다. `obit update --check`가 `Latest:` 줄을 출력하면 해결된 것입니다.
+
+## 만료된 파일이 그대로 남아 있을 때
+
+`obit watch --list`에서 대기 시간을, `obit doctor --verbose`에서 현재 모드를 확인하세요. 파일을 열고 있는 프로그램을 닫으세요. 다른 프로세스의 파일 디스크립터를 읽을 권한이 없으면 승인 후에도 파일은 그대로 남습니다.

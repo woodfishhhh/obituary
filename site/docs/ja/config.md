@@ -12,6 +12,7 @@ Obituary の設定は、設定ディレクトリにある `config.toml` に書�
 | `hooks.session_cleanup` | `true` | `true`、`false` |
 | `hooks.session_summary` | `false` | `true`、`false` |
 | `watch.stable_window` | `10m` | 正の時間。例: `30s`、`10m`、`1h30m` |
+| `watch.file_expiry` (macOS/Linux) | `quiet` | `quiet`, `propose` |
 | `explorer.enabled` | `true` | `true`、`false` |
 | `explorer.everywhere` | `false` | `true`、`false` |
 | `explorer.in_git` | `false` | `true`、`false` |

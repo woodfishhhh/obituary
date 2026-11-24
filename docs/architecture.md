@@ -488,3 +488,9 @@ Windows 的 `ApplyUpdate` 和 `obit update --apply` 都从 2 小时寿命的临�
 
 - **不校验 hook 脚本。** 讣告的 hook 直接调用二进制，没有脚本可以被改，`obit doctor` 只核对配置里的命令是不是当前版本。
 - **不主动弹通知。** 想看就查询（`obit list`、`obit stats`、`obit doctor`），到期预告只出现在 agent 的会话开头。M6 起有一个常驻托盘图标（2026-11-09 定），它只安静地待着，不推送。
+
+### macOS / Linux 文件夹策略的普通文件
+
+`watch.file_expiry = "quiet"` 在到期后比较大小、修改时间及文件身份。静置时间取十分钟与 `watch.stable_window` 中较长者。移动前后按设备和 inode 核对进程打开的描述符。Linux 遍历 procfs，Darwin 查询内核的进程和描述符表。遇到打开的描述符或无法完整读取时保留原物并重新计时。改名后复核失败沿用 v3 清单，回滚冲突时保留现场。POSIX 的检查是瞬时快照，两次检查之间仍可能有进程打开文件。
+
+`watch.file_expiry = "propose"` 让普通文件到期时进入已有的下葬提议队列。批准时复核提议、策略范围、Git 跟踪状态、文件身份和打开状态。Windows 使用持有至移动完成的拒写句柄。

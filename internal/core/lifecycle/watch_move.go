@@ -48,14 +48,19 @@ func (s *Service) verifyWatchMovement(st *State, p *preparedBurial) bool {
 	var snap WatchSnapshot
 	var release func()
 	if err == nil {
-		snap, release, err = s.observeWatch(b.Grave, *b.Identity, b.IsDir, true)
+		snap, release, err = s.observeWatch(b.Grave, *b.Identity, b.IsDir, !posixWatchFile(p.out.Item))
 	}
 	if err == nil {
 		release()
-		if sameWatchSnapshot(*p.watch, snap) {
+		if posixWatchFile(p.out.Item) {
+			err = s.FS.CheckWatchClosed(*b.Identity)
+		}
+		if err == nil && sameWatchSnapshot(*p.watch, snap) {
 			return true
 		}
-		err = fmt.Errorf("object changed after final observation")
+		if err == nil {
+			err = fmt.Errorf("object changed after final observation")
+		}
 	}
 	detail := err.Error()
 	if rollbackErr := s.rollbackWatchDirectory(b); rollbackErr != nil {
@@ -70,6 +75,9 @@ func (s *Service) verifyWatchMovement(st *State, p *preparedBurial) bool {
 	p.out.Action, p.out.Detail = ActionRetry, detail
 	// The lock is still held; bind retry to any timing refresh in this attempt.
 	if idx := st.Index(p.out.Item.ID); idx >= 0 {
+		if posixWatchFile(p.out.Item) {
+			st.Items[idx].Watch.StableSince = s.now()
+		}
 		p.out.Item = st.Items[idx]
 	}
 	return false

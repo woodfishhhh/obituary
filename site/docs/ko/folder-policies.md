@@ -8,9 +8,11 @@ obit watch --list                           # folder policies, their exemptions 
 obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans it registered
 ```
 
-macOS와 Linux에서도 정책을 승인하면 폴더 바로 아래의 항목마다 별도로 수명이 정해지며, 기본적으로 처음 발견한 시점부터 계산합니다. 정책 폴더 자체는 보호되고 만료된 하위 폴더는 제안만 생성합니다. 다운로드 임시 파일은 건너뜁니다. 쓰기를 막을 수 없으면 10분간 변경이 없어도 원래 위치에 남습니다.
+macOS와 Linux에서도 정책을 승인하면 폴더 바로 아래의 항목마다 별도로 수명이 정해지며, 기본적으로 처음 발견한 시점부터 계산합니다. 정책 폴더 자체는 보호되고 만료된 하위 폴더는 제안만 생성합니다. 다운로드 임시 파일은 건너뜁니다.
 
-**현재 macOS와 Linux에서는 정책에 따른 자동 매장을 지원하지 않습니다. 만료된 파일도, 승인한 하위 폴더도 이동하지 않습니다.**
+일반 파일은 만료된 뒤 기본적으로 10분 더 기다립니다. 크기나 수정 시간이 바뀌거나, 파일이 열려 있거나, 프로세스 정보를 읽을 수 없으면 파일을 그대로 두고 시간을 다시 잽니다. Windows에서는 이동하는 동안 쓰기를 차단합니다. macOS와 Linux에서는 확인 후 이름을 바꾸기 전에 다른 프로세스가 파일을 열 수 있습니다.
+
+개별 승인이 필요하면 `[watch]`에 `file_expiry = "propose"`를 설정하고 `obit proposals`로 검토한 뒤 `obit approve <ID>`로 승인하세요. 만료된 하위 폴더는 계속 제안만 생성하며 macOS와 Linux에서는 승인해도 그대로 남습니다.
 
 ```sh
 obit watch "$HOME/Downloads" 2w

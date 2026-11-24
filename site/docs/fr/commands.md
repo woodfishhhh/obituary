@@ -1049,6 +1049,8 @@ Usage: `obit update [flags]`
 
 ### `obit watch`
 
+Pour approuver chaque fichier, réglez `file_expiry = "propose"` dans `[watch]`. Consultez les propositions avec `obit proposals` et approuvez avec `obit approve <ID>`. Les sous-dossiers expirés donnent toujours lieu à une proposition et restent en place même après approbation sous macOS et Linux.
+
 Donner à chaque élément de premier niveau d’un dossier sa propre durée de vie
 
 Usage: `obit watch <directory> <lifespan> | watch --list | watch --remove <directory> [flags]`

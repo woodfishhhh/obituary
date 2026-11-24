@@ -126,3 +126,7 @@ obit doctor --verbose      # 各エージェントの接続状況
 ## 更新に失敗する、または中国本土でのダウンロードが遅い
 
 `obit update --check` がエラーを報告する、あるいはインストールスクリプトが遅い、失敗する場合は、たいていこのコンピューターが GitHub に届いていません。GitHub の応答が遅いと、`obit update --check` とインストールスクリプトは自動的に中国本土のミラーに切り替わります。最初からミラーを使うには、macOS と Linux では `bash install.sh --mirror cn`、Windows では `.\install.ps1 -Mirror cn` を実行します。手動でダウンロードする場合は、アーカイブと `checksums.txt` を同じリリース、同じ入手先から取ってください。`obit update --check` が `Latest:` の行を表示すれば、直っています。
+
+## 期限切れのファイルが残る
+
+`obit watch --list` で待機時間を、`obit doctor --verbose` で現在のモードを確認してください。ファイルを開いているアプリを閉じます。他のプロセスのファイル記述子を調べる権限がなければ、承認してもファイルは残ります。

@@ -1049,6 +1049,8 @@ obit mktemp 2h --name screenshots
 
 ### `obit watch`
 
+Для отдельного подтверждения укажите `file_expiry = "propose"` в разделе `[watch]`. Просмотрите предложения командой `obit proposals` и подтвердите нужное командой `obit approve <ID>`. Для просроченных подпапок по-прежнему создаются предложения, а в macOS и Linux подпапки остаются на месте даже после подтверждения.
+
 Задать каждому элементу верхнего уровня в папке собственный срок жизни
 
 Использование: `obit watch <directory> <lifespan> | watch --list | watch --remove <directory> [flags]`
