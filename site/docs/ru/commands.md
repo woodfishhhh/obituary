@@ -81,7 +81,7 @@ obit daemon disable
 ## Запросы и проверки
 
 ```powershell
-obit doctor              # read-only check (--json)
+obit doctor              # health check: short summary, full HTML report (--open, --verbose, --json)
 obit stats               # eulogy: how much was buried, space freed, resurrections (alias: eulogy)
 obit log                 # the full record of everything done
 obit config              # show the configuration; --create writes a commented default
@@ -362,7 +362,7 @@ obit add report.zip --at "2026-12-01 18:00"
 
 ### `obit doctor`
 
-Проверить установку, интеграции и данные, ничего не изменяя
+Проверить установку, интеграции и данные; записывает только собственный отчёт
 
 Использование: `obit doctor [flags]`
 
@@ -370,7 +370,8 @@ obit add report.zip --at "2026-12-01 18:00"
 | --- | --- | --- | --- |
 | `--help` | `-h` | `false` | Справка по doctor |
 | `--json` | нет | `false` | Вывести JSON |
-| `--verbose` | нет | `false` | Включить подробности о возможностях агентов |
+| `--open` | нет | `false` | Открыть полный HTML-отчёт в браузере по умолчанию |
+| `--verbose` | нет | `false` | Вывести все проверки полным текстом, с подробностями о возможностях агентов |
 
 ### `obit extend`
 
@@ -790,6 +791,7 @@ obit extend debug.log 30m
 | `--show` | нет | `false` | Показать, что установлено |
 | `--skill` | нет | `false` | Установить Agent Skill для Obituary (включено по умолчанию) |
 | `--uninstall` | нет | `false` | Удалить то, что добавил Obituary |
+| `--verbose` | нет | `false` | Вместе с --show: перечислить возможности каждого агента подробно |
 | `--yes` | нет | `false` | Применить без вопросов |
 
 Примеры:

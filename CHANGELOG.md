@@ -1,5 +1,12 @@
 # Changelog / 更新日志
 
+## Unreleased / 未发布
+
+- 改进：`obit doctor` 默认只给精简结论：第一行说一切正常还是发现了几个问题，每个方面（安装、后台运行、agent 接入、右键菜单、数据等）一行，出问题的方面下面写原因和一条能直接复制的修复命令。完整内容存成自包含的 HTML 报告（放在数据目录的 `reports` 文件夹，只在本机，7 天后自动下葬），`obit doctor --open` 用浏览器打开，`obit doctor --verbose` 在终端打印原来的完整文字版，`--json` 和退出码不变。
+- Improvement: `obit doctor` now prints a short summary: a first line saying everything is fine or how many problems it found, one line per area (installation, background runner, agents, right-click menu, data and so on), and under an area that needs attention the reason and a fix you can copy. The full details go into a self-contained HTML report (in the `reports` folder of the data directory, kept on your computer only and buried after 7 days); `obit doctor --open` opens it in your browser, `obit doctor --verbose` prints the full text of earlier versions in the terminal, and `--json` and the exit code are unchanged.
+- 改进：`obit init --show` 默认只列简短摘要（没装的 agent 合成一行）；每个 agent 的能力明细用 `--agent <名称>` 看，或加 `--verbose` 全部列出。
+- Improvement: `obit init --show` now prints a short summary (agents that are not installed share one line); see one agent's capability details with `--agent <name>`, or all of them with `--verbose`.
+
 ## 1.7.0 - 2026-11-23
 
 - 新增：Docker 本地卷可以用 `obit mark --docker-volume` 设寿命，也可以用 `obit bury --docker-volume` 立即下葬；讣告先归档并校验，再删除未被使用的卷，复活时不覆盖同名卷。

@@ -81,7 +81,7 @@ obit daemon disable
 ## 查詢與檢查
 
 ```powershell
-obit doctor              # 唯讀檢查（支援 --json）
+obit doctor              # 檢查：一行一個面向，完整報告存成 HTML（--open 開啟，--verbose 看全文，--json）
 obit stats               # 悼詞：埋了多少、騰出多少空間、復活過幾次（同 eulogy）
 obit log                 # 生平記錄：做過的所有事
 obit config              # 查看設定；--create 產生附註解的預設設定
@@ -362,7 +362,7 @@ obit add report.zip --at "2026-12-01 18:00"
 
 ### `obit doctor`
 
-檢查安裝、整合和資料，不做任何變更
+檢查安裝、整合和資料，只會寫下自己的報告
 
 用法: `obit doctor [flags]`
 
@@ -370,7 +370,8 @@ obit add report.zip --at "2026-12-01 18:00"
 | --- | --- | --- | --- |
 | `--help` | `-h` | `false` | doctor 的說明 |
 | `--json` | 無 | `false` | 輸出 JSON |
-| `--verbose` | 無 | `false` | 包含 agent 的功能細節 |
+| `--open` | 無 | `false` | 用預設瀏覽器開啟完整的 HTML 報告 |
+| `--verbose` | 無 | `false` | 在終端機印出完整文字版：每項檢查的細節和 agent 的功能細節 |
 
 ### `obit extend`
 
@@ -790,6 +791,7 @@ agent hook 的進入點（由 agent 呼叫，不是給人用的）
 | `--show` | 無 | `false` | 顯示已安裝的項目 |
 | `--skill` | 無 | `false` | 安裝訃告的 Agent Skill（預設啟用） |
 | `--uninstall` | 無 | `false` | 移除訃告加入的項目 |
+| `--verbose` | 無 | `false` | 與 --show 一起使用：列出每個 agent 的功能細節 |
 | `--yes` | 無 | `false` | 不詢問，直接套用 |
 
 範例：

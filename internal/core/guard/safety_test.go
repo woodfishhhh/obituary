@@ -78,3 +78,39 @@ func TestForcedCheckSkipsTheRepositoryWalk(t *testing.T) {
 		t.Fatalf("unforced check missed the repository: %v", err)
 	}
 }
+
+// Obituary's report folder lives inside the protected data directory: its
+// contents may get a lifespan, nothing else in the directory may.
+func TestGuardExemptFolderAllowsOnlyItsContents(t *testing.T) {
+	home := t.TempDir()
+	reports := filepath.Join(home, "reports")
+	for _, dir := range []string{reports, filepath.Join(home, "reports-other"), filepath.Join(home, "sessions")} {
+		if err := os.MkdirAll(dir, 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	files := map[string]string{
+		"report":   filepath.Join(reports, "doctor.html"),
+		"sibling":  filepath.Join(home, "reports-other", "doctor.html"),
+		"ledger":   filepath.Join(home, "store.json"),
+		"sessions": filepath.Join(home, "sessions", "a"),
+	}
+	for _, path := range files {
+		if err := os.WriteFile(path, []byte("x"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	g := core.Guard{System: []string{home}, Exempt: []string{reports}}
+	if err := g.Check(files["report"], false); err != nil {
+		t.Errorf("a report was refused: %v", err)
+	}
+	for _, path := range []string{reports, home, files["sibling"], files["ledger"], files["sessions"]} {
+		var refused *core.RefusedError
+		if err := g.Check(path, true); !errors.As(err, &refused) {
+			t.Errorf("%s not refused: %v", path, err)
+		}
+	}
+	if err := (core.Guard{System: []string{home}}).Check(files["report"], false); err == nil {
+		t.Error("without Exempt the report folder is part of the protected data directory")
+	}
+}

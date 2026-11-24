@@ -76,7 +76,7 @@ irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/instal
 설치를 확인하세요.
 
 ```powershell
-obit doctor              # read-only check: PATH, obitd, runner, Claude Code / Codex integration, data directory, ledger, config (--json)
+obit doctor              # health check: short summary, full HTML report (--open, --verbose, --json)
 ```
 
 ## 2. 에이전트 연결

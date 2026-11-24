@@ -81,7 +81,7 @@ With desktop supervision enabled, the tray handles expiries as they occur and an
 ## Queries and checks
 
 ```powershell
-obit doctor              # read-only check (--json)
+obit doctor              # health check: short summary, full HTML report (--open, --verbose, --json)
 obit stats               # eulogy: how much was buried, space freed, resurrections (alias: eulogy)
 obit log                 # the full record of everything done
 obit config              # show the configuration; --create writes a commented default
@@ -362,7 +362,7 @@ Usage: `obit docker list [flags]`
 
 ### `obit doctor`
 
-Check installation, integrations and data without changing anything
+Check installation, integrations and data; the only thing it writes is its report
 
 Usage: `obit doctor [flags]`
 
@@ -370,7 +370,8 @@ Usage: `obit doctor [flags]`
 | --- | --- | --- | --- |
 | `--help` | `-h` | `false` | help for doctor |
 | `--json` | none | `false` | print JSON |
-| `--verbose` | none | `false` | include agent capability details |
+| `--open` | none | `false` | open the full HTML report in your default browser |
+| `--verbose` | none | `false` | print every check in full text, with agent capability details |
 
 ### `obit extend`
 
@@ -790,6 +791,7 @@ Usage: `obit init [flags]`
 | `--show` | none | `false` | show what is installed |
 | `--skill` | none | `false` | install the Obituary Agent Skill (enabled by default) |
 | `--uninstall` | none | `false` | remove what Obituary added |
+| `--verbose` | none | `false` | with --show: list every agent's capability details |
 | `--yes` | none | `false` | apply without asking |
 
 Examples:

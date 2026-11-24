@@ -28,7 +28,7 @@ body:
   - type: textarea
     id: doctor
     attributes:
-      label: obit doctor 的输出 / obit doctor output
+      label: obit doctor --verbose 的输出 / obit doctor --verbose output
       description: 贴之前删掉不想公开的路径。 / Remove paths you don't want public.
       render: text
   - type: textarea
