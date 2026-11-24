@@ -12,27 +12,16 @@ exec > >(tee "$EVIDENCE/session.log") 2>&1
 mkdir -p "$HOME/Downloads" "$HOME/Desktop" "$OBIT_CONFIG_DIR"
 trap "obit daemon stop || true" EXIT
 obit init -g --agent codex --context-menu --yes
-mkdir -p "$HOME/Downloads/Nautilus" "$HOME/Desktop/Dolphin"
 if [[ $RUNNER_OS == Linux ]]; then
   export GDK_BACKEND=x11 QT_QPA_PLATFORM=xcb LC_ALL=C.UTF-8
   export GTK_A11Y=atspi QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
   dbus-update-activation-environment DISPLAY HOME XDG_DATA_HOME XDG_CONFIG_HOME OBIT_HOME OBIT_CONFIG_DIR OBIT_USER_HOME GTK_A11Y QT_LINUX_ACCESSIBILITY_ALWAYS_ON
   python3 scripts/test-dolphin-selection.py "$RUNNER_TEMP/tools/obit" "$HOME/menu-registration-fixture"
-  openbox >"$EVIDENCE/openbox.log" 2>&1 &
-  failed=0
-  for manager in Nautilus Dolphin; do
-    folder="$HOME/Downloads/Nautilus"; [[ $manager != Dolphin ]] || folder="$HOME/Desktop/Dolphin"
-    sample="$folder/Sample.txt"; touch "$sample"
-    python3 -c "import os,sys;os.setxattr(sys.argv[1], b\"user.xdg.tags\", b\"work\")" "$sample"
-    if ! /usr/bin/python3 scripts/file-manager-menu.py "$manager" "$folder"; then failed=1; continue; fi
-    python3 -c "import os,sys,time; f=sys.argv[1]; end=time.monotonic()+10
-while time.monotonic()<end and b\"burial\" not in os.getxattr(f,b\"user.xdg.tags\"): time.sleep(.2)
-v=os.getxattr(f,b\"user.xdg.tags\");print(f,v);assert v.startswith(b\"work,\") and b\"burial\" in v" "$sample" || failed=1
-  done
   g++ -fPIC scripts/read-kde-tags.cpp -I/usr/include/KF5/KFileMetaData -o "$RUNNER_TEMP/tools/read-kde-tags" $(pkg-config --cflags --libs Qt5Core) -lKF5FileMetaData
-  read-kde-tags "$sample" || failed=1
-  xdotool key Escape F11; sleep 1
-  import -window root "$EVIDENCE/dolphin-information.png"
+  openbox >"$EVIDENCE/openbox.log" 2>&1 &
+  # Drives Nautilus and Dolphin, records every step, then uninstalls and checks what is kept.
+  status=0; /usr/bin/python3 scripts/file-manager-menu.py || status=$?
+  exit "$status"
 else
   sample="$HOME/Downloads/Sample.txt"; touch "$sample"
   tag=com.apple.metadata:_kMDItemUserTags
