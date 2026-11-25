@@ -285,7 +285,7 @@ jobs:
         run: |
           bins="$RUNNER_TEMP/bin-final"
           mkdir -p "$bins"
-          for exe in obit obitd; do go build -trimpath -ldflags='-s -w' -o "$bins/$exe" "./cmd/$exe"; done
+          for exe in obit obitd; do go build -tags desktop -trimpath -ldflags='-s -w' -o "$bins/$exe" "./cmd/$exe"; done
           go build -trimpath -ldflags='-s -w' -o "$bins/probe" ./experiments/m3-json-resident/probe
           python3 experiments/m3-json-resident/listbench.py "$RUNNER_TEMP" --arms final --levels 0,2,4 --waves 42 --gate 250 --out "$RUNNER_TEMP/list.jsonl"
           python3 experiments/m3-json-resident/listsummary.py "$RUNNER_TEMP/list.jsonl" >> "$GITHUB_STEP_SUMMARY"
