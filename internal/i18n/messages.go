@@ -37,6 +37,14 @@ var defaultMessages = map[string]*goi18n.Message{
 	"cli.doctor.volume_manifest_mismatch": &goi18n.Message{ID: "cli.doctor.volume_manifest_mismatch", Other: "volume manifest does not match archive %s"},
 	"cli.doctor.volume_phase_unknown":     &goi18n.Message{ID: "cli.doctor.volume_phase_unknown", Other: "unknown volume manifest phase %q"},
 
+	"cli.restore_parent.renamed":      &goi18n.Message{ID: "cli.restore_parent.renamed", Other: "original parent {{.Path}} is currently at {{.Current}}; the item remains in the graveyard"},
+	"cli.restore_parent.unverified":   &goi18n.Message{ID: "cli.restore_parent.unverified", Other: "original parent {{.Path}} changed or cannot be verified; the item remains in the graveyard"},
+	"cli.restore_parent.link":         &goi18n.Message{ID: "cli.restore_parent.link", Other: "the link at {{.Path}} changed; its current location cannot be verified; the item remains in the graveyard"},
+	"cli.restore_parent.permission":   &goi18n.Message{ID: "cli.restore_parent.permission", Other: "permission denied inspecting {{.Path}}; the item remains in the graveyard"},
+	"cli.restore_parent.missing":      &goi18n.Message{ID: "cli.restore_parent.missing", Other: "cannot resolve {{.Path}}: no such file or directory (the link target may be missing); the item remains in the graveyard"},
+	"cli.restore_parent.file":         &goi18n.Message{ID: "cli.restore_parent.file", Other: "original folder {{.Path}} is now a file; the item is still in the graveyard; restore the original directory to its original path or recover manually"},
+	"cli.restore_parent.file_windows": &goi18n.Message{ID: "cli.restore_parent.file_windows", Other: "original folder {{.Path}} is now a file; the item is still in the graveyard, and after that file is moved or renamed, obit resurrect can restore it"},
+
 	"telemetry.help":           &goi18n.Message{ID: "telemetry.help", Other: "Usage statistics: a random installation ID, version, OS, architecture, interface language and installation channel help measure installation counts and version use. No files, paths or commands are sent; IP addresses and user agents are not stored. Disable with obit config telemetry off or OBIT_TELEMETRY=0."},
 	"telemetry.syntax":         &goi18n.Message{ID: "telemetry.syntax", Other: "Use obit config telemetry on or obit config telemetry off."},
 	"cli.list.short":           &goi18n.Message{ID: "cli.list.short", Other: "Show tracked paths and Docker containers, soonest expiry first"},

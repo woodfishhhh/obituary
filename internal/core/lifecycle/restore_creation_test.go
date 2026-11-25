@@ -172,12 +172,8 @@ func TestResurrectReportsRecreatedParentIdentityFailure(t *testing.T) {
 	if err != nil || len(got) != 1 || got[0].Ref != b.Path || !strings.HasPrefix(got[0].Error, injected.Error()) || got[0].Action != "" {
 		t.Fatalf("parent identity failure did not reach its ref result: %+v %v", got, err)
 	}
-	if runtime.GOOS == "windows" {
-		if got[0].Error != injected.Error() || exists(nearest) || exists(parent) {
-			t.Fatal("failed parent recheck left recreated directories or changed the error")
-		}
-	} else if !exists(nearest) || !exists(parent) || !strings.Contains(got[0].Error, parent) || !strings.Contains(got[0].Error, nearest) {
-		t.Fatal("POSIX rollback must retain created directories and report both paths")
+	if got[0].Error != injected.Error() || exists(nearest) || exists(parent) {
+		t.Fatal("failed parent recheck left recreated directories or changed the error")
 	}
 	if !exists(b.Grave) || exists(b.Path) || len(f.burials()) != 1 {
 		t.Fatal("parent identity failure changed the buried object or its record")
@@ -195,7 +191,8 @@ func TestResurrectSharedMissingParent(t *testing.T) {
 			f := newFixture(t)
 			a := buryOne(t, f, "output/a.txt")
 			b := buryOne(t, f, "output/b.txt")
-			if err := os.Remove(filepath.Dir(a.Path)); err != nil {
+			current := filepath.Join(f.dir, "omega-dst")
+			if err := os.Rename(filepath.Dir(a.Path), current); err != nil {
 				t.Fatal(err)
 			}
 			groups := [][]string{{a.Path, b.Path}}
@@ -205,8 +202,21 @@ func TestResurrectSharedMissingParent(t *testing.T) {
 			for _, refs := range groups {
 				got, err := f.svc.Resurrect(refs)
 				if runtime.GOOS != "windows" {
-					if err != nil || !core.GraveFailed(got) || !exists(a.Grave) || !strings.Contains(got[0].Error, "cannot be verified") {
-						t.Fatalf("POSIX shared missing parent was not retained: %+v %v", got, err)
+					if err != nil || len(got) != len(refs) {
+						t.Fatalf("shared missing parent: %+v %v", got, err)
+					}
+					for i, row := range got {
+						if row.Ref != refs[i] || row.Burial == nil || row.Burial.Path != refs[i] || row.Path != "" || row.Action != "" || !strings.Contains(row.Error, filepath.Dir(row.Ref)+" is currently at "+current) {
+							t.Fatalf("incorrect refusal: %+v", row)
+						}
+					}
+					for _, item := range []core.Burial{a, b} {
+						if exists(filepath.Join(current, filepath.Base(item.Path))) || exists(item.Path) || exists(filepath.Dir(item.Path)) || read(t, item.Grave) != "output/"+filepath.Base(item.Path) {
+							t.Fatalf("lost shared missing-parent payload: %+v", item)
+						}
+					}
+					if len(f.burials()) != 2 {
+						t.Fatal("shared missing parent lost ledger entries")
 					}
 					continue
 				}

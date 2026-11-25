@@ -54,6 +54,14 @@ func TestResurrectRejectsChangedParents(t *testing.T) {
 }
 
 func TestResurrectOrdinaryReplacement(t *testing.T) {
+	t.Run("unchanged", func(t *testing.T) {
+		f := newFixture(t)
+		b := buryOne(t, f, "output/control.txt")
+		got, err := f.svc.Resurrect([]string{b.Path})
+		if err != nil || core.GraveFailed(got) || read(t, b.Path) != "output/control.txt" {
+			t.Fatalf("unchanged parent blocked resurrection: %+v %v", got, err)
+		}
+	})
 	for _, legacy := range []bool{false, true} {
 		t.Run(fmt.Sprint(legacy), func(t *testing.T) {
 			f := newFixture(t)

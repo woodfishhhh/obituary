@@ -12,11 +12,14 @@ import (
 )
 
 type restoreParent struct {
-	file    *os.File
-	path    string
-	id      corefs.Identity
-	created bool
+	file         *os.File
+	path         string
+	id           corefs.Identity
+	created      bool
+	expectedPath string
 }
+
+func (p *restoreParent) ExpectRestorePath(path string) { p.expectedPath = path }
 
 func (p *restoreParent) Close() error              { return p.file.Close() }
 func (p *restoreParent) Path() string              { return p.path }

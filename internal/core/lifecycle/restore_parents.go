@@ -7,12 +7,10 @@ import (
 	"regexp"
 	"runtime"
 
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 )
 
-// freedesktop's Path metadata and gio-tool-trash.c restore_trash rebuild the
-// original parent directory. POSIX also verifies each recorded ancestor
-// identity before rebuilding a missing path.
 func (s *Service) captureParents(path string) ([]BurialParent, error) {
 	var parents []BurialParent
 	for dir := pathutil.Parent(path); ; dir = pathutil.Parent(dir) {
@@ -32,20 +30,13 @@ func (s *Service) captureParents(path string) ([]BurialParent, error) {
 }
 
 func (s *Service) preflightRestoreParent(b Burial, dest, nearest string, parent RestoreParent) error {
-	inspectErr := s.inspectRestoreParents(b, true)
-	if oldPath, currentPath := s.restoreParentIssue(b, nearest, parent); oldPath != "" {
-		if runtime.GOOS != "windows" {
-			if currentPath != "" {
-				return fmt.Errorf("original parent %s is currently at %s; resurrection refused for safety; the item remains in the graveyard: %w", oldPath, currentPath, ErrUnsafe)
-			}
-			return fmt.Errorf("original parent %s changed or cannot be verified; the item remains in the graveyard: %w", oldPath, ErrUnsafe)
-		}
+	if err := s.inspectRestoreParents(b, true); err != nil {
+		return err
 	}
-	if inspectErr != nil {
-		if runtime.GOOS != "windows" {
-			return fmt.Errorf("original parent path changed or cannot be verified; the item remains in the graveyard: %w", inspectErr)
-		}
-		return inspectErr
+	// The initial lookup found missing components. They may have reappeared
+	// during inspection, but their stale names must never authorize mkdir on POSIX.
+	if runtime.GOOS != "windows" && nearest != filepath.Dir(dest) {
+		return changedRestoreParent(filepath.Dir(dest), nil)
 	}
 	current, err := s.FS.IdentifyFollowing(nearest)
 	if err != nil {
@@ -85,6 +76,9 @@ func (s *Service) inspectRestoreParents(b Burial, allowMissing bool) error {
 		index++
 		info, err := os.Lstat(dir)
 		if allowMissing && os.IsNotExist(err) && pathutil.Parent(dir) != dir {
+			if runtime.GOOS != "windows" {
+				return changedRestoreParent(dir, recorded)
+			}
 			// Missing components cannot reveal a former alias. Keep the old
 			// tilde heuristic, applied only to this component, as a conservative
 			// refusal; it must not contaminate ordinary long-name descendants.
@@ -92,7 +86,7 @@ func (s *Service) inspectRestoreParents(b Burial, allowMissing bool) error {
 				return fmt.Errorf("legacy short-name parent %s is missing; original long name is unavailable: %w", dir, ErrUnsafe)
 			}
 			if recorded != nil && recorded.Reparse {
-				return fmt.Errorf("recorded reparse parent %s is missing: %w", dir, ErrUnsafe)
+				return changedRestoreParent(dir, recorded)
 			}
 			continue
 		}
@@ -100,7 +94,7 @@ func (s *Service) inspectRestoreParents(b Burial, allowMissing bool) error {
 			return fmt.Errorf("inspect original parent %s: %w", dir, err)
 		}
 		if isReparse(info) && (recorded == nil || !recorded.Reparse) {
-			return fmt.Errorf("original parent %s is now a link or junction: %w", dir, ErrUnsafe)
+			return &corefs.RestoreParentError{Kind: "link", Path: dir, Cause: ErrUnsafe}
 		}
 		id, err := s.FS.IdentifyFollowing(dir)
 		if err != nil {
@@ -111,8 +105,8 @@ func (s *Service) inspectRestoreParents(b Burial, allowMissing bool) error {
 				return err
 			}
 		}
-		if recorded != nil && !restoreParentMatches(recorded, info, id) {
-			return fmt.Errorf("original parent %s changed identity: %w", dir, ErrUnsafe)
+		if recorded != nil && (recorded.Reparse && !isReparse(info) || !restoreParentIdentityMatches(recorded, id)) {
+			return changedRestoreParent(dir, recorded)
 		}
 		if pathutil.Parent(dir) == dir {
 			break
@@ -128,52 +122,18 @@ func restoreParentIdentityMatches(recorded *BurialParent, id Identity) bool {
 	if id.Serial != recorded.Identity.Serial {
 		return false
 	}
-	return runtime.GOOS == "windows" && !recorded.Reparse || id.FileID == recorded.Identity.FileID
+	if runtime.GOOS == "windows" && !recorded.Reparse {
+		return true
+	}
+	return recorded.Identity.RequirePersistent() == nil && id.RequirePersistent() == nil && id.FileID == recorded.Identity.FileID
 }
 
-func restoreParentMatches(recorded *BurialParent, info os.FileInfo, id Identity) bool {
-	return isReparse(info) == recorded.Reparse && restoreParentIdentityMatches(recorded, id)
-}
-
-// LocateIn is POSIX-only. Keep it optional so Windows and test doubles retain their existing contract.
-type restoreParentLocator interface {
-	LocateIn(string, Identity) (string, error)
-}
-
-func (s *Service) restoreParentIssue(b Burial, nearest string, parent RestoreParent) (string, string) {
-	if len(b.Parents) == 0 {
-		return "", ""
+func changedRestoreParent(dir string, recorded *BurialParent) error {
+	kind := "unverified"
+	if recorded != nil && recorded.Reparse {
+		kind = "link"
 	}
-	root := filepath.Clean(nearest)
-	rootMatched := false
-	for _, recorded := range b.Parents {
-		if filepath.Clean(recorded.Path) == root {
-			rootMatched = restoreParentIdentityMatches(&recorded, parent.Identity())
-			break
-		}
-	}
-	if !rootMatched {
-		return nearest, ""
-	}
-	for _, recorded := range b.Parents {
-		if filepath.Clean(recorded.Path) == root {
-			break
-		}
-		info, err := os.Lstat(recorded.Path)
-		if err == nil {
-			current, identifyErr := s.FS.IdentifyFollowing(recorded.Path)
-			if identifyErr == nil && restoreParentMatches(&recorded, info, current) {
-				continue
-			}
-		}
-		if locator, ok := s.FS.(restoreParentLocator); ok {
-			if current, locateErr := locator.LocateIn(parent.Path(), recorded.Identity); locateErr == nil && !samePath(current, recorded.Path) {
-				return recorded.Path, current
-			}
-		}
-		return recorded.Path, ""
-	}
-	return "", ""
+	return &corefs.RestoreParentError{Kind: kind, Path: dir, Cause: ErrUnsafe}
 }
 
 func (s *Service) checkLegacyRestoreParent(dir string, recorded *BurialParent, id Identity) error {

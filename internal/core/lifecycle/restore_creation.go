@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"syscall"
+
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 )
@@ -57,6 +60,9 @@ func (s *Service) prepareRestoreParent(b Burial, dest string) (_ *restoreParentC
 	if err := s.checkCreatedRestoreParent(b, dest, dir, parent); err != nil {
 		return nil, err
 	}
+	if p, ok := parent.(interface{ ExpectRestorePath(string) }); ok {
+		p.ExpectRestorePath(dir)
+	}
 	return &restoreParentChain{RestoreParent: parent, parents: parents}, nil
 }
 
@@ -66,7 +72,11 @@ func existingRestoreAncestor(dir string) (string, []string, error) {
 	for {
 		info, err := os.Lstat(nearest)
 		if err == nil && info.Mode().IsRegular() {
-			return "", nil, fmt.Errorf("original folder %s is now a file; the item is still in the graveyard, and after that file is moved or renamed, obit resurrect can restore it", nearest)
+			kind := "file"
+			if runtime.GOOS == "windows" {
+				kind = "file_windows"
+			}
+			return "", nil, &corefs.RestoreParentError{Kind: kind, Path: nearest, Cause: syscall.ENOTDIR}
 		}
 		if err == nil {
 			break

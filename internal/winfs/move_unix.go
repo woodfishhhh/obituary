@@ -57,6 +57,15 @@ func (fs FS) moveFrom(from *restoreParent, old string, want corefs.Identity, par
 	if fs.beforeRename != nil {
 		fs.beforeRename()
 	}
+	if restore {
+		path := parent.expectedPath
+		if path == "" {
+			path = parent.path
+		}
+		if id, err := fs.IdentifyFollowing(path); err != nil || id != parent.id {
+			return "", &corefs.RestoreParentError{Kind: "unverified", Path: path, Cause: corefs.ErrUnsafe}
+		}
+	}
 	if err := fs.renameNoReplace(from.fd(), old, parent.fd(), name); err != nil {
 		return "", err
 	}

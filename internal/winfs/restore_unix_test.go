@@ -180,6 +180,39 @@ func TestPOSIXRestoreRaceRollback(t *testing.T) {
 	}
 }
 
+func TestPOSIXRestoreAuditsParentMovedAfterRename(t *testing.T) {
+	dir := t.TempDir()
+	dst := filepath.Join(dir, "alpha-src")
+	moved := filepath.Join(dir, "omega-dst")
+	src := filepath.Join(dst, "payload")
+	if err := os.Mkdir(dst, 0700); err != nil {
+		t.Fatal(err)
+	}
+	makePOSIXPayload(t, src, false, "tracked")
+	want := posixID(t, src)
+	svc := &core.Service{Store: core.Store{Home: filepath.Join(dir, "home")}, FS: FS{}}
+	rows, err := svc.Bury([]string{src}, false, "")
+	if err != nil || core.GraveFailed(rows) {
+		t.Fatal(rows, err)
+	}
+	svc.FS = FS{rename: func(from int, old string, to int, name string) error {
+		if err := renameExclusive(from, old, to, name); err != nil {
+			return err
+		}
+		mustPOSIXRename(t, dst, moved)
+		return nil
+	}}
+	rows, err = svc.Resurrect([]string{src})
+	if err != nil || core.GraveFailed(rows) || rows[0].Path != src {
+		t.Fatalf("lost committed receipt: %+v %v", rows, err)
+	}
+	assertPOSIXPayload(t, filepath.Join(moved, "payload"), false, want, "tracked")
+	events, err := svc.Store.History(1)
+	if err != nil || len(events) != 1 || events[0].Path != src || !strings.Contains(events[0].Detail, "actual restored path unavailable; expected path used") {
+		t.Fatalf("lost expected-path audit: %+v %v", events, err)
+	}
+}
+
 type lostRestoreResultFS struct{ FS }
 
 func (fs lostRestoreResultFS) MovePinnedInto(path string, want corefs.Identity, parent corefs.RestoreParent, name string) (string, error) {

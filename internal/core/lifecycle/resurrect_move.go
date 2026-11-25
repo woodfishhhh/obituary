@@ -23,7 +23,8 @@ func (s *Service) restoreBurial(result *GraveResult, b Burial, state State) erro
 	}
 	chain, err := tx.prepareRestoreParent(b, b.Path)
 	if err != nil {
-		result.Error = err.Error()
+		result.Err = restorePreparationError(filepath.Dir(b.Path), err)
+		result.Error = result.Err.Error()
 		return nil
 	}
 	parent := chain.RestoreParent
@@ -36,7 +37,7 @@ func (s *Service) restoreBurial(result *GraveResult, b Burial, state State) erro
 	}()
 	dest, pathUnavailable, err := s.renameResurrection(b, parent)
 	if err != nil {
-		result.Error = err.Error()
+		result.Err, result.Error = err, err.Error()
 		return tx.retainRestoreMismatch(b, err)
 	}
 	moved = true
