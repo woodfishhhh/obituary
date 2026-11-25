@@ -778,14 +778,14 @@ Uso: `obit init [flags]`
 | Parâmetro | Curto | Padrão | Descrição |
 | --- | --- | --- | --- |
 | `--agent` | nenhum | `[claude]` | Agentes a integrar (repetir a opção ou separar por vírgulas; padrão: claude) |
-| `--context-menu` | nenhum | `false` | Instalar os menus de contexto clássicos do Explorador de Arquivos (ativado por padrão) |
+| `--context-menu` | nenhum | `false` | Instalar os menus de contexto do gerenciador de arquivos (ativado por padrão) |
 | `--dry-run` | nenhum | `false` | Apenas exibir as alterações |
 | `--format` | nenhum | `"text"` | Formato de saída de --show: text ou markdown (cobertura dos agentes) |
 | `--global` | `-g` | `false` | Para todo o usuário, em vez de só este projeto |
 | `--guard-rm` | nenhum | `false` | Negar os comandos de exclusão compatíveis e sugerir alternativas do obit que podem ser restauradas |
 | `--help` | `-h` | `false` | Ajuda de init |
 | `--mcp` | nenhum | `false` | Registrar o servidor MCP stdio do Obituary |
-| `--no-context-menu` | nenhum | `false` | Pular os menus de contexto do Explorador de Arquivos |
+| `--no-context-menu` | nenhum | `false` | Pular os menus de contexto do gerenciador de arquivos |
 | `--no-shortcuts` | nenhum | `false` | Pular os atalhos do menu Iniciar e da área de trabalho |
 | `--no-skill` | nenhum | `false` | Deixar o Agent Skill do Obituary inalterado |
 | `--show` | nenhum | `false` | Exibir o que está instalado |

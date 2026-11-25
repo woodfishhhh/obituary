@@ -5,7 +5,7 @@
 L’agent et vous décidez de ce qui entre dans Obituary (par défaut, `[proposals] mode = "off"`) :
 
 - **L’agent enregistre ses propres productions.** Il attribue une durée avec `obit mark <path> 2d` à ses scripts de débogage, journaux et captures, crée un espace temporaire avec `obit mktemp 1d` et enterre avec `obit bury` ce qu’il ne sait pas devoir conserver. `obit init` lui explique cette règle.
-- **Vous ajoutez des éléments depuis le menu contextuel.** Sous Windows, faites un clic droit sur des fichiers ou dossiers dans l’Explorateur, choisissez « Add to Obituary », puis 1, 7, 30 jours ou « Bury now (recoverable) ». Voir [Fenêtre, icône de notification et menu contextuel](./desktop).
+- **Vous ajoutez des éléments depuis le menu contextuel.** Dans l’Explorateur, Finder, Nautilus ou Dolphin, faites un clic droit sur des fichiers ou dossiers, choisissez « Add to Obituary », puis 1, 7, 30 jours ou « Bury now (recoverable) ». Voir [Fenêtre, icône de notification et menu contextuel](./desktop).
 - **Les règles de dossier** attribuent une durée de vie à des dossiers comme Téléchargements. Voir [Règles de dossier](./folder-policies).
 
 Tout élément enregistré est enterré à l’échéance et reste ressuscitable à l’identique pendant sept jours. Rien d’autre n’entre automatiquement.

@@ -224,3 +224,6 @@ func snapshotFile(f *os.File, info os.FileInfo) (snapshot, error) {
 }
 
 func restoreBits(current, original, mask uint32) uint32 { return current&^mask | original&mask }
+func projectLabels(svc *core.Service, index string, state core.State, previous map[string]directory, options Options) error {
+	return projectDirectories(svc, index, state, previous, options)
+}

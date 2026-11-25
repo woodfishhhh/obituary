@@ -769,14 +769,14 @@ stdin으로 들어온 zcode 훅 이벤트 하나를 처리합니다. 오류가 �
 | 매개변수 | 단축 | 기본값 | 설명 |
 | --- | --- | --- | --- |
 | `--agent` | 없음 | `[claude]` | 연동할 에이전트(반복하거나 쉼표로 구분, 기본값: claude) |
-| `--context-menu` | 없음 | `false` | 클래식 파일 탐색기 상황에 맞는 메뉴를 설치합니다(기본적으로 활성화) |
+| `--context-menu` | 없음 | `false` | 파일 관리자의 컨텍스트 메뉴를 설치합니다(기본값) |
 | `--dry-run` | 없음 | `false` | 변경 내용만 출력합니다 |
 | `--format` | 없음 | `"text"` | --show의 출력 형식: text 또는 markdown(에이전트 지원 범위) |
 | `--global` | `-g` | `false` | 이 프로젝트가 아니라 사용자 전체에 적용 |
 | `--guard-rm` | 없음 | `false` | 지원되는 삭제 명령을 거부하고 복원 가능한 obit 대체 명령을 안내합니다 |
 | `--help` | `-h` | `false` | init 도움말 |
 | `--mcp` | 없음 | `false` | Obituary MCP stdio 서버를 등록합니다 |
-| `--no-context-menu` | 없음 | `false` | 파일 탐색기 상황에 맞는 메뉴를 설치하지 않습니다 |
+| `--no-context-menu` | 없음 | `false` | 파일 관리자 컨텍스트 메뉴를 건너뜁니다 |
 | `--no-shortcuts` | 없음 | `false` | 시작 메뉴와 바탕 화면 바로 가기를 만들지 않습니다 |
 | `--no-skill` | 없음 | `false` | Obituary Agent Skill을 변경하지 않습니다 |
 | `--show` | 없음 | `false` | 설치된 항목을 표시합니다 |

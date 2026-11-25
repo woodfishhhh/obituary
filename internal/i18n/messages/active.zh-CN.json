@@ -456,7 +456,7 @@
   "cli.uninstall.permanently_purge_the_listed_graves_and_remove": "永久火化列出的坟墓并删除讣告的数据吗？[y/N] ",
   "cli.uninstall.purge_permanent_requires_confirmation": "火化，永久删除，需要确认",
   "cli.uninstall.remove_context_menu": "  移除右键菜单",
-  "cli.uninstall.remove_explorer_desktop_ini_labels": "  移除资源管理器的 desktop.ini 标签",
+  "cli.uninstall.remove_explorer_desktop_ini_labels": "  移除讣告添加的下葬日期标签",
   "cli.uninstall.remove_folder_policy_files_stay_in_place": "  移除文件夹策略 #%d %s（文件原样保留）\n",
   "cli.uninstall.remove_hkcu_run": "  移除 HKCU Run %s\n",
   "cli.uninstall.removed_owned_data": "已删除讣告自己的数据:",

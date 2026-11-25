@@ -63,10 +63,8 @@ func prepare(d dependencies) (*plan, error) {
 		daemon += ".exe"
 	}
 	p.schedule = d.previewSchedule(filepath.Join(filepath.Dir(exe), daemon), svc.Store.Home, p.config)
-	if runtime.GOOS == "windows" {
-		if err := p.prepareDesktop(d, exe); err != nil {
-			return nil, err
-		}
+	if err := p.prepareDesktop(d, exe); err != nil {
+		return nil, err
 	}
 	p.integrations, err = integrationPlans(initcmd.Planner{Executable: d.executable})
 	return p, err
@@ -75,7 +73,9 @@ func prepare(d dependencies) (*plan, error) {
 func (p *plan) prepareDesktop(d dependencies, exe string) error {
 	var err error
 	svc := p.svc
-	p.startup, err = app.PlanAutostart(d.runRegistry, filepath.Join(filepath.Dir(exe), "obitd.exe"), svc.Store.Home, p.config, false)
+	if runtime.GOOS == "windows" {
+		p.startup, err = app.PlanAutostart(d.runRegistry, filepath.Join(filepath.Dir(exe), "obitd.exe"), svc.Store.Home, p.config, false)
+	}
 	if err != nil {
 		return err
 	}
@@ -152,7 +152,11 @@ func (p *plan) print(out io.Writer, purge bool) {
 		fmt.Fprintln(out, cmdutil.Text("cli.uninstall.remove_context_menu"), menu.Path)
 	}
 	for _, dir := range p.labels {
-		fmt.Fprintln(out, cmdutil.Text("cli.uninstall.remove_explorer_desktop_ini_labels"), dir)
+		label := cmdutil.Text("cli.uninstall.remove_explorer_desktop_ini_labels")
+		if runtime.GOOS == "windows" {
+			label += " (desktop.ini)"
+		}
+		fmt.Fprintln(out, label, dir)
 	}
 	for _, watch := range p.state.Watches {
 		fmt.Fprintf(out, cmdutil.Text("cli.uninstall.remove_folder_policy_files_stay_in_place"), watch.ID, watch.Path)
@@ -173,7 +177,7 @@ func (p *plan) apply(d dependencies, out io.Writer, purge bool) error {
 	for _, entry := range p.integrations {
 		failures = append(failures, initcmd.ApplyUninstall(entry.changes))
 	}
-	if runtime.GOOS == "windows" {
+	if len(p.menus) > 0 {
 		failures = append(failures, contextmenu.Apply(d.menuRegistry, p.menus))
 	}
 	if serviceErr != nil {

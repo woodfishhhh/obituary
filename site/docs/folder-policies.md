@@ -32,3 +32,5 @@ obit watch "$HOME/Downloads" 2w
 - 日期靠文件夹里隐藏的 `desktop.ini`。
 - `config.toml` 的 `[explorer]` 可以关掉（`enabled = false`）或扩大到其他位置（`everywhere = true`）。
 - 资源管理器有自己的缓存，延长寿命后同一个窗口最长约一分钟还显示旧日期。
+
+Finder 和 Dolphin 用标签显示下葬日期，不改文件名。延长寿命会更新日期，取消跟踪或卸载只移除讣告添加的标签。Nautilus 不显示日期标签，用 `obit list` 查看。

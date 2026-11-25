@@ -4,7 +4,7 @@ Dateien wiederbeleben, Vorschläge genehmigen und Einstellungen ändern geht auc
 
 ## Was jede der drei Plattformen bietet
 
-Fenster, Infobereichs-Symbol und Desktop-Benachrichtigungen gibt es unter Windows, macOS und Ubuntu 24.04; das Kontextmenü und die Datumsmarkierungen im Explorer existieren nur unter Windows. Die Desktop-Ausgaben für macOS und Ubuntu sind vorerst Vorabversionen. Andere Linux-Distributionen haben keine Desktop-Ausgabe und nutzen die Befehlszeile.
+Fenster, Infobereichs-Symbol und Desktop-Benachrichtigungen gibt es unter Windows, macOS und Ubuntu 24.04. Die Desktop-Ausgaben für macOS und Ubuntu sind vorerst Vorabversionen. Andere Linux-Distributionen haben keine Desktop-Ausgabe und nutzen die Befehlszeile.
 
 | | Windows | macOS | Ubuntu 24.04 |
 | --- | --- | --- | --- |
@@ -13,8 +13,8 @@ Fenster, Infobereichs-Symbol und Desktop-Benachrichtigungen gibt es unter Window
 | Symbol bei der Anmeldung | nach `obit init` standardmäßig an | Schalter in den Settings | Schalter in den Settings |
 | Prüfung auf Abgelaufenes | residenter Prozess des Symbols | LaunchAgent | systemd |
 | Desktop-Benachrichtigungen | ja | ja | ja |
-| Kontextmenü | im Explorer | nein | nein |
-| Datumsmarkierungen im Explorer | ja | nein | nein |
+| Kontextmenü | im Explorer | Finder: Schnellaktionen | Nautilus: Skripte · Dolphin |
+| Datums-Tags | ja | Finder | Dolphin |
 | Papierkorbmodus | ja | nein, nur Friedhof | ja |
 | Installiert mit | dem Installationsskript, Scoop, winget oder dem Archiv | dem DMG | dem `.deb` |
 | Erster Start | ein von Hand heruntergeladenes Archiv kann eine SmartScreen-Warnung auslösen | braucht eine manuelle Freigabe, siehe [unten](#erste-offnung-einer-unsignierten-app) | öffnet sich direkt |
@@ -110,7 +110,7 @@ Du kannst mehrere Dateien gleichzeitig auswählen und hinzufügen. Ein Hinweis n
 
 Erscheinen nach einem Upgrade alle Explorer-Menüeinträge in einer anderen unterstützten Sprache, funktioniert das Menü weiterhin. `obit doctor` meldet dies als Hinweis (JSON: `installation: label-language-mismatch`). `obit init --context-menu --yes` stellt die Beschriftung auf die aktuelle Oberflächensprache um.
 
-Unter macOS und Linux gibt es noch kein Kontextmenü. Nutze `obit mark <path> 7d` zum Registrieren oder `obit bury <path>` zum sofortigen Begraben.
+Im Finder stehen die Aktionen unter Schnellaktionen, in Nautilus unter Skripte → Obituary. Dolphin kann in statischen Dienstmenüs eine freie Fläche nicht von einem einzelnen ausgewählten Ordner unterscheiden; in beiden Fällen fehlen die Obituary-Aktionen. In Dolphin ist das Untermenü für eine Datei oder eine Mehrfachauswahl verfügbar, und Ordnerrichtlinien erfordern mindestens zwei ausgewählte Ordner. Für einen einzelnen ausgewählten Ordner die Befehlszeile oder Nautilus verwenden. Bestehende Menüs mit `obit init --context-menu --yes` aktualisieren.
 
 ## Symbole und Menüs
 

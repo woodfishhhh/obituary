@@ -89,7 +89,7 @@ Read https://obituary.woodfish.site/agent-install.md and follow it to install Ob
 | 설치 방법 | Scoop, `install.ps1` 스크립트(winget 검토 중) | Homebrew, `install.sh` 스크립트 | `install.sh` 스크립트 |
 | 만료 확인 | 상주 트레이 프로세스, 작업 스케줄러를 예비로 사용 | 사용자 launchd 에이전트 | `systemd --user` 타이머; systemd가 없으면 사용자 crontab |
 | CLI, 묘지와 부활, 선택적 자동 등록, 삭제 가드, 에이전트 통합(hook, Skill, MCP), Docker 컨테이너, 폴더 정책 | 있음 | 있음 | 있음 |
-| 트레이, 작은 창, 컨텍스트 메뉴, 탐색기의 매장 날짜, 시작 메뉴와 바탕 화면 바로 가기 | 있음 | macOS universal DMG에서 작은 창과 메뉴 막대 트레이 지원, 컨텍스트 메뉴는 아직 없음 | Ubuntu 24.04 amd64용 deb에서 작은 창과 트레이 지원 |
+| 트레이, 작은 창, 컨텍스트 메뉴, 탐색기의 매장 날짜, 시작 메뉴와 바탕 화면 바로 가기 | 있음 | macOS universal DMG에서 작은 창과 메뉴 막대 트레이 지원 · Finder: 빠른 동작, 날짜 태그 | Ubuntu 24.04 amd64용 deb에서 작은 창과 트레이 지원 · Nautilus: 스크립트 · Dolphin: 메뉴, 날짜 태그 |
 | 휴지통 모드 | 있음 | 묘지만 사용 | 있음 |
 
 데스크톱에서 감독 기능을 켜면 트레이 프로세스가 만료 시점에 처리하고 별도 작업이 한 시간마다 누락된 항목을 확인합니다. 트레이가 없는 버전은 기존처럼 5분마다 확인합니다.

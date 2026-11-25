@@ -32,3 +32,5 @@ Tracked items in Downloads, on the Desktop and in folders under a policy show in
 - The dates come from a hidden `desktop.ini` in the folder.
 - `[explorer]` in `config.toml` turns them off (`enabled = false`) or on everywhere (`everywhere = true`).
 - Explorer caches folder views, so after extending a lifespan the same window may show the old date for up to a minute.
+
+Finder and Dolphin show the burial date as a tag without renaming the file. Extending a lifespan updates the date. Untracking or uninstalling removes only tags Obituary added. Nautilus has no date tag; use `obit list` instead.

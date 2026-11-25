@@ -24,9 +24,11 @@ type Options struct {
 }
 
 type directory struct {
-	Path      string        `json:"path"`
-	Identity  core.Identity `json:"identity"`
-	Candidate bool          `json:"-"` // No write has been attempted in this sync.
+	Tag         string        `json:"tag,omitempty"`
+	PreviousTag string        `json:"previousTag,omitempty"`
+	Path        string        `json:"path"`
+	Identity    core.Identity `json:"identity"`
+	Candidate   bool          `json:"-"` // No write has been attempted in this sync.
 }
 
 type projection struct {
@@ -61,15 +63,19 @@ func Sync(svc *core.Service, options Options) error {
 	if err != nil {
 		return err
 	}
+	if options.Language == "" {
+		options.Language = config.UILanguage()
+	}
+	return projectLabels(svc, index, state, previous, options)
+}
+
+func projectDirectories(svc *core.Service, index string, state core.State, previous map[string]directory, options Options) error {
 	wanted, err := desired(svc, state.Items, options)
 	if err != nil {
 		return err
 	} // retain all old labels when a location is uncertain
 	for _, old := range previous {
 		wanted.dirs[directoryKey(old.Identity)] = old
-	}
-	if options.Language == "" {
-		options.Language = config.UILanguage()
 	}
 	return syncDirectories(svc, index, wanted, options.Language)
 }

@@ -40,7 +40,7 @@ Windows 和 Linux 可把 `graveyard.mode` 设为 `recycle`。从系统回收站�
 
 `watch.stable_window` 是文件夹策略的耐心：新文件出现后，要连续这么久没有变化，才会被移动，免得把还在下载的文件移走。它写成 Go 的时长格式，数字后面跟 `s`、`m` 或 `h`，可以连写，比如 `1h30m`，而且必须大于零。
 
-`explorer.*` 只对 Windows 有意义。讣告会让资源管理器在文件名旁显示下葬日期，真实的文件名不变。默认只在「下载」、桌面（含子文件夹）和文件夹策略管着的位置显示；`explorer.everywhere` 打开后，其他受跟踪的位置也显示；Git 工作区默认不显示，要显示就把 `explorer.in_git` 设为 `true`；`explorer.enabled` 设为 `false` 则完全不写。见[文件夹策略](./folder-policies)。
+Windows 在资源管理器的显示名旁标出日期；Finder 和 Dolphin 使用原生标签。三者都遵循 `explorer.*`，都不修改真实文件名。默认只在「下载」、桌面（含子文件夹）和文件夹策略管着的位置显示；`explorer.everywhere` 打开后，其他受跟踪的位置也显示；Git 工作区默认不显示，要显示就把 `explorer.in_git` 设为 `true`；`explorer.enabled` 设为 `false` 则完全不写。见[文件夹策略](./folder-policies)。
 
 ## 界面
 

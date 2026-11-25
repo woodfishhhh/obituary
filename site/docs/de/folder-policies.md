@@ -32,3 +32,5 @@ Im Downloadordner, auf dem Desktop und in Ordnern mit Richtlinie zeigt der Explo
 - Die Datumsangaben stammen aus der versteckten Datei `desktop.ini` im jeweiligen Ordner.
 - Im Abschnitt `[explorer]` der Datei `config.toml` kannst du die Anzeige mit `enabled = false` abschalten oder mit `everywhere = true` überall einschalten.
 - Der Explorer speichert Ordneransichten zwischen. Nach einer Verlängerung kann dasselbe Fenster noch bis zu einer Minute das alte Datum anzeigen.
+
+Finder und Dolphin zeigen das Begräbnisdatum als Tag, ohne die Datei umzubenennen. Eine Verlängerung aktualisiert das Datum. Beim Beenden der Erfassung oder Deinstallieren entfernt Obituary nur eigene Tags. Nautilus zeigt kein Datum an; nutze `obit list`.

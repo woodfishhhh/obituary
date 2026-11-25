@@ -32,3 +32,5 @@ Em Downloads, na Área de Trabalho e nas pastas com uma política, o Explorador 
 - As datas vêm do arquivo oculto `desktop.ini` da pasta.
 - Na seção `[explorer]` de `config.toml`, use `enabled = false` para ocultar as datas ou `everywhere = true` para exibi-las em todos os locais.
 - O Explorador mantém as visualizações de pasta em cache. Depois de prolongar a vida útil, a mesma janela pode mostrar a data anterior por até um minuto.
+
+O Finder e o Dolphin mostram a data de enterro em uma etiqueta, sem mudar o nome do arquivo. Prolongar o prazo atualiza a data. Ao encerrar o acompanhamento ou desinstalar, somente as etiquetas adicionadas pelo Obituary são removidas. No Nautilus, consulte `obit list`.

@@ -11,7 +11,8 @@ Windows 10 / 11, macOS und Linux (x64 und ARM64):
 | Installieren mit | Scoop, dem Skript `install.ps1` (winget wird noch geprüft) | Homebrew, dem Skript `install.sh` | dem Skript `install.sh` |
 | Ablauf alle 5 Minuten prüfen | residenter Prozess in der Taskleiste, Aufgabenplanung als Ersatz | launchd-Agent des Benutzers | `systemd --user`-Timer; Benutzer-Crontab ohne systemd |
 | CLI, Friedhof und Wiederbelebung, automatische Registrierung (optional), Löschschutz, Agent-Integration (Hooks, Skill, MCP), Docker-Container, Ordnerrichtlinien | ja | ja | ja |
-| Taskleiste, kleines Fenster, Kontextmenüs, Begräbnisdaten im Explorer, Startmenü und Desktopverknüpfungen | ja | stattdessen die CLI: `obit list`, `obit graveyard`, `obit resurrect` | wie bei macOS |
+| Taskleiste, kleines Fenster, Startmenü und Desktopverknüpfungen | ja | stattdessen die CLI: `obit list`, `obit graveyard`, `obit resurrect` | wie bei macOS |
+| Kontextmenü und Begräbnisdaten im Dateimanager | Explorer | Finder: Schnellaktionen, Datums-Tags | Nautilus: Skripte · Dolphin: Menü, Datums-Tags |
 | Papierkorbmodus | ja | nur Friedhof | nur Friedhof |
 
 **Am einfachsten: Lassen Sie Ihren Agenten die Arbeit erledigen.** Senden Sie diesen Satz an den Agenten, den Sie verwenden (Claude Code, Codex, Cursor usw.). Er installiert Obituary, verbindet es mit sich selbst und hält an, wenn Sie entscheiden müssen.

@@ -7,6 +7,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"slices"
 
@@ -23,6 +24,10 @@ func printContextMenuChange(out io.Writer, change contextmenu.Change) {
 	}
 	if change.After == nil {
 		action, tree = "remove", change.Before
+	}
+	if runtime.GOOS != "windows" {
+		fmt.Fprintf(out, "  %-9s %s\n", cmdutil.Column(cmdutil.Localizer(), cmdutil.Localizer().Label(action)), change.Path)
+		return
 	}
 	fmt.Fprintf(out, "  %-9s HKCU\\Software\\Classes\\%s\n", cmdutil.Column(cmdutil.Localizer(), cmdutil.Localizer().Label(action)), change.Path)
 	for _, key := range slices.Sorted(maps.Keys(tree)) {

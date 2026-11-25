@@ -32,3 +32,5 @@ obit watch "$HOME/Downloads" 2w
 - 日付の表示には、フォルダー内の隠しファイル `desktop.ini` を使います。
 - `config.toml` の `[explorer]` セクションで、`enabled = false` にすると日付を非表示に、`everywhere = true` にするとすべての場所で表示できます。
 - エクスプローラーはフォルダーの表示をキャッシュするため、寿命を延長しても同じウィンドウに最長 1 分ほど古い日付が残ることがあります。
+
+Finder と Dolphin はファイル名を変更せず、埋葬日をタグで表示します。期限を延長すると日付も変わり、追跡の解除時やアンインストール時には Obituary が追加したタグだけを削除します。Nautilus では `obit list` で確認してください。

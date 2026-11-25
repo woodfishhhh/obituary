@@ -5,7 +5,7 @@
 El agente y tú decidís qué entra en Obituary (por defecto, `[proposals] mode = "off"`):
 
 - **El agente registra sus propios resultados.** Asigna una vida útil con `obit mark <path> 2d` a los scripts de depuración, registros y capturas que escribe, crea espacio temporal con `obit mktemp 1d` y entierra con `obit bury` lo que no sabe si debe conservar. `obit init` explica este comportamiento al agente.
-- **Tú añades elementos desde el menú contextual.** En Windows, haz clic derecho en archivos o carpetas del Explorador (puedes seleccionar varios), elige «Add to Obituary» y después 1, 7 o 30 días, o «Bury now (recoverable)». Consulta [Ventana, bandeja y menú contextual](./desktop).
+- **Tú añades elementos desde el menú contextual.** En el Explorador, Finder, Nautilus o Dolphin, haz clic derecho en archivos o carpetas (puedes seleccionar varios), elige «Add to Obituary» y después 1, 7 o 30 días, o «Bury now (recoverable)». Consulta [Ventana, bandeja y menú contextual](./desktop).
 - **Las políticas de carpetas** asignan una vida útil a carpetas como Descargas. Consulta [Políticas de carpetas](./folder-policies).
 
 Todo lo registrado se entierra cuando caduca y puede resucitarse tal como estaba durante siete días. Nada más se registra por sí solo.

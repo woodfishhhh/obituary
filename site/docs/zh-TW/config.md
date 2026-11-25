@@ -40,7 +40,7 @@ Windows 和 Linux 可將 `graveyard.mode` 設為 `recycle`。請從系統資源�
 
 `watch.stable_window` 是資料夾策略的耐心：新檔案出現後，必須連續這麼久沒有變動才會被移動，免得把還在下載的檔案搬走。它使用 Go 的時間長度格式，數字後面接 `s`、`m` 或 `h`，可以連著寫，例如 `1h30m`，而且必須大於零。
 
-`explorer.*` 只對 Windows 有意義。訃告會讓檔案總管在檔名旁顯示下葬日期，實際的檔名不會改變。預設只在「下載」、桌面（含子資料夾）和資料夾策略管理的位置顯示；開啟 `explorer.everywhere` 後，其他被追蹤的位置也會顯示；Git 工作區預設不顯示，要顯示就把 `explorer.in_git` 設為 `true`；`explorer.enabled` 設為 `false` 則完全不寫入。見[資料夾策略](./folder-policies)。
+Windows 在檔案總管的顯示名稱旁標出日期；Finder 和 Dolphin 使用原生標籤。三者都遵循 `explorer.*`，不改動真實檔名。預設只在「下載」、桌面（含子資料夾）和資料夾策略管理的位置顯示；開啟 `explorer.everywhere` 後，其他被追蹤的位置也會顯示；Git 工作區預設不顯示，要顯示就把 `explorer.in_git` 設為 `true`；`explorer.enabled` 設為 `false` 則完全不寫入。見[資料夾策略](./folder-policies)。
 
 ## 介面
 
