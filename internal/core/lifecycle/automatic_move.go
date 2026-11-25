@@ -11,13 +11,38 @@ import (
 
 const gitMoveFreshness = 10 * time.Millisecond
 const ownerQueryBatchSize = 128
+const defaultGitVerificationBudget = 250 * time.Millisecond
 
 var errOwnerSnapshotRefresh = errors.New("owner snapshot needs an outside-lock refresh")
 
 func gitVerificationBudget(elapsed time.Duration) time.Duration {
 	// Freshness dates from the Git reply or start of final ownership validation.
 	// Bound lock contention separately, including slow uncached Git queries.
-	return max(250*time.Millisecond, 2*min(elapsed, time.Second))
+	return max(defaultGitVerificationBudget, 2*min(elapsed, time.Second))
+}
+
+func (s *Service) verificationBudget(item Item, real string, owners *ownershipBatch) (time.Duration, error) {
+	var elapsed time.Duration
+	if owners != nil && !owners.retried[item.ID] {
+		elapsed = owners.elapsed[owners.groups[real]]
+	}
+	budget := gitVerificationBudget(elapsed)
+	if owners == nil || budget <= defaultGitVerificationBudget {
+		return budget, nil
+	}
+	rootCtx, cancel := context.WithTimeout(s.Store.Context(), defaultGitVerificationBudget)
+	sameRoot, err := owners.currentRoot(rootCtx, real)
+	cancel()
+	if err != nil {
+		return defaultGitVerificationBudget, nil
+	}
+	if sameRoot {
+		return budget, nil
+	}
+	if owners.retried[item.ID] {
+		return defaultGitVerificationBudget, nil
+	}
+	return 0, owners.requestRefresh(item.ID, real).Err
 }
 
 // Git's index may be atomically published during an earlier move, even within
@@ -27,11 +52,11 @@ func (s *Service) finalGitForMove(item Item, real string, owners *ownershipBatch
 	if s.OwnerBatch == nil && s.Owner == nil {
 		return "", "", nil
 	}
-	var elapsed time.Duration
-	if owners != nil {
-		elapsed = owners.elapsed[owners.groups[real]]
+	budget, err := s.verificationBudget(item, real, owners)
+	if err != nil {
+		return "", "", err
 	}
-	ctx, cancel := context.WithTimeout(s.Store.Context(), gitVerificationBudget(elapsed))
+	ctx, cancel := context.WithTimeout(s.Store.Context(), budget)
 	defer cancel()
 	for {
 		if err := ctx.Err(); err != nil {
@@ -146,6 +171,8 @@ func (b *ownershipBatch) fill(ctx context.Context, paths []string) {
 	started := time.Now()
 	queried := b.query(ctx, paths)
 	elapsed := time.Since(started)
+	groups := make([]string, len(paths))
+	mixed := false
 	for i, path := range paths {
 		b.answers[path] = queried[i]
 		group := b.groups[path]
@@ -153,6 +180,15 @@ func (b *ownershipBatch) fill(ctx context.Context, paths []string) {
 			group = pathutil.ComparisonPath(filepath.Clean(root))
 			b.groups[path] = group
 		}
+		groups[i] = group
+		if i > 0 && group != groups[0] {
+			mixed = true
+		}
+	}
+	if mixed {
+		return
+	}
+	for _, group := range groups {
 		b.elapsed[group] = max(b.elapsed[group], elapsed)
 	}
 }
@@ -183,6 +219,14 @@ func (b *ownershipBatch) requestRefresh(id int64, real string) Ownership {
 	}
 	b.retried[id], b.refresh = true, real
 	return Ownership{Tracked: true, Err: errOwnerSnapshotRefresh}
+}
+
+func (b *ownershipBatch) currentRoot(ctx context.Context, real string) (bool, error) {
+	owner, ok := b.answers[real]
+	if !ok || owner.CurrentRoot == nil {
+		return true, nil
+	}
+	return owner.CurrentRoot(ctx)
 }
 
 func (b *ownershipBatch) lookup(ctx context.Context, id int64, real string) Ownership {

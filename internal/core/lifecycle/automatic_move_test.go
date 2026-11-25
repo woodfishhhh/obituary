@@ -498,20 +498,19 @@ func checkSlowGitPublication(t *testing.T, timing string) {
 		return nil
 	})
 	defer restore()
+	var rows []core.Outcome
+	var err error
 	for attempt := 0; attempt < 3; attempt++ {
-		rows, err := f.svc.Sweep(false)
+		rows, err = f.svc.Sweep(false)
 		if data, readErr := os.ReadFile(paths[1]); readErr != nil || string(data) != "keep.log" {
 			t.Fatalf("slow Git moved newly tracked content: %+v %v", rows, readErr)
 		}
-		if err != nil || !published {
-			t.Fatalf("slow Git publication fixture failed: %+v %v", rows, err)
+		if err != nil {
+			t.Fatalf("slow Git publication sweep failed: %+v %v", rows, err)
 		}
 		items := f.items()
 		if len(items) == 0 {
-			if len(f.burials()) != 1 {
-				t.Fatalf("slow Git publication lost sibling burial: %+v", rows)
-			}
-			return
+			break
 		}
 		// A final ownership check stalled beyond 10ms retains a retry.
 		for _, item := range items {
@@ -520,7 +519,15 @@ func checkSlowGitPublication(t *testing.T, timing string) {
 			}
 		}
 	}
-	t.Fatalf("slow Git publication did not settle safely: %+v", f.items())
+	if !published {
+		t.Fatalf("slow Git publication fixture failed: %+v %v", rows, err)
+	}
+	if items := f.items(); len(items) != 0 {
+		t.Fatalf("slow Git publication did not settle safely: %+v", items)
+	}
+	if len(f.burials()) != 1 {
+		t.Fatalf("slow Git publication lost sibling burial: %+v", rows)
+	}
 }
 
 func TestSlowGitBudgetIsolatedByProject(t *testing.T) {
@@ -643,5 +650,106 @@ func testSlowGitBudgetByProject(t *testing.T, history string) {
 	t.Logf("mixed=%t fast budget=%s reader=%s err=%v actions=%s,%s", mixed, budget, r.wait, r.err, out[0].Action, out[1].Action)
 	if mixed || budget != 250*time.Millisecond || r.err != nil || out[0].Action != wantSlow || out[1].Action != core.ActionRetry || (history != "no-repository" && len(f.burials()) != 0) {
 		t.Fatal("slow repository inflated another project's final budget")
+	}
+}
+
+func TestSignoffCurrentScope(t *testing.T) {
+	for _, stage := range []string{"historical-alias", "publish-after-discovery", "publish-after-prefetch"} {
+		t.Run(stage, func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				f, pp, git := slowGitFixture(t, "outer.log", "nested/child.log")
+				slow, fast := pp[0], pp[1]
+				git("config", "include.path", "optional.config")
+				git("add", "--", "outer.log")
+				nested := filepath.Dir(fast)
+				historical := f.dir + string(os.PathSeparator) + "."
+				if runtime.GOOS == "windows" {
+					historical = strings.ToUpper(f.dir)
+				}
+				if stage == "historical-alias" {
+					if err := f.svc.Store.Update(func(s *core.State) error {
+						for i := range s.Items {
+							if s.Items[i].Path == fast {
+								s.Items[i].Project = historical
+								s.Items[i].Rev++
+							}
+						}
+						return nil
+					}); err != nil {
+						t.Fatal(err)
+					}
+					if recorded := f.items(); len(recorded) != 2 || recorded[0].Project == recorded[1].Project {
+						t.Fatalf("historical alias missing: %+v", recorded)
+					}
+				}
+				published := false
+				publish := func() {
+					testenv.InitRepo(t, nested)
+					git("-C", nested, "config", "include.path", "optional.config")
+					git("-C", nested, "add", "--", "child.log")
+					published = true
+				}
+				mixed, splitReply := false, false
+				var fastBudget time.Duration
+				var readDone <-chan snapshotRead
+				f.svc.PrepareOwners = func(ctx context.Context, paths []string, roots map[string]string) core.OwnerBatchFunc {
+					q := auto.PrepareOwners(ctx, paths, roots)
+					if roots[slow] != f.dir || roots[fast] != f.dir {
+						t.Fatalf("outer root setup = %v", roots)
+					}
+					if stage == "publish-after-discovery" {
+						publish()
+					}
+					return func(c context.Context, ps []string) []core.Ownership {
+						if ledgerUnlocked(t, f) {
+							if slices.Contains(ps, slow) {
+								mixed = mixed || slices.Contains(ps, fast)
+								delayGit(c)
+							}
+							owners := q(c, ps)
+							if len(owners) == 2 {
+								splitReply = owners[0].Root != owners[1].Root
+							}
+							if stage == "publish-after-prefetch" && !published {
+								publish()
+							}
+							return owners
+						}
+						if slices.Contains(ps, fast) {
+							until, ok := c.Deadline()
+							if !ok {
+								t.Fatal("missing final deadline")
+							}
+							fastBudget = time.Until(until)
+							if stage != "historical-alias" {
+								readDone = concurrentSnapshot(f.svc.Store)
+								delayGit(c)
+							}
+						}
+						return q(c, ps)
+					}
+				}
+				rows, err := f.svc.Sweep(false)
+				if err != nil || len(rows) != 2 || rows[0].Action != core.ActionRefused || read(t, slow) != "outer.log" {
+					t.Fatalf("fixture: rows=%+v err=%v", rows, err)
+				}
+				if stage == "historical-alias" {
+					if !mixed || splitReply || fastBudget != 2*time.Second || rows[1].Action != core.ActionBuried || read(t, rows[1].Grave) != "nested/child.log" {
+						t.Fatalf("same worktree not shared or ownership changed: mixed=%v split=%v budget=%v rows=%+v", mixed, splitReply, fastBudget, rows)
+					}
+					t.Logf("one current root, distinct historical spellings, mixed=%v sharedBudget=%s actions=%s,%s", mixed, fastBudget, rows[0].Action, rows[1].Action)
+					return
+				}
+				realRoot, tracked, e := auto.Owner(fast)
+				if !published || realRoot != nested || !tracked || e != nil || readDone == nil || read(t, fast) != "nested/child.log" || len(f.burials()) != 0 {
+					t.Fatalf("current nested scope or protected bytes missing: root=%s tracked=%v e=%v", realRoot, tracked, e)
+				}
+				rr := <-readDone
+				t.Logf("mixed=%v splitReply=%v currentTracked=%v fastBudget=%s reader=%s err=%v actions=%s,%s", mixed, splitReply, tracked, fastBudget, rr.wait, rr.err, rows[0].Action, rows[1].Action)
+				if fastBudget != 250*time.Millisecond || rr.err != nil {
+					t.Errorf("new current worktree inherited the outer repository budget")
+				}
+			})
+		})
 	}
 }

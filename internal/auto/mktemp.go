@@ -31,7 +31,21 @@ func Owner(path string) (string, bool, error) {
 // OwnerBatch discovers every path independently (including nested worktrees),
 // then reuses project.TrackedBatchContext's UTF-16 command-line chunking.
 func OwnerBatch(ctx context.Context, paths []string) []core.Ownership {
-	return queryOwners(ctx, paths, nil, nil, nil)
+	return attachCurrentRoots(paths, queryOwners(ctx, paths, nil, nil, nil), nil)
+}
+
+func attachCurrentRoots(paths []string, answers []core.Ownership, known map[string]discoveredOwner) []core.Ownership {
+	for i := range answers {
+		path, root := paths[i], answers[i].Root
+		answers[i].CurrentRoot = func(ctx context.Context) (bool, error) {
+			current, found, err := project.FindContext(ctx, path)
+			if known != nil {
+				known[path] = discoveredOwner{project: current, found: found, err: err}
+			}
+			return err == nil && found == (root != "") && (!found || current.Root == root), err
+		}
+	}
+	return answers
 }
 
 func queryOwners(ctx context.Context, paths []string, observers map[string]preparedIndex, known map[string]discoveredOwner, names map[string]string) []core.Ownership {
@@ -68,13 +82,22 @@ func queryOwners(ctx context.Context, paths []string, observers map[string]prepa
 			answers[i].CheckedAt = checkedAt
 			if snapshot != nil {
 				path := paths[i]
-				answers[i].Current = func(ctx context.Context) (bool, time.Time, error) {
-					started := time.Now()
+				findRoot := func(ctx context.Context) (project.Project, bool, error) {
 					current, found, err := project.FindContext(ctx, path)
 					if afterFind != nil {
 						afterFind()
 					}
 					known[path] = discoveredOwner{project: current, found: found, err: err}
+					return current, found, err
+				}
+				answers[i].CurrentRoot = func(ctx context.Context) (bool, error) {
+					current, found, err := project.FindContext(ctx, path)
+					known[path] = discoveredOwner{project: current, found: found, err: err}
+					return err == nil && found && current.Root == root, err
+				}
+				answers[i].Current = func(ctx context.Context) (bool, time.Time, error) {
+					started := time.Now()
+					current, found, err := findRoot(ctx)
 					if err != nil || !found || current.Root != root {
 						return false, time.Time{}, err
 					}

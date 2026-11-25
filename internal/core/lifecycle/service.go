@@ -126,6 +126,9 @@ type Ownership struct {
 	// Current proves the answer's index generation and project still apply.
 	// Nil answers cannot be reused for a later move.
 	Current func(context.Context) (bool, time.Time, error)
+	// CurrentRoot proves the path still belongs to the same project without
+	// querying Git's index.
+	CurrentRoot func(context.Context) (bool, error)
 }
 
 type OwnerBatchFunc func(context.Context, []string) []Ownership
