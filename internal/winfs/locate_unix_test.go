@@ -39,7 +39,7 @@ func TestPOSIXBirthTimeCheckedAtLookup(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, _, err = fs.BurialEntry(root, path, parent)
-	if err == nil || got != weak || got == want {
+	if err != nil || got.RequirePersistent() == nil || got != weak || got == want {
 		t.Fatalf("weak child acquired a durable identity: %+v %v", got, err)
 	}
 	parentBirth, err := strconv.ParseUint(parent.FileID[:16], 16, 64)

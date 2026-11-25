@@ -8,18 +8,25 @@ import (
 
 // Scan the private grave while graveyard.lock excludes recovery and purge. The manifest
 // protects a moved directory until the inventory and current ledger agree.
-func (s *Service) graveInventory(b Burial) (map[string]bool, error) {
+func (s *Service) graveInventory(b Burial) (*lifespanSnapshot, error) {
 	if !b.IsDir {
 		return nil, nil
 	}
-	inside := make(map[string]bool)
-	err := s.walkBurialTree(s.Store.Context(), b.Grave, *b.Identity, nil, -1, func(id string) { inside[id] = true })
-	if err != nil {
+	snap := &lifespanSnapshot{real: b.Grave}
+	if err := s.scanInventory(snap, *b.Identity); err != nil {
+		snap.close()
 		return nil, err
 	}
+	if err := s.checkDeparted(b, snap.inventory); err != nil {
+		snap.close()
+		return nil, err
+	}
+	return snap, nil
+}
+func (s *Service) checkDeparted(b Burial, inside map[string]bool) error {
 	for _, child := range b.Children {
 		if child.Identity == nil {
-			return nil, ErrUnsafe
+			return ErrUnsafe
 		}
 		if child.Identity.Serial == b.Identity.Serial && inside[child.Identity.FileID] {
 			continue
@@ -29,13 +36,13 @@ func (s *Service) graveInventory(b Burial) (map[string]bool, error) {
 			continue
 		}
 		if e != nil {
-			return nil, fmt.Errorf("locate departed #%d: %w", child.ID, e)
+			return fmt.Errorf("locate departed #%d: %w", child.ID, e)
 		}
 		if isInside(current, b.Grave) {
-			return nil, fmt.Errorf("departed #%d still in grave", child.ID)
+			return fmt.Errorf("departed #%d still in grave", child.ID)
 		}
 	}
-	return inside, nil
+	return nil
 }
 
 func reconcileChildren(st *State, b *Burial, inside map[string]bool) error {
@@ -68,11 +75,19 @@ func reconcileChildren(st *State, b *Burial, inside map[string]bool) error {
 
 // checkErr identifies a local receipt requiring retry. A storage failure stops the batch.
 func (s *Service) publishBurial(b *Burial) (checkErr, err error) {
-	inside, checkErr := s.graveInventory(*b)
+	snap, checkErr := s.graveInventory(*b)
 	if checkErr != nil {
 		return checkErr, nil
 	}
-	err = s.Store.UpdateGraveyard(func(st *State) error { checkErr = s.entomb(st, b, inside); return checkErr })
+	defer snap.close()
+	err = s.Store.UpdateGraveyard(func(st *State) error {
+		inside, err := snap.verified(st, b.ID)
+		if err == nil {
+			err = s.entomb(st, b, inside)
+		}
+		checkErr = err
+		return err
+	})
 	if checkErr != nil {
 		return checkErr, nil
 	}
@@ -340,4 +355,18 @@ func (r *recovery) updateOutcomeSizes() {
 			}
 		}
 	}
+}
+
+func (snap *lifespanSnapshot) verified(st *State, id int64) (map[string]bool, error) {
+	if snap == nil {
+		return nil, nil
+	}
+	active := false
+	for _, it := range st.Items {
+		if it.ID != id && it.Kind != KindContainer && it.Kind != KindDockerVolume {
+			active = true
+			break
+		}
+	}
+	return snap.inventory, snap.check(active)
 }

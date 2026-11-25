@@ -348,21 +348,25 @@ func (s *Service) inspect(ref string, force bool) (*candidate, error) {
 	if err != nil {
 		return nil, err
 	}
-	info, err := os.Lstat(abs)
-	if errors.Is(err, os.ErrNotExist) {
+	identity, mode, err := s.FS.Inspect(abs)
+	if errors.Is(err, ErrNotFound) || errors.Is(err, os.ErrNotExist) {
 		return nil, fmt.Errorf("%s does not exist: %w", abs, ErrNotFound)
 	}
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("refusing %s: %w", abs, err)
 	}
 	if err := s.Guard.Check(abs, force); err != nil {
 		return nil, err
 	}
-	identity, err := s.FS.Identify(abs)
+	// Guard checks the named tree. A replacement during that check cannot inherit its approval.
+	current, err := s.FS.Identify(abs)
 	if err != nil {
 		return nil, fmt.Errorf("refusing %s: %w", abs, err)
 	}
-	return &candidate{path: filepath.Clean(abs), isDir: info.IsDir(), searched: info.IsDir() && !force, identity: identity}, nil
+	if current != identity {
+		return nil, fmt.Errorf("registration target changed during inspection: %w", ErrUnsafe)
+	}
+	return &candidate{path: filepath.Clean(abs), isDir: mode.IsDir(), searched: mode.IsDir() && !force, identity: identity}, nil
 }
 
 func recordAutoReceipts(st *State, results []Result, opts AddOptions, now time.Time) {

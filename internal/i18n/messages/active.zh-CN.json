@@ -10,7 +10,7 @@
   "cli.list.quiet": "还需安静 {{.QuietFor}}（stable_window={{.StableWindow}}）；下次检查 {{.NextCheck}}",
   "cli.bury.short": "按当前删除模式移动路径；恢复方式取决于该模式",
   "cli.bury.short.graveyard": "立即把路径移进墓地（用 obit resurrect 复活）",
-  "cli.bury.short.recycle": "把路径移进系统回收站（从回收站恢复）",
+  "cli.bury.short.recycle": "回收模式下，普通文件从系统回收站恢复，目录从讣告墓地用 obit resurrect 恢复",
   "cli.bury.force": "允许包含 .git 仓库的文件夹",
   "cli.bury.note": "随下葬保存的自由文本备注",
   "cli.bury.json": "输出 JSON",

@@ -56,3 +56,37 @@ func TestBurialDirectoryAndQueuedChanges(t *testing.T) {
 		t.Fatal("missed queued nested entry creation")
 	}
 }
+
+func TestBurialChangesFollowRenamedDirectory(t *testing.T) {
+	parent := t.TempDir()
+	dir := filepath.Join(parent, "original")
+	if err := os.Mkdir(dir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	old, err := os.OpenRoot(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer old.Close()
+	current := filepath.Join(parent, "renamed")
+	if err := os.Rename(dir, current); err != nil {
+		t.Fatal(err)
+	}
+	watch, err := (FS{}).NewDirectoryChanges(current)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer watch.Close()
+	if err := watch.WatchDirectory(current); err != nil {
+		t.Fatal(err)
+	}
+	if err := watch.Check(); err != nil {
+		t.Fatal(err)
+	}
+	if err := old.WriteFile("note", nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if watch.Check() == nil {
+		t.Fatal("watcher missed a write through a pre-rename directory handle")
+	}
+}

@@ -479,3 +479,14 @@ func (s Store) inspectSnapshot() (State, error) {
 func sameGraveyardReference(a, b *GraveyardReference) bool {
 	return a == nil && b == nil || a != nil && b != nil && *a == *b
 }
+
+// ViewItems compares a filesystem inventory against active registrations under the shared ledger lock.
+func (s Store) ViewItems(check func([]Item) error) error {
+	return s.withLock("store.lock", false, func() error {
+		st, _, err := s.loadHot()
+		if err != nil {
+			return err
+		}
+		return check(st.Items)
+	})
+}

@@ -182,7 +182,7 @@ func (s *Service) buryRef(ref string, force bool, note, source string, recovery 
 		return r, err
 	}
 	identity := c.identity
-	item.Path, item.IsDir, item.Identity, item.Force = c.path, c.isDir, &identity, force
+	item.Path, item.IsDir, item.Identity, item.Force = c.path, item.IsDir || c.isDir, &identity, force
 	if note != "" {
 		item.Note = note
 	}

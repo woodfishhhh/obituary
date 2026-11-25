@@ -29,6 +29,14 @@ func (fs unavailableBirthFS) Identify(path string) (core.Identity, error) {
 	return id, err
 }
 
+func (fs unavailableBirthFS) Inspect(path string) (core.Identity, os.FileMode, error) {
+	id, mode, err := fs.FS.Inspect(path)
+	if err == nil {
+		id.FileID = "0000000000000000" + id.FileID[16:]
+	}
+	return id, mode, err
+}
+
 func TestPOSIXLegacyIdentityDiagnostics(t *testing.T) {
 	dir := t.TempDir()
 	home := filepath.Join(dir, "data")

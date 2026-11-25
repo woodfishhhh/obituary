@@ -48,7 +48,7 @@ var defaultMessages = map[string]*goi18n.Message{
 	"cli.list.quiet":           &goi18n.Message{ID: "cli.list.quiet", Other: "quiet for {{.QuietFor}} more (stable_window={{.StableWindow}}); next check {{.NextCheck}}"},
 	"cli.bury.short":           &goi18n.Message{ID: "cli.bury.short", Other: "Move paths using the configured deletion mode; recovery depends on that mode"},
 	"cli.bury.short.graveyard": &goi18n.Message{ID: "cli.bury.short.graveyard", Other: "Move paths into the graveyard now (restore with obit resurrect)"},
-	"cli.bury.short.recycle":   &goi18n.Message{ID: "cli.bury.short.recycle", Other: "Move paths to the system Recycle Bin (restore from the Recycle Bin)"},
+	"cli.bury.short.recycle":   &goi18n.Message{ID: "cli.bury.short.recycle", Other: "In recycle mode, restore files from the system Recycle Bin and directories with obit resurrect"},
 	"cli.bury.force":           &goi18n.Message{ID: "cli.bury.force", Other: "allow folders that contain a .git repository"},
 	"cli.bury.note":            &goi18n.Message{ID: "cli.bury.note", Other: "free-text note kept with the burial"},
 	"cli.bury.json":            &goi18n.Message{ID: "cli.bury.json", Other: "print JSON"},

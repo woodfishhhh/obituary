@@ -8,7 +8,7 @@
   "cli.list.quiet": "quiet for {{.QuietFor}} more (stable_window={{.StableWindow}}); next check {{.NextCheck}}",
   "cli.bury.short": "Move paths using the configured deletion mode; recovery depends on that mode",
   "cli.bury.short.graveyard": "Move paths into the graveyard now (restore with obit resurrect)",
-  "cli.bury.short.recycle": "Move paths to the system Recycle Bin (restore from the Recycle Bin)",
+  "cli.bury.short.recycle": "In recycle mode, restore files from the system Recycle Bin and directories with obit resurrect",
   "cli.bury.force": "allow folders that contain a .git repository",
   "cli.bury.note": "free-text note kept with the burial",
   "cli.bury.json": "print JSON",

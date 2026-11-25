@@ -68,7 +68,11 @@ func TestLargeBurialInventoryYieldsAndRevalidates(t *testing.T) {
 				}
 			}}
 			rows, err := f.svc.Bury([]string{root}, false, "")
-			if err != nil || len(rows) != 1 || starts != 1 {
+			wantStarts := 2
+			if change {
+				wantStarts = 1
+			}
+			if err != nil || len(rows) != 1 || starts != wantStarts {
 				t.Fatalf("wide retries=%d outcomes=%+v err=%v", starts, rows, err)
 			}
 			if change {

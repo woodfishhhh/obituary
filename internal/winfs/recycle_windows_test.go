@@ -77,3 +77,15 @@ func TestRecycleRefusesAnObjectThatWasSwappedIn(t *testing.T) {
 		t.Fatal("the swapped-in file must be kept")
 	}
 }
+
+func TestRecycleRejectsActualDirectory(t *testing.T) {
+	dir := t.TempDir()
+	backend := FS{}
+	id, err := backend.Identify(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = backend.Recycle(dir, id); err == nil || !strings.Contains(err.Error(), "directories require") {
+		t.Fatalf("directory recycle gate: %v", err)
+	}
+}

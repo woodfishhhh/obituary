@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"errors"
 	"fmt"
+	"github.com/woodfishhhh/obituary/internal/core/fs"
 	"os"
 )
 
@@ -126,11 +127,16 @@ func (s *Service) executePurge(r *GraveResult, state State, decision purgeDecisi
 		}
 		r.Action = ActionLost
 	case purgeDelete:
+		protected, err := s.purgeProtection(*b, state)
+		if err != nil {
+			r.Error = fmt.Sprintf("protected grave #%d: %v", b.ID, err)
+			return nil
+		}
 		if dryRun {
 			r.Action = ActionPurged
 			return nil
 		}
-		err := s.deletePurgeBurial(r, state, decision.dir, basis)
+		err = s.deletePurgeBurial(r, state, decision.dir, basis, protected)
 		if err != nil || r.Error != "" {
 			return err
 		}
@@ -153,7 +159,7 @@ func (s *Service) executePurge(r *GraveResult, state State, decision purgeDecisi
 
 // Publish the intent before removal. Each failure keeps its original receipt
 // semantics: manifest/delete failures retry this item; intent failures abort.
-func (s *Service) deletePurgeBurial(r *GraveResult, state State, dir, basis string) error {
+func (s *Service) deletePurgeBurial(r *GraveResult, state State, dir, basis string, protected fs.ProtectedIDs) error {
 	err := s.cleanRecordedManifest(*r.Burial, state)
 	if err != nil {
 		r.Error = err.Error()
@@ -163,7 +169,7 @@ func (s *Service) deletePurgeBurial(r *GraveResult, state State, dir, basis stri
 	if err != nil {
 		return err
 	}
-	err = s.FS.PurgeGrave(dir, *r.Burial.GraveID)
+	err = s.FS.PurgeGrave(dir, *r.Burial.GraveID, protected)
 	if err != nil {
 		r.Error = fmt.Sprintf("#%d: %v", r.Burial.ID, err)
 		return nil

@@ -198,7 +198,7 @@ func (s *Service) claim(id int64) (Item, bool, error) {
 
 // commit writes a sweep outcome back, but only onto the revision it processed.
 func (s *Service) commit(o Outcome) error {
-	if o.err != nil || o.Action == ActionBuried || o.Action == ActionSkipped || o.Action == ActionProposed {
+	if o.err != nil || o.Action == ActionBuried || o.Action == ActionRecoveryPending || o.Action == ActionSkipped || o.Action == ActionProposed {
 		return o.err // burial was committed in the same transaction as its move
 	}
 	return s.Store.UpdateHot(func(st *State) error {

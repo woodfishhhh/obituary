@@ -6,6 +6,7 @@ package integrate
 // instead of reporting it as someone else's. When Awareness changes, add the
 // previous hash here (TestAwarenessChangeKeepsOwnership names it).
 var shippedAwareness = map[string]bool{
+	"4fe3886374072113421ab8540709ab15ce92e20af8a0a4e5c40e09f0cd0de984": true, // directory recovery in recycle mode
 	"ac1a01aeba00e65e73b5b90058b5aa7c5e8c562b62bd74026a33e5ce62828cf9": true, // 1.0.0 to 1.1.1
 	"a8f4fee772231351412bde9bf1fdb18ae5368cb12675f66f255a95c38f6f192b": true, // main between 1.1.1 and 1.2.0
 	"4f65738ff0b18132e0e7a19e933d51c32d8d36cdd0613bace9d8bf5d2600de2d": true, // 1.2.0 and 1.2.1
@@ -25,8 +26,8 @@ const Awareness = ownedMarker + `
 Obituary gives files a lifespan. When it runs out they are buried in a
 graveyard, restorable with ` + "`obit resurrect <id>`" + ` until they are purged
 (after 7 days by default; the user's config may change this). When the user has
-configured recycle mode, buried items go to the system Recycle Bin instead and
-` + "`obit resurrect`" + ` cannot restore them.
+configured recycle mode, recover ordinary files from the system Recycle Bin.
+Directories still go to the graveyard. Restore them with ` + "`obit resurrect <id>`" + `.
 
 When the delete guard is enabled, deletion commands are denied with an equivalent obit command as a suggestion.
 

@@ -223,8 +223,14 @@ func (s *Service) movePrepared(st *State, p *preparedBurial, reason string) erro
 // and unconfirmed commits retain every moved object's independent manifest.
 func (s *Service) finishBurial(p *preparedBurial, commitErr error) error {
 	if p.moved && p.burial.IsDir && !commitFailed(commitErr) {
+		p.out.lifespans.close()
 		checkErr, err := s.publishBurial(&p.burial)
-		commitErr = errors.Join(commitErr, checkErr, err)
+		if checkErr != nil {
+			p.out.Action = ActionRecoveryPending
+			p.out.Detail = fmt.Sprintf("retained at %s for verification: %v", p.burial.Grave, checkErr)
+			return commitErr
+		}
+		commitErr = errors.Join(commitErr, err)
 	}
 	if p.retained {
 		return commitErr
@@ -262,7 +268,7 @@ func (s *Service) moveToGrave(out Outcome, reason string) Outcome {
 		owners = s.prepareBatchOwners([]Item{item}, nil)
 	}
 	err := s.commitPreparedBurial(p, reason, owners)
-	if commitFailed(err) || !p.moved {
+	if commitFailed(err) || !p.moved || p.out.Action == ActionRecoveryPending {
 		return ledgerOutcome(p.out, err)
 	}
 	return s.measureBurial(p, err)

@@ -77,8 +77,6 @@ func burialDescent(attributes, tag uint32) (bool, error) {
 	return false, fmt.Errorf("unverified directory reparse tag %#x", tag)
 }
 
-func (FS) PurgeGrave(path string, _ corefs.Identity) error { return os.RemoveAll(path) }
-
 type directoryChanges struct {
 	handle windows.Handle
 	root   string

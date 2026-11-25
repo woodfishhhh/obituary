@@ -59,7 +59,8 @@ func (s *Service) resurrectionCandidates(state State, ref string) (*resurrection
 		if !numeric && p.Status == "unverifiable" {
 			candidates.addUnverified(state, p)
 		}
-		if p.Status != "restore-committed" {
+		pendingDirectory := numeric && p.Number() == id && p.Status == "pending" && p.Burial.IsDir
+		if p.Status != "restore-committed" && !pendingDirectory {
 			continue
 		}
 		candidates.committed[p.Burial.ID] = p

@@ -142,7 +142,7 @@ func (s *Service) reserveBuryBatch(batch []burialRequest, force bool, note, sour
 				st.NextID++
 			}
 			c := r.candidate
-			r.item.Path, r.item.IsDir, r.item.Identity, r.item.Force = c.path, c.isDir, &c.identity, force
+			r.item.Path, r.item.IsDir, r.item.Identity, r.item.Force = c.path, r.item.IsDir || c.isDir, &c.identity, force
 			if note != "" {
 				r.item.Note = note
 			}

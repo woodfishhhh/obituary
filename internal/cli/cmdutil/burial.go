@@ -9,6 +9,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/project"
 )
 
+// RecycleRecovery describes a confirmed file receipt. Directories receive a grave and a resurrection ID.
 const RecycleRecovery = "sent to the system Recycle Bin; restore from the Recycle Bin"
 
 // Cobra renders help before RunE; load only config here, without opening a store.

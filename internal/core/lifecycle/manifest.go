@@ -268,15 +268,21 @@ func (s *Service) cleanRecordedManifest(b Burial, st State) error {
 // Confirm and audit before retiring the independent manifest. Both recovery
 // and direct terminal actions use this step; failed auditing retains evidence.
 func (s *Service) confirmRecordedBurial(b Burial) (confirmed Burial, checkErr, err error) {
-	inside, checkErr := s.graveInventory(b)
+	snap, checkErr := s.graveInventory(b)
 	if checkErr != nil {
 		return b, checkErr, checkErr
 	}
+	defer snap.close()
 	err = s.Store.Confirm(func(st *State) error {
 		idx := st.BurialIndex(b.ID)
 		if idx < 0 || !sameBurial(st.Burials[idx], b) {
 			checkErr = fmt.Errorf("burial #%d changed before confirmation; retry", b.ID)
 			return checkErr
+		}
+		inside, err := snap.verified(st, b.ID)
+		if err != nil {
+			checkErr = err
+			return err
 		}
 		checkErr = reconcileChildren(st, &st.Burials[idx], inside)
 		confirmed = st.Burials[idx]

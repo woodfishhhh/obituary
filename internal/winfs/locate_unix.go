@@ -26,5 +26,5 @@ func (backend FS) BurialEntry(parent fs.ReadDirFile, path string, dir corefs.Ide
 	}
 	id := inodeBytes(&st)
 	child := corefs.Identity{Volume: dir.Volume, Serial: st.Dev, FileID: hex.EncodeToString(id[:])}
-	return child, isDir, child.RequirePersistent()
+	return child, isDir, nil
 }

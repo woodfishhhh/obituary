@@ -19,7 +19,7 @@ func (s *Service) settle(item Item, dryRun bool, reason string, roots []resolved
 	if out.Action != "" || out.err != nil {
 		return out
 	}
-	if !s.recycleMode() || item.IsDir {
+	if !s.recycleMode() || out.Item.IsDir {
 		return s.moveToGrave(out, reason)
 	}
 	return s.recyclePrepared(out, reason)
@@ -74,6 +74,15 @@ func (s *Service) prepareSettlement(item Item, dryRun bool, reason string, roots
 		return out
 	}
 	out.Path = target
+	id, mode, err := s.FS.Inspect(target)
+	if err != nil {
+		return failedMove(out, err)
+	}
+	if id != *item.Identity {
+		return failedMove(out, errors.New("settlement target changed before inspection"))
+	}
+	item.IsDir = item.IsDir || mode.IsDir()
+	out.Item = item
 	if state == nil {
 		current, err := s.Store.Read()
 		if err != nil {

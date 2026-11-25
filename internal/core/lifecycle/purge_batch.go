@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 )
 
 // Tick already owns graveyard.lock, excluding other burial/restore/purge
@@ -14,12 +16,11 @@ import (
 // protocol sufficient to distinguish deleted content from a lost grave.
 func (s *Service) purgeExpiredBatches(state State, requested []Burial, blocked map[int64]string) (results []GraveResult, finalErr error) {
 	for len(requested) > 0 {
-		n := min(len(requested), sweepBatchSize)
-		batch := make([]GraveResult, n)
-		for i, b := range requested[:n] {
-			batch[i] = s.inspectExpiredPurge(b, state, blocked[b.ID])
+		batch, tree := s.preparePurgePrefix(requested, state, blocked)
+		reserved, protected, capacityErr, err := s.reservePurgeBatch(batch, tree)
+		if tree != nil {
+			tree.close()
 		}
-		reserved, capacityErr, err := s.reservePurgeBatch(batch)
 		if err != nil {
 			for _, r := range batch {
 				r.Action, r.Error = ActionNotExecuted, err.Error()
@@ -27,8 +28,11 @@ func (s *Service) purgeExpiredBatches(state State, requested []Burial, blocked m
 			}
 			return results, err // an unconfirmed intent never authorizes deletion
 		}
+		if reserved < len(batch) {
+			protected = nil
+		}
 		batch = batch[:reserved]
-		processed := s.deletePurgePrefix(batch, state)
+		processed := s.deletePurgePrefix(batch, state, protected)
 		// Carry durable intents for the unprocessed suffix into its next pass.
 		for i := processed; i < reserved; i++ {
 			requested[i] = *batch[i].Burial
@@ -59,7 +63,27 @@ func (s *Service) purgeExpiredBatches(state State, requested []Burial, blocked m
 	return results, finalErr
 }
 
-func (s *Service) reservePurgeBatch(batch []GraveResult) (reserved int, capacityErr, err error) {
+// End the prefix at its first directory so only one potentially large inventory is live.
+func (s *Service) preparePurgePrefix(requested []Burial, state State, blocked map[int64]string) ([]GraveResult, *purgeInventory) {
+	batch := make([]GraveResult, 0, min(len(requested), sweepBatchSize))
+	for _, b := range requested[:cap(batch)] {
+		r := s.inspectExpiredPurge(b, state, blocked[b.ID])
+		var tree *purgeInventory
+		if r.Action == "" && r.Error == "" {
+			var err error
+			tree, err = s.inspectPurgeTree(b, state)
+			if err != nil {
+				r.Error = fmt.Sprintf("protected grave #%d: %v", b.ID, err)
+			}
+		}
+		batch = append(batch, r)
+		if tree != nil {
+			return batch, tree
+		}
+	}
+	return batch, nil
+}
+func (s *Service) reservePurgeBatch(batch []GraveResult, tree *purgeInventory) (reserved int, protected corefs.ProtectedIDs, capacityErr, err error) {
 	err = s.Store.Confirm(func(st *State) error {
 		lostReservations := 0
 		for i := range batch {
@@ -67,6 +91,13 @@ func (s *Service) reservePurgeBatch(batch []GraveResult) (reserved int, capacity
 			idx := st.BurialIndex(b.ID)
 			if idx < 0 || !sameBurial(st.Burials[idx], *b) {
 				return ErrUnsafe
+			}
+			if i == len(batch)-1 && tree != nil {
+				var checkErr error
+				protected, checkErr = tree.protect(st.Items)
+				if checkErr != nil {
+					r.Error = fmt.Sprintf("protected grave #%d: %v", b.ID, checkErr)
+				}
 			}
 			if r.Error == "" && b.PurgeIntent == nil {
 				if pendingAuditCount(st)+lostReservations >= maxPendingAudit {
@@ -84,10 +115,10 @@ func (s *Service) reservePurgeBatch(batch []GraveResult) (reserved int, capacity
 		}
 		return nil
 	})
-	return reserved, capacityErr, err
+	return reserved, protected, capacityErr, err
 }
 
-func (s *Service) deletePurgePrefix(batch []GraveResult, state State) (processed int) {
+func (s *Service) deletePurgePrefix(batch []GraveResult, state State, lastProtected corefs.ProtectedIDs) (processed int) {
 	started := time.Now()
 	for i := range batch {
 		if processed > 0 && time.Since(started) >= sweepBatchWork {
@@ -110,10 +141,14 @@ func (s *Service) deletePurgePrefix(batch []GraveResult, state State) (processed
 			r.Action = ActionPurged
 			continue
 		}
+		var protected corefs.ProtectedIDs
+		if i == len(batch)-1 {
+			protected = lastProtected
+		}
 		if s.beforePurgeDelete != nil {
 			s.beforePurgeDelete()
 		}
-		if err := s.FS.PurgeGrave(filepath.Dir(b.Grave), *b.GraveID); err != nil {
+		if err := s.FS.PurgeGrave(filepath.Dir(b.Grave), *b.GraveID, protected); err != nil {
 			r.Error = fmt.Sprintf("#%d: %v", b.ID, err)
 		} else {
 			r.Action = ActionPurged

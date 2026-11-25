@@ -24,6 +24,15 @@ func (s *Service) resolvePurgeRefs(run *purgeRun, state *State) {
 		idx, err := s.findBurial(state, ref)
 		if err == nil && idx < 0 {
 			err = missingBurial(ref)
+			if id, numeric, _ := BurialReferenceID(ref); numeric {
+				pending, _ := s.scanManifests(*state)
+				for _, p := range pending {
+					if p.Number() == id && p.Status == "pending" {
+						err = fmt.Errorf("grave #%d is pending verification and cannot be purged", id)
+						break
+					}
+				}
+			}
 		}
 		if err != nil {
 			run.results = append(run.results, GraveResult{Ref: ref, Error: err.Error()})

@@ -25,7 +25,7 @@ func TestBurialHelpUsesCurrentConfig(t *testing.T) {
 			// Construct before writing config: help must use the invocation's configuration.
 			cmd := factory()
 			for _, tc := range []struct{ config, want, forbidden string }{
-				{"[graveyard]\nmode = 'recycle'\n", "restore from the Recycle Bin", "obit resurrect"},
+				{"[graveyard]\nmode = 'recycle'\n", "restore files from the system Recycle Bin and directories with obit resurrect", "Move paths to the system Recycle Bin"},
 				{"[graveyard]\nmode = 'graveyard'\n", "restore with obit resurrect", "Recycle Bin"},
 				{"[broken", "recovery depends on that mode", "restore with obit resurrect"},
 			} {

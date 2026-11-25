@@ -14,6 +14,8 @@ import (
 	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 )
 
+var errWeakDescendant = errors.New("this filesystem cannot identify all directory entries while other lifespans are active; restore or move the active objects to a filesystem with persistent identities first")
+
 var errLifespanBudget = errors.New("continue burial directory inspection outside the ledger lock")
 
 func (s *Service) commitChildLifespans(st *State, out Outcome, reason string) ([]Item, error) {
@@ -73,18 +75,24 @@ func (s *Service) currentBurialChildren(st *State, item Item, snap *lifespanSnap
 
 func (s *Service) containedIdentities(item Item, snap *lifespanSnapshot, active map[string]bool) (map[string]bool, error) {
 	if snap.changes != nil {
-		return snap.inventory, snap.changes.Check()
+		return snap.inventory, snap.check(len(active) > 0)
 	}
 	ctx, cancel := context.WithTimeout(s.Store.Context(), 50*time.Millisecond)
 	defer cancel()
-	err := s.walkBurialTree(ctx, snap.real, *item.Identity, nil, 256, func(id string) {
-		if _, ok := active[id]; ok {
-			active[id] = true
+	err := s.walkBurialTree(ctx, snap.real, *item.Identity, nil, 256, func(child Identity) {
+		if len(active) > 0 && child.RequirePersistent() != nil {
+			snap.weak = true
+		}
+		if _, ok := active[child.FileID]; ok {
+			active[child.FileID] = true
 		}
 	})
 	if errors.Is(err, errLifespanBudget) || errors.Is(err, context.DeadlineExceeded) && s.Store.Context().Err() == nil {
 		snap.wide = true
 		return nil, errLifespanBudget
+	}
+	if err == nil && snap.weak && len(active) > 0 {
+		return nil, errWeakDescendant
 	}
 	return active, err
 }
@@ -96,17 +104,35 @@ func (s *Service) prepareWideInventory(out *Outcome) {
 	if snap == nil || !snap.wide || snap.changes != nil || out.Action != "" {
 		return
 	}
-	changes, err := s.FS.NewDirectoryChanges(snap.real)
-	if err == nil {
-		snap.changes = changes
-		snap.inventory = make(map[string]bool)
-		err = s.walkBurialTree(s.Store.Context(), snap.real, *out.Item.Identity, changes, -1, func(id string) { snap.inventory[id] = true })
-	}
+	err := s.scanInventory(snap, *out.Item.Identity)
 	if err != nil {
 		*out = failedMove(*out, err)
 	}
 }
 
+func (s *Service) scanInventory(snap *lifespanSnapshot, id Identity) error {
+	changes, err := s.FS.NewDirectoryChanges(snap.real)
+	if err != nil {
+		return err
+	}
+	snap.changes = changes
+	snap.inventory = make(map[string]bool)
+	return s.walkBurialTree(s.Store.Context(), snap.real, id, changes, -1, func(child Identity) {
+		snap.inventory[child.FileID] = true
+		if !snap.weak && child.RequirePersistent() != nil {
+			snap.weak = true
+		}
+	})
+}
+func (snap *lifespanSnapshot) check(active bool) error {
+	if snap == nil {
+		return nil
+	}
+	if active && snap.weak {
+		return errWeakDescendant
+	}
+	return snap.changes.Check()
+}
 func (snap *lifespanSnapshot) close() {
 	if snap != nil && snap.changes != nil {
 		_ = snap.changes.Close()
@@ -120,7 +146,7 @@ type burialDirectory struct {
 	id   Identity
 }
 
-func (s *Service) walkBurialTree(ctx context.Context, root string, id Identity, changes corefs.DirectoryChanges, remaining int, visit func(string)) error {
+func (s *Service) walkBurialTree(ctx context.Context, root string, id Identity, changes corefs.DirectoryChanges, remaining int, visit func(Identity)) error {
 	dirs := []burialDirectory{{root, id}}
 	seen := map[string]bool{id.FileID: true}
 	for len(dirs) > 0 {
@@ -161,7 +187,7 @@ func (s *Service) walkBurialTree(ctx context.Context, root string, id Identity, 
 				seen[child.FileID] = true
 				dirs = append(dirs, burialDirectory{path, child})
 			}
-			visit(child.FileID)
+			visit(child)
 			return nil
 		})
 		_ = f.Close()

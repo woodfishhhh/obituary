@@ -58,5 +58,5 @@ If tools named `obit_*` are available (Obituary's MCP server), they do the same 
 
 - Files tracked by Git, and dependencies, build output and caches (`node_modules`, `dist`, `__pycache__` and the like), are never given a lifespan automatically, and an automatic lifespan is checked against Git again before burial.
 - Burying a directory takes everything inside it. A directory that contains a `.git` repository needs `obit bury --force`; `obit rm -rf` buries it the way `rm -rf` would delete it.
-- With `mode = "recycle"` in Obituary's configuration, buried and expired items go to the system Recycle Bin and are restored from there. `obit config` shows the mode in effect.
+- With `mode = "recycle"` in Obituary's configuration, ordinary files go to the system Recycle Bin and are restored from there. Directories go to the graveyard. Restore them with `obit resurrect <id>`. `obit config` shows the mode in effect.
 - `obit stats` shows how much has been buried, purged and resurrected; `obit doctor` checks the installation.

@@ -16,6 +16,7 @@ type lifespanSnapshot struct {
 	real      string
 	expires   time.Time
 	wide      bool
+	weak      bool
 	inventory map[string]bool
 	changes   corefs.DirectoryChanges
 }

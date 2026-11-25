@@ -76,9 +76,12 @@ func (fs FS) Recycle(path string, want corefs.Identity) error {
 	if pathutil.IsReservedLeaf(filepath.Base(path)) {
 		return fmt.Errorf("reserved Windows filename cannot be sent to the Recycle Bin; use graveyard mode: %w", corefs.ErrUnsafe)
 	}
-	got, err := fs.Identify(path)
+	got, mode, err := fs.Inspect(path)
 	if err != nil {
 		return err
+	}
+	if mode.IsDir() {
+		return fmt.Errorf("directories require the Obituary graveyard: %w", corefs.ErrUnsafe)
 	}
 	if got != want {
 		return fmt.Errorf("%s is no longer the tracked object: %w", path, corefs.ErrUnsafe)

@@ -60,6 +60,9 @@ func (s *Service) resurrectLocked(ref string) (GraveResult, error) {
 		result.Error, result.Err = lookupErr.Error(), lookupErr
 		return result, nil
 	}
+	if pending != nil && pending.Status == "pending" {
+		return s.restorePendingDirectory(result, *pending, state)
+	}
 	if pending != nil {
 		r, err := s.recoverRestoreIntent(*pending)
 		if r.Committed {
@@ -134,4 +137,38 @@ func (s *Service) recoverRecordedResurrection(result *GraveResult, b Burial, sta
 		result.Action, result.Burial, result.Error = ActionBlocked, &b, r.Warning.Error()
 	}
 	return r.Committed || r.Warning != nil, nil
+}
+
+// The move was never committed. Returning it to its original name leaves every lifespan intact.
+func (s *Service) restorePendingDirectory(result GraveResult, p PendingGrave, state State) (GraveResult, error) {
+	b := *p.Burial
+	fail := func(err error) (GraveResult, error) {
+		result.Error = fmt.Sprintf("directory retained at %s; cannot restore to %s: %v. Resolve the conflict at the original path and retry obit resurrect %d", b.Grave, b.Path, err, b.ID)
+		return result, nil
+	}
+	if i := state.Index(b.ID); i >= 0 && (state.Items[i].Identity == nil || *state.Items[i].Identity != *b.Identity) {
+		return fail(ErrUnsafe)
+	}
+	if _, err := s.verifyGrave(*p.Burial); err != nil {
+		return fail(err)
+	}
+	chain, err := s.prepareRestoreParent(b, b.Path)
+	if err != nil {
+		return fail(err)
+	}
+	defer chain.Close()
+	if err = s.checkResurrectionTarget(b.Path, chain.RestoreParent); err == nil {
+		result.Path, err = s.FS.MovePinnedInto(b.Grave, *b.Identity, chain.RestoreParent, filepath.Base(b.Path))
+	}
+	if err != nil {
+		result.Warning = errorText(chain.Rollback())
+		refused, _ := fail(err)
+		return refused, s.retainRestoreMismatch(b, err)
+	}
+	if result.Path == "" {
+		result.Path = b.Path
+	}
+	result.Action = ActionResurrected
+	result.Warning = errorText(s.discardEmptyGrave(p.Manifest, b))
+	return result, nil
 }

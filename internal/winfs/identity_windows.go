@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io/fs"
 	"path/filepath"
 	"strings"
 	"unsafe"
@@ -91,6 +92,14 @@ func volumeRoot(path string) string { return pathutil.VolumeRoot(path) }
 // Identify returns the volume serial and 128-bit file ID of path without
 // following links. Files with more than one hard link are refused: following
 // such an ID could reach a name that was never registered.
+func (FS) Inspect(path string) (corefs.Identity, fs.FileMode, error) {
+	h, err := open(path)
+	if err != nil {
+		return corefs.Identity{}, 0, mapNotFound(err)
+	}
+	defer windows.CloseHandle(h)
+	return inspectHandle(h, volumeRoot(path))
+}
 func (FS) Identify(path string) (corefs.Identity, error) {
 	h, err := open(path)
 	if err != nil {
@@ -107,18 +116,43 @@ func IdentifyHandle(h windows.Handle, path string) (corefs.Identity, error) {
 }
 
 func identify(h windows.Handle, volume string) (corefs.Identity, error) {
+	id, _, err := inspectHandle(h, volume)
+	return id, err
+}
+
+func inspectHandle(h windows.Handle, volume string) (corefs.Identity, fs.FileMode, error) {
 	var basic windows.ByHandleFileInformation
 	if err := windows.GetFileInformationByHandle(h, &basic); err != nil {
-		return corefs.Identity{}, err
+		return corefs.Identity{}, 0, err
 	}
 	if basic.FileAttributes&windows.FILE_ATTRIBUTE_DIRECTORY == 0 && basic.NumberOfLinks > 1 {
-		return corefs.Identity{}, fmt.Errorf("it has %d hard links: %w", basic.NumberOfLinks, corefs.ErrUnsafe)
+		return corefs.Identity{}, 0, fmt.Errorf("it has %d hard links: %w", basic.NumberOfLinks, corefs.ErrUnsafe)
+	}
+	mode, err := handleMode(h, basic.FileAttributes)
+	if err != nil {
+		return corefs.Identity{}, 0, err
 	}
 	info, err := queryID(h)
 	if err != nil {
-		return corefs.Identity{}, err
+		return corefs.Identity{}, 0, err
 	}
-	return (corefs.Identity{Volume: volume, Serial: info.VolumeSerialNumber, FileID: hex.EncodeToString(info.FileID[:])}).Normalized(), nil
+	return (corefs.Identity{Volume: volume, Serial: info.VolumeSerialNumber, FileID: hex.EncodeToString(info.FileID[:])}).Normalized(), mode, nil
+}
+
+func handleMode(h windows.Handle, attrs uint32) (fs.FileMode, error) {
+	if attrs&windows.FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+		var info struct{ Attributes, Tag uint32 }
+		if err := windows.GetFileInformationByHandleEx(h, windows.FileAttributeTagInfo, (*byte)(unsafe.Pointer(&info)), uint32(unsafe.Sizeof(info))); err != nil {
+			return 0, err
+		}
+		if info.Tag == windows.IO_REPARSE_TAG_SYMLINK || info.Tag == windows.IO_REPARSE_TAG_MOUNT_POINT {
+			return fs.ModeSymlink, nil
+		}
+	}
+	if attrs&windows.FILE_ATTRIBUTE_DIRECTORY != 0 {
+		return fs.ModeDir, nil
+	}
+	return 0, nil
 }
 
 // Locate opens the object by its file ID and returns its current path. The

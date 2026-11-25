@@ -23,9 +23,11 @@ type FS interface {
 	// BurialEntry identifies the literal enumerated name and reports whether to descend.
 	BurialEntry(parent fs.ReadDirFile, path string, dir Identity) (Identity, bool, error)
 	// PurgeGrave removes a verified grave without crossing filesystem boundaries.
-	PurgeGrave(path string, want Identity) error
+	PurgeGrave(path string, want Identity, protected ProtectedIDs) error
 	// NewDirectoryChanges creates a synchronous namespace-change check for a large burial scan.
 	NewDirectoryChanges(root string) (DirectoryChanges, error)
+	// Inspect identifies the literal name and reads its type from the same handle.
+	Inspect(path string) (Identity, fs.FileMode, error)
 	// Identify returns the identity of the object at path (without following
 	// links). Files with several hard links yield an error wrapping ErrUnsafe.
 	Identify(path string) (Identity, error)
@@ -105,3 +107,6 @@ type DirectoryChanges interface {
 	Check() error
 	Close() error
 }
+
+// ProtectedIDs names active filesystem objects on the verified grave's device.
+type ProtectedIDs map[string]bool
