@@ -28,7 +28,7 @@ The delete guard recognizes `docker volume rm`, `docker volume remove`, `docker 
 
 - After `docker stop` the container and its writable layer remain; `obit resurrect <id>` runs `docker start` and stops tracking its lifespan.
 - Only after the retention period (`[graveyard] retention_days`, 7 days by default) is it removed with `docker rm`, never with `-v` or `-f`.
-- If it is running by then (you or someone started it), it counts as resurrected and is kept.
+- If you start the container during retention, Obituary keeps it and stops tracking it, even if you stop it again. Older versions did not record the start time: Obituary leaves those containers alone, and you can still run `obit resurrect <id>`.
 - `obit purge` and `--all` also wait for the retention period for containers. Recycle mode does not apply to containers: they are still stopped first and removed after retention.
 
 ## Identified by full ID

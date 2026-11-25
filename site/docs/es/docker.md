@@ -28,7 +28,7 @@ La protección contra borrados reconoce `docker volume rm`, `docker volume remov
 
 - Tras `docker stop` se conservan tanto el contenedor como su capa de escritura. `obit resurrect <id>` ejecuta `docker start` y deja de hacer seguimiento de su vida útil.
 - Solo después del período de retención (`[graveyard] retention_days`, 7 días por defecto) se elimina con `docker rm`, nunca con `-v` o `-f`.
-- Si al final del plazo está en ejecución porque tú u otra persona lo habéis iniciado, se considera resucitado y se conserva.
+- Si inicias el contenedor durante el plazo de conservación, Obituary lo conserva y deja de seguirlo, aunque vuelvas a detenerlo. Las versiones anteriores no guardaban la hora de inicio: Obituary no elimina esos contenedores y puedes recuperarlos con `obit resurrect <id>`.
 - Ni `obit purge` ni `--all` permiten acortar el plazo de retención de los contenedores. El modo de papelera tampoco se aplica: primero se detienen y solo se eliminan pasado el plazo.
 
 ## Identificación por el ID completo

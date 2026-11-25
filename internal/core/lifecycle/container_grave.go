@@ -80,7 +80,7 @@ func checkContainerBurial(st *State, b Burial) error {
 	}
 	current := st.Burials[idx]
 	if current.Kind != KindContainer || current.Container == nil || !current.Container.Same(*b.Container) ||
-		!current.BuriedAt.Equal(b.BuriedAt) || !current.PurgeAt.Equal(b.PurgeAt) || !reflect.DeepEqual(current.PurgeIntent, b.PurgeIntent) {
+		current.Container.StartedAt != b.Container.StartedAt || !current.BuriedAt.Equal(b.BuriedAt) || !current.PurgeAt.Equal(b.PurgeAt) || !reflect.DeepEqual(current.PurgeIntent, b.PurgeIntent) {
 		return docker.ErrIdentity
 	}
 	return nil
@@ -107,8 +107,15 @@ func (s *Service) prepareContainerPurge(r *GraveResult, dryRun bool) (bool, erro
 		r.Error = err.Error()
 		return true, nil
 	}
-	if got.Running {
-		action = ActionResurrected
+	if action == "" {
+		reclaimed, err := got.Reclaimed(*b.Container)
+		if err != nil {
+			r.Error = err.Error()
+			return true, nil
+		}
+		if reclaimed {
+			action = ActionResurrected
+		}
 	}
 	if action == "" {
 		return false, nil

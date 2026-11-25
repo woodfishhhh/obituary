@@ -59,6 +59,10 @@ func (s *Service) sendContainerStop(p *ContainerIntent) (error, error) {
 	var writeErr error
 	beforeSend := func(got docker.Container) error {
 		writeErr = s.updateContainerIntent(p, func(p *ContainerIntent) {
+			item, id := *p.Item, *p.Item.Container
+			id.StartedAt = got.StartedAt
+			item.Container = &id
+			p.Item = &item
 			p.Phase = "sent"
 			p.WasRunning = &got.Running
 			p.StopTimeout = got.StopTimeout

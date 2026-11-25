@@ -18,7 +18,42 @@ func dockerFixture(t *testing.T) (docker.CLI, docker.Container, string, string) 
 	executable, state, log := testenv.FakeDocker(t)
 	row := docker.Container{Identity: docker.Identity{ID: strings.Repeat("a", 64), ShortID: strings.Repeat("a", 12), Name: "cache", Created: time.Date(2026, 11, 11, 12, 0, 0, 0, time.UTC)}, Running: true}
 	testenv.WriteDocker(t, state, row)
+	row.StartedAt = time.Time{}.Format(time.RFC3339Nano)
 	return docker.CLI{Executable: executable}, row, state, log
+}
+
+func TestRemoveRechecksStoppedRun(t *testing.T) {
+	cli, row, _, log := dockerFixture(t)
+	if err := cli.Start(t.Context(), row.Identity); err != nil {
+		t.Fatal(err)
+	}
+	if err := cli.Stop(t.Context(), row.Identity, nil); err != nil {
+		t.Fatal(err)
+	}
+	kept, err := cli.Remove(t.Context(), row.Identity, nil)
+	if err != nil || !kept {
+		t.Fatal(kept, err)
+	}
+	for _, raw := range testenv.DockerCalls(t, log) {
+		if testenv.DockerCommand(raw)[0] == "rm" {
+			t.Fatal("sent removal after start time changed")
+		}
+	}
+}
+
+func TestRemoveKeepsRunningContainer(t *testing.T) {
+	cli, row, state, log := dockerFixture(t)
+	row.Running = true
+	testenv.WriteDocker(t, state, row)
+	kept, err := cli.Remove(t.Context(), row.Identity, nil)
+	if err != nil || !kept {
+		t.Fatal("running container not kept:", kept, err)
+	}
+	for _, raw := range testenv.DockerCalls(t, log) {
+		if testenv.DockerCommand(raw)[0] == "rm" {
+			t.Fatal("sent removal to a running container")
+		}
+	}
 }
 
 func TestIdentity(t *testing.T) {

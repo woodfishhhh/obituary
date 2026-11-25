@@ -106,6 +106,7 @@ func containerFixture(t *testing.T) (*fixture, *containerStub, core.Item) {
 	f := newFixture(t)
 	d := &containerStub{row: docker.Container{Identity: docker.Identity{Target: &docker.Target{Endpoint: "stub", DaemonID: "stub"}, ID: strings.Repeat("a", 64), ShortID: strings.Repeat("a", 12), Name: "cache", Created: f.clock.Add(-time.Hour)}, Running: true}}
 	f.svc.Docker = d
+	d.row.StartedAt = d.row.Created.Format(time.RFC3339Nano)
 	it, err := f.svc.AddContainer("cache", core.AddOptions{ExpiresAt: f.clock.Add(time.Hour)})
 	if err != nil {
 		t.Fatal(err)

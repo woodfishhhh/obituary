@@ -13,8 +13,11 @@ type container struct {
 	ID      string `json:"Id"`
 	Created time.Time
 	Name    string
-	State   struct{ Running bool }
-	Config  struct {
+	State   struct {
+		Running   bool
+		StartedAt time.Time
+	}
+	Config struct {
 		Labels      map[string]string
 		StopTimeout *int
 	}
@@ -227,6 +230,7 @@ func action(path string, args []string, rows []container) error {
 			return err
 		}
 	case "start":
+		rows[i].State.StartedAt = time.Now().UTC()
 		rows[i].State.Running = true
 	case "rm":
 		if rows[i].State.Running {
