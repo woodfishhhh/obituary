@@ -20,11 +20,15 @@ func gitVerificationBudget(elapsed time.Duration) time.Duration {
 // Git's index may be atomically published during an earlier move, even within
 // 10 ms. Reusing an answer requires a fresh proof of the same index generation.
 // Call only after Guard, Rev, child lifespans, manifest writes and rules finish.
-func (s *Service) finalGitForMove(item Item, real string, lookup func(context.Context, string) Ownership) (action, detail string, err error) {
+func (s *Service) finalGitForMove(item Item, real string, owners *ownershipBatch) (action, detail string, err error) {
 	if s.OwnerBatch == nil && s.Owner == nil {
 		return "", "", nil
 	}
-	ctx, cancel := context.WithTimeout(s.Store.Context(), max(250*time.Millisecond, s.gitMoveBudget))
+	var elapsed time.Duration
+	if owners != nil {
+		elapsed = owners.elapsed[item.Project]
+	}
+	ctx, cancel := context.WithTimeout(s.Store.Context(), gitVerificationBudget(elapsed))
 	defer cancel()
 	for {
 		if err := ctx.Err(); err != nil {
@@ -32,8 +36,8 @@ func (s *Service) finalGitForMove(item Item, real string, lookup func(context.Co
 		}
 		started := time.Now()
 		var owner Ownership
-		if lookup != nil {
-			owner = lookup(ctx, real)
+		if owners != nil {
+			owner = owners.lookup(ctx, item.ID, real)
 		} else if s.OwnerBatch != nil {
 			owner = s.OwnerBatch(ctx, []string{real})[0]
 		} else {
@@ -69,19 +73,21 @@ type ownershipBatch struct {
 	answers map[string]Ownership
 	paths   map[int64]string
 	done    map[int64]bool
-	pending []Item
+	pending map[string][]int64
 	query   OwnerBatchFunc
-	elapsed time.Duration
+	elapsed map[string]time.Duration
 	refresh string
-	retried map[string]bool
+	retried map[int64]bool
 }
 
 func (s *Service) prepareBatchOwners(items []Item, blocked map[int64]bool) *ownershipBatch {
 	owners := s.batchOwners(items, blocked)
 	if s.PrepareOwners != nil {
 		var paths []string
-		for _, item := range owners.pending {
-			paths = append(paths, owners.paths[item.ID])
+		for _, item := range items {
+			if path, ok := owners.paths[item.ID]; ok {
+				paths = append(paths, path)
+			}
 		}
 		s.OwnerBatch = s.PrepareOwners(s.Store.Context(), paths)
 		owners.query = s.OwnerBatch
@@ -93,51 +99,46 @@ func (s *Service) batchOwners(items []Item, blocked map[int64]bool) *ownershipBa
 	if s.OwnerBatch == nil && s.PrepareOwners == nil {
 		return nil
 	}
-	b := &ownershipBatch{answers: make(map[string]Ownership), paths: make(map[int64]string), done: make(map[int64]bool), query: s.OwnerBatch}
+	b := &ownershipBatch{
+		answers: make(map[string]Ownership), paths: make(map[int64]string), done: make(map[int64]bool),
+		pending: make(map[string][]int64), elapsed: make(map[string]time.Duration), retried: make(map[int64]bool), query: s.OwnerBatch,
+	}
 	// These names only select query candidates. Each item resolves its real
 	// path again under store.lock, before consuming any cached answer.
 	for _, item := range items {
 		if automatic(item) && item.Identity != nil && item.Due(s.now()) && !blocked[item.ID] {
 			if path, err := s.FS.RealPath(item.Path); err == nil {
 				b.paths[item.ID] = path
-				b.pending = append(b.pending, item)
+				b.pending[item.Project] = append(b.pending[item.Project], item.ID)
 			}
 		}
 	}
 	return b
 }
 
-func (b *ownershipBatch) fill(ctx context.Context, real string) Ownership {
-	var paths []string
-	if real != "" {
-		paths = append(paths, real)
-	}
-	for _, item := range b.pending {
+// A query's elapsed time belongs only to the project whose paths it checked.
+func (b *ownershipBatch) fill(ctx context.Context, project, real string) {
+	paths := []string{real}
+	for _, id := range b.pending[project] {
 		if len(paths) >= ownerQueryBatchSize {
 			break
 		}
-		path := b.paths[item.ID]
-		if !b.done[item.ID] && path != real {
+		if path := b.paths[id]; !b.done[id] && path != real {
 			paths = append(paths, path)
 		}
 	}
-	if len(paths) == 0 {
-		return Ownership{}
-	}
 	started := time.Now()
 	queried := b.query(ctx, paths)
-	b.elapsed = max(b.elapsed, time.Since(started))
+	b.elapsed[project] = max(b.elapsed[project], time.Since(started))
 	for i, path := range paths {
 		b.answers[path] = queried[i]
 	}
-	return queried[0]
 }
 
 func (b *ownershipBatch) prefetch(ctx context.Context, pending []*preparedBurial) {
 	if b.refresh != "" {
-		real := b.refresh
+		b.fill(ctx, pending[0].out.Item.Project, b.refresh)
 		b.refresh = ""
-		b.fill(ctx, real)
 		return
 	}
 	for _, p := range pending {
@@ -146,80 +147,49 @@ func (b *ownershipBatch) prefetch(ctx context.Context, pending []*preparedBurial
 		}
 		path := b.paths[p.out.Item.ID]
 		if _, ok := b.answers[path]; path != "" && !ok {
-			b.fill(ctx, path)
+			b.fill(ctx, p.out.Item.Project, path)
 		}
-		return
 	}
 }
 
-// One optimistic refresh yields both locks before running Git again. A second
-// invalidation for this path falls back to the existing bounded locked query.
-func (b *ownershipBatch) requestRefresh(real string) bool {
-	if b.retried[real] {
-		return false
+// Yield both locks once per item, including when its resolved path changes.
+// Continued index churn keeps the file and its registration for a later sweep.
+func (b *ownershipBatch) requestRefresh(id int64, real string) Ownership {
+	if b.retried[id] {
+		return Ownership{Tracked: true, Err: errors.New("repository snapshot changed again after refresh")}
 	}
-	if b.retried == nil {
-		b.retried = make(map[string]bool)
-	}
-	b.retried[real], b.refresh = true, real
-	return true
+	b.retried[id], b.refresh = true, real
+	return Ownership{Tracked: true, Err: errOwnerSnapshotRefresh}
 }
 
-func (b *ownershipBatch) lookup(ctx context.Context, real string) Ownership {
-	for {
-		if err := ctx.Err(); err != nil {
-			return Ownership{Tracked: true, Err: err}
-		}
-		if owner, ok := b.answers[real]; ok {
-			if checked, done := b.lookupCachedOwner(ctx, real, owner); done {
-				return checked
-			}
-			continue
-		}
-		owner := b.fill(ctx, real)
+func (b *ownershipBatch) lookup(ctx context.Context, id int64, real string) Ownership {
+	owner, ok := b.answers[real]
+	if !ok {
+		return b.requestRefresh(id, real)
+	}
+	if owner.Err != nil || owner.Current == nil {
+		// An uncacheable answer has no generation proof; only a live final query is safe.
+		fresh := b.query(ctx, []string{real})[0]
+		b.answers[real] = fresh
+		owner = fresh
 		if owner.Err != nil || owner.Current == nil {
 			return owner
 		}
-		// A new answer is subject to the same final generation check.
 	}
-}
-
-func (b *ownershipBatch) lookupCachedOwner(ctx context.Context, real string, owner Ownership) (Ownership, bool) {
-	if owner.Err != nil || owner.Current == nil {
-		fresh := b.query(ctx, []string{real})[0]
-		b.answers[real] = fresh
-		if fresh.Err != nil || fresh.Current == nil {
-			return fresh, true
-		}
-		return Ownership{}, false
+	if err := ctx.Err(); err != nil {
+		return Ownership{Tracked: true, Err: err}
 	}
-	if owner.Current != nil {
-		if checked, done := b.checkOwnerGeneration(ctx, real, owner); done {
-			return checked, true
-		}
-	}
-	owner = b.fill(ctx, real)
-	if owner.Err != nil || owner.Current == nil {
-		return owner, true
-	}
-	return Ownership{}, false
-}
-
-func (b *ownershipBatch) checkOwnerGeneration(ctx context.Context, real string, owner Ownership) (Ownership, bool) {
 	current, checkedAt, err := owner.Current(ctx)
 	owner.CheckedAt = checkedAt
 	if err != nil {
 		owner.Tracked, owner.Err = true, err
-		return owner, true
+		return owner
 	}
-	if current {
-		if time.Since(checkedAt) > gitMoveFreshness {
-			owner.Tracked, owner.Err = true, context.DeadlineExceeded
-		}
-		return owner, true
+	if !current {
+		return b.requestRefresh(id, real)
 	}
-	if b.requestRefresh(real) {
-		return Ownership{Tracked: true, Err: errOwnerSnapshotRefresh}, true
+	if time.Since(checkedAt) > gitMoveFreshness {
+		owner.Tracked, owner.Err = true, context.DeadlineExceeded
 	}
-	return Ownership{}, false
+	return owner
 }

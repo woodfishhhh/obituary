@@ -25,7 +25,7 @@ type preparedBurial struct {
 	retained     bool // an unverified directory stays quarantined with its manifest
 	watch        *WatchSnapshot
 	sourceParent *os.Root
-	owner        func(context.Context, string) Ownership
+	owner        *ownershipBatch
 }
 
 func (s *Service) prepareBurial(out Outcome, reason string) *preparedBurial {
@@ -254,8 +254,7 @@ func (s *Service) commitPreparedBurial(p *preparedBurial, reason string, owners 
 	for {
 		if owners != nil {
 			owners.prefetch(s.Store.Context(), []*preparedBurial{p})
-			p.owner = owners.lookup
-			s.gitMoveBudget = gitVerificationBudget(owners.elapsed)
+			p.owner = owners
 		}
 		err := s.withGraveyardLock(func() error {
 			commitErr := s.Store.UpdateGraveyard(func(st *State) error { return s.movePrepared(st, p, reason) })

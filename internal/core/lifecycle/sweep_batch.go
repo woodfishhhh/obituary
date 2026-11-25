@@ -107,14 +107,13 @@ func (s *Service) commitBurialBatch(pending []*preparedBurial, owners *ownership
 	}
 	if owners != nil {
 		for _, p := range pending {
-			p.owner = owners.lookup
+			p.owner = owners
 		}
 	}
 	for len(pending) > 0 {
 		if owners != nil {
 			// Git queries run outside store.lock; Current revalidates each snapshot next to its move.
 			owners.prefetch(s.Store.Context(), pending)
-			s.gitMoveBudget = gitVerificationBudget(owners.elapsed)
 		}
 		processed, auditCount, stopErr, err := s.commitBurialPrefix(pending, owners, reason, requestContext, len(outcomes) > 0)
 		for _, p := range pending[:processed] {

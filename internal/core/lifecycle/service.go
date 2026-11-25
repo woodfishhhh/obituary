@@ -56,7 +56,6 @@ type Service struct {
 	// Fault injection belongs to this service and its request-local copies.
 	beforePurgeDelete func()             // after durable pre-delete persistence
 	afterBurialStep   func(string) error // interruption without cleanup
-	gitMoveBudget     time.Duration      // measured outside store.lock for this sweep
 	// Only successful durable owner claims in this operation are cached.
 	confirmedOwners map[string]bool
 	readOnlyOwners  bool // diagnostics validate legacy markers without migrating them

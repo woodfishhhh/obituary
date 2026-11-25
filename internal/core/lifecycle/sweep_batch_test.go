@@ -58,7 +58,7 @@ func TestSweepInvalidatedSnapshotRefreshesOnce(t *testing.T) {
 		t.Skip("real Git indexes published after consecutive queries")
 	}
 	// Index publication and lock boundaries use real Git; runner scheduling
-	// must not consume the fallback query's budget in this ordering test.
+	// must not consume the generation check's budget in this ordering test.
 	synctest.Test(t, func(t *testing.T) {
 		f, paths, git := slowGitFixture(t, "keep.log")
 		f.file("seed.txt")
@@ -75,7 +75,7 @@ func TestSweepInvalidatedSnapshotRefreshesOnce(t *testing.T) {
 			query := auto.PrepareOwners(ctx, paths)
 			return func(ctx context.Context, paths []string) []core.Ownership {
 				calls++
-				if unlocked := ledgerUnlocked(t, f); unlocked != (calls <= 2) {
+				if unlocked := ledgerUnlocked(t, f); !unlocked {
 					t.Fatalf("refresh query %d used wrong lock boundary: unlocked=%t", calls, unlocked)
 				}
 				owners := query(ctx, paths)
@@ -95,8 +95,8 @@ func TestSweepInvalidatedSnapshotRefreshesOnce(t *testing.T) {
 			}
 		}
 		rows, err := f.svc.Sweep(false)
-		if err != nil || calls != 3 || len(rows) != 1 || rows[0].Action != core.ActionRefused || read(t, paths[0]) != "keep.log" || len(f.burials()) != 0 {
-			t.Fatalf("repeated invalidation skipped bounded fallback or protection: calls=%d %+v %v", calls, rows, err)
+		if err != nil || calls != 2 || len(rows) != 1 || rows[0].Action != core.ActionRetry || read(t, paths[0]) != "keep.log" || len(f.burials()) != 0 {
+			t.Fatalf("repeated invalidation skipped bounded retry or protection: calls=%d %+v %v", calls, rows, err)
 		}
 	})
 }

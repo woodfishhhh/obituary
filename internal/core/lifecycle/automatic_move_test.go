@@ -272,6 +272,11 @@ func TestSweepRefreshesExpiredGitAnswer(t *testing.T) {
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}
+	// The publication is real; only the injected stall should spend the 10 ms window.
+	synctest.Test(t, checkExpiredGitAnswer)
+}
+
+func checkExpiredGitAnswer(t *testing.T) {
 	f := newFixture(t)
 	git := func(args ...string) {
 		t.Helper()
