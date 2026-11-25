@@ -8,9 +8,13 @@ obit watch --list                           # folder policies, their exemptions 
 obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans it registered
 ```
 
-No macOS e no Linux, depois da aprovação, cada item diretamente na pasta tem seu próprio prazo, contado por padrão desde a primeira detecção. A pasta monitorada permanece protegida; subpastas vencidas só geram propostas, e arquivos temporários de download são ignorados. Se não for possível impedir gravações, o item permanece no lugar mesmo após dez minutos sem alterações.
+No macOS e no Linux, depois da aprovação, cada item diretamente na pasta tem seu próprio prazo, contado por padrão desde a primeira detecção. A pasta monitorada permanece protegida; subpastas vencidas só geram propostas, e arquivos temporários de download são ignorados.
 
-**No macOS e no Linux, a política ainda não pode enterrar arquivos vencidos nem mover uma subpasta após a aprovação.**
+Por padrão, um arquivo comum precisa ficar sem alterações por mais dez minutos após vencer. Se o tamanho ou a data de modificação mudar ou se o arquivo estiver aberto, a contagem recomeça. O Windows bloqueia gravações durante a movimentação. No macOS e no Linux, um processo ainda pode abrir o arquivo entre a verificação e a renomeação.
+
+O modo automático precisa verificar todos os processos do proprietário do arquivo. Só pode ignorar processos inacessíveis de outros usuários, inclusive root, quando o arquivo é seu e nem o grupo nem os demais têm permissão de escrita. Use `propose` para revisar cada arquivo. A aprovação aceita lacunas na lista de processos. Se o arquivo estiver comprovadamente aberto, ele permanece no lugar e o motivo é exibido.
+
+Para aprovar cada arquivo, defina `file_expiry = "propose"` em `[watch]`. Consulte `obit proposals` e aprove com `obit approve <ID>`. Subpastas vencidas continuam gerando propostas e permanecem no local mesmo após aprovação no macOS e no Linux.
 
 ```sh
 obit watch "$HOME/Downloads" 2w
@@ -30,3 +34,5 @@ Em Downloads, na Área de Trabalho e nas pastas com uma política, o Explorador 
 - As datas vêm do arquivo oculto `desktop.ini` da pasta.
 - Na seção `[explorer]` de `config.toml`, use `enabled = false` para ocultar as datas ou `everywhere = true` para exibi-las em todos os locais.
 - O Explorador mantém as visualizações de pasta em cache. Depois de prolongar a vida útil, a mesma janela pode mostrar a data anterior por até um minuto.
+
+O Finder e o Dolphin mostram a data de enterro em uma etiqueta, sem mudar o nome do arquivo. Prolongar o prazo atualiza a data. Ao encerrar o acompanhamento ou desinstalar, somente as etiquetas adicionadas pelo Obituary são removidas. No Nautilus, consulte `obit list`.

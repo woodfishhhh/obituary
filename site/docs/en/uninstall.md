@@ -17,6 +17,8 @@ If you installed with the script on Windows, one command is enough:
 
 `obit uninstall` works on the user level and on the current Git project: the hooks, MCP and Skill of each agent, the scheduled job (Task Scheduler on Windows, a launchd user agent on macOS, a systemd user timer on Linux), the resident process and the tray, and folder policies (the files under a policy stay where they are). On Windows it also removes the login startup entry, the Explorer context menu and the date labels in Explorer.
 
+On macOS and Linux it also removes the installed Finder, Nautilus and Dolphin actions, leaving user scripts untouched. It removes burial tags it added; other tags are kept.
+
 It touches only what Obituary itself wrote. An entry you edited, or one left by another installation, is kept as it is, and the plan says which one and why. Where there is no terminal (a script, an agent's command line) add `--yes`; without it the command stops and tells you it needs a terminal.
 
 Three things it does not do for you. The program files go the way you installed them (see below). If you installed project-level hooks in other projects, run `obit uninstall` in each of those projects before you remove the programs, or the hooks there will fail because `obit` is gone. And on macOS and Linux the tray's startup entry is not on the list: before uninstalling, turn off "Start the tray at sign-in" in the window's Settings, which removes the entry Obituary wrote. On Windows `obit uninstall` handles the tray's startup itself, but the Start menu and desktop shortcuts that `obit init` created are not on its list; `obit init --uninstall` removes them, unless you add `--no-shortcuts`.

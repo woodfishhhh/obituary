@@ -8,9 +8,13 @@ obit watch --list                           # folder policies, their exemptions 
 obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans it registered
 ```
 
-On macOS and Linux, approving a policy registers each top-level item separately. By default, its age starts when first seen. The policy folder is protected, expired subfolders only generate proposals, and download temporary files are skipped. If writers cannot be excluded, the item stays in place even after ten quiet minutes.
+On macOS and Linux, approving a policy registers each top-level item separately. By default, its age starts when first seen. The policy folder is protected, expired subfolders only generate proposals, and download temporary files are skipped.
 
-**Automatic policy burial is not supported on macOS or Linux: expired files stay in place, and approving an expired subfolder does not move it.**
+By default, a regular file must stay quiet for ten minutes after expiry. A change in size or modification time or an open descriptor restarts the timer and keeps the file in place. Windows holds a handle that excludes writers during the move. On macOS and Linux a writer can still open the file between the check and the rename.
+
+Automatic burial requires access to every process belonging to the file owner. It may ignore unreadable processes of other users, including root, only for your own files with neither group nor other write permission. Choose `propose` for individual review. Approval accepts gaps in the process list. A confirmed open file always stays in place and the reason is shown.
+
+For individual approval, set `file_expiry = "propose"` under `[watch]`. Use `obit proposals` to review and `obit approve <ID>` to approve. Expired subfolders still produce proposals and stay in place even after approval on macOS and Linux.
 
 ```sh
 obit watch "$HOME/Downloads" 2w
@@ -30,3 +34,5 @@ Tracked items in Downloads, on the Desktop and in folders under a policy show in
 - The dates come from a hidden `desktop.ini` in the folder.
 - `[explorer]` in `config.toml` turns them off (`enabled = false`) or on everywhere (`everywhere = true`).
 - Explorer caches folder views, so after extending a lifespan the same window may show the old date for up to a minute.
+
+Finder and Dolphin show the burial date as a tag without renaming the file. Extending a lifespan updates the date. Untracking or uninstalling removes only tags Obituary added. Nautilus has no date tag; use `obit list` instead.

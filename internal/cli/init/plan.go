@@ -18,6 +18,8 @@ import (
 type Planner struct {
 	Executable cmdutil.Executable
 	SkipSkill  bool
+	// Verbose lists every agent's capability details under --show.
+	Verbose bool
 }
 
 func IntegrationPlan(agent string, scope integrate.Scope, uninstall bool) ([]integrate.Change, error) {

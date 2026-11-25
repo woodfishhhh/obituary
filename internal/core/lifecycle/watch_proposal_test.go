@@ -212,3 +212,43 @@ func TestWatchBurialProposalWithdrawnByLifespanEdit(t *testing.T) {
 		})
 	}
 }
+
+func TestWatchFileExpiryProposal(t *testing.T) {
+	f, path, _ := watchFixture(t, "file.zip", core.WatchFirstSeen)
+	f.svc.WatchFileProposals = true
+	if err := watch.Reconcile(f.svc); err != nil {
+		t.Fatal(err)
+	}
+	var open bool
+	f.svc.FS = watchFileProbeFS{f.svc.FS, func(core.Identity) error {
+		if open {
+			return fmt.Errorf("file is open")
+		}
+		return nil
+	}}
+	out := f.sweepAt(2 * time.Hour)
+	if runtime.GOOS == "windows" {
+		if len(out) != 1 || out[0].Action != core.ActionBuried || exists(path) {
+			t.Fatalf("Windows exclusive handle should still bury: %+v", out)
+		}
+		return
+	}
+	if len(out) != 1 || out[0].Action != core.ActionProposed || !exists(path) {
+		t.Fatalf("file moved without approval: %+v", out)
+	}
+	p := expiredWatchProposal(t, f)
+	if out := f.sweepAt(time.Hour); len(out) != 0 {
+		t.Fatalf("pending decision swept again: %+v", out)
+	}
+	engine := &auto.Engine{Svc: f.svc}
+	open = true
+	rows, err := engine.Approve([]string{fmt.Sprint(p.ID)})
+	if err != nil || len(rows) != 1 || !strings.Contains(rows[0].Error, "file is open") || !exists(path) || len(f.burials()) != 0 {
+		t.Fatalf("open file approval: %+v %v", rows, err)
+	}
+	open = false
+	rows, err = engine.Approve([]string{fmt.Sprint(p.ID)})
+	if err != nil || len(rows) != 1 || rows[0].Error != "" || exists(path) || len(f.burials()) != 1 {
+		t.Fatalf("approved file not buried: %+v %v", rows, err)
+	}
+}

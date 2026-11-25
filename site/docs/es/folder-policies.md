@@ -8,9 +8,13 @@ obit watch --list                           # folder policies, their exemptions 
 obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans it registered
 ```
 
-En macOS y Linux, tras aprobar la política, cada elemento de primer nivel tiene su propio plazo, que por defecto empieza al detectarlo por primera vez. La carpeta vigilada sigue protegida; las subcarpetas caducadas solo generan propuestas y se omiten los archivos temporales de descarga. Si no se pueden impedir las escrituras, el archivo permanece en su sitio incluso tras diez minutos sin cambios.
+En macOS y Linux, tras aprobar la política, cada elemento de primer nivel tiene su propio plazo, que por defecto empieza al detectarlo por primera vez. La carpeta vigilada sigue protegida; las subcarpetas caducadas solo generan propuestas y se omiten los archivos temporales de descarga.
 
-**En macOS y Linux la política todavía no puede enterrar archivos caducados ni mover una subcarpeta después de su aprobación.**
+Por defecto, un archivo normal debe permanecer sin cambios diez minutos más después de caducar. Si cambia su tamaño o su fecha de modificación o si está abierto, el plazo vuelve a empezar. Windows bloquea la escritura durante el traslado. En macOS y Linux un proceso puede abrir el archivo entre la comprobación y el cambio de nombre.
+
+El modo automático debe poder inspeccionar todos los procesos del propietario del archivo. Solo puede ignorar procesos inaccesibles de otros usuarios, incluido root, si el archivo es tuyo y ni el grupo ni los demás tienen permiso de escritura. Elige `propose` para revisar cada archivo. La aprobación admite información incompleta, pero si se detecta un archivo abierto, se conserva y se muestra el motivo.
+
+Para aprobar cada archivo, establece `file_expiry = "propose"` en `[watch]`. Revisa las propuestas con `obit proposals` y aprueba con `obit approve <ID>`. Las subcarpetas caducadas siguen generando propuestas y se quedan en su sitio incluso tras la aprobación en macOS y Linux.
 
 ```sh
 obit watch "$HOME/Downloads" 2w
@@ -30,3 +34,5 @@ En Descargas, en el Escritorio y en las carpetas con política, el Explorador mu
 - Las fechas proceden del archivo oculto `desktop.ini` de la carpeta.
 - En la sección `[explorer]` de `config.toml`, usa `enabled = false` para ocultar las fechas o `everywhere = true` para mostrarlas en todas partes.
 - El Explorador guarda en caché las vistas de carpeta. Al ampliar la vida útil, la misma ventana puede seguir mostrando la fecha anterior hasta un minuto.
+
+Finder y Dolphin muestran la fecha de entierro en una etiqueta sin cambiar el nombre del archivo. Al ampliar el plazo, cambia la fecha. Al dejar de seguir el archivo o desinstalar, solo se eliminan las etiquetas de Obituary. En Nautilus consulta `obit list`.

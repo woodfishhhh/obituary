@@ -81,7 +81,7 @@ Avec la supervision du bureau activée, le processus résident traite les éché
 ## Requêtes et vérifications
 
 ```powershell
-obit doctor              # read-only check (--json)
+obit doctor              # health check: short summary, full HTML report (--open, --verbose, --json)
 obit stats               # eulogy: how much was buried, space freed, resurrections (alias: eulogy)
 obit log                 # the full record of everything done
 obit config              # show the configuration; --create writes a commented default
@@ -362,7 +362,7 @@ Usage: `obit docker list [flags]`
 
 ### `obit doctor`
 
-Vérifier l’installation, les intégrations et les données sans rien modifier
+Vérifier l’installation, les intégrations et les données ; la seule chose qu’elle écrit est son rapport
 
 Usage: `obit doctor [flags]`
 
@@ -370,7 +370,8 @@ Usage: `obit doctor [flags]`
 | --- | --- | --- | --- |
 | `--help` | `-h` | `false` | Aide pour doctor |
 | `--json` | aucun | `false` | Afficher le JSON |
-| `--verbose` | aucun | `false` | Inclure les détails des capacités des agents |
+| `--open` | aucun | `false` | Ouvrir le rapport HTML complet dans le navigateur par défaut |
+| `--verbose` | aucun | `false` | Afficher tous les contrôles en texte complet, avec les détails des capacités des agents |
 
 ### `obit extend`
 
@@ -777,19 +778,20 @@ Usage: `obit init [flags]`
 | Paramètre | Court | Valeur par défaut | Description |
 | --- | --- | --- | --- |
 | `--agent` | aucun | `[claude]` | Agents à intégrer (répéter l’option ou séparer par des virgules ; par défaut : claude) |
-| `--context-menu` | aucun | `false` | Installer les menus contextuels classiques de l’Explorateur (activé par défaut) |
+| `--context-menu` | aucun | `false` | Installer les menus contextuels du gestionnaire de fichiers (activé par défaut) |
 | `--dry-run` | aucun | `false` | Afficher seulement les changements |
 | `--format` | aucun | `"text"` | Format de sortie de --show : text ou markdown (couverture des agents) |
 | `--global` | `-g` | `false` | Pour tout l’utilisateur plutôt que pour ce seul projet |
 | `--guard-rm` | aucun | `false` | Refuser les commandes de suppression prises en charge et proposer des équivalents obit restaurables |
 | `--help` | `-h` | `false` | Aide pour init |
 | `--mcp` | aucun | `false` | Enregistrer le serveur MCP stdio d’Obituary |
-| `--no-context-menu` | aucun | `false` | Ne pas installer les menus contextuels de l’Explorateur |
+| `--no-context-menu` | aucun | `false` | Ignorer les menus contextuels du gestionnaire de fichiers |
 | `--no-shortcuts` | aucun | `false` | Ne pas créer les raccourcis du menu Démarrer et du Bureau |
 | `--no-skill` | aucun | `false` | Laisser l’Agent Skill d’Obituary inchangé |
 | `--show` | aucun | `false` | Afficher ce qui est installé |
 | `--skill` | aucun | `false` | Installer l’Agent Skill d’Obituary (activé par défaut) |
 | `--uninstall` | aucun | `false` | Retirer ce qu’Obituary a ajouté |
+| `--verbose` | aucun | `false` | Avec --show : lister les détails des capacités de chaque agent |
 | `--yes` | aucun | `false` | Appliquer sans demander |
 
 Exemples :
@@ -1046,6 +1048,8 @@ Usage: `obit update [flags]`
 | `--wait-pid` | aucun | `0` | Attendre la fin de ce processus avant la mise à jour (Windows) |
 
 ### `obit watch`
+
+Pour approuver chaque fichier, réglez `file_expiry = "propose"` dans `[watch]`. Consultez les propositions avec `obit proposals` et approuvez avec `obit approve <ID>`. Les sous-dossiers expirés donnent toujours lieu à une proposition et restent en place même après approbation sous macOS et Linux.
 
 Donner à chaque élément de premier niveau d’un dossier sa propre durée de vie
 

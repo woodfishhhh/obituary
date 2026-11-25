@@ -11,7 +11,8 @@ Windows 10 / 11, macOS and Linux (x64 and ARM64):
 | Install with | Scoop, the `install.ps1` script (winget in review) | Homebrew, the `install.sh` script | the `install.sh` script |
 | Expiry checks | resident tray process, Task Scheduler as a fallback | user launchd agent | `systemd --user` timer; a user crontab without systemd |
 | CLI, graveyard and resurrection, automatic registration (optional), delete guard, agent integration (hooks, Skill, MCP), Docker containers, folder policies | yes | yes | yes |
-| Tray, small window, context menus, burial dates in Explorer, Start menu and desktop shortcuts | yes | the CLI instead: `obit list`, `obit graveyard`, `obit resurrect` | Ubuntu 24.04 amd64: [window and tray](./desktop) |
+| Tray, small window, Start menu and desktop shortcuts | yes | the CLI instead: `obit list`, `obit graveyard`, `obit resurrect` | Ubuntu 24.04 amd64: [window and tray](./desktop) |
+| Context menu and burial dates in the file manager | Explorer | Finder: Quick Actions, Date tags | Nautilus: Scripts · Dolphin: menu, Date tags |
 | Recycle Bin mode | yes | graveyard only | graveyard only |
 
 **Easiest: let your agent do it.** Send this sentence to the agent you use (Claude Code, Codex, Cursor…). It installs Obituary, connects it to itself and stops wherever a decision is yours:
@@ -76,7 +77,7 @@ irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/instal
 Then check the installation:
 
 ```powershell
-obit doctor              # read-only check: PATH, obitd, runner, Claude Code / Codex integration, data directory, ledger, config (--json)
+obit doctor              # health check: short summary, full HTML report (--open, --verbose, --json)
 ```
 
 ## 2. Connect your agents

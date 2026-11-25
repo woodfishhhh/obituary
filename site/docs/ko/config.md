@@ -12,6 +12,7 @@ Obituary의 설정은 설정 디렉터리에 있는 `config.toml`에 씁니다. 
 | `hooks.session_cleanup` | `true` | `true`, `false` |
 | `hooks.session_summary` | `false` | `true`, `false` |
 | `watch.stable_window` | `10m` | 0보다 큰 시간. 예: `30s`, `10m`, `1h30m` |
+| `watch.file_expiry` (macOS/Linux) | `quiet` | `quiet`, `propose` |
 | `explorer.enabled` | `true` | `true`, `false` |
 | `explorer.everywhere` | `false` | `true`, `false` |
 | `explorer.in_git` | `false` | `true`, `false` |
@@ -39,7 +40,9 @@ Windows와 Linux에서는 `graveyard.mode = "recycle"`로 시스템 휴지통을
 
 `watch.stable_window`는 폴더 정책의 인내심입니다. 새 파일이 나타난 뒤 이만큼 변화가 없어야 옮겨지므로, 아직 내려받는 중인 파일이 치워지지 않습니다. Go의 시간 형식을 쓰며, 숫자 뒤에 `s`, `m`, `h`를 붙이고 `1h30m`처럼 이어 쓸 수 있습니다. 0보다 커야 합니다.
 
-`explorer.*`는 Windows에서만 의미가 있습니다. Obituary는 탐색기가 파일 이름 옆에 매장 날짜를 보여 주게 하며, 실제 파일 이름은 바뀌지 않습니다. 기본적으로는 다운로드, 바탕 화면(하위 폴더 포함), 폴더 정책이 관리하는 위치에서만 보입니다. `explorer.everywhere`를 켜면 추적 중인 다른 위치에서도 보이고, Git 작업 영역은 `explorer.in_git`을 `true`로 하지 않는 한 제외됩니다. `explorer.enabled`를 `false`로 하면 아예 기록하지 않습니다. [폴더 정책](./folder-policies)을 참고하세요.
+자동 모드는 파일 소유자의 모든 프로세스를 확인할 수 있어야 합니다. 현재 사용자가 소유하고 그룹과 기타 사용자에게 쓰기 권한이 없는 파일에만 root를 포함한 다른 사용자의 읽을 수 없는 프로세스를 무시합니다. 파일별로 검토하려면 `propose`를 선택하세요. 승인하면 일부 프로세스 정보가 없어도 진행하지만 열린 파일이 확인되면 그대로 두고 이유를 표시합니다.
+
+`explorer.*` 설정은 Windows 탐색기의 표시 이름과 Finder 및 Dolphin의 날짜 태그에 적용됩니다. 실제 파일 이름은 바뀌지 않습니다. 기본적으로는 다운로드, 바탕 화면(하위 폴더 포함), 폴더 정책이 관리하는 위치에서만 보입니다. `explorer.everywhere`를 켜면 추적 중인 다른 위치에서도 보이고, Git 작업 영역은 `explorer.in_git`을 `true`로 하지 않는 한 제외됩니다. `explorer.enabled`를 `false`로 하면 아예 기록하지 않습니다. [폴더 정책](./folder-policies)을 참고하세요.
 
 ## 인터페이스
 

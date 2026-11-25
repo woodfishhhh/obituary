@@ -5,7 +5,7 @@
 O agente e você decidem o que entra no Obituary (por padrão, `[proposals] mode = "off"`):
 
 - **O agente registra os próprios resultados.** Ele dá uma vida útil com `obit mark <path> 2d` aos scripts de depuração, logs e capturas que cria, usa `obit mktemp 1d` para obter espaço temporário e enterra com `obit bury` o que não sabe se deve guardar. `obit init` informa o agente sobre essa regra.
-- **Você adiciona pelo menu de contexto.** No Windows, clique com o botão direito em arquivos ou pastas no Explorador, escolha “Add to Obituary” e selecione 1, 7 ou 30 dias, ou “Bury now (recoverable)”. Veja [Janela, bandeja e menu de contexto](./desktop).
+- **Você adiciona pelo menu de contexto.** No Explorador, Finder, Nautilus ou Dolphin, clique com o botão direito em arquivos ou pastas, escolha “Add to Obituary” e selecione 1, 7 ou 30 dias, ou “Bury now (recoverable)”. Veja [Janela, bandeja e menu de contexto](./desktop).
 - **Políticas de pastas** atribuem vida útil a pastas como Downloads. Veja [Políticas de pastas](./folder-policies).
 
 Tudo o que for registrado é enterrado quando expira e pode ser ressuscitado como estava durante sete dias. Nada mais entra automaticamente.

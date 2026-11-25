@@ -81,7 +81,7 @@ With desktop supervision enabled, the tray handles expiries as they occur and an
 ## Queries and checks
 
 ```powershell
-obit doctor              # read-only check (--json)
+obit doctor              # health check: short summary, full HTML report (--open, --verbose, --json)
 obit stats               # eulogy: how much was buried, space freed, resurrections (alias: eulogy)
 obit log                 # the full record of everything done
 obit config              # show the configuration; --create writes a commented default
@@ -362,7 +362,7 @@ Usage: `obit docker list [flags]`
 
 ### `obit doctor`
 
-Check installation, integrations and data without changing anything
+Check installation, integrations and data; the only thing it writes is its report
 
 Usage: `obit doctor [flags]`
 
@@ -370,7 +370,8 @@ Usage: `obit doctor [flags]`
 | --- | --- | --- | --- |
 | `--help` | `-h` | `false` | help for doctor |
 | `--json` | none | `false` | print JSON |
-| `--verbose` | none | `false` | include agent capability details |
+| `--open` | none | `false` | open the full HTML report in your default browser |
+| `--verbose` | none | `false` | print every check in full text, with agent capability details |
 
 ### `obit extend`
 
@@ -777,19 +778,20 @@ Usage: `obit init [flags]`
 | Option | Short | Default | Description |
 | --- | --- | --- | --- |
 | `--agent` | none | `[claude]` | agents to integrate with (repeat or comma-separate; default: claude) |
-| `--context-menu` | none | `false` | install classic Explorer context menus (enabled by default) |
+| `--context-menu` | none | `false` | install file manager context menus (enabled by default) |
 | `--dry-run` | none | `false` | only print the changes |
 | `--format` | none | `"text"` | output format for --show: text or markdown (agent coverage) |
 | `--global` | `-g` | `false` | user-wide instead of this project |
 | `--guard-rm` | none | `false` | deny supported deletion commands with restorable obit alternatives |
 | `--help` | `-h` | `false` | help for init |
 | `--mcp` | none | `false` | register the Obituary MCP stdio server |
-| `--no-context-menu` | none | `false` | skip Explorer context menus |
+| `--no-context-menu` | none | `false` | skip file manager context menus |
 | `--no-shortcuts` | none | `false` | skip Start menu and desktop shortcuts |
 | `--no-skill` | none | `false` | leave the Obituary Agent Skill unchanged |
 | `--show` | none | `false` | show what is installed |
 | `--skill` | none | `false` | install the Obituary Agent Skill (enabled by default) |
 | `--uninstall` | none | `false` | remove what Obituary added |
+| `--verbose` | none | `false` | with --show: list every agent's capability details |
 | `--yes` | none | `false` | apply without asking |
 
 Examples:
@@ -1046,6 +1048,8 @@ Usage: `obit update [flags]`
 | `--wait-pid` | none | `0` | wait for this process to exit before updating (Windows) |
 
 ### `obit watch`
+
+For individual approval, set `file_expiry = "propose"` under `[watch]`. Use `obit proposals` to review and `obit approve <ID>` to approve. Expired subfolders still produce proposals and stay in place even after approval on macOS and Linux.
 
 Give each top-level child of a folder its own lifespan
 

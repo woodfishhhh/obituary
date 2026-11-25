@@ -17,6 +17,8 @@ obit uninstall                # 列出計畫，確認後執行
 
 `obit uninstall` 處理的是使用者層級和目前 Git 專案裡的東西：各家 agent 的 hook、MCP 和 Skill，排程工作（Windows 的工作排程器、macOS 的 launchd 使用者代理、Linux 的 systemd 使用者計時器），常駐的背景程式和系統匣，以及資料夾策略（策略底下的檔案留在原處）。在 Windows 上還會撤掉登入時自動啟動的設定、檔案總管的右鍵選單和日期標籤。
 
+在 macOS 和 Linux 上，解除安裝會移除訃告安裝到 Finder、Nautilus 和 Dolphin 的選單，不動使用者的指令稿。只移除訃告所加的日期標籤。
+
 它只動訃告自己寫下的東西。你改過的項目，或是別的安裝留下的項目，會原樣保留，計畫裡會寫出保留了哪一項、為什麼。在沒有終端機的環境（腳本、agent 的命令列）要加上 `--yes`，否則它會提示需要終端機。
 
 有三件事它不會替你做。程式檔案要依照你的安裝方式去刪（見下文）。在其他專案裡裝過專案層級 hook 的，要先到那些專案裡各執行一次 `obit uninstall`，再刪程式，不然那裡的 hook 會因為找不到 `obit` 而失效。macOS 和 Linux 上系統匣的自動啟動項目也不在清單裡：解除安裝前先到小視窗的 Settings 裡關閉「Start the tray at sign-in」，它會連同訃告自己寫下的自動啟動項目一起撤掉；Windows 上系統匣的自動啟動由 `obit uninstall` 負責，不過 `obit init` 建立的開始功能表和桌面捷徑不在它的清單裡，`obit init --uninstall` 會刪掉它們，加上 `--no-shortcuts` 則會保留。

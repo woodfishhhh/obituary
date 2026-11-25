@@ -116,7 +116,7 @@ var metadataNames = []string{
 	"store.json", "store.lock", "store.json.tmp", "sweep.lock", "graveyard.lock",
 	"grave-notice-paths.json", "grave-notice-paths.json.tmp", "grave-notice-paths.lock",
 	"audit.jsonl", "audit.jsonl.1", "audit.lock", "audit-outbox.lock",
-	"explorer.json", "explorer.json.tmp", "explorer.lock", "explorer.log", "explorer.log.1", "explorer.stamp",
+	"explorer.json", "explorer.json.tmp", "explorer.lock", "explorer.log", "explorer.log.1", "explorer.stamp", "menu.lock",
 	"update.json", "update.json.tmp", "update.lock",
 	"obitd.attempt.lock", "obitd.supervision.json", "obitd.supervision.json.tmp",
 	"obitd.supervisor.json", "obitd.supervisor.json.tmp", "obitd.process.json.tmp",

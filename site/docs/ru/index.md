@@ -11,7 +11,8 @@ Windows 10 / 11, macOS и Linux (x64 и ARM64):
 | Установка с помощью | Scoop, скрипта `install.ps1` (пакет winget ещё проверяется) | Homebrew, скрипта `install.sh` | скрипта `install.sh` |
 | Проверка сроков | фоновый процесс в области уведомлений, планировщик заданий как запасной вариант | пользовательский агент launchd | таймер `systemd --user`; crontab пользователя без systemd |
 | CLI, кладбище и воскрешение, автоматическая регистрация (необязательно), защита удаления, интеграция с агентами (хуки, Skill, MCP), контейнеры Docker, политики папок | да | да | да |
-| Область уведомлений, небольшое окно, контекстные меню, даты захоронения в Проводнике, меню «Пуск» и ярлыки рабочего стола | да | вместо этого CLI: `obit list`, `obit graveyard`, `obit resurrect` | как в macOS |
+| Область уведомлений, небольшое окно, меню «Пуск» и ярлыки рабочего стола | да | вместо этого CLI: `obit list`, `obit graveyard`, `obit resurrect` | как в macOS |
+| Контекстное меню и даты захоронения в файловом менеджере | Проводник | Finder: Быстрые действия, Метки с датой | Nautilus: Сценарии · Dolphin: меню, Метки с датой |
 | Режим корзины | да | только кладбище | только кладбище |
 
 **Проще всего поручить это агенту.** Отправьте эту фразу используемому агенту (Claude Code, Codex, Cursor и другим). Он установит Obituary, подключит его к себе и остановится там, где решение остаётся за вами.
@@ -76,7 +77,7 @@ irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/instal
 Затем проверьте установку:
 
 ```powershell
-obit doctor              # read-only check: PATH, obitd, runner, Claude Code / Codex integration, data directory, ledger, config (--json)
+obit doctor              # health check: short summary, full HTML report (--open, --verbose, --json)
 ```
 
 ## 2. Подключение агентов

@@ -6,7 +6,7 @@
 
 ## 提 issue
 
-- **Bug**：写清楚怎么复现、你以为会怎样、实际怎样，附上 `obit --version` 和 `obit doctor` 的输出。贴之前看一眼，删掉不想公开的路径。
+- **Bug**：写清楚怎么复现、你以为会怎样、实际怎样，附上 `obit --version` 和 `obit doctor --verbose` 的输出。贴之前看一眼，删掉不想公开的路径。
 - **带着修复**：直接开 PR，描述里写 `Fixes #<issue 编号>`。还没有 issue 也可以直接开 PR，把问题写在描述里。
 - **想法和新功能**：先开 issue 聊聊方向，免得白写。
 - **安全问题**（可能误删、移错文件、越权）：不要公开提，见 [SECURITY.md](SECURITY.md)。
@@ -29,7 +29,7 @@ Issues and pull requests are welcome. The most welcome is an issue that comes wi
 
 ## Issues
 
-- **Bugs**: how to reproduce it, what you expected, what happened, plus the output of `obit --version` and `obit doctor`. Remove any paths you don't want public before posting.
+- **Bugs**: how to reproduce it, what you expected, what happened, plus the output of `obit --version` and `obit doctor --verbose`. Remove any paths you don't want public before posting.
 - **With a fix**: open a pull request and write `Fixes #<issue number>` in it. No issue yet? Open the pull request anyway and describe the problem there.
 - **Ideas and features**: open an issue first so we can agree on the direction before you write code.
 - **Security problems** (anything that could delete or move the wrong file): don't post them publicly; see [SECURITY.md](SECURITY.md).

@@ -81,7 +81,7 @@ obit daemon disable
 ## 조회 및 점검
 
 ```powershell
-obit doctor              # read-only check (--json)
+obit doctor              # health check: short summary, full HTML report (--open, --verbose, --json)
 obit stats               # eulogy: how much was buried, space freed, resurrections (alias: eulogy)
 obit log                 # the full record of everything done
 obit config              # show the configuration; --create writes a commented default
@@ -353,7 +353,7 @@ Docker 컨테이너 하나를 등록합니다. 만료되면 컨테이너를 중�
 
 ### `obit doctor`
 
-아무것도 변경하지 않고 설치, 연동, 데이터를 점검합니다
+설치, 연동, 데이터를 점검합니다. 쓰는 것은 자체 보고서뿐입니다
 
 사용법: `obit doctor [flags]`
 
@@ -361,7 +361,8 @@ Docker 컨테이너 하나를 등록합니다. 만료되면 컨테이너를 중�
 | --- | --- | --- | --- |
 | `--help` | `-h` | `false` | doctor 도움말 |
 | `--json` | 없음 | `false` | JSON으로 출력합니다 |
-| `--verbose` | 없음 | `false` | 에이전트 기능 세부 정보를 포함합니다 |
+| `--open` | 없음 | `false` | 전체 HTML 보고서를 기본 브라우저로 엽니다 |
+| `--verbose` | 없음 | `false` | 모든 점검 항목과 에이전트 기능 세부 정보를 텍스트로 전부 출력합니다 |
 
 ### `obit extend`
 
@@ -768,19 +769,20 @@ stdin으로 들어온 zcode 훅 이벤트 하나를 처리합니다. 오류가 �
 | 매개변수 | 단축 | 기본값 | 설명 |
 | --- | --- | --- | --- |
 | `--agent` | 없음 | `[claude]` | 연동할 에이전트(반복하거나 쉼표로 구분, 기본값: claude) |
-| `--context-menu` | 없음 | `false` | 클래식 파일 탐색기 상황에 맞는 메뉴를 설치합니다(기본적으로 활성화) |
+| `--context-menu` | 없음 | `false` | 파일 관리자의 컨텍스트 메뉴를 설치합니다(기본값) |
 | `--dry-run` | 없음 | `false` | 변경 내용만 출력합니다 |
 | `--format` | 없음 | `"text"` | --show의 출력 형식: text 또는 markdown(에이전트 지원 범위) |
 | `--global` | `-g` | `false` | 이 프로젝트가 아니라 사용자 전체에 적용 |
 | `--guard-rm` | 없음 | `false` | 지원되는 삭제 명령을 거부하고 복원 가능한 obit 대체 명령을 안내합니다 |
 | `--help` | `-h` | `false` | init 도움말 |
 | `--mcp` | 없음 | `false` | Obituary MCP stdio 서버를 등록합니다 |
-| `--no-context-menu` | 없음 | `false` | 파일 탐색기 상황에 맞는 메뉴를 설치하지 않습니다 |
+| `--no-context-menu` | 없음 | `false` | 파일 관리자 컨텍스트 메뉴를 건너뜁니다 |
 | `--no-shortcuts` | 없음 | `false` | 시작 메뉴와 바탕 화면 바로 가기를 만들지 않습니다 |
 | `--no-skill` | 없음 | `false` | Obituary Agent Skill을 변경하지 않습니다 |
 | `--show` | 없음 | `false` | 설치된 항목을 표시합니다 |
 | `--skill` | 없음 | `false` | Obituary Agent Skill을 설치합니다(기본적으로 활성화) |
 | `--uninstall` | 없음 | `false` | Obituary가 추가한 항목을 제거합니다 |
+| `--verbose` | 없음 | `false` | --show와 함께 사용: 모든 에이전트의 기능 세부 정보를 나열합니다 |
 | `--yes` | 없음 | `false` | 묻지 않고 적용합니다 |
 
 예시:
@@ -1037,6 +1039,8 @@ Obituary 연동과 백그라운드 서비스를 제거합니다. 기본적으로
 | `--wait-pid` | 없음 | `0` | 업데이트 전에 이 프로세스가 종료되기를 기다립니다(Windows) |
 
 ### `obit watch`
+
+개별 승인이 필요하면 `[watch]`에 `file_expiry = "propose"`를 설정하고 `obit proposals`로 검토한 뒤 `obit approve <ID>`로 승인하세요. 만료된 하위 폴더는 계속 제안만 생성하며 macOS와 Linux에서는 승인해도 그대로 남습니다.
 
 폴더의 최상위 하위 항목마다 각각 수명을 지정합니다
 

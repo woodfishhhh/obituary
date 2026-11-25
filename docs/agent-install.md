@@ -14,8 +14,8 @@
    - macOS / Linux：curl -fsSL https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh -o install.sh，把脚本内容给我过目。我同意后运行 bash install.sh，默认装最新正式版（macOS 上有 Homebrew 时也可以改用 brew install --cask woodfishhhh/tap/obituary）。默认装到 ~/.local/bin，可用 --install-dir 指定目录；按输出提示配置 PATH。
    装完新开一个终端，确认 obit --version 能运行。
 3. 运行 obit init --show，找到你自己对应的 agent 名字。
-4. 运行 obit init -g --agent <你的名字> --dry-run，把计划给我看。默认会装所选 agent 的 Agent Skill；Windows 还会装右键菜单、开始菜单和桌面快捷方式，可用 --no-skill / --no-context-menu / --no-shortcuts 跳过。问我要不要同时打开删除护栏（--guard-rm：拦下 rm -rf 这类删除，改用可以复活的 obit 命令）。我同意后，去掉 --dry-run、加上 --yes 再执行一次。macOS / Linux 再运行 obit daemon enable --dry-run，确认后用 obit daemon enable 启用用户级 launchd / systemd 定时检查；Linux 没有 systemd 时给我用户 crontab 的 obitd --once 配置步骤。
-5. 运行 obit doctor，把 FAIL 和 WARN 逐条告诉我，说明哪些是正常的。
+4. 运行 obit init -g --agent <你的名字> --dry-run，把计划给我看。默认会装所选 agent 的 Agent Skill；右键菜单（Windows 资源管理器、macOS Finder、Linux Nautilus 和 Dolphin）也会一并安装，Windows 还会装开始菜单和桌面快捷方式，可用 --no-skill / --no-context-menu / --no-shortcuts 跳过。问我要不要同时打开删除护栏（--guard-rm：拦下 rm -rf 这类删除，改用可以复活的 obit 命令）。我同意后，去掉 --dry-run、加上 --yes 再执行一次。macOS / Linux 再运行 obit daemon enable --dry-run，确认后用 obit daemon enable 启用用户级 launchd / systemd 定时检查；Linux 没有 systemd 时给我用户 crontab 的 obitd --once 配置步骤。
+5. 运行 obit doctor --verbose，把 FAIL 和 WARN 逐条告诉我，说明哪些是正常的。
 6. 告诉我接下来要做什么：通常是重启你自己；如果你是 Codex，要在 Codex 里运行 /hooks 信任讣告的 hook。
 
 规则：
@@ -40,8 +40,8 @@ Please install Obituary (the command is obit) and integrate it with yourself. Go
    - macOS / Linux: curl -fsSL https://raw.githubusercontent.com/woodfishhhh/obituary/main/install.sh -o install.sh, show me the script, and only after I agree run bash install.sh, which installs the latest release (on macOS with Homebrew, brew install --cask woodfishhhh/tap/obituary works too). The default directory is ~/.local/bin; --install-dir overrides it. Follow the printed PATH instructions.
    Then open a new terminal and confirm that obit --version runs.
 3. Run obit init --show and find your own agent name.
-4. Run obit init -g --agent <your name> --dry-run and show me the plan. The selected agent's Agent Skill is installed by default; Windows also gets context menus and Start menu / desktop shortcuts. Skip them with --no-skill / --no-context-menu / --no-shortcuts. Ask me whether to turn on the delete guard as well (--guard-rm: deletions such as rm -rf are stopped and replaced by restorable obit commands). After I agree, run it again without --dry-run and with --yes. On macOS / Linux also preview obit daemon enable --dry-run, then run obit daemon enable after confirmation for the user launchd / systemd scheduler; on Linux without systemd, show me user crontab steps for obitd --once.
-5. Run obit doctor and go through every FAIL and WARN with me, saying which ones are expected.
+4. Run obit init -g --agent <your name> --dry-run and show me the plan. The selected agent's Agent Skill is installed by default; The file manager context menus (Explorer on Windows, Finder on macOS, Nautilus and Dolphin on Linux) are installed too, and Windows also gets Start menu / desktop shortcuts. Skip them with --no-skill / --no-context-menu / --no-shortcuts. Ask me whether to turn on the delete guard as well (--guard-rm: deletions such as rm -rf are stopped and replaced by restorable obit commands). After I agree, run it again without --dry-run and with --yes. On macOS / Linux also preview obit daemon enable --dry-run, then run obit daemon enable after confirmation for the user launchd / systemd scheduler; on Linux without systemd, show me user crontab steps for obitd --once.
+5. Run obit doctor --verbose and go through every FAIL and WARN with me, saying which ones are expected.
 6. Tell me what to do next: usually restart yourself; if you are Codex, run /hooks in Codex and trust Obituary's hooks.
 
 Rules:

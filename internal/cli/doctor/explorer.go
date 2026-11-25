@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/woodfishhhh/obituary/internal/config"
@@ -23,9 +22,6 @@ type ExplorerCheck struct {
 }
 
 func (lang diagnostics) diagnoseExplorer(home string) DoctorCheck {
-	if runtime.GOOS != "windows" {
-		return DoctorCheck{Name: "explorer", Status: "INFO", Detail: lang.Text("cli.doctor.explorer_labels_are_windows_only", nil)}
-	}
 	c := DoctorCheck{Name: "explorer", Status: "PASS"}
 	cfg, err := config.Load()
 	if err != nil {

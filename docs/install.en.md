@@ -11,7 +11,8 @@ Obituary runs on Windows 10 / 11, macOS and Linux (x64 and ARM64). The Windows s
 | Install with | Scoop, the `install.ps1` script (winget in review) | Homebrew, the `install.sh` script | the `install.sh` script |
 | Expiry checks | resident tray process, Task Scheduler as a fallback | user launchd agent | `systemd --user` timer; a user crontab without systemd |
 | CLI, graveyard and resurrection, automatic registration (optional), delete guard, agent integration (hooks, Skill, MCP), Docker containers, folder policies | yes | yes | yes |
-| Tray, small window, context menus, burial dates in Explorer, Start menu and desktop shortcuts | yes | the CLI instead: `obit list`, `obit graveyard`, `obit resurrect` | as on macOS |
+| Tray, small window, Start menu and desktop shortcuts | yes | the CLI instead: `obit list`, `obit graveyard`, `obit resurrect` | as on macOS |
+| Context menu and burial dates in the file manager | Explorer | Finder: Quick Actions, Date tags | Nautilus: Scripts · Dolphin: menu, Date tags |
 | Recycle Bin mode | yes | graveyard only | graveyard only |
 
 With desktop supervision enabled, the tray handles expiries as they occur and an independent job checks once an hour. Editions without a tray check every five minutes.

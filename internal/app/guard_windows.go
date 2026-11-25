@@ -36,5 +36,7 @@ func Guard(home string) core.Guard {
 			}
 		}
 	}
-	return allowDownloads(core.DefaultGuard(home, keep...).WithCanonical(winfs.Canonical), watchAllowed)
+	g := core.DefaultGuard(home, keep...)
+	g.Exempt = []string{ReportsDir(home)}
+	return allowDownloads(g.WithCanonical(winfs.Canonical), watchAllowed)
 }

@@ -4,4 +4,6 @@ package gui
 
 import "runtime"
 
-func platformCapabilities() Capabilities { return Capabilities{Recycle: runtime.GOOS == "linux"} }
+func platformCapabilities() Capabilities {
+	return Capabilities{Recycle: runtime.GOOS == "linux", ContextMenu: true}
+}

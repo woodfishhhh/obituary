@@ -1,4 +1,4 @@
-name: Windows Explorer acceptance
+name: File manager acceptance
 
 on:
   workflow_dispatch:
@@ -6,13 +6,55 @@ on:
       version:
         description: Published Obituary version to install (for example 1.7.0)
         type: string
-        required: true
+        required: false
+      posix:
+        description: Exercise Finder, Nautilus and Dolphin on disposable desktops instead
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
+  file-managers:
+    if: ${{ inputs.posix }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, macos-15]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+      - name: Build pure Go binaries
+        run: |
+          mkdir -p "$RUNNER_TEMP/tools" "$RUNNER_TEMP/evidence"
+          CGO_ENABLED=0 go build -o "$RUNNER_TEMP/tools/" ./cmd/obit ./cmd/obitd
+      - if: runner.os == 'Linux'
+        run: |
+          apt_options=(-o Dir::Etc::sourcelist=sources.list.d/ubuntu.sources -o Dir::Etc::sourceparts=- -o Acquire::Retries=2)
+          sudo apt-get "${apt_options[@]}" update -qq
+          sudo apt-get "${apt_options[@]}" install -y --no-install-recommends nautilus dolphin xvfb xauth dbus-x11 openbox xdotool imagemagick tesseract-ocr tesseract-ocr-eng qtbase5-dev libkf5filemetadata-dev at-spi2-core python3-pyatspi
+      - if: runner.os == 'Linux'
+        run: xvfb-run -a -s "-screen 0 1280x960x24" dbus-run-session -- bash scripts/accept-file-managers.sh
+      - if: runner.os == 'macOS'
+        run: bash scripts/accept-file-managers.sh
+      - if: always() && runner.os == 'Linux'
+        run: test ! -f "$RUNNER_TEMP/evidence/results.md" || cat "$RUNNER_TEMP/evidence/results.md" >> "$GITHUB_STEP_SUMMARY"
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: file-manager-${{ matrix.runner }}
+          path: ${{ runner.temp }}/evidence/
+          if-no-files-found: error
+          retention-days: 14
   explorer:
+    if: ${{ !inputs.posix }}
     runs-on: windows-latest
     timeout-minutes: 20
     env:

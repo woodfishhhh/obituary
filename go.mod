@@ -19,6 +19,7 @@ require (
 	go.yaml.in/yaml/v3 v3.0.6
 	golang.org/x/mod v0.43.0
 	golang.org/x/sys v0.50.0
+	howett.net/plist v1.0.2-0.20250314012144-ee69052608d9
 	mvdan.cc/sh/v3 v3.14.1
 )
 

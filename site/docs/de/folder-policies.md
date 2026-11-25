@@ -8,9 +8,13 @@ obit watch --list                           # folder policies, their exemptions 
 obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans it registered
 ```
 
-Unter macOS und Linux wird nach der Freigabe jeder direkte Eintrag einzeln erfasst. Die Frist beginnt standardmäßig beim ersten Erkennen. Der überwachte Ordner bleibt geschützt; für abgelaufene Unterordner gibt es nur Vorschläge. Temporäre Downloads werden übersprungen. Lassen sich Schreibzugriffe nicht ausschließen, bleibt der Eintrag auch nach zehn ruhigen Minuten liegen.
+Unter macOS und Linux wird nach der Freigabe jeder direkte Eintrag einzeln erfasst. Die Frist beginnt standardmäßig beim ersten Erkennen. Der überwachte Ordner bleibt geschützt; für abgelaufene Unterordner gibt es nur Vorschläge. Temporäre Downloads werden übersprungen.
 
-**Unter macOS und Linux werden abgelaufene Dateien derzeit nicht automatisch begraben; auch ein genehmigter Unterordner bleibt liegen.**
+Nach Ablauf bleibt eine reguläre Datei standardmäßig weitere zehn Minuten liegen. Ändern sich Größe oder Änderungszeit oder ist die Datei geöffnet, beginnt die Wartezeit von vorn. Windows sperrt Schreibzugriffe während des Verschiebens. Unter macOS und Linux kann ein Prozess die Datei zwischen Prüfung und Umbenennung öffnen.
+
+Im automatischen Modus müssen alle Prozesse des Dateieigentümers prüfbar sein. Unlesbare Prozesse anderer Benutzer einschließlich root werden nur bei eigenen Dateien ohne Schreibrecht für Gruppe oder andere ignoriert. Mit `propose` prüfen Sie jede Datei einzeln. Die Freigabe akzeptiert Lücken in der Prozessliste. Eine nachweislich geöffnete Datei bleibt mit Begründung liegen.
+
+Zur Einzelbestätigung unter `[watch]` die Einstellung `file_expiry = "propose"` setzen. Mit `obit proposals` prüfen und mit `obit approve <ID>` bestätigen. Abgelaufene Unterordner erzeugen weiterhin Vorschläge und bleiben unter macOS und Linux auch nach Bestätigung am alten Ort.
 
 ```sh
 obit watch "$HOME/Downloads" 2w
@@ -30,3 +34,5 @@ Im Downloadordner, auf dem Desktop und in Ordnern mit Richtlinie zeigt der Explo
 - Die Datumsangaben stammen aus der versteckten Datei `desktop.ini` im jeweiligen Ordner.
 - Im Abschnitt `[explorer]` der Datei `config.toml` kannst du die Anzeige mit `enabled = false` abschalten oder mit `everywhere = true` überall einschalten.
 - Der Explorer speichert Ordneransichten zwischen. Nach einer Verlängerung kann dasselbe Fenster noch bis zu einer Minute das alte Datum anzeigen.
+
+Finder und Dolphin zeigen das Begräbnisdatum als Tag, ohne die Datei umzubenennen. Eine Verlängerung aktualisiert das Datum. Beim Beenden der Erfassung oder Deinstallieren entfernt Obituary nur eigene Tags. Nautilus zeigt kein Datum an; nutze `obit list`.

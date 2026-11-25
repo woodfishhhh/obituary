@@ -14,7 +14,7 @@ obit watch --list                           # folder policies, their exemptions 
 obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans it registered
 ```
 
-- Context menu: right-click files or folders in Explorer (several at once is fine), choose "Add to Obituary" and then 1, 7 or 30 days, or "Bury now (recoverable)"; on Windows 11 it is under "Show more options". A notification says how many went in and how many failed. macOS and Linux have no context menu; use the commands there: `obit mark <path> 7d`, `obit bury <path>`.
+- Context menu: right-click files or folders in Explorer (several at once is fine), choose "Add to Obituary" and then 1, 7 or 30 days, or "Bury now (recoverable)"; on Windows 11 it is under "Show more options". A notification says how many went in and how many failed. On macOS it is under Quick Actions in Finder; on Linux under Scripts → Obituary in Nautilus or the Obituary menu in Dolphin. Dolphin shows no entry for a single selected folder; use the commands (`obit mark <path> 7d`, `obit bury <path>`) or Nautilus there.
 - Tray menu: recent burials (click to resurrect; a notification says where it went back), items due within 24 hours (click one to open the small window and extend or spare it there), pause / resume, Open Obituary (the small window), Quit (the scheduled task keeps working).
 - `obit-gui.exe` must sit next to `obitd.exe` for the tray to open it. Every switch shows exactly what it will change and writes only after you confirm; trusting a `.obitrules` file trusts exactly the version shown in the window.
 - Explorer dates come from a hidden `desktop.ini` in the folder and appear by default only in Downloads, on the Desktop and in folders under a policy. `[explorer]` in `config.toml` turns them off (`enabled = false`) or on everywhere (`everywhere = true`). Explorer caches folder views, so after extending a lifespan the same window may show the old date for up to a minute.
@@ -32,7 +32,7 @@ Obituary supports English and Simplified Chinese. The command line, tray, small 
 
 ```powershell
 obit init -g                         # all projects (~/.claude); obit init alone installs into this project (.claude/)
-obit init -g --show --agent claude   # what is installed (without --agent: a one-line summary per agent, then the details)
+obit init -g --show --agent claude   # what is installed and what that agent supports (without --agent: a short summary; --verbose adds every agent's details)
 obit init -g --uninstall             # remove only what Obituary added
 ```
 
@@ -52,7 +52,7 @@ obit init -g --uninstall             # remove only what Obituary added
 - Any error in a hook lets the agent continue silently (the error goes to `hook.log`). `OBIT_DISABLED=1` turns hooks off temporarily; `OBIT_HOOK_AUDIT=1` records what each hook received and did, readable with `obit hook audit`.
 
 ```powershell
-obit doctor              # read-only check: PATH, obitd, runner, Claude Code / Codex integration, data directory, ledger, config (--json)
+obit doctor              # health check, one line per area; the full report is saved as an HTML file (--open opens it, --verbose prints the full text, --json)
 ```
 
 Once installed:
@@ -97,7 +97,7 @@ obit init -g --agent codex   # ~/.codex/hooks.json plus a block in AGENTS.md; ob
 ## Other agents
 
 ```powershell
-obit init -g --show                         # every supported agent, how far each integration goes, what is installed
+obit init -g --show                         # a short summary of every supported agent and what is installed (--verbose: how far each integration goes)
 obit init -g --agent gemini,cursor          # install one or several; without -g, into this project only
 obit init -g --agent gemini --mcp --skill   # also register the MCP server and install the Skill (where supported)
 obit init -g --agent gemini --uninstall     # remove only what Obituary added

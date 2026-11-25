@@ -14,7 +14,7 @@ obit watch --list                           # 有哪些文件夹策略，各自�
 obit watch --remove C:\Users\你\Downloads    # 移除策略，它登记过的寿命一起取消
 ```
 
-- 右键菜单：在资源管理器里右键文件或文件夹（可以多选），选「放进讣告」再选 1 天、7 天或 30 天，或者「现在埋掉（可恢复）」；Windows 11 在「显示更多选项」里。做完弹一条通知，说放进了几项、失败几项。macOS 和 Linux 没有右键菜单，先用命令：`obit mark <路径> 7d`、`obit bury <路径>`。
+- 右键菜单：在资源管理器里右键文件或文件夹（可以多选），选「放进讣告」再选 1 天、7 天或 30 天，或者「现在埋掉（可恢复）」；Windows 11 在「显示更多选项」里。做完弹一条通知，说放进了几项、失败几项。macOS 在 Finder 的「快速操作」里，Linux 在 Nautilus 的「脚本 → Obituary」或 Dolphin 的讣告菜单里；Dolphin 单独选中一个文件夹时没有入口，请改用命令（`obit mark <路径> 7d`、`obit bury <路径>`）或 Nautilus。
 
   <img alt="资源管理器右键菜单：现在埋掉（可恢复）、放进讣告（1 天、7 天、30 天）、复活最近下葬的" src="assets/readme/context-menu-zh.png" width="420">
 
@@ -34,7 +34,7 @@ obit watch --remove C:\Users\你\Downloads    # 移除策略，它登记过的�
 
 ```powershell
 obit init -g             # 所有项目（~/.claude）；obit init 只装当前项目（.claude/）
-obit init -g --show --agent claude  # 装了什么（不加 --agent 先列每家一行的摘要，再给完整明细）
+obit init -g --show --agent claude  # 装了什么、这家 agent 能做到哪一步（不加 --agent 只给简短摘要；加 --verbose 再列每家的明细）
 obit init -g --uninstall # 只删讣告加的东西
 ```
 
@@ -54,7 +54,7 @@ obit init -g --uninstall # 只删讣告加的东西
 - hook 出任何错都静默放行（错误写进 `hook.log`）。设置 `OBIT_DISABLED=1` 可以临时关掉；设置 `OBIT_HOOK_AUDIT=1` 会记下每次 hook 收到了什么、做了什么，用 `obit hook audit` 查看。
 
 ```powershell
-obit doctor              # 只读体检：PATH、obitd、运行器、Claude Code / Codex 集成、数据目录、账本、配置（支持 --json）
+obit doctor              # 体检，一个方面一行；完整报告存成 HTML 文件（--open 打开，--verbose 打印完整文字版，--json）
 ```
 
 装好后：
@@ -99,7 +99,7 @@ obit init -g --agent codex   # ~/.codex/hooks.json + AGENTS.md 里的说明块�
 ## 接入其他 agent
 
 ```powershell
-obit init -g --show                         # 列出全部可接入的 agent、各自能做到哪一步、装没装
+obit init -g --show                         # 全部可接入的 agent 和装没装的简短摘要（--verbose：各自能做到哪一步）
 obit init -g --agent gemini,cursor          # 装一家或几家；不带 -g 只装当前项目
 obit init -g --agent gemini --mcp --skill   # 同时注册 MCP 服务、安装 Skill（看各家是否支持）
 obit init -g --agent gemini --uninstall     # 只删讣告加的东西

@@ -27,6 +27,7 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 		global, uninstall, show, dryRun, yes, guardRM bool
 		withMCP, withSkill, noSkill                   bool
 		withContextMenu, noContextMenu, noShortcuts   bool
+		verbose                                       bool
 	)
 	cmd := &cobra.Command{
 		Use:   "init",
@@ -41,6 +42,9 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := validateShowFormat(cmd, format, show); err != nil {
 				return err
+			}
+			if verbose && !show {
+				return errors.New(cmdutil.Text("cli.init.verbose_requires_show"))
 			}
 			if withContextMenu && noContextMenu {
 				return errors.New(cmdutil.Text("cli.init.context_menu_conflicts_with_no_context_menu"))
@@ -67,7 +71,7 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 				_, err := fmt.Fprint(cmd.OutOrStdout(), coverageMarkdown(selected))
 				return err
 			}
-			planner.SkipSkill = noSkill
+			planner.SkipSkill, planner.Verbose = noSkill, verbose
 			scope := integrate.Scope{Global: global, GuardRM: guardRM, MCP: withMCP, Skill: !noSkill}
 			if !global {
 				p, err := rulescmd.CurrentProject()
@@ -80,7 +84,7 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 				if err := planner.showIntegrations(scope.ForInspection(), selected, cmd.Flags().Changed("agent")); err != nil {
 					return err
 				}
-				return showDesktop(cmd.OutOrStdout(), executable)
+				return showDesktop(cmd.OutOrStdout(), executable, verbose)
 			}
 			changes, err := planner.IntegrationPlans(selected, scope, uninstall)
 			if err != nil {
@@ -161,6 +165,7 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 	cmd.Flags().BoolVarP(&global, "global", "g", false, "user-wide instead of this project")
 	cmd.Flags().BoolVar(&uninstall, "uninstall", false, "remove what Obituary added")
 	cmd.Flags().BoolVar(&show, "show", false, "show what is installed")
+	cmd.Flags().BoolVar(&verbose, "verbose", false, "with --show: list every agent's capability details")
 	cmd.Flags().StringVar(&format, "format", "text", "output format for --show: text or markdown (agent coverage)")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "only print the changes")
 	cmd.Flags().BoolVar(&yes, "yes", false, "apply without asking")
@@ -168,8 +173,8 @@ func NewCmdWithExecutable(executable cmdutil.Executable) *cobra.Command {
 	cmd.Flags().BoolVar(&withMCP, "mcp", false, "register the Obituary MCP stdio server")
 	cmd.Flags().BoolVar(&withSkill, "skill", false, "install the Obituary Agent Skill (enabled by default)")
 	cmd.Flags().BoolVar(&noSkill, "no-skill", false, "leave the Obituary Agent Skill unchanged")
-	cmd.Flags().BoolVar(&withContextMenu, "context-menu", false, "install classic Explorer context menus (enabled by default)")
-	cmd.Flags().BoolVar(&noContextMenu, "no-context-menu", false, "skip Explorer context menus")
+	cmd.Flags().BoolVar(&withContextMenu, "context-menu", false, "install file manager context menus (enabled by default)")
+	cmd.Flags().BoolVar(&noContextMenu, "no-context-menu", false, "skip file manager context menus")
 	cmd.Flags().BoolVar(&noShortcuts, "no-shortcuts", false, "skip Start menu and desktop shortcuts")
 	return cmd
 }
