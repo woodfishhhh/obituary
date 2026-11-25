@@ -102,6 +102,7 @@ func (s *Service) saveSweepBurialSizes(outcomes []Outcome, finalErr error) error
 
 func (s *Service) commitBurialBatch(pending []*preparedBurial, owners *ownershipBatch, reason string) (outcomes []Outcome, finalErr error) {
 	requestContext := s.Store.Context()
+	allowedItemChanges := make(map[int64]bool)
 	if reason == ReasonBury {
 		s = s.WithContext(context.WithoutCancel(requestContext))
 	}
@@ -116,7 +117,7 @@ func (s *Service) commitBurialBatch(pending []*preparedBurial, owners *ownership
 			owners.prefetch(s.Store.Context(), pending)
 			s.gitMoveBudget = gitVerificationBudget(owners.elapsed)
 		}
-		processed, auditCount, stopErr, err := s.commitBurialPrefix(pending, owners, reason, requestContext, len(outcomes) > 0)
+		processed, auditCount, stopErr, err := s.commitBurialPrefix(pending, owners, reason, requestContext, len(outcomes) > 0, allowedItemChanges)
 		for _, p := range pending[:processed] {
 			outcomes = append(outcomes, p.out)
 		}
@@ -144,11 +145,11 @@ func (s *Service) commitBurialBatch(pending []*preparedBurial, owners *ownership
 	return outcomes, finalErr
 }
 
-func (s *Service) commitBurialPrefix(pending []*preparedBurial, owners *ownershipBatch, reason string, ctx context.Context, started bool) (processed, auditCount int, stopErr, err error) {
+func (s *Service) commitBurialPrefix(pending []*preparedBurial, owners *ownershipBatch, reason string, ctx context.Context, started bool, allowedItemChanges map[int64]bool) (processed, auditCount int, stopErr, err error) {
 	err = s.withGraveyardLock(func() error {
 		commitErr := s.Store.UpdateGraveyard(func(st *State) error {
 			var moveErr error
-			processed, stopErr, moveErr = s.moveBurialPrefix(st, pending, owners, reason, ctx, started)
+			processed, stopErr, moveErr = s.moveBurialPrefix(st, pending, owners, reason, ctx, started, allowedItemChanges)
 			auditCount = len(st.PendingAudit)
 			return moveErr
 		})
@@ -157,7 +158,7 @@ func (s *Service) commitBurialPrefix(pending []*preparedBurial, owners *ownershi
 	return
 }
 
-func (s *Service) moveBurialPrefix(st *State, pending []*preparedBurial, owners *ownershipBatch, reason string, ctx context.Context, alreadyStarted bool) (processed int, stopErr, err error) {
+func (s *Service) moveBurialPrefix(st *State, pending []*preparedBurial, owners *ownershipBatch, reason string, ctx context.Context, alreadyStarted bool, allowedItemChanges map[int64]bool) (processed int, stopErr, err error) {
 	started := time.Now()
 	for _, p := range pending {
 		if reason == ReasonBury && (processed > 0 || alreadyStarted) && ctx.Err() != nil {
@@ -170,6 +171,7 @@ func (s *Service) moveBurialPrefix(st *State, pending []*preparedBurial, owners 
 		if err := requireAuditSpace(st); err != nil {
 			return processed, err, nil
 		}
+		p.allowedItemChanges = allowedItemChanges
 		if p.out.Action == "" {
 			err := s.movePrepared(st, p, reason)
 			if errors.Is(err, errOwnerSnapshotRefresh) {
@@ -190,6 +192,12 @@ func (s *Service) moveBurialPrefix(st *State, pending []*preparedBurial, owners 
 				s.commitOutcome(st, p.out)
 			}
 			queueAudit(st, Event{Time: s.now(), Action: p.out.Action, ID: p.out.Item.ID, Path: p.out.Path, Detail: p.out.Detail})
+		}
+		if p.moved {
+			allowedItemChanges[p.out.Item.ID] = true
+			for _, child := range p.burial.Children {
+				allowedItemChanges[child.ID] = true
+			}
 		}
 	}
 	return processed, nil, nil

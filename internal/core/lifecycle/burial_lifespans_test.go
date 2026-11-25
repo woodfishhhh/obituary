@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 
@@ -77,4 +78,86 @@ func TestManifestChildLookupUncertaintyRetries(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestManifestChildLifespanRecheckedAfterExtension(t *testing.T) {
+	f := newFixture(t)
+	child := f.file("output/child.txt")
+	parent := f.add(filepath.Dir(child), time.Hour)
+	childItem := f.add(child, time.Minute)
+	f.clock = f.clock.Add(time.Hour)
+	restore := core.SetAfterManifest(f.svc, func() {
+		if _, err := f.svc.Extend([]string{fmt.Sprint(childItem.ID)}, 30*24*time.Hour); err != nil {
+			t.Fatal(err)
+		}
+	})
+	defer restore()
+	rows, err := f.svc.Bury([]string{parent.Path}, false, "")
+	st, readErr := f.svc.Store.Read()
+	idx := st.Index(childItem.ID)
+	if err != nil || len(rows) != 1 || rows[0].Action != core.ActionRetry || readErr != nil || idx < 0 || !exists(child) || len(st.Burials) != 0 || !st.Items[idx].ExpiresAt.After(f.clock) {
+		t.Fatalf("extended child lifespan authorized parent burial: rows=%+v state=%+v err=%v/%v", rows, st, err, readErr)
+	}
+}
+
+func TestManifestChildLifespanRecheckedAfterMoveIntoParent(t *testing.T) {
+	f := newFixture(t)
+	child := f.file("outside/child.txt")
+	parentDir := filepath.Dir(f.file("output/.marker"))
+	parent := f.add(parentDir, time.Hour)
+	childItem := f.add(child, 30*24*time.Hour)
+	moved := filepath.Join(parent.Path, "arrived.txt")
+	f.clock = f.clock.Add(time.Hour)
+	restore := core.SetAfterManifest(f.svc, func() {
+		if err := os.Rename(child, moved); err != nil {
+			t.Fatal(err)
+		}
+		rows, err := f.svc.Add([]string{moved}, core.AddOptions{ExpiresAt: f.clock.Add(30 * 24 * time.Hour)})
+		if err != nil || len(rows) != 1 || rows[0].Error != "" {
+			t.Fatalf("register moved child: %+v %v", rows, err)
+		}
+	})
+	defer restore()
+	rows, err := f.svc.Bury([]string{parent.Path}, false, "")
+	st, readErr := f.svc.Store.Read()
+	idx := st.Index(childItem.ID)
+	if err != nil || len(rows) != 1 || rows[0].Action != core.ActionRetry || readErr != nil || idx < 0 || !exists(moved) || len(st.Burials) != 0 || st.Items[idx].Path != moved {
+		t.Fatalf("moved child lifespan authorized parent burial: rows=%+v state=%+v err=%v/%v", rows, st, err, readErr)
+	}
+}
+
+func TestSweepContainmentScanDoesNotHoldStoreLock(t *testing.T) {
+	f := newFixture(t)
+	parent := filepath.Dir(f.file("parent/.marker"))
+	f.add(parent, time.Hour)
+	for i := range 30 {
+		f.add(f.file(fmt.Sprintf("unrelated-%02d.txt", i)), 30*24*time.Hour)
+	}
+	f.clock = f.clock.Add(time.Hour)
+	f.fs.locateDelay = 40 * time.Millisecond
+	var maxLock time.Duration
+	core.ObserveStoreLocks(&f.svc.Store, func(held time.Duration) {
+		if held > maxLock {
+			maxLock = held
+		}
+	})
+	var once sync.Once
+	readerDone := make(chan time.Duration, 1)
+	f.fs.onLocate = func() {
+		once.Do(func() {
+			go func() {
+				started := time.Now()
+				_, _ = f.svc.Store.ReadSnapshot()
+				readerDone <- time.Since(started)
+			}()
+		})
+	}
+	started := time.Now()
+	rows := f.sweepAt(time.Hour)
+	elapsed := time.Since(started)
+	readerWait := <-readerDone
+	if len(rows) != 1 || rows[0].Action != core.ActionBuried || maxLock >= time.Second || readerWait >= time.Second {
+		t.Fatalf("containment scan held store.lock: rows=%+v elapsed=%s lock=%s reader=%s", rows, elapsed, maxLock, readerWait)
+	}
+	t.Logf("containment scan elapsed=%s store.lock=%s reader wait=%s", elapsed, maxLock, readerWait)
 }

@@ -31,7 +31,11 @@ func (s *Service) settle(item Item, dryRun bool, reason string, roots []resolved
 		if _, err := s.burialRevision(st, item, reason); err != nil {
 			return err
 		}
-		if err := s.checkChildLifespans(st, item, out.Path, reason); err != nil {
+		if err := s.checkChildLifespanState(st, item, out.Path, reason); err != nil {
+			out = failedMove(out, err)
+			return err
+		}
+		if _, err := s.validateLifespanSnapshot(st, item, out.Path, out.lifespans, nil); err != nil {
 			out = failedMove(out, err)
 			return err
 		}
@@ -102,6 +106,13 @@ func (s *Service) prepareSettlement(item Item, dryRun bool, reason string, roots
 	}
 	if reason == ReasonExpired && item.Source == "watch" && (item.IsDir || posixWatchFile(item) && s.WatchFileProposals) {
 		return s.proposeWatchBurial(out, dryRun)
+	}
+	if !dryRun {
+		lifespans, err := s.preflightChildLifespans(state, item, target, reason)
+		if err != nil {
+			return failedMove(out, err)
+		}
+		out.lifespans = lifespans
 	}
 	return s.finishSettlementPreparation(out, dryRun, reason, roots, state, batchSnapshot)
 }

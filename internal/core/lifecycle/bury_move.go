@@ -18,14 +18,15 @@ func (s *Service) burialStep(step string) error {
 }
 
 type preparedBurial struct {
-	out          Outcome
-	burial       Burial
-	manifest     string
-	moved        bool
-	retained     bool // an unverified directory stays quarantined with its manifest
-	watch        *WatchSnapshot
-	sourceParent *os.Root
-	owner        func(context.Context, string) Ownership
+	out                Outcome
+	burial             Burial
+	manifest           string
+	moved              bool
+	retained           bool // an unverified directory stays quarantined with its manifest
+	watch              *WatchSnapshot
+	sourceParent       *os.Root
+	owner              func(context.Context, string) Ownership
+	allowedItemChanges map[int64]bool
 }
 
 func (s *Service) prepareBurial(out Outcome, reason string) *preparedBurial {
@@ -98,6 +99,8 @@ func (s *Service) validatePrepared(st *State, p *preparedBurial, reason string) 
 	if st.BurialIndex(b.ID) >= 0 || st.ProposalIndex(b.ID) >= 0 {
 		return "", fmt.Errorf("#%d is already in use", b.ID)
 	}
+	s.preparedLifespans, s.allowedItemChanges = p.out.lifespans, p.allowedItemChanges
+	defer func() { s.preparedLifespans, s.allowedItemChanges = nil, nil }()
 	children, err := s.childLifespans(st, out.Item, out.Path, reason)
 	if err != nil {
 		*out = failedMove(*out, err)

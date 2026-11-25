@@ -44,6 +44,7 @@ type Outcome struct {
 	err          error     // a ledger failure, distinct from a retryable filesystem outcome
 	retryCommand string    // selected from the pre-move ledger's discoverable roots
 	searched     bool      // the full repository search passed before store.lock
+	lifespans    *lifespanSnapshot
 }
 
 // A failing burial is retried at growing intervals, up to a day apart, and

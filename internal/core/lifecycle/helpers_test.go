@@ -361,6 +361,8 @@ type testFS struct {
 	winfs.FS
 	fail                 error
 	locateErr            error
+	locateDelay          time.Duration
+	onLocate             func()
 	identifyFollowingErr func(path string) error
 	onRecycle            func(path string) // runs while deleting, before the outcome
 	recycled             []string
@@ -398,6 +400,12 @@ func (f *testFS) MovePinnedInto(path string, want core.Identity, parent core.Res
 }
 
 func (f *testFS) Locate(id core.Identity) (string, error) {
+	if f.onLocate != nil {
+		f.onLocate()
+	}
+	if f.locateDelay > 0 {
+		time.Sleep(f.locateDelay)
+	}
 	if f.locateErr != nil {
 		return "", f.locateErr
 	}

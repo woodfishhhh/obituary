@@ -18,18 +18,14 @@ func (s *Service) checkChildLifespans(st *State, item Item, path, reason string)
 }
 
 func (s *Service) childLifespans(st *State, item Item, path, reason string) ([]Item, error) {
-	if err := s.checkWatchedFolders(st, path, *item.Identity, item.IsDir); err != nil {
-		return nil, err
-	}
-	if err := s.checkWatchScope(st, item, path, reason); err != nil {
-		return nil, err
-	}
-	if reason == ReasonExpired && automatic(item) {
-		if exempt, err := s.AutomaticExempt(st, path, *item.Identity); err != nil {
-			return nil, watchExemptionRetry(err)
-		} else if exempt {
-			return nil, fmt.Errorf("automatic expiry paused: kept by resurrect or spare until its next write")
+	if s.preparedLifespans != nil {
+		if err := s.checkChildLifespanState(st, item, path, reason); err != nil {
+			return nil, err
 		}
+		return s.validateLifespanSnapshot(st, item, path, s.preparedLifespans, s.allowedItemChanges)
+	}
+	if err := s.checkChildLifespanState(st, item, path, reason); err != nil {
+		return nil, err
 	}
 	if !item.IsDir {
 		return nil, nil
@@ -42,11 +38,71 @@ func (s *Service) childLifespans(st *State, item Item, path, reason string) ([]I
 	if reason == ReasonBury {
 		expires = s.now()
 	}
-	return s.containedLifespans(st, item, real, expires)
+	children, _, _, err := s.scanContainedLifespans(st, item, real, expires)
+	return children, err
 }
 
-func (s *Service) containedLifespans(st *State, item Item, real string, expires time.Time) ([]Item, error) {
+type lifespanSnapshot struct {
+	real     string
+	expires  time.Time
+	children []Item
+	entries  map[int64]lifespanEntry
+	missing  bool
+}
+
+type lifespanEntry struct {
+	path       string
+	ledgerPath string
+	rev        int64
+	expiresAt  time.Time
+	isDir      bool
+	kind       string
+	identity   *Identity
+}
+
+func (s *Service) preflightChildLifespans(st *State, item Item, path, reason string) (*lifespanSnapshot, error) {
+	if err := s.checkChildLifespanState(st, item, path, reason); err != nil {
+		return nil, err
+	}
+	if !item.IsDir {
+		return nil, nil
+	}
+	real, err := s.FS.RealPath(path)
+	if err != nil {
+		return nil, err
+	}
+	expires := item.ExpiresAt
+	if reason == ReasonBury {
+		expires = s.now()
+	}
+	children, entries, missing, err := s.scanContainedLifespans(st, item, real, expires)
+	if err != nil {
+		return nil, err
+	}
+	return &lifespanSnapshot{real: real, expires: expires, children: children, entries: entries, missing: missing}, nil
+}
+
+func (s *Service) checkChildLifespanState(st *State, item Item, path, reason string) error {
+	if err := s.checkWatchedFolders(st, path, *item.Identity, item.IsDir); err != nil {
+		return err
+	}
+	if err := s.checkWatchScope(st, item, path, reason); err != nil {
+		return err
+	}
+	if reason == ReasonExpired && automatic(item) {
+		if exempt, err := s.AutomaticExempt(st, path, *item.Identity); err != nil {
+			return watchExemptionRetry(err)
+		} else if exempt {
+			return fmt.Errorf("automatic expiry paused: kept by resurrect or spare until its next write")
+		}
+	}
+	return nil
+}
+
+func (s *Service) scanContainedLifespans(st *State, item Item, real string, expires time.Time) ([]Item, map[int64]lifespanEntry, bool, error) {
 	var children []Item
+	entries := make(map[int64]lifespanEntry, len(st.Items))
+	missing := false
 	var err error
 	for _, other := range st.Items {
 		if other.Kind == KindContainer {
@@ -56,6 +112,7 @@ func (s *Service) containedLifespans(st *State, item Item, real string, expires 
 			continue
 		}
 		current := other.Path
+		entries[other.ID] = lifespanEntryOf(other, current)
 		if other.Identity != nil {
 			if other.Identity.Serial != item.Identity.Serial {
 				continue
@@ -65,17 +122,19 @@ func (s *Service) containedLifespans(st *State, item Item, real string, expires 
 			current, err = s.FS.RealPath(current)
 		}
 		if errors.Is(err, ErrNotFound) {
+			missing = true
 			continue
 		}
 		if err != nil {
-			return nil, fmt.Errorf("could not locate #%d: %v", other.ID, err) //nolint:errorlint // Another item's ErrUnsafe or RefusedError must retry, not refuse the parent.
+			return nil, nil, false, fmt.Errorf("could not locate #%d: %v", other.ID, err) //nolint:errorlint // Another item's ErrUnsafe or RefusedError must retry, not refuse the parent.
 		}
+		entries[other.ID] = lifespanEntryOf(other, current)
 		if isInside(current, real) {
 			if other.ExpiresAt.After(expires) {
-				return nil, fmt.Errorf("holds #%d, which has a later expiry", other.ID)
+				return nil, nil, false, fmt.Errorf("holds #%d, which has a later expiry", other.ID)
 			}
 			if other.Identity == nil {
-				return nil, fmt.Errorf("contained #%d lacks an identity", other.ID)
+				return nil, nil, false, fmt.Errorf("contained #%d lacks an identity", other.ID)
 			}
 			children = append(children, other)
 		}
@@ -89,7 +148,68 @@ func (s *Service) containedLifespans(st *State, item Item, real string, expires 
 		}
 		return 0
 	})
-	return children, nil
+	return children, entries, missing, nil
+}
+
+func cloneIdentity(identity *Identity) *Identity {
+	if identity == nil {
+		return nil
+	}
+	copy := *identity
+	return &copy
+}
+
+func lifespanEntryOf(item Item, path string) lifespanEntry {
+	return lifespanEntry{path: path, ledgerPath: item.Path, rev: item.Rev, expiresAt: item.ExpiresAt, isDir: item.IsDir, kind: item.Kind, identity: cloneIdentity(item.Identity)}
+}
+
+func (e lifespanEntry) matches(item Item) bool {
+	if e.ledgerPath != item.Path || e.rev != item.Rev || !e.expiresAt.Equal(item.ExpiresAt) || e.isDir != item.IsDir || e.kind != item.Kind {
+		return false
+	}
+	if e.identity == nil || item.Identity == nil {
+		return e.identity == nil && item.Identity == nil
+	}
+	return *e.identity == *item.Identity
+}
+
+func (s *Service) validateLifespanSnapshot(st *State, item Item, path string, snapshot *lifespanSnapshot, allowedItemChanges map[int64]bool) ([]Item, error) {
+	if !item.IsDir {
+		return nil, nil
+	}
+	if snapshot == nil {
+		return nil, errors.New("burial lifespan snapshot is unavailable")
+	}
+	real, err := s.FS.RealPath(path)
+	if err != nil {
+		return nil, err
+	}
+	if !samePath(real, snapshot.real) {
+		return nil, errors.New("burial directory changed before commit")
+	}
+	if snapshot.missing {
+		children, _, _, err := s.scanContainedLifespans(st, item, real, snapshot.expires)
+		return children, err
+	}
+	for _, current := range st.Items {
+		if current.Kind == KindContainer || current.ID == item.ID {
+			continue
+		}
+		entry, ok := snapshot.entries[current.ID]
+		if !ok {
+			if isInside(current.Path, real) {
+				return nil, fmt.Errorf("new lifespan #%d entered the burial directory", current.ID)
+			}
+			continue
+		}
+		if allowedItemChanges[current.ID] || entry.matches(current) {
+			continue
+		}
+		if isInside(entry.path, real) || isInside(current.Path, real) {
+			return nil, fmt.Errorf("lifespan #%d changed before burial", current.ID)
+		}
+	}
+	return snapshot.children, nil
 }
 
 // Called under store.lock, before changing any matching registration. Listing
