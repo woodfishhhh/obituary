@@ -31,7 +31,8 @@ def main():
     hooks = defaultdict(list)
     for r in rows:
         cell[(r["k"], r["arm"])][r["wave"]] = r["list_ms"]
-        cpu[(r["k"], r["arm"])].append(r["cpu"])
+        if r["cpu"] is not None:
+            cpu[(r["k"], r["arm"])].append(r["cpu"])
         hooks[(r["k"], r["arm"])] += r.get("hook_ms", [])
     print(f"| level | build | n | p50 | p95 | max | >{a.gate:g} ms | paired vs {a.ref} (median) | faster | CPU p50 | hook p50 / p95 |")
     print("|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
