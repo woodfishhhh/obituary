@@ -44,3 +44,29 @@ func TestPOSIXWatchObservationDoesNotPromiseWriterExclusion(t *testing.T) {
 		t.Fatal("observation changed file", err)
 	}
 }
+
+func TestWatchInventoryDecision(t *testing.T) {
+	for _, tc := range []struct {
+		name                 string
+		owner, current, mode uint32
+		private              bool
+	}{
+		{"owner-only-write", 1000, 1000, 0644, true}, {"group-writable", 1000, 1000, 0664, false}, {"world-writable", 1000, 1000, 0602, false}, {"other-owner", 1001, 1000, 0600, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := privateWatchFile(tc.owner, tc.current, tc.mode); got != tc.private {
+				t.Fatalf("private: %v, want %v", got, tc.private)
+			}
+		})
+	}
+	var first error
+	if recordWatchError(&first, os.ErrPermission) || first == nil {
+		t.Fatal("stopped before scanning other descriptors")
+	}
+	if watchInventoryResult(false, first) == nil || watchInventoryResult(true, first) != nil {
+		t.Fatal("only approval can override an unresolved inventory")
+	}
+	if !recordWatchError(&first, errWatchFileOpen) || !errors.Is(watchInventoryResult(true, first), errWatchFileOpen) {
+		t.Fatal("approval hid known open file after an unreadable process")
+	}
+}

@@ -8,6 +8,18 @@ obit watch --list                           # folder policies, their exemptions 
 obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans it registered
 ```
 
+macOS と Linux でも、承認後は直下の項目が個別に登録され、既定では最初に検出した時点から期限を数えます。監視フォルダー自体は保護され、期限の切れたサブフォルダーには提案だけが作られます。ダウンロード中の一時ファイルは対象外です。
+
+通常のファイルは期限が切れてから、既定でさらに10分間待ちます。サイズや更新日時が変わった場合、またはファイルが開かれている場合は、その場に残して計時をやり直します。Windows は移動中の書き込みを排除します。macOS と Linux では確認から名前変更までの間に別のプロセスがファイルを開く可能性があります。
+
+自動モードでは、ファイル所有者の全プロセスを確認できる必要があります。自分のファイルで、グループとその他のユーザーに書き込み権限がない場合に限り、root を含む他のユーザーの読み取れないプロセスを除外します。一件ずつ判断するには `propose` を選びます。承認時はプロセス情報の不足を許容しますが、開いていることが確認できたファイルは元の場所に残り、理由が表示されます。
+
+個別に承認するには `[watch]` に `file_expiry = "propose"` を設定し、`obit proposals` で確認して `obit approve <ID>` で承認します。期限切れのサブフォルダーには引き続き提案が作成され、macOS と Linux では承認しても移動されません。
+
+```sh
+obit watch "$HOME/Downloads" 2w
+```
+
 ## 適用条件
 
 - **ポリシー自体に承認が必要です。** `obit watch` は提案を作成します。`obit approve` を実行するか、小ウィンドウの「For you」で承認すると有効になります。
@@ -22,3 +34,5 @@ obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans 
 - 日付の表示には、フォルダー内の隠しファイル `desktop.ini` を使います。
 - `config.toml` の `[explorer]` セクションで、`enabled = false` にすると日付を非表示に、`everywhere = true` にするとすべての場所で表示できます。
 - エクスプローラーはフォルダーの表示をキャッシュするため、寿命を延長しても同じウィンドウに最長 1 分ほど古い日付が残ることがあります。
+
+Finder と Dolphin はファイル名を変更せず、埋葬日をタグで表示します。期限を延長すると日付も変わり、追跡の解除時やアンインストール時には Obituary が追加したタグだけを削除します。Nautilus では `obit list` で確認してください。

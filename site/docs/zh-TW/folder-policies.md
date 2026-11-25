@@ -8,6 +8,18 @@ obit watch --list                           # 有哪些文件夹策略，各自�
 obit watch --remove C:\Users\你\Downloads    # 移除策略，它登记过的寿命一起取消
 ```
 
+在 macOS 和 Linux 上，核准後會逐一登記頂層項目，預設從第一次看到時計算壽命。策略資料夾本身受保護，子資料夾到期只會產生提議，下載暫存檔會略過。
+
+一般檔案到期後，預設還要靜置十分鐘。大小或修改時間改變或發現開啟的檔案描述符，都會重新計時並保留檔案。Windows 移動時會阻止寫入。macOS 和 Linux 只能檢查當下的狀態，從檢查到重新命名之間仍可能有程式開啟檔案。
+
+自動模式必須能檢查檔案擁有者的所有行程。只有檔案屬於目前使用者，且群組及其他人均無寫入權限時，才會忽略其他使用者（包括 root）無法讀取的行程。選擇 `propose` 可逐項核准。核准可以接受行程資訊不完整，但只要確認檔案仍開啟，就會保留檔案並顯示原因。
+
+若要逐項核准，請在 `[watch]` 設定 `file_expiry = "propose"`。以 `obit proposals` 檢閱，再用 `obit approve <ID>` 核准。到期的子資料夾仍只會產生提議，在 macOS 和 Linux 上即使核准也會保留。
+
+```sh
+obit watch "$HOME/Downloads" 2w
+```
+
 ## 策略如何生效
 
 - **策略須經你核准。** `obit watch` 會建立一項提議。執行 `obit approve` 或在小視窗的「待你決定」頁核准後，策略才會生效。
@@ -22,3 +34,5 @@ obit watch --remove C:\Users\你\Downloads    # 移除策略，它登记过的�
 - 日期來自資料夾中的隱藏檔 `desktop.ini`。
 - 在 `config.toml` 的 `[explorer]` 區段中，可設定 `enabled = false` 關閉日期顯示，或設定 `everywhere = true` 在所有位置顯示。
 - 檔案總管會快取資料夾的檢視畫面。延長壽命後，同一個視窗最多可能還會顯示舊日期一分鐘。
+
+Finder 和 Dolphin 以標籤顯示下葬日期，不會改變檔名。延長壽命時會更新日期；停止追蹤或解除安裝時只移除訃告所加的標籤。Nautilus 不顯示日期標籤，請用 `obit list` 查詢。

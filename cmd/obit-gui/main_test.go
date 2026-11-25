@@ -90,7 +90,7 @@ func TestWindowOptionsBindAPIAndExitOnClose(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	options := windowOptions(a, 900, 600)
+	options := platformOptions(a, 900, 600)
 	// A Wails dialog needs a frontend context. First use must complete without one.
 	options.OnStartup(context.Background())
 	if _, err := os.Stat(filepath.Join(os.Getenv("OBIT_HOME"), "usage.json")); err != nil {

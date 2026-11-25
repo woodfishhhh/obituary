@@ -11,7 +11,8 @@ Windows 10 / 11、macOS、Linux（x64 と ARM64）：
 | インストール方法 | Scoop、`install.ps1` スクリプト（winget は審査中） | Homebrew、`install.sh` スクリプト | `install.sh` スクリプト |
 | 期限の確認 | 常駐トレイプロセス、タスク スケジューラが代替 | ユーザーの launchd エージェント | `systemd --user` タイマー、systemd がない場合はユーザーの crontab |
 | CLI、墓地と復活、自動登録（任意）、削除ガード、エージェント連携（hook、Skill、MCP）、Docker コンテナ、フォルダーポリシー | あり | あり | あり |
-| トレイ、小さなウィンドウ、コンテキストメニュー、Explorer の埋葬日時、スタートメニューとデスクトップショートカット | あり | CLI を使用：`obit list`、`obit graveyard`、`obit resurrect` | macOS と同じ |
+| トレイ、小さなウィンドウ、スタートメニューとデスクトップショートカット | あり | CLI を使用：`obit list`、`obit graveyard`、`obit resurrect` | macOS と同じ |
+| ファイルマネージャーのコンテキストメニューと埋葬日 | エクスプローラー | Finder: クイックアクション、日付タグ | Nautilus: スクリプト · Dolphin: メニュー、日付タグ |
 | ごみ箱モード | あり | 墓地のみ | 墓地のみ |
 
 **簡単な方法：エージェントに任せる。** 使用中のエージェント（Claude Code、Codex、Cursor など）にこの文を送ってください。Obituary をインストールして自分自身に接続し、あなたの判断が必要なところで停止します。
@@ -76,7 +77,7 @@ irm https://raw.githubusercontent.com/woodfishhhh/obituary/main/packaging/instal
 続いてインストールを確認します。
 
 ```powershell
-obit doctor              # read-only check: PATH, obitd, runner, Claude Code / Codex integration, data directory, ledger, config (--json)
+obit doctor              # health check: short summary, full HTML report (--open, --verbose, --json)
 ```
 
 ## 2. エージェントを接続

@@ -157,6 +157,9 @@ func (s *Service) movePrepared(st *State, p *preparedBurial, reason string) erro
 	}
 	release, err := s.holdWatchForMove(st, out.Item, out.Path, reason)
 	if err != nil {
+		if posixWatchFile(out.Item) {
+			out.Item = st.Items[st.Index(out.Item.ID)]
+		}
 		*out = failedMove(*out, err)
 		return nil
 	}

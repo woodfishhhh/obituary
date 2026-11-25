@@ -62,6 +62,7 @@ type Explorer struct {
 // Use Go duration syntax, as in time.ParseDuration.
 type Watch struct {
 	StableWindow string `toml:"stable_window"`
+	FileExpiry   string `toml:"file_expiry"`
 }
 
 func (w Watch) Stability() time.Duration {
@@ -118,7 +119,7 @@ func (g Graveyard) Retention() time.Duration {
 
 // Default returns the built-in configuration.
 func Default() Config {
-	return Config{Graveyard: Graveyard{Mode: ModeGraveyard, RetentionDays: 7}, Explorer: Explorer{Enabled: true}, Watch: Watch{StableWindow: "10m"}, UI: UI{Language: i18n.Auto, Tray: true, Taskbar: true}, Update: Update{Check: true}, Telemetry: Telemetry{Enabled: true}, Hooks: Hooks{SessionCleanup: true}, Proposals: Proposals{Mode: ProposalsOff}}
+	return Config{Graveyard: Graveyard{Mode: ModeGraveyard, RetentionDays: 7}, Explorer: Explorer{Enabled: true}, Watch: Watch{StableWindow: "10m", FileExpiry: "quiet"}, UI: UI{Language: i18n.Auto, Tray: true, Taskbar: true}, Update: Update{Check: true}, Telemetry: Telemetry{Enabled: true}, Hooks: Hooks{SessionCleanup: true}, Proposals: Proposals{Mode: ProposalsOff}}
 }
 
 // Template is what `obit config --create` writes.
@@ -186,6 +187,8 @@ enabled = true
 # Quiet interval before moving a folder-policy child (Go duration syntax).
 # Quiet time alone cannot prove a paused download is complete.
 stable_window = "10m"
+# macOS/Linux regular files: wait for quiet and check open files, or ask for approval.
+file_expiry = "quiet" # "quiet" | "propose"
 
 [explorer]
 # Show burial dates in Explorer without changing real file names.
@@ -333,6 +336,9 @@ func (c Config) validate(path string) error {
 	}
 	if d, err := time.ParseDuration(c.Watch.StableWindow); err != nil || d <= 0 {
 		return fmt.Errorf("%s: watch.stable_window must be a positive duration (for example 10m)", path)
+	}
+	if c.Watch.FileExpiry != "quiet" && c.Watch.FileExpiry != "propose" {
+		return fmt.Errorf("%s: watch.file_expiry must be quiet or propose", path)
 	}
 	switch c.Proposals.Mode {
 	case ProposalsOff, ProposalsTiered, ProposalsAuto, ProposalsAsk:

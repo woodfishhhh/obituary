@@ -4,7 +4,7 @@ Resurrect files, approve proposals and change settings without the command line.
 
 ## What each of the three platforms has
 
-The window, the tray and desktop notifications exist on Windows, macOS and Ubuntu 24.04; the context menu, the date labels in Explorer and Recycle Bin mode exist only on Windows. The desktop editions for macOS and Ubuntu are previews for now. Other Linux distributions have no desktop edition and use the command line.
+The window, the tray and desktop notifications exist on Windows, macOS and Ubuntu 24.04. The desktop editions for macOS and Ubuntu are previews for now. Other Linux distributions have no desktop edition and use the command line.
 
 | | Windows | macOS | Ubuntu 24.04 |
 | --- | --- | --- | --- |
@@ -13,9 +13,9 @@ The window, the tray and desktop notifications exist on Windows, macOS and Ubunt
 | Tray at login | on by default after `obit init` | switch in Settings | switch in Settings |
 | Expiry check | resident tray process | LaunchAgent | systemd |
 | Desktop notifications | yes | yes | yes |
-| Context menu | in Explorer | no | no |
-| Date labels in Explorer | yes | no | no |
-| Recycle Bin mode | yes | no, graveyard only | no, graveyard only |
+| Context menu | in Explorer | Finder: Quick Actions | Nautilus: Scripts · Dolphin |
+| Date tags | yes | Finder | Dolphin |
+| Recycle Bin mode | yes | no, graveyard only | yes |
 | Installed with | the install script, Scoop, winget or the archive | the DMG | the `.deb` |
 | First opening | an archive downloaded by hand may meet a SmartScreen warning | needs manual approval, see [below](#first-opening-an-unsigned-app) | opens directly |
 | Requirements | the WebView2 runtime | 1.6.0 needs macOS 26, fixed in 1.6.1 | GTK 3 and WebKitGTK 4.1, installed by apt |
@@ -110,7 +110,7 @@ Select many files and add them at once. A notification says how many went in, wh
 
 If all Explorer menu labels are in another supported language after an upgrade, the menu still works. `obit doctor` reports this as information (`installation: label-language-mismatch` in JSON). Run `obit init --context-menu --yes` to switch the labels to the current interface language.
 
-macOS and Linux have no context menu yet; use the commands: `obit mark <path> 7d` to add, `obit bury <path>` to bury now.
+Use Quick Actions in Finder or Scripts → Obituary in Nautilus. Dolphin passes the same target for empty space and a single selected folder, so neither offers Obituary actions. In Dolphin, the Obituary submenu appears for a file or a multiple selection, and a folder policy requires at least two selected folders. For a single selected folder, use the CLI or Nautilus. Run `obit init --context-menu --yes` to update an existing menu.
 
 ## Icons and menus
 

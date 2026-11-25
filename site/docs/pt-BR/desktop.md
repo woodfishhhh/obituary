@@ -4,7 +4,7 @@ Você pode ressuscitar arquivos, aprovar propostas e alterar as configurações 
 
 ## O que cada uma das três plataformas oferece
 
-A janela, o ícone da bandeja e as notificações de desktop existem no Windows, no macOS e no Ubuntu 24.04; o menu de contexto, as etiquetas de data do Explorador de Arquivos e o modo Lixeira existem só no Windows. As edições de desktop para macOS e Ubuntu são, por enquanto, versões de pré-lançamento. Outras distribuições Linux não têm edição de desktop e usam a linha de comando.
+A janela, o ícone da bandeja e as notificações de desktop existem no Windows, no macOS e no Ubuntu 24.04. As edições de desktop para macOS e Ubuntu são, por enquanto, versões de pré-lançamento. Outras distribuições Linux não têm edição de desktop e usam a linha de comando.
 
 | | Windows | macOS | Ubuntu 24.04 |
 | --- | --- | --- | --- |
@@ -13,9 +13,9 @@ A janela, o ícone da bandeja e as notificações de desktop existem no Windows,
 | Ícone no login | ativado por padrão após `obit init` | interruptor em Settings | interruptor em Settings |
 | Verificação de expiração | processo residente do ícone | LaunchAgent | systemd |
 | Notificações de desktop | sim | sim | sim |
-| Menu de contexto | no Explorador de Arquivos | não | não |
-| Etiquetas de data no Explorador | sim | não | não |
-| Modo Lixeira | sim | não, só cemitério | não, só cemitério |
+| Menu de contexto | no Explorador de Arquivos | Finder: Ações Rápidas | Nautilus: Scripts · Dolphin |
+| Etiquetas de data | sim | Finder | Dolphin |
+| Modo Lixeira | sim | não, só cemitério | sim |
 | Instalado com | o script de instalação, Scoop, winget ou o arquivo compactado | o DMG | o `.deb` |
 | Primeira abertura | um arquivo baixado à mão pode gerar um aviso do SmartScreen | exige aprovação manual, veja [abaixo](#primeira-abertura-de-um-app-sem-assinatura) | abre direto |
 | Requisitos | o runtime do WebView2 | a 1.6.0 exige macOS 26 (corrigido na 1.6.1) | GTK 3 e WebKitGTK 4.1, instalados pelo apt |
@@ -110,7 +110,7 @@ Você pode selecionar vários arquivos e adicioná-los de uma vez. A notificaç�
 
 Se após uma atualização todos os rótulos do menu do Explorer estiverem em outro idioma compatível, o menu continua funcionando. `obit doctor` mostra um aviso informativo (JSON: `installation: label-language-mismatch`). Execute `obit init --context-menu --yes` para aplicar o idioma atual da interface.
 
-O macOS e o Linux ainda não têm menu de contexto. Use `obit mark <path> 7d` para registrar um item ou `obit bury <path>` para enterrá-lo agora.
+No Finder, use Ações Rápidas; no Nautilus, Scripts → Obituary. O Dolphin passa o mesmo destino para uma área vazia e para uma única pasta selecionada; nenhum dos dois casos oferece ações do Obituary. No Dolphin, o submenu aparece para um arquivo ou para uma seleção múltipla, e uma política exige pelo menos duas pastas selecionadas. Para uma única pasta selecionada, use a linha de comando ou o Nautilus. Atualize um menu existente com `obit init --context-menu --yes`.
 
 ## Ícones e menus
 

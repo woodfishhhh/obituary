@@ -5,7 +5,7 @@
 The agent and you decide what goes into Obituary (the default, `[proposals] mode = "off"`):
 
 - **The agent registers its own output.** It gives the debug scripts, logs and screenshots it writes a lifespan with `obit mark <path> 2d`, takes scratch space from `obit mktemp 1d`, and buries what it is unsure about with `obit bury`. The instructions `obit init` writes for the agent say so.
-- **You add from the context menu.** On Windows, right-click files or folders in Explorer (several at once is fine) → "Add to Obituary" → 1, 7 or 30 days, or "Bury now (recoverable)". See [Window, tray and context menu](./desktop).
+- **You add from the context menu.** In Explorer, Finder, Nautilus or Dolphin, right-click files or folders (several at once is fine) → "Add to Obituary" → 1, 7 or 30 days, or "Bury now (recoverable)". See [Window, tray and context menu](./desktop).
 - **Folder policies** give a folder such as Downloads a lifespan; see [Folder policies](./folder-policies).
 
 Whatever is in is buried when due and can be resurrected as it was from the graveyard for 7 days. Nothing else goes in by itself.

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/i18n"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -53,29 +54,34 @@ func NewCmdWithExecutable(executable cmdutil.Executable, agents ...string) *cobr
 }
 
 func newCmdWithAgents(executable cmdutil.Executable, agents []string) *cobra.Command {
-	var asJSON, verbose bool
+	var asJSON, verbose, open bool
 	cmd := &cobra.Command{
-		Use: "doctor", Short: "Check installation, integrations and data without changing anything", Args: cobra.NoArgs,
+		Use: "doctor", Short: "Check installation, integrations and data; the only thing it writes is its report", Args: cobra.NoArgs,
 		RunE: func(*cobra.Command, []string) error {
+			if asJSON && open {
+				return errors.New(cmdutil.Text("cli.doctor.open_with_json"))
+			}
 			lang := diagnostics{cmdutil.OutputLocalizer(asJSON), asJSON}
 			checks := lang.diagnose(time.Now(), executable, agents...)
-			if verbose {
-				for i := range checks {
-					if installer, ok := integrate.LookupAgent(checks[i].Name); ok {
-						checks[i].Capabilities = &installer.Capabilities
-					}
-				}
+			if verbose || !asJSON { // the report lists capabilities too
+				attachCapabilities(checks)
 			}
-			if asJSON {
+			switch {
+			case asJSON:
 				if err := cmdutil.PrintJSON(checks); err != nil {
 					return err
 				}
-			} else {
-				for _, c := range checks {
-					fmt.Printf("%-4s %-12s %s\n", cmdutil.Column(lang.Localizer, lang.Label(c.Status)), c.Name, c.Detail)
-					if c.Capabilities != nil {
-						fmt.Printf("  %s\n", initcmd.CapabilityText(*c.Capabilities))
-					}
+			case verbose && !open:
+				lang.writeVerbose(os.Stdout, checks)
+			default:
+				note := lang.publish(checks, executable)
+				if verbose {
+					lang.writeVerbose(os.Stdout, checks)
+				} else {
+					lang.writeSummary(os.Stdout, checks, note)
+				}
+				if open {
+					lang.openNote(note)
 				}
 			}
 			for _, c := range checks {
@@ -87,8 +93,59 @@ func newCmdWithAgents(executable cmdutil.Executable, agents []string) *cobra.Com
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print JSON")
-	cmd.Flags().BoolVar(&verbose, "verbose", false, "include agent capability details")
+	cmd.Flags().BoolVar(&verbose, "verbose", false, "print every check in full text, with agent capability details")
+	cmd.Flags().BoolVar(&open, "open", false, "open the full HTML report in your default browser")
 	return cmd
+}
+
+// attachCapabilities adds each agent's capability table to its check.
+func attachCapabilities(checks []DoctorCheck) {
+	for i := range checks {
+		if installer, ok := integrate.LookupAgent(checks[i].Name); ok {
+			checks[i].Capabilities = &installer.Capabilities
+		}
+	}
+}
+
+// writeVerbose prints every check, one per line: the output of earlier versions.
+func (lang diagnostics) writeVerbose(w io.Writer, checks []DoctorCheck) {
+	for _, c := range checks {
+		fmt.Fprintf(w, "%-4s %-12s %s\n", cmdutil.Column(lang.Localizer, lang.Label(c.Status)), c.Name, c.Detail)
+		if c.Capabilities != nil {
+			fmt.Fprintf(w, "  %s\n", initcmd.CapabilityText(*c.Capabilities))
+		}
+	}
+}
+
+// publish saves the HTML report. Failing to write it never fails the check.
+func (lang diagnostics) publish(checks []DoctorCheck, executable cmdutil.Executable) reportNote {
+	now := time.Now()
+	home, _ := userdirs.Data()
+	self, _ := executable.Path()
+	page, err := lang.renderReport(checks, now, home, self)
+	var path string
+	if err == nil {
+		path, err = saveReport(page, now)
+	}
+	var missing missingDataDirectory
+	switch {
+	case errors.As(err, &missing):
+		return reportNote{Reason: lang.Text("cli.doctor.report.no_data", nil)}
+	case err != nil:
+		return reportNote{Reason: err.Error()}
+	}
+	return reportNote{Path: path}
+}
+
+// openNote opens the report, or says why there is none to open.
+func (lang diagnostics) openNote(note reportNote) {
+	err := errors.New(note.Reason)
+	if note.Path != "" {
+		if err = openReport(note.Path); err == nil {
+			return
+		}
+	}
+	fmt.Fprintln(os.Stderr, lang.Text("cli.warning", map[string]any{"Text": err}))
 }
 
 //nolint:funlen // Retain the diagnostic flow while injecting executable discovery and the agent list.
@@ -213,8 +270,12 @@ func (lang diagnostics) diagnose(now time.Time, executable cmdutil.Executable, a
 		checks = append(checks, lang.diagnoseSlowGit(home, now))
 		checks = append(checks, lang.diagnoseIdentities(home))
 	}
-	_, err := config.Load()
-	check("config", lang.Text("cli.doctor.config_toml_is_valid_defaults_apply_when", nil), err)
+	cfg, err := config.Load()
+	detail := lang.Text("cli.doctor.config_toml_is_valid_defaults_apply_when", nil)
+	if err == nil && runtime.GOOS != "windows" {
+		detail += lang.Text("cli.doctor.watch_file_expiry_mode", map[string]any{"Mode": cfg.Watch.FileExpiry})
+	}
+	check("config", detail, err)
 	checks = append(checks, lang.diagnoseCodexWindowsShell(), lang.diagnoseDocker())
 	if available > 0 {
 		checks = append(checks, DoctorCheck{Name: "agents", Status: "INFO", Detail: fmt.Sprintf(lang.Text("cli.doctor.additional_agents", nil), available)})

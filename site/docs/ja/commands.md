@@ -81,7 +81,7 @@ obit daemon disable
 ## 状態の照会と診断
 
 ```powershell
-obit doctor              # read-only check (--json)
+obit doctor              # health check: short summary, full HTML report (--open, --verbose, --json)
 obit stats               # eulogy: how much was buried, space freed, resurrections (alias: eulogy)
 obit log                 # the full record of everything done
 obit config              # show the configuration; --create writes a commented default
@@ -353,7 +353,7 @@ Docker コンテナを 1 つ登録する。期限が切れると停止する
 
 ### `obit doctor`
 
-インストール、連携、データを確認する。何も変更しない
+インストール、連携、データを確認する。書き込むのは自分のレポートだけ
 
 使い方: `obit doctor [flags]`
 
@@ -361,7 +361,8 @@ Docker コンテナを 1 つ登録する。期限が切れると停止する
 | --- | --- | --- | --- |
 | `--help` | `-h` | `false` | doctor のヘルプ |
 | `--json` | なし | `false` | JSON を出力する |
-| `--verbose` | なし | `false` | エージェントの機能の詳細を含める |
+| `--open` | なし | `false` | 完全な HTML レポートを既定のブラウザーで開く |
+| `--verbose` | なし | `false` | 各チェックの詳細とエージェントの機能の詳細を、テキストですべて出力する |
 
 ### `obit extend`
 
@@ -768,19 +769,20 @@ stdin から zcode のフックイベントを 1 件処理する。エラー時�
 | パラメーター | 短縮 | 既定値 | 説明 |
 | --- | --- | --- | --- |
 | `--agent` | なし | `[claude]` | 連携するエージェント（繰り返し指定するか、カンマで区切る。既定は claude） |
-| `--context-menu` | なし | `false` | クラシックなエクスプローラーのコンテキストメニューをインストールする（既定で有効） |
+| `--context-menu` | なし | `false` | ファイルマネージャーのコンテキストメニューを追加する（既定で有効） |
 | `--dry-run` | なし | `false` | 変更内容の表示だけを行う |
 | `--format` | なし | `"text"` | --show の出力形式：text または markdown（エージェントの対応範囲） |
 | `--global` | `-g` | `false` | このプロジェクトだけでなく、ユーザー全体に適用する |
 | `--guard-rm` | なし | `false` | 対応する削除コマンドを拒否し、復元できる obit のコマンドを代わりに示す |
 | `--help` | `-h` | `false` | init のヘルプ |
 | `--mcp` | なし | `false` | Obituary の MCP stdio サーバーを登録する |
-| `--no-context-menu` | なし | `false` | エクスプローラーのコンテキストメニューをインストールしない |
+| `--no-context-menu` | なし | `false` | ファイルマネージャーのコンテキストメニューを変更しない |
 | `--no-shortcuts` | なし | `false` | スタートメニューとデスクトップのショートカットを作らない |
 | `--no-skill` | なし | `false` | Obituary の Agent Skill には手を加えない |
 | `--show` | なし | `false` | インストール済みの内容を表示する |
 | `--skill` | なし | `false` | Obituary の Agent Skill をインストールする（既定で有効） |
 | `--uninstall` | なし | `false` | Obituary が追加したものを削除する |
+| `--verbose` | なし | `false` | --show と併用：すべてのエージェントの機能の詳細を一覧する |
 | `--yes` | なし | `false` | 確認せずに適用する |
 
 例：
@@ -1037,6 +1039,8 @@ Obituary の連携とバックグラウンドサービスを削除する。既�
 | `--wait-pid` | なし | `0` | 更新の前に、このプロセスが終了するのを待つ（Windows） |
 
 ### `obit watch`
+
+個別に承認するには `[watch]` に `file_expiry = "propose"` を設定し、`obit proposals` で確認して `obit approve <ID>` で承認します。期限切れのサブフォルダーには引き続き提案が作成され、macOS と Linux では承認しても移動されません。
 
 フォルダー直下の各項目に、それぞれ寿命を設定する
 

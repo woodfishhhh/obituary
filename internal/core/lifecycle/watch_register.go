@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"slices"
+	"strings"
+	"time"
 
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 )
@@ -159,6 +161,11 @@ func (s *Service) refreshWatchItem(st *State, idx int, p WatchPolicy, c *candida
 	rev := it.Rev
 	if err := updateWatchTiming(it, p, snap, s.now()); err != nil {
 		return err
+	}
+	// Old POSIX sweeps could exhaust every retry while writer exclusion was unavailable.
+	if posixWatchFile(*it) && strings.HasPrefix(it.LastError, "excluding concurrent writers is unavailable;") {
+		it.Attempts, it.NextAttempt, it.LastError = 0, time.Time{}, ""
+		it.Rev++
 	}
 	if it.Rev == rev {
 		return errWatchUnchanged

@@ -6,7 +6,7 @@
 
 ## 支援 macOS 和 Linux 嗎？
 
-支援。macOS 和 Linux 都提供 x64／ARM64 命令列工具與背景程式，支援墓地、復活及自動下葬。macOS 用 launchd、Linux 用 systemd 使用者計時器檢查到期項目；agent hook 也會在需要時啟動檢查。詳見[快速開始](./index)。資源回收筒模式、小視窗、系統匣和右鍵選單只在 Windows 版提供。
+支援。macOS 和 Linux 都提供 x64／ARM64 命令列工具與背景程式，支援墓地、復活及自動下葬。macOS 用 launchd、Linux 用 systemd 使用者計時器檢查到期項目；agent hook 也會在需要時啟動檢查。詳見[快速開始](./index)。 Windows 和 Linux 可將 `graveyard.mode` 設為 `recycle`。請從系統資源回收筒還原，不能用 `obit resurrect`。macOS 僅支援墓地。
 
 ## 下載時 Windows 說「已保護你的電腦」？
 

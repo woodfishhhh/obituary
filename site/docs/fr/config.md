@@ -12,6 +12,7 @@ Le répertoire de configuration est `%APPDATA%\obituary` sous Windows, `~/Librar
 | `hooks.session_cleanup` | `true` | `true`, `false` |
 | `hooks.session_summary` | `false` | `true`, `false` |
 | `watch.stable_window` | `10m` | une durée positive, comme `30s`, `10m`, `1h30m` |
+| `watch.file_expiry` (macOS/Linux) | `quiet` | `quiet`, `propose` |
 | `explorer.enabled` | `true` | `true`, `false` |
 | `explorer.everywhere` | `false` | `true`, `false` |
 | `explorer.in_git` | `false` | `true`, `false` |
@@ -27,7 +28,7 @@ Le répertoire de configuration est `%APPDATA%\obituary` sous Windows, `~/Librar
 
 Par défaut, un élément dont la durée de vie est écoulée entre dans le cimetière d’Obituary. Pendant `graveyard.retention_days` jours (7 si vous ne changez rien), vous pouvez le remettre à sa place avec `obit resurrect` ; c’est seulement après ce délai qu’il est supprimé définitivement. Ce nombre peut aller de 1 à 3650.
 
-Avec `graveyard.mode` à `recycle`, ce qui expire part dans la Corbeille du système, que Windows gère ensuite. Cette option n’existe que sous Windows ; macOS et Linux n’ont que le cimetière. Ce qui est dans la Corbeille se restaure depuis la Corbeille, et `obit resurrect` ne le trouvera pas.
+Sous Windows et Linux, `graveyard.mode = "recycle"` utilise la Corbeille du système. Restaurez les fichiers depuis celle-ci, et non avec `obit resurrect`. Sous macOS, seul le cimetière est disponible.
 
 ## Enregistrement automatique et sessions d’agent
 
@@ -39,7 +40,9 @@ Avec `graveyard.mode` à `recycle`, ce qui expire part dans la Corbeille du syst
 
 `watch.stable_window` est la patience d’une règle de dossier : un nouveau fichier doit rester inchangé pendant cette durée avant d’être déplacé, afin qu’un fichier encore en cours de téléchargement ne soit pas emporté. Elle utilise le format de durée de Go, un nombre suivi de `s`, `m` ou `h`, que l’on peut enchaîner comme dans `1h30m`, et elle doit être supérieure à zéro.
 
-Les réglages `explorer.*` ne comptent que sous Windows. Obituary fait afficher à l’Explorateur la date d’enterrement à côté du nom du fichier, sans changer le nom réel. Par défaut, cela se produit dans Téléchargements, sur le Bureau (sous-dossiers compris) et dans les emplacements gérés par une règle de dossier. Avec `explorer.everywhere` activé, les autres emplacements suivis l’affichent aussi ; les espaces de travail Git sont exclus, sauf si vous mettez `explorer.in_git` à `true` ; et `explorer.enabled = false` le désactive complètement. Voir [Règles de dossier](./folder-policies).
+Le mode automatique doit pouvoir examiner tous les processus du propriétaire du fichier. Il ne peut ignorer les processus inaccessibles d’autres utilisateurs, y compris root, que si le fichier vous appartient et que ni le groupe ni les autres ne peuvent y écrire. Choisissez `propose` pour examiner chaque fichier. L’approbation accepte les lacunes de la liste des processus. Un fichier ouvert reste en place et le motif est affiché.
+
+Les réglages `explorer.*` contrôlent la date dans le nom affiché par l’Explorateur Windows et les étiquettes de date dans Finder et Dolphin. Le nom réel ne change pas. Par défaut, cela se produit dans Téléchargements, sur le Bureau (sous-dossiers compris) et dans les emplacements gérés par une règle de dossier. Avec `explorer.everywhere` activé, les autres emplacements suivis l’affichent aussi ; les espaces de travail Git sont exclus, sauf si vous mettez `explorer.in_git` à `true` ; et `explorer.enabled = false` le désactive complètement. Voir [Règles de dossier](./folder-policies).
 
 ## Interface
 

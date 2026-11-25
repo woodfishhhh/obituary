@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -37,8 +38,10 @@ func TestPOSIXMovesNeverReplace(t *testing.T) {
 	if err := fs.MovePinned(source, id, target); !errors.Is(err, os.ErrExist) {
 		t.Fatalf("no-replace move: %v", err)
 	}
-	if err := fs.Recycle(source, id); !errors.Is(err, corefs.ErrUnsupported) {
-		t.Fatal(err)
+	if runtime.GOOS == "darwin" {
+		if err := fs.Recycle(source, id); !errors.Is(err, corefs.ErrUnsupported) {
+			t.Fatal(err)
+		}
 	}
 	if _, err := fs.MovePinnedInto(source, id, parent, "target"); !errors.Is(err, os.ErrExist) {
 		t.Fatalf("no-replace restoration: %v", err)

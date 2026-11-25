@@ -54,3 +54,5 @@ Queries such as `list`, `graveyard`, `stats` and `log` are read-only and never b
 Data lives in `%LOCALAPPDATA%\obituary`: `store.json` (ledger), `audit.jsonl` (audit log), `obitd.log` (daemon log), `graveyard\` (this drive's graveyard).
 
 `OBIT_HOME` (data), `OBIT_CONFIG_DIR` (configuration) and `OBIT_USER_HOME` (user home) move these locations.
+
+Opening the window again brings the window for the same data directory to the front. A different `OBIT_HOME` opens a separate window. Non-default directories are shown in the window title.

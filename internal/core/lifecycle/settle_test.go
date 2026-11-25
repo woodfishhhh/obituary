@@ -27,14 +27,11 @@ func TestWatchExpiryAlwaysUsesRestorableGraveyard(t *testing.T) {
 		t.Fatal(err)
 	}
 	f.svc.Mode = core.ModeRecycle
-	out := f.sweepAt(2 * time.Hour)
 	if runtime.GOOS != "windows" {
-		requireRetainedRetry(t, f, out)
-		if read(t, path) != "downloads/file" || len(f.fs.recycled) != 0 || !strings.Contains(out[0].Detail, "excluding concurrent writers") {
-			t.Fatalf("unsupported watch exclusion moved the source: %+v", out)
-		}
-		return
+		f.svc.FS = watchFileProbeFS{f.svc.FS, func(core.Identity) error { return nil }}
+		requireRetainedRetry(t, f, f.sweepAt(time.Hour))
 	}
+	out := f.sweepAt(2 * time.Hour)
 	if len(out) != 1 || out[0].Action != core.ActionBuried || out[0].Burial == nil || !exists(out[0].Grave) {
 		t.Fatalf("folder policy must use restorable burial: %+v", out)
 	}

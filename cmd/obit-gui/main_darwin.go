@@ -2,10 +2,16 @@
 
 package main
 
+// #include <fcntl.h>
+// #include <sys/param.h>
+// static int windowPathForFD(int fd, char *buf) { return fcntl(fd, F_GETPATH, buf); }
+import "C"
+
 import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"sync"
 
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -19,7 +25,21 @@ import (
 	"github.com/woodfishhhh/obituary/internal/userdirs"
 )
 
-func windowOptions(api *gui.API, width, height int) *options.App {
+// EvalSymlinks alone preserves user-supplied case on a case-insensitive APFS volume.
+func windowPath(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	var buf [C.MAXPATHLEN]C.char
+	if rc, err := C.windowPathForFD(C.int(f.Fd()), &buf[0]); rc < 0 {
+		return "", err
+	}
+	return C.GoString(&buf[0]), nil
+}
+
+func platformOptions(api *gui.API, width, height int) *options.App {
 	var mu sync.Mutex
 	var window context.Context
 	gui.SetFolderPicker(api, func() (string, error) {
@@ -52,7 +72,6 @@ func windowOptions(api *gui.API, width, height int) *options.App {
 			app.ObserveUsage()
 		},
 		SingleInstanceLock: &options.SingleInstanceLock{
-			UniqueId: "c36c42b1-df66-43e4-b909-obituary-gui",
 			OnSecondInstanceLaunch: func(options.SecondInstanceData) {
 				mu.Lock()
 				defer mu.Unlock()

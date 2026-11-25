@@ -75,7 +75,8 @@ type Service struct {
 	// Retention is how long burials stay restorable (DefaultRetention if 0).
 	Retention time.Duration
 	// WatchStableWindow is the quiet interval for folder policies (10m if zero).
-	WatchStableWindow time.Duration
+	WatchStableWindow  time.Duration
+	WatchFileProposals bool // POSIX regular files require individual approval
 	// SessionSummary lists expiring items and recent burials at session start
 	// ([hooks] session_summary); off by default to save agents' tokens.
 	SessionSummary bool

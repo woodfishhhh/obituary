@@ -81,7 +81,7 @@ Bei aktiver Desktop-Überwachung verarbeitet der Tray-Prozess fällige Einträge
 ## Abfragen und Prüfungen
 
 ```powershell
-obit doctor              # read-only check (--json)
+obit doctor              # health check: short summary, full HTML report (--open, --verbose, --json)
 obit stats               # eulogy: how much was buried, space freed, resurrections (alias: eulogy)
 obit log                 # the full record of everything done
 obit config              # show the configuration; --create writes a commented default
@@ -362,7 +362,7 @@ Verwendung: `obit docker list [flags]`
 
 ### `obit doctor`
 
-Installation, Integrationen und Daten prüfen, ohne etwas zu ändern
+Installation, Integrationen und Daten prüfen; geschrieben wird nur der eigene Bericht
 
 Verwendung: `obit doctor [flags]`
 
@@ -370,7 +370,8 @@ Verwendung: `obit doctor [flags]`
 | --- | --- | --- | --- |
 | `--help` | `-h` | `false` | Hilfe zu doctor |
 | `--json` | keiner | `false` | JSON ausgeben |
-| `--verbose` | keiner | `false` | Details zu den Fähigkeiten der Agenten einbeziehen |
+| `--open` | keiner | `false` | Den vollständigen HTML-Bericht im Standardbrowser öffnen |
+| `--verbose` | keiner | `false` | Alle Prüfungen als vollständigen Text ausgeben, mit Details zu den Fähigkeiten der Agenten |
 
 ### `obit extend`
 
@@ -777,19 +778,20 @@ Verwendung: `obit init [flags]`
 | Parameter | Kurz | Standardwert | Beschreibung |
 | --- | --- | --- | --- |
 | `--agent` | keiner | `[claude]` | Agenten, die eingebunden werden (Option wiederholen oder mit Komma trennen; Standard: claude) |
-| `--context-menu` | keiner | `false` | Klassische Explorer-Kontextmenüs installieren (standardmäßig aktiviert) |
+| `--context-menu` | keiner | `false` | Kontextmenüs im Dateimanager installieren (standardmäßig aktiviert) |
 | `--dry-run` | keiner | `false` | Nur die Änderungen ausgeben |
 | `--format` | keiner | `"text"` | Ausgabeformat für --show: text oder markdown (Agentenabdeckung) |
 | `--global` | `-g` | `false` | Für den ganzen Benutzer statt nur für dieses Projekt |
 | `--guard-rm` | keiner | `false` | Unterstützte Löschbefehle verweigern und wiederherstellbare obit-Alternativen vorschlagen |
 | `--help` | `-h` | `false` | Hilfe zu init |
 | `--mcp` | keiner | `false` | Den MCP-stdio-Server von Obituary registrieren |
-| `--no-context-menu` | keiner | `false` | Explorer-Kontextmenüs überspringen |
+| `--no-context-menu` | keiner | `false` | Kontextmenüs des Dateimanagers überspringen |
 | `--no-shortcuts` | keiner | `false` | Startmenü- und Desktopverknüpfungen überspringen |
 | `--no-skill` | keiner | `false` | Den Obituary-Agent-Skill unverändert lassen |
 | `--show` | keiner | `false` | Anzeigen, was installiert ist |
 | `--skill` | keiner | `false` | Den Obituary-Agent-Skill installieren (standardmäßig aktiviert) |
 | `--uninstall` | keiner | `false` | Entfernen, was Obituary hinzugefügt hat |
+| `--verbose` | keiner | `false` | Mit --show: die Fähigkeiten jedes Agenten im Detail auflisten |
 | `--yes` | keiner | `false` | Ohne Nachfrage anwenden |
 
 Beispiele:
@@ -1046,6 +1048,8 @@ Verwendung: `obit update [flags]`
 | `--wait-pid` | keiner | `0` | Vor dem Update warten, bis dieser Prozess beendet ist (Windows) |
 
 ### `obit watch`
+
+Zur Einzelbestätigung unter `[watch]` die Einstellung `file_expiry = "propose"` setzen. Mit `obit proposals` prüfen und mit `obit approve <ID>` bestätigen. Abgelaufene Unterordner erzeugen weiterhin Vorschläge und bleiben unter macOS und Linux auch nach Bestätigung am alten Ort.
 
 Jedem Element auf oberster Ebene eines Ordners eine eigene Lebensdauer geben
 

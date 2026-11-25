@@ -12,6 +12,7 @@ Das Konfigurationsverzeichnis ist unter Windows `%APPDATA%\obituary`, unter macO
 | `hooks.session_cleanup` | `true` | `true`, `false` |
 | `hooks.session_summary` | `false` | `true`, `false` |
 | `watch.stable_window` | `10m` | eine positive Dauer, etwa `30s`, `10m`, `1h30m` |
+| `watch.file_expiry` (macOS/Linux) | `quiet` | `quiet`, `propose` |
 | `explorer.enabled` | `true` | `true`, `false` |
 | `explorer.everywhere` | `false` | `true`, `false` |
 | `explorer.in_git` | `false` | `true`, `false` |
@@ -27,7 +28,7 @@ Das Konfigurationsverzeichnis ist unter Windows `%APPDATA%\obituary`, unter macO
 
 Standardmäßig landet etwas, dessen Lebensdauer abgelaufen ist, auf dem Friedhof von Obituary. `graveyard.retention_days` Tage lang (7, wenn du nichts änderst) kannst du es mit `obit resurrect` an seinen Platz zurückholen; erst danach wird es endgültig gelöscht. Die Zahl kann zwischen 1 und 3650 liegen.
 
-Setzt du `graveyard.mode` auf `recycle`, wandert Abgelaufenes stattdessen in den Papierkorb des Systems, um den sich dann Windows kümmert. Das gibt es nur unter Windows; macOS und Linux kennen nur den Friedhof. Was im Papierkorb liegt, stellst du aus dem Papierkorb wieder her, und `obit resurrect` findet es nicht.
+Unter Windows und Linux aktiviert `graveyard.mode = "recycle"` den Systempapierkorb. Stelle die Dateien dort wieder her, nicht mit `obit resurrect`. Unter macOS gibt es nur den Friedhof.
 
 ## Automatische Registrierung und Agentensitzungen
 
@@ -39,7 +40,9 @@ Setzt du `graveyard.mode` auf `recycle`, wandert Abgelaufenes stattdessen in den
 
 `watch.stable_window` ist die Geduld einer Ordnerrichtlinie: Eine neue Datei muss so lange unverändert bleiben, bevor sie verschoben wird, damit nichts mitgenommen wird, was noch heruntergeladen wird. Es gilt das Zeitformat von Go, eine Zahl gefolgt von `s`, `m` oder `h`, die sich wie in `1h30m` aneinanderreihen lassen, und der Wert muss größer als null sein.
 
-Die Einstellungen `explorer.*` sind nur unter Windows von Belang. Obituary lässt den Explorer neben dem Dateinamen das Begräbnisdatum anzeigen, während der eigentliche Name unverändert bleibt. Standardmäßig geschieht das in Downloads, auf dem Desktop (einschließlich Unterordnern) und an Orten, die eine Ordnerrichtlinie verwaltet. Mit `explorer.everywhere` zeigen es auch andere verfolgte Orte an; Git-Arbeitsbereiche bleiben ausgenommen, solange du `explorer.in_git` nicht auf `true` setzt; und `explorer.enabled = false` schaltet es ganz ab. Siehe [Ordnerrichtlinien](./folder-policies).
+Im automatischen Modus müssen alle Prozesse des Dateieigentümers prüfbar sein. Unlesbare Prozesse anderer Benutzer einschließlich root werden nur bei eigenen Dateien ohne Schreibrecht für Gruppe oder andere ignoriert. Mit `propose` prüfen Sie jede Datei einzeln. Die Freigabe akzeptiert Lücken in der Prozessliste. Eine nachweislich geöffnete Datei bleibt mit Begründung liegen.
+
+Die Einstellungen `explorer.*` steuern die Datumsanzeige im Windows-Explorer und die Datums-Tags in Finder und Dolphin. Der eigentliche Dateiname bleibt unverändert. Standardmäßig geschieht das in Downloads, auf dem Desktop (einschließlich Unterordnern) und an Orten, die eine Ordnerrichtlinie verwaltet. Mit `explorer.everywhere` zeigen es auch andere verfolgte Orte an; Git-Arbeitsbereiche bleiben ausgenommen, solange du `explorer.in_git` nicht auf `true` setzt; und `explorer.enabled = false` schaltet es ganz ab. Siehe [Ordnerrichtlinien](./folder-policies).
 
 ## Oberfläche
 

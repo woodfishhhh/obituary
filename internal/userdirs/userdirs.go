@@ -19,28 +19,52 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 )
 
 const dirName = "obituary"
 
+// DesktopDirectoryEnv binds a GUI launcher to any directories explicitly selected at installation.
+// Finder services and file managers need not inherit the installing shell environment.
+func DesktopDirectoryEnv() ([]string, error) {
+	var env []string
+	for _, k := range []string{"OBIT_HOME", "OBIT_CONFIG_DIR", "OBIT_USER_HOME"} {
+		if value := os.Getenv(k); value != "" {
+			if strings.ContainsAny(value, "\r\n") {
+				return nil, errors.New(k + " cannot contain a newline in a desktop action")
+			}
+			absolute, err := directoryAbs(value)
+			if err != nil {
+				return nil, err
+			}
+			env = append(env, k+"="+absolute)
+		}
+	}
+	return env, nil
+}
+
 // Data is where Obituary keeps its state: %LOCALAPPDATA%\obituary,
 // ~/Library/Application Support/obituary or $XDG_DATA_HOME/obituary.
 func Data() (string, error) {
-	dir := os.Getenv("OBIT_HOME")
-	if dir == "" {
-		base, err := dataBase()
-		if err != nil {
-			return "", err
-		}
-		base, err = directoryAbs(base)
-		if err != nil {
-			return "", err
-		}
-		dir = filepath.Join(base, dirName)
+	if dir := os.Getenv("OBIT_HOME"); dir != "" {
+		return directoryAbs(dir)
 	}
-	return directoryAbs(dir)
+	return DefaultData()
+}
+
+// DefaultData resolves the platform default independently of OBIT_HOME.
+func DefaultData() (string, error) {
+	base, err := dataBase()
+	if err != nil {
+		return "", err
+	}
+	base, err = directoryAbs(base)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(base, dirName), nil
 }
 
 // RegistryLocks is per user even when installers select different ledgers.

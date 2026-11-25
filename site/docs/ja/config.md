@@ -12,6 +12,7 @@ Obituary の設定は、設定ディレクトリにある `config.toml` に書�
 | `hooks.session_cleanup` | `true` | `true`、`false` |
 | `hooks.session_summary` | `false` | `true`、`false` |
 | `watch.stable_window` | `10m` | 正の時間。例: `30s`、`10m`、`1h30m` |
+| `watch.file_expiry` (macOS/Linux) | `quiet` | `quiet`, `propose` |
 | `explorer.enabled` | `true` | `true`、`false` |
 | `explorer.everywhere` | `false` | `true`、`false` |
 | `explorer.in_git` | `false` | `true`、`false` |
@@ -27,7 +28,7 @@ Obituary の設定は、設定ディレクトリにある `config.toml` に書�
 
 既定では、寿命が尽きたものは Obituary 自身の墓地に入ります。`graveyard.retention_days` 日の間（既定は 7 日）は `obit resurrect` で元の場所に戻せて、それを過ぎてはじめて完全に削除されます。日数は 1 から 3650 の範囲で変えられます。
 
-`graveyard.mode` を `recycle` にすると、期限が切れたものはシステムのごみ箱に渡され、Windows が管理します。この設定があるのは Windows だけで、macOS と Linux には墓地しかありません。ごみ箱に入ったものはごみ箱から元に戻します。`obit resurrect` では見つかりません。
+Windows と Linux では `graveyard.mode = "recycle"` でシステムのごみ箱を使えます。復元には `obit resurrect` ではなく、ごみ箱の復元機能を使います。macOS では墓地のみ対応しています。
 
 ## 自動登録とエージェントのセッション
 
@@ -39,7 +40,9 @@ Obituary の設定は、設定ディレクトリにある `config.toml` に書�
 
 `watch.stable_window` は、フォルダーポリシーの待ち時間です。新しいファイルが現れてから、これだけの間変化がなかった場合にはじめて移動されるので、ダウンロード中のファイルが持ち去られることはありません。Go の時間の書式を使い、数字のあとに `s`、`m`、`h` を付けます。`1h30m` のようにつなげて書くこともでき、0 より大きくなければなりません。
 
-`explorer.*` は Windows でのみ意味があります。Obituary は、エクスプローラーでファイル名の横に埋葬日を表示させますが、実際のファイル名は変わりません。既定では、ダウンロード、デスクトップ（サブフォルダーを含む）、フォルダーポリシーが管理する場所だけに表示されます。`explorer.everywhere` を有効にすると、追跡中のほかの場所にも表示されます。Git ワークスペースは既定では表示されず、表示したい場合は `explorer.in_git` を `true` にします。`explorer.enabled` を `false` にすると、まったく書き込まなくなります。[フォルダーポリシー](./folder-policies)を参照してください。
+自動モードでは、ファイル所有者の全プロセスを確認できる必要があります。自分のファイルで、グループとその他のユーザーに書き込み権限がない場合に限り、root を含む他のユーザーの読み取れないプロセスを除外します。一件ずつ判断するには `propose` を選びます。承認時はプロセス情報の不足を許容しますが、開いていることが確認できたファイルは元の場所に残り、理由が表示されます。
+
+`explorer.*` は Windows のエクスプローラーの表示名と、Finder や Dolphin の日付タグに適用されます。実際のファイル名は変わりません。既定では、ダウンロード、デスクトップ（サブフォルダーを含む）、フォルダーポリシーが管理する場所だけに表示されます。`explorer.everywhere` を有効にすると、追跡中のほかの場所にも表示されます。Git ワークスペースは既定では表示されず、表示したい場合は `explorer.in_git` を `true` にします。`explorer.enabled` を `false` にすると、まったく書き込まなくなります。[フォルダーポリシー](./folder-policies)を参照してください。
 
 ## インターフェース
 

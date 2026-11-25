@@ -19,7 +19,7 @@ type WatchBurialReview struct {
 }
 
 func AwaitingWatchBurial(st *State, it Item) bool {
-	if it.Source != "watch" || !it.IsDir {
+	if it.Source != "watch" {
 		return false
 	}
 	return slices.ContainsFunc(st.Proposals, func(p Proposal) bool {

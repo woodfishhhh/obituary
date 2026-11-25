@@ -81,7 +81,7 @@ Com a supervisão de desktop ativa, a bandeja trata os vencimentos e uma tarefa 
 ## Consultas e verificações
 
 ```powershell
-obit doctor              # read-only check (--json)
+obit doctor              # health check: short summary, full HTML report (--open, --verbose, --json)
 obit stats               # eulogy: how much was buried, space freed, resurrections (alias: eulogy)
 obit log                 # the full record of everything done
 obit config              # show the configuration; --create writes a commented default
@@ -362,7 +362,7 @@ Uso: `obit docker list [flags]`
 
 ### `obit doctor`
 
-Verificar a instalação, as integrações e os dados sem alterar nada
+Verificar a instalação, as integrações e os dados; a única coisa que grava é o próprio relatório
 
 Uso: `obit doctor [flags]`
 
@@ -370,7 +370,8 @@ Uso: `obit doctor [flags]`
 | --- | --- | --- | --- |
 | `--help` | `-h` | `false` | Ajuda de doctor |
 | `--json` | nenhum | `false` | Exibir JSON |
-| `--verbose` | nenhum | `false` | Incluir detalhes dos recursos dos agentes |
+| `--open` | nenhum | `false` | Abrir o relatório HTML completo no navegador padrão |
+| `--verbose` | nenhum | `false` | Imprimir todas as verificações em texto completo, com os detalhes dos recursos dos agentes |
 
 ### `obit extend`
 
@@ -777,19 +778,20 @@ Uso: `obit init [flags]`
 | Parâmetro | Curto | Padrão | Descrição |
 | --- | --- | --- | --- |
 | `--agent` | nenhum | `[claude]` | Agentes a integrar (repetir a opção ou separar por vírgulas; padrão: claude) |
-| `--context-menu` | nenhum | `false` | Instalar os menus de contexto clássicos do Explorador de Arquivos (ativado por padrão) |
+| `--context-menu` | nenhum | `false` | Instalar os menus de contexto do gerenciador de arquivos (ativado por padrão) |
 | `--dry-run` | nenhum | `false` | Apenas exibir as alterações |
 | `--format` | nenhum | `"text"` | Formato de saída de --show: text ou markdown (cobertura dos agentes) |
 | `--global` | `-g` | `false` | Para todo o usuário, em vez de só este projeto |
 | `--guard-rm` | nenhum | `false` | Negar os comandos de exclusão compatíveis e sugerir alternativas do obit que podem ser restauradas |
 | `--help` | `-h` | `false` | Ajuda de init |
 | `--mcp` | nenhum | `false` | Registrar o servidor MCP stdio do Obituary |
-| `--no-context-menu` | nenhum | `false` | Pular os menus de contexto do Explorador de Arquivos |
+| `--no-context-menu` | nenhum | `false` | Pular os menus de contexto do gerenciador de arquivos |
 | `--no-shortcuts` | nenhum | `false` | Pular os atalhos do menu Iniciar e da área de trabalho |
 | `--no-skill` | nenhum | `false` | Deixar o Agent Skill do Obituary inalterado |
 | `--show` | nenhum | `false` | Exibir o que está instalado |
 | `--skill` | nenhum | `false` | Instalar o Agent Skill do Obituary (ativado por padrão) |
 | `--uninstall` | nenhum | `false` | Remover o que o Obituary adicionou |
+| `--verbose` | nenhum | `false` | Com --show: listar os detalhes dos recursos de cada agente |
 | `--yes` | nenhum | `false` | Aplicar sem perguntar |
 
 Exemplos:
@@ -1046,6 +1048,8 @@ Uso: `obit update [flags]`
 | `--wait-pid` | nenhum | `0` | Esperar este processo terminar antes de atualizar (Windows) |
 
 ### `obit watch`
+
+Para aprovar cada arquivo, defina `file_expiry = "propose"` em `[watch]`. Consulte `obit proposals` e aprove com `obit approve <ID>`. Subpastas vencidas continuam gerando propostas e permanecem no local mesmo após aprovação no macOS e no Linux.
 
 Dar a cada item de nível superior de uma pasta a sua própria vida útil
 

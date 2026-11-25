@@ -18,7 +18,14 @@ func (s *Service) WatchStatus(it Item, now time.Time) *WatchStatus {
 		return nil
 	}
 	window := s.watchStableWindow()
-	stableAt := it.Watch.StableSince.Add(window)
+	start := it.Watch.StableSince
+	if posixWatchFile(it) {
+		window = max(WatchStableWindow, window)
+		if start.Before(it.ExpiresAt) {
+			start = it.ExpiresAt
+		}
+	}
+	stableAt := start.Add(window)
 	next := it.ExpiresAt
 	if it.NextAttempt.After(next) {
 		next = it.NextAttempt

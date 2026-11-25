@@ -8,6 +8,18 @@ obit watch --list                           # folder policies, their exemptions 
 obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans it registered
 ```
 
+macOS와 Linux에서도 정책을 승인하면 폴더 바로 아래의 항목마다 별도로 수명이 정해지며, 기본적으로 처음 발견한 시점부터 계산합니다. 정책 폴더 자체는 보호되고 만료된 하위 폴더는 제안만 생성합니다. 다운로드 임시 파일은 건너뜁니다.
+
+일반 파일은 만료된 뒤 기본적으로 10분 더 기다립니다. 크기나 수정 시간이 바뀌거나 파일이 열려 있으면 파일을 그대로 두고 시간을 다시 잽니다. Windows에서는 이동하는 동안 쓰기를 차단합니다. macOS와 Linux에서는 확인 후 이름을 바꾸기 전에 다른 프로세스가 파일을 열 수 있습니다.
+
+자동 모드는 파일 소유자의 모든 프로세스를 확인할 수 있어야 합니다. 현재 사용자가 소유하고 그룹과 기타 사용자에게 쓰기 권한이 없는 파일에만 root를 포함한 다른 사용자의 읽을 수 없는 프로세스를 무시합니다. 파일별로 검토하려면 `propose`를 선택하세요. 승인하면 일부 프로세스 정보가 없어도 진행하지만 열린 파일이 확인되면 그대로 두고 이유를 표시합니다.
+
+개별 승인이 필요하면 `[watch]`에 `file_expiry = "propose"`를 설정하고 `obit proposals`로 검토한 뒤 `obit approve <ID>`로 승인하세요. 만료된 하위 폴더는 계속 제안만 생성하며 macOS와 Linux에서는 승인해도 그대로 남습니다.
+
+```sh
+obit watch "$HOME/Downloads" 2w
+```
+
 ## 적용 조건
 
 - **정책은 승인을 받아야 합니다.** `obit watch`는 제안을 만듭니다. `obit approve`를 실행하거나 작은 창의 ‘For you’ 페이지에서 승인하면 정책이 적용됩니다.
@@ -22,3 +34,5 @@ obit watch --remove C:\Users\you\Downloads  # remove a policy and the lifespans 
 - 날짜 정보는 폴더의 숨김 파일 `desktop.ini`에서 가져옵니다.
 - `config.toml`의 `[explorer]` 섹션에서 `enabled = false`로 날짜 표시를 끄거나 `everywhere = true`로 모든 위치에서 표시할 수 있습니다.
 - 파일 탐색기는 폴더 보기를 캐시하므로 수명을 늘린 뒤 같은 창에 최대 1분 동안 이전 날짜가 남을 수 있습니다.
+
+Finder와 Dolphin은 파일 이름을 바꾸지 않고 매장 날짜를 태그로 표시합니다. 수명을 연장하면 날짜도 바뀌며, 추적을 해제하거나 프로그램을 제거하면 Obituary가 추가한 태그만 지웁니다. Nautilus에서는 `obit list` 명령으로 확인하세요.

@@ -81,7 +81,7 @@ obit daemon disable
 ## 查询与体检
 
 ```powershell
-obit doctor              # 只读体检（支持 --json）
+obit doctor              # 体检：一行一个方面，完整报告存成 HTML（--open 打开，--verbose 看全文，--json）
 obit stats               # 悼词：埋了多少、腾出多少空间、复活过几次（同 eulogy）
 obit log                 # 生平记录：做过的所有事
 obit config              # 查看配置；--create 生成带注释的默认配置
@@ -362,7 +362,7 @@ obit add report.zip --at "2026-12-01 18:00"
 
 ### `obit doctor`
 
-检查安装、集成和数据，不做任何改动
+检查安装、集成和数据，只会写下自己的报告
 
 用法: `obit doctor [flags]`
 
@@ -370,7 +370,8 @@ obit add report.zip --at "2026-12-01 18:00"
 | --- | --- | --- | --- |
 | `--help` | `-h` | `false` | doctor 的帮助 |
 | `--json` | 无 | `false` | 输出 JSON |
-| `--verbose` | 无 | `false` | 包含 agent 的能力详情 |
+| `--open` | 无 | `false` | 用默认浏览器打开完整的 HTML 报告 |
+| `--verbose` | 无 | `false` | 在终端打印完整文字版：每项检查的详情和 agent 的能力详情 |
 
 ### `obit extend`
 
@@ -777,19 +778,20 @@ agent hook 的入口（由 agent 调用，不是给人用的）
 | 参数 | 简写 | 默认值 | 说明 |
 | --- | --- | --- | --- |
 | `--agent` | 无 | `[claude]` | 要接入的 agent（可重复指定，也可用逗号分隔；默认 claude） |
-| `--context-menu` | 无 | `false` | 安装经典的资源管理器右键菜单（默认启用） |
+| `--context-menu` | 无 | `false` | 安装文件管理器右键菜单（默认启用） |
 | `--dry-run` | 无 | `false` | 只打印改动 |
 | `--format` | 无 | `"text"` | --show 的输出格式：text 或 markdown（agent 支持范围） |
 | `--global` | `-g` | `false` | 对当前用户生效，而不是只对这个项目生效 |
 | `--guard-rm` | 无 | `false` | 拒绝受支持的删除命令，并给出可以复活的 obit 替代命令 |
 | `--help` | `-h` | `false` | init 的帮助 |
 | `--mcp` | 无 | `false` | 注册讣告的 MCP stdio 服务 |
-| `--no-context-menu` | 无 | `false` | 不安装资源管理器右键菜单 |
+| `--no-context-menu` | 无 | `false` | 跳过文件管理器右键菜单 |
 | `--no-shortcuts` | 无 | `false` | 不创建开始菜单和桌面快捷方式 |
 | `--no-skill` | 无 | `false` | 不改动讣告的 Agent Skill |
 | `--show` | 无 | `false` | 显示已安装的内容 |
 | `--skill` | 无 | `false` | 安装讣告的 Agent Skill（默认启用） |
 | `--uninstall` | 无 | `false` | 移除讣告添加的内容 |
+| `--verbose` | 无 | `false` | 与 --show 一起用：列出每个 agent 的能力详情 |
 | `--yes` | 无 | `false` | 不询问，直接执行 |
 
 示例：
@@ -1046,6 +1048,8 @@ obit mktemp 2h --name screenshots
 | `--wait-pid` | 无 | `0` | 等待该进程退出后再更新（Windows） |
 
 ### `obit watch`
+
+如需逐项批准，在配置文件的 `[watch]` 中设 `file_expiry = "propose"`。用 `obit proposals` 查看，再用 `obit approve <ID>` 批准。子目录仍只生成提议，在 macOS 和 Linux 上即使批准也会保留。
 
 给文件夹里的每个第一层子项各自设定寿命
 

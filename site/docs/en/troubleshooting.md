@@ -1,6 +1,6 @@
 # Troubleshooting
 
-When something goes wrong, start with `obit doctor`. It only reads and never writes. It checks the installation, the agent integrations, the background schedule and your data, and every line begins with `PASS`, `INFO`, `WARN` or `FAIL`, followed by the reason and what to do; with any `FAIL` the command exits with a non-zero code. Add `--json` to pass the result to someone else, or `--verbose` to see exactly which capabilities each agent has.
+When something goes wrong, start with `obit doctor`. It prints a short summary: the first line says whether everything is fine or how many problems it found, and below it each area (installation, background runner, agents, right-click menu, data, hooks and so on) gets one line marked `PASS`, `WARN` or `FAIL`. Under an area that needs attention it gives the reason and a fix you can copy as it is. Every run also saves the full report as a self-contained HTML file in the `reports` folder of the data directory (it stays on your computer and is buried after 1 day); the last lines say where it is. `obit doctor --open` opens it in your browser, and `obit doctor --verbose` prints the full text in the terminal: one line per check beginning with `PASS`, `INFO`, `WARN` or `FAIL`, followed by the reason and what to do, plus what each agent can do. With any `FAIL` the command exits with a non-zero code. Add `--json` to pass the result to someone else (its format has not changed). The lines quoted further down this page, such as `path` or `obitd`, are the individual checks that `--verbose` and the report show.
 
 Each entry below follows the same order: what you see, why, what to do, and how to tell it is fixed.
 
@@ -126,3 +126,7 @@ Docker events are checked before and after removal. If deletion cannot be confir
 ## An update fails, or downloads from mainland China are slow
 
 `obit update --check` reports an error, or the install script is slow or fails; most likely this computer cannot reach GitHub. When GitHub is slow to answer, `obit update --check` and the install script switch to the mainland China mirror on their own. To use the mirror from the start, run `bash install.sh --mirror cn` on macOS and Linux, or `.\install.ps1 -Mirror cn` on Windows. If you download by hand, take the archive and `checksums.txt` from the same release and the same source. When `obit update --check` prints a `Latest:` line, it is fixed.
+
+## An expired file is still in place
+
+Close programs holding the file and try again. If process information alone is incomplete, you can approve the individual file in `propose` mode. Automatic burial requires access to every process belonging to the file owner. It may ignore unreadable processes of other users, including root, only for your own files with neither group nor other write permission. Choose `propose` for individual review. Approval accepts gaps in the process list. A confirmed open file always stays in place and the reason is shown. `obit doctor --verbose` · `obit watch --list`

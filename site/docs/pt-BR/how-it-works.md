@@ -54,3 +54,5 @@ Consultas como `list`, `graveyard`, `stats` e `log` são somente leitura e nunca
 `%LOCALAPPDATA%\obituary` contém `store.json` (registro), `audit.jsonl` (log de auditoria), `obitd.log` (log do daemon) e `graveyard\` (cemitério desta unidade).
 
 Para mudar os locais, use `OBIT_HOME` (dados), `OBIT_CONFIG_DIR` (configuração) e `OBIT_USER_HOME` (pasta pessoal do usuário).
+
+Ao abrir novamente com a mesma pasta de dados, a janela existente volta ao primeiro plano. Outro `OBIT_HOME` abre uma janela separada. Se a pasta não for a padrão, o caminho aparece no título.

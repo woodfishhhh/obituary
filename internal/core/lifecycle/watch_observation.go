@@ -6,6 +6,7 @@ import (
 	"hash"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
@@ -195,6 +196,12 @@ func (s *Service) holdWatchForMove(st *State, it Item, path, reason string) (fun
 	if idx < 0 {
 		return noop, errClaimChanged
 	}
+	if posixWatchFile(it) {
+		if err := s.checkPOSIXWatchFile(st, idx, path); err != nil {
+			return noop, err
+		}
+		return noop, s.checkWatchScope(st, it, path, reason)
+	}
 	p := watchByID(st, it.WatchID)
 	snap, release, err := s.observeWatch(path, *it.Identity, it.IsDir, true)
 	if err != nil {
@@ -215,4 +222,43 @@ func (s *Service) holdWatchForMove(st *State, it Item, path, reason string) (fun
 		return noop, err
 	}
 	return release, nil
+}
+
+func posixWatchFile(it Item) bool {
+	return runtime.GOOS != "windows" && it.Source == "watch" && !it.IsDir
+}
+
+func (s *Service) checkPOSIXWatchFile(st *State, idx int, path string) error {
+	it := &st.Items[idx]
+	now := s.now()
+	snap, release, err := s.observeWatch(path, *it.Identity, false, false)
+	if err == nil {
+		release()
+		err = updateWatchTiming(it, watchByID(st, it.WatchID), snap, now)
+	}
+	if err == nil {
+		err = s.FS.CheckWatchClosed(path, *it.Identity, s.approvedWatch != nil)
+	}
+	if s.approvedWatch != nil {
+		if err != nil {
+			return err
+		}
+		return s.checkWatchBurialReview(st, *s.approvedWatch)
+	}
+	if it.Watch == nil {
+		return err
+	}
+	if err != nil || it.Watch.StableSince.Before(it.ExpiresAt) {
+		it.Watch.StableSince = now
+		it.Rev++
+		it.Attempts = 0
+	}
+	if err != nil {
+		return err
+	}
+	stableAt := s.WatchStatus(*it, now).StableAt
+	if now.Before(stableAt) {
+		return fmt.Errorf("folder child is still active; stable at %s", stableAt.Format(time.RFC3339))
+	}
+	return nil
 }

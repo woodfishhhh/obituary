@@ -382,7 +382,7 @@ POSIX 没有「在同一个源句柄上改名」，所以换一种做法：先�
 - 文件系统不支持不覆盖改名（WSL 的 DrvFS、部分网络盘返回 `EINVAL` / `ENOTSUP`）时返回 `ErrUnsupported`，不退回普通 `rename`。
 - `MkdirRestoreParent` 在父目录 fd 上 `mkdirat` / `openat`，不跟随最后一级符号链接。POSIX 不能按创建 fd 删除目录，按路径复查再删可能删到别人的目录，所以复活失败时**保留**本次新建的空父目录并报告路径，不删。
 - `FindRestored` / `LocateIn`：没有全卷按 inode 打开的能力，只在已知的父目录或坟墓树里（`os.Root` + `WalkDir`）按完整身份找；找不到只说明「不确定」，条目保留，绝不当成已消失。
-- 回收站模式只在 Windows 上有；POSIX 上 `Recycle` 返回 `ErrUnsupported`，提示改用墓地。
+- Linux 系统回收站使用 freedesktop 的 `files/` 和 `info/*.trashinfo`。家目录卷记录绝对路径；其他卷使用带 sticky bit 的 `.Trash/<uid>` 或私有 `.Trash-<uid>`，记录卷内相对路径。先在私有暂存目录核验移动的对象，再以不覆盖的改名发布；失败不复制、不永久删除，回滚冲突则保留内容并报告位置。恢复交给系统回收站。macOS 仅支持墓地。
 
 ## 数据布局
 
@@ -450,7 +450,7 @@ POSIX 没有「在同一个源句柄上改名」，所以换一种做法：先�
 - **兜底**：登记、批准、`mktemp`、`rules apply`、`bury` 成功后调用 `cmdutil.EnsureDaemon`：有常驻进程在服务这个数据目录，或定时任务的 `--home` 正好是它（`ScheduleServes`，用和 obitd 相同的参数解析），就什么都不做；否则临时起一个常驻进程。`--json` 模式下不往 stderr 写提示。
 - **启动时的资源管理器判断很便宜。** Cobra 的双击检查要把系统进程列表枚举两遍才读出父进程的名字（单跑约 24 毫秒，竞争时更多）。`cmdutil.SkipExplorerCheck` 先向内核问父进程的映像名：确定不是 `explorer.exe` 才关掉 Cobra 的检查；是、或查不出，就由 Cobra 照旧判断，所以无参数双击的行为不变，所有命令（含 hook）都不再付这笔开销。
 - 所有子进程都带 `CREATE_NO_WINDOW`，后台永远不弹黑框；`obitd.exe` 必须用 `-ldflags=-H=windowsgui` 构建。
-- `obit doctor` 只读地检查以上所有环节（PATH、obitd、运行器、两家集成、数据目录权限、账本、信任存储、hook 日志、配置），给出 PASS / INFO / WARN / FAIL，有 FAIL 时退出码 1。
+- `obit doctor` 只读地检查以上所有环节（PATH、obitd、运行器、两家集成、数据目录权限、账本、信任存储、hook 日志、配置），每项给出 PASS / INFO / WARN / FAIL，有 FAIL 时退出码 1。终端默认只打印精简结论（按类别归并成一类一行，出问题的类别写最严重一项的原因和一条修复），完整内容写进数据目录 `reports/` 下自包含的 HTML 报告，用讣告自己的寿命机制保留 1 天，到期下葬；`--verbose` 打印逐项文字版（不写报告），`--open` 用系统浏览器打开报告，`--json` 的内容和退出码不变。`reports/` 在受保护的数据目录里，Guard 的 `Exempt` 只放行它里面的文件（文件夹本身和数据目录的其余部分照旧拒绝）；账本写不进去时刚写的报告会被删掉，数据目录不存在时不替报告创建它。
 - Windows 的 `context-menu` 检查核对完整注册树（含命令、当前程序路径和归属清单）。整套标签与当前界面同语言时是 PASS；仅整套标签为另一种支持的语言时是 INFO，`--json` 的 `installation` 为 `label-language-mismatch`。菜单仍能用，用户可运行 `obit init --context-menu --yes` 刷新标签；doctor 和升级都不改写菜单。标签混用、陌生或注册内容不符仍是 WARN，完全未安装是 INFO。
 
 ### Windows 定时任务迁移
@@ -493,3 +493,9 @@ Windows 的 `ApplyUpdate` 和 `obit update --apply` 都从 2 小时寿命的临�
 
 - **不校验 hook 脚本。** 讣告的 hook 直接调用二进制，没有脚本可以被改，`obit doctor` 只核对配置里的命令是不是当前版本。
 - **不主动弹通知。** 想看就查询（`obit list`、`obit stats`、`obit doctor`），到期预告只出现在 agent 的会话开头。M6 起有一个常驻托盘图标（2026-11-09 定），它只安静地待着，不推送。
+
+### macOS / Linux 文件夹策略的普通文件
+
+`watch.file_expiry = "quiet"` 在到期后比较大小、修改时间及文件身份。静置时间取十分钟与 `watch.stable_window` 中较长者。移动前后按设备和 inode 核对进程打开的描述符。Linux 遍历 procfs，Darwin 查询内核的进程和描述符表。只要发现打开的描述符就保留原物并重新计时。同属主进程不可读也重新计时。仅对当前用户所有且组和其他人没有写权限的文件，允许略过已知属于其他用户的不可读进程，包括 root。改名后复核失败沿用 v3 清单，回滚冲突时保留现场。POSIX 的检查是瞬时快照，两次检查之间仍可能有进程打开文件。
+
+`watch.file_expiry = "propose"` 让普通文件到期时进入已有的下葬提议队列。批准时复核提议、策略范围、Git 跟踪状态、文件身份和打开状态。逐项批准可接受进程表不完整，已确认打开的文件仍保留并显示原因。Windows 使用持有至移动完成的拒写句柄。

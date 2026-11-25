@@ -12,6 +12,7 @@ El directorio de configuración es `%APPDATA%\obituary` en Windows, `~/Library/A
 | `hooks.session_cleanup` | `true` | `true`, `false` |
 | `hooks.session_summary` | `false` | `true`, `false` |
 | `watch.stable_window` | `10m` | una duración positiva, como `30s`, `10m`, `1h30m` |
+| `watch.file_expiry` (macOS/Linux) | `quiet` | `quiet`, `propose` |
 | `explorer.enabled` | `true` | `true`, `false` |
 | `explorer.everywhere` | `false` | `true`, `false` |
 | `explorer.in_git` | `false` | `true`, `false` |
@@ -27,7 +28,7 @@ El directorio de configuración es `%APPDATA%\obituary` en Windows, `~/Library/A
 
 De forma predeterminada, lo que agota su vida útil va al cementerio de Obituary. Durante `graveyard.retention_days` días (7 si no lo cambias) puedes devolverlo a su sitio con `obit resurrect`; solo pasado ese plazo se elimina para siempre. El número puede ser cualquiera entre 1 y 3650.
 
-Si pones `graveyard.mode` en `recycle`, lo que caduca va a la Papelera de reciclaje del sistema, y de ella se encarga Windows. Esta opción solo existe en Windows; macOS y Linux tienen únicamente el cementerio. Lo que está en la Papelera se restaura desde la Papelera, y `obit resurrect` no lo encontrará.
+En Windows y Linux, `graveyard.mode = "recycle"` usa la papelera del sistema. Restaura los archivos desde la papelera, no con `obit resurrect`. macOS solo admite el cementerio.
 
 ## Registro automático y sesiones de agentes
 
@@ -39,7 +40,9 @@ Si pones `graveyard.mode` en `recycle`, lo que caduca va a la Papelera de recicl
 
 `watch.stable_window` es la paciencia de una política de carpetas: un archivo nuevo tiene que permanecer sin cambios durante este tiempo antes de moverse, para que no se lleve un archivo que aún se está descargando. Usa el formato de duración de Go, un número seguido de `s`, `m` o `h`, que se puede encadenar como en `1h30m`, y debe ser mayor que cero.
 
-Los ajustes `explorer.*` solo importan en Windows. Obituary hace que el Explorador muestre la fecha de entierro junto al nombre del archivo sin cambiar el nombre real. De forma predeterminada ocurre en Descargas, en el Escritorio (con sus subcarpetas) y en los lugares que gestiona una política de carpetas. Con `explorer.everywhere` activado, también lo muestran otras ubicaciones seguidas; las áreas de trabajo de Git quedan fuera salvo que pongas `explorer.in_git` en `true`; y `explorer.enabled = false` lo desactiva por completo. Consulta [Políticas de carpetas](./folder-policies).
+El modo automático debe poder inspeccionar todos los procesos del propietario del archivo. Solo puede ignorar procesos inaccesibles de otros usuarios, incluido root, si el archivo es tuyo y ni el grupo ni los demás tienen permiso de escritura. Elige `propose` para revisar cada archivo. La aprobación admite información incompleta, pero si se detecta un archivo abierto, se conserva y se muestra el motivo.
+
+Los ajustes `explorer.*` controlan las fechas junto al nombre en el Explorador de Windows y las etiquetas de fecha en Finder y Dolphin. El nombre real no cambia. De forma predeterminada ocurre en Descargas, en el Escritorio (con sus subcarpetas) y en los lugares que gestiona una política de carpetas. Con `explorer.everywhere` activado, también lo muestran otras ubicaciones seguidas; las áreas de trabajo de Git quedan fuera salvo que pongas `explorer.in_git` en `true`; y `explorer.enabled = false` lo desactiva por completo. Consulta [Políticas de carpetas](./folder-policies).
 
 ## Interfaz
 

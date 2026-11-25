@@ -36,8 +36,12 @@ func TestPOSIXGuardProtectsSystemAndHome(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("OBIT_USER_HOME", user)
+	downloads := filepath.Join(user, "Downloads")
+	if err := os.Mkdir(downloads, 0700); err != nil {
+		t.Fatal(err)
+	}
 	g := Guard(filepath.Join(dir, "data"))
-	for _, path := range []string{"/", "/etc", user} {
+	for _, path := range []string{"/", "/etc", user, downloads} {
 		if err := g.Check(path, true); err == nil {
 			t.Fatalf("protected directory accepted: %s", path)
 		}

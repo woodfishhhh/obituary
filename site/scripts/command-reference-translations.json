@@ -981,17 +981,17 @@
   },
   "obit doctor": {
     "summary": {
-      "source": "Check installation, integrations and data without changing anything",
+      "source": "Check installation, integrations and data; the only thing it writes is its report",
       "translations": {
-        "zh": "检查安装、集成和数据，不做任何改动",
-        "zh-TW": "檢查安裝、整合和資料，不做任何變更",
-        "ja": "インストール、連携、データを確認する。何も変更しない",
-        "ko": "아무것도 변경하지 않고 설치, 연동, 데이터를 점검합니다",
-        "es": "Comprobar la instalación, las integraciones y los datos sin cambiar nada",
-        "fr": "Vérifier l’installation, les intégrations et les données sans rien modifier",
-        "de": "Installation, Integrationen und Daten prüfen, ohne etwas zu ändern",
-        "pt-BR": "Verificar a instalação, as integrações e os dados sem alterar nada",
-        "ru": "Проверить установку, интеграции и данные, ничего не изменяя"
+        "zh": "检查安装、集成和数据，只会写下自己的报告",
+        "zh-TW": "檢查安裝、整合和資料，只會寫下自己的報告",
+        "ja": "インストール、連携、データを確認する。書き込むのは自分のレポートだけ",
+        "ko": "설치, 연동, 데이터를 점검합니다. 쓰는 것은 자체 보고서뿐입니다",
+        "es": "Comprobar la instalación, las integraciones y los datos; solo escribe su propio informe",
+        "fr": "Vérifier l’installation, les intégrations et les données ; la seule chose qu’elle écrit est son rapport",
+        "de": "Installation, Integrationen und Daten prüfen; geschrieben wird nur der eigene Bericht",
+        "pt-BR": "Verificar a instalação, as integrações e os dados; a única coisa que grava é o próprio relatório",
+        "ru": "Проверить установку, интеграции и данные; записывает только собственный отчёт"
       }
     },
     "--help": {
@@ -1022,18 +1022,32 @@
         "ru": "Вывести JSON"
       }
     },
-    "--verbose": {
-      "source": "include agent capability details",
+    "--open": {
+      "source": "open the full HTML report in your default browser",
       "translations": {
-        "zh": "包含 agent 的能力详情",
-        "zh-TW": "包含 agent 的功能細節",
-        "ja": "エージェントの機能の詳細を含める",
-        "ko": "에이전트 기능 세부 정보를 포함합니다",
-        "es": "Incluir los detalles de las capacidades del agente",
-        "fr": "Inclure les détails des capacités des agents",
-        "de": "Details zu den Fähigkeiten der Agenten einbeziehen",
-        "pt-BR": "Incluir detalhes dos recursos dos agentes",
-        "ru": "Включить подробности о возможностях агентов"
+        "zh": "用默认浏览器打开完整的 HTML 报告",
+        "zh-TW": "用預設瀏覽器開啟完整的 HTML 報告",
+        "ja": "完全な HTML レポートを既定のブラウザーで開く",
+        "ko": "전체 HTML 보고서를 기본 브라우저로 엽니다",
+        "es": "Abrir el informe HTML completo en el navegador predeterminado",
+        "fr": "Ouvrir le rapport HTML complet dans le navigateur par défaut",
+        "de": "Den vollständigen HTML-Bericht im Standardbrowser öffnen",
+        "pt-BR": "Abrir o relatório HTML completo no navegador padrão",
+        "ru": "Открыть полный HTML-отчёт в браузере по умолчанию"
+      }
+    },
+    "--verbose": {
+      "source": "print every check in full text, with agent capability details",
+      "translations": {
+        "zh": "在终端打印完整文字版：每项检查的详情和 agent 的能力详情",
+        "zh-TW": "在終端機印出完整文字版：每項檢查的細節和 agent 的功能細節",
+        "ja": "各チェックの詳細とエージェントの機能の詳細を、テキストですべて出力する",
+        "ko": "모든 점검 항목과 에이전트 기능 세부 정보를 텍스트로 전부 출력합니다",
+        "es": "Imprimir todas las comprobaciones en texto completo, con los detalles de las capacidades del agente",
+        "fr": "Afficher tous les contrôles en texte complet, avec les détails des capacités des agents",
+        "de": "Alle Prüfungen als vollständigen Text ausgeben, mit Details zu den Fähigkeiten der Agenten",
+        "pt-BR": "Imprimir todas as verificações em texto completo, com os detalhes dos recursos dos agentes",
+        "ru": "Вывести все проверки полным текстом, с подробностями о возможностях агентов"
       }
     }
   },
@@ -2869,17 +2883,17 @@
       }
     },
     "--context-menu": {
-      "source": "install classic Explorer context menus (enabled by default)",
+      "source": "install file manager context menus (enabled by default)",
       "translations": {
-        "zh": "安装经典的资源管理器右键菜单（默认启用）",
-        "zh-TW": "安裝傳統的檔案總管右鍵選單（預設啟用）",
-        "ja": "クラシックなエクスプローラーのコンテキストメニューをインストールする（既定で有効）",
-        "ko": "클래식 파일 탐색기 상황에 맞는 메뉴를 설치합니다(기본적으로 활성화)",
-        "es": "Instalar los menús contextuales clásicos del Explorador (activado por defecto)",
-        "fr": "Installer les menus contextuels classiques de l’Explorateur (activé par défaut)",
-        "de": "Klassische Explorer-Kontextmenüs installieren (standardmäßig aktiviert)",
-        "pt-BR": "Instalar os menus de contexto clássicos do Explorador de Arquivos (ativado por padrão)",
-        "ru": "Установить классические контекстные меню Проводника (включено по умолчанию)"
+        "zh": "安装文件管理器右键菜单（默认启用）",
+        "zh-TW": "安裝檔案管理員右鍵選單（預設啟用）",
+        "ja": "ファイルマネージャーのコンテキストメニューを追加する（既定で有効）",
+        "ko": "파일 관리자의 컨텍스트 메뉴를 설치합니다(기본값)",
+        "es": "Instalar los menús contextuales del gestor de archivos (activado por defecto)",
+        "fr": "Installer les menus contextuels du gestionnaire de fichiers (activé par défaut)",
+        "de": "Kontextmenüs im Dateimanager installieren (standardmäßig aktiviert)",
+        "pt-BR": "Instalar os menus de contexto do gerenciador de arquivos (ativado por padrão)",
+        "ru": "Установить контекстные меню файлового менеджера (по умолчанию)"
       }
     },
     "--dry-run": {
@@ -2967,17 +2981,17 @@
       }
     },
     "--no-context-menu": {
-      "source": "skip Explorer context menus",
+      "source": "skip file manager context menus",
       "translations": {
-        "zh": "不安装资源管理器右键菜单",
-        "zh-TW": "不安裝檔案總管右鍵選單",
-        "ja": "エクスプローラーのコンテキストメニューをインストールしない",
-        "ko": "파일 탐색기 상황에 맞는 메뉴를 설치하지 않습니다",
-        "es": "Omitir los menús contextuales del Explorador",
-        "fr": "Ne pas installer les menus contextuels de l’Explorateur",
-        "de": "Explorer-Kontextmenüs überspringen",
-        "pt-BR": "Pular os menus de contexto do Explorador de Arquivos",
-        "ru": "Не устанавливать контекстные меню Проводника"
+        "zh": "跳过文件管理器右键菜单",
+        "zh-TW": "略過檔案管理員右鍵選單",
+        "ja": "ファイルマネージャーのコンテキストメニューを変更しない",
+        "ko": "파일 관리자 컨텍스트 메뉴를 건너뜁니다",
+        "es": "Omitir los menús contextuales del gestor de archivos",
+        "fr": "Ignorer les menus contextuels du gestionnaire de fichiers",
+        "de": "Kontextmenüs des Dateimanagers überspringen",
+        "pt-BR": "Pular os menus de contexto do gerenciador de arquivos",
+        "ru": "Пропустить контекстные меню файлового менеджера"
       }
     },
     "--no-shortcuts": {
@@ -3048,6 +3062,20 @@
         "de": "Entfernen, was Obituary hinzugefügt hat",
         "pt-BR": "Remover o que o Obituary adicionou",
         "ru": "Удалить то, что добавил Obituary"
+      }
+    },
+    "--verbose": {
+      "source": "with --show: list every agent's capability details",
+      "translations": {
+        "zh": "与 --show 一起用：列出每个 agent 的能力详情",
+        "zh-TW": "與 --show 一起使用：列出每個 agent 的功能細節",
+        "ja": "--show と併用：すべてのエージェントの機能の詳細を一覧する",
+        "ko": "--show와 함께 사용: 모든 에이전트의 기능 세부 정보를 나열합니다",
+        "es": "Con --show: enumerar los detalles de las capacidades de cada agente",
+        "fr": "Avec --show : lister les détails des capacités de chaque agent",
+        "de": "Mit --show: die Fähigkeiten jedes Agenten im Detail auflisten",
+        "pt-BR": "Com --show: listar os detalhes dos recursos de cada agente",
+        "ru": "Вместе с --show: перечислить возможности каждого агента подробно"
       }
     },
     "--yes": {

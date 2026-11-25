@@ -81,7 +81,7 @@ obit daemon disable
 ## 查詢與檢查
 
 ```powershell
-obit doctor              # 唯讀檢查（支援 --json）
+obit doctor              # 檢查：一行一個面向，完整報告存成 HTML（--open 開啟，--verbose 看全文，--json）
 obit stats               # 悼詞：埋了多少、騰出多少空間、復活過幾次（同 eulogy）
 obit log                 # 生平記錄：做過的所有事
 obit config              # 查看設定；--create 產生附註解的預設設定
@@ -362,7 +362,7 @@ obit add report.zip --at "2026-12-01 18:00"
 
 ### `obit doctor`
 
-檢查安裝、整合和資料，不做任何變更
+檢查安裝、整合和資料，只會寫下自己的報告
 
 用法: `obit doctor [flags]`
 
@@ -370,7 +370,8 @@ obit add report.zip --at "2026-12-01 18:00"
 | --- | --- | --- | --- |
 | `--help` | `-h` | `false` | doctor 的說明 |
 | `--json` | 無 | `false` | 輸出 JSON |
-| `--verbose` | 無 | `false` | 包含 agent 的功能細節 |
+| `--open` | 無 | `false` | 用預設瀏覽器開啟完整的 HTML 報告 |
+| `--verbose` | 無 | `false` | 在終端機印出完整文字版：每項檢查的細節和 agent 的功能細節 |
 
 ### `obit extend`
 
@@ -777,19 +778,20 @@ agent hook 的進入點（由 agent 呼叫，不是給人用的）
 | 參數 | 簡寫 | 預設值 | 說明 |
 | --- | --- | --- | --- |
 | `--agent` | 無 | `[claude]` | 要整合的 agent（可重複指定，也可用逗號分隔；預設為 claude） |
-| `--context-menu` | 無 | `false` | 安裝傳統的檔案總管右鍵選單（預設啟用） |
+| `--context-menu` | 無 | `false` | 安裝檔案管理員右鍵選單（預設啟用） |
 | `--dry-run` | 無 | `false` | 只列印變更內容 |
 | `--format` | 無 | `"text"` | --show 的輸出格式：text 或 markdown（agent 支援範圍） |
 | `--global` | `-g` | `false` | 對目前使用者生效，而不是只對這個專案生效 |
 | `--guard-rm` | 無 | `false` | 拒絕受支援的刪除指令，並提供可以復活的 obit 替代指令 |
 | `--help` | `-h` | `false` | init 的說明 |
 | `--mcp` | 無 | `false` | 註冊訃告的 MCP stdio 伺服器 |
-| `--no-context-menu` | 無 | `false` | 不安裝檔案總管右鍵選單 |
+| `--no-context-menu` | 無 | `false` | 略過檔案管理員右鍵選單 |
 | `--no-shortcuts` | 無 | `false` | 不建立開始功能表和桌面捷徑 |
 | `--no-skill` | 無 | `false` | 不更動訃告的 Agent Skill |
 | `--show` | 無 | `false` | 顯示已安裝的項目 |
 | `--skill` | 無 | `false` | 安裝訃告的 Agent Skill（預設啟用） |
 | `--uninstall` | 無 | `false` | 移除訃告加入的項目 |
+| `--verbose` | 無 | `false` | 與 --show 一起使用：列出每個 agent 的功能細節 |
 | `--yes` | 無 | `false` | 不詢問，直接套用 |
 
 範例：
@@ -1046,6 +1048,8 @@ obit mktemp 2h --name screenshots
 | `--wait-pid` | 無 | `0` | 等待該程序結束後再更新（Windows） |
 
 ### `obit watch`
+
+若要逐項核准，請在 `[watch]` 設定 `file_expiry = "propose"`。以 `obit proposals` 檢閱，再用 `obit approve <ID>` 核准。到期的子資料夾仍只會產生提議，在 macOS 和 Linux 上即使核准也會保留。
 
 為資料夾中的每個第一層子項目各自設定壽命
 

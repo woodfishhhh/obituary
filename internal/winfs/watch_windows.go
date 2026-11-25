@@ -45,3 +45,6 @@ func (FS) ObserveWatch(path string, hold bool) (corefs.WatchSnapshot, func(), er
 	return corefs.WatchSnapshot{Identity: id, Size: int64(info.FileSizeHigh)<<32 | int64(info.FileSizeLow),
 		Modified: time.Unix(0, info.LastWriteTime.Nanoseconds()).UTC(), Directory: info.FileAttributes&windows.FILE_ATTRIBUTE_DIRECTORY != 0}, release, nil
 }
+
+// Windows uses ObserveWatch's exclusive handle throughout the move.
+func (FS) CheckWatchClosed(string, corefs.Identity, bool) error { return corefs.ErrUnsupported }

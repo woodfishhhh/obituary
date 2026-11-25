@@ -109,6 +109,7 @@ export type ProposalMode = "off" | "tiered" | "auto" | "ask";
 // one entry per candidate, ref being the candidate's path; any of them can
 // fail while the proposal itself succeeds.
 export interface ProposalResult {
+  remaining?: string[];
   ref: string;
   proposal?: Proposal;
   results?: Result[];

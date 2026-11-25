@@ -178,6 +178,10 @@ func (e *Engine) approve(refs []string, claim func(int, string) (core.Proposal, 
 		if err := e.Svc.ResolveProposal(p, pending); err != nil {
 			r.Error = "could not save proposal outcomes; candidates remain pending: " + err.Error()
 			retryErr = errors.Join(retryErr, errors.New(r.Error))
+		} else {
+			for _, c := range pending {
+				r.Remaining = append(r.Remaining, c.Path)
+			}
 		}
 		release()
 		out = append(out, r)

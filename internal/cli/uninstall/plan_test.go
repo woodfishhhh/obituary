@@ -20,7 +20,7 @@ func TestPOSIXUninstallKeepsDataAndUsesNativeDaemonName(t *testing.T) {
 		t.Skip("POSIX timer and metadata uninstall without Windows desktop APIs")
 	}
 	d, root, calls := fixture(t)
-	d.runRegistry, d.menuRegistry = nil, nil
+	d.runRegistry = nil
 	d.previewSchedule = func(exe, _, _ string) string {
 		if filepath.Base(exe) != "obitd" {
 			t.Errorf("POSIX timer executable: %s", exe)

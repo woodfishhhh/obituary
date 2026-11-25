@@ -7,6 +7,7 @@ import (
 	"os"
 	"runtime"
 	"slices"
+	"strings"
 
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/config"
@@ -25,9 +26,6 @@ type desktopPlan struct {
 
 func planDesktop(out io.Writer, self cmdutil.Executable, uninstall, noMenu, noShortcuts bool) (desktopPlan, error) {
 	p := desktopPlan{registry: ContextMenuRegistry()}
-	if runtime.GOOS != "windows" {
-		return p, nil
-	}
 	exe, err := self.Path()
 	if err != nil {
 		return p, err
@@ -38,7 +36,7 @@ func planDesktop(out io.Writer, self cmdutil.Executable, uninstall, noMenu, noSh
 			return p, err
 		}
 	}
-	if !noShortcuts {
+	if !noShortcuts && runtime.GOOS == "windows" {
 		p.shortcuts, err = planShortcuts(out, exe, uninstall)
 	}
 	return p, err
@@ -46,7 +44,7 @@ func planDesktop(out io.Writer, self cmdutil.Executable, uninstall, noMenu, noSh
 
 func planDesktopMenu(out io.Writer, reg contextmenu.Registry, exe string, uninstall bool) ([]contextmenu.Change, error) {
 	fmt.Fprintln(out, cmdutil.Text("cli.init.context_menu"))
-	if !uninstall {
+	if !uninstall && runtime.GOOS == "windows" {
 		if err := checkMenuDaemon(exe); errors.Is(err, os.ErrNotExist) {
 			fmt.Fprintln(out, cmdutil.Text("cli.init.unavailable_obitd_exe_is_missing"))
 			return nil, nil
@@ -92,15 +90,14 @@ func (p desktopPlan) apply(out io.Writer) error {
 		if err := contextmenu.Apply(p.registry, p.menu); err != nil {
 			return err
 		}
-		fmt.Fprintln(out, cmdutil.Text("cli.init.classic_context_menu_updated_windows_show_more"))
+		if runtime.GOOS == "windows" {
+			fmt.Fprintln(out, cmdutil.Text("cli.init.classic_context_menu_updated_windows_show_more"))
+		}
 	}
 	return integrate.Apply(p.shortcuts)
 }
 
-func showDesktop(out io.Writer, self cmdutil.Executable) error {
-	if runtime.GOOS != "windows" {
-		return nil
-	}
+func showDesktop(out io.Writer, self cmdutil.Executable, verbose bool) error {
 	exe, err := self.Path()
 	if err != nil {
 		return err
@@ -109,7 +106,14 @@ func showDesktop(out io.Writer, self cmdutil.Executable) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(out, cmdutil.Text("cli.init.context_menu_showdesktop"), menu.Detail)
+	detail := menu.Detail
+	if !verbose { // the per-entry registration rows follow the first line
+		detail, _, _ = strings.Cut(detail, "\n")
+	}
+	fmt.Fprintf(out, cmdutil.Text("cli.init.context_menu_showdesktop"), detail)
+	if runtime.GOOS != "windows" {
+		return nil
+	}
 	for _, place := range []shortcut.Location{shortcut.StartMenu, shortcut.Desktop} {
 		path, err := shortcut.Inspect(ShortcutCodec, exe, place)
 		if err != nil {

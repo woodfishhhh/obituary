@@ -12,6 +12,7 @@ O diretório de configuração é `%APPDATA%\obituary` no Windows, `~/Library/Ap
 | `hooks.session_cleanup` | `true` | `true`, `false` |
 | `hooks.session_summary` | `false` | `true`, `false` |
 | `watch.stable_window` | `10m` | uma duração positiva, como `30s`, `10m`, `1h30m` |
+| `watch.file_expiry` (macOS/Linux) | `quiet` | `quiet`, `propose` |
 | `explorer.enabled` | `true` | `true`, `false` |
 | `explorer.everywhere` | `false` | `true`, `false` |
 | `explorer.in_git` | `false` | `true`, `false` |
@@ -27,7 +28,7 @@ O diretório de configuração é `%APPDATA%\obituary` no Windows, `~/Library/Ap
 
 Por padrão, o que esgota a vida útil vai para o cemitério do Obituary. Durante `graveyard.retention_days` dias (7, se você não mudar) é possível devolvê-lo ao lugar com `obit resurrect`; só depois desse prazo ele é excluído de vez. O número pode ser qualquer valor entre 1 e 3650.
 
-Se você definir `graveyard.mode` como `recycle`, o que expira vai para a Lixeira do sistema, e quem cuida dela é o Windows. Isso existe só no Windows; macOS e Linux têm apenas o cemitério. O que está na Lixeira é restaurado a partir da Lixeira, e `obit resurrect` não o encontrará.
+No Windows e no Linux, `graveyard.mode = "recycle"` usa a Lixeira do sistema. Restaure os arquivos pela Lixeira, não com `obit resurrect`. O macOS só oferece o cemitério.
 
 ## Registro automático e sessões de agentes
 
@@ -39,7 +40,9 @@ Se você definir `graveyard.mode` como `recycle`, o que expira vai para a Lixeir
 
 `watch.stable_window` é a paciência de uma política de pasta: um arquivo novo precisa ficar sem mudanças por esse tempo antes de ser movido, para que nada seja levado enquanto ainda está sendo baixado. Ela usa o formato de duração do Go, um número seguido de `s`, `m` ou `h`, que podem ser encadeados como em `1h30m`, e deve ser maior que zero.
 
-As configurações `explorer.*` só importam no Windows. O Obituary faz o Explorador de Arquivos mostrar a data de sepultamento ao lado do nome do arquivo, sem alterar o nome real. Por padrão isso acontece em Downloads, na Área de Trabalho (incluindo subpastas) e nos lugares que uma política de pasta gerencia. Com `explorer.everywhere` ativado, outros locais acompanhados também mostram a data; áreas de trabalho do Git ficam de fora, a menos que você defina `explorer.in_git` como `true`; e `explorer.enabled = false` desliga tudo. Veja [Políticas de pastas](./folder-policies).
+O modo automático precisa verificar todos os processos do proprietário do arquivo. Só pode ignorar processos inacessíveis de outros usuários, inclusive root, quando o arquivo é seu e nem o grupo nem os demais têm permissão de escrita. Use `propose` para revisar cada arquivo. A aprovação aceita lacunas na lista de processos. Se o arquivo estiver comprovadamente aberto, ele permanece no lugar e o motivo é exibido.
+
+As configurações `explorer.*` controlam as datas no nome exibido pelo Explorador de Arquivos e as etiquetas de data no Finder e no Dolphin. O nome real não muda. Por padrão isso acontece em Downloads, na Área de Trabalho (incluindo subpastas) e nos lugares que uma política de pasta gerencia. Com `explorer.everywhere` ativado, outros locais acompanhados também mostram a data; áreas de trabalho do Git ficam de fora, a menos que você defina `explorer.in_git` como `true`; e `explorer.enabled = false` desliga tudo. Veja [Políticas de pastas](./folder-policies).
 
 ## Interface
 

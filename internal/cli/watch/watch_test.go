@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -22,9 +21,6 @@ func TestWatchCommandsAndModifiedApproval(t *testing.T) {
 		t.Setenv(name, filepath.Join(root, sub))
 	}
 	name := "Downloads"
-	if runtime.GOOS != "windows" {
-		name = "Downloads/inbox" // POSIX Guard protects the whole Downloads directory.
-	}
 	dir := filepath.Join(root, "user", name)
 	clitest.WriteFixture(t, filepath.Join(dir, "file.txt"), "fixture")
 	out, _, err := clitest.Execute(t, NewCmd(), "~/"+name, "30d", "--json")
