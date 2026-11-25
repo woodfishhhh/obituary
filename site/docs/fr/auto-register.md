@@ -15,6 +15,8 @@ Tout élément enregistré est enterré à l’échéance et reste ressuscitable
 
 ## Activez l'enregistrement automatique quand vous le souhaitez
 
+Le processus résident traite les inscriptions automatiques après l’écriture. Un nouveau fichier peut donc mettre un instant à apparaître dans `obit list`.
+
 Activez-le dans Settings ou For you, ou définissez `[proposals] mode` dans `config.toml`.
 
 - `"tiered"` enregistre directement les fichiers créés par l’agent pendant la session et les [conteneurs Docker](./docker) démarrés pour le projet. Un fichier doit avoir été observé par le hook, être absent de l’instantané initial et avoir une date de création postérieure au début de la session. L’agent est informé et l’élément apparaît dans `obit proposals` et sous « Handled automatically » dans For you. Les fichiers déjà présents ou non observés par le hook deviennent seulement des propositions. `obit approve <id>` enregistre les éléments proposés ; les correspondances de règles du projet sont ensuite enregistrées directement. `obit reject <id>` refuse l’enregistrement automatique dans ce projet.

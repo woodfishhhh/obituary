@@ -15,6 +15,8 @@ Whatever is in is buried when due and can be resurrected as it was from the grav
 
 ## Turn automatic registration on when you want it
 
+The resident processes automatic registrations after a write, so a new file may take a moment to appear in `obit list`.
+
 Switch it in the window's Settings or For you page, or set `[proposals] mode` in `config.toml`:
 
 - `"tiered"`: files the agent created in its session (the hook watched it write them, they were not there when the session started, and the file system created them after it started) and Docker containers the session started for the project (see [Docker containers](./docker)) go in directly; the agent is told afterwards, and they are listed in `obit proposals` and under Handled automatically on the For you page. The rest becomes a proposal: files that were there before the session, or files the hook did not see the agent write. `obit approve <id>` registers it and lets rule matches in that project register directly from then on; `obit reject <id>` means never register automatically in this project.

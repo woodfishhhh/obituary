@@ -15,6 +15,8 @@ Tudo o que for registrado é enterrado quando expira e pode ser ressuscitado com
 
 ## Ativar o registro automático quando você quiser
 
+O processo residente cuida do registro automático após a gravação, então um arquivo novo pode levar um instante para aparecer em `obit list`.
+
 Ative na página Settings ou For you, ou defina `[proposals] mode` em `config.toml`.
 
 - `"tiered"` registra diretamente os arquivos criados pelo agente nesta sessão e os [contêineres Docker](./docker) iniciados para o projeto. O arquivo só entra diretamente se o hook tiver observado a gravação, se não existisse no snapshot inicial e se sua data de criação fosse posterior ao início. O agente é avisado; os itens aparecem em `obit proposals` e em “Handled automatically” na página For you. Arquivos anteriores à sessão ou não observados pelo hook viram propostas. `obit approve <id>` registra os itens propostos; depois, as regras correspondentes do projeto podem registrar itens diretamente. `obit reject <id>` recusa o registro automático neste projeto.
