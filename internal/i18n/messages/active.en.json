@@ -346,7 +346,7 @@
   "cli.uninstall.stop_resident_tray_for": "  %s\n  stop resident/tray for %s\n",
   "cli.uninstall.remove_hkcu_run": "  remove HKCU Run %s\n",
   "cli.uninstall.remove_context_menu": "  remove context menu",
-  "cli.uninstall.remove_explorer_desktop_ini_labels": "  remove Explorer desktop.ini labels",
+  "cli.uninstall.remove_explorer_desktop_ini_labels": "  remove owned burial date labels",
   "cli.uninstall.remove_folder_policy_files_stay_in_place": "  remove folder policy #%d %s (files stay in place)\n",
   "cli.uninstall.data_retained_unrecognized_session_file": "data retained: unrecognized session file %s",
   "cli.uninstall.data_retained_unrecognized_session_contents": "data retained: unrecognized session contents %s",

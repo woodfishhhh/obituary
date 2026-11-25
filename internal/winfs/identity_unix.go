@@ -69,6 +69,18 @@ func IdentifyFollowing(path string) (corefs.Identity, error) {
 	return (FS{}).IdentifyFollowing(path)
 }
 
+// IdentifyHandle checks the same open object that a metadata operation will modify.
+func IdentifyHandle(fd int, path string) (corefs.Identity, error) {
+	st, err := readPOSIXStat(fd, "")
+	if err != nil {
+		return corefs.Identity{}, err
+	}
+	if st.Mode&unix.S_IFMT != unix.S_IFDIR && (st.Mode&unix.S_IFMT != unix.S_IFREG || st.Nlink != 1) {
+		return corefs.Identity{}, corefs.ErrUnsafe
+	}
+	return identity(&st, path)
+}
+
 func (fs FS) IdentifyFollowing(path string) (corefs.Identity, error) {
 	real, err := filepath.EvalSymlinks(path)
 	if err != nil {

@@ -39,7 +39,7 @@ On Windows and Linux, set `graveyard.mode` to `recycle` to use the system Trash.
 
 `watch.stable_window` is the patience of a folder policy: a new file has to stay unchanged for this long before it is moved, so a file that is still downloading is not carried off. It uses Go's duration format, a number followed by `s`, `m` or `h`, which can be chained as in `1h30m`, and it must be greater than zero.
 
-The `explorer.*` settings matter only on Windows. Obituary makes Explorer show the burial date next to a file name while the real name stays the same. By default this happens in Downloads, on the Desktop (including subfolders) and in places a folder policy manages. With `explorer.everywhere` on, other tracked locations show it too; Git workspaces are left out unless you set `explorer.in_git` to `true`; and `explorer.enabled = false` switches it off entirely. See [Folder policies](./folder-policies).
+The `explorer.*` settings control Explorer display names on Windows and native date tags in Finder and Dolphin. None of these changes the real file name. By default this happens in Downloads, on the Desktop (including subfolders) and in places a folder policy manages. With `explorer.everywhere` on, other tracked locations show it too; Git workspaces are left out unless you set `explorer.in_git` to `true`; and `explorer.enabled = false` switches it off entirely. See [Folder policies](./folder-policies).
 
 ## Interface
 

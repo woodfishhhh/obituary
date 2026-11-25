@@ -5,7 +5,7 @@
 Der Agent und du entscheiden, was in Obituary gelangt (standardmäßig `[proposals] mode = "off"`):
 
 - **Der Agent registriert seine eigenen Ergebnisse.** Für Debug-Skripte, Logs und Screenshots setzt er mit `obit mark <path> 2d` eine Lebensdauer, erstellt mit `obit mktemp 1d` temporären Platz und begräbt mit `obit bury`, was er nicht sicher behalten muss. `obit init` erklärt dem Agenten diese Regeln.
-- **Du fügst über das Kontextmenü hinzu.** Klicke unter Windows im Explorer mit der rechten Maustaste auf Dateien oder Ordner, wähle „Add to Obituary“ und dann 1, 7 oder 30 Tage oder „Bury now (recoverable)“. Siehe [Fenster, Tray und Kontextmenü](./desktop).
+- **Du fügst über das Kontextmenü hinzu.** Klicke im Explorer, Finder, Nautilus oder Dolphin mit der rechten Maustaste auf Dateien oder Ordner, wähle „Add to Obituary“ und dann 1, 7 oder 30 Tage oder „Bury now (recoverable)“. Siehe [Fenster, Tray und Kontextmenü](./desktop).
 - **Ordnerrichtlinien** geben Ordnern wie Downloads eine Lebensdauer. Siehe [Ordnerrichtlinien](./folder-policies).
 
 Registrierte Einträge werden bei Ablauf begraben und können sieben Tage lang unverändert wiederbelebt werden. Nichts anderes wird automatisch aufgenommen.

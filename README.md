@@ -89,7 +89,7 @@ Each platform at a glance:
 | Install with | Scoop, the `install.ps1` script (winget in review) | Homebrew, the `install.sh` script | the `install.sh` script |
 | Expiry checks | resident tray process, Task Scheduler as a fallback | user launchd agent | `systemd --user` timer; a user crontab without systemd |
 | CLI, graveyard and resurrection, automatic registration (optional), delete guard, agent integration (hooks, Skill, MCP), Docker containers, folder policies | yes | yes | yes |
-| Tray, small window, context menus, burial dates in Explorer, Start menu and desktop shortcuts | yes | Window and tray on macOS (universal DMG); no context menu yet | Window and tray on Ubuntu 24.04 amd64 (deb) |
+| Tray, small window, context menus, burial dates in Explorer, Start menu and desktop shortcuts | yes | Window and tray on macOS (universal DMG) · Finder: Quick Actions, Date tags | Window and tray on Ubuntu 24.04 amd64 (deb) · Nautilus: Scripts · Dolphin: menu, Date tags |
 | Recycle Bin mode | yes | graveyard only | yes |
 
 With desktop supervision enabled, the tray handles expiries as they occur and an independent job checks once an hour. Editions without a tray check every five minutes.

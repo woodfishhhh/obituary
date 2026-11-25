@@ -30,3 +30,5 @@ obit watch "$HOME/Downloads" 2w
 - 日期來自資料夾中的隱藏檔 `desktop.ini`。
 - 在 `config.toml` 的 `[explorer]` 區段中，可設定 `enabled = false` 關閉日期顯示，或設定 `everywhere = true` 在所有位置顯示。
 - 檔案總管會快取資料夾的檢視畫面。延長壽命後，同一個視窗最多可能還會顯示舊日期一分鐘。
+
+Finder 和 Dolphin 以標籤顯示下葬日期，不會改變檔名。延長壽命時會更新日期；停止追蹤或解除安裝時只移除訃告所加的標籤。Nautilus 不顯示日期標籤，請用 `obit list` 查詢。

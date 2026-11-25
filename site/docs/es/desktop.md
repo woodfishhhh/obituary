@@ -4,7 +4,7 @@ Puedes resucitar archivos, aprobar propuestas y cambiar ajustes sin usar la lín
 
 ## Qué tiene cada una de las tres plataformas
 
-La ventana, la bandeja y las notificaciones de escritorio existen en Windows, macOS y Ubuntu 24.04; el menú contextual y las etiquetas de fecha del Explorador existen solo en Windows. Las ediciones de escritorio para macOS y Ubuntu son, por ahora, versiones preliminares. Otras distribuciones de Linux no tienen edición de escritorio y usan la línea de comandos.
+La ventana, la bandeja y las notificaciones de escritorio existen en Windows, macOS y Ubuntu 24.04. Las ediciones de escritorio para macOS y Ubuntu son, por ahora, versiones preliminares. Otras distribuciones de Linux no tienen edición de escritorio y usan la línea de comandos.
 
 | | Windows | macOS | Ubuntu 24.04 |
 | --- | --- | --- | --- |
@@ -13,8 +13,8 @@ La ventana, la bandeja y las notificaciones de escritorio existen en Windows, ma
 | Bandeja al iniciar sesión | activada de forma predeterminada tras `obit init` | interruptor en Settings | interruptor en Settings |
 | Comprobación de caducidad | proceso residente de la bandeja | LaunchAgent | systemd |
 | Notificaciones de escritorio | sí | sí | sí |
-| Menú contextual | en el Explorador | no | no |
-| Etiquetas de fecha en el Explorador | sí | no | no |
+| Menú contextual | en el Explorador | Finder: Acciones rápidas | Nautilus: Scripts · Dolphin |
+| Etiquetas de fecha | sí | Finder | Dolphin |
 | Modo Papelera de reciclaje | sí | no, solo cementerio | sí |
 | Se instala con | el script de instalación, Scoop, winget o el archivo comprimido | el DMG | el `.deb` |
 | Primera apertura | un archivo descargado a mano puede mostrar un aviso de SmartScreen | requiere aprobación manual, ver [más abajo](#primer-inicio-de-una-app-sin-firma) | se abre directamente |
@@ -110,7 +110,7 @@ Puedes seleccionar varios archivos a la vez. Una notificación muestra cuántos 
 
 Si tras actualizar todas las etiquetas del menú del Explorador aparecen en otro idioma admitido, el menú sigue funcionando. `obit doctor` lo indica como información (JSON: `installation: label-language-mismatch`). `obit init --context-menu --yes` aplica el idioma actual de la interfaz.
 
-macOS y Linux todavía no tienen menú contextual. Usa `obit mark <path> 7d` para registrar un elemento y `obit bury <path>` para enterrarlo de inmediato.
+En Finder usa Acciones rápidas; en Nautilus, Scripts → Obituary. Dolphin pasa el mismo destino al pulsar un espacio vacío o una sola carpeta, por lo que no ofrece acciones en ninguno de esos casos. En Dolphin, el submenú Obituary está disponible para un archivo o una selección múltiple, y una política requiere al menos dos carpetas seleccionadas. Para una sola carpeta seleccionada, usa la línea de comandos o Nautilus. Actualiza el menú existente con `obit init --context-menu --yes`.
 
 ## Iconos y menús
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"maps"
 	"os"
+	"runtime"
 	"slices"
 	"strings"
 
@@ -44,7 +45,7 @@ func (a *API) contextMenuPlan(enabled bool, labels, ui i18n.Language) ([]context
 		if _, err := os.Stat(a.deps.Executable); err != nil {
 			return nil, nil, err
 		}
-		if _, err := os.Stat(a.deps.Daemon); err != nil {
+		if _, err := os.Stat(a.deps.Daemon); runtime.GOOS == "windows" && err != nil {
 			return nil, nil, err
 		}
 	}
@@ -86,6 +87,12 @@ func menuPreview(change contextmenu.Change, ui i18n.Language) ChangePreview {
 
 // menuLabels lists the entry names a key shows, in menu order.
 func menuLabels(tree contextmenu.Tree, ui i18n.Language) string {
+	if runtime.GOOS != "windows" {
+		if tree == nil {
+			return ui.Text(i18n.Disabled)
+		}
+		return ui.Text(i18n.Enabled)
+	}
 	var names []string
 	for _, key := range slices.Sorted(maps.Keys(tree)) {
 		name := tree[key]["MUIVerb"]

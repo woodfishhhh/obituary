@@ -4,7 +4,7 @@ Ressuscitez des fichiers, approuvez les propositions et modifiez les réglages s
 
 ## Ce que propose chacune des trois plateformes
 
-La fenêtre, l’icône de notification et les notifications de bureau existent sous Windows, macOS et Ubuntu 24.04 ; le menu contextuel et les étiquettes de date de l’Explorateur n’existent que sous Windows. Les éditions de bureau pour macOS et Ubuntu sont pour l’instant des préversions. Les autres distributions Linux n’ont pas d’édition de bureau et utilisent la ligne de commande.
+La fenêtre, l’icône de notification et les notifications de bureau existent sous Windows, macOS et Ubuntu 24.04. Les éditions de bureau pour macOS et Ubuntu sont pour l’instant des préversions. Les autres distributions Linux n’ont pas d’édition de bureau et utilisent la ligne de commande.
 
 | | Windows | macOS | Ubuntu 24.04 |
 | --- | --- | --- | --- |
@@ -13,8 +13,8 @@ La fenêtre, l’icône de notification et les notifications de bureau existent 
 | Icône à l’ouverture de session | activée par défaut après `obit init` | interrupteur dans Settings | interrupteur dans Settings |
 | Vérification des expirations | processus résident de l’icône | LaunchAgent | systemd |
 | Notifications de bureau | oui | oui | oui |
-| Menu contextuel | dans l’Explorateur | non | non |
-| Étiquettes de date dans l’Explorateur | oui | non | non |
+| Menu contextuel | dans l’Explorateur | Finder: Actions rapides | Nautilus: Scripts · Dolphin |
+| Étiquettes de date | oui | Finder | Dolphin |
 | Mode Corbeille | oui | non, cimetière seulement | oui |
 | Installé avec | le script d’installation, Scoop, winget ou l’archive | le DMG | le `.deb` |
 | Première ouverture | une archive téléchargée à la main peut déclencher un avertissement SmartScreen | demande une autorisation manuelle, voir [plus bas](#premiere-ouverture-d-une-app-non-signee) | s’ouvre directement |
@@ -110,7 +110,7 @@ Vous pouvez ajouter plusieurs fichiers en une fois. Une notification indique le 
 
 Après une mise à niveau, si tous les libellés du menu de l’Explorateur sont dans une autre langue prise en charge, le menu reste utilisable. `obit doctor` le signale à titre informatif (JSON : `installation: label-language-mismatch`). `obit init --context-menu --yes` applique la langue actuelle de l’interface.
 
-macOS et Linux n’ont pas encore de menu contextuel. Utilisez `obit mark <path> 7d` pour ajouter un élément ou `obit bury <path>` pour l’enterrer immédiatement.
+Dans Finder, ouvrez Actions rapides ; dans Nautilus, Scripts → Obituary. Dolphin transmet la même cible pour une zone vide et pour un seul dossier sélectionné : aucune action Obituary dans ces deux cas. Dans Dolphin, le sous-menu reste disponible pour un fichier ou une sélection multiple, et une règle de dossier nécessite au moins deux dossiers sélectionnés. Pour un seul dossier sélectionné, utilisez la ligne de commande ou Nautilus. Mettez à jour un menu existant avec `obit init --context-menu --yes`.
 
 ## Icônes et menus
 

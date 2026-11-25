@@ -3,11 +3,14 @@
 package app
 
 import (
-	"github.com/woodfishhhh/obituary/internal/config"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/userdirs"
 )
 
-// Explorer labels have no POSIX projection. CLI diagnostics disclose this.
-func syncExplorer(*core.Service, config.Config) {}
-func syncCurrentExplorer(*core.Service)         {}
-func explorerStale(string, string) bool         { return false }
+func explorerFolders() ([]string, error) {
+	downloads, err := userdirs.Downloads()
+	if err != nil {
+		return nil, err
+	}
+	desktop, err := userdirs.Desktop()
+	return []string{downloads, desktop}, err
+}

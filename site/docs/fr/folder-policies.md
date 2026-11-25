@@ -30,3 +30,5 @@ Dans Téléchargements, sur le Bureau et dans les dossiers soumis à une règle,
 - Les dates proviennent du fichier caché `desktop.ini` du dossier.
 - Dans la section `[explorer]` de `config.toml`, utilisez `enabled = false` pour masquer les dates ou `everywhere = true` pour les afficher partout.
 - L’Explorateur met les vues des dossiers en cache. Après une prolongation, l’ancienne date peut rester affichée dans la même fenêtre pendant une minute au maximum.
+
+Finder et Dolphin affichent la date d’enterrement dans une étiquette sans renommer le fichier. Prolonger la durée de vie actualise la date. L’arrêt du suivi et la désinstallation ne retirent que les étiquettes ajoutées par Obituary. Dans Nautilus, consultez `obit list`.

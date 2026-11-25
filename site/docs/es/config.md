@@ -39,7 +39,7 @@ En Windows y Linux, `graveyard.mode = "recycle"` usa la papelera del sistema. Re
 
 `watch.stable_window` es la paciencia de una política de carpetas: un archivo nuevo tiene que permanecer sin cambios durante este tiempo antes de moverse, para que no se lleve un archivo que aún se está descargando. Usa el formato de duración de Go, un número seguido de `s`, `m` o `h`, que se puede encadenar como en `1h30m`, y debe ser mayor que cero.
 
-Los ajustes `explorer.*` solo importan en Windows. Obituary hace que el Explorador muestre la fecha de entierro junto al nombre del archivo sin cambiar el nombre real. De forma predeterminada ocurre en Descargas, en el Escritorio (con sus subcarpetas) y en los lugares que gestiona una política de carpetas. Con `explorer.everywhere` activado, también lo muestran otras ubicaciones seguidas; las áreas de trabajo de Git quedan fuera salvo que pongas `explorer.in_git` en `true`; y `explorer.enabled = false` lo desactiva por completo. Consulta [Políticas de carpetas](./folder-policies).
+Los ajustes `explorer.*` controlan las fechas junto al nombre en el Explorador de Windows y las etiquetas de fecha en Finder y Dolphin. El nombre real no cambia. De forma predeterminada ocurre en Descargas, en el Escritorio (con sus subcarpetas) y en los lugares que gestiona una política de carpetas. Con `explorer.everywhere` activado, también lo muestran otras ubicaciones seguidas; las áreas de trabajo de Git quedan fuera salvo que pongas `explorer.in_git` en `true`; y `explorer.enabled = false` lo desactiva por completo. Consulta [Políticas de carpetas](./folder-policies).
 
 ## Interfaz
 
