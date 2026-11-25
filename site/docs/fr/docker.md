@@ -28,7 +28,7 @@ La protection reconnaît `docker volume rm`, `docker volume remove`, `docker vol
 
 - Après `docker stop`, le conteneur et sa couche accessible en écriture sont conservés. `obit resurrect <id>` lance `docker start`, puis met fin au suivi de sa durée de vie.
 - Le conteneur n’est supprimé avec `docker rm` qu’après le délai de conservation (`[graveyard] retention_days`, 7 jours par défaut). Les options `-v` et `-f` ne sont jamais utilisées.
-- S’il est en cours d’exécution à ce moment-là, que vous l’ayez redémarré vous-même ou non, il est considéré comme ressuscité et conservé.
+- Si vous démarrez le conteneur pendant la période de conservation, Obituary le conserve et cesse de le suivre, même si vous l’arrêtez de nouveau. Les anciennes versions n’enregistraient pas l’heure de démarrage : ces conteneurs ne sont pas supprimés et restent récupérables avec `obit resurrect <id>`.
 - Pour les conteneurs, `obit purge` et `--all` respectent également le délai de conservation. Le mode corbeille ne s’applique pas : les conteneurs sont d’abord arrêtés, puis supprimés après ce délai.
 
 ## Identification par l’ID complet

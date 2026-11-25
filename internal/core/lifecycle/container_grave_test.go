@@ -168,6 +168,52 @@ func TestContainerLifecycle(t *testing.T) {
 	}
 }
 
+func TestContainerPurgeRestartedThenStopped(t *testing.T) {
+	f, it, _, _, log := fakeStopFixture(t)
+	if _, err := f.svc.Sweep(false); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.svc.Docker.Start(t.Context(), *it.Container); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.svc.Docker.Stop(t.Context(), *it.Container, nil); err != nil {
+		t.Fatal(err)
+	}
+	f.clock = f.clock.Add(8 * 24 * time.Hour)
+	_, rows, err := f.svc.Tick()
+	if err != nil || len(rows) != 1 || rows[0].Action != core.ActionResurrected {
+		t.Fatalf("restarted then stopped: %+v %v", rows, err)
+	}
+	for _, call := range testenv.DockerCalls(t, log) {
+		if testenv.DockerCommand(call)[0] == "rm" {
+			t.Fatal("reclaimed container removed")
+		}
+	}
+}
+
+func TestLegacyContainerWithoutStopTimeStaysRestorable(t *testing.T) {
+	f, d, it := containerFixture(t)
+	f.clock = f.clock.Add(2 * time.Hour)
+	if _, err := f.svc.Sweep(false); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.svc.Store.Update(func(st *core.State) error {
+		st.Burials[0].Container.StartedAt = ""
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	f.clock = f.clock.Add(8 * 24 * time.Hour)
+	_, rows, err := f.svc.Tick()
+	if len(rows) != 1 || !strings.Contains(rows[0].Error, "cannot verify container start") || strings.Join(d.calls, ",") != "stop" {
+		t.Fatal(rows, d.calls, err)
+	}
+	rows, err = f.svc.Resurrect([]string{fmt.Sprint(it.ID)})
+	if err != nil || len(rows) != 1 || rows[0].Action != core.ActionResurrected {
+		t.Fatal(rows, err)
+	}
+}
+
 func TestContainerPurgeRunningPreserved(t *testing.T) {
 	f, d, it := containerFixture(t)
 	f.clock = f.clock.Add(2 * time.Hour)
