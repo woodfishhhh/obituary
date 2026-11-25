@@ -379,7 +379,7 @@ func killReplayAfterCommit(t *testing.T, store core.Store, repo string) {
 }
 
 // With a resident, hooks do not touch the ledger lock: a writer holding it for
-// seconds neither delays them nor makes them queue per-request files themselves.
+// seconds does not prevent them from handing off all their writes.
 // The old path waited out its full one-second lock deadline first.
 func TestResidentTakesHookWritesWhileTheLedgerIsLocked(t *testing.T) {
 	if testing.Short() {
@@ -423,15 +423,16 @@ func TestResidentTakesHookWritesWhileTheLedgerIsLocked(t *testing.T) {
 		data, _ := os.ReadFile(filepath.Join(store.Home, "hook.log"))
 		t.Fatalf("a hook failed open: %s", data)
 	}
-	if status, err := store.InspectObservations(); err != nil || status.Pending != 20 {
-		t.Fatalf("all 20 requests are acknowledged and still unprocessed behind the lock: %+v %v", status, err)
+	if st, err := store.Inspect(); err != nil || len(st.ObservationReceipts) != 0 || !store.HasDeferredObservations() {
+		t.Fatalf("writes should be queued behind the ledger lock: receipts=%d err=%v", len(st.ObservationReceipts), err)
 	}
 	release()
 	release = nil
 	waitForQueueItems(t, store, 16)
 	st, err := store.ReadSnapshot()
-	if err != nil || len(st.Items) != 16 {
-		t.Fatalf("items=%d err=%v", len(st.Items), err)
+	// A timed-out acknowledgement can leave two queue records for the same token.
+	if err != nil || len(st.ObservationReceipts) != len(cmds) || len(st.Items) != len(paths) {
+		t.Fatalf("receipts=%d items=%d err=%v", len(st.ObservationReceipts), len(st.Items), err)
 	}
 	for _, item := range st.Items {
 		if item.Rev != 1 {
