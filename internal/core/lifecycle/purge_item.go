@@ -163,7 +163,7 @@ func (s *Service) deletePurgeBurial(r *GraveResult, state State, dir, basis stri
 	if err != nil {
 		return err
 	}
-	err = os.RemoveAll(dir)
+	err = s.FS.PurgeGrave(dir, *r.Burial.GraveID)
 	if err != nil {
 		r.Error = fmt.Sprintf("#%d: %v", r.Burial.ID, err)
 		return nil

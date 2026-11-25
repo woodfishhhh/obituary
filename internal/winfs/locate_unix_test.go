@@ -15,25 +15,20 @@ func TestPOSIXBirthTimeCheckedAtLookup(t *testing.T) {
 	makePOSIXPayload(t, path, false, "keep")
 	fs := FS{}
 	want, parent := posixID(t, path), posixID(t, dir)
-	root, err := os.OpenRoot(dir)
+	root, err := os.Open(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer root.Close()
-	if matches, err := fs.matchesPOSIXInfo(root, "payload", changedBirth(want)); err != nil || matches {
-		t.Fatalf("lookup accepted wrong birth time: %v %v", matches, err)
-	}
-	if found, err := fs.LocateIn(dir, changedBirth(want)); err == nil {
-		t.Fatalf("lookup accepted wrong birth time: %s", found)
+	got, isDir, err := fs.BurialEntry(root, path, parent)
+	if err != nil || isDir || got != want || got == changedBirth(want) {
+		t.Fatalf("burial inventory lost birth time: %+v %v", got, err)
 	}
 	if found, err := fs.FindRestoredIn(dir, parent, changedBirth(want)); err == nil {
 		t.Fatalf("restore lookup accepted wrong source birth time: %s", found)
 	}
 	if found, err := fs.FindRestoredIn(dir, changedBirth(parent), want); err == nil {
 		t.Fatalf("restore lookup accepted wrong parent birth time: %s", found)
-	}
-	if found, err := fs.LocateIn(dir, want); err != nil || found != path {
-		t.Fatalf("durable lookup failed: %s %v", found, err)
 	}
 	if found, err := fs.FindRestoredIn(dir, parent, want); err != nil || found != path {
 		t.Fatalf("durable restore lookup failed: %s %v", found, err)
@@ -43,8 +38,9 @@ func TestPOSIXBirthTimeCheckedAtLookup(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if found, err := fs.LocateIn(dir, weak); err == nil {
-		t.Fatalf("weak child lookup accepted: %s", found)
+	got, _, err = fs.BurialEntry(root, path, parent)
+	if err == nil || got != weak || got == want {
+		t.Fatalf("weak child acquired a durable identity: %+v %v", got, err)
 	}
 	parentBirth, err := strconv.ParseUint(parent.FileID[:16], 16, 64)
 	if err != nil {

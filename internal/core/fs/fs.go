@@ -20,6 +20,10 @@ var (
 type FS interface {
 	// OpenBurialDirectory opens an ordinary directory and verifies its identity on the enumeration handle.
 	OpenBurialDirectory(path string, want Identity) (fs.ReadDirFile, error)
+	// BurialEntry identifies the literal enumerated name and reports whether to descend.
+	BurialEntry(parent fs.ReadDirFile, path string, dir Identity) (Identity, bool, error)
+	// PurgeGrave removes a verified grave without crossing filesystem boundaries.
+	PurgeGrave(path string, want Identity) error
 	// NewDirectoryChanges creates a synchronous namespace-change check for a large burial scan.
 	NewDirectoryChanges(root string) (DirectoryChanges, error)
 	// Identify returns the identity of the object at path (without following

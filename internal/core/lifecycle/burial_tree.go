@@ -52,9 +52,6 @@ func (s *Service) currentBurialChildren(st *State, item Item, snap *lifespanSnap
 			active[other.Identity.FileID] = false
 		}
 	}
-	if len(active) == 0 {
-		return nil, nil
-	}
 	inside, err := s.containedIdentities(item, snap, active)
 	if err != nil {
 		return nil, err
@@ -150,14 +147,14 @@ func (s *Service) walkBurialTree(ctx context.Context, root string, id Identity, 
 			}
 			remaining--
 			path := filepath.Join(dir.path, e.Name())
-			child, err := s.FS.Identify(path)
+			child, descend, err := s.FS.BurialEntry(f, path, dir.id)
 			if err != nil {
 				return fmt.Errorf("inspect burial descendant %s: %v", path, err) //nolint:errorlint // An unsafe child must retry, not retire the parent's registration.
 			}
 			if child.Serial != id.Serial {
-				return nil
+				return fmt.Errorf("burial descendant is on another device: %s", path)
 			}
-			if e.IsDir() && e.Type()&(fs.ModeSymlink|fs.ModeIrregular) == 0 {
+			if descend {
 				if seen[child.FileID] {
 					return fmt.Errorf("directory occurs twice under %s", root)
 				}

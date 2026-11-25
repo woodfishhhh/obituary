@@ -4,6 +4,7 @@ package lifecycle_test
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -86,11 +87,11 @@ type unreadableDescendantFS struct {
 	blocked string
 }
 
-func (f unreadableDescendantFS) Identify(path string) (core.Identity, error) {
+func (f unreadableDescendantFS) BurialEntry(parent fs.ReadDirFile, path string, dir core.Identity) (core.Identity, bool, error) {
 	if samePath(path, f.blocked) {
-		return core.Identity{}, os.ErrPermission
+		return core.Identity{}, false, os.ErrPermission
 	}
-	return f.FS.Identify(path)
+	return f.FS.BurialEntry(parent, path, dir)
 }
 func TestBurialUnreadablePhysicalChildRetries(t *testing.T) {
 	f := newFixture(t)
@@ -101,5 +102,37 @@ func TestBurialUnreadablePhysicalChildRetries(t *testing.T) {
 	rows := f.sweepAt(time.Hour)
 	if len(rows) != 1 || rows[0].Action != core.ActionRetry || read(t, file) != "parent/unreadable" || !exists(parent.Path) {
 		t.Fatalf("unreadable child authorized burial: %+v", rows)
+	}
+}
+
+func TestBurialRawNTFSNames(t *testing.T) {
+	for _, suffix := range []string{".", " "} {
+		t.Run(fmt.Sprintf("%x", suffix), func(t *testing.T) {
+			f := newFixture(t)
+			ordinary := f.file("parent/item")
+			f.add(ordinary, time.Minute)
+			dir := filepath.Dir(ordinary)
+			parent := f.add(dir, time.Hour)
+			keep := f.add(f.file("keep"), 24*time.Hour)
+			raw := `\\?\` + ordinary + suffix
+			t.Cleanup(func() {
+				if _, err := os.Lstat(raw); err == nil {
+					if err := os.Rename(raw, keep.Path); err != nil {
+						t.Error(err)
+					}
+				}
+			})
+			restore := core.SetAfterManifest(f.svc, func() {
+				if err := os.Rename(keep.Path, raw); err != nil {
+					t.Fatal(err)
+				}
+			})
+			defer restore()
+			f.clock = f.clock.Add(time.Hour)
+			rows, err := f.svc.Bury([]string{parent.Path}, false, "")
+			if err != nil || len(rows) != 1 || rows[0].Action != core.ActionRetry || read(t, raw) != "keep" || read(t, ordinary) != "parent/item" || len(f.burials()) != 0 {
+				t.Fatalf("raw sibling lost protection: %+v %v", rows, err)
+			}
+		})
 	}
 }

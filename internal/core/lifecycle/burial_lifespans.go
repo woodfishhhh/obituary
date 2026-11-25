@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -76,7 +77,7 @@ func (s *Service) preflightContained(st *State, item Item, real string, expires 
 			}
 			current, err = s.LocateKnown(other.Path, *other.Identity)
 		}
-		if errors.Is(err, ErrNotFound) {
+		if errors.Is(err, ErrNotFound) || runtime.GOOS != "windows" && other.Identity != nil && errors.Is(err, ErrUnsupported) {
 			continue
 		}
 		if err != nil {

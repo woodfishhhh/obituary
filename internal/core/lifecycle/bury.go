@@ -11,7 +11,7 @@ import (
 )
 
 // entomb records one manifest's burial, retaining its original timestamps.
-func (s *Service) entomb(st *State, b *Burial) error {
+func (s *Service) entomb(st *State, b *Burial, inside map[string]bool) error {
 	// Recovery also enters here, after another operation may have filled the
 	// outbox. Keep the manifest until its event fits in the same transaction.
 	if err := requireAuditSpace(st); err != nil {
@@ -20,7 +20,7 @@ func (s *Service) entomb(st *State, b *Burial) error {
 	if st.BurialIndex(b.ID) >= 0 || st.ProposalIndex(b.ID) >= 0 {
 		return fmt.Errorf("#%d is already in use; leaving its grave unchanged", b.ID)
 	}
-	if err := s.reconcileChildren(st, b); err != nil {
+	if err := reconcileChildren(st, b, inside); err != nil {
 		return err
 	}
 	st.Burials = append(st.Burials, *b)

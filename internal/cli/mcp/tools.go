@@ -77,7 +77,7 @@ func NewServer(svc *core.Service, version string) *mcp.Server {
 	addMCPTool(s, svc, "obit_mktemp", "Creates and registers a temporary directory with a lifespan. The explicit absolute cwd selects the Git project; outside Git the system temporary directory is used.", false, mktempMCP)
 	buryDescription := "Moves absolute paths into the restorable graveyard immediately, with the same Guard and identity checks as obit bury."
 	if svc.Mode == core.ModeRecycle {
-		buryDescription = "Moves absolute paths to the system Recycle Bin immediately, with the same Guard and identity checks as obit bury. Restore from the Recycle Bin; obit_resurrect cannot restore these files."
+		buryDescription = "Moves files to the system Recycle Bin. Restore files from the Recycle Bin. Directories move to the verified graveyard and can be restored with obit_resurrect."
 	}
 	addMCPTool(s, svc, "obit_bury", buryDescription, false, buryMCP)
 	addMCPTool(s, svc, "obit_resurrect", "Restores verified burials by ID or absolute original path. Existing files are never overwritten; the result reports the restored path.", false, resurrectMCP)

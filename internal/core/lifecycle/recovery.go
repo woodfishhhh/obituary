@@ -6,33 +6,77 @@ import (
 	"os"
 )
 
-// Children records identities before the move; Contains is the set still in
-// the grave. Departed children stay untracked. Uncertain locations block recovery.
-func (s *Service) reconcileChildren(st *State, b *Burial) error {
+// Scan the private grave while graveyard.lock excludes recovery and purge. The manifest
+// protects a moved directory until the inventory and current ledger agree.
+func (s *Service) graveInventory(b Burial) (map[string]bool, error) {
+	if !b.IsDir {
+		return nil, nil
+	}
+	inside := make(map[string]bool)
+	err := s.walkBurialTree(s.Store.Context(), b.Grave, *b.Identity, nil, -1, func(id string) { inside[id] = true })
+	if err != nil {
+		return nil, err
+	}
+	for _, child := range b.Children {
+		if child.Identity == nil {
+			return nil, ErrUnsafe
+		}
+		if child.Identity.Serial == b.Identity.Serial && inside[child.Identity.FileID] {
+			continue
+		}
+		current, e := s.FS.Locate(*child.Identity)
+		if errors.Is(e, ErrNotFound) {
+			continue
+		}
+		if e != nil {
+			return nil, fmt.Errorf("locate departed #%d: %w", child.ID, e)
+		}
+		if isInside(current, b.Grave) {
+			return nil, fmt.Errorf("departed #%d still in grave", child.ID)
+		}
+	}
+	return inside, nil
+}
+
+func reconcileChildren(st *State, b *Burial, inside map[string]bool) error {
+	if !b.IsDir {
+		return nil
+	}
+	known := make(map[int64]bool, len(b.Children))
 	var contained []int64
 	for _, child := range b.Children {
 		idx := st.Index(child.ID)
-		if st.BurialIndex(child.ID) >= 0 || st.ProposalIndex(child.ID) >= 0 ||
-			idx >= 0 && (st.Items[idx].Identity == nil || *st.Items[idx].Identity != *child.Identity) {
+		if child.Identity == nil || st.BurialIndex(child.ID) >= 0 || st.ProposalIndex(child.ID) >= 0 || idx >= 0 && (st.Items[idx].Identity == nil || *st.Items[idx].Identity != *child.Identity) {
 			return fmt.Errorf("contained #%d belongs to another object: %w", child.ID, ErrUnsafe)
 		}
-		current, err := s.findBuriedChild(*b, *child.Identity)
-		if errors.Is(err, ErrNotFound) {
+		known[child.ID] = true
+		if child.Identity.Serial == b.Identity.Serial && inside[child.Identity.FileID] {
+			contained = append(contained, child.ID)
+		}
+	}
+	for _, it := range st.Items {
+		if known[it.ID] || it.ID == b.ID || it.Kind == KindContainer || it.Kind == KindDockerVolume {
 			continue
 		}
-		if err != nil {
-			return fmt.Errorf("locate contained #%d: %w", child.ID, err)
-		}
-		grave, err := s.FS.RealPath(b.Grave)
-		if err != nil {
-			return err
-		}
-		if isInside(current, grave) {
-			contained = append(contained, child.ID)
+		if it.Identity == nil || it.Identity.Serial == b.Identity.Serial && inside[it.Identity.FileID] {
+			return fmt.Errorf("cannot confirm grave #%d with unaccounted active item #%d; retaining manifest", b.ID, it.ID)
 		}
 	}
 	b.Contains = contained
 	return nil
+}
+
+// checkErr identifies a local receipt requiring retry. A storage failure stops the batch.
+func (s *Service) publishBurial(b *Burial) (checkErr, err error) {
+	inside, checkErr := s.graveInventory(*b)
+	if checkErr != nil {
+		return checkErr, nil
+	}
+	err = s.Store.UpdateGraveyard(func(st *State) error { checkErr = s.entomb(st, b, inside); return checkErr })
+	if checkErr != nil {
+		return checkErr, nil
+	}
+	return
 }
 
 type recovery struct {
@@ -192,8 +236,7 @@ func (s *Service) recoverRecordedManifest(p PendingGrave) (manifestRecovery, err
 
 func (s *Service) recoverPendingManifest(p PendingGrave) (manifestRecovery, error) {
 	b := *p.Burial
-	var checkErr error
-	err := s.Store.UpdateGraveyard(func(st *State) error { checkErr = s.entomb(st, &b); return checkErr })
+	checkErr, err := s.publishBurial(&b)
 	if checkErr != nil {
 		return manifestRecovery{warning: checkErr}, nil
 	}

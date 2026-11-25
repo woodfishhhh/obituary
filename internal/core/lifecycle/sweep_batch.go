@@ -122,6 +122,7 @@ func (s *Service) commitBurialBatch(pending []*preparedBurial, owners *ownership
 		}
 		processed, auditCount, stopErr, err := s.commitBurialPrefix(pending, owners, reason, requestContext, len(outcomes) > 0)
 		for _, p := range pending[:processed] {
+			p.out.lifespans.close()
 			outcomes = append(outcomes, p.out)
 		}
 		// A cleanup error does not undo the confirmed transaction.
@@ -189,6 +190,9 @@ func (s *Service) moveBurialPrefix(st *State, pending []*preparedBurial, owners 
 		if owners != nil {
 			owners.done[p.out.Item.ID] = true
 		}
+		if p.moved && p.burial.IsDir {
+			break
+		}
 		if !p.moved {
 			if reason == ReasonExpired {
 				s.commitOutcome(st, p.out)
@@ -202,7 +206,7 @@ func (s *Service) moveBurialPrefix(st *State, pending []*preparedBurial, owners 
 func (s *Service) finishBurialBatch(pending []*preparedBurial, commitErr error) error {
 	if !commitFailed(commitErr) {
 		for _, p := range pending {
-			if p.moved {
+			if p.moved && !p.burial.IsDir {
 				p.out.Action, p.out.Burial = ActionBuried, &p.burial
 			}
 		}
@@ -216,6 +220,7 @@ func (s *Service) finishBurialBatch(pending []*preparedBurial, commitErr error) 
 		if commitFailed(finishErr) {
 			return finishErr
 		}
+		commitErr = finishErr
 	}
 	return commitErr
 }

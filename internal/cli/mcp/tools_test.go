@@ -114,7 +114,7 @@ func TestMCPRecycleModeDescriptionAndReceipt(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, tool := range tools.Tools {
-		if tool.Name == "obit_bury" && tool.Description != "Moves absolute paths to the system Recycle Bin immediately, with the same Guard and identity checks as obit bury. Restore from the Recycle Bin; obit_resurrect cannot restore these files." {
+		if tool.Name == "obit_bury" && tool.Description != "Moves files to the system Recycle Bin. Restore files from the Recycle Bin. Directories move to the verified graveyard and can be restored with obit_resurrect." {
 			t.Errorf("recycle description promises wrong recovery: %s", tool.Description)
 		}
 	}

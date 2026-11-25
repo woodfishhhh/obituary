@@ -113,7 +113,7 @@ func (s *Service) deletePurgePrefix(batch []GraveResult, state State) (processed
 		if s.beforePurgeDelete != nil {
 			s.beforePurgeDelete()
 		}
-		if err := os.RemoveAll(filepath.Dir(b.Grave)); err != nil {
+		if err := s.FS.PurgeGrave(filepath.Dir(b.Grave), *b.GraveID); err != nil {
 			r.Error = fmt.Sprintf("#%d: %v", b.ID, err)
 		} else {
 			r.Action = ActionPurged

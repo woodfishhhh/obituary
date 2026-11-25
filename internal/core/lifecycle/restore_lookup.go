@@ -24,20 +24,12 @@ func (s *Service) LocateKnown(path string, want Identity) (string, error) {
 	if !errors.Is(err, ErrUnsupported) {
 		return current, err
 	}
-	if got, checkErr := s.FS.Identify(path); checkErr == nil && got == want {
+	got, checkErr := s.FS.Identify(path)
+	if checkErr != nil && !errors.Is(checkErr, ErrNotFound) {
+		return "", checkErr
+	}
+	if checkErr == nil && got == want {
 		return s.FS.RealPath(path)
 	}
 	return "", err
-}
-
-func (s *Service) findBuriedChild(b Burial, want Identity) (string, error) {
-	current, err := s.FS.Locate(want)
-	if errors.Is(err, ErrUnsupported) {
-		if fs, ok := s.FS.(interface {
-			LocateIn(string, Identity) (string, error)
-		}); ok {
-			return fs.LocateIn(b.Grave, want)
-		}
-	}
-	return current, err
 }

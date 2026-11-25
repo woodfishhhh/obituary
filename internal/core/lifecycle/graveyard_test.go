@@ -343,11 +343,14 @@ func TestMissingRootSnapshotAfterFirstBurial(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer parent.Close()
-	f.svc.FS = &moveHookFS{testFS: f.fs, after: func(to string) {
-		if _, err := f.fs.MovePinnedInto(b, *second.Identity, parent, "payload-b.txt"); err != nil {
-			t.Fatal(err)
+	// Exercise the cached root after publication. Before publication, the grave inventory retains the manifest.
+	t.Cleanup(core.SetBurialStep(f.svc, func(step string) error {
+		if step == "committed" {
+			_, err := f.fs.MovePinnedInto(b, *second.Identity, parent, "payload-b.txt")
+			return err
 		}
-	}}
+		return nil
+	}))
 	f.clock = first.ExpiresAt
 	rows, err := f.svc.Sweep(false)
 	graves := f.burials()

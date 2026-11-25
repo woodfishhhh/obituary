@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -479,6 +480,11 @@ func TestRecoveryReconcilesDepartedChildren(t *testing.T) {
 	}
 }
 
+type unavailableGraveDirectory struct{ core.FS }
+
+func (unavailableGraveDirectory) OpenBurialDirectory(string, core.Identity) (fs.ReadDirFile, error) {
+	return nil, os.ErrPermission
+}
 func TestChildRecoveryRetriesTemporaryLocateFailure(t *testing.T) {
 	f := newFixture(t)
 	path := f.file("output/child.txt")
@@ -497,14 +503,14 @@ func TestChildRecoveryRetriesTemporaryLocateFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 	restore()
-	f.fs.locateErr = errors.New("temporary child locate failure")
+	f.svc.FS = unavailableGraveDirectory{f.fs}
 	if rows, err := f.svc.Bury([]string{parent.Path}, false, ""); err != nil || !core.GraveFailed(rows) {
 		t.Fatalf("uncertain child recovery must be a per-record failure: %+v %v", rows, err)
 	}
 	if len(f.items()) != 2 || len(f.burials()) != 0 {
 		t.Fatal("uncertain child retired")
 	}
-	f.fs.locateErr = nil
+	f.svc.FS = f.fs
 	if _, err := f.svc.Bury([]string{parent.Path}, false, ""); err != nil {
 		t.Fatal(err)
 	}

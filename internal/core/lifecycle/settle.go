@@ -19,7 +19,7 @@ func (s *Service) settle(item Item, dryRun bool, reason string, roots []resolved
 	if out.Action != "" || out.err != nil {
 		return out
 	}
-	if !s.recycleMode() {
+	if !s.recycleMode() || item.IsDir {
 		return s.moveToGrave(out, reason)
 	}
 	return s.recyclePrepared(out, reason)
@@ -27,39 +27,24 @@ func (s *Service) settle(item Item, dryRun bool, reason string, roots []resolved
 
 func (s *Service) recyclePrepared(out Outcome, reason string) Outcome {
 	item := out.Item
-	defer out.lifespans.close()
-	for {
-		s.prepareWideInventory(&out)
-		if out.Action != "" {
+	// Directories take the verifiable graveyard path. The Shell cannot inspect a moved tree.
+	if err := s.Store.UpdateGraveyard(func(st *State) error {
+		if err := requireAuditSpace(st); err != nil {
+			return err
+		}
+		if _, err := s.burialRevision(st, item, reason); err != nil {
+			return err
+		}
+		if err := s.checkChildLifespanState(st, item, out.Path, reason); err != nil {
+			out = failedMove(out, err)
+			return err
+		}
+		return nil
+	}); err != nil {
+		if out.Action == ActionRetry {
 			return out
 		}
-		// Shell recycling is slow: hold the write lock only for the final check.
-		// A later mutation may still race the Shell, but commit preserves its Rev.
-		if err := s.Store.UpdateGraveyard(func(st *State) error {
-			if err := requireAuditSpace(st); err != nil {
-				return err
-			}
-			if _, err := s.burialRevision(st, item, reason); err != nil {
-				return err
-			}
-			if _, err := s.commitChildLifespans(st, out, reason); err != nil {
-				if errors.Is(err, errLifespanBudget) {
-					return err
-				}
-				out = failedMove(out, err)
-				return err
-			}
-			return nil
-		}); err != nil {
-			if errors.Is(err, errLifespanBudget) {
-				continue
-			}
-			if out.Action == ActionRetry {
-				return out
-			}
-			return ledgerOutcome(out, err)
-		}
-		break
+		return ledgerOutcome(out, err)
 	}
 	if err := s.FS.Recycle(out.Path, *item.Identity); err != nil {
 		return failedMove(out, err)
@@ -145,7 +130,7 @@ func settlementGuardFailure(out Outcome, err error) Outcome {
 func (s *Service) finishSettlementPreparation(out Outcome, dryRun bool, reason string, roots []resolvedGraveyardRoot, state *State, batchSnapshot bool) Outcome {
 	item, target := out.Item, out.Path
 	done := ActionBuried
-	if s.recycleMode() {
+	if s.recycleMode() && !item.IsDir {
 		done = ActionRecycled
 	}
 	if dryRun {
@@ -160,7 +145,7 @@ func (s *Service) finishSettlementPreparation(out Outcome, dryRun bool, reason s
 		out.Action = done
 		return out
 	}
-	if !s.recycleMode() {
+	if !s.recycleMode() || item.IsDir {
 		if batchSnapshot {
 			// The sweep already collected this snapshot's discoverable roots.
 			// Rebuilding them for each item performs quadratic Win32 path work.
