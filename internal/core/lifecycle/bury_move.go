@@ -18,15 +18,14 @@ func (s *Service) burialStep(step string) error {
 }
 
 type preparedBurial struct {
-	out                Outcome
-	burial             Burial
-	manifest           string
-	moved              bool
-	retained           bool // an unverified directory stays quarantined with its manifest
-	watch              *WatchSnapshot
-	sourceParent       *os.Root
-	owner              func(context.Context, string) Ownership
-	allowedItemChanges map[int64]bool
+	out          Outcome
+	burial       Burial
+	manifest     string
+	moved        bool
+	retained     bool // an unverified directory stays quarantined with its manifest
+	watch        *WatchSnapshot
+	sourceParent *os.Root
+	owner        func(context.Context, string) Ownership
 }
 
 func (s *Service) prepareBurial(out Outcome, reason string) *preparedBurial {
@@ -99,15 +98,17 @@ func (s *Service) validatePrepared(st *State, p *preparedBurial, reason string) 
 	if st.BurialIndex(b.ID) >= 0 || st.ProposalIndex(b.ID) >= 0 {
 		return "", fmt.Errorf("#%d is already in use", b.ID)
 	}
-	s.preparedLifespans, s.allowedItemChanges = p.out.lifespans, p.allowedItemChanges
-	defer func() { s.preparedLifespans, s.allowedItemChanges = nil, nil }()
-	children, err := s.childLifespans(st, out.Item, out.Path, reason)
+	children, err := s.commitChildLifespans(st, *out, reason)
+	if errors.Is(err, errLifespanBudget) {
+		return "", err
+	}
 	if err != nil {
 		*out = failedMove(*out, err)
 		return "", nil
 	}
+	rewriteManifest := len(b.Children) > 0 || len(children) > 0
 	setBurialChildren(b, children)
-	if len(children) > 0 {
+	if rewriteManifest {
 		// Publish this transaction's children before moving their parent.
 		if err := writeManifest(p.manifest, *b); err != nil {
 			*out = failedMove(*out, err)
@@ -193,6 +194,12 @@ func (s *Service) movePrepared(st *State, p *preparedBurial, reason string) erro
 			return nil
 		}
 	}
+	if snap := out.lifespans; snap != nil && snap.changes != nil {
+		if err := snap.changes.Check(); err != nil {
+			*out = failedMove(*out, err)
+			return nil
+		}
+	}
 	if err := s.FS.MovePinned(out.Path, *out.Item.Identity, b.Grave); err != nil {
 		*out = failedMove(*out, err)
 		return retainMoveMismatch(p, err)
@@ -254,7 +261,12 @@ func (s *Service) moveToGrave(out Outcome, reason string) Outcome {
 }
 
 func (s *Service) commitPreparedBurial(p *preparedBurial, reason string, owners *ownershipBatch) error {
+	defer p.out.lifespans.close()
 	for {
+		s.prepareWideInventory(&p.out)
+		if p.out.Action != "" {
+			return s.withGraveyardLock(func() error { return s.finishBurial(p, nil) })
+		}
 		if owners != nil {
 			owners.prefetch(s.Store.Context(), []*preparedBurial{p})
 			p.owner = owners.lookup
@@ -262,12 +274,12 @@ func (s *Service) commitPreparedBurial(p *preparedBurial, reason string, owners 
 		}
 		err := s.withGraveyardLock(func() error {
 			commitErr := s.Store.UpdateGraveyard(func(st *State) error { return s.movePrepared(st, p, reason) })
-			if errors.Is(commitErr, errOwnerSnapshotRefresh) {
+			if errors.Is(commitErr, errOwnerSnapshotRefresh) || errors.Is(commitErr, errLifespanBudget) {
 				return commitErr // Keep the prepared grave for the next transaction.
 			}
 			return s.finishBurial(p, commitErr)
 		})
-		if !errors.Is(err, errOwnerSnapshotRefresh) {
+		if !errors.Is(err, errOwnerSnapshotRefresh) && !errors.Is(err, errLifespanBudget) {
 			return err
 		}
 	}

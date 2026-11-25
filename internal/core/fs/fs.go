@@ -2,6 +2,7 @@ package fs
 
 import (
 	"errors"
+	"io/fs"
 )
 
 var (
@@ -17,6 +18,10 @@ var (
 // FS is the file system access Obituary needs; the Windows implementation
 // lives in internal/winfs and tests substitute their own.
 type FS interface {
+	// OpenBurialDirectory opens an ordinary directory and verifies its identity on the enumeration handle.
+	OpenBurialDirectory(path string, want Identity) (fs.ReadDirFile, error)
+	// NewDirectoryChanges creates a synchronous namespace-change check for a large burial scan.
+	NewDirectoryChanges(root string) (DirectoryChanges, error)
 	// Identify returns the identity of the object at path (without following
 	// links). Files with several hard links yield an error wrapping ErrUnsafe.
 	Identify(path string) (Identity, error)
@@ -87,4 +92,12 @@ type RestoreParent interface {
 	Path() string
 	// Identity was queried on the pinned handle, not by reopening Path.
 	Identity() Identity
+}
+
+// DirectoryChanges detects changes from before each directory is read through the commit check.
+// Check must report queued kernel events even when userspace has not scheduled a reader.
+type DirectoryChanges interface {
+	WatchDirectory(path string) error
+	Check() error
+	Close() error
 }

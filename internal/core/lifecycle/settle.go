@@ -22,29 +22,44 @@ func (s *Service) settle(item Item, dryRun bool, reason string, roots []resolved
 	if !s.recycleMode() {
 		return s.moveToGrave(out, reason)
 	}
-	// Shell recycling is slow: hold the write lock only for the final check.
-	// A later mutation may still race the Shell, but commit preserves its Rev.
-	if err := s.Store.UpdateGraveyard(func(st *State) error {
-		if err := requireAuditSpace(st); err != nil {
-			return err
-		}
-		if _, err := s.burialRevision(st, item, reason); err != nil {
-			return err
-		}
-		if err := s.checkChildLifespanState(st, item, out.Path, reason); err != nil {
-			out = failedMove(out, err)
-			return err
-		}
-		if _, err := s.validateLifespanSnapshot(st, item, out.Path, out.lifespans, nil); err != nil {
-			out = failedMove(out, err)
-			return err
-		}
-		return nil
-	}); err != nil {
-		if out.Action == ActionRetry {
+	return s.recyclePrepared(out, reason)
+}
+
+func (s *Service) recyclePrepared(out Outcome, reason string) Outcome {
+	item := out.Item
+	defer out.lifespans.close()
+	for {
+		s.prepareWideInventory(&out)
+		if out.Action != "" {
 			return out
 		}
-		return ledgerOutcome(out, err)
+		// Shell recycling is slow: hold the write lock only for the final check.
+		// A later mutation may still race the Shell, but commit preserves its Rev.
+		if err := s.Store.UpdateGraveyard(func(st *State) error {
+			if err := requireAuditSpace(st); err != nil {
+				return err
+			}
+			if _, err := s.burialRevision(st, item, reason); err != nil {
+				return err
+			}
+			if _, err := s.commitChildLifespans(st, out, reason); err != nil {
+				if errors.Is(err, errLifespanBudget) {
+					return err
+				}
+				out = failedMove(out, err)
+				return err
+			}
+			return nil
+		}); err != nil {
+			if errors.Is(err, errLifespanBudget) {
+				continue
+			}
+			if out.Action == ActionRetry {
+				return out
+			}
+			return ledgerOutcome(out, err)
+		}
+		break
 	}
 	if err := s.FS.Recycle(out.Path, *item.Identity); err != nil {
 		return failedMove(out, err)
@@ -134,7 +149,7 @@ func (s *Service) finishSettlementPreparation(out Outcome, dryRun bool, reason s
 		done = ActionRecycled
 	}
 	if dryRun {
-		if err := s.checkChildLifespans(state, item, target, reason); err != nil {
+		if _, err := s.preflightChildLifespans(state, item, target, reason); err != nil {
 			return failedMove(out, err)
 		}
 		release, err := s.holdWatchForMove(state, item, target, reason)

@@ -8,7 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"sync"
+	"slices"
+
 	"testing"
 	"time"
 
@@ -67,6 +68,11 @@ func TestManifestChildLookupUncertaintyRetries(t *testing.T) {
 			dir := filepath.Dir(child)
 			f.add(dir, time.Hour)
 			f.add(child, 30*24*time.Hour)
+			if errors.Is(cause, core.ErrNotFound) {
+				if err := os.Remove(child); err != nil {
+					t.Fatal(err)
+				}
+			}
 			f.fs.locateErr = cause
 			out := f.sweepAt(time.Hour)
 			if errors.Is(cause, core.ErrNotFound) {
@@ -127,37 +133,147 @@ func TestManifestChildLifespanRecheckedAfterMoveIntoParent(t *testing.T) {
 }
 
 func TestSweepContainmentScanDoesNotHoldStoreLock(t *testing.T) {
+	testContainmentLock(t, false)
+}
+
+func TestSweepMissingUnrelatedDoesNotHoldStoreLock(t *testing.T) {
+	testContainmentLock(t, true)
+}
+
+func testContainmentLock(t *testing.T, missing bool) {
+	if testing.Short() {
+		t.Skip("injects thirty slow lookups")
+	}
 	f := newFixture(t)
 	parent := filepath.Dir(f.file("parent/.marker"))
 	f.add(parent, time.Hour)
+	if missing {
+		stale := f.add(f.file("gone.txt"), 30*24*time.Hour)
+		if err := os.Remove(stale.Path); err != nil {
+			t.Fatal(err)
+		}
+	}
 	for i := range 30 {
 		f.add(f.file(fmt.Sprintf("unrelated-%02d.txt", i)), 30*24*time.Hour)
 	}
 	f.clock = f.clock.Add(time.Hour)
 	f.fs.locateDelay = 40 * time.Millisecond
+	reader := f.svc.Store
 	var maxLock time.Duration
 	core.ObserveStoreLocks(&f.svc.Store, func(held time.Duration) {
 		if held > maxLock {
 			maxLock = held
 		}
 	})
-	var once sync.Once
 	readerDone := make(chan time.Duration, 1)
-	f.fs.onLocate = func() {
-		once.Do(func() {
+	probe := &burialReaderFS{FS: f.fs, parent: parent}
+	f.svc.FS = probe
+	t.Cleanup(core.SetAfterManifest(f.svc, func() {
+		probe.start = func() {
+			entered := make(chan struct{})
 			go func() {
 				started := time.Now()
-				_, _ = f.svc.Store.ReadSnapshot()
+				close(entered)
+				if _, err := reader.ReadSnapshot(); err != nil {
+					t.Error(err)
+				}
 				readerDone <- time.Since(started)
 			}()
-		})
-	}
+			<-entered
+		}
+	}))
 	started := time.Now()
 	rows := f.sweepAt(time.Hour)
 	elapsed := time.Since(started)
-	readerWait := <-readerDone
+	var readerWait time.Duration
+	select {
+	case readerWait = <-readerDone:
+	case <-time.After(3 * time.Second):
+		t.Fatal("reader did not reach the commit")
+	}
 	if len(rows) != 1 || rows[0].Action != core.ActionBuried || maxLock >= time.Second || readerWait >= time.Second {
 		t.Fatalf("containment scan held store.lock: rows=%+v elapsed=%s lock=%s reader=%s", rows, elapsed, maxLock, readerWait)
 	}
 	t.Logf("containment scan elapsed=%s store.lock=%s reader wait=%s", elapsed, maxLock, readerWait)
+}
+
+func TestManifestExternalRenameProtectsChild(t *testing.T) {
+	f := newFixture(t)
+	src := f.file("outside/child")
+	parent := f.add(filepath.Dir(f.file("parent/marker")), time.Hour)
+	child := f.add(src, 30*24*time.Hour)
+	dst := filepath.Join(parent.Path, "arrived")
+	t.Cleanup(core.SetAfterManifest(f.svc, func() {
+		if err := os.Rename(src, dst); err != nil {
+			t.Fatal(err)
+		}
+	}))
+	rows := f.sweepAt(time.Hour)
+	st, err := f.svc.Store.Read()
+	if err != nil || len(rows) != 1 || rows[0].Action != core.ActionRetry || st.Index(child.ID) < 0 || len(st.Burials) != 0 || read(t, dst) != "outside/child" {
+		t.Fatalf("physical move lost child: rows=%+v err=%v", rows, err)
+	}
+}
+
+func TestManifestAliasRegistrationProtectsChild(t *testing.T) {
+	if testing.Short() {
+		t.Skip("creates a junction via cmd.exe")
+	}
+	f := newFixture(t)
+	path := f.file("parent/child")
+	parent := f.add(filepath.Dir(path), time.Hour)
+	alias := filepath.Join(f.dir, "alias")
+	directoryLink(t, alias, parent.Path)
+	t.Cleanup(core.SetAfterManifest(f.svc, func() { f.add(filepath.Join(alias, "child"), 30*24*time.Hour) }))
+	rows, err := f.svc.Bury([]string{parent.Path}, false, "")
+	if err != nil || len(rows) != 1 || rows[0].Action != core.ActionRetry || len(f.burials()) != 0 || read(t, path) != "parent/child" {
+		t.Fatalf("alias registration lost child: rows=%+v err=%v", rows, err)
+	}
+}
+
+func TestManifestCanceledChildOmitted(t *testing.T) {
+	f := newFixture(t)
+	path := f.file("parent/child")
+	parent := f.add(filepath.Dir(path), time.Hour)
+	child := f.add(path, time.Minute)
+	f.clock = f.clock.Add(time.Hour)
+	t.Cleanup(core.SetAfterManifest(f.svc, func() {
+		rows, err := f.svc.Cancel([]string{fmt.Sprint(child.ID)})
+		if err != nil || len(rows) != 1 || rows[0].Error != "" {
+			t.Fatalf("cancel: %+v %v", rows, err)
+		}
+	}))
+	rows, err := f.svc.Bury([]string{parent.Path}, false, "")
+	if err != nil || len(rows) != 1 || rows[0].Action != core.ActionBuried {
+		t.Fatalf("parent: %+v %v", rows, err)
+	}
+	b := f.burials()[0]
+	if slices.Contains(b.Contains, child.ID) || len(b.Children) != 0 || read(t, filepath.Join(b.Grave, "child")) != "parent/child" {
+		t.Fatalf("canceled child in receipt: %+v", b)
+	}
+}
+
+func TestSweepEarlierBurialOmittedFromParent(t *testing.T) {
+	f := newFixture(t)
+	child := f.add(f.file("parent/child"), time.Hour)
+	parent := f.add(filepath.Dir(child.Path), time.Hour)
+	rows := f.sweepAt(time.Hour)
+	bs := f.burials()
+	if len(rows) != 2 || len(bs) != 2 || rows[0].Item.ID != child.ID || rows[1].Item.ID != parent.ID || rows[0].Action != core.ActionBuried || rows[1].Action != core.ActionBuried || len(rows[1].Burial.Contains) != 0 || len(rows[1].Burial.Children) != 0 {
+		t.Fatalf("earlier child in parent receipt: %+v", rows)
+	}
+}
+
+type burialReaderFS struct {
+	core.FS
+	parent string
+	start  func()
+}
+
+func (f *burialReaderFS) RealPath(path string) (string, error) {
+	if f.start != nil && samePath(path, f.parent) {
+		f.start()
+		f.start = nil
+	}
+	return f.FS.RealPath(path)
 }
