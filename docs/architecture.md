@@ -235,7 +235,7 @@ flowchart TD
 火化前比较原 daemon 报告的 `State.StartedAt` 与发送 stop 前持久化的运行时间戳（不和本机时钟比较）。时间戳改变即视为外部接管：即便又停下也不删除、不启动；缺少时间戳的旧墓地记录保留待复活。Docker CLI 没有按运行时间戳原子删除的操作：最后一次 inspect 后才完成整次启动和停止仍属并发边界。
 
 - 容器是第二种条目（`kind: "container"`），和文件共用编号序列；账本 v14 起保存完整容器 ID 和创建时间。文件的下葬、复活、火化路径遇到容器条目一律跳过，容器走 `internal/core/lifecycle/container*.go` 和 `internal/docker`。
-- 到期是 `docker stop`（保留可写层），复活是 `docker start`，保留期过后火化是 `docker rm`（不带 `-v`、`-f`）。每次动手前都重新 inspect，完整 ID 和创建时间对不上就不动；火化时正在运行的当作复活。AutoRemove 容器拒绝登记。
+- 到期是 `docker stop`（保留可写层），复活是 `docker start`，保留期过后火化是 `docker rm`（不带 `-v`、`-f`）。每次动手前都重新 inspect，完整 ID 和创建时间对不上就不动；火化时正在运行的当作复活（见下一段的启动时间戳）。AutoRemove 容器拒绝登记。
 - 会话差分在后台的 `obit hook finish` 里按会话时间窗找新建的容器，生成提议；hook 进程本身从不调用 docker。docker stop 等待容器自己的 StopTimeout 再加 5 秒（不给 docker stop 传 `--timeout`，尊重用户设的宽限期），其他调用 5 秒。
 - **绑定原来的 daemon。** 登记、提议和意图都记下 Docker 上下文或端点和 daemon ID，之后每次调用都显式带 `--context` / `--host`；daemon 对不上就不动并诊断。只有在原来的 daemon 上确认容器不存在，才按「外部移除」结案（清掉意图和记录，计入 `containersLost`）。旧的 v14 记录没有这些字段：在当前端点找到同一个 ID 和创建时间时补记，找不到就保留记录。
 - **完整 ID 也可能被当成名字。** Docker 按完整 ID、精确名字、ID 前缀的顺序解析引用。动手前若有容器的名字恰好等于这个完整 ID 就拒绝。stop 和 start 之后会再核对作用的是原容器，不是就记 `container-ambiguous` 审计。rm 前后各记一份完整 ID 清单（崩溃后也能接着比），有别的已知容器跟着消失，就保留墓地记录和意图、记 `container-ambiguous`，不当作正常火化；外部同时删了别的容器也会触发这个保守诊断。从最后一次检查到 Docker 解析引用之间仍有一个 CLI 往返的窗口：如果原容器恰好在这时被外部删除、另一个已停止的容器又改名成这个完整 ID，rm 可能删到那个容器；清单能发现「原先就有的容器少了一个」，但证明不了因果，清单之后才新建又被删掉的替代容器也发现不了。docker CLI 做不到按 ID 加创建时间原子执行。
