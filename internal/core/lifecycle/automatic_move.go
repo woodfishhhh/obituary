@@ -3,7 +3,10 @@ package lifecycle
 import (
 	"context"
 	"errors"
+	"path/filepath"
 	"time"
+
+	"github.com/woodfishhhh/obituary/internal/pathutil"
 )
 
 const gitMoveFreshness = 10 * time.Millisecond
@@ -26,7 +29,7 @@ func (s *Service) finalGitForMove(item Item, real string, owners *ownershipBatch
 	}
 	var elapsed time.Duration
 	if owners != nil {
-		elapsed = owners.elapsed[item.Project]
+		elapsed = owners.elapsed[owners.groups[real]]
 	}
 	ctx, cancel := context.WithTimeout(s.Store.Context(), gitVerificationBudget(elapsed))
 	defer cancel()
@@ -72,6 +75,7 @@ func (s *Service) finalGitForMove(item Item, real string, owners *ownershipBatch
 type ownershipBatch struct {
 	answers map[string]Ownership
 	paths   map[int64]string
+	groups  map[string]string
 	done    map[int64]bool
 	pending map[string][]int64
 	query   OwnerBatchFunc
@@ -81,45 +85,53 @@ type ownershipBatch struct {
 }
 
 func (s *Service) prepareBatchOwners(items []Item, blocked map[int64]bool) *ownershipBatch {
-	owners := s.batchOwners(items, blocked)
-	if s.PrepareOwners != nil {
-		var paths []string
-		for _, item := range items {
-			if path, ok := owners.paths[item.ID]; ok {
-				paths = append(paths, path)
-			}
-		}
-		s.OwnerBatch = s.PrepareOwners(s.Store.Context(), paths)
-		owners.query = s.OwnerBatch
-	}
-	return owners
-}
-
-func (s *Service) batchOwners(items []Item, blocked map[int64]bool) *ownershipBatch {
 	if s.OwnerBatch == nil && s.PrepareOwners == nil {
 		return nil
 	}
 	b := &ownershipBatch{
 		answers: make(map[string]Ownership), paths: make(map[int64]string), done: make(map[int64]bool),
-		pending: make(map[string][]int64), elapsed: make(map[string]time.Duration), retried: make(map[int64]bool), query: s.OwnerBatch,
+		groups: make(map[string]string), pending: make(map[string][]int64), elapsed: make(map[string]time.Duration),
+		retried: make(map[int64]bool), query: s.OwnerBatch,
 	}
-	// These names only select query candidates. Each item resolves its real
-	// path again under store.lock, before consuming any cached answer.
+	var paths []string
 	for _, item := range items {
 		if automatic(item) && item.Identity != nil && item.Due(s.now()) && !blocked[item.ID] {
 			if path, err := s.FS.RealPath(item.Path); err == nil {
 				b.paths[item.ID] = path
-				b.pending[item.Project] = append(b.pending[item.Project], item.ID)
+				paths = append(paths, path)
 			}
+		}
+	}
+	if s.PrepareOwners != nil {
+		s.OwnerBatch = s.PrepareOwners(s.Store.Context(), paths, b.groups)
+		b.query = s.OwnerBatch
+	}
+	for _, item := range items {
+		if path, ok := b.paths[item.ID]; ok {
+			group := ownerGroup(path, b.groups[path], item.IsDir)
+			b.groups[path] = group
+			b.pending[group] = append(b.pending[group], item.ID)
 		}
 	}
 	return b
 }
 
-// A query's elapsed time belongs only to the project whose paths it checked.
-func (b *ownershipBatch) fill(ctx context.Context, project, real string) {
+// Discovery and RealPath return canonical names. A folder without a worktree
+// shares a budget only with other candidates from that same directory.
+func ownerGroup(path, root string, isDir bool) string {
+	if root == "" {
+		root = path
+		if !isDir {
+			root = filepath.Dir(path)
+		}
+	}
+	return pathutil.ComparisonPath(filepath.Clean(root))
+}
+
+// A query's elapsed time belongs only to the worktree whose paths it checked.
+func (b *ownershipBatch) batchPaths(real string) []string {
 	paths := []string{real}
-	for _, id := range b.pending[project] {
+	for _, id := range b.pending[b.groups[real]] {
 		if len(paths) >= ownerQueryBatchSize {
 			break
 		}
@@ -127,17 +139,28 @@ func (b *ownershipBatch) fill(ctx context.Context, project, real string) {
 			paths = append(paths, path)
 		}
 	}
+	return paths
+}
+
+func (b *ownershipBatch) fill(ctx context.Context, paths []string) {
 	started := time.Now()
 	queried := b.query(ctx, paths)
-	b.elapsed[project] = max(b.elapsed[project], time.Since(started))
+	elapsed := time.Since(started)
 	for i, path := range paths {
 		b.answers[path] = queried[i]
+		group := b.groups[path]
+		if root := queried[i].Root; root != "" {
+			group = pathutil.ComparisonPath(filepath.Clean(root))
+			b.groups[path] = group
+		}
+		b.elapsed[group] = max(b.elapsed[group], elapsed)
 	}
 }
 
 func (b *ownershipBatch) prefetch(ctx context.Context, pending []*preparedBurial) {
 	if b.refresh != "" {
-		b.fill(ctx, pending[0].out.Item.Project, b.refresh)
+		b.groups[b.refresh] = ownerGroup(b.refresh, "", pending[0].out.Item.IsDir)
+		b.fill(ctx, []string{b.refresh})
 		b.refresh = ""
 		return
 	}
@@ -147,7 +170,7 @@ func (b *ownershipBatch) prefetch(ctx context.Context, pending []*preparedBurial
 		}
 		path := b.paths[p.out.Item.ID]
 		if _, ok := b.answers[path]; path != "" && !ok {
-			b.fill(ctx, p.out.Item.Project, path)
+			b.fill(ctx, b.batchPaths(path))
 		}
 	}
 }

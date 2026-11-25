@@ -17,7 +17,7 @@ func TestPreparedOwnersShortPaths(t *testing.T) {
 	r.write("debug.log", "scratch")
 	short := shortPath(t, r.root)
 	paths := []string{filepath.Join(short, "keep.log"), filepath.Join(short, "debug.log")}
-	query := PrepareOwners(t.Context(), paths)
+	query := PrepareOwners(t.Context(), paths, nil)
 	owners := query(t.Context(), paths)
 	for i, owner := range owners {
 		if owner.Err != nil || owner.Root != r.root || owner.Tracked != (i == 0) || owner.Current == nil {
@@ -37,7 +37,7 @@ func TestPreparedOwnersSeparateMetadataFailures(t *testing.T) {
 	r, other := newRepo(t), newRepo(t)
 	paths := []string{r.write("free.log", "free"), other.write("keep.log", "keep")}
 	other.git("add", "--", "keep.log")
-	query := PrepareOwners(t.Context(), []string{r.root, other.root})
+	query := PrepareOwners(t.Context(), []string{r.root, other.root}, nil)
 	if err := os.WriteFile(filepath.Join(other.root, ".git", "index"), []byte("broken index"), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +57,7 @@ func TestPreparedOwnersNoticeNestedRepository(t *testing.T) {
 	t.Parallel()
 	r := newRepo(t)
 	path := r.write("nested/keep.log", "keep")
-	query := PrepareOwners(t.Context(), []string{r.root})
+	query := PrepareOwners(t.Context(), []string{r.root}, nil)
 	owners := query(t.Context(), []string{path})
 	if owners[0].Err != nil || owners[0].Tracked || owners[0].Current == nil {
 		t.Fatalf("nested fixture: %+v", owners)
@@ -88,7 +88,7 @@ func TestPreparedOwnersMissingIncludeUsesLiveGit(t *testing.T) {
 	r.git("add", "--", "repo/keep.log")
 	include := filepath.Join(r.root, "optional.config")
 	r.git("config", "include.path", include)
-	query := PrepareOwners(t.Context(), []string{path})
+	query := PrepareOwners(t.Context(), []string{path}, nil)
 	owners := query(t.Context(), []string{path})
 	if owners[0].Err != nil || owners[0].Tracked {
 		t.Fatalf("missing include fixture: %+v", owners)
@@ -113,7 +113,7 @@ func TestPreparedOwnersVirtualConfigUsesLiveGit(t *testing.T) {
 	t.Setenv("GIT_CONFIG_GLOBAL", "NUL")
 	r := newRepo(t)
 	path := r.write("keep.log", "keep")
-	query := PrepareOwners(t.Context(), []string{path})
+	query := PrepareOwners(t.Context(), []string{path}, nil)
 	owners := query(t.Context(), []string{path})
 	if owners[0].Err != nil || owners[0].Tracked {
 		t.Fatalf("virtual configuration blocked live Git: %+v", owners)

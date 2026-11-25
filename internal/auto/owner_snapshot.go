@@ -78,7 +78,7 @@ func queryIndex(ctx context.Context, observer *project.IndexObserver, paths []st
 
 // PrepareOwners has one sweep's lifetime. Slow path resolution happens before
 // taking store.lock; only metadata checks and bounded fallback queries run inside it.
-func PrepareOwners(ctx context.Context, paths []string) core.OwnerBatchFunc {
+func PrepareOwners(ctx context.Context, paths []string, roots map[string]string) core.OwnerBatchFunc {
 	known := make(map[string]discoveredOwner, len(paths))
 	names := make(map[string]string, len(paths))
 	directories := make(map[string]discoveredOwner)
@@ -115,6 +115,9 @@ func PrepareOwners(ctx context.Context, paths []string) core.OwnerBatchFunc {
 			continue
 		}
 		root := p.Root
+		if roots != nil {
+			roots[path] = root
+		}
 		if _, ok := observers[root]; ok {
 			continue
 		}

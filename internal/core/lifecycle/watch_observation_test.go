@@ -80,8 +80,8 @@ func TestWatchGitFreshnessIncludesFinalCheck(t *testing.T) {
 	if err := watch.Reconcile(f.svc); err != nil {
 		t.Fatal(err)
 	}
-	f.svc.PrepareOwners = func(ctx context.Context, paths []string) core.OwnerBatchFunc {
-		query := auto.PrepareOwners(ctx, paths)
+	f.svc.PrepareOwners = func(ctx context.Context, paths []string, roots map[string]string) core.OwnerBatchFunc {
+		query := auto.PrepareOwners(ctx, paths, roots)
 		return func(ctx context.Context, paths []string) []core.Ownership {
 			owners := query(ctx, paths)
 			for i := range owners {

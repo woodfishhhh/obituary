@@ -12,6 +12,7 @@ import (
 	"time"
 
 	core "github.com/woodfishhhh/obituary/internal/core/lifecycle"
+	"golang.org/x/sys/windows"
 )
 
 // rm -rf node_modules becomes obit bury: a folder far too large for the
@@ -340,4 +341,152 @@ func benchmarkBuryThousand(b *testing.B, individual bool) {
 	b.StopTimer()
 	b.ReportMetric(float64(longest.Microseconds())/1000, "max-lock-ms")
 	b.ReportMetric(float64(writes), "ledger-writes/op")
+}
+
+func TestSweepBatchMeasuresAfterManifestCleanupFailure(t *testing.T) {
+	f, paths := dueBatch(t, 3)
+	var locked windows.Handle
+	defer func() {
+		if locked != 0 {
+			windows.CloseHandle(locked)
+		}
+	}()
+	committed := 0
+	restore := core.SetBurialStep(f.svc, func(step string) error {
+		if step != "committed" {
+			return nil
+		}
+		committed++
+		st, err := f.svc.Store.ReadSnapshot()
+		if err != nil || len(st.Burials) != len(paths) {
+			t.Fatalf("cleanup fixture did not commit the whole batch: %+v %v", st, err)
+		}
+		if committed == 2 {
+			name, err := windows.UTF16PtrFromString(filepath.Dir(st.Burials[1].Grave) + ".json")
+			if err != nil {
+				t.Fatal(err)
+			}
+			locked, err = windows.CreateFile(name, windows.GENERIC_READ, windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE, nil, windows.OPEN_EXISTING, 0, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+		return nil
+	})
+	defer restore()
+	rows, err := f.svc.Sweep(false)
+	restore()
+	if !errors.Is(err, windows.ERROR_SHARING_VIOLATION) || locked == 0 || len(rows) != len(paths) {
+		t.Fatalf("manifest sharing failure was not exercised: %+v %v", rows, err)
+	}
+	for i, row := range rows {
+		if row.Action != core.ActionBuried || row.Burial == nil || exists(paths[i]) || read(t, row.Grave) != filepath.Base(paths[i]) {
+			t.Fatalf("cleanup failure lost committed content or receipt: %+v", rows)
+		}
+	}
+	if exists(filepath.Dir(rows[0].Grave)+".json") || !exists(filepath.Dir(rows[1].Grave)+".json") {
+		t.Fatal("fixture did not clean the earlier manifest before failure")
+	}
+	windows.CloseHandle(locked)
+	locked = 0
+	for range 2 {
+		if recovered, err := f.svc.Sweep(false); err != nil {
+			t.Fatalf("recover cleanup failure: %+v %v", recovered, err)
+		}
+	}
+	st, err := f.svc.Store.ReadSnapshot()
+	if err != nil || len(st.Burials) != len(paths) || len(st.Items) != 0 || st.Stats.Buried != int64(len(paths)) {
+		t.Fatalf("cleanup recovery changed burial count: %+v %v", st, err)
+	}
+	var wantBytes int64
+	for _, b := range st.Burials {
+		want := int64(len(filepath.Base(b.Path)))
+		wantBytes += want
+		if b.Size != want {
+			t.Fatalf("manifest cleanup failure lost committed burial sizes: #%d size=%d want=%d", b.ID, b.Size, want)
+		}
+		if exists(filepath.Dir(b.Grave) + ".json") {
+			t.Fatal("recovered manifest remained")
+		}
+	}
+	if st.Stats.BuriedBytes != wantBytes {
+		t.Fatalf("manifest cleanup failure lost committed burial sizes: stats=%d want=%d", st.Stats.BuriedBytes, wantBytes)
+	}
+}
+
+func TestSweepBatchAuditCapacity(t *testing.T) {
+	f, paths := dueBatch(t, 3)
+	if err := f.svc.Store.Update(func(st *core.State) error {
+		for range 999 {
+			st.PendingAudit = append(st.PendingAudit, core.Event{Time: f.clock, Action: "fixture"})
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	name, _ := windows.UTF16PtrFromString(filepath.Join(f.svc.Store.Home, "audit.jsonl"))
+	h, err := windows.CreateFile(name, windows.GENERIC_READ, windows.FILE_SHARE_READ, nil, windows.OPEN_EXISTING, 0, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer windows.CloseHandle(h)
+	rows, err := f.svc.Sweep(false)
+	st, readErr := f.svc.Store.ReadSnapshot()
+	if err == nil || readErr != nil || len(st.PendingAudit) != 1000 || len(st.Burials) != 1 || len(st.Items) != 2 || exists(paths[0]) || !exists(paths[1]) || !exists(paths[2]) {
+		t.Fatalf("batch exceeded audit capacity or discarded committed prefix: %+v %v %v", rows, err, readErr)
+	}
+}
+
+func TestSweepBatchRecoveryAuditCapacity(t *testing.T) {
+	f, _ := dueBatch(t, 3)
+	moves := 0
+	restore := core.SetBurialStep(f.svc, func(step string) error {
+		if step == "moved" {
+			moves++
+			if moves == 3 {
+				return errors.New("interrupted before batch commit")
+			}
+		}
+		return nil
+	})
+	defer restore()
+	if _, err := f.svc.Sweep(false); err == nil {
+		t.Fatal("interruption missing")
+	}
+	restore()
+	if err := f.svc.Store.Update(func(st *core.State) error {
+		for range 999 {
+			st.PendingAudit = append(st.PendingAudit, core.Event{Time: f.clock, Action: "fixture"})
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	name, _ := windows.UTF16PtrFromString(filepath.Join(f.svc.Store.Home, "audit.jsonl"))
+	h, err := windows.CreateFile(name, windows.GENERIC_READ, windows.FILE_SHARE_READ, nil, windows.OPEN_EXISTING, 0, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if h != 0 {
+			windows.CloseHandle(h)
+		}
+	}()
+	_, err = f.svc.Sweep(false)
+	st, readErr := f.svc.Store.ReadSnapshot()
+	if err == nil || readErr != nil || len(st.PendingAudit) != 1000 || len(st.Burials) != 1 || len(st.Items) != 2 {
+		t.Fatalf("batch recovery exceeded audit capacity: events=%d graves=%d %v %v", len(st.PendingAudit), len(st.Burials), err, readErr)
+	}
+	windows.CloseHandle(h)
+	h = 0
+	if err := f.svc.Store.FlushAudit(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.Sweep(false); err != nil {
+		t.Fatal(err)
+	}
+	st, err = f.svc.Store.ReadSnapshot()
+	if err != nil || len(st.Items) != 0 || len(st.Burials) != 3 || st.Stats.Buried != 3 {
+		t.Fatalf("backlogged recovery lost objects: %+v %v", st, err)
+	}
 }

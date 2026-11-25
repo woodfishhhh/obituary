@@ -115,8 +115,8 @@ func invalidatedIndex(t *testing.T, f *fixture, git func(...string), name string
 		}))
 	}
 	refreshed := false
-	f.svc.PrepareOwners = func(ctx context.Context, paths []string) core.OwnerBatchFunc {
-		query := auto.PrepareOwners(ctx, paths)
+	f.svc.PrepareOwners = func(ctx context.Context, paths []string, roots map[string]string) core.OwnerBatchFunc {
+		query := auto.PrepareOwners(ctx, paths, roots)
 		calls := 0
 		return func(ctx context.Context, paths []string) []core.Ownership {
 			calls++

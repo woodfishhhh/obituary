@@ -1,6 +1,7 @@
 package lifecycle_test
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,9 +11,12 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"testing/synctest"
 	"time"
 
+	"github.com/woodfishhhh/obituary/internal/auto"
 	core "github.com/woodfishhhh/obituary/internal/core/lifecycle"
+	"github.com/woodfishhhh/obituary/internal/testenv"
 )
 
 func TestRecoveryCommitFailureStopsBatch(t *testing.T) {
@@ -741,6 +745,124 @@ func TestOfflineRootDoesNotBlockOtherRoots(t *testing.T) {
 			if !reflect.DeepEqual(got, offline) {
 				t.Fatalf("offline record changed beyond retry state: %+v", got)
 			}
+		})
+	}
+}
+
+type missingPrefetchFS struct {
+	core.FS
+	target, escaped string
+	missed          bool
+}
+
+func (x *missingPrefetchFS) RealPath(p string) (string, error) {
+	if p == x.target && !x.missed {
+		x.missed = true
+		return "", os.ErrNotExist
+	}
+	return x.FS.RealPath(p)
+}
+
+func (x *missingPrefetchFS) Locate(id core.Identity) (string, error) {
+	p, e := x.FS.Locate(id)
+	if !errors.Is(e, core.ErrUnsupported) {
+		return p, e
+	}
+	if found, err := x.Identify(x.escaped); err == nil && found == id {
+		return x.escaped, nil
+	}
+	return p, e
+}
+
+func TestRefreshedManifestChildren(t *testing.T) {
+	for _, stage := range []string{"committed", "moved"} {
+		t.Run(stage, func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				f := newFixture(t)
+				testenv.InitRepo(t, f.dir)
+				child := f.file("bag/child")
+				parent := filepath.Dir(child)
+				escaped := filepath.Join(f.dir, "outside.log")
+				expiry := f.clock.Add(time.Hour)
+				add, e := f.svc.Add([]string{parent}, core.AddOptions{Source: "rule", Project: f.dir, ExpiresAt: expiry})
+				if e != nil || core.Failed(add) {
+					t.Fatalf("add parent: %+v %v", add, e)
+				}
+				it := f.add(child, time.Hour)
+				if runtime.GOOS == "windows" {
+					moved := filepath.Join(f.dir, "renamed")
+					if err := os.Rename(parent, moved); err != nil {
+						t.Fatal(err)
+					}
+					child = filepath.Join(moved, filepath.Base(child))
+				} else {
+					f.svc.FS = &missingPrefetchFS{FS: f.svc.FS, target: parent, escaped: escaped}
+				}
+				f.svc.Owner, f.svc.OwnerBatch = auto.Owner, auto.OwnerBatch
+				f.clock = expiry
+				if e := f.svc.Store.Update(func(st *core.State) error {
+					it := &st.Items[st.Index(it.ID)]
+					it.Attempts = 1
+					it.LastError = "busy"
+					it.NextAttempt = expiry.Add(24 * time.Hour)
+					it.Rev++
+					return nil
+				}); e != nil {
+					t.Fatal(e)
+				}
+				calls := 0
+				relocated := false
+				f.svc.PrepareOwners = func(ctx context.Context, pp []string, roots map[string]string) core.OwnerBatchFunc {
+					q := auto.PrepareOwners(ctx, pp, roots)
+					return func(c context.Context, p []string) []core.Ownership {
+						calls++
+						if calls == 1 && ledgerUnlocked(t, f) {
+							if err := os.Rename(child, escaped); err != nil {
+								t.Fatal(err)
+							}
+							relocated = true
+						}
+						return q(c, p)
+					}
+				}
+				stop := errors.New("receipt interruption")
+				reset := core.SetBurialStep(f.svc, func(p string) error {
+					if p == stage {
+						return stop
+					}
+					return nil
+				})
+				_, err := f.svc.Sweep(false)
+				reset()
+				if !relocated {
+					t.Fatalf("missing unlocked refresh: calls=%d", calls)
+				}
+				if !errors.Is(err, stop) {
+					t.Fatalf("setup: interruption=%v, child moved=%v calls=%d", err, relocated, calls)
+				}
+				before, err := f.svc.Store.ReadSnapshot()
+				if err != nil || before.Index(it.ID) < 0 || !exists(escaped) || before.Items[before.Index(it.ID)].NextAttempt.Before(expiry.Add(24*time.Hour)) {
+					t.Fatalf("missing original deferred registration: %+v %v", before.Items, err)
+				}
+				_, e = f.svc.Sweep(false)
+				view, verr := f.svc.ReadGraveyard()
+				after, err := f.svc.Store.ReadSnapshot()
+				if err != nil || verr != nil {
+					t.Fatalf("read recovery: %v %v", err, verr)
+				}
+				var status, detail string
+				if len(view.Pending) > 0 {
+					status, detail = view.Pending[0].Status, view.Pending[0].Error
+				}
+				t.Logf("step=%s childRegistered=%t pending=%d status=%s detail=%s payloadPreserved=%t recovery=%v", stage, after.Index(it.ID) >= 0, len(view.Pending), status, detail, exists(escaped), e)
+				if read(t, escaped) != "bag/child" {
+					t.Fatal("escaped payload bytes changed")
+				}
+				idx := after.Index(it.ID)
+				if e != nil || idx < 0 || !after.Items[idx].NextAttempt.Equal(expiry.Add(24*time.Hour)) || after.Items[idx].Attempts != 1 || len(view.Pending) != 0 || len(view.Burials) != 1 || view.Burials[0].ID != add[0].Item.ID || len(view.Burials[0].Children) != 0 {
+					t.Errorf("refreshed burial manifest lost the escaped registration or failed to reconcile the confirmed grave")
+				}
+			})
 		})
 	}
 }

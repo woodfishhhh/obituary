@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"testing/synctest"
@@ -157,8 +159,8 @@ func TestSweepRejectsUnverifiableIndexSnapshot(t *testing.T) {
 				paths := []string{f.file("first.log"), f.file("keep.log")}
 				changed := false
 				f.svc.Owner, f.svc.OwnerBatch = auto.Owner, auto.OwnerBatch
-				f.svc.PrepareOwners = func(ctx context.Context, roots []string) core.OwnerBatchFunc {
-					query := auto.PrepareOwners(ctx, roots)
+				f.svc.PrepareOwners = func(ctx context.Context, paths []string, roots map[string]string) core.OwnerBatchFunc {
+					query := auto.PrepareOwners(ctx, paths, roots)
 					return func(ctx context.Context, paths []string) []core.Ownership {
 						owners := query(ctx, paths)
 						for i := range owners {
@@ -222,8 +224,8 @@ func TestSweepBatchesStableGitAnswers(t *testing.T) {
 		var checkedAt time.Time
 		var queriedAt time.Time
 		var longest, rawLongest time.Duration
-		f.svc.PrepareOwners = func(ctx context.Context, roots []string) core.OwnerBatchFunc {
-			query := auto.PrepareOwners(ctx, roots)
+		f.svc.PrepareOwners = func(ctx context.Context, paths []string, roots map[string]string) core.OwnerBatchFunc {
+			query := auto.PrepareOwners(ctx, paths, roots)
 			return func(ctx context.Context, paths []string) []core.Ownership {
 				calls++
 				if !ledgerUnlocked(t, f) {
@@ -377,10 +379,10 @@ func TestSweepSlowGitProgress(t *testing.T) {
 		t.Run(fmt.Sprint(snapshot), func(t *testing.T) {
 			f, paths, _ := slowGitFixture(t, "scratch.log")
 			calls, unlocked := 0, 0
-			f.svc.PrepareOwners = func(ctx context.Context, paths []string) core.OwnerBatchFunc {
+			f.svc.PrepareOwners = func(ctx context.Context, paths []string, roots map[string]string) core.OwnerBatchFunc {
 				query := auto.OwnerBatch
 				if snapshot {
-					query = auto.PrepareOwners(ctx, paths)
+					query = auto.PrepareOwners(ctx, paths, roots)
 				}
 				return func(ctx context.Context, paths []string) []core.Ownership {
 					calls++
@@ -414,7 +416,7 @@ func TestSweepSlowGitProgress(t *testing.T) {
 func TestSweepRetriesSlowOwnershipValidation(t *testing.T) {
 	f := newFixture(t)
 	path := f.file("keep.log")
-	f.svc.PrepareOwners = func(context.Context, []string) core.OwnerBatchFunc {
+	f.svc.PrepareOwners = func(context.Context, []string, map[string]string) core.OwnerBatchFunc {
 		return func(context.Context, []string) []core.Ownership {
 			return []core.Ownership{{Root: f.dir, Current: func(context.Context) (bool, time.Time, error) {
 				return true, time.Now().Add(-32 * time.Millisecond), nil
@@ -454,65 +456,192 @@ func TestSweepSlowGitPreservesTracked(t *testing.T) {
 	}
 	for _, timing := range []string{"prefetch", "between-moves", "expired", "uncached"} {
 		t.Run(timing, func(t *testing.T) {
-			f, paths, git := slowGitFixture(t, "first.log", "keep.log")
-			published := false
-			publish := func() {
-				if !published {
-					git("add", "--", "keep.log")
-					published = true
-				}
-			}
-			f.svc.PrepareOwners = func(ctx context.Context, paths []string) core.OwnerBatchFunc {
-				query := auto.PrepareOwners(ctx, paths)
-				if timing == "uncached" {
-					query = auto.OwnerBatch
-				}
-				return func(ctx context.Context, paths []string) []core.Ownership {
-					owners := delayedOwners(ctx, query, paths)
-					if timing == "prefetch" || timing == "uncached" {
-						publish()
-					}
-					return owners
-				}
-			}
-			firstMoved := false
-			restore := core.SetBurialStep(f.svc, func(step string) error {
-				if step == "moved" {
-					firstMoved = true
-				}
-				if timing == "between-moves" && step == "moved" {
-					publish()
-				}
-				if timing == "expired" && firstMoved && step == "git-checked" && !published {
-					publish()
-					time.Sleep(20 * time.Millisecond)
-				}
-				return nil
-			})
-			defer restore()
-			for attempt := 0; attempt < 3; attempt++ {
-				rows, err := f.svc.Sweep(false)
-				if data, readErr := os.ReadFile(paths[1]); readErr != nil || string(data) != "keep.log" {
-					t.Fatalf("slow Git moved newly tracked content: %+v %v", rows, readErr)
-				}
-				if err != nil || !published {
-					t.Fatalf("slow Git publication fixture failed: %+v %v", rows, err)
-				}
-				items := f.items()
-				if len(items) == 0 {
-					if len(f.burials()) != 1 {
-						t.Fatalf("slow Git publication lost sibling burial: %+v", rows)
-					}
-					return
-				}
-				// A final ownership check stalled beyond 10ms retains a retry.
-				for _, item := range items {
-					if item.NextAttempt.After(f.clock) {
-						f.clock = item.NextAttempt
-					}
-				}
-			}
-			t.Fatalf("slow Git publication did not settle safely: %+v", f.items())
+			synctest.Test(t, func(t *testing.T) { checkSlowGitPublication(t, timing) })
 		})
+	}
+}
+
+func checkSlowGitPublication(t *testing.T, timing string) {
+	f, paths, git := slowGitFixture(t, "first.log", "keep.log")
+	published := false
+	publish := func() {
+		if !published {
+			git("add", "--", "keep.log")
+			published = true
+		}
+	}
+	f.svc.PrepareOwners = func(ctx context.Context, paths []string, roots map[string]string) core.OwnerBatchFunc {
+		query := auto.PrepareOwners(ctx, paths, roots)
+		if timing == "uncached" {
+			query = auto.OwnerBatch
+		}
+		return func(ctx context.Context, paths []string) []core.Ownership {
+			owners := delayedOwners(ctx, query, paths)
+			if timing == "prefetch" || timing == "uncached" {
+				publish()
+			}
+			return owners
+		}
+	}
+	firstMoved := false
+	restore := core.SetBurialStep(f.svc, func(step string) error {
+		if step == "moved" {
+			firstMoved = true
+		}
+		if timing == "between-moves" && step == "moved" {
+			publish()
+		}
+		if timing == "expired" && firstMoved && step == "git-checked" && !published {
+			publish()
+			time.Sleep(20 * time.Millisecond)
+		}
+		return nil
+	})
+	defer restore()
+	for attempt := 0; attempt < 3; attempt++ {
+		rows, err := f.svc.Sweep(false)
+		if data, readErr := os.ReadFile(paths[1]); readErr != nil || string(data) != "keep.log" {
+			t.Fatalf("slow Git moved newly tracked content: %+v %v", rows, readErr)
+		}
+		if err != nil || !published {
+			t.Fatalf("slow Git publication fixture failed: %+v %v", rows, err)
+		}
+		items := f.items()
+		if len(items) == 0 {
+			if len(f.burials()) != 1 {
+				t.Fatalf("slow Git publication lost sibling burial: %+v", rows)
+			}
+			return
+		}
+		// A final ownership check stalled beyond 10ms retains a retry.
+		for _, item := range items {
+			if item.NextAttempt.After(f.clock) {
+				f.clock = item.NextAttempt
+			}
+		}
+	}
+	t.Fatalf("slow Git publication did not settle safely: %+v", f.items())
+}
+
+func TestSlowGitBudgetIsolatedByProject(t *testing.T) {
+	if testing.Short() {
+		t.Skip("real repositories and delayed Git startup")
+	}
+	for _, history := range []string{"separate-projects", "nested-after-registration", "independent-watch-folders", "no-repository"} {
+		t.Run(history, func(t *testing.T) { synctest.Test(t, func(t *testing.T) { testSlowGitBudgetByProject(t, history) }) })
+	}
+}
+func watchBudgetFixture(t *testing.T, initRepos bool) (*fixture, []string) {
+	f := newFixture(t)
+	f.svc.Owner, f.svc.OwnerBatch = auto.Owner, auto.OwnerBatch
+	ps := []string{f.file("left/slow.log"), f.file("right/fast.log")}
+	for _, p := range ps {
+		w, err := f.svc.SetWatch(filepath.Dir(p), "1h", core.WatchFirstSeen)
+		if err != nil {
+			t.Fatal(err)
+		}
+		approveWatch(t, f.svc)
+		if err := f.svc.RegisterWatchChild(w, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	f.clock = f.clock.Add(time.Hour)
+	if runtime.GOOS != "windows" {
+		f.svc.FS = watchFileProbeFS{f.svc.FS, func(core.Identity) error { return nil }}
+		first, e := f.svc.Sweep(false)
+		if e != nil || len(first) != 2 {
+			t.Fatalf("initial quiet pass: %+v %v", first, e)
+		}
+		f.clock = f.clock.Add(11 * time.Minute)
+	}
+	if initRepos {
+		for _, p := range ps {
+			testenv.InitRepo(t, filepath.Dir(p))
+		}
+	}
+	return f, ps
+}
+func budgetFixture(t *testing.T, history string) (*fixture, []string) {
+	switch history {
+	case "nested-after-registration":
+		f, paths, _ := slowGitFixture(t, "sub/slow.log", "fast.log")
+		testenv.InitRepo(t, filepath.Dir(paths[0]))
+		return f, paths
+	case "independent-watch-folders", "no-repository":
+		return watchBudgetFixture(t, history != "no-repository")
+	}
+	f, slow, git := slowGitFixture(t, "slow.log")
+	git("add", "--", "slow.log")
+	fast := f.file("fast/keep.log")
+	root := filepath.Dir(fast)
+	git("-C", root, "init", "-q")
+
+	rows, err := f.svc.Add([]string{fast}, core.AddOptions{Project: root, Source: "rule", ExpiresAt: f.clock.Add(time.Hour)})
+	if err != nil || core.Failed(rows) {
+		t.Fatalf("add: %+v %v", rows, err)
+	}
+
+	f.clock = f.clock.Add(time.Hour)
+	return f, []string{slow[0], fast}
+}
+func testSlowGitBudgetByProject(t *testing.T, history string) {
+	f, paths := budgetFixture(t, history)
+	if history != "no-repository" {
+		for _, args := range [][]string{{"config", "include.path", "optional.config"}, {"add", "--", filepath.Base(paths[1])}} {
+			if out, err := exec.Command("git", append([]string{"-C", filepath.Dir(paths[1])}, args...)...).CombinedOutput(); err != nil {
+				t.Fatalf("git %v: %s %v", args, out, err)
+			}
+		}
+	}
+	recorded := f.items()
+	if len(recorded) != 2 || (recorded[0].Project == recorded[1].Project) != (history != "separate-projects") {
+		t.Fatalf("incorrect registration history: %+v", recorded)
+	}
+	var mixed bool
+	var reader <-chan snapshotRead
+	var budget time.Duration
+	slow, fast := paths[0], paths[1]
+	f.svc.PrepareOwners = func(ctx context.Context, paths []string, roots map[string]string) core.OwnerBatchFunc {
+		query := auto.PrepareOwners(ctx, paths, roots)
+		return func(ctx context.Context, paths []string) []core.Ownership {
+			if ledgerUnlocked(t, f) {
+				if slices.Contains(paths, slow) {
+					mixed = mixed || slices.Contains(paths, fast)
+					delayGit(ctx)
+				}
+			} else if slices.Contains(paths, fast) {
+				deadline, ok := ctx.Deadline()
+				if !ok {
+					t.Fatal("missing final Git deadline")
+				}
+				budget = time.Until(deadline)
+				reader = concurrentSnapshot(f.svc.Store)
+				delayGit(ctx)
+			}
+			return query(ctx, paths)
+		}
+	}
+	out, err := f.svc.Sweep(false)
+	if err != nil || len(out) != 2 || reader == nil {
+		t.Fatalf("protected paths or reader missing: %+v %v", out, err)
+	}
+	r := <-reader
+	wantSlow := core.ActionRefused
+	if history == "no-repository" {
+		wantSlow = core.ActionBuried
+	}
+	for i, p := range paths {
+		rel, err := filepath.Rel(f.dir, p)
+		source := p
+		if i == 0 && wantSlow == core.ActionBuried {
+			source = out[0].Grave
+		}
+		if err != nil || read(t, source) != filepath.ToSlash(rel) {
+			t.Fatalf("protected bytes changed: %s", p)
+		}
+	}
+	t.Logf("mixed=%t fast budget=%s reader=%s err=%v actions=%s,%s", mixed, budget, r.wait, r.err, out[0].Action, out[1].Action)
+	if mixed || budget != 250*time.Millisecond || r.err != nil || out[0].Action != wantSlow || out[1].Action != core.ActionRetry || (history != "no-repository" && len(f.burials()) != 0) {
+		t.Fatal("slow repository inflated another project's final budget")
 	}
 }

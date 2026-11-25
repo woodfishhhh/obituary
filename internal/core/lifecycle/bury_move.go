@@ -103,8 +103,9 @@ func (s *Service) validatePrepared(st *State, p *preparedBurial, reason string) 
 		*out = failedMove(*out, err)
 		return "", nil
 	}
+	hadChildren := len(b.Children) > 0
 	setBurialChildren(b, children)
-	if len(children) > 0 {
+	if hadChildren || len(children) > 0 {
 		// Publish this transaction's children before moving their parent.
 		if err := writeManifest(p.manifest, *b); err != nil {
 			*out = failedMove(*out, err)

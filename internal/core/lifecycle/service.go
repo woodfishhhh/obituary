@@ -93,8 +93,8 @@ type Service struct {
 	// OwnerBatch returns one answer per path using bounded Git queries.
 	OwnerBatch OwnerBatchFunc
 	// PrepareOwners resolves Git metadata outside store.lock for one sweep.
-	// The returned query can prefetch snapshots outside the moving transaction.
-	PrepareOwners func(context.Context, []string) OwnerBatchFunc
+	// It records discovered worktree roots by real path for per-repository query budgets.
+	PrepareOwners func(context.Context, []string, map[string]string) OwnerBatchFunc
 	// Recheck re-applies a project's rules before an automatic item is
 	// buried; ErrProtected refuses it, other errors retry. Nil disables it.
 	Recheck func(project, path string, isDir bool) error
