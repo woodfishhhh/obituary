@@ -21,7 +21,9 @@ func TestPurgeGraveChecksProtectedHandle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := fs.PurgeGrave(dir, root, corefs.ProtectedIDs{member.FileID: true}); err == nil {
+	if err := fs.PurgeGrave(dir, root, corefs.PurgePlan{Name: "member", Object: member, Guard: func(check func(corefs.ProtectedIDs) error) error {
+		return check(corefs.ProtectedIDs{member.FileID: true})
+	}}); err == nil {
 		t.Fatal("protected member approved for removal")
 	}
 	if _, err := os.Stat(file); err != nil {

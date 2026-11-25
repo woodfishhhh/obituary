@@ -10,10 +10,12 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"time"
 
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 )
@@ -225,6 +227,7 @@ func (s *Service) verifyGrave(b Burial) (string, error) {
 	if len(entries) == 0 {
 		return dir, fmt.Errorf("#%d: %w; its object was removed outside Obituary; obit purge %d clears the record", b.ID, errEmptyGrave, b.ID)
 	}
+	_, entries = gravePurgeStage(b, entries)
 	if len(entries) != 1 || !strings.EqualFold(entries[0].Name(), filepath.Base(b.Grave)) {
 		return "", fmt.Errorf("#%d: grave %s holds something besides the buried object: %w", b.ID, dir, ErrUnsafe)
 	}
@@ -236,6 +239,25 @@ func (s *Service) verifyGrave(b Burial) (string, error) {
 		return "", fmt.Errorf("#%d: %s is not the object that was buried: %w", b.ID, b.Grave, ErrUnsafe)
 	}
 	return dir, nil
+}
+
+// Old intents predate recorded stage names. Only one private directory of the
+// exact historical nonce format may accompany the verified payload.
+func gravePurgeStage(b Burial, entries []os.DirEntry) (string, []os.DirEntry) {
+	if runtime.GOOS == "windows" || b.PurgeIntent == nil || len(entries) != 2 {
+		return "", entries
+	}
+	for i, e := range entries {
+		if !e.IsDir() || e.Type()&os.ModeSymlink != 0 {
+			continue
+		}
+		plan := corefs.PurgePlan{Name: filepath.Base(b.Grave), Stage: e.Name()}
+		if !plan.ValidStage() || b.PurgeIntent.Stage != "" && plan.Stage != b.PurgeIntent.Stage {
+			continue
+		}
+		return plan.Stage, []os.DirEntry{entries[1-i]}
+	}
+	return "", entries
 }
 
 func (s *Service) withGraveyardLock(fn func() error) error {

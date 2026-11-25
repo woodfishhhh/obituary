@@ -3,126 +3,212 @@
 package winfs
 
 import (
-	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"golang.org/x/sys/unix"
 	"io"
 	"os"
 	"path/filepath"
-
-	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
-	"golang.org/x/sys/unix"
 )
 
-// RemoveAll has no mount boundary. Open each directory relative to the pinned parent,
-// then check its device on that same handle before enumerating or unlinking children.
-func (f FS) PurgeGrave(path string, want corefs.Identity, protected corefs.ProtectedIDs) error {
+// A purge owns only the recorded payload and its private staging directory.
+func (f FS) PurgeGrave(path string, want corefs.Identity, plan corefs.PurgePlan) error {
 	parent, err := os.Open(filepath.Dir(path))
 	if err != nil {
 		return err
 	}
 	defer parent.Close()
-	return f.removeGraveDir(int(parent.Fd()), filepath.Base(path), want, -1, protected)
-}
-func (f FS) removeGraveDir(parent int, name string, want corefs.Identity, stage int, protected corefs.ProtectedIDs) error {
-	fd, err := openOnMount(parent, name, unix.O_RDONLY|unix.O_DIRECTORY)
+	name := filepath.Base(path)
+	root, err := openOnMount(int(parent.Fd()), name, unix.O_RDONLY|unix.O_DIRECTORY)
 	if err != nil {
 		return err
 	}
-	dir := os.NewFile(uintptr(fd), name)
-	defer dir.Close()
-	st, err := f.statAt(fd, "")
+	defer unix.Close(root)
+	st, err := f.statAt(root, "")
 	if err != nil {
 		return err
 	}
-	id := inodeBytes(&st)
-	if st.Dev != want.Serial || stage < 0 && hex.EncodeToString(id[:]) != want.FileID || len(protected) > 0 && (st.Incarnation == 0 || protected[hex.EncodeToString(id[:])]) {
+	if st.Dev != want.Serial || purgeID(st) != want.FileID || !plan.ValidStage() {
 		return corefs.ErrUnsafe
 	}
-	root := stage < 0
-	if root {
-		stage = fd
+	tree := purgeTree{fs: f, root: root, stage: -1, plan: plan}
+	if err := tree.purgePayload(); err != nil {
+		return err
 	}
+	return plan.WithObject(want.FileID, st.Incarnation == 0, func() error { return unix.Unlinkat(int(parent.Fd()), name, unix.AT_REMOVEDIR) })
+}
+
+type purgeTree struct {
+	fs          FS
+	root, stage int
+	plan        corefs.PurgePlan
+}
+
+func purgeID(st posixStat) string { id := inodeBytes(&st); return hex.EncodeToString(id[:]) }
+
+func (p *purgeTree) purgePayload() (err error) {
+	name := p.plan.Name
+	st, err := p.fs.burialStat(p.root, name)
+	if err != nil {
+		return err
+	}
+	if st.Dev != p.plan.Object.Serial || purgeID(st) != p.plan.Object.FileID {
+		return corefs.ErrUnsafe
+	}
+	if st.Mode&unix.S_IFMT == unix.S_IFDIR {
+		if err = p.openStage(); err != nil {
+			return err
+		}
+		defer unix.Close(p.stage)
+		stageStat, statErr := p.fs.statAt(p.stage, "")
+		if statErr != nil {
+			return statErr
+		}
+		if stageStat.Dev != p.plan.Object.Serial || stageStat.Mode&0077 != 0 {
+			return corefs.ErrUnsafe
+		}
+		if err := p.plan.WithObject(purgeID(stageStat), stageStat.Incarnation == 0, nil); err != nil {
+			return err
+		}
+		defer func() {
+			if err == nil {
+				return
+			}
+			e := p.unlink(p.root, p.plan.Stage, stageStat)
+			if e != nil && !errors.Is(e, unix.ENOTEMPTY) && !errors.Is(e, unix.ENOENT) {
+				err = errors.Join(err, e)
+			}
+		}()
+		if err = p.resumeStage(); err != nil {
+			return err
+		}
+	}
+	return p.entry(p.root, name, st)
+}
+
+func (p *purgeTree) openStage() error {
+	created := true
+	err := unix.Mkdirat(p.root, p.plan.Stage, 0700)
+	if errors.Is(err, unix.EEXIST) {
+		created = false
+	} else if err != nil {
+		return err
+	}
+	p.stage, err = openOnMount(p.root, p.plan.Stage, unix.O_RDONLY|unix.O_DIRECTORY)
+	if err != nil && created {
+		return errors.Join(err, unix.Unlinkat(p.root, p.plan.Stage, unix.AT_REMOVEDIR))
+	}
+	return err
+}
+
+// Each staged name is its expected file identity. Only emptied directories are staged.
+func (p *purgeTree) resumeStage() error {
+	return p.each(p.stage, func(fd int, name string) error {
+		st, err := p.fs.burialStat(fd, name)
+		if err != nil {
+			return err
+		}
+		if st.Dev != p.plan.Object.Serial || purgeID(st) != name && !p.plan.LegacyMembers[purgeID(st)] {
+			return corefs.ErrUnsafe
+		}
+		return p.unlink(fd, name, st)
+	})
+}
+
+func (p *purgeTree) each(fd int, visit func(int, string) error) error {
+	dup, err := unix.Dup(fd)
+	if err != nil {
+		return err
+	}
+	dir := os.NewFile(uintptr(dup), "grave")
+	defer dir.Close()
 	for {
 		names, err := dir.Readdirnames(64)
-		for _, child := range names {
-			if err := f.removeGraveEntry(fd, child, want, stage, protected); err != nil {
+		for _, name := range names {
+			if err := visit(fd, name); err != nil {
 				return err
 			}
 		}
 		if errors.Is(err, io.EOF) {
-			break
+			return nil
 		}
 		if err != nil {
 			return err
 		}
 	}
-	if root {
-		return unix.Unlinkat(parent, name, unix.AT_REMOVEDIR)
-	}
-	return f.unlinkGraveEntry(parent, name, unix.AT_REMOVEDIR, st, stage, protected)
 }
-func (f FS) removeGraveEntry(parent int, name string, want corefs.Identity, stage int, protected corefs.ProtectedIDs) error {
-	st, err := f.burialStat(parent, name)
-	if err != nil {
-		return err
-	}
-	if st.Dev != want.Serial {
+
+func (p *purgeTree) entry(parent int, name string, st posixStat) error {
+	if st.Dev != p.plan.Object.Serial {
 		return corefs.ErrUnsafe
 	}
 	if st.Mode&unix.S_IFMT == unix.S_IFDIR {
-		return f.removeGraveDir(parent, name, want, stage, protected)
-	}
-	return f.unlinkGraveEntry(parent, name, 0, st, stage, protected)
-}
-
-// unlinkat selects a name, not a file descriptor. With active registrations,
-// take the name into a fresh private directory, then verify the object there.
-func (f FS) unlinkGraveEntry(parent int, name string, flags int, expected posixStat, stage int, protected corefs.ProtectedIDs) error {
-	if len(protected) == 0 {
-		return unix.Unlinkat(parent, name, flags)
-	}
-	id := inodeBytes(&expected)
-	if expected.Incarnation == 0 || protected[hex.EncodeToString(id[:])] {
-		return fmt.Errorf("protected active object %s: %w", name, corefs.ErrUnsafe)
-	}
-	if parent == stage {
-		return unix.Unlinkat(parent, name, flags)
-	}
-	scratch := ".obit-purge-" + rand.Text()
-	if err := unix.Mkdirat(stage, scratch, 0700); err != nil {
-		return err
-	}
-	fd, err := openOnMount(stage, scratch, unix.O_RDONLY|unix.O_DIRECTORY)
-	if err != nil {
-		return err
-	}
-	defer unix.Close(fd)
-	if err = renameExclusive(parent, name, fd, name); err != nil {
-		return errors.Join(err, unix.Unlinkat(stage, scratch, unix.AT_REMOVEDIR))
-	}
-	err = f.deleteStagedEntry(fd, name, flags, expected, protected)
-	if err != nil {
-		if rollback := renameExclusive(fd, name, parent, name); rollback != nil {
-			return fmt.Errorf("retained %s/%s: %w", scratch, name, errors.Join(err, rollback))
+		fd, err := openOnMount(parent, name, unix.O_RDONLY|unix.O_DIRECTORY)
+		if err != nil {
+			return err
+		}
+		defer unix.Close(fd)
+		got, err := p.fs.statAt(fd, "")
+		if err != nil {
+			return err
+		}
+		if got.Dev != st.Dev || inodeBytes(&got) != inodeBytes(&st) {
+			return corefs.ErrUnsafe
+		}
+		if err = p.plan.WithObject(purgeID(got), got.Incarnation == 0, nil); err != nil {
+			return err
+		}
+		if err = p.each(fd, func(fd int, child string) error {
+			cs, e := p.fs.burialStat(fd, child)
+			if e != nil {
+				return e
+			}
+			return p.entry(fd, child, cs)
+		}); err != nil {
+			return err
 		}
 	}
-	return errors.Join(err, unix.Unlinkat(stage, scratch, unix.AT_REMOVEDIR))
+	if parent == p.root {
+		if p.stage >= 0 {
+			stageStat, err := p.fs.statAt(p.stage, "")
+			if err != nil {
+				return err
+			}
+			if err := p.unlink(p.root, p.plan.Stage, stageStat); err != nil {
+				return err
+			}
+		}
+		return p.unlink(parent, name, st)
+	}
+	id := purgeID(st)
+	if err := renameExclusive(parent, name, p.stage, id); err != nil {
+		return err
+	}
+	if err := p.unlink(p.stage, id, st); err != nil {
+		return errors.Join(err, renameExclusive(p.stage, id, parent, name))
+	}
+	return nil
 }
-func (f FS) deleteStagedEntry(parent int, name string, flags int, want posixStat, protected corefs.ProtectedIDs) error {
-	fd, err := openOnMount(parent, name, moveOpenFlags)
+
+// unlinkat accepts names, so re-open the staged name and compare on its handle.
+func (p *purgeTree) unlink(fd int, name string, want posixStat) error {
+	pinned, err := openOnMount(fd, name, moveOpenFlags)
 	if err != nil {
 		return err
 	}
-	defer unix.Close(fd)
-	got, err := f.statAt(fd, "")
+	defer unix.Close(pinned)
+	got, err := p.fs.statAt(pinned, "")
 	if err != nil {
 		return err
 	}
-	id := inodeBytes(&got)
-	if got.Dev != want.Dev || id != inodeBytes(&want) || protected[hex.EncodeToString(id[:])] {
-		return fmt.Errorf("changed or protected entry %s: %w", name, corefs.ErrUnsafe)
+	if got.Dev != want.Dev || inodeBytes(&got) != inodeBytes(&want) {
+		return fmt.Errorf("changed entry %s: %w", name, corefs.ErrUnsafe)
 	}
-	return unix.Unlinkat(parent, name, flags)
+	flags := 0
+	if got.Mode&unix.S_IFMT == unix.S_IFDIR {
+		flags = unix.AT_REMOVEDIR
+	}
+	return p.plan.WithObject(purgeID(got), got.Incarnation == 0, func() error { return unix.Unlinkat(fd, name, flags) })
 }

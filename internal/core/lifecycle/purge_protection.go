@@ -2,6 +2,8 @@ package lifecycle
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/woodfishhhh/obituary/internal/core/fs"
 )
@@ -34,43 +36,88 @@ func (s *Service) inspectPurgeTree(b Burial, state State) (*purgeInventory, erro
 	return tree, nil
 }
 
-func (tree *purgeInventory) protect(items []Item) (fs.ProtectedIDs, error) {
+func (tree *purgeInventory) protect(items []Item) error {
 	if tree == nil {
-		return nil, nil
+		return nil
 	}
-	protected := make(fs.ProtectedIDs)
+	active := false
 	for _, it := range items {
 		if it.Kind == KindContainer || it.Kind == KindDockerVolume {
 			continue
 		}
 		if it.Identity == nil {
-			return nil, fmt.Errorf("cannot exclude active item #%d without an identity", it.ID)
+			return fmt.Errorf("cannot exclude active item #%d without an identity", it.ID)
 		}
 		if it.Identity.Serial != tree.root.Serial {
 			continue
 		}
 		if tree.lifespanSnapshot == nil {
-			return nil, fmt.Errorf("active lifespans changed; retry directory inspection")
+			return fmt.Errorf("active lifespans changed; retry directory inspection")
 		}
-		protected[it.Identity.FileID] = true
+		active = true
 		if tree.inventory[it.Identity.FileID] || it.Identity.FileID == tree.root.FileID {
-			return nil, fmt.Errorf("grave contains protected active item #%d", it.ID)
+			return fmt.Errorf("grave contains protected active item #%d", it.ID)
 		}
 	}
-	return protected, tree.check(len(protected) > 0)
+	return tree.check(active)
 }
 
-func (s *Service) purgeProtection(b Burial, state State) (fs.ProtectedIDs, error) {
+func (s *Service) purgeProtection(b Burial, state State) error {
 	tree, err := s.inspectPurgeTree(b, state)
 	if err != nil || tree == nil {
-		return nil, err
+		return err
 	}
 	defer tree.close()
-	var protected fs.ProtectedIDs
-	err = s.Store.ViewItems(func(items []Item) error {
-		var checkErr error
-		protected, checkErr = tree.protect(items)
-		return checkErr
+	return s.Store.ViewItems(tree.protect)
+}
+
+func (s *Service) purgeVerified(b Burial) error {
+	var ids fs.ProtectedIDs
+	guard := s.Store.GuardItems(func(items []Item) error {
+		ids = make(fs.ProtectedIDs)
+		for _, it := range items {
+			if it.Kind == KindContainer || it.Kind == KindDockerVolume {
+				continue
+			}
+			if it.Identity == nil {
+				return fmt.Errorf("cannot exclude active item #%d without an identity", it.ID)
+			}
+			if it.Identity.Serial == b.GraveID.Serial {
+				ids[it.Identity.FileID] = true
+			}
+		}
+		return nil
 	})
-	return protected, err
+	plan := fs.PurgePlan{Name: filepath.Base(b.Grave), Object: *b.Identity, Stage: b.PurgeIntent.Stage,
+		Guard: func(check func(fs.ProtectedIDs) error) error { return guard(func() error { return check(ids) }) },
+	}
+	if err := s.resumePurgePlan(b, &plan); err != nil {
+		return err
+	}
+	if err := plan.WithObject(b.Identity.FileID, false, nil); err != nil {
+		return err
+	}
+	return s.FS.PurgeGrave(filepath.Dir(b.Grave), *b.GraveID, plan)
+}
+
+func (s *Service) resumePurgePlan(b Burial, plan *fs.PurgePlan) error {
+	if plan.Stage != "" {
+		return nil
+	}
+	entries, err := os.ReadDir(filepath.Dir(b.Grave))
+	if err != nil {
+		return err
+	}
+	plan.Stage, _ = gravePurgeStage(b, entries)
+	if plan.Stage == "" {
+		plan.Stage = s.newPurgeIntent("").Stage
+		return nil
+	}
+	plan.LegacyMembers = make(map[string]bool, len(b.Children))
+	for _, c := range b.Children {
+		if c.Identity != nil {
+			plan.LegacyMembers[c.Identity.FileID] = true
+		}
+	}
+	return nil
 }

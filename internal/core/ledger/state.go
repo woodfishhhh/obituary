@@ -105,6 +105,7 @@ type Burial struct {
 // enclosing Burial retains the verified object and directory identities.
 // It reserves one audit slot until deletion and accounting commit together.
 type PurgeIntent struct {
+	Stage      string    `json:"stage,omitempty"`
 	VerifiedAt time.Time `json:"verifiedAt"`
 	Basis      string    `json:"basis"`
 }

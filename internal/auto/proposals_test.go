@@ -571,3 +571,75 @@ func TestApproveSettlesDefinitiveAddFailures(t *testing.T) {
 		})
 	}
 }
+
+func TestAutomaticAddPreservesConcurrentManualLifespan(t *testing.T) {
+	if testing.Short() {
+		t.Skip("requires a real Git repository or child process")
+	}
+	t.Parallel()
+	for _, route := range []string{"rule", "leftovers", "approve"} {
+		for _, relation := range []string{"identity", "child", "parent", "old-path"} {
+			t.Run(route+"/"+relation, func(t *testing.T) {
+				t.Parallel()
+				r := newRepo(t)
+				now := time.Now()
+				r.engine.Svc.Now = func() time.Time { return now }
+				if err := r.engine.Snapshot(r.root, "s"); err != nil {
+					t.Fatal(err)
+				}
+				unit := r.write("scratch/debug.log", "new")
+				manualPath := unit
+				switch relation {
+				case "child":
+					manualPath = r.write("test-results/keep.txt", "keep")
+					unit = filepath.Dir(manualPath)
+				case "parent":
+					manualPath = filepath.Dir(unit)
+				}
+				var proposal core.Proposal
+				if route != "rule" {
+					var err error
+					// Session leftovers and approved rule candidates share the approval gate.
+					kind := core.ProposalOnboard
+					if route == "leftovers" {
+						kind = core.ProposalLeftovers
+					}
+					proposal, _, _, err = r.engine.Svc.Propose(kind, r.root, "s", []core.Candidate{{Path: unit, Lifespan: "3d"}})
+					if err != nil {
+						t.Fatal(err)
+					}
+				}
+				manual := *r.engine.Svc
+				var saved core.Item
+				r.engine.Svc.FS = &interleaveAddFS{beforeAdd: func() {
+					got, err := manual.Add([]string{manualPath}, core.AddOptions{ExpiresAt: now.Add(30 * 24 * time.Hour)})
+					if err != nil || core.Failed(got) {
+						t.Fatalf("manual add: %+v, %v", got, err)
+					}
+					saved = *got[0].Item
+					if relation == "old-path" {
+						if err := os.Rename(unit, unit+".kept"); err != nil {
+							t.Fatal(err)
+						}
+						r.write("scratch/debug.log", "replacement")
+					}
+				}}
+				if route == "rule" {
+					got, err := r.engine.Apply([]string{unit}, Options{})
+					if err != nil || len(got) != 1 || got[0].Action != Skipped || !strings.Contains(got[0].Reason, "already has a lifespan") {
+						t.Errorf("race must refuse automatic add: %+v, %v", got, err)
+					}
+				} else {
+					got, err := r.engine.Approve([]string{fmt.Sprint(proposal.ID)})
+					if err != nil || len(got) != 1 || len(got[0].Results) != 1 || !strings.Contains(got[0].Results[0].Error, "already has a lifespan") {
+						t.Errorf("approval race must settle without updating: %+v, %v", got, err)
+					}
+				}
+				st, err := r.engine.Svc.Store.Read()
+				if err != nil || len(st.Items) != 1 || st.Items[0].ID != saved.ID || st.Items[0].Rev != saved.Rev || st.Items[0].Source != "cli" || !st.Items[0].ExpiresAt.Equal(saved.ExpiresAt) || len(st.Proposals) != 0 {
+					t.Fatalf("manual lifespan or resolved proposal changed: %+v, %v", st, err)
+				}
+			})
+		}
+	}
+}

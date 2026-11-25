@@ -2,7 +2,9 @@ package fs
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
+	"strings"
 )
 
 var (
@@ -23,7 +25,7 @@ type FS interface {
 	// BurialEntry identifies the literal enumerated name and reports whether to descend.
 	BurialEntry(parent fs.ReadDirFile, path string, dir Identity) (Identity, bool, error)
 	// PurgeGrave removes a verified grave without crossing filesystem boundaries.
-	PurgeGrave(path string, want Identity, protected ProtectedIDs) error
+	PurgeGrave(path string, want Identity, plan PurgePlan) error
 	// NewDirectoryChanges creates a synchronous namespace-change check for a large burial scan.
 	NewDirectoryChanges(root string) (DirectoryChanges, error)
 	// Inspect identifies the literal name and reads its type from the same handle.
@@ -110,3 +112,31 @@ type DirectoryChanges interface {
 
 // ProtectedIDs names active filesystem objects on the verified grave's device.
 type ProtectedIDs map[string]bool
+
+// PurgePlan authorizes one named payload in a verified grave. Guard keeps each
+// final identity check and unlink ordered against commits of new registrations.
+type PurgePlan struct {
+	Name          string
+	Object        Identity
+	Stage         string
+	Guard         func(func(ProtectedIDs) error) error
+	LegacyMembers map[string]bool
+}
+
+func (p PurgePlan) WithObject(id string, weak bool, remove func() error) error {
+	return p.Guard(func(ids ProtectedIDs) error {
+		if ids[id] || weak && len(ids) != 0 {
+			return fmt.Errorf("protected or unverifiable grave entry %s: %w", id, ErrUnsafe)
+		}
+		if remove != nil {
+			return remove()
+		}
+		return nil
+	})
+}
+
+// ValidStage restricts a stored token to the single basename produced by crypto/rand.Text.
+func (p PurgePlan) ValidStage() bool {
+	token, ok := strings.CutPrefix(p.Stage, ".obit-purge-")
+	return ok && len(token) == 26 && strings.Trim(token, "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567") == "" && p.Stage != p.Name
+}

@@ -118,6 +118,9 @@ func (s *Service) inspectRegistrations(paths []string, force bool) ([]Result, []
 			err = c.identity.RequirePersistent()
 		}
 		if err != nil {
+			if c != nil && errors.Is(err, errRegistrationChanged) {
+				candidates[i] = c
+			}
 			results[i].Error = err.Error()
 			results[i].Err = err
 			continue
@@ -138,7 +141,10 @@ func (s *Service) addCandidate(st *State, result Result, c *candidate, opts AddO
 		result.Error, result.Err = err.Error(), err
 		return result, nil
 	}
-	if c == nil {
+	if result.Err != nil || c == nil {
+		if opts.OnlyNew && errors.Is(result.Err, errRegistrationChanged) {
+			result = classifyChangedRegistration(st, c, result)
+		}
 		return result, nil
 	}
 	if err := s.checkRegistration(st, c, opts, roots); err != nil {
@@ -315,7 +321,7 @@ func (s *Service) checkNew(st *State, c *candidate, roots []resolvedGraveyardRoo
 			return err
 		}
 		refuse := func() error {
-			return &RefusedError{Path: c.path, Reason: fmt.Sprintf("conflicts with #%d, which already has a lifespan", it.ID)}
+			return lifespanConflict(c.path, it.ID)
 		}
 		if it.Identity != nil && *it.Identity == c.identity {
 			return refuse()
@@ -343,6 +349,23 @@ func (s *Service) checkNew(st *State, c *candidate, roots []resolvedGraveyardRoo
 	return nil
 }
 
+var errRegistrationChanged = fmt.Errorf("registration target changed during inspection: %w", ErrUnsafe)
+
+func classifyChangedRegistration(st *State, c *candidate, r Result) Result {
+	for _, it := range st.Items {
+		if !automatic(it) && (samePath(it.Path, c.path) || it.Identity != nil && *it.Identity == c.identity) {
+			r.Err = lifespanConflict(c.path, it.ID)
+			r.Error = r.Err.Error()
+			break
+		}
+	}
+	return r
+}
+
+func lifespanConflict(path string, id int64) error {
+	return &RefusedError{Path: path, Reason: fmt.Sprintf("conflicts with #%d, which already has a lifespan", id)}
+}
+
 func (s *Service) inspect(ref string, force bool) (*candidate, error) {
 	abs, _, err := s.FS.LongPath(ref)
 	if err != nil {
@@ -364,7 +387,7 @@ func (s *Service) inspect(ref string, force bool) (*candidate, error) {
 		return nil, fmt.Errorf("refusing %s: %w", abs, err)
 	}
 	if current != identity {
-		return nil, fmt.Errorf("registration target changed during inspection: %w", ErrUnsafe)
+		return &candidate{path: filepath.Clean(abs), identity: identity}, errRegistrationChanged
 	}
 	return &candidate{path: filepath.Clean(abs), isDir: mode.IsDir(), searched: mode.IsDir() && !force, identity: identity}, nil
 }

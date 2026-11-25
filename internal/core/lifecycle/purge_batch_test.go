@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	core "github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"golang.org/x/sys/windows"
 )
@@ -106,6 +107,11 @@ func TestTickPurgeBatchRejectsReplacement(t *testing.T) {
 	}
 	graves := f.burials()
 	protected := graves[1].Grave
+	f.svc.FS = purgeProbe{f.fs, func(path string) {
+		if path == filepath.Dir(protected) {
+			t.Fatal("purge batch deleted a replacement or blocked siblings: stale grave reached destructive backend")
+		}
+	}}
 	changed := false
 	restore := core.SetBeforePurgeDelete(f.svc, func() {
 		if changed {
@@ -193,4 +199,14 @@ func TestTickPurgeBatchCommitFailure(t *testing.T) {
 	if err != nil || len(st.Burials) != 0 || st.Stats.Purged != 3 || st.Stats.PurgedBytes != st.Stats.BuriedBytes {
 		t.Fatalf("purge batch recovery lost accounting: %+v %v", st, err)
 	}
+}
+
+type purgeProbe struct {
+	core.FS
+	before func(string)
+}
+
+func (probe purgeProbe) PurgeGrave(path string, want core.Identity, plan corefs.PurgePlan) error {
+	probe.before(path)
+	return probe.FS.PurgeGrave(path, want, plan)
 }

@@ -2,13 +2,18 @@ package lifecycle
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 )
+
+func (s *Service) newPurgeIntent(basis string) *PurgeIntent {
+	return &PurgeIntent{VerifiedAt: s.now(), Basis: basis, Stage: ".obit-purge-" + rand.Text()}
+}
 
 func (s *Service) beginPurge(b *Burial, basis string) error {
 	intent := b.PurgeIntent
 	if intent == nil {
-		intent = &PurgeIntent{VerifiedAt: s.now(), Basis: basis}
+		intent = s.newPurgeIntent(basis)
 	}
 	// A visible intent may come from an unconfirmed replacement; confirm it
 	// under the ledger lock before authorizing another permanent deletion.

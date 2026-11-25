@@ -40,6 +40,19 @@ func (s *Service) commitChildLifespans(st *State, out Outcome, reason string) ([
 	return s.currentBurialChildren(st, item, snap)
 }
 
+func (s *Service) previewBurialChildren(st *State, out Outcome) error {
+	snap := out.lifespans
+	if snap == nil {
+		return nil
+	}
+	defer snap.close()
+	if err := s.scanInventory(snap, *out.Item.Identity); err != nil {
+		return err
+	}
+	_, err := s.currentBurialChildren(st, out.Item, snap)
+	return err
+}
+
 func (s *Service) currentBurialChildren(st *State, item Item, snap *lifespanSnapshot) ([]Item, error) {
 	active := make(map[string]bool)
 	for i := range st.Items {
@@ -74,6 +87,9 @@ func (s *Service) currentBurialChildren(st *State, item Item, snap *lifespanSnap
 }
 
 func (s *Service) containedIdentities(item Item, snap *lifespanSnapshot, active map[string]bool) (map[string]bool, error) {
+	if len(active) > 0 && item.Identity.RequirePersistent() != nil {
+		return nil, errWeakDescendant
+	}
 	if snap.changes != nil {
 		return snap.inventory, snap.check(len(active) > 0)
 	}

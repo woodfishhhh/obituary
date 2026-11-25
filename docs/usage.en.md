@@ -274,7 +274,7 @@ Data lives in `%LOCALAPPDATA%\obituary`: `store.json` (ledger), `audit.jsonl` (a
 
 ```toml
 [graveyard]
-mode = "graveyard"      # or "recycle": straight to the system Recycle Bin
+mode = "graveyard"      # or "recycle": files go to the system Recycle Bin, directories to the graveyard for recovery with obit resurrect
 retention_days = 7      # days the graveyard keeps things
 ```
 

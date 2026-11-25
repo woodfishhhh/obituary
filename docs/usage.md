@@ -274,7 +274,7 @@ obit daemon disable             # 撤掉定时任务和登录启动，并停掉�
 
 ```toml
 [graveyard]
-mode = "graveyard"      # 或 "recycle"：直接进系统回收站
+mode = "graveyard"      # 或 "recycle"：普通文件进系统回收站，目录进讣告墓地，可用 obit resurrect 恢复
 retention_days = 7      # 墓地保留天数
 ```
 

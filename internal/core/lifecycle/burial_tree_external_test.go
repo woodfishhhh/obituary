@@ -251,7 +251,11 @@ func TestHistoricalDirectoryTypePreservesChild(t *testing.T) {
 			f := newFixture(t)
 			c := f.file("parent/child")
 			p := f.add(filepath.Dir(c), time.Hour)
-			f.add(c, 24*time.Hour)
+			child := f.add(f.file("outside"), 24*time.Hour)
+			c = filepath.Join(filepath.Dir(c), "arrived")
+			if err := os.Rename(child.Path, c); err != nil {
+				t.Fatal(err)
+			}
 			f.svc.Mode = mode
 			if err := f.svc.Store.UpdateHot(func(st *core.State) error { st.Items[st.Index(p.ID)].IsDir = false; return nil }); err != nil {
 				t.Fatal(err)
@@ -259,7 +263,7 @@ func TestHistoricalDirectoryTypePreservesChild(t *testing.T) {
 			f.clock = f.clock.Add(time.Hour)
 			for _, dry := range []bool{true, false} {
 				rows, err := f.svc.Sweep(dry)
-				if err != nil || len(rows) != 1 || rows[0].Action == core.ActionRecycled || rows[0].Action == core.ActionBuried || !exists(c) {
+				if err != nil || len(rows) != 1 || rows[0].Action != core.ActionRetry || read(t, c) != "outside" || len(f.items()) != 2 {
 					t.Fatalf("historical type dry=%v: %+v %v", dry, rows, err)
 				}
 			}
