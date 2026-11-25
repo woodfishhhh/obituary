@@ -23,6 +23,9 @@ func (s *Service) restoreBurial(result *GraveResult, b Burial, state State) erro
 	}
 	chain, err := tx.prepareRestoreParent(b, b.Path)
 	if err != nil {
+		if chain != nil {
+			result.Warning = errorText(chain.Rollback())
+		}
 		result.Err = restorePreparationError(filepath.Dir(b.Path), err)
 		result.Error = result.Err.Error()
 		return nil

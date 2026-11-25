@@ -117,3 +117,7 @@ func SetAfterManifest(s *Service, fn func()) func() {
 		return nil
 	})
 }
+
+func PrepareRestoreParent(s *Service, b Burial) (*restoreParentChain, error) {
+	return s.prepareRestoreParent(b, b.Path)
+}

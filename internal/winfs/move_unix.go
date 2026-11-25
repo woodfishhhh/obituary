@@ -58,14 +58,11 @@ func (fs FS) moveFrom(from *restoreParent, old string, want corefs.Identity, par
 		fs.beforeRename()
 	}
 	if restore {
-		path := parent.expectedPath
-		if path == "" {
-			path = parent.path
-		}
-		if id, err := fs.IdentifyFollowing(path); err != nil || id != parent.id {
-			return "", &corefs.RestoreParentError{Kind: "unverified", Path: path, Cause: corefs.ErrUnsafe}
+		if err := fs.verifyRestoreDestination(parent); err != nil {
+			return "", err
 		}
 	}
+
 	if err := fs.renameNoReplace(from.fd(), old, parent.fd(), name); err != nil {
 		return "", err
 	}
@@ -73,6 +70,16 @@ func (fs FS) moveFrom(from *restoreParent, old string, want corefs.Identity, par
 		return "", fs.rollbackMove(from, old, parent, name, restore, err)
 	}
 	return fs.verifiedChildPath(parent, name, want), nil
+}
+
+func (fs FS) verifyRestoreDestination(parent *restoreParent) error {
+	if parent.checkPath != nil {
+		return parent.checkPath()
+	}
+	if id, err := fs.Identify(parent.path); err != nil || id != parent.id {
+		return &corefs.RestoreParentError{Kind: "unverified", Path: parent.path, Cause: corefs.ErrUnsafe}
+	}
+	return nil
 }
 
 func (fs FS) pinMoveSource(parent *restoreParent, name string, want corefs.Identity) (int, posixStat, error) {

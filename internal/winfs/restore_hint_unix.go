@@ -14,19 +14,24 @@ import (
 
 // FindRestoreDirectory checks siblings first, then their immediate children.
 // WalkDir sorts entire directories; streaming names through pinned descriptors
-// bounds the work and lets an unreadable sibling be skipped independently.
+// bounds entries and checks elapsed time between system calls.
 func (fs FS) FindRestoreDirectory(root corefs.RestoreParent, want corefs.Identity) string {
 	p, ok := root.(*restoreParent)
 	if !ok || p.id.Serial != want.Serial || want.RequirePersistent() != nil {
 		return ""
 	}
 	s := directorySearch{fs: fs, want: want, left: 512, until: time.Now().Add(100 * time.Millisecond)}
+	mounts, err := hintMountPoints()
+	if err != nil {
+		return ""
+	}
+	s.mounts = mounts
 	found := s.scan(p.file, p.path, true)
 	for _, name := range s.children {
 		if found != "" || s.exhausted() {
 			break
 		}
-		child, err := openHintDirectory(p.fd(), name)
+		child, err := s.openDirectory(p.file, p.path, name, unix.O_RDONLY)
 		if err != nil {
 			continue
 		}
@@ -54,6 +59,7 @@ type directorySearch struct {
 	left     int
 	until    time.Time
 	children []string
+	mounts   map[string]bool
 }
 
 func (s *directorySearch) exhausted() bool { return s.left == 0 || time.Now().After(s.until) }
@@ -66,18 +72,13 @@ func (s *directorySearch) scan(dir *os.File, path string, siblings bool) string 
 				return ""
 			}
 			s.left--
-			st, err := s.fs.statAt(int(dir.Fd()), name)
-			if err != nil || st.Mode&unix.S_IFMT != unix.S_IFDIR || st.Dev != s.want.Serial {
+			st, err := s.directoryStat(dir, path, name)
+			if err != nil || st.Dev != s.want.Serial {
 				continue
 			}
 			id := inodeBytes(&st)
 			if hex.EncodeToString(id[:]) == s.want.FileID {
-				// A same-device bind mount can expose the same inode under a different name.
-				fd, err := openHintDirectory(int(dir.Fd()), name)
-				if err == nil {
-					unix.Close(fd)
-					return filepath.Join(path, name)
-				}
+				return filepath.Join(path, name)
 			}
 			if siblings {
 				s.children = append(s.children, name)
@@ -88,4 +89,20 @@ func (s *directorySearch) scan(dir *os.File, path string, siblings bool) string 
 		}
 	}
 	return ""
+}
+
+func (s *directorySearch) openDirectory(parent *os.File, path, name string, access int) (int, error) {
+	if len(s.mounts) > 0 && s.mounts[filepath.Join(path, name)] {
+		return -1, unix.EXDEV
+	}
+	return openHintDirectory(int(parent.Fd()), name, access)
+}
+
+func (s *directorySearch) directoryStat(parent *os.File, path, name string) (posixStat, error) {
+	fd, err := s.openDirectory(parent, path, name, hintMetadataOnly)
+	if err != nil {
+		return posixStat{}, err
+	}
+	defer unix.Close(fd)
+	return s.fs.statAt(fd, "")
 }

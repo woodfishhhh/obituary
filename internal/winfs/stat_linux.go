@@ -112,6 +112,10 @@ func linuxCreationIDWith(fd int, name string, birth uint64, lookup func(int, str
 
 // NO_XDEV also excludes same-device bind mounts. On older kernels the
 // optional hint stays unknown rather than traversing an unverified mount.
-func openHintDirectory(fd int, name string) (int, error) {
-	return unix.Openat2(fd, name, &unix.OpenHow{Flags: unix.O_RDONLY | unix.O_CLOEXEC | unix.O_DIRECTORY | unix.O_NOFOLLOW, Resolve: unix.RESOLVE_NO_XDEV})
+const hintMetadataOnly = unix.O_PATH
+
+func hintMountPoints() (map[string]bool, error) { return nil, nil }
+
+func openHintDirectory(fd int, name string, access int) (int, error) {
+	return unix.Openat2(fd, name, &unix.OpenHow{Flags: uint64(access | unix.O_CLOEXEC | unix.O_DIRECTORY | unix.O_NOFOLLOW), Resolve: unix.RESOLVE_NO_XDEV | unix.RESOLVE_NO_SYMLINKS})
 }

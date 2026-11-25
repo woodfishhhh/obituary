@@ -121,6 +121,9 @@ func (s *Service) rollbackWatchDirectory(b Burial) error {
 	}
 	parent, err := s.prepareRestoreParent(b, b.Path)
 	if err != nil {
+		if parent != nil {
+			return errors.Join(err, parent.Rollback())
+		}
 		return err
 	}
 	defer parent.Close()

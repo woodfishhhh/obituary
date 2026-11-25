@@ -14,6 +14,14 @@ func (e *RestoreParentError) Error() string {
 	switch e.Kind {
 	case "renamed":
 		return fmt.Sprintf("original parent %s is currently at %s; the item remains in the graveyard", e.Path, e.Current)
+	case "pinned":
+		return fmt.Sprintf("original parent %s no longer names the pinned directory; the item remains in the graveyard", e.Path)
+	case "link_file":
+		return fmt.Sprintf("a file occupies the original link at %s; the item remains in the graveyard; restore the original link or recover the item manually", e.Path)
+	case "not_directory":
+		return fmt.Sprintf("cannot traverse %s because its target is not a directory; the item remains in the graveyard", e.Path)
+	case "loop":
+		return fmt.Sprintf("cannot resolve %s because its links form a loop; the item remains in the graveyard", e.Path)
 	case "link":
 		return fmt.Sprintf("the link at %s changed; its current location cannot be verified; the item remains in the graveyard", e.Path)
 	case "permission":

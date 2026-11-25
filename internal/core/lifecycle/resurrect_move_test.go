@@ -200,3 +200,29 @@ func TestResurrectProtectsCollisionSuffix(t *testing.T) {
 		t.Fatalf("restore suffix bypassed protection: %+v %v", got, err)
 	}
 }
+
+type refuseSecondParentFS struct{ core.FS }
+
+func (f refuseSecondParentFS) MkdirRestoreParent(parent core.RestoreParent, name string) (core.RestoreParent, error) {
+	if name == "child" {
+		if err := os.WriteFile(filepath.Join(parent.Path(), "sentinel"), []byte("kept"), 0600); err != nil {
+			return nil, err
+		}
+		return nil, os.ErrPermission
+	}
+	return f.FS.MkdirRestoreParent(parent, name)
+}
+
+func TestRestorePreparationKeepsRollbackWarning(t *testing.T) {
+	f := newFixture(t)
+	b := buryOne(t, f, "missing/child/payload")
+	missing := filepath.Dir(filepath.Dir(b.Path))
+	if err := os.Rename(missing, missing+"-saved"); err != nil {
+		t.Fatal(err)
+	}
+	f.svc.FS = refuseSecondParentFS{f.fs}
+	rows, err := f.svc.Resurrect([]string{b.Path})
+	if err != nil || len(rows) != 1 || !strings.Contains(rows[0].Error, "permission denied") || !strings.Contains(rows[0].Warning, "nonempty created directory "+missing) || read(t, filepath.Join(missing, "sentinel")) != "kept" || read(t, b.Grave) != "missing/child/payload" {
+		t.Fatalf("missing preparation or rollback detail: %+v %v", rows, err)
+	}
+}

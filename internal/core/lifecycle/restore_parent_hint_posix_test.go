@@ -96,18 +96,11 @@ func TestRestoreParentSiblingHints(t *testing.T) {
 	}{{"alpha-src", "Z-renamed", true}, {"Folder", "folder", false}} {
 		t.Run(tc.current, func(t *testing.T) {
 			f := newFixture(t)
-			if err := os.Mkdir(filepath.Join(f.dir, "A-unreadable"), 0); err != nil {
-				t.Fatal(err)
-			}
-			t.Cleanup(func() { os.Chmod(filepath.Join(f.dir, "A-unreadable"), 0700) })
 			name := tc.old + "/payload"
 			b := buryOne(t, f, name)
 			old, current := filepath.Dir(b.Path), filepath.Join(f.dir, tc.current)
 			if err := os.Rename(old, current); err != nil {
 				t.Fatal(err)
-			}
-			if !tc.occupied && exists(old) {
-				t.Skip("case-insensitive filesystem still resolves the original spelling")
 			}
 			if tc.occupied {
 				f.file(tc.old + "/sentinel")
@@ -259,5 +252,72 @@ func TestRestoreParentPreparationReasons(t *testing.T) {
 				t.Fatalf("lost preparation reason: %+v", rows)
 			}
 		})
+	}
+}
+
+func TestRestoreHintSkipsUnreadableSiblingAtDepthTwo(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root bypasses directory permissions")
+	}
+	f := newFixture(t)
+	b := buryOne(t, f, "siblings/Old/payload")
+	old := filepath.Dir(b.Path)
+	root := filepath.Dir(old)
+	parked := filepath.Join(f.dir, "parked")
+	if err := os.Rename(old, parked); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"one", "two", "three"} {
+		if err := os.Mkdir(filepath.Join(root, name), 0700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	dir, err := os.Open(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	names, err := dir.Readdirnames(-1)
+	dir.Close()
+	if err != nil || len(names) != 3 {
+		t.Fatal(names, err)
+	}
+	first := filepath.Join(root, names[0])
+	if err := os.Chmod(first, 0); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Chmod(first, 0700) })
+	current := filepath.Join(root, names[len(names)-1], "New")
+	if err := os.Rename(parked, current); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := f.svc.Resurrect([]string{b.Path})
+	if err != nil || len(rows) != 1 || !strings.Contains(rows[0].Error, old+" is currently at "+current) || read(t, b.Grave) != "siblings/Old/payload" || exists(filepath.Join(current, "payload")) || len(f.burials()) != 1 {
+		t.Fatal(rows, err)
+	}
+}
+
+func TestRestoreFinalCheckRequiresRecordedLinkType(t *testing.T) {
+	f := newFixture(t)
+	real := filepath.Join(f.dir, "Real")
+	alias := filepath.Join(f.dir, "Alias")
+	if err := os.Mkdir(real, 0700); err != nil {
+		t.Fatal(err)
+	}
+	directoryLink(t, alias, real)
+	b := buryOne(t, f, "Alias/child/payload")
+	chain, err := core.PrepareRestoreParent(f.svc, b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer chain.Close()
+	// Model the two snapshots deterministically: the only difference is the recorded link bit.
+	if b.Parents[1].Path != alias || !b.Parents[1].Reparse {
+		t.Fatal("link fixture was not recorded")
+	}
+	b.Parents[1].Reparse = false
+	_, err = f.fs.MovePinnedInto(b.Grave, *b.Identity, chain.RestoreParent, "payload")
+	issue, ok := errors.AsType[*corefs.RestoreParentError](err)
+	if !ok || issue.Kind != "link" || issue.Path != alias || !errors.Is(err, core.ErrUnsafe) || read(t, b.Grave) != "Alias/child/payload" || exists(b.Path) || len(f.burials()) != 1 {
+		t.Fatalf("ordinary ancestor accepted as a same-target link: %v", err)
 	}
 }

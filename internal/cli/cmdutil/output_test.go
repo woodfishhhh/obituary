@@ -20,6 +20,7 @@ import (
 	extendcmd "github.com/woodfishhhh/obituary/internal/cli/extend"
 	resurrectcmd "github.com/woodfishhhh/obituary/internal/cli/resurrect"
 	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 )
 
 func TestOtherJSONMutationCommandsReportItemErrors(t *testing.T) {
@@ -135,6 +136,23 @@ func TestPendingMutationCommandsFailInTextAndJSON(t *testing.T) {
 					t.Fatal("failed CLI mutation changed state")
 				}
 			})
+		}
+	}
+}
+
+func TestRestoreRefusalAndRollbackWarningRenderedTogether(t *testing.T) {
+	for _, lang := range []string{"en", "zh-CN"} {
+		t.Setenv("OBIT_LANG", lang)
+		issue := &corefs.RestoreParentError{Kind: "permission", Path: "denied-child"}
+		row := core.GraveResult{Ref: "1", Err: issue, Error: issue.Error(), Warning: "rollback kept nonempty created directory retained-parent"}
+		cmd := &cobra.Command{RunE: func(*cobra.Command, []string) error { return cmdutil.ReportGraves([]core.GraveResult{row}, false, nil) }}
+		_, text, err := clitest.Execute(t, cmd)
+		cause := "permission denied"
+		if lang == "zh-CN" {
+			cause = "没有权限"
+		}
+		if !errors.Is(err, cmdutil.ErrReported) || !strings.Contains(text, cause) || !strings.Contains(text, issue.Path) || !strings.Contains(text, row.Warning) {
+			t.Fatal(lang, text, err)
 		}
 	}
 }

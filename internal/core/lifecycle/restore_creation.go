@@ -2,23 +2,21 @@ package lifecycle
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 	"syscall"
 
 	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
-
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 )
 
-func (s *Service) prepareRestoreParent(b Burial, dest string) (_ *restoreParentChain, err error) {
+func (s *Service) prepareRestoreParent(b Burial, dest string) (*restoreParentChain, error) {
 	if reason := s.Guard.ProtectedReason(dest); reason != "" {
 		return nil, &RefusedError{Path: dest, Reason: reason}
 	}
 	dir := filepath.Dir(dest)
-	nearest, missing, err := existingRestoreAncestor(dir)
+	nearest, missing, err := existingRestoreAncestor(dir, b.Parents)
 	if err != nil {
 		return nil, err
 	}
@@ -26,57 +24,48 @@ func (s *Service) prepareRestoreParent(b Burial, dest string) (_ *restoreParentC
 	// after pinning and before the first handle-relative directory creation.
 	real, err := s.FS.Resolve(nearest)
 	if err != nil {
-		return nil, err
+		// EvalSymlinks may return an untyped loop error. Stat supplies the OS cause.
+		if _, statErr := os.Stat(nearest); statErr != nil {
+			err = statErr
+		}
+		return nil, restorePreparationError(nearest, err)
 	}
 	parent, err := s.FS.OpenRestoreParent(real)
 	if err != nil {
-		return nil, err
+		return nil, restorePreparationError(nearest, err)
 	}
-	parents := []RestoreParent{parent}
-	defer func() {
-		for i := len(parents) - 1; i >= 0; i-- {
-			if err != nil {
-				err = errors.Join(err, parents[i].Rollback())
-			}
-			if err != nil {
-				parents[i].Close()
-			}
-		}
-	}()
+	chain := &restoreParentChain{RestoreParent: parent, parents: []RestoreParent{parent}}
 	if err := s.preflightRestoreParent(b, dest, nearest, parent); err != nil {
-		return nil, err
+		return chain, err
 	}
 	for i := len(missing) - 1; i >= 0; i-- {
 		child, err := s.FS.MkdirRestoreParent(parent, missing[i])
 		if err != nil {
-			return nil, err
+			return chain, err
 		}
-		parents = append(parents, child)
+		chain.parents = append(chain.parents, child)
+		chain.RestoreParent = child
 		parent = child
 	}
 	// Pin first, then check the entire original lexical chain, then prove that
 	// this checked spelling still reaches that handle (not a freshly resolved
 	// replacement). Ordinary rebuilt parents keep their original path contract.
 	if err := s.checkCreatedRestoreParent(b, dest, dir, parent); err != nil {
-		return nil, err
+		return chain, err
 	}
-	if p, ok := parent.(interface{ ExpectRestorePath(string) }); ok {
-		p.ExpectRestorePath(dir)
+	if p, ok := parent.(interface{ BeforeRestoreRename(func() error) }); ok {
+		p.BeforeRestoreRename(func() error { return restorePreparationError(dir, s.checkCreatedRestoreParent(b, dest, dir, parent)) })
 	}
-	return &restoreParentChain{RestoreParent: parent, parents: parents}, nil
+	return chain, nil
 }
 
-func existingRestoreAncestor(dir string) (string, []string, error) {
+func existingRestoreAncestor(dir string, parents []BurialParent) (string, []string, error) {
 	nearest := dir
 	var missing []string
 	for {
 		info, err := os.Lstat(nearest)
 		if err == nil && info.Mode().IsRegular() {
-			kind := "file"
-			if runtime.GOOS == "windows" {
-				kind = "file_windows"
-			}
-			return "", nil, &corefs.RestoreParentError{Kind: kind, Path: nearest, Cause: syscall.ENOTDIR}
+			return "", nil, occupiedRestoreParent(nearest, parents)
 		}
 		if err == nil {
 			break
@@ -91,6 +80,24 @@ func existingRestoreAncestor(dir string) (string, []string, error) {
 	return nearest, missing, nil
 }
 
+func occupiedRestoreParent(path string, parents []BurialParent) error {
+	issue := &corefs.RestoreParentError{Kind: "file", Path: path, Cause: syscall.ENOTDIR}
+	if runtime.GOOS != "windows" {
+		return issue
+	}
+	for _, rec := range parents {
+		if rec.Path != path {
+			continue
+		}
+		issue.Kind = "file_windows"
+		if rec.Reparse {
+			issue.Kind = "link_file"
+		}
+		break
+	}
+	return issue
+}
+
 func (s *Service) checkCreatedRestoreParent(b Burial, dest, dir string, parent RestoreParent) error {
 	if err := s.checkRestoreParents(b); err != nil {
 		return err
@@ -101,7 +108,7 @@ func (s *Service) checkCreatedRestoreParent(b Burial, dest, dir string, parent R
 	}
 	pinned := parent.Identity()
 	if current.Serial != pinned.Serial || current.FileID != pinned.FileID {
-		return fmt.Errorf("original parent %s no longer names the pinned directory: %w", dir, ErrUnsafe)
+		return &corefs.RestoreParentError{Kind: "pinned", Path: dir, Cause: ErrUnsafe}
 	}
 	path := filepath.Join(parent.Path(), filepath.Base(dest))
 	if reason := s.Guard.ProtectedReason(path); reason != "" {

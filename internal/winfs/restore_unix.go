@@ -12,14 +12,14 @@ import (
 )
 
 type restoreParent struct {
-	file         *os.File
-	path         string
-	id           corefs.Identity
-	created      bool
-	expectedPath string
+	file      *os.File
+	path      string
+	id        corefs.Identity
+	created   bool
+	checkPath func() error
 }
 
-func (p *restoreParent) ExpectRestorePath(path string) { p.expectedPath = path }
+func (p *restoreParent) BeforeRestoreRename(check func() error) { p.checkPath = check }
 
 func (p *restoreParent) Close() error              { return p.file.Close() }
 func (p *restoreParent) Path() string              { return p.path }
@@ -58,7 +58,7 @@ func (fs FS) OpenRestoreParent(path string) (corefs.RestoreParent, error) {
 	back, err := fs.Identify(real)
 	if err != nil || back != id {
 		f.Close()
-		return nil, fmt.Errorf("restore parent changed while opening %s: %w", path, corefs.ErrUnsafe)
+		return nil, &corefs.RestoreParentError{Kind: "pinned", Path: path, Cause: corefs.ErrUnsafe}
 	}
 	return &restoreParent{file: f, path: real, id: id}, nil
 }
