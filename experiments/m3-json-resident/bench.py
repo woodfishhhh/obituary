@@ -33,15 +33,19 @@ import time
 import uuid
 from pathlib import Path
 
-K = ct.windll.kernel32
-K.CreateMutexW.restype = ct.c_void_p
+WINDOWS = os.name == "nt"
+SUFFIX = ".exe" if WINDOWS else ""
+CREATE_FLAGS = getattr(sp, "CREATE_NO_WINDOW", 0)
+if WINDOWS:
+    K = ct.windll.kernel32
+    K.CreateMutexW.restype = ct.c_void_p
 CPU = os.cpu_count()
 
 
 class Bench:
     def __init__(self, bins: Path, out: Path):
         self.bin = {p.name[4:]: p for p in bins.glob("bin-*")}  # bin-old, bin-new, bin-<variant>
-        self.root = Path(tempfile.gettempdir()) / ("obit-resident-bench-" + uuid.uuid4().hex[:8])
+        self.root = Path(tempfile.gettempdir()).resolve() / ("obit-resident-bench-" + uuid.uuid4().hex[:8])
         self.root.mkdir()
         self.out = out
         self.repo = self.root / "repo"
@@ -53,7 +57,7 @@ class Bench:
                     GIT_CEILING_DIRECTORIES=str(self.root), GIT_TERMINAL_PROMPT="0", PYTHONUTF8="1")
         for key, sub in dict(OBIT_USER_HOME="user", HOME="user", USERPROFILE="user", APPDATA="roaming",
                              LOCALAPPDATA="local", CODEX_HOME="codex", CLAUDE_CONFIG_DIR="claude",
-                             OBIT_CONFIG_DIR="config", XDG_CONFIG_HOME="config").items():
+                             OBIT_CONFIG_DIR="config", XDG_CONFIG_HOME="config", XDG_DATA_HOME="data", XDG_STATE_HOME="state").items():
             p = self.root / sub
             p.mkdir(exist_ok=True)
             base[key] = str(p)
@@ -81,8 +85,8 @@ class Bench:
     def run(self, system, exe, args, env, payload=None, allow=False):
         data = None if payload is None else json.dumps(payload).encode()
         t = time.perf_counter_ns()
-        r = sp.run([str(self.bin[system] / (exe + ".exe")), *args], input=data, stdout=sp.PIPE, stderr=sp.PIPE,
-                   cwd=self.repo, env=env, creationflags=sp.CREATE_NO_WINDOW, timeout=180)
+        r = sp.run([str(self.bin[system] / (exe + SUFFIX)), *args], input=data, stdout=sp.PIPE, stderr=sp.PIPE,
+                   cwd=self.repo, env=env, creationflags=CREATE_FLAGS, timeout=180)
         ms = (time.perf_counter_ns() - t) / 1e6
         if not allow and r.returncode:
             raise RuntimeError((args, r.returncode, r.stderr[-1500:], r.stdout[-500:]))
@@ -112,10 +116,13 @@ def cpu_times():
 class CPUWindow:
     """Whole-machine CPU use between two points (kernel time includes idle)."""
     def __enter__(self):
-        self.a = cpu_times()
+        self.a = cpu_times() if WINDOWS else None
         return self
 
     def __exit__(self, *_):
+        if self.a is None:
+            self.pct = None
+            return
         b = cpu_times()
         idle, kern, user = (b[n] - self.a[n] for n in range(3))
         self.pct = 100.0 * (1 - idle / (kern + user)) if kern + user else 0.0
@@ -165,12 +172,12 @@ class System:
 
     def start(self):
         b = self.b
-        self.daemon = sp.Popen([b.bin[self.name] / "obitd.exe", "--tray=false", "--home", self.home,
+        self.daemon = sp.Popen([b.bin[self.name] / ("obitd" + SUFFIX), "--tray=false", "--home", self.home,
                                 "--config-dir", b.base["OBIT_CONFIG_DIR"]], cwd=b.repo, env=self.e,
-                               creationflags=sp.CREATE_NO_WINDOW)
+                               creationflags=CREATE_FLAGS)
         pipe = r"\\.\pipe\obituary-resident-" + hashlib.sha256(str(self.home).encode()).hexdigest()
         for _ in range(500):
-            if K.WaitNamedPipeW(pipe, 20):
+            if K.WaitNamedPipeW(pipe, 20) if WINDOWS else (self.home / "resident.sock").is_socket():
                 return
             assert self.daemon.poll() is None, "obitd exited"
             time.sleep(.02)

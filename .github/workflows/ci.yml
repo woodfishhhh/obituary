@@ -263,6 +263,38 @@ jobs:
           OBIT_TEST_DELETE_MUTATIONS: "1"
         run: go test -count=1 -run '^TestDeleteGuardMutations/native-posix-' ./internal/cli/remove
 
+  resident-list:
+    if: github.event_name == 'workflow_dispatch' && inputs.full
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+      - name: Measure list alongside real PostToolUse hooks
+        env:
+          TMPDIR: /tmp
+          OBIT_BENCH_SEED_REAL: "1"
+        run: |
+          bins="$RUNNER_TEMP/bin-final"
+          mkdir -p "$bins"
+          for exe in obit obitd; do go build -trimpath -ldflags='-s -w' -o "$bins/$exe" "./cmd/$exe"; done
+          go build -trimpath -ldflags='-s -w' -o "$bins/probe" ./experiments/m3-json-resident/probe
+          python3 experiments/m3-json-resident/listbench.py "$RUNNER_TEMP" --arms final --levels 0,2,4 --waves 42 --gate 250 --out "$RUNNER_TEMP/list.jsonl"
+          python3 experiments/m3-json-resident/listsummary.py "$RUNNER_TEMP/list.jsonl" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: list-latency-${{ matrix.os }}
+          path: ${{ runner.temp }}/list.jsonl
+
   docker-volume-e2e:
     needs: changes
     if: >-

@@ -42,8 +42,9 @@ def main():
         diffs = [ref[w] - v[w] for w in v if w in ref] if arm != a.ref else []
         pair = f"{st.median(diffs):+.1f}" if diffs else "-"
         faster = f"{sum(d > 0 for d in diffs)}/{len(diffs)}" if diffs else "-"
+        cpu_cell = f"{st.median(cpu[(k, arm)]):.0f}%" if cpu[(k, arm)] else "-"
         print(f"| {'solo' if k == 0 else k} | {arm} | {len(vals)} | {st.median(vals):.1f} | {p95(vals):.1f} | {max(vals):.1f} | "
-              f"{sum(x > a.gate for x in vals)} | {pair} | {faster} | {st.median(cpu[(k, arm)]):.0f}% | {hook_cell(hooks[(k, arm)])} |")
+              f"{sum(x > a.gate for x in vals)} | {pair} | {faster} | {cpu_cell} | {hook_cell(hooks[(k, arm)])} |")
 
 
 if __name__ == "__main__":

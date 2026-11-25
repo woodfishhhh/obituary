@@ -13,7 +13,7 @@ import (
 )
 
 func TestLanguageSettingsAndPlan(t *testing.T) {
-	t.Setenv("OBIT_LANG", "")
+	useSystemLocale(t)
 	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	a, _ := fixture(t)
 	a.deps.SystemLanguage = func() string { return "zh-TW" }
@@ -62,7 +62,7 @@ func TestLanguageSettingsAndPlan(t *testing.T) {
 }
 
 func TestLanguagePlanIncludesInstalledMenu(t *testing.T) {
-	t.Setenv("OBIT_LANG", "")
+	useSystemLocale(t)
 	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	a, _ := fixture(t)
 	a.deps.SystemLanguage = func() string { return "zh-CN" }
@@ -107,7 +107,7 @@ func TestLanguagePlanIncludesInstalledMenu(t *testing.T) {
 }
 
 func TestLanguagePlanRetainsPartialReceipt(t *testing.T) {
-	t.Setenv("OBIT_LANG", "")
+	useSystemLocale(t)
 	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	a, _ := fixture(t)
 	a.deps.SystemLanguage = func() string { return "zh-CN" }
@@ -148,7 +148,7 @@ func TestLanguagePlanRetainsPartialReceipt(t *testing.T) {
 }
 
 func TestLanguagePlanPreservesConcurrentEdits(t *testing.T) {
-	t.Setenv("OBIT_LANG", "")
+	useSystemLocale(t)
 	testenv.WindowsOnly(t, "Windows desktop shortcuts, Explorer menu, or Run registration")
 	for _, changed := range []string{"config", "registry"} {
 		t.Run(changed, func(t *testing.T) {
@@ -184,5 +184,12 @@ func TestLanguagePlanPreservesConcurrentEdits(t *testing.T) {
 				t.Fatalf("registry conflict: %+v", receipt)
 			}
 		})
+	}
+}
+
+func useSystemLocale(t *testing.T) {
+	t.Helper()
+	for _, key := range []string{"OBIT_LANG", "LC_ALL", "LC_MESSAGES", "LANG"} {
+		t.Setenv(key, "")
 	}
 }

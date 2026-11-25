@@ -53,6 +53,7 @@ def one_wave(b, s, hook_sys, k, j):
         barrier.wait()
         hooks = [f.result() for f in fs]
         ms, size, rows, errlen, errtext = rd.result()
+    assert errlen == 0 and rows >= s.n + 1, (rows, size, errtext)
     if k:
         s.expected += k
         s.drain()
@@ -67,14 +68,20 @@ def run_level(b, a, k, log):
     written = {nm: [] for nm in arms}
     try:
         time.sleep(3)  # the resident's first reconciliation is not the steady state
+        samples = {nm: [] for nm in arms}
         for j in range(a.waves):
             for nm in arms[j % len(arms):] + arms[:j % len(arms)]:
                 paths, rec = one_wave(b, systems[nm], a.hooks or nm, k, j)
                 written[nm] += paths
+                samples[nm].append(rec["list_ms"])
                 print(json.dumps(rec, separators=(",", ":")), file=log, flush=True)
-                print(f"k={k} wave={j} {nm} list={rec['list_ms']:.0f} ms rows={rec['rows']} cpu={rec['cpu']:.0f}%", flush=True)
+                print(f"k={k} wave={j} {nm} list={rec['list_ms']:.0f} ms rows={rec['rows']}", flush=True)
         for nm, s in systems.items():
             logged = s.verify(written[nm])
+            tail = p95(samples[nm])
+            print(f"k={k} {nm} n={len(samples[nm])} p50={st.median(samples[nm]):.2f} p95={tail:.2f} ms", flush=True)
+            if a.gate and k in (2, 4) and tail > a.gate:
+                raise RuntimeError(f"k={k} {nm} p95 exceeds {a.gate} ms")
             print(f"k={k} {nm}: {len(written[nm])} writes registered once each; hook.log lines={logged}", flush=True)
     finally:
         for s in systems.values():
@@ -89,6 +96,7 @@ def main():
     ap.add_argument("--levels", default="0,2,4,8,16")
     ap.add_argument("--waves", type=int, default=21)
     ap.add_argument("--n", type=int, default=1000)
+    ap.add_argument("--gate", type=float, help="maximum list p95 (ms) at 2 and 4 hooks")
     ap.add_argument("--hooks", default="")
     ap.add_argument("--out", default="list-raw.jsonl")
     a = ap.parse_args()
