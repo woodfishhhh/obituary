@@ -129,4 +129,4 @@ Les événements Docker sont vérifiés avant et après la suppression. Si celle
 
 ## Un fichier expiré reste en place
 
-`obit watch --list` indique le délai et `obit doctor --verbose` le mode actif. Fermez les applications qui utilisent le fichier. Si votre compte ne peut pas inspecter les descripteurs d’un autre processus, le fichier reste en place même après approbation.
+Fermez les programmes qui utilisent le fichier. Si seules les informations sur les processus sont incomplètes, vous pouvez approuver ce fichier en mode `propose`. Le mode automatique doit pouvoir examiner tous les processus du propriétaire du fichier. Il ne peut ignorer les processus inaccessibles d’autres utilisateurs, y compris root, que si le fichier vous appartient et que ni le groupe ni les autres ne peuvent y écrire. Choisissez `propose` pour examiner chaque fichier. L’approbation accepte les lacunes de la liste des processus. Un fichier ouvert reste en place et le motif est affiché. `obit doctor --verbose` · `obit watch --list`

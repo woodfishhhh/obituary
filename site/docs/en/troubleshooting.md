@@ -129,4 +129,4 @@ Docker events are checked before and after removal. If deletion cannot be confir
 
 ## An expired file is still in place
 
-Use `obit watch --list` to see the quiet period and `obit doctor --verbose` to see the active mode. Close programs using the file. If your account cannot inspect another process’s descriptors, the file stays in place even after approval.
+Close programs holding the file and try again. If process information alone is incomplete, you can approve the individual file in `propose` mode. Automatic burial requires access to every process belonging to the file owner. It may ignore unreadable processes of other users, including root, only for your own files with neither group nor other write permission. Choose `propose` for individual review. Approval accepts gaps in the process list. A confirmed open file always stays in place and the reason is shown. `obit doctor --verbose` · `obit watch --list`

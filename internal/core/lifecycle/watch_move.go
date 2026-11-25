@@ -53,7 +53,7 @@ func (s *Service) verifyWatchMovement(st *State, p *preparedBurial) bool {
 	if err == nil {
 		release()
 		if posixWatchFile(p.out.Item) {
-			err = s.FS.CheckWatchClosed(*b.Identity)
+			err = s.FS.CheckWatchClosed(b.Grave, *b.Identity, s.approvedWatch != nil)
 		}
 		if err == nil && sameWatchSnapshot(*p.watch, snap) {
 			return true

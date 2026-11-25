@@ -237,9 +237,12 @@ func (s *Service) checkPOSIXWatchFile(st *State, idx int, path string) error {
 		err = updateWatchTiming(it, watchByID(st, it.WatchID), snap, now)
 	}
 	if err == nil {
-		err = s.FS.CheckWatchClosed(*it.Identity)
+		err = s.FS.CheckWatchClosed(path, *it.Identity, s.approvedWatch != nil)
 	}
-	if err == nil && s.approvedWatch != nil {
+	if s.approvedWatch != nil {
+		if err != nil {
+			return err
+		}
 		return s.checkWatchBurialReview(st, *s.approvedWatch)
 	}
 	if it.Watch == nil {

@@ -47,4 +47,4 @@ func (FS) ObserveWatch(path string, hold bool) (corefs.WatchSnapshot, func(), er
 }
 
 // Windows uses ObserveWatch's exclusive handle throughout the move.
-func (FS) CheckWatchClosed(corefs.Identity) error { return corefs.ErrUnsupported }
+func (FS) CheckWatchClosed(string, corefs.Identity, bool) error { return corefs.ErrUnsupported }

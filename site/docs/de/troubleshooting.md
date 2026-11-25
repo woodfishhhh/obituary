@@ -129,4 +129,4 @@ Docker-Ereignisse werden vor und nach dem Löschen geprüft. Lässt sich die Lö
 
 ## Eine abgelaufene Datei bleibt liegen
 
-`obit watch --list` zeigt die Wartezeit, `obit doctor --verbose` den aktiven Modus. Programme schließen, die die Datei geöffnet haben. Fehlen dem Konto die Rechte zum Prüfen fremder Dateideskriptoren, bleibt die Datei auch nach Bestätigung liegen.
+Schließen Sie Programme, die die Datei geöffnet haben. Fehlen nur Prozessinformationen, können Sie die Datei im Modus `propose` einzeln bestätigen. Im automatischen Modus müssen alle Prozesse des Dateieigentümers prüfbar sein. Unlesbare Prozesse anderer Benutzer einschließlich root werden nur bei eigenen Dateien ohne Schreibrecht für Gruppe oder andere ignoriert. Mit `propose` prüfen Sie jede Datei einzeln. Die Freigabe akzeptiert Lücken in der Prozessliste. Eine nachweislich geöffnete Datei bleibt mit Begründung liegen. `obit doctor --verbose` · `obit watch --list`

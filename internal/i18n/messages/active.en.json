@@ -128,6 +128,7 @@
   "cli.doctor.companion_executable_exists": "companion executable exists: ",
   "cli.doctor.store_json_and_its_referenced_graveyard_snapshot": "store.json and its referenced graveyard snapshot are readable (absent store means empty)",
   "cli.doctor.trusted_rules_json_is_readable_absence_means": "trusted_rules.json is readable (absence means no trusted rules)",
+  "cli.doctor.watch_file_expiry_mode": ". Folder-policy file expiry: {{.Mode}}",
   "cli.doctor.config_toml_is_valid_defaults_apply_when": "config.toml is valid (defaults apply when absent)",
   "cli.doctor.project_rules_permit_automatic_registration": "project rules permit automatic registration",
   "cli.doctor.native_posix_shell_no_windows_shell_declaration": "native POSIX shell; no Windows shell declaration needed",

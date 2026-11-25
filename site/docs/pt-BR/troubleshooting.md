@@ -129,4 +129,4 @@ Os eventos do Docker são verificados antes e depois da exclusão. Se não for p
 
 ## Um arquivo vencido continua no lugar
 
-Veja o tempo de espera com `obit watch --list` e o modo ativo com `obit doctor --verbose`. Feche os programas que abriram o arquivo. Se sua conta não puder consultar os descritores de outro processo, o arquivo permanecerá no lugar mesmo após a aprovação.
+Feche os programas que mantêm o arquivo aberto. Se apenas faltarem informações sobre processos, você pode aprovar cada arquivo no modo `propose`. O modo automático precisa verificar todos os processos do proprietário do arquivo. Só pode ignorar processos inacessíveis de outros usuários, inclusive root, quando o arquivo é seu e nem o grupo nem os demais têm permissão de escrita. Use `propose` para revisar cada arquivo. A aprovação aceita lacunas na lista de processos. Se o arquivo estiver comprovadamente aberto, ele permanece no lugar e o motivo é exibido. `obit doctor --verbose` · `obit watch --list`

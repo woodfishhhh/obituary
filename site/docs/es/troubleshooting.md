@@ -129,4 +129,4 @@ Se comprueban los eventos de Docker antes y después de eliminar el volumen. Si 
 
 ## Un archivo caducado sigue en su sitio
 
-Consulta el tiempo de espera con `obit watch --list` y el modo activo con `obit doctor --verbose`. Cierra los programas que tengan abierto el archivo. Si tu cuenta no puede inspeccionar los descriptores de otro proceso, el archivo permanece en su sitio incluso después de aprobarlo.
+Cierra los programas que tengan abierto el archivo. Si solo falta información de procesos, puedes aprobar el archivo individualmente en el modo `propose`. El modo automático debe poder inspeccionar todos los procesos del propietario del archivo. Solo puede ignorar procesos inaccesibles de otros usuarios, incluido root, si el archivo es tuyo y ni el grupo ni los demás tienen permiso de escritura. Elige `propose` para revisar cada archivo. La aprobación admite información incompleta, pero si se detecta un archivo abierto, se conserva y se muestra el motivo. `obit doctor --verbose` · `obit watch --list`

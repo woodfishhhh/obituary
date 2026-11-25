@@ -12,21 +12,27 @@ import (
 
 // The CLI ships without cgo. SYS_PROC_INFO exposes the same kernel queries as
 // libproc, including per-process permission errors that a filtered file list loses.
-func checkOpenFiles(dev, ino uint64) error {
+func checkOpenFiles(dev, ino uint64, owner uint32, private bool) error {
 	procs, err := unix.SysctlKinfoProcSlice("kern.proc.all")
 	if err != nil {
 		return err
 	}
+	var first error
 	for _, proc := range procs {
 		pid := int(proc.Proc.P_pid)
 		if pid == 0 {
 			continue
 		} // kernel_task has no user file descriptor table.
 		if err := inspectDarwinFDs(pid, dev, ino); err != nil && !errors.Is(err, unix.ESRCH) {
-			return fmt.Errorf("inspect pid %d: %w", pid, err)
+			if private && !errors.Is(err, errWatchFileOpen) && proc.Eproc.Ucred.Uid != owner && proc.Eproc.Pcred.P_ruid != owner && proc.Eproc.Pcred.P_svuid != owner {
+				continue
+			}
+			if recordWatchError(&first, fmt.Errorf("inspect pid %d: %w", pid, err)) {
+				break
+			}
 		}
 	}
-	return nil
+	return first
 }
 
 func inspectDarwinFDs(pid int, dev, ino uint64) error {
@@ -44,16 +50,19 @@ func inspectDarwinFDs(pid int, dev, ino uint64) error {
 		if n == size {
 			continue
 		}
+		var first error
 		for offset := 0; offset < n; offset += 8 {
 			if binary.NativeEndian.Uint32(fds[offset+4:]) != 1 {
 				continue
 			} // PROX_FDTYPE_VNODE
 			fd := binary.NativeEndian.Uint32(fds[offset:])
 			if err := inspectDarwinVnode(pid, fd, dev, ino); err != nil && !errors.Is(err, unix.EBADF) {
-				return err
+				if recordWatchError(&first, err) {
+					break
+				}
 			}
 		}
-		return nil
+		return first
 	}
 }
 

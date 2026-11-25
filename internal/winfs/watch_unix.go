@@ -5,6 +5,7 @@ package winfs
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"time"
 
@@ -46,7 +47,7 @@ func (fs FS) ObserveWatch(path string, hold bool) (corefs.WatchSnapshot, func(),
 
 // Compare kernel device/inode pairs, also for renamed files. The pinned move
 // separately checks the durable identity, including generation/birth time.
-func (FS) CheckWatchClosed(id corefs.Identity) error {
+func (FS) CheckWatchClosed(path string, id corefs.Identity, approved bool) error {
 	if len(id.FileID) != 32 {
 		return fmt.Errorf("invalid POSIX watch identity")
 	}
@@ -54,5 +55,38 @@ func (FS) CheckWatchClosed(id corefs.Identity) error {
 	if err != nil {
 		return err
 	}
-	return checkOpenFiles(id.Serial, ino)
+	var st unix.Stat_t
+	if err := unix.Lstat(path, &st); err != nil {
+		return err
+	}
+	if uint64(st.Dev) != id.Serial || st.Ino != ino || st.Mode&unix.S_IFMT != unix.S_IFREG {
+		return fmt.Errorf("watched file changed before descriptor check")
+	}
+	private := privateWatchFile(st.Uid, uint32(os.Geteuid()), uint32(st.Mode))
+	err = checkOpenFiles(id.Serial, ino, st.Uid, private)
+	return watchInventoryResult(approved, err)
+}
+
+// Continue across incomplete entries so a later confirmed holder always wins.
+func recordWatchError(first *error, err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, errWatchFileOpen) {
+		*first = err
+		return true
+	}
+	if *first == nil {
+		*first = err
+	}
+	return false
+}
+
+func privateWatchFile(owner, current, mode uint32) bool { return owner == current && mode&0022 == 0 }
+
+func watchInventoryResult(approved bool, err error) error {
+	if approved && !errors.Is(err, errWatchFileOpen) {
+		return nil
+	}
+	return err
 }

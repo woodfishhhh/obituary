@@ -173,7 +173,9 @@ type watchFileProbeFS struct {
 	probe func(core.Identity) error
 }
 
-func (f watchFileProbeFS) CheckWatchClosed(id core.Identity) error { return f.probe(id) }
+func (f watchFileProbeFS) CheckWatchClosed(_ string, id core.Identity, _ bool) error {
+	return f.probe(id)
+}
 
 func TestPOSIXWatchFileQuietAfterExpiry(t *testing.T) {
 	if runtime.GOOS == "windows" {

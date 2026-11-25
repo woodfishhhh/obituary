@@ -121,8 +121,12 @@ func (s *Service) ApproveWatchBurial(p Proposal) (Outcome, error) {
 	roots := tx.resolveGraveyardRoots(st, it.Path)
 	out := tx.settle(it, false, ReasonBury, roots)
 	if out.Action == ActionRetry {
-		if err := tx.commit(out); err != nil {
-			return out, err
+		// An unchanged file decision stays pending, so it can be approved again
+		// immediately after the holder closes without an intervening sweep.
+		if !posixWatchFile(it) {
+			if err := tx.commit(out); err != nil {
+				return out, err
+			}
 		}
 		return out, errors.Join(out.err, s.Store.RecordCommitted(Event{Time: s.now(), Action: out.Action, ID: it.ID, Path: out.Path, Detail: out.Detail}))
 	}

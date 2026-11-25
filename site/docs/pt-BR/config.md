@@ -40,6 +40,8 @@ No Windows e no Linux, `graveyard.mode = "recycle"` usa a Lixeira do sistema. Re
 
 `watch.stable_window` é a paciência de uma política de pasta: um arquivo novo precisa ficar sem mudanças por esse tempo antes de ser movido, para que nada seja levado enquanto ainda está sendo baixado. Ela usa o formato de duração do Go, um número seguido de `s`, `m` ou `h`, que podem ser encadeados como em `1h30m`, e deve ser maior que zero.
 
+O modo automático precisa verificar todos os processos do proprietário do arquivo. Só pode ignorar processos inacessíveis de outros usuários, inclusive root, quando o arquivo é seu e nem o grupo nem os demais têm permissão de escrita. Use `propose` para revisar cada arquivo. A aprovação aceita lacunas na lista de processos. Se o arquivo estiver comprovadamente aberto, ele permanece no lugar e o motivo é exibido.
+
 As configurações `explorer.*` controlam as datas no nome exibido pelo Explorador de Arquivos e as etiquetas de data no Finder e no Dolphin. O nome real não muda. Por padrão isso acontece em Downloads, na Área de Trabalho (incluindo subpastas) e nos lugares que uma política de pasta gerencia. Com `explorer.everywhere` ativado, outros locais acompanhados também mostram a data; áreas de trabalho do Git ficam de fora, a menos que você defina `explorer.in_git` como `true`; e `explorer.enabled = false` desliga tudo. Veja [Políticas de pastas](./folder-policies).
 
 ## Interface
