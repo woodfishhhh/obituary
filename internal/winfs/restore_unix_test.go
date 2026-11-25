@@ -51,7 +51,7 @@ func TestPOSIXRestoreParents(t *testing.T) {
 	}
 }
 
-func TestPOSIXFailedRestoreRetainsCreatedParents(t *testing.T) {
+func TestPOSIXFailedRestoreRetainsBurialAfterParentMove(t *testing.T) {
 	dir := t.TempDir()
 	source := filepath.Join(dir, "parent", "child", "source")
 	if err := os.MkdirAll(filepath.Dir(source), 0700); err != nil {
@@ -72,13 +72,11 @@ func TestPOSIXFailedRestoreRetainsCreatedParents(t *testing.T) {
 	if err != nil || len(rows) != 1 || !core.GraveFailed(rows) {
 		t.Fatalf("failed restore: %+v %v", rows, err)
 	}
-	for _, path := range []string{filepath.Join(dir, "parent"), filepath.Dir(source)} {
-		if info, err := os.Stat(path); err != nil || !info.IsDir() {
-			t.Fatalf("created parent deleted: %s %v", path, err)
-		}
-		if !strings.Contains(rows[0].Warning, path) {
-			t.Fatalf("cleanup warning omits %s: %+v", path, rows[0])
-		}
+	if _, err := os.Stat(filepath.Join(dir, "parent")); !os.IsNotExist(err) {
+		t.Fatalf("renamed parent was recreated: %v", err)
+	}
+	if rows[0].Warning != "" {
+		t.Fatalf("preflight refusal unexpectedly reported cleanup: %+v", rows[0])
 	}
 	if _, err := os.Stat(filepath.Join(oldParent, "child")); err != nil {
 		t.Fatalf("original parent deleted: %v", err)
@@ -205,7 +203,6 @@ func TestPOSIXRestoreRecovery(t *testing.T) {
 	if err != nil || core.GraveFailed(rows) {
 		t.Fatalf("bury: %+v %v", rows, err)
 	}
-	mustPOSIXRename(t, filepath.Dir(source), filepath.Join(dir, "old-parent"))
 	svc.FS = lostRestoreResultFS{}
 	rows, err = svc.Resurrect([]string{source})
 	if err != nil || !core.GraveFailed(rows) {

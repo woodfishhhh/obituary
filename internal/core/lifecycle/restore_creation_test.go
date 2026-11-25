@@ -78,6 +78,12 @@ func TestResurrectRecreatesMissingParents(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, err := f.svc.Resurrect([]string{b.Path})
+	if runtime.GOOS != "windows" {
+		if err != nil || !core.GraveFailed(got) || !exists(b.Grave) || exists(b.Path) || !strings.Contains(got[0].Error, "cannot be verified") {
+			t.Fatalf("POSIX missing parents were not retained safely: %+v %v", got, err)
+		}
+		return
+	}
 	if err != nil || core.GraveFailed(got) || read(t, b.Path) != "output/deep/payload.txt" {
 		t.Fatalf("missing parents not recreated: %+v %v", got, err)
 	}
@@ -105,6 +111,12 @@ func TestResurrectNamesAncestorReplacedByFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, err = f.svc.Resurrect([]string{fmt.Sprint(b.ID)})
+	if runtime.GOOS != "windows" {
+		if err != nil || !core.GraveFailed(got) || !exists(b.Grave) || exists(b.Path) || !strings.Contains(got[0].Error, "cannot be verified") {
+			t.Fatalf("POSIX deleted ancestor was not retained safely: %+v %v", got, err)
+		}
+		return
+	}
 	if err != nil || core.GraveFailed(got) || read(t, b.Path) != "output/deep/payload.txt" {
 		t.Fatalf("restore after moving the file failed: %+v %v", got, err)
 	}
@@ -121,6 +133,9 @@ func TestResurrectRetriesAfterRecreatingParents(t *testing.T) {
 	if err != nil || !core.GraveFailed(first) || !exists(b.Grave) {
 		t.Fatalf("failed restoration lost grave: %+v %v", first, err)
 	}
+	if runtime.GOOS != "windows" {
+		return
+	}
 	f.fs.fail = nil
 	got, err := f.svc.Resurrect([]string{b.Path})
 	if err != nil || core.GraveFailed(got) || !exists(b.Path) {
@@ -129,6 +144,9 @@ func TestResurrectRetriesAfterRecreatingParents(t *testing.T) {
 }
 
 func TestResurrectReportsRecreatedParentIdentityFailure(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("POSIX refuses an unverified missing parent before rebuilding it")
+	}
 	f := newFixture(t)
 	b := buryOne(t, f, "output/deep/payload.txt")
 	nearest := filepath.Dir(b.Path)
@@ -186,9 +204,18 @@ func TestResurrectSharedMissingParent(t *testing.T) {
 			}
 			for _, refs := range groups {
 				got, err := f.svc.Resurrect(refs)
+				if runtime.GOOS != "windows" {
+					if err != nil || !core.GraveFailed(got) || !exists(a.Grave) || !strings.Contains(got[0].Error, "cannot be verified") {
+						t.Fatalf("POSIX shared missing parent was not retained: %+v %v", got, err)
+					}
+					continue
+				}
 				if err != nil || core.GraveFailed(got) {
 					t.Fatalf("shared rebuilt parent blocked resurrection: %+v %v", got, err)
 				}
+			}
+			if runtime.GOOS != "windows" {
+				return
 			}
 			if read(t, a.Path) != "output/a.txt" || read(t, b.Path) != "output/b.txt" || len(f.burials()) != 0 {
 				t.Fatal("shared parent lost restored files")
@@ -208,6 +235,9 @@ func (fs beforeMkdirRestoreFS) MkdirRestoreParent(p core.RestoreParent, name str
 }
 
 func TestResurrectRollsBackDirectoriesAfterAncestorMove(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("POSIX refuses an unverified missing parent before rebuilding it")
+	}
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}
