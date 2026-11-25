@@ -57,33 +57,34 @@ func (p *purgeTree) purgePayload() (err error) {
 	if st.Dev != p.plan.Object.Serial || purgeID(st) != p.plan.Object.FileID {
 		return corefs.ErrUnsafe
 	}
-	if st.Mode&unix.S_IFMT == unix.S_IFDIR {
-		if err = p.openStage(); err != nil {
-			return err
+	if st.Mode&unix.S_IFMT != unix.S_IFDIR {
+		return p.entry(p.root, name, st)
+	}
+	if err = p.openStage(); err != nil {
+		return err
+	}
+	defer unix.Close(p.stage)
+	stageStat, statErr := p.fs.statAt(p.stage, "")
+	if statErr != nil {
+		return statErr
+	}
+	if stageStat.Dev != p.plan.Object.Serial || stageStat.Mode&0077 != 0 {
+		return corefs.ErrUnsafe
+	}
+	if err := p.plan.WithObject(purgeID(stageStat), stageStat.Incarnation == 0, nil); err != nil {
+		return err
+	}
+	defer func() {
+		if err == nil {
+			return
 		}
-		defer unix.Close(p.stage)
-		stageStat, statErr := p.fs.statAt(p.stage, "")
-		if statErr != nil {
-			return statErr
+		e := p.unlink(p.root, p.plan.Stage, stageStat)
+		if e != nil && !errors.Is(e, unix.ENOTEMPTY) && !errors.Is(e, unix.ENOENT) {
+			err = errors.Join(err, e)
 		}
-		if stageStat.Dev != p.plan.Object.Serial || stageStat.Mode&0077 != 0 {
-			return corefs.ErrUnsafe
-		}
-		if err := p.plan.WithObject(purgeID(stageStat), stageStat.Incarnation == 0, nil); err != nil {
-			return err
-		}
-		defer func() {
-			if err == nil {
-				return
-			}
-			e := p.unlink(p.root, p.plan.Stage, stageStat)
-			if e != nil && !errors.Is(e, unix.ENOTEMPTY) && !errors.Is(e, unix.ENOENT) {
-				err = errors.Join(err, e)
-			}
-		}()
-		if err = p.resumeStage(); err != nil {
-			return err
-		}
+	}()
+	if err = p.resumeStage(); err != nil {
+		return err
 	}
 	return p.entry(p.root, name, st)
 }
@@ -145,43 +146,18 @@ func (p *purgeTree) entry(parent int, name string, st posixStat) error {
 		return corefs.ErrUnsafe
 	}
 	if st.Mode&unix.S_IFMT == unix.S_IFDIR {
-		fd, err := openOnMount(parent, name, unix.O_RDONLY|unix.O_DIRECTORY)
-		if err != nil {
-			return err
-		}
-		defer unix.Close(fd)
-		got, err := p.fs.statAt(fd, "")
-		if err != nil {
-			return err
-		}
-		if got.Dev != st.Dev || inodeBytes(&got) != inodeBytes(&st) {
-			return corefs.ErrUnsafe
-		}
-		if err = p.plan.WithObject(purgeID(got), got.Incarnation == 0, nil); err != nil {
-			return err
-		}
-		if err = p.each(fd, func(fd int, child string) error {
-			cs, e := p.fs.burialStat(fd, child)
-			if e != nil {
-				return e
-			}
-			return p.entry(fd, child, cs)
-		}); err != nil {
+		if err := p.emptyDirectory(parent, name, st); err != nil {
 			return err
 		}
 	}
+
 	if parent == p.root {
-		if p.stage >= 0 {
-			stageStat, err := p.fs.statAt(p.stage, "")
-			if err != nil {
-				return err
-			}
-			if err := p.unlink(p.root, p.plan.Stage, stageStat); err != nil {
-				return err
-			}
+		if err := p.finishStage(); err != nil {
+			return err
 		}
 		return p.unlink(parent, name, st)
 	}
+
 	id := purgeID(st)
 	if err := renameExclusive(parent, name, p.stage, id); err != nil {
 		return err
@@ -211,4 +187,43 @@ func (p *purgeTree) unlink(fd int, name string, want posixStat) error {
 		flags = unix.AT_REMOVEDIR
 	}
 	return p.plan.WithObject(purgeID(got), got.Incarnation == 0, func() error { return unix.Unlinkat(fd, name, flags) })
+}
+
+func (p *purgeTree) emptyDirectory(parent int, name string, st posixStat) error {
+	fd, err := openOnMount(parent, name, unix.O_RDONLY|unix.O_DIRECTORY)
+	if err != nil {
+		return err
+	}
+	defer unix.Close(fd)
+	got, err := p.fs.statAt(fd, "")
+	if err != nil {
+		return err
+	}
+	if got.Dev != st.Dev || inodeBytes(&got) != inodeBytes(&st) {
+		return corefs.ErrUnsafe
+	}
+	if err = p.plan.WithObject(purgeID(got), got.Incarnation == 0, nil); err != nil {
+		return err
+	}
+	if err = p.each(fd, func(fd int, child string) error {
+		cs, e := p.fs.burialStat(fd, child)
+		if e != nil {
+			return e
+		}
+		return p.entry(fd, child, cs)
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (p *purgeTree) finishStage() error {
+	if p.stage < 0 {
+		return nil
+	}
+	st, err := p.fs.statAt(p.stage, "")
+	if err != nil {
+		return err
+	}
+	return p.unlink(p.root, p.plan.Stage, st)
 }
