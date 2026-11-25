@@ -41,6 +41,21 @@ func TestRemoveRechecksStoppedRun(t *testing.T) {
 	}
 }
 
+func TestRemoveKeepsRunningContainer(t *testing.T) {
+	cli, row, state, log := dockerFixture(t)
+	row.Running = true
+	testenv.WriteDocker(t, state, row)
+	kept, err := cli.Remove(t.Context(), row.Identity, nil)
+	if err != nil || !kept {
+		t.Fatal("running container not kept:", kept, err)
+	}
+	for _, raw := range testenv.DockerCalls(t, log) {
+		if testenv.DockerCommand(raw)[0] == "rm" {
+			t.Fatal("sent removal to a running container")
+		}
+	}
+}
+
 func TestIdentity(t *testing.T) {
 	id := docker.Identity{ID: strings.Repeat("a", 64), Created: time.Now()}
 	if !id.Valid() || !id.Same(id) {
