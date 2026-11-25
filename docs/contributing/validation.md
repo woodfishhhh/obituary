@@ -39,7 +39,7 @@ go build -ldflags=-H=windowsgui -o bin/obitd.exe ./cmd/obitd
 - `schtasks /Query /XML` 按控制台代码页（GBK）输出，任务 XML 里只放 ASCII。
 - 真实的任务计划测试要设 `OBIT_TEST_SCHEDULER=1`。测试任务的名字是唯一的，清理时按这个名字删，不要依赖全局变量（defer 会比 t.Cleanup 先执行）。
 
-- 从 WSL 通过 interop 启动 `obit.exe` 时，Windows 的环境变量（`LOCALAPPDATA` 等）都能拿到；但 WSL 里设的变量要靠 `WSLENV` 才能传过去，测试时用 `WSLENV=OBIT_HOME/w`。
+- 从 WSL 启动 Windows 版 `obit.exe` 做隔离测试时，把 `OBIT_HOME` 和 `OBIT_CONFIG_DIR` 都导出为 WSL 临时目录路径，并设置 `WSLENV=OBIT_HOME/p:OBIT_CONFIG_DIR/p`。`/p` 会把两个路径转换为 Windows 路径。若已有 `WSLENV` 条目，请保留并用冒号分隔。
 - 别在 heredoc 里用 Python 修改含 `\n` 的 Go 字符串字面量：`\n` 会变成真的换行，导致编译失败。改这类地方用 Edit 工具。
 
 - 维护者的 Git Bash 会把 `rm` 送进回收站，排查额外回收站条目时先核对 shell 命令。可恢复删除用 `obit bury <确切路径>`。仅清理自己的一次性临时文件时，原生命令是 `/usr/bin/rm`。WSL 脚本与后续清理分开执行，核实确切路径并遵守宿主删除护栏。
