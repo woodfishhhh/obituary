@@ -91,7 +91,7 @@ func (s *Service) originalRestoreNameMatches(rec BurialParent) bool {
 	if err != nil || id != rec.Identity {
 		return false
 	}
-	exact, err := exactRestoreName(rec.Path)
+	exact, err := s.exactRestoreName(rec.Path)
 	return err != nil || exact
 }
 
@@ -101,6 +101,9 @@ func (s *Service) describeRenamedParent(issue *corefs.RestoreParentError, parent
 	issue.Kind, issue.Path, issue.Current = "renamed", root.Path, found
 	for j := len(parents) - 2; j >= 0; j-- {
 		child := parents[j]
+		if info, err := os.Lstat(child.Path); err == nil && info.Mode().IsRegular() {
+			break
+		}
 		if child.Reparse || child.Identity.Serial != root.Identity.Serial || filepath.Dir(child.Path) != issue.Path {
 			break
 		}

@@ -321,3 +321,43 @@ func TestRestoreFinalCheckRequiresRecordedLinkType(t *testing.T) {
 		t.Fatalf("ordinary ancestor accepted as a same-target link: %v", err)
 	}
 }
+
+func TestRestoreReportsRenamedAncestorBeforeLowerFileOccupant(t *testing.T) {
+	f := newFixture(t)
+	b := buryOne(t, f, "Old/Deep/Leaf/payload")
+	old := filepath.Join(f.dir, "Old")
+	current := filepath.Join(f.dir, "New")
+	if err := os.Rename(old, current); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(old, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(old, "Deep"), []byte("occupant"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := f.svc.Resurrect([]string{b.Path})
+	if err != nil || len(rows) != 1 || !strings.Contains(rows[0].Error, old+" is currently at "+current) || !exists(b.Grave) || exists(filepath.Join(current, "Deep", "Leaf", "payload")) {
+		t.Fatalf("renamed ancestor was hidden by lower file: %+v %v", rows, err)
+	}
+	if read(t, filepath.Join(old, "Deep")) != "occupant" || read(t, b.Grave) != "Old/Deep/Leaf/payload" {
+		t.Fatal("placeholder or burial changed")
+	}
+}
+
+func TestResurrectTraversesExecuteOnlyAncestor(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root bypasses directory permissions")
+	}
+	f := newFixture(t)
+	b := buryOne(t, f, "locked/deep/payload")
+	locked := filepath.Join(f.dir, "locked")
+	if err := os.Chmod(locked, 0111); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(locked, 0700) })
+	rows, err := f.svc.Resurrect([]string{b.Path})
+	if err != nil || len(rows) != 1 || core.GraveFailed(rows) || read(t, b.Path) != "locked/deep/payload" {
+		t.Fatalf("execute-only ancestor blocked restore: %+v %v", rows, err)
+	}
+}

@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/lifespan"
+	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/listing"
 )
 
@@ -32,11 +34,21 @@ func ReportGraves(results []core.GraveResult, asJSON bool, describe func(core.Gr
 	return nil
 }
 
+func localizedWarning(language *i18n.Localizer, warning string) string {
+	const prefix = "rollback kept nonempty created directory "
+	if language.Language() == i18n.English || !strings.HasPrefix(warning, prefix) {
+		return warning
+	}
+	rest := strings.TrimPrefix(warning, prefix)
+	path, cause, _ := strings.Cut(rest, ": ")
+	return language.Text("cli.restore.rollback_nonempty", map[string]any{"Path": path, "Cause": cause})
+}
+
 func printGraveResult(r core.GraveResult, describe func(core.GraveResult) string) {
 	language := Localizer()
 	r.Error = ReferenceText(language, r.Err, r.Error)
 	if r.Warning != "" {
-		fmt.Fprintln(os.Stderr, language.Text("cli.warning", map[string]any{"Text": r.Warning}))
+		fmt.Fprintln(os.Stderr, language.Text("cli.warning", map[string]any{"Text": localizedWarning(language, r.Warning)}))
 	}
 	if r.Error == "" {
 		fmt.Println(describe(r))

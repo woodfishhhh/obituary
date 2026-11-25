@@ -48,6 +48,7 @@ var defaultMessages = map[string]*goi18n.Message{
 	"cli.restore_parent.missing":       &goi18n.Message{ID: "cli.restore_parent.missing", Other: "cannot resolve {{.Path}}: no such file or directory (the link target may be missing); the item remains in the graveyard"},
 	"cli.restore_parent.file":          &goi18n.Message{ID: "cli.restore_parent.file", Other: "original folder {{.Path}} is now a file; the item is still in the graveyard; restore the original directory to its original path or recover manually"},
 	"cli.restore_parent.file_windows":  &goi18n.Message{ID: "cli.restore_parent.file_windows", Other: "original folder {{.Path}} is now a file; the item is still in the graveyard, and after that file is moved or renamed, obit resurrect can restore it"},
+	"cli.restore.rollback_nonempty":    &goi18n.Message{ID: "cli.restore.rollback_nonempty", Other: "rollback kept nonempty created directory {{.Path}}: {{.Cause}}"},
 
 	"telemetry.help":           &goi18n.Message{ID: "telemetry.help", Other: "Usage statistics: a random installation ID, version, OS, architecture, interface language and installation channel help measure installation counts and version use. No files, paths or commands are sent; IP addresses and user agents are not stored. Disable with obit config telemetry off or OBIT_TELEMETRY=0."},
 	"telemetry.syntax":         &goi18n.Message{ID: "telemetry.syntax", Other: "Use obit config telemetry on or obit config telemetry off."},

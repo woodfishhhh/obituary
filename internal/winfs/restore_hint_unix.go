@@ -21,11 +21,6 @@ func (fs FS) FindRestoreDirectory(root corefs.RestoreParent, want corefs.Identit
 		return ""
 	}
 	s := directorySearch{fs: fs, want: want, left: 512, until: time.Now().Add(100 * time.Millisecond)}
-	mounts, err := hintMountPoints()
-	if err != nil {
-		return ""
-	}
-	s.mounts = mounts
 	found := s.scan(p.file, p.path, true)
 	for _, name := range s.children {
 		if found != "" || s.exhausted() {
@@ -59,15 +54,18 @@ type directorySearch struct {
 	left     int
 	until    time.Time
 	children []string
-	mounts   map[string]bool
 }
 
 func (s *directorySearch) exhausted() bool { return s.left == 0 || time.Now().After(s.until) }
 
 func (s *directorySearch) scan(dir *os.File, path string, siblings bool) string {
 	for !s.exhausted() {
-		names, err := dir.Readdirnames(min(32, s.left))
-		for _, name := range names {
+		entries, err := readHintEntries(dir, min(32, s.left))
+		for _, entry := range entries {
+			if !entry.directory || entry.mountPoint {
+				continue
+			}
+			name := entry.name
 			if s.exhausted() {
 				return ""
 			}
@@ -92,9 +90,6 @@ func (s *directorySearch) scan(dir *os.File, path string, siblings bool) string 
 }
 
 func (s *directorySearch) openDirectory(parent *os.File, path, name string, access int) (int, error) {
-	if len(s.mounts) > 0 && s.mounts[filepath.Join(path, name)] {
-		return -1, unix.EXDEV
-	}
 	return openHintDirectory(int(parent.Fd()), name, access)
 }
 

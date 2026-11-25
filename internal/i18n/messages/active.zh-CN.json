@@ -827,6 +827,7 @@
   "cli.restore_parent.missing": "无法解析 {{.Path}}：文件、目录或链接目标不存在。原物仍保留在墓地。",
   "cli.restore_parent.file": "原目录 {{.Path}} 已被普通文件占用。原物仍保留在墓地。请将原目录放回原位，或手动恢复。",
   "cli.restore_parent.file_windows": "原目录 {{.Path}} 已被普通文件占用。原物仍保留在墓地。移开该文件后可用 obit resurrect 重试。",
+  "cli.restore.rollback_nonempty": "回滚保留了非空的新建目录 {{.Path}}：{{.Cause}}",
   "cli.reference.burial_id": "没有和 {{.Ref}} 对应的下葬记录。文件名是纯数字时，请用 ./ 开头或写绝对路径。",
   "cli.reference.burial_path": "{{.Ref}} 不在墓地里。如果路径解析不了，试试用下葬编号。",
   "cli.reference.already_buried": "{{.Ref}} 已经在墓地里。用 obit resurrect {{.ID}} 把它复活。",

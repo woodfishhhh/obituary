@@ -827,6 +827,7 @@
   "cli.restore_parent.missing": "cannot resolve {{.Path}}: no such file or directory (the link target may be missing); the item remains in the graveyard",
   "cli.restore_parent.file": "original folder {{.Path}} is now a file; the item is still in the graveyard; restore the original directory to its original path or recover manually",
   "cli.restore_parent.file_windows": "original folder {{.Path}} is now a file; the item is still in the graveyard, and after that file is moved or renamed, obit resurrect can restore it",
+  "cli.restore.rollback_nonempty": "rollback kept nonempty created directory {{.Path}}: {{.Cause}}",
   "cli.reference.burial_id": "No burial matches {{.Ref}}. For a numeric filename use ./ or an absolute path.",
   "cli.reference.burial_path": "{{.Ref}} is not in the graveyard. Try the burial ID if the path cannot be resolved.",
   "cli.reference.already_buried": "{{.Ref}} is already in the graveyard. Restore it with obit resurrect {{.ID}}.",

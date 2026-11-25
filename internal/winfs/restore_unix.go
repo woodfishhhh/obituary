@@ -136,3 +136,123 @@ func (fs FS) findRestoredChild(parent *restoreParent, source corefs.Identity) (s
 	// A failed candidate inspection cannot prove absence of the inode.
 	return "", fmt.Errorf("restored object could not be verified in its recorded parent; retain record")
 }
+
+func (fs FS) RestoreParentPath(path string) (string, error) {
+	fd, err := unix.Open(path, restoreParentPathOpenFlags(), 0)
+	if err != nil {
+		return "", err
+	}
+	defer unix.Close(fd)
+	return restoreParentPath(fd, path)
+}
+
+func (fs FS) VerifyRestoreParentChain(records []corefs.RestoreParentRecord) error {
+	if len(records) == 0 {
+		return nil
+	}
+	ordered := make([]corefs.RestoreParentRecord, len(records))
+	for i, record := range records {
+		ordered[len(records)-1-i] = record
+	}
+	root := filepath.VolumeName(ordered[0].Path) + string(filepath.Separator)
+	fd, err := unix.Open(root, restoreParentChainOpenFlags(), 0)
+	if err != nil {
+		return restoreParentChainError(ordered[0].Path, err)
+	}
+	defer func() { unix.Close(fd) }()
+	reparseAncestor := false
+	for i, record := range ordered {
+		if i == 0 {
+			if err := fs.verifyRestoreParentHandle(fd, record); err != nil {
+				return err
+			}
+			continue
+		}
+		if filepath.Dir(record.Path) != ordered[i-1].Path {
+			return restoreParentChainError(record.Path, corefs.ErrUnsafe)
+		}
+		child, err := fs.verifyRestoreParentChild(fd, record, reparseAncestor)
+		if err != nil {
+			return err
+		}
+		unix.Close(fd)
+		fd = child
+		reparseAncestor = reparseAncestor || record.Reparse
+	}
+	return nil
+}
+
+func (fs FS) verifyRestoreParentChild(fd int, record corefs.RestoreParentRecord, reparseAncestor bool) (int, error) {
+	name := filepath.Base(record.Path)
+	st, err := fs.statAt(fd, name)
+	if err != nil {
+		return -1, restoreParentChainError(record.Path, err)
+	}
+	isLink := st.Mode&unix.S_IFMT == unix.S_IFLNK
+	if isLink != record.Reparse {
+		return -1, &corefs.RestoreParentError{Kind: "link", Path: record.Path, Cause: corefs.ErrUnsafe}
+	}
+	if record.Reparse {
+		id, err := fs.IdentifyFollowing(record.Path)
+		if err != nil {
+			return -1, restoreParentChainError(record.Path, err)
+		}
+		if !restoreIdentityMatches(record.Identity, id) {
+			return -1, restoreParentChainError(record.Path, corefs.ErrUnsafe)
+		}
+		child, err := unix.Openat(fd, name, restoreParentChainFollowFlags(), 0)
+		if err != nil {
+			return -1, restoreParentChainError(record.Path, err)
+		}
+		return child, nil
+	}
+	child, err := unix.Openat(fd, name, restoreParentChainOpenFlags(), 0)
+	if err != nil {
+		return -1, restoreParentChainError(record.Path, err)
+	}
+	childStat, err := fs.statAt(child, "")
+	if err == nil && childStat.Mode&unix.S_IFMT != unix.S_IFDIR {
+		err = corefs.ErrUnsafe
+	}
+	if err == nil {
+		id, identityErr := identity(&childStat, record.Path)
+		if identityErr != nil {
+			err = identityErr
+		} else if !restoreIdentityMatches(record.Identity, id) {
+			err = corefs.ErrUnsafe
+		} else if !reparseAncestor {
+			err = restoreParentPathMatches(child, record.Path)
+		}
+	}
+	if err != nil {
+		unix.Close(child)
+		return -1, restoreParentChainError(record.Path, err)
+	}
+	return child, nil
+}
+
+func (fs FS) verifyRestoreParentHandle(fd int, record corefs.RestoreParentRecord) error {
+	st, err := fs.statAt(fd, "")
+	if err != nil {
+		return restoreParentChainError(record.Path, err)
+	}
+	if st.Mode&unix.S_IFMT != unix.S_IFDIR || record.Reparse {
+		return &corefs.RestoreParentError{Kind: "link", Path: record.Path, Cause: corefs.ErrUnsafe}
+	}
+	id, err := identity(&st, record.Path)
+	if err != nil {
+		return restoreParentChainError(record.Path, err)
+	}
+	if !restoreIdentityMatches(record.Identity, id) {
+		return restoreParentChainError(record.Path, corefs.ErrUnsafe)
+	}
+	return nil
+}
+
+func restoreIdentityMatches(want, got corefs.Identity) bool {
+	return want.Serial == got.Serial && want.RequirePersistent() == nil && got.RequirePersistent() == nil && want.FileID == got.FileID
+}
+
+func restoreParentChainError(path string, err error) error {
+	return &corefs.RestoreParentError{Kind: "unverified", Path: path, Cause: err}
+}

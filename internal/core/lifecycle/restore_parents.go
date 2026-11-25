@@ -2,31 +2,57 @@ package lifecycle
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"slices"
 
 	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 )
 
-func (s *Service) captureParents(path string) ([]BurialParent, error) {
+func (s *Service) captureParents(path string) (string, []BurialParent, error) {
 	var parents []BurialParent
 	for dir := pathutil.Parent(path); ; dir = pathutil.Parent(dir) {
 		info, err := os.Lstat(dir)
 		if err != nil {
-			return nil, err
+			return "", nil, err
 		}
 		id, err := s.FS.IdentifyFollowing(dir)
 		if err != nil {
-			return nil, err
+			return "", nil, err
 		}
-		parents = append(parents, BurialParent{Path: dir, Identity: id, Reparse: isReparse(info)})
+		reparse := isReparse(info)
+		recordedPath := dir
+		if runtime.GOOS == "darwin" && !reparse && !hasReparseAncestor(dir) {
+			if resolver, ok := s.FS.(corefs.RestoreParentPathResolver); ok {
+				recordedPath, err = resolver.RestoreParentPath(dir)
+				if err != nil {
+					return "", nil, err
+				}
+			}
+		}
+		parents = append(parents, BurialParent{Path: recordedPath, Identity: id, Reparse: reparse})
 		if pathutil.Parent(dir) == dir {
-			return parents, nil
+			if len(parents) > 0 {
+				path = filepath.Join(parents[0].Path, filepath.Base(path))
+			}
+			return path, parents, nil
+		}
+	}
+}
+
+func hasReparseAncestor(path string) bool {
+	for parent := filepath.Dir(path); ; parent = filepath.Dir(parent) {
+		info, err := os.Lstat(parent)
+		if err != nil {
+			return true
+		}
+		if isReparse(info) {
+			return true
+		}
+		if filepath.Dir(parent) == parent {
+			return false
 		}
 	}
 }
@@ -60,6 +86,15 @@ func (s *Service) preflightRestoreParent(b Burial, dest, nearest string, parent 
 }
 
 func (s *Service) checkRestoreParents(b Burial) error {
+	if runtime.GOOS != "windows" && len(b.Parents) > 0 {
+		if checker, ok := s.FS.(corefs.RestoreParentChainChecker); ok {
+			records := make([]corefs.RestoreParentRecord, len(b.Parents))
+			for i, parent := range b.Parents {
+				records[i] = corefs.RestoreParentRecord{Path: parent.Path, Identity: parent.Identity, Reparse: parent.Reparse}
+			}
+			return checker.VerifyRestoreParentChain(records)
+		}
+	}
 	return s.inspectRestoreParents(b, false)
 }
 
@@ -133,37 +168,23 @@ func (s *Service) inspectRestoreParent(b Burial, dir string, recorded *BurialPar
 	if recorded != nil && (recorded.Reparse && !isReparse(info) || !restoreParentIdentityMatches(recorded, id)) {
 		return changedRestoreParent(dir, recorded)
 	}
-	if runtime.GOOS != "windows" && recorded != nil && pathutil.Parent(dir) != dir {
-		exact, err := exactRestoreName(dir)
-		if err != nil {
-			return err
-		}
-		if !exact {
-			return changedRestoreParent(dir, recorded)
-		}
-	}
 	return nil
 }
 
 // A case-insensitive lookup can return the recorded inode under an obsolete spelling.
-func exactRestoreName(path string) (bool, error) {
-	dir, err := os.Open(filepath.Dir(path))
+func (s *Service) exactRestoreName(path string) (bool, error) {
+	if runtime.GOOS == "linux" {
+		return true, nil
+	}
+	resolver, ok := s.FS.(corefs.RestoreParentPathResolver)
+	if !ok {
+		return true, nil
+	}
+	actual, err := resolver.RestoreParentPath(path)
 	if err != nil {
 		return false, err
 	}
-	defer dir.Close()
-	for {
-		names, err := dir.Readdirnames(128)
-		if slices.Contains(names, filepath.Base(path)) {
-			return true, nil
-		}
-		if err == io.EOF {
-			return false, nil
-		}
-		if err != nil {
-			return false, err
-		}
-	}
+	return filepath.Clean(actual) == filepath.Clean(path), nil
 }
 
 func restoreParentIdentityMatches(recorded *BurialParent, id Identity) bool {

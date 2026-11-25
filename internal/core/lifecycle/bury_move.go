@@ -41,11 +41,12 @@ func (s *Service) prepareBurial(out Outcome, reason string) *preparedBurial {
 		return p
 	}
 	out.Path = path
-	parents, err := s.captureParents(out.Path)
+	path, parents, err := s.captureParents(out.Path)
 	if err != nil {
 		p.out = failedMove(out, err)
 		return p
 	}
+	out.Path = path
 	grave, graveID, err := s.prepareGrave(out.Path, out.Item.ID, now)
 	if err != nil {
 		p.out = failedMove(out, err)

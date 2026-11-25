@@ -151,7 +151,14 @@ func TestRestoreRefusalAndRollbackWarningRenderedTogether(t *testing.T) {
 		if lang == "zh-CN" {
 			cause = "没有权限"
 		}
-		if !errors.Is(err, cmdutil.ErrReported) || !strings.Contains(text, cause) || !strings.Contains(text, issue.Path) || !strings.Contains(text, row.Warning) {
+		if !errors.Is(err, cmdutil.ErrReported) || !strings.Contains(text, cause) || !strings.Contains(text, issue.Path) {
+			t.Fatal(lang, text, err)
+		}
+		if lang == "zh-CN" {
+			if strings.Contains(text, row.Warning) || !strings.Contains(text, "回滚保留了非空的新建目录") || !strings.Contains(text, "retained-parent") {
+				t.Fatal(lang, text, err)
+			}
+		} else if !strings.Contains(text, row.Warning) {
 			t.Fatal(lang, text, err)
 		}
 	}

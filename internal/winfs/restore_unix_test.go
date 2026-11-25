@@ -325,3 +325,31 @@ func TestPOSIXQuarantinedMissingGraveRetainsRecord(t *testing.T) {
 		t.Fatalf("quarantine record retired: %+v %v", st, err)
 	}
 }
+
+func TestVerifyRestoreParentChainRejectsSameTargetReplacementLink(t *testing.T) {
+	root := t.TempDir()
+	ordinary := filepath.Join(root, "ordinary")
+	moved := filepath.Join(root, "moved")
+	if err := os.Mkdir(ordinary, 0700); err != nil {
+		t.Fatal(err)
+	}
+	want := posixID(t, ordinary)
+	if err := os.Rename(ordinary, moved); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(moved, ordinary); err != nil {
+		t.Fatal(err)
+	}
+	records := []corefs.RestoreParentRecord{{Path: ordinary, Identity: want}}
+	for path := filepath.Dir(ordinary); ; path = filepath.Dir(path) {
+		records = append(records, corefs.RestoreParentRecord{Path: path, Identity: posixID(t, path)})
+		if filepath.Dir(path) == path {
+			break
+		}
+	}
+	err := (FS{}).VerifyRestoreParentChain(records)
+	issue, ok := errors.AsType[*corefs.RestoreParentError](err)
+	if !ok || issue.Kind != "link" || issue.Path != ordinary {
+		t.Fatalf("same-target replacement link was accepted: %v cause=%v issue=%+v", err, issue.Cause, issue)
+	}
+}

@@ -16,7 +16,7 @@ func (s *Service) prepareRestoreParent(b Burial, dest string) (*restoreParentCha
 		return nil, &RefusedError{Path: dest, Reason: reason}
 	}
 	dir := filepath.Dir(dest)
-	nearest, missing, err := existingRestoreAncestor(dir, b.Parents)
+	nearest, missing, err := s.existingRestoreAncestor(b, dir)
 	if err != nil {
 		return nil, err
 	}
@@ -59,13 +59,23 @@ func (s *Service) prepareRestoreParent(b Burial, dest string) (*restoreParentCha
 	return chain, nil
 }
 
-func existingRestoreAncestor(dir string, parents []BurialParent) (string, []string, error) {
+func (s *Service) existingRestoreAncestor(b Burial, dir string) (string, []string, error) {
 	nearest := dir
 	var missing []string
 	for {
 		info, err := os.Lstat(nearest)
 		if err == nil && info.Mode().IsRegular() {
-			return "", nil, occupiedRestoreParent(nearest, parents)
+			if runtime.GOOS != "windows" {
+				if changed, err := s.firstChangedRestoreParent(b); err != nil {
+					return "", nil, err
+				} else if changed != nil {
+					if changedInfo, statErr := os.Lstat(changed.Path); statErr == nil && changedInfo.Mode().IsRegular() {
+						return "", nil, occupiedRestoreParent(changed.Path, b.Parents)
+					}
+					return "", nil, changedRestoreParent(changed.Path, changed)
+				}
+			}
+			return "", nil, occupiedRestoreParent(nearest, b.Parents)
 		}
 		if err == nil {
 			break
@@ -78,6 +88,30 @@ func existingRestoreAncestor(dir string, parents []BurialParent) (string, []stri
 		nearest = pathutil.Parent(nearest)
 	}
 	return nearest, missing, nil
+}
+
+func (s *Service) firstChangedRestoreParent(b Burial) (*BurialParent, error) {
+	for i := len(b.Parents) - 1; i >= 0; i-- {
+		recorded := &b.Parents[i]
+		info, err := os.Lstat(recorded.Path)
+		if os.IsNotExist(err) {
+			return recorded, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+		if isReparse(info) != recorded.Reparse {
+			return recorded, nil
+		}
+		id, err := s.FS.IdentifyFollowing(recorded.Path)
+		if err != nil {
+			return nil, err
+		}
+		if !restoreParentIdentityMatches(recorded, id) {
+			return recorded, nil
+		}
+	}
+	return nil, nil
 }
 
 func occupiedRestoreParent(path string, parents []BurialParent) error {
