@@ -126,3 +126,7 @@ Docker events are checked before and after removal. If deletion cannot be confir
 ## An update fails, or downloads from mainland China are slow
 
 `obit update --check` reports an error, or the install script is slow or fails; most likely this computer cannot reach GitHub. When GitHub is slow to answer, `obit update --check` and the install script switch to the mainland China mirror on their own. To use the mirror from the start, run `bash install.sh --mirror cn` on macOS and Linux, or `.\install.ps1 -Mirror cn` on Windows. If you download by hand, take the archive and `checksums.txt` from the same release and the same source. When `obit update --check` prints a `Latest:` line, it is fixed.
+
+## An expired file is still in place
+
+Close programs holding the file and try again. If process information alone is incomplete, you can approve the individual file in `propose` mode. Automatic burial requires access to every process belonging to the file owner. It may ignore unreadable processes of other users, including root, only for your own files with neither group nor other write permission. Choose `propose` for individual review. Approval accepts gaps in the process list. A confirmed open file always stays in place and the reason is shown. `obit doctor --verbose` · `obit watch --list`

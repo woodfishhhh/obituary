@@ -126,3 +126,7 @@ obit doctor --verbose      # 每個 agent 的接入情況
 ## 更新失敗，或在中國大陸下載很慢
 
 `obit update --check` 回報錯誤，或安裝腳本下載很慢、失敗，多半是這台電腦連不上 GitHub。`obit update --check` 和安裝腳本在 GitHub 遲遲沒有回應時，會自己改走中國大陸的鏡像。想一開始就走鏡像，macOS 和 Linux 執行 `bash install.sh --mirror cn`，Windows 執行 `.\install.ps1 -Mirror cn`。手動下載的話，壓縮檔和 `checksums.txt` 要取自同一個版本、同一個來源。`obit update --check` 能印出 `Latest:` 那一行，就是好了。
+
+## 到期的檔案仍在原處
+
+請關閉開啟檔案的程式後重試。若只是行程資訊不完整，可在 `propose` 模式逐項核准。 自動模式必須能檢查檔案擁有者的所有行程。只有檔案屬於目前使用者，且群組及其他人均無寫入權限時，才會忽略其他使用者（包括 root）無法讀取的行程。選擇 `propose` 可逐項核准。核准可以接受行程資訊不完整，但只要確認檔案仍開啟，就會保留檔案並顯示原因。 `obit doctor --verbose` · `obit watch --list`

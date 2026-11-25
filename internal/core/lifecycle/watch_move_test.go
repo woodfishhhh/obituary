@@ -165,3 +165,53 @@ func TestWatchPostMoveObservationFailureRollsBack(t *testing.T) {
 		t.Fatal("rollback lost newly arrived child")
 	}
 }
+
+// The observer stands in for a complete process table; the real move, policy,
+// Git checks, manifest and ledger still use the fixture's filesystem.
+type watchFileProbeFS struct {
+	core.FS
+	probe func(core.Identity) error
+}
+
+func (f watchFileProbeFS) CheckWatchClosed(_ string, id core.Identity, _ bool) error {
+	return f.probe(id)
+}
+
+func TestPOSIXWatchFileQuietAfterExpiry(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX observation policy")
+	}
+	for _, change := range []string{"modified", "open", "unreadable"} {
+		t.Run(change, func(t *testing.T) {
+			f, path, _ := watchFixture(t, "file.zip", core.WatchFirstSeen)
+			if err := watch.Reconcile(f.svc); err != nil {
+				t.Fatal(err)
+			}
+			var busy error
+			f.svc.FS = watchFileProbeFS{f.svc.FS, func(core.Identity) error { return busy }}
+			check := func(after time.Duration, action string) {
+				t.Helper()
+				out := f.sweepAt(after)
+				if len(out) != 1 || out[0].Action != action || exists(path) != (action != core.ActionBuried) {
+					t.Fatalf("%s after %s: want %s, got %+v", change, after, action, out)
+				}
+				t.Logf("%s: %s %s", f.clock.Format(time.RFC3339), out[0].Action, out[0].Detail)
+			}
+			check(time.Hour, core.ActionRetry)
+			switch change {
+			case "modified":
+				if err := os.WriteFile(path, []byte("updated payload"), 0600); err != nil {
+					t.Fatal(err)
+				}
+			case "open":
+				busy = os.ErrExist
+			case "unreadable":
+				busy = os.ErrPermission
+			}
+			check(9*time.Minute, core.ActionRetry)
+			busy = nil
+			check(2*time.Minute, core.ActionRetry)
+			check(10*time.Minute, core.ActionBuried)
+		})
+	}
+}

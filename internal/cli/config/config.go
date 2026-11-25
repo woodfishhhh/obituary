@@ -69,7 +69,7 @@ func NewCmd() *cobra.Command {
 			fmt.Printf("\n[graveyard]\nmode = %q\nretention_days = %d\n", cfg.Graveyard.Mode, cfg.Graveyard.RetentionDays)
 			fmt.Printf("\n[update]\ncheck = %t\n", cfg.Update.Check)
 			fmt.Printf("\n[telemetry]\nenabled = %t\n", cfg.Telemetry.Enabled)
-			fmt.Printf("\n[watch]\nstable_window = %q\n", cfg.Watch.StableWindow)
+			fmt.Printf("\n[watch]\nstable_window = %q\nfile_expiry = %q\n", cfg.Watch.StableWindow, cfg.Watch.FileExpiry)
 			fmt.Printf("\n[ui]\nlanguage = %q\neffective_language = %q\n", cfg.UI.Language, config.UILanguage())
 			fmt.Printf(cmdutil.Text("cli.config.hooks_list_expiring_items_and_recent_burials"), cfg.Hooks.SessionSummary, cfg.Hooks.SessionCleanup)
 			fmt.Printf(cmdutil.Text("cli.config.proposals_off_nothing_goes_in_by_itself"), cfg.Proposals.Mode)

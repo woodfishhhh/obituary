@@ -1049,6 +1049,8 @@ Uso: `obit update [flags]`
 
 ### `obit watch`
 
+Para aprovar cada arquivo, defina `file_expiry = "propose"` em `[watch]`. Consulte `obit proposals` e aprove com `obit approve <ID>`. Subpastas vencidas continuam gerando propostas e permanecem no local mesmo após aprovação no macOS e no Linux.
+
 Dar a cada item de nível superior de uma pasta a sua própria vida útil
 
 Uso: `obit watch <directory> <lifespan> | watch --list | watch --remove <directory> [flags]`

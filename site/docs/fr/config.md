@@ -12,6 +12,7 @@ Le répertoire de configuration est `%APPDATA%\obituary` sous Windows, `~/Librar
 | `hooks.session_cleanup` | `true` | `true`, `false` |
 | `hooks.session_summary` | `false` | `true`, `false` |
 | `watch.stable_window` | `10m` | une durée positive, comme `30s`, `10m`, `1h30m` |
+| `watch.file_expiry` (macOS/Linux) | `quiet` | `quiet`, `propose` |
 | `explorer.enabled` | `true` | `true`, `false` |
 | `explorer.everywhere` | `false` | `true`, `false` |
 | `explorer.in_git` | `false` | `true`, `false` |
@@ -38,6 +39,8 @@ Sous Windows et Linux, `graveyard.mode = "recycle"` utilise la Corbeille du syst
 ## Règles de dossier et dates dans l’Explorateur
 
 `watch.stable_window` est la patience d’une règle de dossier : un nouveau fichier doit rester inchangé pendant cette durée avant d’être déplacé, afin qu’un fichier encore en cours de téléchargement ne soit pas emporté. Elle utilise le format de durée de Go, un nombre suivi de `s`, `m` ou `h`, que l’on peut enchaîner comme dans `1h30m`, et elle doit être supérieure à zéro.
+
+Le mode automatique doit pouvoir examiner tous les processus du propriétaire du fichier. Il ne peut ignorer les processus inaccessibles d’autres utilisateurs, y compris root, que si le fichier vous appartient et que ni le groupe ni les autres ne peuvent y écrire. Choisissez `propose` pour examiner chaque fichier. L’approbation accepte les lacunes de la liste des processus. Un fichier ouvert reste en place et le motif est affiché.
 
 Les réglages `explorer.*` contrôlent la date dans le nom affiché par l’Explorateur Windows et les étiquettes de date dans Finder et Dolphin. Le nom réel ne change pas. Par défaut, cela se produit dans Téléchargements, sur le Bureau (sous-dossiers compris) et dans les emplacements gérés par une règle de dossier. Avec `explorer.everywhere` activé, les autres emplacements suivis l’affichent aussi ; les espaces de travail Git sont exclus, sauf si vous mettez `explorer.in_git` à `true` ; et `explorer.enabled = false` le désactive complètement. Voir [Règles de dossier](./folder-policies).
 

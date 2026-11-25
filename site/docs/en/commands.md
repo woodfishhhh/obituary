@@ -1049,6 +1049,8 @@ Usage: `obit update [flags]`
 
 ### `obit watch`
 
+For individual approval, set `file_expiry = "propose"` under `[watch]`. Use `obit proposals` to review and `obit approve <ID>` to approve. Expired subfolders still produce proposals and stay in place even after approval on macOS and Linux.
+
 Give each top-level child of a folder its own lifespan
 
 Usage: `obit watch <directory> <lifespan> | watch --list | watch --remove <directory> [flags]`

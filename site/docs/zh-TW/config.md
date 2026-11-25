@@ -12,6 +12,7 @@
 | `hooks.session_cleanup` | `true` | `true`、`false` |
 | `hooks.session_summary` | `false` | `true`、`false` |
 | `watch.stable_window` | `10m` | 正的時間長度，例如 `30s`、`10m`、`1h30m` |
+| `watch.file_expiry` (macOS/Linux) | `quiet` | `quiet`, `propose` |
 | `explorer.enabled` | `true` | `true`、`false` |
 | `explorer.everywhere` | `false` | `true`、`false` |
 | `explorer.in_git` | `false` | `true`、`false` |
@@ -38,6 +39,8 @@ Windows 和 Linux 可將 `graveyard.mode` 設為 `recycle`。請從系統資源�
 ## 資料夾策略與檔案總管裡的日期
 
 `watch.stable_window` 是資料夾策略的耐心：新檔案出現後，必須連續這麼久沒有變動才會被移動，免得把還在下載的檔案搬走。它使用 Go 的時間長度格式，數字後面接 `s`、`m` 或 `h`，可以連著寫，例如 `1h30m`，而且必須大於零。
+
+自動模式必須能檢查檔案擁有者的所有行程。只有檔案屬於目前使用者，且群組及其他人均無寫入權限時，才會忽略其他使用者（包括 root）無法讀取的行程。選擇 `propose` 可逐項核准。核准可以接受行程資訊不完整，但只要確認檔案仍開啟，就會保留檔案並顯示原因。
 
 Windows 在檔案總管的顯示名稱旁標出日期；Finder 和 Dolphin 使用原生標籤。三者都遵循 `explorer.*`，不改動真實檔名。預設只在「下載」、桌面（含子資料夾）和資料夾策略管理的位置顯示；開啟 `explorer.everywhere` 後，其他被追蹤的位置也會顯示；Git 工作區預設不顯示，要顯示就把 `explorer.in_git` 設為 `true`；`explorer.enabled` 設為 `false` 則完全不寫入。見[資料夾策略](./folder-policies)。
 

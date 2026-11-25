@@ -12,6 +12,7 @@ The configuration directory is `%APPDATA%\obituary` on Windows, `~/Library/Appli
 | `hooks.session_cleanup` | `true` | `true`, `false` |
 | `hooks.session_summary` | `false` | `true`, `false` |
 | `watch.stable_window` | `10m` | a positive duration such as `30s`, `10m`, `1h30m` |
+| `watch.file_expiry` (macOS/Linux) | `quiet` | `quiet`, `propose` |
 | `explorer.enabled` | `true` | `true`, `false` |
 | `explorer.everywhere` | `false` | `true`, `false` |
 | `explorer.in_git` | `false` | `true`, `false` |
@@ -38,6 +39,8 @@ On Windows and Linux, set `graveyard.mode` to `recycle` to use the system Trash.
 ## Folder policies and dates in Explorer
 
 `watch.stable_window` is the patience of a folder policy: a new file has to stay unchanged for this long before it is moved, so a file that is still downloading is not carried off. It uses Go's duration format, a number followed by `s`, `m` or `h`, which can be chained as in `1h30m`, and it must be greater than zero.
+
+Automatic burial requires access to every process belonging to the file owner. It may ignore unreadable processes of other users, including root, only for your own files with neither group nor other write permission. Choose `propose` for individual review. Approval accepts gaps in the process list. A confirmed open file always stays in place and the reason is shown.
 
 The `explorer.*` settings control Explorer display names on Windows and native date tags in Finder and Dolphin. None of these changes the real file name. By default this happens in Downloads, on the Desktop (including subfolders) and in places a folder policy manages. With `explorer.everywhere` on, other tracked locations show it too; Git workspaces are left out unless you set `explorer.in_git` to `true`; and `explorer.enabled = false` switches it off entirely. See [Folder policies](./folder-policies).
 

@@ -153,6 +153,7 @@
   "cli.doctor.codex_windows_shell_is_unset_ambiguous_windows": "codex_windows_shell 未设置；有歧义的 Windows shell 命令会直接放行；运行 obit init --agent codex --guard-rm 可以推断出声明，也可以在讣告的 config.toml 里设为 bash 或 powershell",
   "cli.doctor.companion_executable_exists": "配套程序存在：",
   "cli.doctor.comparable_version_metadata_unavailable_path_check_only": "；没有可比对的版本信息（只检查了路径）",
+  "cli.doctor.watch_file_expiry_mode": "。文件夹策略的到期模式：{{.Mode}}",
   "cli.doctor.config_toml_is_valid_defaults_apply_when": "config.toml 有效（不存在时用默认值）",
   "cli.doctor.container_docker_endpoints_and_daemon_identities_are": "容器的 Docker 端点和守护进程身份已固定",
   "cli.doctor.containers_stop_at_expiry_and_retain_their": "容器到期后停止并保留可写层；墓地保留期过后，已停止的容器可能被删除；回收站模式用同一套策略；镜像、卷和网络保持不动",

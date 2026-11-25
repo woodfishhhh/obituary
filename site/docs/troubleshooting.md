@@ -126,3 +126,7 @@ obit doctor --verbose      # 每个 agent 的接入情况
 ## 更新失败，或国内下载很慢
 
 `obit update --check` 报错，或安装脚本下载很慢、失败，多半是这台电脑连不上 GitHub。`obit update --check` 和安装脚本在 GitHub 迟迟没有回应时，会自己改走国内镜像。想一开始就走镜像，macOS 和 Linux 运行 `bash install.sh --mirror cn`，Windows 运行 `.\install.ps1 -Mirror cn`。手动下载的话，压缩包和 `checksums.txt` 要取自同一个版本、同一个来源。`obit update --check` 能打印出 `Latest:` 一行，就是好了。
+
+## 到期文件仍在原处
+
+关闭占用文件的程序后再试。如果只有进程信息不全，可以在 `propose` 模式逐项批准。 自动模式必须能检查文件属主的所有进程。只有文件属于当前用户、组和其他人都没有写权限时，才忽略其他用户（包括 root）不可读的进程。想逐项确认时请选择 `propose`。批准可以覆盖进程信息不全，只要发现文件仍被打开，就会保留并显示原因。 `obit doctor --verbose` · `obit watch --list`

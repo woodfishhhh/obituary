@@ -100,7 +100,7 @@ func (s *Service) prepareSettlement(item Item, dryRun bool, reason string, roots
 	if moved {
 		out.Detail = "moved from " + item.Path
 	}
-	if reason == ReasonExpired && item.Source == "watch" && item.IsDir {
+	if reason == ReasonExpired && item.Source == "watch" && (item.IsDir || posixWatchFile(item) && s.WatchFileProposals) {
 		return s.proposeWatchBurial(out, dryRun)
 	}
 	return s.finishSettlementPreparation(out, dryRun, reason, roots, state, batchSnapshot)

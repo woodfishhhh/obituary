@@ -12,6 +12,7 @@
 | `hooks.session_cleanup` | `true` | `true`、`false` |
 | `hooks.session_summary` | `false` | `true`、`false` |
 | `watch.stable_window` | `10m` | 正的时长，如 `30s`、`10m`、`1h30m` |
+| `watch.file_expiry` (macOS/Linux) | `quiet` | `quiet`, `propose` |
 | `explorer.enabled` | `true` | `true`、`false` |
 | `explorer.everywhere` | `false` | `true`、`false` |
 | `explorer.in_git` | `false` | `true`、`false` |
@@ -38,6 +39,8 @@ Windows 和 Linux 可把 `graveyard.mode` 设为 `recycle`。从系统回收站�
 ## 文件夹策略和资源管理器里的日期
 
 `watch.stable_window` 是文件夹策略的耐心：新文件出现后，要连续这么久没有变化，才会被移动，免得把还在下载的文件移走。它写成 Go 的时长格式，数字后面跟 `s`、`m` 或 `h`，可以连写，比如 `1h30m`，而且必须大于零。
+
+自动模式必须能检查文件属主的所有进程。只有文件属于当前用户、组和其他人都没有写权限时，才忽略其他用户（包括 root）不可读的进程。想逐项确认时请选择 `propose`。批准可以覆盖进程信息不全，只要发现文件仍被打开，就会保留并显示原因。
 
 Windows 在资源管理器的显示名旁标出日期；Finder 和 Dolphin 使用原生标签。三者都遵循 `explorer.*`，都不修改真实文件名。默认只在「下载」、桌面（含子文件夹）和文件夹策略管着的位置显示；`explorer.everywhere` 打开后，其他受跟踪的位置也显示；Git 工作区默认不显示，要显示就把 `explorer.in_git` 设为 `true`；`explorer.enabled` 设为 `false` 则完全不写。见[文件夹策略](./folder-policies)。
 

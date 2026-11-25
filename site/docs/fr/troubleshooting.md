@@ -126,3 +126,7 @@ Les événements Docker sont vérifiés avant et après la suppression. Si celle
 ## Une mise à jour échoue, ou les téléchargements depuis la Chine continentale sont lents
 
 `obit update --check` signale une erreur, ou le script d’installation est lent ou échoue ; le plus probable est que cet ordinateur n’atteint pas GitHub. Quand GitHub tarde à répondre, `obit update --check` et le script d’installation basculent d’eux-mêmes sur le miroir de Chine continentale. Pour utiliser le miroir dès le départ, lancez `bash install.sh --mirror cn` sous macOS et Linux, ou `.\install.ps1 -Mirror cn` sous Windows. Si vous téléchargez à la main, prenez l’archive et `checksums.txt` dans la même version et la même source. Quand `obit update --check` affiche une ligne `Latest:`, c’est réglé.
+
+## Un fichier expiré reste en place
+
+Fermez les programmes qui utilisent le fichier. Si seules les informations sur les processus sont incomplètes, vous pouvez approuver ce fichier en mode `propose`. Le mode automatique doit pouvoir examiner tous les processus du propriétaire du fichier. Il ne peut ignorer les processus inaccessibles d’autres utilisateurs, y compris root, que si le fichier vous appartient et que ni le groupe ni les autres ne peuvent y écrire. Choisissez `propose` pour examiner chaque fichier. L’approbation accepte les lacunes de la liste des processus. Un fichier ouvert reste en place et le motif est affiché. `obit doctor --verbose` · `obit watch --list`
