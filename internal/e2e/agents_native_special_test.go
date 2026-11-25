@@ -24,7 +24,7 @@ func TestNativeSpecialInstalledHookCommands(t *testing.T) {
 	}
 	for _, agent := range []string{"trae", "trae-cn", "antigravity", "vibe", "kimi"} {
 		t.Run(agent, func(t *testing.T) {
-			repo, store := commandRepo(t)
+			repo, store := commandRepoDirect(t)
 			root := t.TempDir()
 			t.Setenv("OBIT_USER_HOME", root)
 			t.Setenv("KIMI_SHARE_DIR", filepath.Join(root, "kimi"))

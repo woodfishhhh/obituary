@@ -268,7 +268,7 @@ obit daemon disable             # remove the scheduled task and login start, and
 
 After registering (`add`, `approve`, `mktemp`, `rules apply`) or burying, if no runner serves your data directory, Obituary starts a temporary resident process and suggests `enable`. A scheduled task serving a different data directory (for example after moving it with `OBIT_HOME`) counts as none; `obit daemon status` points this out.
 
-When several agents work at once and a hook cannot get the ledger lock in time, the registration is queued on disk and applied by the next process that holds the lock; `obit doctor` shows the queue if it backs up.
+When automatic registration is enabled, a healthy resident accepts the write event and finishes registration in the background. A new file can take a moment to appear in `obit list`. Without a resident, hooks register directly and queue the event on disk if the ledger lock is busy. `obit doctor` reports a backlog.
 
 Data lives in `%LOCALAPPDATA%\obituary`: `store.json` (ledger), `audit.jsonl` (audit log), `obitd.log` (daemon log), `graveyard\` (this drive's graveyard); the full list is in [docs/architecture.md](architecture.md#数据布局). Configuration is `%APPDATA%\obituary\config.toml`; `obit config` shows it and `obit config --create` writes a commented default:
 

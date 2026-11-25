@@ -106,6 +106,17 @@ func (s Store) RecordCommitted(events ...Event) error {
 // Rotation and appending share one lock across processes. Failures are
 // returned as *AuditError.
 func (s Store) Record(events ...Event) error {
+	// Inside an observation batch the events join the private state's outbox
+	// and reach audit.jsonl with the commit, exactly like any hot transaction.
+	if s.replayState != nil {
+		for _, event := range events {
+			if err := RequireAuditSpace(s.replayState); err != nil {
+				return err
+			}
+			QueueAudit(s.replayState, event)
+		}
+		return nil
+	}
 	if len(events) == 0 {
 		return nil
 	}

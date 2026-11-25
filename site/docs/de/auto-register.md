@@ -15,6 +15,8 @@ Registrierte Einträge werden bei Ablauf begraben und können sieben Tage lang u
 
 ## Automatische Registrierung aktivieren, wenn Sie es wünschen
 
+Der Hintergrundprozess verarbeitet automatische Registrierungen nach dem Schreiben. Daher kann es einen Moment dauern, bis eine neue Datei in `obit list` erscheint.
+
 Aktiviere die Option unter Settings oder For you oder setze `[proposals] mode` in `config.toml`.
 
 - `"tiered"` registriert Dateien, die der Agent in dieser Sitzung erzeugt, und [Docker-Container](./docker), die für das Projekt gestartet wurden, direkt. Eine Datei muss vom Hook beim Schreiben beobachtet worden sein, im Anfangssnapshot fehlen und eine spätere Erstellungszeit haben. Danach wird der Agent informiert; die Einträge erscheinen in `obit proposals` und unter „Handled automatically“ auf For you. Bereits vorhandene oder nicht beobachtete Dateien werden nur vorgeschlagen. `obit approve <id>` registriert vorgeschlagene Einträge; danach werden passende Regeln dieses Projekts direkt angewendet. `obit reject <id>` lehnt die automatische Registrierung für dieses Projekt ab.

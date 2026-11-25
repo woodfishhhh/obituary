@@ -44,6 +44,7 @@ import (
 )
 
 func main() {
+	cmdutil.SkipExplorerCheck()
 	root := newRoot(os.Args[1:])
 	cmdutil.SetUsage(root)
 	if command, err := root.ExecuteC(); err != nil {

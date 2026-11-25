@@ -18,6 +18,9 @@ import (
 var binaries func() (string, error)
 
 func TestMain(m *testing.M) {
+	if len(os.Args) == 3 && os.Args[1] == "ipc-crash-fixture" {
+		os.Exit(runInterruptedResident(os.Args[2]))
+	}
 	if binary := os.Getenv("OBIT_E2E_ARGV_BINARY"); binary != "" {
 		// This child inherits the already isolated fixture. Record native argv
 		// at the process boundary, then pass it unchanged to the real CLI.

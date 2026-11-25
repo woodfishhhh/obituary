@@ -48,7 +48,7 @@ func TestPOSIXMoveMutations(t *testing.T) {
 		{"immediate-inspection-pin", "pin_unix.go", "fs.pins[id], retained = fd, true", "retained = false", "TestPOSIXImmediateWithoutBirthTime", "immediate weak burial failed"},
 		{"move-weak-needs-pin", "move_unix.go", "if _, pinned := fs.pins[want]; !pinned", "if _, pinned := fs.pins[want]; false && !pinned", "TestPOSIXImmediateWithoutBirthTime", "weak move without inspection pin accepted"},
 		{"grave-persistent", "../core/lifecycle/graveyard.go", "if err := id.RequirePersistent(); err != nil", "if err := id.RequirePersistent(); false && err != nil", "TestPOSIXImmediateWithoutBirthTime", "weak grave purged without durable identity"},
-		{"list-legacy-warning", "../cli/list/list.go", "return err.Error()", "return \"\"", "TestPOSIXLegacyIdentityDiagnostics", "list hid legacy identity"},
+		{"list-legacy-warning", "../listing/listing.go", "return err.Error()", "return \"\"", "TestPOSIXLegacyIdentityDiagnostics", "list hid legacy identity"},
 		{"doctor-legacy-warning", "identity_unix.go", "if err := id.RequirePersistent(); err != nil", "if err := id.RequirePersistent(); false && err != nil", "TestPOSIXLegacyIdentityDiagnostics", "doctor hid legacy identity"},
 		{"no-replace-linux", "move_linux.go", "unix.RENAME_NOREPLACE", "0", "TestPOSIXMovesNeverReplace", "no-replace move"},
 		{"no-replace-darwin", "move_darwin.go", "unix.RENAME_EXCL", "0", "TestPOSIXMovesNeverReplace", "no-replace move"},

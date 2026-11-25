@@ -16,6 +16,22 @@ import (
 	"time"
 )
 
+func TestPresentationReadsCommittedStateDuringWriter(t *testing.T) {
+	s := snapshotTestStore(t)
+	release, err := LockFile(filepath.Join(s.Home, "store.lock"), true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer release()
+	s = s.WithDeadline(time.Now().Add(150 * time.Millisecond))
+	if _, err := s.ReadActive(); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := s.ReadSummary(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestReadActiveAndSummaryAllowAnEmptyLedger(t *testing.T) {
 	store := Store{Home: t.TempDir()}
 	active, err := store.ReadActive()
@@ -299,5 +315,41 @@ func TestPresentationReadsDockerVolumeEntriesAndFallsBackForVolumeBurials(t *tes
 	full, summary, err := store.ReadSummary()
 	if err != nil || len(full.Burials) != 1 || summary.Count != 1 || full.Burials[0].Volume == nil {
 		t.Fatalf("volume burial did not fall back to a complete read: %+v %+v %v", full, summary, err)
+	}
+}
+
+// A burial made by the command line carries longNames and references into the
+// snapshot's tables; the summary must hold it, or every real ledger is read twice
+// (the summary projection fails, then the whole cold snapshot is decoded).
+func TestReadActiveHoldsBurialsThatReferenceSnapshotTables(t *testing.T) {
+	s := snapshotTestStore(t)
+	reads, old := 0, readGraveyardSnapshot
+	readGraveyardSnapshot = func(path string) ([]byte, error) { reads++; return old(path) }
+	t.Cleanup(func() { readGraveyardSnapshot = old })
+	if _, summary, err := s.ReadSummary(); err != nil || summary.Count != 1 || reads != 1 {
+		t.Fatalf("summary %+v after %d snapshot reads: %v", summary, reads, err)
+	}
+}
+
+func TestSummaryRefsMustLandOnTableRows(t *testing.T) {
+	one, bad := 1, 5
+	row := json.RawMessage(`{}`)
+	for name, tc := range map[string]struct {
+		burial graveyardSummaryBurial
+		snap   graveyardSummarySnapshot
+		ok     bool
+	}{
+		"in range":      {graveyardSummaryBurial{ParentRef: &one}, graveyardSummarySnapshot{ParentChains: []json.RawMessage{row, row}}, true},
+		"no references": {graveyardSummaryBurial{}, graveyardSummarySnapshot{}, true},
+		"out of range":  {graveyardSummaryBurial{OperationRef: &bad}, graveyardSummarySnapshot{Operations: []json.RawMessage{row}}, false},
+		"negative":      {graveyardSummaryBurial{OriginRef: new(int)}, graveyardSummarySnapshot{Origins: nil}, false},
+		"null row":      {graveyardSummaryBurial{ParentRef: &one}, graveyardSummarySnapshot{ParentChains: []json.RawMessage{row, json.RawMessage("null")}}, false},
+	} {
+		t.Run(name, func(t *testing.T) {
+			tc.snap.Burials = []graveyardSummaryBurial{tc.burial}
+			if err := validateSummaryRefs(tc.snap); (err == nil) != tc.ok {
+				t.Fatalf("err %v, want ok=%v", err, tc.ok)
+			}
+		})
 	}
 }

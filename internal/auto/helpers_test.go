@@ -47,6 +47,10 @@ func newEngineFixture(t *testing.T) *repo {
 		FS:           winfs.FS{},
 		ProposalMode: core.ProposalsTiered,
 	}
+	if os.Getenv("OBIT_TEST_RESIDENT_REPLAY") == "1" {
+		// Second pass over every replay test with the resident's batch consumer.
+		svc.Store = svc.Store.WithResidentReplay()
+	}
 	r.engine = &Engine{Svc: svc, Trust: rules.TrustStore{Path: filepath.Join(home, "trusted_rules.json")}}
 	svc.Owner, svc.Recheck = Owner, r.engine.RecheckRules
 	return r

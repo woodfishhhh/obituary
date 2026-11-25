@@ -43,6 +43,7 @@ func (s Store) FlushAudit() error {
 		if err := s.RecordCommitted(st.PendingAudit...); err != nil {
 			return err
 		}
+		s.rememberReplay = s.resident != nil // the trim is this resident's own commit
 		return s.UpdateHot(func(current *State) error {
 			current.PendingAudit = current.PendingAudit[len(st.PendingAudit):]
 			return nil

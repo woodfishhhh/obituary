@@ -16,13 +16,16 @@ import (
 // Store persists State as JSON under a home directory. Every mutation runs
 // under an exclusive lock file so the CLI and the daemon can share it.
 type Store struct {
-	changed      *bool // request-local commit tracking for presentation callbacks
-	Home         string
-	lockDeadline time.Time
-	ctx          context.Context
-	auditPending *bool
-	auditLines   *int                // batch delivery upper bound for recovery log advice
-	observeLock  func(time.Duration) // serial test measurement of store.lock ownership
+	resident       *replayCache // set only by the resident's observation consumer
+	rememberReplay bool         // saveHot may keep this commit's state for the next replay batch
+	replayState    *State       // private to one observation batch; no other process sees it
+	changed        *bool        // request-local commit tracking for presentation callbacks
+	Home           string
+	lockDeadline   time.Time
+	ctx            context.Context
+	auditPending   *bool
+	auditLines     *int                // batch delivery upper bound for recovery log advice
+	observeLock    func(time.Duration) // serial test measurement of store.lock ownership
 }
 
 func (s Store) WithContext(ctx context.Context) Store { s.ctx = ctx; return s }
@@ -245,6 +248,12 @@ func (s Store) loadHot() (State, []Event, error) {
 	if err != nil {
 		return State{}, nil, fmt.Errorf("read store: %w", err)
 	}
+	return s.decodeHot(data)
+}
+
+// decodeHot turns one read of store.json into a normalised hot state. A caller
+// that must know exactly which bytes it decoded reads the file itself.
+func (s Store) decodeHot(data []byte) (State, []Event, error) {
 	state, err := unmarshalLedger(data)
 	if newer := (newerStoreError{}); errors.As(err, &newer) {
 		return State{}, nil, err
@@ -406,7 +415,11 @@ func (s Store) saveHot(state State, graveyardChanged bool) error {
 	if err != nil {
 		return err
 	}
-	err = writeDurably(s.statePath(), append(data, '\n'))
+	data = append(data, '\n')
+	err = writeDurably(s.statePath(), data)
+	if err == nil && s.rememberReplay && !graveyardChanged && !state.graveyardLoaded {
+		s.resident.put(s.statePath(), data, state)
+	}
 	if err == nil || fileio.IsCommitUnconfirmed(err) {
 		// The new state is visible on disk even when its flush is unconfirmed.
 		if s.changed != nil {
