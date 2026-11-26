@@ -28,7 +28,7 @@ func TestApplyPinsParentForWrites(t *testing.T) {
 			}
 			c.Action, c.data, c.delete = action, []byte("new"), action == "remove"
 			attempted, swapped := false, false
-			beforeIntegrationWrite = func(string) error {
+			hooks := integrationHooks{beforeWrite: func(string) error {
 				attempted = true
 				dir := filepath.Join(root, "agent")
 				if err := os.Rename(dir, filepath.Join(root, "original")); err != nil {
@@ -37,10 +37,9 @@ func TestApplyPinsParentForWrites(t *testing.T) {
 				makeIntegrationJunction(t, dir, outside)
 				swapped = true
 				return nil
-			}
-			t.Cleanup(func() { beforeIntegrationWrite = nil; _ = os.Remove(filepath.Join(root, "agent")) })
-			err = Apply([]Change{c})
-			beforeIntegrationWrite = nil
+			}}
+			t.Cleanup(func() { _ = os.Remove(filepath.Join(root, "agent")) })
+			err = applyWithHooks([]Change{c}, hooks)
 			if !attempted {
 				t.Fatalf("directory swap was not attempted: %v", err)
 			}

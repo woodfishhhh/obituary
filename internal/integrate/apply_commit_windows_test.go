@@ -23,12 +23,11 @@ func TestCommitBlocksConcurrentEdits(t *testing.T) {
 			}
 			c.Action, c.data, c.delete = action, []byte("installer content"), action == "remove"
 			attempted := false
-			beforeIntegrationCommit = func(string) error {
+			hooks := integrationHooks{beforeCommit: func(string) error {
 				attempted = true
 				return tryIntegrationEditorSave(root, path)
-			}
-			t.Cleanup(func() { beforeIntegrationCommit = nil })
-			if err := Apply([]Change{c}); err != nil || !attempted {
+			}}
+			if err := applyWithHooks([]Change{c}, hooks); err != nil || !attempted {
 				t.Fatalf("verified commit did not finish: %v (attempted=%v)", err, attempted)
 			}
 			if read(t, testBackupPath(t, path)) != "authorized original" || read(t, filepath.Join(root, "editor.tmp")) != "NEW USER POLICY" {
@@ -84,13 +83,12 @@ func TestCommitConflictPreservesEditorVersion(t *testing.T) {
 				t.Fatal(err)
 			}
 			c.Action, c.data, c.delete = action, []byte("installer content"), action == "remove"
-			beforeIntegrationWrite = func(string) error {
+			hooks := integrationHooks{beforeWrite: func(string) error {
 				tmp := filepath.Join(root, "editor.tmp")
 				writeIntegrationFile(t, tmp, "NEW USER POLICY")
 				return os.Rename(tmp, path)
-			}
-			t.Cleanup(func() { beforeIntegrationWrite = nil })
-			if err := Apply([]Change{c}); err == nil || read(t, path) != "NEW USER POLICY" {
+			}}
+			if err := applyWithHooks([]Change{c}, hooks); err == nil || read(t, path) != "NEW USER POLICY" {
 				t.Fatalf("commit conflict lost editor version: %v", err)
 			}
 			if _, err := os.Stat(path + ".bak"); !errors.Is(err, os.ErrNotExist) {
@@ -153,12 +151,11 @@ func TestCreatePreservesConcurrentFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	c.Action, c.data = "create", []byte("installer content")
-	beforeIntegrationCommit = func(string) error {
+	hooks := integrationHooks{beforeCommit: func(string) error {
 		writeIntegrationFile(t, path, "NEW USER POLICY")
 		return nil
-	}
-	t.Cleanup(func() { beforeIntegrationCommit = nil })
-	err = Apply([]Change{c})
+	}}
+	err = applyWithHooks([]Change{c}, hooks)
 	if err == nil || read(t, path) != "NEW USER POLICY" {
 		t.Fatalf("create overwrote concurrent file: %v", err)
 	}
@@ -181,8 +178,8 @@ func TestCommitProtectsTemporarySource(t *testing.T) {
 			if !c.existed {
 				c.Action = "create"
 			}
-			protectIntegrationTemp(t, root, variant)
-			if err := Apply([]Change{c}); err != nil {
+			hooks := protectIntegrationTemp(t, root, variant)
+			if err := applyWithHooks([]Change{c}, hooks); err != nil {
 				t.Fatalf("protected temporary source did not publish: %v", err)
 			}
 			data, err := os.ReadFile(path)
@@ -197,10 +194,10 @@ func TestCommitProtectsTemporarySource(t *testing.T) {
 	}
 }
 
-func protectIntegrationTemp(t *testing.T, root, variant string) {
+func protectIntegrationTemp(t *testing.T, root, variant string) integrationHooks {
 	t.Helper()
 	attempted := false
-	beforeIntegrationCommit = func(string) error {
+	hooks := integrationHooks{beforeCommit: func(string) error {
 		attempted = true
 		matches, err := filepath.Glob(filepath.Join(root, ".obit-*.tmp"))
 		if err != nil || len(matches) != 1 {
@@ -210,13 +207,13 @@ func protectIntegrationTemp(t *testing.T, root, variant string) {
 			t.Errorf("temporary source protection failed: %s attack = %v", variant, err)
 		}
 		return nil // Finish publishing so the test also observes the installed bytes.
-	}
+	}}
 	t.Cleanup(func() {
-		beforeIntegrationCommit = nil
 		if !attempted {
 			t.Error("temporary source attack was not attempted")
 		}
 	})
+	return hooks
 }
 
 func attackIntegrationTemp(path, variant string) error {
@@ -311,7 +308,7 @@ func TestCommitTemporaryStaysInPinnedParent(t *testing.T) {
 				t.Fatal(err)
 			}
 			c.Action, c.data = "create", []byte("approved content")
-			beforeIntegrationTemporary = func(p *integrationTarget) error {
+			hooks := integrationHooks{beforeTemporary: func(p *integrationTarget) error {
 				// Retain the pinned object, but release only the name lock so the
 				// fixture can test creation independently of that other safeguard.
 				shared, err := p.root.OpenRoot(".")
@@ -325,10 +322,10 @@ func TestCommitTemporaryStaysInPinnedParent(t *testing.T) {
 				}
 				makeIntegrationJunction(t, parent, outside)
 				return nil
-			}
+			}}
 			observed := false
 			rejected := errors.New("reject after temporary creation")
-			beforeIntegrationCommit = func(string) error {
+			hooks.beforeCommit = func(string) error {
 				observed = true
 				entries, err := os.ReadDir(outside)
 				if err != nil || len(entries) != 1 || entries[0].Name() != "sentinel" {
@@ -340,10 +337,9 @@ func TestCommitTemporaryStaysInPinnedParent(t *testing.T) {
 				return nil
 			}
 			t.Cleanup(func() {
-				beforeIntegrationTemporary, beforeIntegrationCommit = nil, nil
 				_ = os.Remove(parent) // This fixture's junction, never its target.
 			})
-			err = Apply([]Change{c})
+			err = applyWithHooks([]Change{c}, hooks)
 			if !observed || reject && !errors.Is(err, rejected) || !reject && err != nil {
 				t.Fatalf("pinned-parent commit = %v, observed=%v", err, observed)
 			}
@@ -379,9 +375,8 @@ func TestCommitCleansTemporarySourceOnFailure(t *testing.T) {
 			}
 			c.Action, c.data = "update", []byte("installer content")
 			rejected := errors.New("commit rejected")
-			beforeIntegrationCommit = func(string) error { return rejected }
-			t.Cleanup(func() { beforeIntegrationCommit = nil })
-			if err := Apply([]Change{c}); !errors.Is(err, rejected) {
+			hooks := integrationHooks{beforeCommit: func(string) error { return rejected }}
+			if err := applyWithHooks([]Change{c}, hooks); !errors.Is(err, rejected) {
 				t.Fatalf("commit rejection = %v", err)
 			}
 			assertIntegrationTempRemoved(t, root)

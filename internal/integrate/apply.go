@@ -59,18 +59,22 @@ func Apply(changes []Change) error {
 // the files it changed, so the caller can give them a lifespan.
 func ApplyWithBackups(changes []Change) ([]string, error) {
 	var backups []string
-	err := applyRecording(changes, nil, &backups)
+	err := applyRecording(changes, integrationHooks{}, &backups)
 	return backups, err
 }
 
 func apply(changes []Change, afterWrite func(string) error) error {
-	return applyRecording(changes, afterWrite, nil)
+	return applyRecording(changes, integrationHooks{afterWrite: afterWrite}, nil)
+}
+
+func applyWithHooks(changes []Change, hooks integrationHooks) error {
+	return applyRecording(changes, hooks, nil)
 }
 
 // afterWrite simulates interruption for this apply only, after a durable write.
 //
 //nolint:funlen // Preserve the existing write transaction while scoping its interruption hook to one call.
-func applyRecording(changes []Change, afterWrite func(string) error, backups *[]string) (err error) {
+func applyRecording(changes []Change, hooks integrationHooks, backups *[]string) (err error) {
 	for _, c := range changes {
 		if c.readOnly {
 			return fmt.Errorf("%s: read-only installation plan cannot be applied", c.Path)
@@ -123,11 +127,11 @@ func applyRecording(changes []Change, afterWrite func(string) error, backups *[]
 		if c.Action == "unchanged" || c.Action == "preserve" {
 			continue
 		}
-		if err := locks.beforeWrite(c, changes); err != nil {
+		if err := locks.beforeWrite(c, changes, hooks); err != nil {
 			return err
 		}
 		if c.claude != nil {
-			steps, err := applyClaudeChange(c)
+			steps, err := applyClaudeChange(c, hooks)
 			applied = append(applied, steps...)
 			if err != nil {
 				return err
@@ -139,6 +143,7 @@ func applyRecording(changes []Change, afterWrite func(string) error, backups *[]
 		if err != nil {
 			return err
 		}
+		p.hooks = hooks
 		err = p.write(c)
 		p.root.Close()
 		if backups != nil && p.backedUp != "" {
@@ -148,8 +153,8 @@ func applyRecording(changes []Change, afterWrite func(string) error, backups *[]
 			return err
 		}
 		applied = append(applied, c.Action+" "+c.Path)
-		if !c.delete && afterWrite != nil {
-			if err := afterWrite(c.Path); err != nil {
+		if !c.delete && hooks.afterWrite != nil {
+			if err := hooks.afterWrite(c.Path); err != nil {
 				return err
 			}
 		}
@@ -157,7 +162,7 @@ func applyRecording(changes []Change, afterWrite func(string) error, backups *[]
 	return nil
 }
 
-func applyClaudeChange(c Change) ([]string, error) {
+func applyClaudeChange(c Change, hooks integrationHooks) ([]string, error) {
 	// The host owns these writes. Keep its configuration directory pinned
 	// until the official CLI has finished, including recovery commands.
 	p, err := openIntegrationTarget(c, true)
@@ -168,8 +173,8 @@ func applyClaudeChange(c Change) ([]string, error) {
 		p.root.Close()
 		return nil, err
 	}
-	if beforeIntegrationWrite != nil {
-		if err := beforeIntegrationWrite(c.Path); err != nil {
+	if hooks.beforeWrite != nil {
+		if err := hooks.beforeWrite(c.Path); err != nil {
 			p.root.Close()
 			return nil, err
 		}

@@ -19,8 +19,7 @@ func (s *Service) Tick() (outcomes []Outcome, purged []GraveResult, err error) {
 		return outcomes, nil, err
 	}
 	if err != nil {
-		var audit *AuditError
-		if !errors.As(err, &audit) {
+		if !HasAuditWarning(err) {
 			return outcomes, nil, err
 		}
 	}

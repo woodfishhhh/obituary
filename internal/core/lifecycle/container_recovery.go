@@ -56,30 +56,12 @@ func (s *Service) settleContainerGrave(p ContainerIntent, r *GraveResult) error 
 		r.Error = err.Error()
 		return s.containerActionError(&p, err)
 	}
-	got, err := s.inspectContainer(p)
-	action, detail := "", ""
-	switch {
-	case errors.Is(err, docker.ErrNotFound) && p.Operation == "rm":
-		action, detail = ActionPurged, "docker rm confirmed; volumes retained"
-	case errors.Is(err, docker.ErrNotFound):
-		action, detail = ActionLost, "container removed externally on original Docker daemon"
-	case err != nil:
+	action, detail, message, err := s.inspectSettledContainer(p)
+	if err != nil {
 		r.Error = err.Error()
 		return nil
-	case got.Running:
-		action, detail = ActionResurrected, "container running; resurrection confirmed"
-	case p.Operation == "rm":
-		reclaimed, err := got.Reclaimed(*p.Burial.Container)
-		if err != nil {
-			r.Error = err.Error()
-		} else if reclaimed {
-			action, detail = ActionResurrected, "container restarted since burial; kept stopped"
-		} else {
-			r.Error = "container remains stopped; operation cleared for retry"
-		}
-	default:
-		r.Error = "container remains stopped; operation cleared for retry"
 	}
+	r.Error = message
 	err = s.Store.UpdateGraveyard(func(st *State) error {
 		if err := checkContainerIntent(st, p); err != nil {
 			return err
@@ -100,6 +82,30 @@ func (s *Service) settleContainerGrave(p ContainerIntent, r *GraveResult) error 
 		}
 	}
 	return err
+}
+
+func (s *Service) inspectSettledContainer(p ContainerIntent) (string, string, string, error) {
+	got, err := s.inspectContainer(p)
+	switch {
+	case errors.Is(err, docker.ErrNotFound) && p.Operation == "rm":
+		return ActionPurged, "docker rm confirmed; volumes retained", "", nil
+	case errors.Is(err, docker.ErrNotFound):
+		return ActionLost, "container removed externally on original Docker daemon", "", nil
+	case err != nil:
+		return "", "", "", err
+	case got.Running:
+		return ActionResurrected, "container running; resurrection confirmed", "", nil
+	case p.Operation == "rm":
+		reclaimed, err := got.Reclaimed(*p.Burial.Container)
+		if err != nil {
+			return "", "", err.Error(), nil
+		}
+		if reclaimed {
+			return ActionResurrected, "container restarted since burial; kept stopped", "", nil
+		}
+		return "", "", "container remains stopped; operation cleared for retry", nil
+	}
+	return "", "", "container remains stopped; operation cleared for retry", nil
 }
 
 func (s *Service) checkContainerRemoval(p ContainerIntent) error {

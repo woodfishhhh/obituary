@@ -3,5 +3,5 @@
   "private": true,
   "type": "module",
   "scripts": { "dev": "vitepress dev", "build": "node --test .vitepress/posts.test.mjs && vitepress build" },
-  "devDependencies": { "@fontsource-variable/geist": "^5.3.0", "@fontsource-variable/geist-mono": "^5.3.0", "vitepress": "^1.6.4", "vue": "^3.5.45" }
+  "devDependencies": { "@fontsource-variable/geist": "^5.3.0", "@fontsource-variable/geist-mono": "^5.3.0", "vitepress": "^1.6.4", "vue": "^3.5.46" }
 }

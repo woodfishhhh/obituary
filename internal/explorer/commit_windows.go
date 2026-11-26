@@ -93,7 +93,7 @@ func (p *Plan) commitOriginal() (*os.File, error) {
 		err = errors.New("desktop.ini changed before commit")
 	}
 	if err == nil {
-		err = labelsCommitHook()
+		err = p.labelsCommitHook()
 	}
 	if err != nil {
 		f.Close()

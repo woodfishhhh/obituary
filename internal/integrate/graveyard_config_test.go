@@ -30,8 +30,8 @@ func TestGraveyardConfigProtectsTemporarySource(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			protectIntegrationTemp(t, root, "in-place")
-			if err := Apply([]Change{c}); err != nil {
+			hooks := protectIntegrationTemp(t, root, "in-place")
+			if err := applyWithHooks([]Change{c}, hooks); err != nil {
 				t.Fatal(err)
 			}
 			if read(t, path) != string(c.data) {

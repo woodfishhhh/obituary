@@ -99,22 +99,12 @@ func (s *Service) validatePrepared(st *State, p *preparedBurial, reason string) 
 	if st.BurialIndex(b.ID) >= 0 || st.ProposalIndex(b.ID) >= 0 {
 		return "", fmt.Errorf("#%d is already in use", b.ID)
 	}
-	children, err := s.commitChildLifespans(st, *out, reason)
-	if errors.Is(err, errLifespanBudget) {
-		return "", err
-	}
-	if err != nil {
+	if err := s.validateBurialChildren(st, p, reason); err != nil {
+		if errors.Is(err, errLifespanBudget) {
+			return "", err
+		}
 		*out = failedMove(*out, err)
 		return "", nil
-	}
-	hadChildren := len(b.Children) > 0
-	setBurialChildren(b, children)
-	if hadChildren || len(children) > 0 {
-		// Publish this transaction's children before moving their parent.
-		if err := writeManifest(p.manifest, *b); err != nil {
-			*out = failedMove(*out, err)
-			return "", nil
-		}
 	}
 	// Refuse an unrepresentable recovery record before a directory scan can
 	// consume the guard budget. The guard still precedes every move.
@@ -126,8 +116,8 @@ func (s *Service) validatePrepared(st *State, p *preparedBurial, reason string) 
 		// that need no walk. A repository found in time still refuses.
 		guardErr = s.Guard.CheckContext(s.Store.Context(), out.Path, true)
 	}
-	if err := guardErr; err != nil {
-		*out = failedMove(*out, err)
+	if guardErr != nil {
+		*out = failedMove(*out, guardErr)
 		return "", nil
 	}
 	if reason == ReasonExpired && automatic(out.Item) || s.approvedWatch != nil {
@@ -138,6 +128,23 @@ func (s *Service) validatePrepared(st *State, p *preparedBurial, reason string) 
 		return real, nil
 	}
 	return "", nil
+}
+
+func (s *Service) validateBurialChildren(st *State, p *preparedBurial, reason string) error {
+	out, b := &p.out, &p.burial
+	children, err := s.commitChildLifespans(st, *out, reason)
+	if err != nil {
+		return err
+	}
+	hadChildren := len(b.Children) > 0
+	setBurialChildren(b, children)
+	if hadChildren || len(children) > 0 {
+		// Publish this transaction's children before moving their parent.
+		if err := writeManifest(p.manifest, *b); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // guardWalkBudget bounds the search for a .git repository inside an expired
@@ -155,7 +162,7 @@ func setBurialChildren(b *Burial, children []Item) {
 }
 
 func (s *Service) movePrepared(st *State, p *preparedBurial, reason string) error {
-	out, b := &p.out, &p.burial
+	out := &p.out
 	real, err := s.validatePrepared(st, p, reason)
 	if err != nil || out.Action != "" {
 		return err
@@ -185,6 +192,11 @@ func (s *Service) movePrepared(st *State, p *preparedBurial, reason string) erro
 			return nil
 		}
 	}
+	return s.finishPreparedMove(st, p, reason, real)
+}
+
+func (s *Service) finishPreparedMove(st *State, p *preparedBurial, reason, real string) error {
+	out, b := &p.out, &p.burial
 	var gitCheckedAt time.Time
 	if reason == ReasonExpired && automatic(out.Item) || s.approvedWatch != nil {
 		action, detail, checkedAt, err := s.finalGitForMove(out.Item, real, p.owner)
@@ -219,7 +231,6 @@ func (s *Service) movePrepared(st *State, p *preparedBurial, reason string) erro
 	if err := s.burialStep("moved"); err != nil {
 		return err
 	}
-	// A directory stays pending until its private grave is scanned outside store.lock.
 	if b.IsDir {
 		return nil
 	}

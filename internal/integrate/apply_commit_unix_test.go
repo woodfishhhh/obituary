@@ -66,13 +66,12 @@ func TestPOSIXCommitPreservesEditorReplacement(t *testing.T) {
 			}
 			change.Action, change.data, change.delete = action, []byte("installer"), action == "remove"
 			called := false
-			beforeIntegrationCommit = func(string) error {
+			hooks := integrationHooks{beforeCommit: func(string) error {
 				called = true
 				writeIntegrationFile(t, path+".editor", "editor replacement")
 				return os.Rename(path+".editor", path)
-			}
-			t.Cleanup(func() { beforeIntegrationCommit = nil })
-			if err := Apply([]Change{change}); err == nil || !called || read(t, path) != "editor replacement" {
+			}}
+			if err := applyWithHooks([]Change{change}, hooks); err == nil || !called || read(t, path) != "editor replacement" {
 				t.Fatalf("commit lost editor replacement: %v, called=%t", err, called)
 			}
 		})
