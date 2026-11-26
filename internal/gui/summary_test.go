@@ -43,3 +43,24 @@ func TestSummaryCountsAndErrors(t *testing.T) {
 		t.Fatal("summary hid corrupt ledger")
 	}
 }
+
+func TestSummaryReportsGraveyardModeAndFallback(t *testing.T) {
+	a, _ := fixture(t)
+	s, err := a.Summary()
+	if err != nil || s.Mode != core.ModeGraveyard {
+		t.Fatalf("default mode = %q, err = %v", s.Mode, err)
+	}
+	cfgPath := filepath.Join(a.deps.ConfigDir, "config.toml")
+	write(t, cfgPath, "[graveyard]\nmode = \"recycle\"\n")
+	s, err = a.Summary()
+	if err != nil || s.Mode != core.ModeRecycle {
+		t.Fatalf("configured recycle mode = %q, err = %v", s.Mode, err)
+	}
+	// When config.toml cannot be parsed, fall back to a.deps.Service.Mode.
+	a.deps.Service.Mode = core.ModeRecycle
+	write(t, cfgPath, "not = [valid toml\n")
+	s, err = a.Summary()
+	if err != nil || s.Mode != core.ModeRecycle {
+		t.Fatalf("fallback mode = %q, err = %v", s.Mode, err)
+	}
+}

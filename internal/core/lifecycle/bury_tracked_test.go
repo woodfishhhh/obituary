@@ -9,6 +9,7 @@ import (
 	"time"
 
 	core "github.com/woodfishhhh/obituary/internal/core/lifecycle"
+	"github.com/woodfishhhh/obituary/internal/docker"
 )
 
 func writePayload(t *testing.T, dir, rel, content string) string {
@@ -136,5 +137,54 @@ func TestBuryTrackedOverlappingParentAndChild(t *testing.T) {
 	}
 	if exists(parent) || len(f.items()) != 0 {
 		t.Fatalf("expected parent and child retired: items=%d", len(f.items()))
+	}
+}
+
+func TestBuryTrackedStopsUnexpiredContainerWhileSweepSkipsIt(t *testing.T) {
+	f, d, it := containerFixture(t)
+	// Container expires in 1h: Sweep must skip it.
+	if _, err := f.svc.Sweep(false); err != nil {
+		t.Fatalf("Sweep: %v", err)
+	}
+	if !d.row.Running || len(f.items()) != 1 || len(f.burials()) != 0 {
+		t.Fatalf("Sweep should skip unexpired container: running=%v items=%d burials=%d", d.row.Running, len(f.items()), len(f.burials()))
+	}
+
+	// Explicit BuryTracked stops and buries the unexpired container right away.
+	rows, err := f.svc.BuryTracked([]string{fmt.Sprintf("#%d", it.ID)})
+	if err != nil {
+		t.Fatalf("BuryTracked: %v", err)
+	}
+	if len(rows) != 1 || rows[0].Action != core.ActionBuried || rows[0].Error != "" || rows[0].Burial == nil {
+		t.Fatalf("unexpired container should bury: %+v", rows)
+	}
+	if d.row.Running || len(f.items()) != 0 || len(f.burials()) != 1 {
+		t.Fatalf("container not buried cleanly: running=%v items=%d burials=%d", d.row.Running, len(f.items()), len(f.burials()))
+	}
+}
+
+func TestBuryTrackedContinuesPastRefusedDockerVolume(t *testing.T) {
+	f, client := volumeFixture(t)
+	client.refs = []docker.Container{{Identity: docker.Identity{ID: strings.Repeat("a", 64), Name: "holder"}}}
+	added, err := f.svc.AddDockerVolume([]string{"cache"}, core.AddOptions{ExpiresAt: f.clock.Add(24 * time.Hour)})
+	if err != nil || len(added) != 1 || added[0].Item == nil {
+		t.Fatalf("AddDockerVolume: %+v %v", added, err)
+	}
+	volItem := *added[0].Item
+	filePath := writePayload(t, f.dir, "after-volume.txt", "keep-moving")
+	fileItem := f.add(filePath, 24*time.Hour)
+
+	rows, err := f.svc.BuryTracked([]string{fmt.Sprintf("#%d", volItem.ID), fmt.Sprintf("#%d", fileItem.ID)})
+	if err != nil {
+		t.Fatalf("BuryTracked should not abort batch on refused volume: %v", err)
+	}
+	if len(rows) != 2 {
+		t.Fatalf("unexpected rows: %+v", rows)
+	}
+	if rows[0].Action != core.ActionRefused || rows[0].Error == "" || client.removed {
+		t.Fatalf("mounted volume should be refused without removal: %+v removed=%v", rows[0], client.removed)
+	}
+	if rows[1].Action != core.ActionBuried || rows[1].Error != "" || rows[1].Burial == nil || exists(filePath) {
+		t.Fatalf("subsequent file should still bury: %+v exists=%v", rows[1], exists(filePath))
 	}
 }

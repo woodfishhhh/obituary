@@ -90,7 +90,7 @@ func (a *API) Bury(refs []string) (BuryReply, error) {
 func buriedIDs(results []core.GraveResult) []int64 {
 	ids := make([]int64, 0, len(results))
 	for _, r := range results {
-		if r.Error == "" && r.Action == core.ActionBuried && r.Burial != nil {
+		if r.Action == core.ActionBuried && r.Burial != nil {
 			ids = append(ids, r.Burial.ID)
 		}
 	}

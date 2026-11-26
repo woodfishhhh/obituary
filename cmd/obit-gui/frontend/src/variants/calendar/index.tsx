@@ -15,7 +15,7 @@ import Notices from "../../notices";
 import { pageTitle, type ShellProps } from "../../shell";
 import { DAY, extendSpans, hm, md, nameOf, remaining, sourceLabel, span, Star, useGraves, useItems, weekday } from "../shared";
 import { columnTemplate } from "./columns";
-import { columnSelectionState, needsBuryConfirm, toggleColumnSelection, UNDO_TOAST_MS } from "./selection";
+import { columnSelectionState, evaluateBuryPolicy, toggleColumnSelection, UNDO_TOAST_MS } from "./selection";
 import "./calendar.css";
 
 const startOfDay = (t: number) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return +d; };
@@ -41,7 +41,7 @@ export default function CalendarShell({ page, nav, setPage, summary: s, refresh 
         <button type="button" className="cal-icon" aria-label={t("refresh")} title={t("refresh")} onClick={refresh}><RefreshCw size={15} aria-hidden /></button>
       </header>
       <main className="cal-main" key={page}>
-        {page === "graveyard" ? <Graves /> : page === "upcoming" ? <Upcoming /> : (
+        {page === "graveyard" ? <Graves /> : page === "upcoming" ? <Upcoming recycleMode={s?.mode === "recycle"} /> : (
           <div className="cal-shared">{page === "decisions" ? <Decisions /> : page === "settings" ? <Settings /> : <Logs />}</div>
         )}
       </main>
@@ -241,7 +241,7 @@ function Graves() {
 
 // ── 即将下葬: the burial calendar ─────────────────────────────────────
 
-function Upcoming() {
+function Upcoming({ recycleMode = false }: { recycleMode?: boolean }) {
   const emptyHint = useTrackingHint("cal.upQuietText");
   const it = useItems("");
   const [lifespan, setLifespan] = useState("1d");
@@ -266,8 +266,8 @@ function Upcoming() {
   }
 
   function burySelected() {
-    const askConfirm = needsBuryConfirm(it.sel.chosen, laterIds);
-    void it.bury(it.sel.chosen, { askConfirm, undoDurationMs: UNDO_TOAST_MS });
+    const policy = evaluateBuryPolicy(it.items, it.sel.chosen, laterIds, recycleMode);
+    void it.bury(it.sel.chosen, { askConfirm: policy.askConfirm, recycleMode, undoDurationMs: UNDO_TOAST_MS });
   }
 
   const capsule = (

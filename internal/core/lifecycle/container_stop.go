@@ -6,7 +6,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/docker"
 )
 
-func (s *Service) stopContainer(item Item, dryRun bool) (out Outcome) {
+func (s *Service) stopContainer(item Item, dryRun, requireDue bool) (out Outcome) {
 	out = Outcome{Item: item, Path: item.Path, Action: ActionRetry}
 	p := ContainerIntent{Operation: "stop", Phase: "prepared", Item: &item}
 	if dryRun {
@@ -23,7 +23,7 @@ func (s *Service) stopContainer(item Item, dryRun bool) (out Outcome) {
 			out.Detail = err.Error()
 			return nil
 		}
-		if err := s.beginContainerIntent(&p); err != nil {
+		if err := s.beginContainerIntent(&p, requireDue); err != nil {
 			if errors.Is(err, ErrUnsafe) {
 				out.Action = ActionSkipped
 				return nil

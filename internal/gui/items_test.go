@@ -161,3 +161,15 @@ func TestBuryBatchUndoPartialAndCrossState(t *testing.T) {
 		t.Fatalf("undo resurrect: %+v %v", restored, err)
 	}
 }
+
+func TestBuriedIDsKeepsBuriedRecordWithCleanupError(t *testing.T) {
+	ids := buriedIDs([]core.GraveResult{
+		{Ref: "#1", Action: core.ActionBuried, Burial: &core.Burial{ID: 1}},
+		{Ref: "#2", Action: core.ActionBuried, Burial: &core.Burial{ID: 2}, Error: "manifest locked during cleanup"},
+		{Ref: "#3", Action: core.ActionRecycled},
+		{Ref: "#4", Action: core.ActionRefused, Error: "refused"},
+	})
+	if len(ids) != 2 || ids[0] != 1 || ids[1] != 2 {
+		t.Fatalf("buriedIDs = %v, want [1 2]", ids)
+	}
+}

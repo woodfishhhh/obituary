@@ -173,7 +173,7 @@ func (s *Service) burySingleTracked(entry trackedBurialEntry, roots []resolvedGr
 	var out Outcome
 	switch entry.item.Kind {
 	case KindContainer:
-		out = s.stopContainer(entry.item, false)
+		out = s.stopContainer(entry.item, false, false)
 	case KindDockerVolume:
 		out = s.settleDockerVolume(entry.item, false, ReasonBury)
 	default:

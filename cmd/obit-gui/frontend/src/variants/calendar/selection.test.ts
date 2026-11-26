@@ -6,9 +6,12 @@ import { zh } from "../../i18n/zh-CN.ts";
 import {
   BURY_CONFIRM_THRESHOLD,
   columnSelectionState,
+  countRenamedResurrections,
+  evaluateBuryPolicy,
   extractBuriedIds,
   needsBuryConfirm,
   selectedGraveTotals,
+  summarizeBuryReply,
   toggleColumnSelection,
   UNDO_TOAST_MS,
 } from "./selection.ts";
@@ -77,7 +80,7 @@ test("bury confirmation threshold: <10 without whole Later runs directly; >=10 o
   assert.equal(needsBuryConfirm([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], []), true);
 });
 
-test("extractBuriedIds returns only successfully buried graveyard IDs for undo resurrection", () => {
+test("extractBuriedIds keeps committed graveyard burials even when post-commit cleanup attached an error", () => {
   assert.deepEqual(
     extractBuriedIds({
       buriedIds: [21, 22],
@@ -90,20 +93,80 @@ test("extractBuriedIds returns only successfully buried graveyard IDs for undo r
     [21, 22],
   );
 
-  // Fallback when an older/mock payload omits buriedIds: excludes failed and recycled items
+  // Fallback when an older/mock payload omits buriedIds: excludes recycled/refused,
+  // but keeps action === "buried" with a burial ID (e.g. manifest cleanup failed after commit).
   assert.deepEqual(
     extractBuriedIds({
       results: [
         { ref: "#31", action: "buried", burial: { id: 31, path: "a", isDir: false, size: 10, buriedAt: "", purgeAt: "" } },
         { ref: "#32", action: "recycled" },
-        { ref: "#33", action: "buried", error: "failed", burial: { id: 33, path: "c", isDir: false, size: 10, buriedAt: "", purgeAt: "" } },
+        { ref: "#33", action: "buried", error: "manifest cleanup locked", burial: { id: 33, path: "c", isDir: true, size: 10, buriedAt: "", purgeAt: "" } },
+        { ref: "#34", action: "refused", error: "refused" },
       ],
     }),
-    [31],
+    [31, 33],
   );
 });
 
-test("purge confirmation totals compute exact count and formatted total size for 1 or many graves", () => {
+test("recycle mode forces bury confirmation whenever plain files are selected and summarizes outcomes honestly", () => {
+  const items = [
+    { id: 1, isDir: false },
+    { id: 2, isDir: true },
+    { id: 3, isDir: false, kind: "container" },
+  ];
+
+  // In graveyard mode, <10 without whole Later runs directly without confirm.
+  assert.deepEqual(evaluateBuryPolicy(items, [1], [], false), { askConfirm: false, recycleCount: 0, graveCount: 1 });
+
+  // In recycle mode, even 1 plain file forces confirmation; folder/container-only stays direct when <10.
+  assert.deepEqual(evaluateBuryPolicy(items, [1], [], true), { askConfirm: true, recycleCount: 1, graveCount: 0 });
+  assert.deepEqual(evaluateBuryPolicy(items, [1, 2, 3], [], true), { askConfirm: true, recycleCount: 1, graveCount: 2 });
+  assert.deepEqual(evaluateBuryPolicy(items, [2, 3], [], true), { askConfirm: false, recycleCount: 0, graveCount: 2 });
+
+  // Mixed bury + recycle + cleanup warning preserves buriedIds, recycledCount and hasErrors.
+  const summary = summarizeBuryReply({
+    results: [
+      { ref: "#1", action: "recycled", path: "a.txt" },
+      { ref: "#2", action: "buried", error: "manifest locked", burial: { id: 2, path: "dir", isDir: true, size: 10, buriedAt: "", purgeAt: "" } },
+    ],
+  });
+  assert.deepEqual(summary, { buriedIds: [2], recycledCount: 1, failedCount: 1, hasErrors: true });
+
+  // Pure recycle reply has no undoable buriedIds.
+  const pureRecycle = summarizeBuryReply({
+    results: [{ ref: "#1", action: "recycled", path: "a.txt" }],
+  });
+  assert.deepEqual(pureRecycle, { buriedIds: [], recycledCount: 1, failedCount: 0, hasErrors: false });
+
+  // Honest zh/en recycle copy.
+  assert.match(zh["ask.buryNowRecycleBody"], /回收站/);
+  assert.match(en["ask.buryNowRecycleBody"], /Recycle Bin/);
+  assert.match(zh["ask.buryNowMixedBody"](1, 2), /1 个普通文件.*2 项/);
+  assert.match(en["ask.buryNowMixedBody"](1, 2), /1 plain file.*2 items/);
+  assert.match(zh["cal.buriedAndRecycledToast"](2, 1), /2 项移入墓地.*1 项移入系统回收站/);
+  assert.match(en["cal.buriedAndRecycledToast"](2, 1), /2 items to the graveyard and 1 item to the Recycle Bin/);
+});
+
+test("countRenamedResurrections detects collision renames and undo copy avoids promising in-place restore", () => {
+  const originalPaths = new Map<number, string>([
+    [10, "D:\\work\\a.txt"],
+    [11, "D:\\work\\b.txt"],
+  ]);
+  const renamed = countRenamedResurrections(
+    [
+      { ref: "#10", action: "resurrected", path: "D:\\work\\a.txt" },
+      { ref: "#11", action: "resurrected", path: "D:\\work\\b (resurrected).txt" },
+    ],
+    originalPaths,
+  );
+  assert.equal(renamed, 1);
+  assert.equal(zh["cal.undoneBury"](2, 0), "已撤销，已复活 2 项");
+  assert.match(zh["cal.undoneBury"](2, 1), /已改名恢复/);
+  assert.equal(en["cal.undoneBury"](2, 0), "Undone; resurrected 2 items");
+  assert.match(en["cal.undoneBury"](2, 1), /1 renamed to avoid overwriting/);
+});
+
+test("purge confirmation totals compute exact count, container count and formatted total size for 1 or many graves", () => {
   const graves = [
     { id: 1, size: 100 * 1024 * 1024 },
     { id: 2, size: 84 * 1024 * 1024 },
@@ -112,16 +175,23 @@ test("purge confirmation totals compute exact count and formatted total size for
 
   // Even 1 item shows count and total size in danger copy
   const one = selectedGraveTotals(graves, [1]);
-  assert.deepEqual(one, { count: 1, totalBytes: 100 * 1024 * 1024, allContainers: false });
+  assert.deepEqual(one, { count: 1, totalBytes: 100 * 1024 * 1024, containerCount: 0, allContainers: false });
   assert.equal(zh["ask.purgeDangerBody"](one.count, bytes(one.totalBytes)), "将永久火化选中的 1 项（共 100 MB），删除后无法恢复。");
   assert.equal(en["ask.purgeDangerBody"](one.count, bytes(one.totalBytes)), "This will permanently cremate 1 selected item (100 MB total). Deleted items cannot be recovered.");
 
-  // Multi-item total size
-  const many = selectedGraveTotals(graves, [1, 2, 3]);
-  assert.deepEqual(many, { count: 3, totalBytes: 184 * 1024 * 1024, allContainers: false });
-  assert.equal(zh["ask.purgeDangerBody"](many.count, bytes(many.totalBytes)), "将永久火化选中的 3 项（共 184 MB），删除后无法恢复。");
+  // Mixed files + Docker container calls out unknown container size explicitly
+  const mixed = selectedGraveTotals(graves, [1, 2, 3]);
+  assert.deepEqual(mixed, { count: 3, totalBytes: 184 * 1024 * 1024, containerCount: 1, allContainers: false });
+  assert.equal(
+    zh["ask.purgeDangerMixed"](mixed.count - mixed.containerCount, bytes(mixed.totalBytes), mixed.containerCount),
+    "将永久火化选中的 2 项文件/目录（共 184 MB），并移除 1 个大小未知的 Docker 容器，删除后无法恢复。",
+  );
+  assert.equal(
+    en["ask.purgeDangerMixed"](mixed.count - mixed.containerCount, bytes(mixed.totalBytes), mixed.containerCount),
+    "This will permanently cremate 2 selected items (184 MB total) and remove 1 Docker container (size unknown). Deleted items cannot be recovered.",
+  );
 
   // Container-only selection
   const onlyContainer = selectedGraveTotals(graves, [3]);
-  assert.deepEqual(onlyContainer, { count: 1, totalBytes: 0, allContainers: true });
+  assert.deepEqual(onlyContainer, { count: 1, totalBytes: 0, containerCount: 1, allContainers: true });
 });

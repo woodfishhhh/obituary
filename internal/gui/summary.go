@@ -15,6 +15,7 @@ type Summary struct {
 	Paused            bool   `json:"paused"`
 	Error             string `json:"error,omitempty"`
 	AutoMode          string `json:"autoMode,omitempty"` // [proposals] mode, for the home page
+	Mode              string `json:"mode,omitempty"`     // [graveyard] mode: graveyard or recycle
 }
 
 func (a *API) Summary() (Summary, error) {
@@ -32,9 +33,17 @@ func (a *API) Summary() (Summary, error) {
 	if err != nil {
 		return Summary{}, err
 	}
-	out := Summary{TrackedCount: len(state.Items), DecisionCount: len(core.ExistingProposals(state.Proposals)), Paused: paused}
+	out := Summary{
+		TrackedCount:  len(state.Items),
+		DecisionCount: len(core.ExistingProposals(state.Proposals)),
+		Paused:        paused,
+		Mode:          a.deps.Service.Mode,
+	}
 	if cfg, err := a.readConfig(); err == nil {
 		out.AutoMode = cfg.Proposals.Mode
+		if cfg.Graveyard.Mode != "" {
+			out.Mode = cfg.Graveyard.Mode
+		}
 	}
 	for _, it := range state.Items {
 		if it.Stuck() { // retries stopped: it waits for Retry or Stop tracking

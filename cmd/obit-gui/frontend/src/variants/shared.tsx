@@ -8,6 +8,7 @@ import { useLoad, useRefresh } from "../hooks";
 import { t } from "../i18n";
 import type { Burial, BuryReply, Item } from "../types";
 import { useBatch, useConfirm, useResurrectReport, useToast } from "../ui";
+import { countRenamedResurrections, selectedGraveTotals, summarizeBuryReply } from "./calendar/selection";
 
 // ── Time ────────────────────────────────────────────────────────────────
 
@@ -94,10 +95,13 @@ export function useGraves(filter: string) {
     const purging = method === "Purge";
     const picked = graves.filter((g) => ids.includes(g.id));
     const paths = picked.map((g) => g.path);
-    const chosenBytes = picked.reduce((sum, g) => sum + (g.kind === "container" ? 0 : g.size || 0), 0);
-    const allContainers = picked.length > 0 && picked.every((g) => g.kind === "container");
+    const totals = selectedGraveTotals(graves, ids);
     const purgeDesc = opts?.showTotalSize
-      ? (allContainers ? t("ask.purgeDangerContainers", picked.length) : t("ask.purgeDangerBody", picked.length, bytes(chosenBytes)))
+      ? (totals.allContainers
+        ? t("ask.purgeDangerContainers", totals.count)
+        : totals.containerCount > 0
+          ? t("ask.purgeDangerMixed", totals.count - totals.containerCount, bytes(totals.totalBytes), totals.containerCount)
+          : t("ask.purgeDangerBody", totals.count, bytes(totals.totalBytes)))
       : t("ask.purgeBody");
     const ok = await confirm({
       title: purging ? (opts?.showTotalSize ? t("ask.purgeDanger", ids.length) : t("ask.purge", ids.length)) : t("ask.resurrect", ids.length),
@@ -146,6 +150,7 @@ export function useItems(range: "" | "24h" | "7d" = "") {
   const { version, bump } = useRefresh();
   const confirm = useConfirm();
   const report = useBatch();
+  const resurrected = useResurrectReport();
   const toast = useToast();
   const q = useLoad(() => api.Upcoming(range), [api, range, version]);
   const items = useMemo(() => q.data?.items ?? [], [q.data]);
@@ -181,17 +186,27 @@ export function useItems(range: "" | "24h" | "7d" = "") {
     return true;
   }
 
-  async function bury(ids: number[] = sel.chosen, opts?: { askConfirm?: boolean; undoDurationMs?: number }) {
+  async function bury(ids: number[] = sel.chosen, opts?: { askConfirm?: boolean; recycleMode?: boolean; undoDurationMs?: number }) {
     if (!ids.length || !api.Bury) return false;
-    if (opts?.askConfirm) {
-      const paths = items.filter((it) => ids.includes(it.id)).map((it) => it.path);
+    const picked = items.filter((it) => ids.includes(it.id));
+    const recycleCount = opts?.recycleMode ? picked.filter((it) => !it.isDir && !it.kind).length : 0;
+    const graveCount = picked.length - recycleCount;
+    if (opts?.askConfirm || recycleCount > 0) {
+      const paths = picked.map((it) => it.path);
+      const title = recycleCount > 0
+        ? (graveCount > 0 ? t("ask.buryNowMixed", ids.length) : t("ask.buryNowRecycle", ids.length))
+        : t("ask.buryNow", ids.length);
+      const bodyText = recycleCount > 0
+        ? (graveCount > 0 ? t("ask.buryNowMixedBody", recycleCount, graveCount) : t("ask.buryNowRecycleBody"))
+        : t("ask.buryNowBody");
       const ok = await confirm({
-        title: t("ask.buryNow", ids.length),
-        body: <><p>{t("ask.buryNowBody")}</p>{list(paths)}</>,
+        title,
+        body: <><p>{bodyText}</p>{list(paths)}</>,
         ok: t("buryNow"),
       });
       if (!ok) return false;
     }
+    const originalPaths = new Map(picked.map((it) => [it.id, it.path]));
     let reply: BuryReply;
     try {
       reply = await api.Bury(ids.map((id) => `#${id}`));
@@ -199,11 +214,7 @@ export function useItems(range: "" | "24h" | "7d" = "") {
       toast(errorText(err), "error");
       return false;
     }
-    const results = reply.results ?? [];
-    const failed = results.filter((r) => r.error);
-    const buriedIds = reply.buriedIds && reply.buriedIds.length > 0
-      ? reply.buriedIds
-      : results.filter((r) => !r.error && r.action === "buried" && r.burial?.id != null).map((r) => r.burial!.id);
+    const { buriedIds, recycledCount, failedCount, hasErrors } = summarizeBuryReply(reply);
     sel.clear();
     bump();
     if (buriedIds.length > 0) {
@@ -214,17 +225,24 @@ export function useItems(range: "" | "24h" | "7d" = "") {
           const undoFailed = undoResults.filter((r) => r.error);
           if (undoReply.error || undoFailed.length) {
             report(undoReply, t("undo"));
+          } else if (undoResults.length === 1) {
+            resurrected(undoReply);
           } else {
-            toast(t("cal.undoneBury", undoResults.length));
+            const renamed = countRenamedResurrections(undoResults, originalPaths);
+            toast(t("cal.undoneBury", undoResults.length, renamed));
           }
           bump();
         } catch (err) {
           toast(errorText(err), "error");
         }
       };
-      const hasErrors = !!reply.error || failed.length > 0;
-      const text = hasErrors ? t("cal.buriedPartial", buriedIds.length, failed.length) : t("cal.buriedToast", buriedIds.length);
+      const text = recycledCount > 0
+        ? (hasErrors ? t("cal.buriedAndRecycledPartial", buriedIds.length, recycledCount, failedCount) : t("cal.buriedAndRecycledToast", buriedIds.length, recycledCount))
+        : (hasErrors ? t("cal.buriedPartial", buriedIds.length, failedCount) : t("cal.buriedToast", buriedIds.length));
       toast(text, hasErrors ? "error" : "", { label: t("undo"), run: undo, durationMs: opts?.undoDurationMs ?? 5000, dismissOnRun: true });
+    } else if (recycledCount > 0) {
+      const text = hasErrors ? t("cal.recycledPartial", recycledCount, failedCount) : t("cal.recycledToast", recycledCount);
+      toast(text, hasErrors ? "error" : "");
     } else {
       report(reply, t("buryNow"));
     }

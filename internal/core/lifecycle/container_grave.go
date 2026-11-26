@@ -40,7 +40,7 @@ func (s *Service) resurrectContainer(r *GraveResult, b Burial) error {
 		r.Error = err.Error()
 		return nil
 	}
-	if err := s.beginContainerIntent(&p); err != nil {
+	if err := s.beginContainerIntent(&p, false); err != nil {
 		return err
 	}
 	got, err := s.inspectContainer(p)
@@ -177,7 +177,7 @@ func (s *Service) purgeContainer(r *GraveResult, dryRun bool) error {
 		r.Error = err.Error()
 		return nil
 	}
-	if err := s.beginContainerIntent(&p); err != nil {
+	if err := s.beginContainerIntent(&p, false); err != nil {
 		return err
 	}
 	got, err := s.inspectContainer(p)

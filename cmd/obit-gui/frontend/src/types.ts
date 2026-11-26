@@ -10,6 +10,8 @@ export interface Summary {
   error?: string;
   // [proposals] mode; missing on an older backend.
   autoMode?: ProposalMode | string;
+  // [graveyard] mode ("graveyard" | "recycle"); missing on an older backend.
+  mode?: "graveyard" | "recycle" | string;
 }
 
 // A Docker container tracked by full ID (core.KindContainer); path is

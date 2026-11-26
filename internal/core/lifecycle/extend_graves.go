@@ -18,19 +18,59 @@ func (s *Service) ExtendGraves(refs []string, d time.Duration) ([]GraveResult, e
 	now := s.now()
 	results := make([]GraveResult, len(refs))
 	var events []Event
+	var auditErr error
 	err := s.withGraveyardLock(func() error {
+		state, readErr := s.Store.Read()
+		if commitFailed(readErr) {
+			return readErr
+		}
+		auditErr = errors.Join(auditErr, readErr)
+		manifestErr := s.cleanExtendManifests(state, refs)
 		return s.Store.UpdateGraveyard(func(st *State) error {
-			events = s.applyExtendGraves(st, refs, now, d, results)
+			events = s.applyExtendGraves(st, refs, now, d, manifestErr, results)
 			return nil
 		})
 	})
 	if commitFailed(err) {
 		return nil, lifespanCommitError(err)
 	}
-	return results, errors.Join(err, s.Store.RecordCommitted(events...))
+	return results, errors.Join(auditErr, err, s.Store.RecordCommitted(events...))
 }
 
-func (s *Service) applyExtendGraves(st *State, refs []string, now time.Time, d time.Duration, results []GraveResult) []Event {
+func (s *Service) cleanExtendManifests(st State, refs []string) map[int64]error {
+	seen := make(map[int64]bool, len(refs))
+	errs := make(map[int64]error)
+	for _, ref := range refs {
+		idx, err := s.findBurial(&st, ref)
+		if err != nil || idx < 0 {
+			continue
+		}
+		b := st.Burials[idx]
+		if seen[b.ID] || b.Kind != "" || b.PurgeIntent != nil || b.IdentityMismatch != "" {
+			continue
+		}
+		seen[b.ID] = true
+		if err := s.cleanRecordedManifest(b, st); err != nil {
+			errs[b.ID] = err
+		}
+	}
+	return errs
+}
+
+func canExtendBurial(st *State, b *Burial, manifestErr map[int64]error) error {
+	if b.PurgeIntent != nil {
+		return fmt.Errorf("#%d: purge is in progress; cannot extend", b.ID)
+	}
+	if b.IdentityMismatch != "" {
+		return fmt.Errorf("#%d: identity mismatch; cannot extend: %s", b.ID, b.IdentityMismatch)
+	}
+	if b.Kind == KindContainer && containerIntent(st, b.ID) != nil {
+		return errors.New("container operation pending; run obit reap")
+	}
+	return manifestErr[b.ID]
+}
+
+func (s *Service) applyExtendGraves(st *State, refs []string, now time.Time, d time.Duration, manifestErr map[int64]error, results []GraveResult) []Event {
 	var events []Event
 	for i, ref := range refs {
 		results[i].Ref = ref
@@ -45,8 +85,8 @@ func (s *Service) applyExtendGraves(st *State, refs []string, now time.Time, d t
 			continue
 		}
 		b := &st.Burials[idx]
-		if b.PurgeIntent != nil {
-			results[i].Error = fmt.Sprintf("#%d: purge is in progress; cannot extend", b.ID)
+		if err := canExtendBurial(st, b, manifestErr); err != nil {
+			results[i].Error, results[i].Err = err.Error(), err
 			continue
 		}
 		extendBurialPurgeAt(b, now, d)

@@ -140,7 +140,7 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
     Summary: () => wait({
       trackedCount: s.items.length, graveCount: s.burials.length, graveBytes: s.burials.reduce((n, b) => n + b.size, 0),
       pendingGraveCount: 0, decisionCount: s.proposals.length + s.rules.filter((r) => r.status !== "trusted").length + s.items.filter((x) => x.nextAttempt?.startsWith("9999")).length, paused: settings.paused,
-      autoMode: proposalMode,
+      autoMode: proposalMode, mode: settings.mode,
     }),
     Graveyard: ({ filter }) => {
       const rows = s.burials.filter((b) => !filter || b.path.toLowerCase().includes(filter.toLowerCase()))
@@ -194,6 +194,9 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
         const i = s.items.findIndex((x) => x.id === idOf(ref));
         if (i < 0) return { ref, error: "not tracked" };
         const [it] = s.items.splice(i, 1);
+        if (settings.mode === "recycle" && !it.isDir && !it.kind) {
+          return { ref, action: "recycled", path: it.path };
+        }
         const nowIso = new Date().toISOString();
         const burial: Burial = {
           id: it.id,
