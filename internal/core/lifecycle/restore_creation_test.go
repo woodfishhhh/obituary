@@ -78,6 +78,12 @@ func TestResurrectRecreatesMissingParents(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, err := f.svc.Resurrect([]string{b.Path})
+	if runtime.GOOS != "windows" {
+		if err != nil || !core.GraveFailed(got) || !exists(b.Grave) || exists(b.Path) || !strings.Contains(got[0].Error, "cannot be verified") {
+			t.Fatalf("POSIX missing parents were not retained safely: %+v %v", got, err)
+		}
+		return
+	}
 	if err != nil || core.GraveFailed(got) || read(t, b.Path) != "output/deep/payload.txt" {
 		t.Fatalf("missing parents not recreated: %+v %v", got, err)
 	}
@@ -105,6 +111,12 @@ func TestResurrectNamesAncestorReplacedByFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, err = f.svc.Resurrect([]string{fmt.Sprint(b.ID)})
+	if runtime.GOOS != "windows" {
+		if err != nil || !core.GraveFailed(got) || !exists(b.Grave) || exists(b.Path) || !strings.Contains(got[0].Error, "cannot be verified") {
+			t.Fatalf("POSIX deleted ancestor was not retained safely: %+v %v", got, err)
+		}
+		return
+	}
 	if err != nil || core.GraveFailed(got) || read(t, b.Path) != "output/deep/payload.txt" {
 		t.Fatalf("restore after moving the file failed: %+v %v", got, err)
 	}
@@ -121,6 +133,9 @@ func TestResurrectRetriesAfterRecreatingParents(t *testing.T) {
 	if err != nil || !core.GraveFailed(first) || !exists(b.Grave) {
 		t.Fatalf("failed restoration lost grave: %+v %v", first, err)
 	}
+	if runtime.GOOS != "windows" {
+		return
+	}
 	f.fs.fail = nil
 	got, err := f.svc.Resurrect([]string{b.Path})
 	if err != nil || core.GraveFailed(got) || !exists(b.Path) {
@@ -129,6 +144,9 @@ func TestResurrectRetriesAfterRecreatingParents(t *testing.T) {
 }
 
 func TestResurrectReportsRecreatedParentIdentityFailure(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("POSIX refuses an unverified missing parent before rebuilding it")
+	}
 	f := newFixture(t)
 	b := buryOne(t, f, "output/deep/payload.txt")
 	nearest := filepath.Dir(b.Path)
@@ -154,12 +172,8 @@ func TestResurrectReportsRecreatedParentIdentityFailure(t *testing.T) {
 	if err != nil || len(got) != 1 || got[0].Ref != b.Path || !strings.HasPrefix(got[0].Error, injected.Error()) || got[0].Action != "" {
 		t.Fatalf("parent identity failure did not reach its ref result: %+v %v", got, err)
 	}
-	if runtime.GOOS == "windows" {
-		if got[0].Error != injected.Error() || exists(nearest) || exists(parent) {
-			t.Fatal("failed parent recheck left recreated directories or changed the error")
-		}
-	} else if !exists(nearest) || !exists(parent) || !strings.Contains(got[0].Error, parent) || !strings.Contains(got[0].Error, nearest) {
-		t.Fatal("POSIX rollback must retain created directories and report both paths")
+	if got[0].Error != injected.Error() || exists(nearest) || exists(parent) {
+		t.Fatal("failed parent recheck left recreated directories or changed the error")
 	}
 	if !exists(b.Grave) || exists(b.Path) || len(f.burials()) != 1 {
 		t.Fatal("parent identity failure changed the buried object or its record")
@@ -177,7 +191,8 @@ func TestResurrectSharedMissingParent(t *testing.T) {
 			f := newFixture(t)
 			a := buryOne(t, f, "output/a.txt")
 			b := buryOne(t, f, "output/b.txt")
-			if err := os.Remove(filepath.Dir(a.Path)); err != nil {
+			current := filepath.Join(f.dir, "omega-dst")
+			if err := os.Rename(filepath.Dir(a.Path), current); err != nil {
 				t.Fatal(err)
 			}
 			groups := [][]string{{a.Path, b.Path}}
@@ -186,9 +201,31 @@ func TestResurrectSharedMissingParent(t *testing.T) {
 			}
 			for _, refs := range groups {
 				got, err := f.svc.Resurrect(refs)
+				if runtime.GOOS != "windows" {
+					if err != nil || len(got) != len(refs) {
+						t.Fatalf("shared missing parent: %+v %v", got, err)
+					}
+					for i, row := range got {
+						if row.Ref != refs[i] || row.Burial == nil || row.Burial.Path != refs[i] || row.Path != "" || row.Action != "" || !strings.Contains(row.Error, filepath.Dir(row.Ref)+" is currently at "+current) {
+							t.Fatalf("incorrect refusal: %+v", row)
+						}
+					}
+					for _, item := range []core.Burial{a, b} {
+						if exists(filepath.Join(current, filepath.Base(item.Path))) || exists(item.Path) || exists(filepath.Dir(item.Path)) || read(t, item.Grave) != "output/"+filepath.Base(item.Path) {
+							t.Fatalf("lost shared missing-parent payload: %+v", item)
+						}
+					}
+					if len(f.burials()) != 2 {
+						t.Fatal("shared missing parent lost ledger entries")
+					}
+					continue
+				}
 				if err != nil || core.GraveFailed(got) {
 					t.Fatalf("shared rebuilt parent blocked resurrection: %+v %v", got, err)
 				}
+			}
+			if runtime.GOOS != "windows" {
+				return
 			}
 			if read(t, a.Path) != "output/a.txt" || read(t, b.Path) != "output/b.txt" || len(f.burials()) != 0 {
 				t.Fatal("shared parent lost restored files")
@@ -208,6 +245,9 @@ func (fs beforeMkdirRestoreFS) MkdirRestoreParent(p core.RestoreParent, name str
 }
 
 func TestResurrectRollsBackDirectoriesAfterAncestorMove(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("POSIX refuses an unverified missing parent before rebuilding it")
+	}
 	if testing.Short() {
 		t.Skip("requires a real Git repository or child process")
 	}

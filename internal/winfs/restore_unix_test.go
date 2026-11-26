@@ -51,7 +51,38 @@ func TestPOSIXRestoreParents(t *testing.T) {
 	}
 }
 
-func TestPOSIXFailedRestoreRetainsCreatedParents(t *testing.T) {
+func TestPOSIXPinExecuteOnlyParent(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root bypasses directory permissions")
+	}
+	dir := t.TempDir()
+	fs := FS{}
+	parent, err := fs.OpenRestoreParent(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer parent.Close()
+	locked := filepath.Join(dir, "locked")
+	if err := os.Mkdir(locked, 0111); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(locked, 0700) })
+	opened, err := fs.OpenRestoreParent(locked)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer opened.Close()
+	existing, err := fs.MkdirRestoreParent(parent, "locked")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer existing.Close()
+	if opened.Identity() != existing.Identity() || opened.Identity() != posixID(t, locked) {
+		t.Fatal("execute-only parent identity changed")
+	}
+}
+
+func TestPOSIXFailedRestoreRetainsBurialAfterParentMove(t *testing.T) {
 	dir := t.TempDir()
 	source := filepath.Join(dir, "parent", "child", "source")
 	if err := os.MkdirAll(filepath.Dir(source), 0700); err != nil {
@@ -72,13 +103,11 @@ func TestPOSIXFailedRestoreRetainsCreatedParents(t *testing.T) {
 	if err != nil || len(rows) != 1 || !core.GraveFailed(rows) {
 		t.Fatalf("failed restore: %+v %v", rows, err)
 	}
-	for _, path := range []string{filepath.Join(dir, "parent"), filepath.Dir(source)} {
-		if info, err := os.Stat(path); err != nil || !info.IsDir() {
-			t.Fatalf("created parent deleted: %s %v", path, err)
-		}
-		if !strings.Contains(rows[0].Warning, path) {
-			t.Fatalf("cleanup warning omits %s: %+v", path, rows[0])
-		}
+	if _, err := os.Stat(filepath.Join(dir, "parent")); !os.IsNotExist(err) {
+		t.Fatalf("renamed parent was recreated: %v", err)
+	}
+	if rows[0].Warning != "" {
+		t.Fatalf("preflight refusal unexpectedly reported cleanup: %+v", rows[0])
 	}
 	if _, err := os.Stat(filepath.Join(oldParent, "child")); err != nil {
 		t.Fatalf("original parent deleted: %v", err)
@@ -182,6 +211,39 @@ func TestPOSIXRestoreRaceRollback(t *testing.T) {
 	}
 }
 
+func TestPOSIXRestoreAuditsParentMovedAfterRename(t *testing.T) {
+	dir := t.TempDir()
+	dst := filepath.Join(dir, "alpha-src")
+	moved := filepath.Join(dir, "omega-dst")
+	src := filepath.Join(dst, "payload")
+	if err := os.Mkdir(dst, 0700); err != nil {
+		t.Fatal(err)
+	}
+	makePOSIXPayload(t, src, false, "tracked")
+	want := posixID(t, src)
+	svc := &core.Service{Store: core.Store{Home: filepath.Join(dir, "home")}, FS: FS{}}
+	rows, err := svc.Bury([]string{src}, false, "")
+	if err != nil || core.GraveFailed(rows) {
+		t.Fatal(rows, err)
+	}
+	svc.FS = FS{rename: func(from int, old string, to int, name string) error {
+		if err := renameExclusive(from, old, to, name); err != nil {
+			return err
+		}
+		mustPOSIXRename(t, dst, moved)
+		return nil
+	}}
+	rows, err = svc.Resurrect([]string{src})
+	if err != nil || core.GraveFailed(rows) || rows[0].Path != src {
+		t.Fatalf("lost committed receipt: %+v %v", rows, err)
+	}
+	assertPOSIXPayload(t, filepath.Join(moved, "payload"), false, want, "tracked")
+	events, err := svc.Store.History(1)
+	if err != nil || len(events) != 1 || events[0].Path != src || !strings.Contains(events[0].Detail, "actual restored path unavailable; expected path used") {
+		t.Fatalf("lost expected-path audit: %+v %v", events, err)
+	}
+}
+
 type lostRestoreResultFS struct{ FS }
 
 func (fs lostRestoreResultFS) MovePinnedInto(path string, want corefs.Identity, parent corefs.RestoreParent, name string) (string, error) {
@@ -205,7 +267,6 @@ func TestPOSIXRestoreRecovery(t *testing.T) {
 	if err != nil || core.GraveFailed(rows) {
 		t.Fatalf("bury: %+v %v", rows, err)
 	}
-	mustPOSIXRename(t, filepath.Dir(source), filepath.Join(dir, "old-parent"))
 	svc.FS = lostRestoreResultFS{}
 	rows, err = svc.Resurrect([]string{source})
 	if err != nil || !core.GraveFailed(rows) {
@@ -293,5 +354,33 @@ func TestPOSIXQuarantinedMissingGraveRetainsRecord(t *testing.T) {
 	st, err := svc.Store.ReadSnapshot()
 	if err != nil || len(st.Burials) != 1 {
 		t.Fatalf("quarantine record retired: %+v %v", st, err)
+	}
+}
+
+func TestVerifyRestoreParentChainRejectsSameTargetReplacementLink(t *testing.T) {
+	root := t.TempDir()
+	ordinary := filepath.Join(root, "ordinary")
+	moved := filepath.Join(root, "moved")
+	if err := os.Mkdir(ordinary, 0700); err != nil {
+		t.Fatal(err)
+	}
+	want := posixID(t, ordinary)
+	if err := os.Rename(ordinary, moved); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(moved, ordinary); err != nil {
+		t.Fatal(err)
+	}
+	records := []corefs.RestoreParentRecord{{Path: ordinary, Identity: want}}
+	for path := filepath.Dir(ordinary); ; path = filepath.Dir(path) {
+		records = append(records, corefs.RestoreParentRecord{Path: path, Identity: posixID(t, path)})
+		if filepath.Dir(path) == path {
+			break
+		}
+	}
+	err := (FS{}).VerifyRestoreParentChain(records)
+	issue, ok := errors.AsType[*corefs.RestoreParentError](err)
+	if !ok || issue.Kind != "link" || issue.Path != ordinary {
+		t.Fatalf("same-target replacement link was accepted: %v cause=%v issue=%+v", err, issue.Cause, issue)
 	}
 }

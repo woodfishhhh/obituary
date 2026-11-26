@@ -14,3 +14,9 @@ func readPOSIXStat(fd int, name string) (posixStat, error) {
 	}
 	return posixStat{Dev: uint64(st.Dev), Ino: st.Ino, Mode: uint32(st.Mode), Nlink: uint64(st.Nlink), Size: st.Size, Mtim: st.Mtim, Incarnation: birthNanos(st.Btim.Sec, st.Btim.Nsec)}, err
 }
+
+const hintMetadataOnly = unix.O_EVTONLY
+
+func openHintDirectory(fd int, name string, access int) (int, error) {
+	return unix.Openat(fd, name, access|unix.O_CLOEXEC|unix.O_DIRECTORY|unix.O_NOFOLLOW, 0)
+}

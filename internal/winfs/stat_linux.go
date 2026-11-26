@@ -109,3 +109,11 @@ func linuxCreationIDWith(fd int, name string, birth uint64, lookup func(int, str
 	sum := sha256.Sum256(append(prefix[:], handle.Bytes()...))
 	return binary.BigEndian.Uint64(sum[:8]), nil
 }
+
+// NO_XDEV also excludes same-device bind mounts. On older kernels the
+// optional hint stays unknown rather than traversing an unverified mount.
+const hintMetadataOnly = unix.O_PATH
+
+func openHintDirectory(fd int, name string, access int) (int, error) {
+	return unix.Openat2(fd, name, &unix.OpenHow{Flags: uint64(access | unix.O_CLOEXEC | unix.O_DIRECTORY | unix.O_NOFOLLOW), Resolve: unix.RESOLVE_NO_XDEV | unix.RESOLVE_NO_SYMLINKS})
+}

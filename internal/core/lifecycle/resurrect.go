@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 // Resurrect moves verified burials back through pinned handles, using a
@@ -45,6 +46,9 @@ func (s *Service) resurrectRef(ref string) (result GraveResult, err error) {
 		result, opErr = s.resurrectLocked(ref)
 		return opErr
 	})
+	if runtime.GOOS != "windows" && err == nil && result.Err != nil {
+		s.diagnoseRestoreParent(&result)
+	}
 	return result, err
 }
 
