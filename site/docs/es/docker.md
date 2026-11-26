@@ -8,6 +8,36 @@ obit docker list               # registered containers (--json works too)
 obit resurrect <id>            # start a container that was stopped at expiry
 ```
 
+## Definir la vida útil al iniciar un contenedor
+
+Los contenedores temporales suelen quedarse encendidos cuando nadie fija su plazo al crearlos. Como `docker run -d` imprime el ID completo en la salida estándar, puedes pasárselo directamente a `obit docker add`:
+
+```powershell
+# PowerShell
+$cid = docker run -d --name tmp-redis redis:7
+if ($LASTEXITCODE -eq 0) { obit docker add $cid 4h }
+```
+
+```bash
+# Bash / zsh (no name required; pass the returned ID directly)
+cid=$(docker run -d redis:7) && obit docker add "$cid" 4h
+```
+
+`obit docker add <name-or-id> <lifespan>` acepta un nombre de contenedor, un ID corto o el ID completo de 64 caracteres, y no admite `--at` ni `--note`. Al registrarlo muestra el número de registro y la hora de caducidad (`#<id> docker:<name> (<12-char-id>)  expires <time>`). No pases `--rm` a `docker run`: Docker borra los contenedores con AutoRemove en cuanto se detienen, por lo que `obit docker add` rechaza registrarlos. Antes de que caduque, usa el número que aparece en `obit docker list` o `obit list` con `obit extend <id> <lifespan>` o `obit spare <id>`.
+
+## Revisar y resucitar contenedores detenidos durante la retención
+
+Cuando un contenedor caduca y se ejecuta `docker stop`, sale de `obit docker list` (que solo muestra contenedores activos en seguimiento) y pasa al cementerio durante `[graveyard] retention_days` (7 días por defecto). Durante ese plazo puedes revisarlos o reactivarlos con estos comandos:
+
+```powershell
+obit graveyard                 # list all restorable burials; containers show as docker:<name> (<12-char-id>) with purge countdown
+obit graveyard --json          # machine-readable output; filter burials where kind == "container"
+obit stats                     # total graveyard count and the next purge time
+obit resurrect <id>            # start the stopped container by its numeric graveyard ID and stop tracking it
+```
+
+Los contenedores añadidos manualmente con `obit docker add` no quedan vinculados a ningún directorio de proyecto, así que `obit graveyard --here` no los muestra; solo coinciden con `--here` los registrados automáticamente o aprobados desde una propuesta del proyecto. En escritorio, el menú de la bandeja muestra el total en el cementerio y hasta los 10 entierros más recientes (haz clic en uno para resucitarlo), y la página del cementerio en la ventana permite buscar por nombre, ver el tiempo restante y resucitar los elementos seleccionados. El proceso en segundo plano no envía notificaciones del sistema de forma proactiva cuando un contenedor se detiene o se acerca a la eliminación definitiva, así que revisa `obit graveyard` o la página del cementerio antes de que venza el plazo.
+
 ## Asignar un plazo a un volumen o enterrarlo ahora
 
 Los volúmenes nunca se registran automáticamente. Obituary solo trata los que registres o entierres expresamente y no elimina imágenes ni redes.

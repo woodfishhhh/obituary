@@ -8,6 +8,36 @@ obit docker list               # 登记了哪些容器（--json 可用）
 obit resurrect <编号>          # 到期被停下的容器重新启动
 ```
 
+## 啟動容器時順手登記壽命
+
+臨時容器最容易忘記關閉，啟動當下直接設定壽命最省事。`docker run -d` 會把完整容器 ID 印到標準輸出，接住後立刻交給 `obit docker add` 即可：
+
+```powershell
+# PowerShell
+$cid = docker run -d --name tmp-redis redis:7
+if ($LASTEXITCODE -eq 0) { obit docker add $cid 4h }
+```
+
+```bash
+# Bash / zsh（不用手動命名，直接傳回傳的 ID）
+cid=$(docker run -d redis:7) && obit docker add "$cid" 4h
+```
+
+`obit docker add <容器名或 ID> <時長>` 接受容器名、短 ID 或完整 64 位元 ID，不支援 `--at` 或 `--note`；登記後會印出帳本編號與到期時間（格式為 `#<編號> docker:<名字> (<12位短ID>)  到期 <時間>`）。啟動臨時容器時不要加 `docker run --rm`：加上 `--rm` 的容器一停止就會被 Docker 直接刪除，訃告會拒絕登記它。到期前若要延長壽命或取消追蹤，依 `obit docker list` 或 `obit list` 裡的編號執行 `obit extend <編號> <時長>` 或 `obit spare <編號>`。
+
+## 保留期內查看與救回已停止的容器
+
+容器到期並執行 `docker stop` 後，就會從 `obit docker list` 轉入墓地，進入保留期（`[graveyard] retention_days`，預設 7 天）。`obit docker list` 只列尚未到期的活躍容器；要查看保留期內待清理的已停止容器，可使用以下入口：
+
+```powershell
+obit graveyard                 # 查看全部保留期項目，容器顯示為 docker:<名字> (<12位短ID>) 及火化倒數
+obit graveyard --json          # 機器可讀輸出，可依 burials 中 kind == "container" 篩選
+obit stats                     # 查看墓地總數與下一次火化時間
+obit resurrect <編號>          # 依墓地裡的數字編號執行 docker start，並結束壽命追蹤
+```
+
+手動以 `obit docker add` 登記的容器不綁定專案目錄，不會出現在 `obit graveyard --here` 中，只有透過專案自動登記或提議核准的容器才會依目前目錄篩選出來。桌面端也可以在系統匣選單中查看目前墓地總數與「最近下葬的」（最多最近 10 筆，點一筆即可復活），或打開小視窗的「墓地」頁依名字搜尋、檢視剩餘倒數並勾選復活。背景程式在容器停止或接近火化前不會主動跳出系統通知，想在 7 天內定期檢視或救回，直接查看 `obit graveyard` 或小視窗墓地頁。
+
 ## 為資料卷設定壽命或立即下葬
 
 資料卷不會自動登記。訃告只處理你明確登記或下葬的資料卷，不會刪除映像檔或網路。

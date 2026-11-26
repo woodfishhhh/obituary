@@ -8,6 +8,36 @@ obit docker list               # registered containers (--json works too)
 obit resurrect <id>            # start a container that was stopped at expiry
 ```
 
+## 컨테이너를 시작할 때 바로 수명 등록하기
+
+임시 컨테이너는 처음 띄울 때 수명을 정해 두지 않으면 가장 쉽게 방치됩니다. `docker run -d`는 전체 컨테이너 ID를 표준 출력으로 돌려주므로 그대로 `obit docker add`에 넘길 수 있습니다.
+
+```powershell
+# PowerShell
+$cid = docker run -d --name tmp-redis redis:7
+if ($LASTEXITCODE -eq 0) { obit docker add $cid 4h }
+```
+
+```bash
+# Bash / zsh (no name required; pass the returned ID directly)
+cid=$(docker run -d redis:7) && obit docker add "$cid" 4h
+```
+
+`obit docker add <name-or-id> <lifespan>`은 컨테이너 이름, 짧은 ID 또는 64자리 전체 ID를 받으며 `--at`이나 `--note` 옵션은 지원하지 않습니다. 등록하면 장부 번호와 만료 시각(`#<id> docker:<name> (<12-char-id>)  expires <time>`)을 출력합니다. `docker run`에 `--rm`을 붙이지 마세요. AutoRemove 컨테이너는 중지 즉시 Docker가 삭제하므로 `obit docker add`가 등록을 거부합니다. 만료 전에 기간을 늘리거나 추적을 해제하려면 `obit docker list`나 `obit list`의 번호로 `obit extend <id> <lifespan>` 또는 `obit spare <id>`를 실행하세요.
+
+## 보관 기간 동안 중지된 컨테이너 확인하고 부활하기
+
+컨테이너가 만료되어 `docker stop`이 실행되면 활성 목록인 `obit docker list`에서 빠져 묘지로 옮겨지며 `[graveyard] retention_days`(기본 7일) 동안 보관됩니다. 보관 기간 중 중지된 컨테이너를 확인하거나 다시 살리려면 아래 명령을 사용합니다.
+
+```powershell
+obit graveyard                 # list all restorable burials; containers show as docker:<name> (<12-char-id>) with purge countdown
+obit graveyard --json          # machine-readable output; filter burials where kind == "container"
+obit stats                     # total graveyard count and the next purge time
+obit resurrect <id>            # start the stopped container by its numeric graveyard ID and stop tracking it
+```
+
+`obit docker add`로 직접 등록한 컨테이너는 프로젝트 디렉터리에 연결되지 않으므로 `obit graveyard --here`에는 나오지 않습니다. `--here`는 프로젝트 자동 등록이나 제안 승인으로 들어온 컨테이너만 일치합니다. 데스크톱에서는 트레이 메뉴에서 묘지 총개수와 최근 매장된 항목 최대 10개(클릭하면 바로 부활)를 볼 수 있고, 창의 묘지(Graveyard) 페이지에서는 이름으로 검색하고 남은 보관 시간을 확인한 뒤 선택해 부활할 수 있습니다. 백그라운드 실행기는 컨테이너가 중지되거나 영구 삭제를 앞둘 때 먼저 시스템 알림을 보내지 않으므로, 보관 기간이 끝나기 전에 살펴보려면 `obit graveyard`나 창의 묘지 페이지를 확인하세요.
+
 ## 볼륨에 수명을 지정하거나 바로 매장하기
 
 볼륨은 자동으로 등록되지 않습니다. 직접 등록하거나 매장하도록 지정한 볼륨만 처리하며 이미지와 네트워크는 삭제하지 않습니다.
