@@ -51,6 +51,37 @@ func TestPOSIXRestoreParents(t *testing.T) {
 	}
 }
 
+func TestPOSIXPinExecuteOnlyParent(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root bypasses directory permissions")
+	}
+	dir := t.TempDir()
+	fs := FS{}
+	parent, err := fs.OpenRestoreParent(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer parent.Close()
+	locked := filepath.Join(dir, "locked")
+	if err := os.Mkdir(locked, 0111); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(locked, 0700) })
+	opened, err := fs.OpenRestoreParent(locked)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer opened.Close()
+	existing, err := fs.MkdirRestoreParent(parent, "locked")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer existing.Close()
+	if opened.Identity() != existing.Identity() || opened.Identity() != posixID(t, locked) {
+		t.Fatal("execute-only parent identity changed")
+	}
+}
+
 func TestPOSIXFailedRestoreRetainsBurialAfterParentMove(t *testing.T) {
 	dir := t.TempDir()
 	source := filepath.Join(dir, "parent", "child", "source")

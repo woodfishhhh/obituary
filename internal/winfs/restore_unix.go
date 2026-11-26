@@ -11,6 +11,12 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+const (
+	restoreFollowFlags   = restoreParentAccess | unix.O_DIRECTORY | unix.O_CLOEXEC
+	pinnedDirectoryFlags = unix.O_DIRECTORY | unix.O_NOFOLLOW | unix.O_CLOEXEC
+	restoreParentFlags   = restoreParentAccess | pinnedDirectoryFlags
+)
+
 type restoreParent struct {
 	file      *os.File
 	path      string
@@ -25,6 +31,16 @@ func (p *restoreParent) Close() error              { return p.file.Close() }
 func (p *restoreParent) Path() string              { return p.path }
 func (p *restoreParent) Identity() corefs.Identity { return p.id }
 func (p *restoreParent) fd() int                   { return int(p.file.Fd()) }
+
+// Open the pinned directory itself for enumeration, even if its pathname has moved.
+func (p *restoreParent) openReadable() (*os.File, error) {
+	fd, err := unix.Openat(p.fd(), ".", unix.O_RDONLY|pinnedDirectoryFlags, 0)
+	if err != nil {
+		return nil, err
+	}
+	return os.NewFile(uintptr(fd), p.path), nil
+}
+
 func (p *restoreParent) Rollback() error {
 	if p.created {
 		// POSIX cannot unlink a directory by its creation fd. A pathname
@@ -35,7 +51,7 @@ func (p *restoreParent) Rollback() error {
 }
 
 func (fs FS) OpenRestoreParent(path string) (corefs.RestoreParent, error) {
-	fd, err := unix.Open(path, unix.O_RDONLY|unix.O_DIRECTORY|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0)
+	fd, err := unix.Open(path, restoreParentFlags, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -64,6 +80,10 @@ func (fs FS) OpenRestoreParent(path string) (corefs.RestoreParent, error) {
 }
 
 func (fs FS) MkdirRestoreParent(parent corefs.RestoreParent, name string) (corefs.RestoreParent, error) {
+	return fs.mkdirRestoreParent(parent, name, restoreParentAccess)
+}
+
+func (fs FS) mkdirRestoreParent(parent corefs.RestoreParent, name string, access int) (corefs.RestoreParent, error) {
 	p, ok := parent.(*restoreParent)
 	if !ok || !singleName(name) {
 		return nil, fmt.Errorf("invalid restore parent or filename: %w", corefs.ErrUnsafe)
@@ -73,7 +93,7 @@ func (fs FS) MkdirRestoreParent(parent corefs.RestoreParent, name string) (coref
 	if err != nil && !os.IsExist(err) {
 		return nil, err
 	}
-	fd, err := unix.Openat(p.fd(), name, unix.O_RDONLY|unix.O_DIRECTORY|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0)
+	fd, err := unix.Openat(p.fd(), name, access|pinnedDirectoryFlags, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +139,12 @@ func (fs FS) FindRestored(parent, source corefs.Identity) (string, error) {
 }
 
 func (fs FS) findRestoredChild(parent *restoreParent, source corefs.Identity) (string, error) {
-	entries, err := parent.file.ReadDir(-1)
+	dir, err := parent.openReadable()
+	if err != nil {
+		return "", err
+	}
+	defer dir.Close()
+	entries, err := dir.ReadDir(-1)
 	if err != nil {
 		return "", err
 	}
@@ -138,7 +163,7 @@ func (fs FS) findRestoredChild(parent *restoreParent, source corefs.Identity) (s
 }
 
 func (fs FS) RestoreParentPath(path string) (string, error) {
-	fd, err := unix.Open(path, restoreParentPathOpenFlags(), 0)
+	fd, err := unix.Open(path, restoreParentFlags, 0)
 	if err != nil {
 		return "", err
 	}
@@ -155,7 +180,7 @@ func (fs FS) VerifyRestoreParentChain(records []corefs.RestoreParentRecord) erro
 		ordered[len(records)-1-i] = record
 	}
 	root := filepath.VolumeName(ordered[0].Path) + string(filepath.Separator)
-	fd, err := unix.Open(root, restoreParentChainOpenFlags(), 0)
+	fd, err := unix.Open(root, restoreParentFlags, 0)
 	if err != nil {
 		return restoreParentChainError(ordered[0].Path, err)
 	}
@@ -200,13 +225,13 @@ func (fs FS) verifyRestoreParentChild(fd int, record corefs.RestoreParentRecord,
 		if !restoreIdentityMatches(record.Identity, id) {
 			return -1, restoreParentChainError(record.Path, corefs.ErrUnsafe)
 		}
-		child, err := unix.Openat(fd, name, restoreParentChainFollowFlags(), 0)
+		child, err := unix.Openat(fd, name, restoreFollowFlags, 0)
 		if err != nil {
 			return -1, restoreParentChainError(record.Path, err)
 		}
 		return child, nil
 	}
-	child, err := unix.Openat(fd, name, restoreParentChainOpenFlags(), 0)
+	child, err := unix.Openat(fd, name, restoreParentFlags, 0)
 	if err != nil {
 		return -1, restoreParentChainError(record.Path, err)
 	}

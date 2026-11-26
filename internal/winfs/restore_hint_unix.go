@@ -21,7 +21,12 @@ func (fs FS) FindRestoreDirectory(root corefs.RestoreParent, want corefs.Identit
 		return ""
 	}
 	s := directorySearch{fs: fs, want: want, left: 512, until: time.Now().Add(100 * time.Millisecond)}
-	found := s.scan(p.file, p.path, true)
+	dir, err := p.openReadable()
+	if err != nil {
+		return ""
+	}
+	defer dir.Close()
+	found := s.scan(dir, p.path, true)
 	for _, name := range s.children {
 		if found != "" || s.exhausted() {
 			break

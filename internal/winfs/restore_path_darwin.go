@@ -11,17 +11,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func restoreParentPathOpenFlags() int {
-	return unix.O_RDONLY | unix.O_DIRECTORY | unix.O_NOFOLLOW | unix.O_CLOEXEC
-}
-
-func restoreParentChainOpenFlags() int {
-	return restoreParentPathOpenFlags()
-}
-
-func restoreParentChainFollowFlags() int {
-	return unix.O_RDONLY | unix.O_DIRECTORY | unix.O_CLOEXEC
-}
+const restoreParentAccess = unix.O_SEARCH
 
 func restoreParentPath(fd int, fallback string) (string, error) {
 	buf := make([]byte, unix.PathMax)
