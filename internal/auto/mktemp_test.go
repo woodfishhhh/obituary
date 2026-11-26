@@ -39,7 +39,7 @@ func TestSweepPreservesNestedRepositoryPublishedDuringDiscovery(t *testing.T) {
 	}
 	now = now.Add(time.Hour)
 	published := false
-	r.engine.Svc.PrepareOwners = func(ctx context.Context, _ []string) core.OwnerBatchFunc {
+	r.engine.Svc.PrepareOwners = func(ctx context.Context, _ []string, roots map[string]string) core.OwnerBatchFunc {
 		observer, err := (project.Project{Root: r.root}).ObserveIndex(ctx)
 		if err != nil {
 			t.Fatal(err)
@@ -130,7 +130,7 @@ func TestOwnerBatchRefreshesAbsentWorktree(t *testing.T) {
 	}
 	r := &repo{t: t, root: t.TempDir()}
 	path := r.write("file.txt", "not yet in Git")
-	query := PrepareOwners(t.Context(), []string{path})
+	query := PrepareOwners(t.Context(), []string{path}, nil)
 	before := query(t.Context(), []string{path})
 	if before[0].Err != nil || before[0].Root != "" || before[0].CheckedAt.IsZero() {
 		t.Fatalf("missing worktree did not produce a fresh answer: %+v", before)
@@ -356,8 +356,8 @@ func TestSweepBatchRechecksGitAndRules(t *testing.T) {
 					}
 				}
 				calls := 0
-				r.engine.Svc.PrepareOwners = func(ctx context.Context, paths []string) core.OwnerBatchFunc {
-					query := PrepareOwners(ctx, paths)
+				r.engine.Svc.PrepareOwners = func(ctx context.Context, paths []string, roots map[string]string) core.OwnerBatchFunc {
+					query := PrepareOwners(ctx, paths, roots)
 					return func(ctx context.Context, paths []string) []core.Ownership {
 						calls++
 						checkOwnerLedgerLock(t, r.engine.Svc, false)

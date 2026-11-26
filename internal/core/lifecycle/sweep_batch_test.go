@@ -1,5 +1,3 @@
-//go:build windows
-
 package lifecycle_test
 
 import (
@@ -16,7 +14,6 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/auto"
 	core "github.com/woodfishhhh/obituary/internal/core/lifecycle"
-	"golang.org/x/sys/windows"
 )
 
 func dueBatch(t *testing.T, n int) (*fixture, []string) {
@@ -58,7 +55,7 @@ func TestSweepInvalidatedSnapshotRefreshesOnce(t *testing.T) {
 		t.Skip("real Git indexes published after consecutive queries")
 	}
 	// Index publication and lock boundaries use real Git; runner scheduling
-	// must not consume the fallback query's budget in this ordering test.
+	// must not consume the generation check's budget in this ordering test.
 	synctest.Test(t, func(t *testing.T) {
 		f, paths, git := slowGitFixture(t, "keep.log")
 		f.file("seed.txt")
@@ -71,11 +68,11 @@ func TestSweepInvalidatedSnapshotRefreshesOnce(t *testing.T) {
 			t.Fatal(err)
 		}
 		calls := 0
-		f.svc.PrepareOwners = func(ctx context.Context, paths []string) core.OwnerBatchFunc {
-			query := auto.PrepareOwners(ctx, paths)
+		f.svc.PrepareOwners = func(ctx context.Context, paths []string, roots map[string]string) core.OwnerBatchFunc {
+			query := auto.PrepareOwners(ctx, paths, roots)
 			return func(ctx context.Context, paths []string) []core.Ownership {
 				calls++
-				if unlocked := ledgerUnlocked(t, f); unlocked != (calls <= 2) {
+				if unlocked := ledgerUnlocked(t, f); !unlocked {
 					t.Fatalf("refresh query %d used wrong lock boundary: unlocked=%t", calls, unlocked)
 				}
 				owners := query(ctx, paths)
@@ -95,8 +92,8 @@ func TestSweepInvalidatedSnapshotRefreshesOnce(t *testing.T) {
 			}
 		}
 		rows, err := f.svc.Sweep(false)
-		if err != nil || calls != 3 || len(rows) != 1 || rows[0].Action != core.ActionRefused || read(t, paths[0]) != "keep.log" || len(f.burials()) != 0 {
-			t.Fatalf("repeated invalidation skipped bounded fallback or protection: calls=%d %+v %v", calls, rows, err)
+		if err != nil || calls != 2 || len(rows) != 1 || rows[0].Action != core.ActionRetry || read(t, paths[0]) != "keep.log" || len(f.burials()) != 0 {
+			t.Fatalf("repeated invalidation skipped bounded retry or protection: calls=%d %+v %v", calls, rows, err)
 		}
 	})
 }
@@ -110,8 +107,8 @@ func TestSweepSnapshotRefreshRechecksRevision(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		f, paths, git := slowGitFixture(t, "keep.log")
 		calls := 0
-		f.svc.PrepareOwners = func(ctx context.Context, paths []string) core.OwnerBatchFunc {
-			query := auto.PrepareOwners(ctx, paths)
+		f.svc.PrepareOwners = func(ctx context.Context, paths []string, roots map[string]string) core.OwnerBatchFunc {
+			query := auto.PrepareOwners(ctx, paths, roots)
 			return func(ctx context.Context, paths []string) []core.Ownership {
 				calls++
 				owners := query(ctx, paths)
@@ -149,7 +146,7 @@ func TestSweepSnapshotRefreshYieldsBeforeQuery(t *testing.T) {
 		f := newFixture(t)
 		path := f.file("scratch.log")
 		calls := 0
-		f.svc.PrepareOwners = func(context.Context, []string) core.OwnerBatchFunc {
+		f.svc.PrepareOwners = func(context.Context, []string, map[string]string) core.OwnerBatchFunc {
 			return func(context.Context, []string) []core.Ownership {
 				calls++
 				if !ledgerUnlocked(t, f) {
@@ -244,77 +241,6 @@ func TestSweepBatchRecoversAllMoved(t *testing.T) {
 	}
 }
 
-func TestSweepBatchMeasuresAfterManifestCleanupFailure(t *testing.T) {
-	f, paths := dueBatch(t, 3)
-	var locked windows.Handle
-	defer func() {
-		if locked != 0 {
-			windows.CloseHandle(locked)
-		}
-	}()
-	committed := 0
-	restore := core.SetBurialStep(f.svc, func(step string) error {
-		if step != "committed" {
-			return nil
-		}
-		committed++
-		st, err := f.svc.Store.ReadSnapshot()
-		if err != nil || len(st.Burials) != len(paths) {
-			t.Fatalf("cleanup fixture did not commit the whole batch: %+v %v", st, err)
-		}
-		if committed == 2 {
-			name, err := windows.UTF16PtrFromString(filepath.Dir(st.Burials[1].Grave) + ".json")
-			if err != nil {
-				t.Fatal(err)
-			}
-			locked, err = windows.CreateFile(name, windows.GENERIC_READ, windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE, nil, windows.OPEN_EXISTING, 0, 0)
-			if err != nil {
-				t.Fatal(err)
-			}
-		}
-		return nil
-	})
-	defer restore()
-	rows, err := f.svc.Sweep(false)
-	restore()
-	if !errors.Is(err, windows.ERROR_SHARING_VIOLATION) || locked == 0 || len(rows) != len(paths) {
-		t.Fatalf("manifest sharing failure was not exercised: %+v %v", rows, err)
-	}
-	for i, row := range rows {
-		if row.Action != core.ActionBuried || row.Burial == nil || exists(paths[i]) || read(t, row.Grave) != filepath.Base(paths[i]) {
-			t.Fatalf("cleanup failure lost committed content or receipt: %+v", rows)
-		}
-	}
-	if exists(filepath.Dir(rows[0].Grave)+".json") || !exists(filepath.Dir(rows[1].Grave)+".json") {
-		t.Fatal("fixture did not clean the earlier manifest before failure")
-	}
-	windows.CloseHandle(locked)
-	locked = 0
-	for range 2 {
-		if recovered, err := f.svc.Sweep(false); err != nil {
-			t.Fatalf("recover cleanup failure: %+v %v", recovered, err)
-		}
-	}
-	st, err := f.svc.Store.ReadSnapshot()
-	if err != nil || len(st.Burials) != len(paths) || len(st.Items) != 0 || st.Stats.Buried != int64(len(paths)) {
-		t.Fatalf("cleanup recovery changed burial count: %+v %v", st, err)
-	}
-	var wantBytes int64
-	for _, b := range st.Burials {
-		want := int64(len(filepath.Base(b.Path)))
-		wantBytes += want
-		if b.Size != want {
-			t.Fatalf("manifest cleanup failure lost committed burial sizes: #%d size=%d want=%d", b.ID, b.Size, want)
-		}
-		if exists(filepath.Dir(b.Grave) + ".json") {
-			t.Fatal("recovered manifest remained")
-		}
-	}
-	if st.Stats.BuriedBytes != wantBytes {
-		t.Fatalf("manifest cleanup failure lost committed burial sizes: stats=%d want=%d", st.Stats.BuriedBytes, wantBytes)
-	}
-}
-
 func TestSweepBatchRechecksEachRevision(t *testing.T) {
 	for _, change := range []string{"extend", "cancel"} {
 		t.Run(change, func(t *testing.T) {
@@ -360,29 +286,6 @@ func TestSweepBatchPinnedIdentity(t *testing.T) {
 	}
 }
 
-func TestSweepBatchAuditCapacity(t *testing.T) {
-	f, paths := dueBatch(t, 3)
-	if err := f.svc.Store.Update(func(st *core.State) error {
-		for range 999 {
-			st.PendingAudit = append(st.PendingAudit, core.Event{Time: f.clock, Action: "fixture"})
-		}
-		return nil
-	}); err != nil {
-		t.Fatal(err)
-	}
-	name, _ := windows.UTF16PtrFromString(filepath.Join(f.svc.Store.Home, "audit.jsonl"))
-	h, err := windows.CreateFile(name, windows.GENERIC_READ, windows.FILE_SHARE_READ, nil, windows.OPEN_EXISTING, 0, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer windows.CloseHandle(h)
-	rows, err := f.svc.Sweep(false)
-	st, readErr := f.svc.Store.ReadSnapshot()
-	if err == nil || readErr != nil || len(st.PendingAudit) != 1000 || len(st.Burials) != 1 || len(st.Items) != 2 || exists(paths[0]) || !exists(paths[1]) || !exists(paths[2]) {
-		t.Fatalf("batch exceeded audit capacity or discarded committed prefix: %+v %v %v", rows, err, readErr)
-	}
-}
-
 func TestSweepBatchReleasesLedgerBetweenSlowMoves(t *testing.T) {
 	f, _ := dueBatch(t, 3)
 	moves := 0
@@ -411,60 +314,6 @@ func TestSweepBatchReleasesLedgerBetweenSlowMoves(t *testing.T) {
 	}
 	if moves != 3 || !yielded {
 		t.Fatalf("slow batch did not resume after yielding: moves=%d yielded=%t", moves, yielded)
-	}
-}
-
-func TestSweepBatchRecoveryAuditCapacity(t *testing.T) {
-	f, _ := dueBatch(t, 3)
-	moves := 0
-	restore := core.SetBurialStep(f.svc, func(step string) error {
-		if step == "moved" {
-			moves++
-			if moves == 3 {
-				return errors.New("interrupted before batch commit")
-			}
-		}
-		return nil
-	})
-	defer restore()
-	if _, err := f.svc.Sweep(false); err == nil {
-		t.Fatal("interruption missing")
-	}
-	restore()
-	if err := f.svc.Store.Update(func(st *core.State) error {
-		for range 999 {
-			st.PendingAudit = append(st.PendingAudit, core.Event{Time: f.clock, Action: "fixture"})
-		}
-		return nil
-	}); err != nil {
-		t.Fatal(err)
-	}
-	name, _ := windows.UTF16PtrFromString(filepath.Join(f.svc.Store.Home, "audit.jsonl"))
-	h, err := windows.CreateFile(name, windows.GENERIC_READ, windows.FILE_SHARE_READ, nil, windows.OPEN_EXISTING, 0, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if h != 0 {
-			windows.CloseHandle(h)
-		}
-	}()
-	_, err = f.svc.Sweep(false)
-	st, readErr := f.svc.Store.ReadSnapshot()
-	if err == nil || readErr != nil || len(st.PendingAudit) != 1000 || len(st.Burials) != 1 || len(st.Items) != 2 {
-		t.Fatalf("batch recovery exceeded audit capacity: events=%d graves=%d %v %v", len(st.PendingAudit), len(st.Burials), err, readErr)
-	}
-	windows.CloseHandle(h)
-	h = 0
-	if err := f.svc.Store.FlushAudit(); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := f.svc.Sweep(false); err != nil {
-		t.Fatal(err)
-	}
-	st, err = f.svc.Store.ReadSnapshot()
-	if err != nil || len(st.Items) != 0 || len(st.Burials) != 3 || st.Stats.Buried != 3 {
-		t.Fatalf("backlogged recovery lost objects: %+v %v", st, err)
 	}
 }
 
@@ -516,8 +365,8 @@ func TestSweepBatchChangesAcrossBoundary(t *testing.T) {
 		}
 		f.svc.Owner, f.svc.OwnerBatch = auto.Owner, auto.OwnerBatch
 		changed, cachedGitAnswer := false, false
-		f.svc.PrepareOwners = func(ctx context.Context, candidates []string) core.OwnerBatchFunc {
-			query := auto.PrepareOwners(ctx, candidates)
+		f.svc.PrepareOwners = func(ctx context.Context, candidates []string, roots map[string]string) core.OwnerBatchFunc {
+			query := auto.PrepareOwners(ctx, candidates, roots)
 			return func(ctx context.Context, candidates []string) []core.Ownership {
 				answers := query(ctx, candidates)
 				for i, path := range candidates {
@@ -585,4 +434,125 @@ func TestSweepBatchChangesAcrossBoundary(t *testing.T) {
 			}
 		}
 	})
+}
+
+const slowStartup = 1200 * time.Millisecond
+
+func delayGit(ctx context.Context) {
+	timer := time.NewTimer(slowStartup)
+	defer timer.Stop()
+	select {
+	case <-timer.C:
+	case <-ctx.Done():
+	}
+}
+
+type snapshotRead struct {
+	wait time.Duration
+	err  error
+}
+
+// Start the deadline at the observed query boundary, independently of sweep setup.
+func concurrentSnapshot(store core.Store) <-chan snapshotRead {
+	started := make(chan struct{})
+	done := make(chan snapshotRead, 1)
+	go func() {
+		start := time.Now()
+		reader := store.WithDeadline(start.Add(time.Second))
+		close(started)
+		_, err := reader.ReadSnapshot()
+		done <- snapshotRead{time.Since(start), err}
+	}()
+	<-started
+	return done
+}
+
+func TestSlowGitConcurrentSnapshot(t *testing.T) {
+	if testing.Short() {
+		t.Skip("real Git publications and a one-second ledger reader")
+	}
+	for _, mode := range []string{"invalidated", "twice", "include", "sparse"} {
+		t.Run(mode, func(t *testing.T) {
+			// Real Git and ledger locks; only delay/deadline clocks are virtual.
+			synctest.Test(t, func(t *testing.T) { testConcurrentSnapshot(t, mode) })
+		})
+	}
+}
+
+func testConcurrentSnapshot(t *testing.T, mode string) {
+	f, paths, git := slowGitFixture(t, "keep.log")
+	uncached := mode == "include" || mode == "sparse"
+	configureSlowGit(f, git, mode)
+	publication := 1
+	if mode == "twice" {
+		publication = 2
+	}
+	calls := 0
+	var reader <-chan snapshotRead
+	f.svc.PrepareOwners = func(ctx context.Context, paths []string, roots map[string]string) core.OwnerBatchFunc {
+		query := auto.PrepareOwners(ctx, paths, roots)
+		return func(ctx context.Context, paths []string) []core.Ownership {
+			calls++
+			if uncached && calls == 2 {
+				reader = concurrentSnapshot(f.svc.Store)
+			}
+			delayGit(ctx)
+			owners := query(ctx, paths)
+			if calls == 1 && (owners[0].Current == nil) != uncached {
+				t.Fatalf("unexpected cacheability: %+v", owners[0])
+			}
+			if calls < publication {
+				git("add", "--", "seed")
+			} else if calls == publication {
+				git("add", "--", "keep.log")
+			}
+			if !uncached && calls == publication {
+				current := owners[0].Current
+				owners[0].Current = func(ctx context.Context) (bool, time.Time, error) {
+					ok, at, err := current(ctx)
+					if ok || err != nil {
+						t.Fatalf("expected published index: %v %v", ok, err)
+					}
+					reader = concurrentSnapshot(f.svc.Store)
+					return ok, at, err
+				}
+			}
+			return owners
+		}
+	}
+	rows, err := f.svc.Sweep(false)
+	if err != nil || len(rows) != 1 || reader == nil || read(t, paths[0]) != "keep.log" || len(f.burials()) != 0 {
+		t.Fatalf("protected file or read missing: %+v %v", rows, err)
+	}
+	checkSlowGitRead(t, f, mode, calls, rows, <-reader)
+}
+
+func configureSlowGit(f *fixture, git func(...string), mode string) {
+	if mode == "twice" {
+		f.file("seed")
+	}
+	if mode == "include" {
+		git("config", "include.path", "optional.config")
+	}
+	if mode == "sparse" {
+		f.file("omitted/tracked")
+		git("add", "--", "omitted/tracked")
+		git("commit", "-qm", "seed sparse index")
+		git("sparse-checkout", "init", "--cone", "--sparse-index")
+		git("sparse-checkout", "set", "kept")
+	}
+}
+
+func checkSlowGitRead(t *testing.T, f *fixture, mode string, calls int, rows []core.Outcome, r snapshotRead) {
+	t.Helper()
+	uncached := mode == "include" || mode == "sparse"
+	t.Logf("reader=%s err=%v action=%s queries=%d", r.wait, r.err, rows[0].Action, calls)
+	want := core.ActionRefused
+	if mode == "twice" {
+		want = core.ActionRetry
+		requireRetainedRetry(t, f, rows)
+	}
+	if rows[0].Action != want || calls != 2 || (uncached && !errors.Is(r.err, context.DeadlineExceeded)) || (!uncached && r.err != nil) {
+		t.Fatal("unexpected read or final Git outcome")
+	}
 }

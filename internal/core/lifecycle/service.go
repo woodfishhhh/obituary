@@ -56,7 +56,6 @@ type Service struct {
 	// Fault injection belongs to this service and its request-local copies.
 	beforePurgeDelete func()             // after durable pre-delete persistence
 	afterBurialStep   func(string) error // interruption without cleanup
-	gitMoveBudget     time.Duration      // measured outside store.lock for this sweep
 	// Only successful durable owner claims in this operation are cached.
 	confirmedOwners map[string]bool
 	readOnlyOwners  bool // diagnostics validate legacy markers without migrating them
@@ -94,8 +93,8 @@ type Service struct {
 	// OwnerBatch returns one answer per path using bounded Git queries.
 	OwnerBatch OwnerBatchFunc
 	// PrepareOwners resolves Git metadata outside store.lock for one sweep.
-	// The returned query can prefetch snapshots outside the moving transaction.
-	PrepareOwners func(context.Context, []string) OwnerBatchFunc
+	// It records discovered worktree roots by real path for per-repository query budgets.
+	PrepareOwners func(context.Context, []string, map[string]string) OwnerBatchFunc
 	// Recheck re-applies a project's rules before an automatic item is
 	// buried; ErrProtected refuses it, other errors retry. Nil disables it.
 	Recheck func(project, path string, isDir bool) error
@@ -127,6 +126,9 @@ type Ownership struct {
 	// Current proves the answer's index generation and project still apply.
 	// Nil answers cannot be reused for a later move.
 	Current func(context.Context) (bool, time.Time, error)
+	// CurrentRoot proves the path still belongs to the same project without
+	// querying Git's index.
+	CurrentRoot func(context.Context) (bool, error)
 }
 
 type OwnerBatchFunc func(context.Context, []string) []Ownership
