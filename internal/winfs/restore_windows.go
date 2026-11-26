@@ -61,8 +61,11 @@ func (FS) OpenRestoreParent(path string) (corefs.RestoreParent, error) {
 	}
 	var info windows.ByHandleFileInformation
 	err = windows.GetFileInformationByHandle(h, &info)
-	if err == nil && (info.FileAttributes&windows.FILE_ATTRIBUTE_DIRECTORY == 0 || info.FileAttributes&windows.FILE_ATTRIBUTE_REPARSE_POINT != 0) {
-		err = fmt.Errorf("restore parent is not an ordinary directory: %w", corefs.ErrUnsafe)
+	if err == nil && info.FileAttributes&windows.FILE_ATTRIBUTE_DIRECTORY == 0 {
+		err = &corefs.RestoreParentError{Kind: "not_directory", Path: path, Cause: corefs.ErrUnsafe}
+	}
+	if err == nil && info.FileAttributes&windows.FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+		err = &corefs.RestoreParentError{Kind: "pinned", Path: path, Cause: corefs.ErrUnsafe}
 	}
 	var id corefs.Identity
 	if err == nil {

@@ -5,13 +5,15 @@ package lifecycle_test
 import (
 	"crypto/rand"
 	"fmt"
-	core "github.com/woodfishhhh/obituary/internal/core/lifecycle"
-	"golang.org/x/sys/unix"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	core "github.com/woodfishhhh/obituary/internal/core/lifecycle"
+	"golang.org/x/sys/unix"
 )
 
 func TestPurgeStageRecovery(t *testing.T) {
@@ -148,6 +150,161 @@ func TestPublishedGraveWithRetainedDirectoryDescriptor(t *testing.T) {
 				if got := read(t, filepath.Join(b.Grave, name)); got != want {
 					t.Fatal(name, got)
 				}
+			}
+		})
+	}
+}
+
+func TestPurgeSupportsPOSIXSpecialEntries(t *testing.T) {
+	cases := []struct {
+		name    string
+		prepare func(*testing.T, *fixture, string) func(*testing.T)
+	}{
+		{
+			name: "symlink",
+			prepare: func(t *testing.T, f *fixture, payload string) func(*testing.T) {
+				outside := f.dir + "-outside"
+				sentinel := filepath.Join(outside, "sentinel")
+				if err := os.MkdirAll(outside, 0o700); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(sentinel, []byte("outside sentinel"), 0o600); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Symlink(sentinel, filepath.Join(payload, "link")); err != nil {
+					t.Fatal(err)
+				}
+				return func(t *testing.T) {
+					if got, err := os.ReadFile(sentinel); err != nil || string(got) != "outside sentinel" {
+						t.Fatalf("outside sentinel changed: %q %v", got, err)
+					}
+				}
+			},
+		},
+		{
+			name: "closed-unix-socket",
+			prepare: func(t *testing.T, _ *fixture, payload string) func(*testing.T) {
+				shortDir, err := os.MkdirTemp("/tmp", "obit-socket-")
+				if err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() { _ = os.RemoveAll(shortDir) })
+				socketPath := filepath.Join(shortDir, "s")
+				if len(socketPath) >= 104 {
+					t.Fatalf("socket path exceeds sockaddr_un limit: %d bytes", len(socketPath))
+				}
+				listener, err := net.Listen("unix", socketPath)
+				if err != nil {
+					t.Fatal(err)
+				}
+				listener.(*net.UnixListener).SetUnlinkOnClose(false)
+				if err := listener.Close(); err != nil {
+					t.Fatal(err)
+				}
+				graveSocket := filepath.Join(payload, "sock")
+				if err := os.Rename(socketPath, graveSocket); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := os.Lstat(graveSocket); err != nil {
+					t.Fatalf("closed socket node missing: %v", err)
+				}
+				return func(t *testing.T) {
+					if exists(graveSocket) {
+						t.Fatal("socket node survived purge")
+					}
+				}
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		for _, operation := range []string{"PurgeRefs", "Tick"} {
+			t.Run(tc.name+"/"+operation, func(t *testing.T) {
+				f := newFixture(t)
+				payload := filepath.Join(f.dir, "payload")
+				if err := os.Mkdir(payload, 0o700); err != nil {
+					t.Fatal(err)
+				}
+				check := tc.prepare(t, f, payload)
+				rows, err := f.svc.Bury([]string{payload}, true, "")
+				if err != nil || len(rows) != 1 || rows[0].Burial == nil {
+					t.Fatal(rows, err)
+				}
+				burial := rows[0].Burial
+				f.clock = burial.PurgeAt.Add(time.Hour)
+				var purged []core.GraveResult
+				if operation == "PurgeRefs" {
+					purged, err = f.svc.PurgeRefs([]string{fmt.Sprint(burial.ID)}, false)
+				} else {
+					_, purged, err = f.svc.Tick()
+				}
+				if err != nil || len(purged) != 1 || purged[0].Action != core.ActionPurged || exists(burial.Grave) || len(f.burials()) != 0 {
+					t.Fatalf("%s failed: %+v %v", operation, purged, err)
+				}
+				check(t)
+			})
+		}
+	}
+}
+
+func TestPurgeProtectsActiveMovedSymlink(t *testing.T) {
+	for _, operation := range []string{"PurgeRefs", "Tick"} {
+		t.Run(operation, func(t *testing.T) {
+			f := newFixture(t)
+			original := f.file("tree/sub/original")
+			sub := filepath.Dir(original)
+			fd, err := unix.Open(sub, unix.O_RDONLY|unix.O_DIRECTORY|unix.O_CLOEXEC, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer unix.Close(fd)
+
+			outside := f.dir + "-outside"
+			target := filepath.Join(outside, "target")
+			if err := os.MkdirAll(outside, 0o700); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(target, []byte("active target"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			active := filepath.Join(f.dir, "active-link")
+			if err := os.Symlink(target, active); err != nil {
+				t.Fatal(err)
+			}
+			identity, err := f.fs.Identify(active)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var itemID int64
+			if err := f.svc.Store.Update(func(st *core.State) error {
+				itemID = st.NextID
+				identityCopy := identity
+				st.Items = append(st.Items, core.Item{ID: itemID, Rev: 1, Path: active, Identity: &identityCopy, CreatedAt: f.clock, ExpiresAt: f.clock.Add(24 * time.Hour), Source: "cli"})
+				st.NextID++
+				return nil
+			}); err != nil {
+				t.Fatal(err)
+			}
+
+			rows, err := f.svc.Bury([]string{filepath.Dir(sub)}, true, "")
+			if err != nil || len(rows) != 1 || rows[0].Burial == nil {
+				t.Fatal(rows, err)
+			}
+			burial := rows[0].Burial
+			if err := unix.Renameat(unix.AT_FDCWD, active, fd, "arrived"); err != nil {
+				t.Fatal(err)
+			}
+			f.clock = burial.PurgeAt.Add(time.Hour)
+			var purged []core.GraveResult
+			if operation == "PurgeRefs" {
+				purged, err = f.svc.PurgeRefs([]string{fmt.Sprint(burial.ID)}, false)
+			} else {
+				_, purged, err = f.svc.Tick()
+			}
+			link := filepath.Join(burial.Grave, "sub", "arrived")
+			gotTarget, targetErr := os.Readlink(link)
+			if err != nil || len(purged) != 1 || purged[0].Error == "" || !strings.Contains(purged[0].Error, "protected") || len(f.burials()) != 1 || len(f.items()) != 1 || f.items()[0].ID != itemID || targetErr != nil || gotTarget != target {
+				t.Fatalf("%s removed protected symlink: %+v %v target=%q targetErr=%v", operation, purged, err, gotTarget, targetErr)
 			}
 		})
 	}

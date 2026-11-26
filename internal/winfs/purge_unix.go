@@ -168,10 +168,16 @@ func (p *purgeTree) entry(parent int, name string, st posixStat) error {
 	return nil
 }
 
-// unlinkat accepts names, so re-open the staged name and compare on its handle.
+// unlinkat accepts names; Linux compares on a pinned handle, while Darwin uses no-follow stat for special entries.
 func (p *purgeTree) unlink(fd int, name string, want posixStat) error {
+	if handled, err := p.tryUnlinkWithoutOpen(fd, name, want, nil); handled {
+		return err
+	}
 	pinned, err := openOnMount(fd, name, moveOpenFlags)
 	if err != nil {
+		if handled, fallbackErr := p.tryUnlinkWithoutOpen(fd, name, want, err); handled {
+			return fallbackErr
+		}
 		return err
 	}
 	defer unix.Close(pinned)
@@ -187,6 +193,17 @@ func (p *purgeTree) unlink(fd int, name string, want posixStat) error {
 		flags = unix.AT_REMOVEDIR
 	}
 	return p.plan.WithObject(purgeID(got), got.Incarnation == 0, func() error { return unix.Unlinkat(fd, name, flags) })
+}
+
+func (p *purgeTree) unlinkByName(fd int, name string, want posixStat) error {
+	got, err := p.fs.statAt(fd, name)
+	if err != nil {
+		return err
+	}
+	if got.Dev != want.Dev || inodeBytes(&got) != inodeBytes(&want) || got.Mode&unix.S_IFMT == unix.S_IFDIR {
+		return fmt.Errorf("changed entry %s: %w", name, corefs.ErrUnsafe)
+	}
+	return p.plan.WithObject(purgeID(got), got.Incarnation == 0, func() error { return unix.Unlinkat(fd, name, 0) })
 }
 
 func (p *purgeTree) emptyDirectory(parent int, name string, st posixStat) error {

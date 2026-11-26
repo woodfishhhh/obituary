@@ -5,6 +5,7 @@ package winfs
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 )
 
@@ -149,4 +151,30 @@ func TestPOSIXBirthTimeCheckedAtMove(t *testing.T) {
 		t.Fatal("post-move birth time change accepted")
 	}
 	assertPOSIXPayload(t, path, false, want, "keep")
+}
+
+func TestPOSIXRestoreRechecksParentImmediatelyBeforeRename(t *testing.T) {
+	dir := t.TempDir()
+	dst := filepath.Join(dir, "alpha-src")
+	moved := filepath.Join(dir, "omega-dst")
+	source := filepath.Join(dir, "grave-payload")
+	if err := os.Mkdir(dst, 0700); err != nil {
+		t.Fatal(err)
+	}
+	makePOSIXPayload(t, source, false, "kept")
+	want := posixID(t, source)
+	fs := FS{beforeRename: func() { mustPOSIXRename(t, dst, moved) }}
+	parent, err := fs.OpenRestoreParent(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer parent.Close()
+	_, err = fs.MovePinnedInto(source, want, parent, "restored")
+	if !errors.Is(err, corefs.ErrUnsafe) {
+		t.Fatalf("renamed pinned directory accepted: %v", err)
+	}
+	assertPOSIXPayload(t, source, false, want, "kept")
+	if _, err := os.Stat(filepath.Join(moved, "restored")); !os.IsNotExist(err) {
+		t.Fatalf("unexpected destination: %v", err)
+	}
 }

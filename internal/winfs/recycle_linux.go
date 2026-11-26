@@ -88,7 +88,8 @@ func (fs FS) Recycle(path string, want corefs.Identity) error {
 }
 
 func (fs FS) privateTrashDir(p *restoreParent, name string) (*restoreParent, error) {
-	child, err := fs.MkdirRestoreParent(p, name)
+	// The trashinfo commit needs a directory descriptor that supports fsync.
+	child, err := fs.mkdirRestoreParent(p, name, unix.O_RDONLY)
 	if err != nil {
 		return nil, err
 	}

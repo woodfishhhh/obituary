@@ -140,3 +140,23 @@ func (p PurgePlan) ValidStage() bool {
 	token, ok := strings.CutPrefix(p.Stage, ".obit-purge-")
 	return ok && len(token) == 26 && strings.Trim(token, "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567") == "" && p.Stage != p.Name
 }
+
+// RestoreParentRecord is the durable evidence for one original ancestor.
+// POSIX backends may use it to verify the entire chain through fixed handles.
+type RestoreParentRecord struct {
+	Path     string
+	Identity Identity
+	Reparse  bool
+}
+
+// RestoreParentChainChecker is an optional backend capability. It keeps the
+// lifecycle package independent of platform-specific descriptor operations.
+type RestoreParentChainChecker interface {
+	VerifyRestoreParentChain([]RestoreParentRecord) error
+}
+
+// RestoreParentPathResolver returns the kernel spelling of an opened ordinary
+// directory when the platform provides one, such as Darwin F_GETPATH.
+type RestoreParentPathResolver interface {
+	RestoreParentPath(string) (string, error)
+}

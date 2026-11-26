@@ -14,3 +14,7 @@ func (f FS) burialStat(parent int, name string) (posixStat, error) {
 	defer unix.Close(fd)
 	return f.statAt(fd, "")
 }
+
+func (p *purgeTree) tryUnlinkWithoutOpen(int, string, posixStat, error) (bool, error) {
+	return false, nil
+}

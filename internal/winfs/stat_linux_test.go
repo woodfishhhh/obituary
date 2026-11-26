@@ -64,3 +64,31 @@ func TestPOSIXGenerationSeparatesEqualBirthTimes(t *testing.T) {
 		}
 	}
 }
+
+func TestHintDirectoryRejectsMountBeforeReadingIdentity(t *testing.T) {
+	dev, err := os.Open("/dev")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dev.Close()
+	var upper, shm unix.Stat_t
+	if err := unix.Fstat(int(dev.Fd()), &upper); err != nil {
+		t.Fatal(err)
+	}
+	if err := unix.Fstatat(int(dev.Fd()), "shm", &shm, unix.AT_SYMLINK_NOFOLLOW); err != nil || shm.Dev == upper.Dev {
+		t.Skip("/dev/shm is not a separate mount")
+	}
+	s := directorySearch{fs: FS{creationID: func(uint64) uint64 { t.Fatal("read identity on external mount"); return 0 }}}
+	if _, err := s.directoryStat(dev, "/dev", "shm"); !errors.Is(err, unix.EXDEV) {
+		t.Fatalf("first pass did not refuse the mount: %v", err)
+	}
+	for _, access := range []int{hintMetadataOnly, unix.O_RDONLY} {
+		fd, err := openHintDirectory(int(dev.Fd()), "shm", access)
+		if err == nil {
+			unix.Close(fd)
+		}
+		if !errors.Is(err, unix.EXDEV) {
+			t.Fatalf("external mount opened with %#x: %v", access, err)
+		}
+	}
+}

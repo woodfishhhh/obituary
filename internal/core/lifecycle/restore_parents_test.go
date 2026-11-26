@@ -54,6 +54,14 @@ func TestResurrectRejectsChangedParents(t *testing.T) {
 }
 
 func TestResurrectOrdinaryReplacement(t *testing.T) {
+	t.Run("unchanged", func(t *testing.T) {
+		f := newFixture(t)
+		b := buryOne(t, f, "output/control.txt")
+		got, err := f.svc.Resurrect([]string{b.Path})
+		if err != nil || core.GraveFailed(got) || read(t, b.Path) != "output/control.txt" {
+			t.Fatalf("unchanged parent blocked resurrection: %+v %v", got, err)
+		}
+	})
 	for _, legacy := range []bool{false, true} {
 		t.Run(fmt.Sprint(legacy), func(t *testing.T) {
 			f := newFixture(t)
@@ -514,5 +522,27 @@ func TestResurrectExpandedLiteralShortShapeCanRebuild(t *testing.T) {
 	got, err := f.svc.Resurrect([]string{b.Path})
 	if err != nil || core.GraveFailed(got) || !exists(b.Path) {
 		t.Fatalf("expanded literal short-shaped name was refused: %+v %v", got, err)
+	}
+}
+
+func TestResurrectFileOccupiesRecordedJunction(t *testing.T) {
+	f := newFixture(t)
+	target := filepath.Join(f.dir, "real")
+	alias := filepath.Join(f.dir, "alias")
+	if err := os.Mkdir(target, 0700); err != nil {
+		t.Fatal(err)
+	}
+	directoryLink(t, alias, target)
+	b := buryOne(t, f, "alias/payload")
+	if !b.Parents[0].Reparse {
+		t.Fatal("junction not recorded")
+	}
+	if err := os.Rename(alias, alias+"-saved"); err != nil {
+		t.Fatal(err)
+	}
+	f.file("alias")
+	rows, err := f.svc.Resurrect([]string{b.Path})
+	if err != nil || len(rows) != 1 || !strings.Contains(rows[0].Error, "restore the original link") || read(t, alias) != "alias" || read(t, b.Grave) != "alias/payload" || len(f.burials()) != 1 {
+		t.Fatalf("junction recovery advice: %+v %v", rows, err)
 	}
 }
