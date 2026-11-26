@@ -2,12 +2,12 @@
 // confirmed actions, selection, time wording and the logo's four-point star.
 // Each variant draws these however it likes; the behaviour stays identical.
 import { useCallback, useMemo, useState, type ReactNode } from "react";
-import { useApi } from "../api";
-import { extendedTo, splitPath, when } from "../format";
+import { errorText, useApi } from "../api";
+import { bytes, extendedTo, splitPath, when } from "../format";
 import { useLoad, useRefresh } from "../hooks";
 import { t } from "../i18n";
-import type { Burial, Item } from "../types";
-import { useBatch, useConfirm, useResurrectReport } from "../ui";
+import type { Burial, BuryReply, Item } from "../types";
+import { useBatch, useConfirm, useResurrectReport, useToast } from "../ui";
 
 // ── Time ────────────────────────────────────────────────────────────────
 
@@ -52,11 +52,14 @@ export function useSelection(ids: number[]) {
   const [picked, setPicked] = useState<Set<number>>(new Set());
   // Only ids still on screen count; a refresh drops the rest silently.
   const chosen = useMemo(() => ids.filter((id) => picked.has(id)), [ids, picked]);
+  const chosenSet = useMemo(() => new Set(chosen), [chosen]);
   const has = useCallback((id: number) => picked.has(id), [picked]);
   const toggle = useCallback((id: number) => setPicked((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; }), []);
   const set = useCallback((next: number[]) => setPicked(new Set(next)), []);
+  const update = useCallback((fn: (current: ReadonlySet<number>) => Set<number>) => setPicked((s) => fn(s)), []);
+  const clear = useCallback(() => setPicked(new Set()), []);
   const all = ids.length > 0 && chosen.length === ids.length;
-  return { chosen, has, toggle, set, clear: () => setPicked(new Set()), all, toggleAll: () => setPicked(all ? new Set() : new Set(ids)) };
+  return { chosen, chosenSet, has, toggle, set, update, clear, all, toggleAll: () => setPicked(all ? new Set() : new Set(ids)) };
 }
 
 const list = (paths: string[]) => <ul>{paths.map((p) => <li key={p}>{p}</li>)}</ul>;
@@ -64,6 +67,11 @@ const list = (paths: string[]) => <ul>{paths.map((p) => <li key={p}>{p}</li>)}</
 // Each item with its current and new expiry, so nobody has to add dates up.
 export const extendList = (items: Item[], lifespan: string) => (
   <ul>{items.map((it) => { const to = extendedTo(it.expiresAt, lifespan); return <li key={it.id}>{it.path}{to ? <b className="moves">{when(it.expiresAt)} → {when(to)}</b> : null}</li>; })}</ul>
+);
+
+// Each burial with its current and postponed cremation date.
+export const extendGraveList = (graves: Burial[], lifespan: string) => (
+  <ul>{graves.map((g) => { const to = extendedTo(g.purgeAt, lifespan); return <li key={g.id}>{g.path}{to ? <b className="moves">{when(g.purgeAt)} → {when(to)}</b> : null}</li>; })}</ul>
 );
 
 // ── Graves ──────────────────────────────────────────────────────────────
@@ -79,32 +87,55 @@ export function useGraves(filter: string) {
   const graves = useMemo(() => rows.filter((r) => r.status === "buried" && r.burial).map((r) => r.burial!), [rows]);
   const pending = rows.filter((r) => r.status !== "buried");
   const sel = useSelection(useMemo(() => graves.map((g) => g.id), [graves]));
-  const bytes = graves.reduce((n, g) => n + g.size, 0);
+  const totalBytes = graves.reduce((n, g) => n + g.size, 0);
 
-  async function run(method: "Resurrect" | "Purge", ids: number[], before?: () => Promise<void>) {
+  async function run(method: "Resurrect" | "Purge", ids: number[], before?: () => Promise<void>, opts?: { showTotalSize?: boolean }) {
     if (!ids.length) return false;
     const purging = method === "Purge";
-    const paths = graves.filter((g) => ids.includes(g.id)).map((g) => g.path);
+    const picked = graves.filter((g) => ids.includes(g.id));
+    const paths = picked.map((g) => g.path);
+    const chosenBytes = picked.reduce((sum, g) => sum + (g.kind === "container" ? 0 : g.size || 0), 0);
+    const allContainers = picked.length > 0 && picked.every((g) => g.kind === "container");
+    const purgeDesc = opts?.showTotalSize
+      ? (allContainers ? t("ask.purgeDangerContainers", picked.length) : t("ask.purgeDangerBody", picked.length, bytes(chosenBytes)))
+      : t("ask.purgeBody");
     const ok = await confirm({
-      title: purging ? t("ask.purge", ids.length) : t("ask.resurrect", ids.length),
-      body: <><p>{purging ? t("ask.purgeBody") : t("ask.resurrectBody")}</p>{list(paths)}</>,
-      ok: purging ? t("purge") : t("resurrect"),
+      title: purging ? (opts?.showTotalSize ? t("ask.purgeDanger", ids.length) : t("ask.purge", ids.length)) : t("ask.resurrect", ids.length),
+      body: <><p className={purging && opts?.showTotalSize ? "cal-danger-copy" : undefined}>{purging ? purgeDesc : t("ask.resurrectBody")}</p>{list(paths)}</>,
+      ok: purging ? (opts?.showTotalSize ? t("purgeNow") : t("purge")) : t("resurrect"),
       danger: purging,
     });
     if (!ok) return false;
     const reply = await api[method](ids.map((id) => `#${id}`));
     await before?.();
-    if (purging) report(reply, t("purge"));
+    if (purging) report(reply, opts?.showTotalSize ? t("purgeNow") : t("purge"));
     else resurrected(reply);
     sel.clear();
     bump();
     return true;
   }
 
+  async function extend(lifespan: string, ids: number[] = sel.chosen, label = spanLabel(lifespan)) {
+    if (!ids.length || !api.ExtendGraves) return false;
+    const picked = graves.filter((g) => ids.includes(g.id));
+    const ok = await confirm({
+      title: t("ask.extendGraves", ids.length, label),
+      body: <><p>{t("ask.extendGravesBody")}</p>{extendGraveList(picked, lifespan)}</>,
+      ok: t("extend"),
+    });
+    if (!ok) return false;
+    report(await api.ExtendGraves(ids.map((id) => `#${id}`), lifespan), t("extend"));
+    sel.clear();
+    bump();
+    return true;
+  }
+
   return {
-    ...q, rows, graves, pending, sel, bytes,
+    ...q, rows, graves, pending, sel, bytes: totalBytes,
+    canExtend: !!api.ExtendGraves,
     resurrect: (ids: number[] = sel.chosen, before?: () => Promise<void>) => run("Resurrect", ids, before),
-    purge: (ids: number[] = sel.chosen, before?: () => Promise<void>) => run("Purge", ids, before),
+    purge: (ids: number[] = sel.chosen, before?: () => Promise<void>, opts?: { showTotalSize?: boolean }) => run("Purge", ids, before, opts),
+    extend,
   };
 }
 
@@ -115,6 +146,7 @@ export function useItems(range: "" | "24h" | "7d" = "") {
   const { version, bump } = useRefresh();
   const confirm = useConfirm();
   const report = useBatch();
+  const toast = useToast();
   const q = useLoad(() => api.Upcoming(range), [api, range, version]);
   const items = useMemo(() => q.data?.items ?? [], [q.data]);
   const sel = useSelection(useMemo(() => items.map((it) => it.id), [items]));
@@ -149,7 +181,57 @@ export function useItems(range: "" | "24h" | "7d" = "") {
     return true;
   }
 
-  return { ...q, items, sel, extend, cancel };
+  async function bury(ids: number[] = sel.chosen, opts?: { askConfirm?: boolean; undoDurationMs?: number }) {
+    if (!ids.length || !api.Bury) return false;
+    if (opts?.askConfirm) {
+      const paths = items.filter((it) => ids.includes(it.id)).map((it) => it.path);
+      const ok = await confirm({
+        title: t("ask.buryNow", ids.length),
+        body: <><p>{t("ask.buryNowBody")}</p>{list(paths)}</>,
+        ok: t("buryNow"),
+      });
+      if (!ok) return false;
+    }
+    let reply: BuryReply;
+    try {
+      reply = await api.Bury(ids.map((id) => `#${id}`));
+    } catch (err) {
+      toast(errorText(err), "error");
+      return false;
+    }
+    const results = reply.results ?? [];
+    const failed = results.filter((r) => r.error);
+    const buriedIds = reply.buriedIds && reply.buriedIds.length > 0
+      ? reply.buriedIds
+      : results.filter((r) => !r.error && r.action === "buried" && r.burial?.id != null).map((r) => r.burial!.id);
+    sel.clear();
+    bump();
+    if (buriedIds.length > 0) {
+      const undo = async () => {
+        try {
+          const undoReply = await api.Resurrect(buriedIds.map((id) => `#${id}`));
+          const undoResults = undoReply.results ?? [];
+          const undoFailed = undoResults.filter((r) => r.error);
+          if (undoReply.error || undoFailed.length) {
+            report(undoReply, t("undo"));
+          } else {
+            toast(t("cal.undoneBury", undoResults.length));
+          }
+          bump();
+        } catch (err) {
+          toast(errorText(err), "error");
+        }
+      };
+      const hasErrors = !!reply.error || failed.length > 0;
+      const text = hasErrors ? t("cal.buriedPartial", buriedIds.length, failed.length) : t("cal.buriedToast", buriedIds.length);
+      toast(text, hasErrors ? "error" : "", { label: t("undo"), run: undo, durationMs: opts?.undoDurationMs ?? 5000, dismissOnRun: true });
+    } else {
+      report(reply, t("buryNow"));
+    }
+    return true;
+  }
+
+  return { ...q, items, sel, canBury: !!api.Bury, extend, cancel, bury };
 }
 
 export type { Burial, Item };

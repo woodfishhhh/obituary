@@ -146,7 +146,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 // ── Toasts ─────────────────────────────────────────────────────────────
 
 // An action keeps the toast up longer, so there is time to reach it.
-export interface ToastAction { label: string; run: () => void }
+export interface ToastAction { label: string; run: () => void | Promise<void>; durationMs?: number; dismissOnRun?: boolean }
 type Toast = { id: number; text: string; kind: "" | "error"; action?: ToastAction };
 const ToastContext = createContext<(text: string, kind?: "" | "error", action?: ToastAction) => void>(() => {});
 export const useToast = () => useContext(ToastContext);
@@ -154,19 +154,42 @@ export const useToast = () => useContext(ToastContext);
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const seq = useRef(0);
+  const timers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
+  const dismiss = useCallback((id: number) => {
+    const timer = timers.current.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      timers.current.delete(id);
+    }
+    setToasts((list) => list.filter((x) => x.id !== id));
+  }, []);
   const push = useCallback((text: string, kind: "" | "error" = "", action?: ToastAction) => {
     const id = ++seq.current;
-    setToasts((t) => [...t, { id, text, kind, action }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), action ? 12000 : kind === "error" ? 8000 : 3200);
-  }, []);
+    setToasts((list) => [...list, { id, text, kind, action }]);
+    const ms = action?.durationMs ?? (action ? 12000 : kind === "error" ? 8000 : 3200);
+    timers.current.set(id, setTimeout(() => dismiss(id), ms));
+  }, [dismiss]);
   return (
     <ToastContext.Provider value={push}>
       {children}
       <div className="toasts" aria-live="polite">
-        {toasts.map((t) => (
-          <div key={t.id} className={`toast ${t.kind}`} role={t.kind ? "alert" : "status"}>
-            <span>{t.text}</span>
-            {t.action ? <button type="button" className="toast-act" onClick={t.action.run}>{t.action.label}</button> : null}
+        {toasts.map((item) => (
+          <div key={item.id} className={`toast ${item.kind}`} role={item.kind ? "alert" : "status"}>
+            <span>{item.text}</span>
+            {item.action ? (
+              <button
+                type="button"
+                className="toast-act"
+                onClick={() => {
+                  const act = item.action;
+                  if (!act) return;
+                  if (act.dismissOnRun) dismiss(item.id);
+                  void act.run();
+                }}
+              >
+                {item.action.label}
+              </button>
+            ) : null}
           </div>
         ))}
       </div>

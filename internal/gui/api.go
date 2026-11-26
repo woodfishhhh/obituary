@@ -75,6 +75,12 @@ type GraveReply struct {
 	Error   string             `json:"error,omitempty"`
 }
 
+type BuryReply struct {
+	Results   []core.GraveResult `json:"results"`
+	BuriedIDs []int64            `json:"buriedIds"`
+	Error     string             `json:"error,omitempty"`
+}
+
 type ItemReply struct {
 	Results []core.Result `json:"results"`
 	Error   string        `json:"error,omitempty"`

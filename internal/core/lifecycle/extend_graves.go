@@ -1,0 +1,73 @@
+package lifecycle
+
+import (
+	"errors"
+	"fmt"
+	"time"
+)
+
+// ExtendGraves pushes the cremation deadline of each referenced burial back
+// by d (counted from now if retention has already elapsed). Active tracked
+// items and burials currently being purged are refused in their result slots.
+func (s *Service) ExtendGraves(refs []string, d time.Duration) ([]GraveResult, error) {
+	if d <= 0 {
+		return nil, fmt.Errorf("duration must be positive")
+	}
+	s, notify := s.trackChanges()
+	defer notify()
+	now := s.now()
+	results := make([]GraveResult, len(refs))
+	var events []Event
+	err := s.withGraveyardLock(func() error {
+		return s.Store.UpdateGraveyard(func(st *State) error {
+			events = s.applyExtendGraves(st, refs, now, d, results)
+			return nil
+		})
+	})
+	if commitFailed(err) {
+		return nil, lifespanCommitError(err)
+	}
+	return results, errors.Join(err, s.Store.RecordCommitted(events...))
+}
+
+func (s *Service) applyExtendGraves(st *State, refs []string, now time.Time, d time.Duration, results []GraveResult) []Event {
+	var events []Event
+	for i, ref := range refs {
+		results[i].Ref = ref
+		idx, err := s.findBurial(st, ref)
+		if err != nil {
+			results[i].Error, results[i].Err = err.Error(), err
+			continue
+		}
+		if idx < 0 {
+			results[i].Err = missingBurial(ref)
+			results[i].Error = results[i].Err.Error()
+			continue
+		}
+		b := &st.Burials[idx]
+		if b.PurgeIntent != nil {
+			results[i].Error = fmt.Sprintf("#%d: purge is in progress; cannot extend", b.ID)
+			continue
+		}
+		extendBurialPurgeAt(b, now, d)
+		after := *b
+		results[i].Action, results[i].Burial, results[i].Path = ActionExtended, &after, after.Path
+		events = append(events, Event{
+			Time: now, Action: ActionExtended, ID: after.ID, Path: after.Path,
+			Detail: "expires " + after.PurgeAt.Format(time.RFC3339),
+		})
+	}
+	return events
+}
+
+func extendBurialPurgeAt(b *Burial, now time.Time, d time.Duration) {
+	base := b.PurgeAt
+	if base.Before(now) {
+		base = now
+	}
+	b.PurgeAt = base.Add(d)
+	if limit := now.Add(MaxLifespan); b.PurgeAt.After(limit) {
+		b.PurgeAt = limit
+	}
+	b.PurgeAttempts, b.NextPurgeAttempt, b.LastPurgeError = 0, time.Time{}, ""
+}

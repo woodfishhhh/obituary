@@ -41,10 +41,45 @@ export function createDemoApi(lang: Lang): { api: Api; items: () => DemoItem[]; 
       refs.forEach((ref) => { const i = items.findIndex((x) => x.id === idOf(ref)); if (i >= 0) items.splice(i, 1); });
       return wait({ results: refs.map((ref) => ({ ref, action: "canceled" })) });
     },
+    Bury: (refs) => {
+      const buriedIds: number[] = [];
+      const results = refs.map((ref) => {
+        const i = items.findIndex((x) => x.id === idOf(ref));
+        if (i < 0) return { ref, error: "not tracked" };
+        const [it] = items.splice(i, 1);
+        const nowIso = new Date().toISOString();
+        const burial: Burial = {
+          id: it.id,
+          path: it.path,
+          isDir: it.isDir,
+          kind: it.kind,
+          container: it.container,
+          size: it.kind === "container" ? 0 : it.isDir ? 18_874_368 : 2_621_440,
+          buriedAt: nowIso,
+          purgeAt: new Date(Date.now() + 7 * 24 * HOUR).toISOString(),
+          note: it.note,
+        };
+        burials.unshift(burial);
+        buriedIds.push(burial.id);
+        return { ref, action: "buried", burial: { ...burial }, path: burial.path };
+      });
+      return wait({ results, buriedIds });
+    },
     Graveyard: ({ filter }) => {
       const rows = burials.filter((b) => !filter || b.path.toLowerCase().includes(filter.toLowerCase()))
         .sort((a, b) => +new Date(b.buriedAt) - +new Date(a.buriedAt)).map((b) => ({ id: b.id, status: "buried", burial: b }));
       return wait({ rows, total: rows.length, pendingCount: 0, hasMore: false, nextAfter: "", restored: [] });
+    },
+    ExtendGraves: (refs, lifespan) => {
+      const add = (hoursOf(lifespan) || 24) * HOUR;
+      return wait({
+        results: refs.map((ref) => {
+          const b = burials.find((x) => x.id === idOf(ref));
+          if (!b) return { ref, error: "not found" };
+          b.purgeAt = new Date(Math.max(+new Date(b.purgeAt), Date.now()) + add).toISOString();
+          return { ref, action: "extended", burial: { ...b }, path: b.path };
+        }),
+      });
     },
     Resurrect: (refs) => wait({
       results: refs.map((ref) => {

@@ -14,7 +14,7 @@ import (
 // window when Settings read policies.length.
 func TestEmptyLedgerListsAreArrays(t *testing.T) {
 	a, _ := fixture(t)
-	null := regexp.MustCompile(`"(policies|proposals|rules|rows|restored|items|lines|results|changes|applied|remaining)":null`)
+	null := regexp.MustCompile(`"(policies|proposals|rules|rows|restored|items|lines|results|buriedIds|changes|applied|remaining)":null`)
 	check := func(name string, v any, err error) {
 		t.Helper()
 		data, merr := json.Marshal(v)
@@ -42,8 +42,12 @@ func TestEmptyLedgerListsAreArrays(t *testing.T) {
 	check("Resurrect", resurrect, err)
 	purge, err := a.Purge(unknown)
 	check("Purge", purge, err)
+	extendGraves, err := a.ExtendGraves(unknown, "1d")
+	check("ExtendGraves", extendGraves, err)
 	extend, err := a.Extend(unknown, "1d")
 	check("Extend", extend, err)
+	bury, err := a.Bury(unknown)
+	check("Bury", bury, err)
 	cancel, err := a.Cancel(unknown)
 	check("Cancel", cancel, err)
 	approve, err := a.Approve(unknown, []string{""})

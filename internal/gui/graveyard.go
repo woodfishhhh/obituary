@@ -161,3 +161,18 @@ func (a *API) Purge(refs []string) (GraveReply, error) {
 	results, err := a.deps.Service.PurgeRefs(refs, false)
 	return GraveReply{Results: list(results), Error: errorText(err)}, nil
 }
+
+// ExtendGraves pushes the cremation deadline of buried records back by lifespan.
+func (a *API) ExtendGraves(refs []string, lifespan string) (GraveReply, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if err := requireRefs(refs); err != nil {
+		return GraveReply{Results: []core.GraveResult{}}, err
+	}
+	duration, err := core.ParseDuration(lifespan)
+	if err != nil {
+		return GraveReply{Results: []core.GraveResult{}}, err
+	}
+	results, err := a.deps.Service.ExtendGraves(refs, duration)
+	return GraveReply{Results: list(results), Error: errorText(err)}, nil
+}

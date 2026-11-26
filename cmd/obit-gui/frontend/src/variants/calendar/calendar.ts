@@ -16,6 +16,7 @@ const variant: Variant = {
     "--text": "#111522", "--text-2": "#3A4256", "--muted": "#6E768A",
     "--accent": "#0048E8", "--on-accent": "#FFFFFF", "--on-accent-2": "#C9D8FF", "--accent-soft": "#EAF0FF",
     "--danger": "#111522", "--danger-soft": "#ECEEF3", "--warn": "#5C5000", "--warn-soft": "#FFF8C4", "--ok": "#0048E8",
+    "--cal-danger": "#D92D20", "--cal-danger-hover": "#B42318", "--cal-danger-soft": "#FEF3F2",
     "--glint": "#B9D9FF", "--cream": "#FCEF8A",
     "--today": "#F6F9FF", "--weekend": "#FAFBFC", "--target": "#F9FBFF",
     "--chip-shadow": "rgba(17, 21, 34, 0.05)", "--chip-on-shadow": "rgba(0, 72, 232, 0.28)",

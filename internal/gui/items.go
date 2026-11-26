@@ -75,3 +75,24 @@ func (a *API) Cancel(refs []string) (ItemReply, error) {
 	results, err := a.deps.Service.Cancel(refs)
 	return ItemReply{Results: list(results), Error: errorText(err)}, nil
 }
+
+// Bury moves tracked items into the graveyard right away (or Recycle Bin in recycle mode).
+func (a *API) Bury(refs []string) (BuryReply, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if err := requireRefs(refs); err != nil {
+		return BuryReply{Results: []core.GraveResult{}, BuriedIDs: []int64{}}, err
+	}
+	results, err := a.deps.Service.BuryTracked(refs)
+	return BuryReply{Results: list(results), BuriedIDs: buriedIDs(results), Error: errorText(err)}, nil
+}
+
+func buriedIDs(results []core.GraveResult) []int64 {
+	ids := make([]int64, 0, len(results))
+	for _, r := range results {
+		if r.Error == "" && r.Action == core.ActionBuried && r.Burial != nil {
+			ids = append(ids, r.Burial.ID)
+		}
+	}
+	return ids
+}

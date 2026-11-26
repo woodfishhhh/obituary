@@ -120,3 +120,38 @@ func TestGraveyardCursorUsesTimeBeforeID(t *testing.T) {
 		t.Fatalf("cursor ordering: %+v %v", page, err)
 	}
 }
+
+func TestExtendGravesAndPurgeRejectActiveItems(t *testing.T) {
+	a, root := fixture(t)
+	b1 := bury(t, a, filepath.Join(root, "grave-a.log"))
+	b2 := bury(t, a, filepath.Join(root, "grave-b.log"))
+	active := add(t, a, filepath.Join(root, "active.log"), time.Now().Add(24*time.Hour))
+
+	if _, err := a.ExtendGraves(nil, "1d"); err == nil {
+		t.Fatal("empty refs accepted")
+	}
+	if _, err := a.ExtendGraves([]string{"#" + ref(b1.ID)}, "bad"); err == nil {
+		t.Fatal("invalid duration accepted")
+	}
+	ext, err := a.ExtendGraves([]string{"#" + ref(b1.ID), "#" + ref(active.ID), "#" + ref(b2.ID)}, "3d")
+	if err != nil {
+		t.Fatalf("ExtendGraves: %v", err)
+	}
+	if ext.Results[0].Action != core.ActionExtended || !ext.Results[0].Burial.PurgeAt.Equal(b1.PurgeAt.Add(72*time.Hour)) {
+		t.Fatalf("b1 not extended: %+v", ext.Results[0])
+	}
+	if ext.Results[1].Error == "" {
+		t.Fatalf("active item must fail ExtendGraves: %+v", ext.Results[1])
+	}
+	if ext.Results[2].Action != core.ActionExtended {
+		t.Fatalf("b2 not extended: %+v", ext.Results[2])
+	}
+	// Batch purge also refuses active tracked item while purging both graves.
+	purged, err := a.Purge([]string{"#" + ref(b1.ID), "#" + ref(active.ID), "#" + ref(b2.ID)})
+	if err != nil {
+		t.Fatalf("Purge: %v", err)
+	}
+	if purged.Results[0].Action != core.ActionPurged || purged.Results[1].Error == "" || purged.Results[2].Action != core.ActionPurged {
+		t.Fatalf("unexpected purge batch: %+v", purged.Results)
+	}
+}

@@ -159,8 +159,19 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
     Purge: (refs) => {
       const results = refs.map((ref) => {
         const i = s.burials.findIndex((b) => b.id === idOf(ref));
-        if (i >= 0) s.burials.splice(i, 1);
+        if (i < 0) return { ref, error: "not found" };
+        s.burials.splice(i, 1);
         return { ref, action: "purged" };
+      });
+      return wait({ results });
+    },
+    ExtendGraves: (refs, lifespan) => {
+      const add = hoursOf(lifespan) || 24;
+      const results = refs.map((ref) => {
+        const b = s.burials.find((x) => x.id === idOf(ref));
+        if (!b) return { ref, error: "not found" };
+        b.purgeAt = new Date(Math.max(+new Date(b.purgeAt), Date.now()) + add * hour).toISOString();
+        return { ref, action: "extended", burial: { ...b }, path: b.path };
       });
       return wait({ results });
     },
@@ -176,6 +187,30 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
         return { ref, action: "extended" };
       });
       return wait({ results });
+    },
+    Bury: (refs) => {
+      const buriedIds: number[] = [];
+      const results = refs.map((ref) => {
+        const i = s.items.findIndex((x) => x.id === idOf(ref));
+        if (i < 0) return { ref, error: "not tracked" };
+        const [it] = s.items.splice(i, 1);
+        const nowIso = new Date().toISOString();
+        const burial: Burial = {
+          id: it.id,
+          path: it.path,
+          isDir: it.isDir,
+          kind: it.kind,
+          container: it.container,
+          size: it.kind === "container" ? 0 : it.isDir ? 18_874_368 : 2_621_440,
+          buriedAt: nowIso,
+          purgeAt: new Date(Date.now() + settings.retentionDays * 24 * hour).toISOString(),
+          note: it.note,
+        };
+        s.burials.unshift(burial);
+        buriedIds.push(burial.id);
+        return { ref, action: "buried", burial: { ...burial }, path: burial.path };
+      });
+      return wait({ results, buriedIds });
     },
     Retry: (refs) => {
       refs.forEach((ref) => { const it = s.items.find((x) => x.id === idOf(ref)); if (it) { it.lastError = undefined; it.nextAttempt = undefined; } });

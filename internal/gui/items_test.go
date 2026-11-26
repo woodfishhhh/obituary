@@ -116,3 +116,48 @@ func TestRetryMakesAStuckItemDue(t *testing.T) {
 		t.Fatal("empty refs accepted")
 	}
 }
+
+func TestBuryBatchUndoPartialAndCrossState(t *testing.T) {
+	a, root := fixture(t)
+	firstPath := filepath.Join(root, "first.bin")
+	secondPath := filepath.Join(root, "second.bin")
+	first := add(t, a, firstPath, time.Now().Add(24*time.Hour))
+	second := add(t, a, secondPath, time.Now().Add(48*time.Hour))
+	write(t, firstPath, strings.Repeat("x", 300))
+	write(t, secondPath, strings.Repeat("y", 700))
+	already := bury(t, a, filepath.Join(root, "already.bin"))
+
+	if _, err := a.Bury(nil); err == nil {
+		t.Fatal("empty refs accepted")
+	}
+	out, err := a.Bury([]string{"#" + ref(first.ID), "#" + ref(already.ID), "#" + ref(second.ID), "#999999"})
+	if err != nil {
+		t.Fatalf("Bury: %v", err)
+	}
+	if len(out.BuriedIDs) != 2 || out.BuriedIDs[0] != first.ID || out.BuriedIDs[1] != second.ID {
+		t.Fatalf("unexpected BuriedIDs: %+v", out)
+	}
+	if out.Results[1].Error == "" || out.Results[3].Error == "" {
+		t.Fatalf("cross-state and missing refs must report errors: %+v", out.Results)
+	}
+	// Verify graveyard rows carry accurate byte sizes for total size calculation.
+	page, err := a.Graveyard(GraveyardQuery{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sizes := map[int64]int64{}
+	for _, row := range page.Rows {
+		if row.Burial != nil {
+			sizes[row.ID] = row.Burial.Size
+		}
+	}
+	if sizes[first.ID] != 300 || sizes[second.ID] != 700 {
+		t.Fatalf("burial sizes missing: %+v", sizes)
+	}
+	// Undo via Resurrect restores both newly buried items in place.
+	undoRefs := []string{"#" + ref(out.BuriedIDs[0]), "#" + ref(out.BuriedIDs[1])}
+	restored, err := a.Resurrect(undoRefs)
+	if err != nil || len(restored.Results) != 2 || restored.Results[0].Action != core.ActionResurrected || restored.Results[1].Action != core.ActionResurrected {
+		t.Fatalf("undo resurrect: %+v %v", restored, err)
+	}
+}

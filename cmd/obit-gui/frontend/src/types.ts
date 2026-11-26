@@ -263,18 +263,23 @@ export interface LogPage {
   scannedLines: number;
 }
 
-export interface GraveResult { ref: string; action?: string; path?: string; error?: string }
+export interface GraveResult { ref: string; action?: string; burial?: Burial; path?: string; error?: string }
 export interface Result { ref: string; action?: string; error?: string }
 export interface BatchReply<T> { results: T[]; error?: string; errorCode?: string }
+export interface BuryReply extends BatchReply<GraveResult> { buriedIds?: number[] }
 
 export interface Api {
   Summary(): Promise<Summary>;
   Graveyard(q: { filter: string; limit: number; after: string }): Promise<GraveyardPage>;
   Resurrect(refs: string[]): Promise<BatchReply<GraveResult>>;
   Purge(refs: string[]): Promise<BatchReply<GraveResult>>;
+  // Missing on an older backend.
+  ExtendGraves?(refs: string[], lifespan: string): Promise<BatchReply<GraveResult>>;
   Upcoming(within: "" | "24h" | "7d"): Promise<{ items: Item[] }>;
   Extend(refs: string[], lifespan: string): Promise<BatchReply<Result>>;
   Cancel(refs: string[]): Promise<BatchReply<Result>>;
+  // Missing on an older backend.
+  Bury?(refs: string[]): Promise<BuryReply>;
   // Missing on an older backend.
   Retry?(refs: string[]): Promise<BatchReply<Result>>;
   // handled and mode are missing on an older backend.
