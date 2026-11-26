@@ -1040,8 +1040,6 @@ Obituary の連携とバックグラウンドサービスを削除する。既�
 
 ### `obit watch`
 
-個別に承認するには `[watch]` に `file_expiry = "propose"` を設定し、`obit proposals` で確認して `obit approve <ID>` で承認します。期限切れのサブフォルダーには引き続き提案が作成され、macOS と Linux では承認しても移動されません。
-
 フォルダー直下の各項目に、それぞれ寿命を設定する
 
 使い方: `obit watch <directory> <lifespan> | watch --list | watch --remove <directory> [flags]`

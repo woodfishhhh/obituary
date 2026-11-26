@@ -8,6 +8,36 @@ obit docker list               # registered containers (--json works too)
 obit resurrect <id>            # start a container that was stopped at expiry
 ```
 
+## Set a lifespan when starting a container
+
+Temporary containers are easiest to forget when no lifespan is set up front. `docker run -d` prints the full container ID to standard output, so you can pass it straight to `obit docker add`:
+
+```powershell
+# PowerShell
+$cid = docker run -d --name tmp-redis redis:7
+if ($LASTEXITCODE -eq 0) { obit docker add $cid 4h }
+```
+
+```bash
+# Bash / zsh (no name required; pass the returned ID directly)
+cid=$(docker run -d redis:7) && obit docker add "$cid" 4h
+```
+
+`obit docker add <name-or-id> <lifespan>` accepts a container name, a short ID or the full 64-character ID, and has no `--at` or `--note` flags. It prints the ledger number and expiry time (`#<id> docker:<name> (<12-char-id>)  expires <time>`). Do not pass `--rm` to `docker run`: Docker removes an AutoRemove container as soon as it stops, so `obit docker add` refuses to register it. Before expiry, use the number from `obit docker list` or `obit list` with `obit extend <id> <lifespan>` or `obit spare <id>`.
+
+## Inspect and recover stopped containers during retention
+
+Once a container expires and `docker stop` runs, it leaves `obit docker list` (which shows only active tracked containers) and moves into the graveyard for `[graveyard] retention_days` (7 days by default). Use these commands to review or bring back stopped containers during retention:
+
+```powershell
+obit graveyard                 # list all restorable burials; containers show as docker:<name> (<12-char-id>) with purge countdown
+obit graveyard --json          # machine-readable output; filter burials where kind == "container"
+obit stats                     # total graveyard count and the next purge time
+obit resurrect <id>            # start the stopped container by its numeric graveyard ID and stop tracking it
+```
+
+Containers added manually with `obit docker add` are not bound to a project directory, so `obit graveyard --here` omits them; only containers registered automatically or approved from a project proposal match `--here`. On desktop, the tray menu shows the graveyard count and up to the 10 most recent burials (click one to resurrect it), and the window's Graveyard page lets you search by name, check remaining retention time and resurrect selected entries. The background runner does not send proactive desktop notifications when a container stops or approaches purge, so check `obit graveyard` or the Graveyard page when you want to review stopped containers before the retention window closes.
+
 ## Give a volume a lifespan or bury it now
 
 Volumes are never registered automatically. Obituary only handles a volume you explicitly mark or bury; it does not remove images or networks.

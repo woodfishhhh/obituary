@@ -1049,8 +1049,6 @@ obit mktemp 2h --name screenshots
 
 ### `obit watch`
 
-如需逐项批准，在配置文件的 `[watch]` 中设 `file_expiry = "propose"`。用 `obit proposals` 查看，再用 `obit approve <ID>` 批准。子目录仍只生成提议，在 macOS 和 Linux 上即使批准也会保留。
-
 给文件夹里的每个第一层子项各自设定寿命
 
 用法: `obit watch <directory> <lifespan> | watch --list | watch --remove <directory> [flags]`

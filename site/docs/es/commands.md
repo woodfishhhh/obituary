@@ -1049,8 +1049,6 @@ Uso: `obit update [flags]`
 
 ### `obit watch`
 
-Para aprobar cada archivo, establece `file_expiry = "propose"` en `[watch]`. Revisa las propuestas con `obit proposals` y aprueba con `obit approve <ID>`. Las subcarpetas caducadas siguen generando propuestas y se quedan en su sitio incluso tras la aprobación en macOS y Linux.
-
 Dar a cada elemento de primer nivel de una carpeta su propia vida útil
 
 Uso: `obit watch <directory> <lifespan> | watch --list | watch --remove <directory> [flags]`

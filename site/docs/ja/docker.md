@@ -8,6 +8,36 @@ obit docker list               # registered containers (--json works too)
 obit resurrect <id>            # start a container that was stopped at expiry
 ```
 
+## コンテナー作成時に寿命を登録する
+
+一時コンテナーは起動時に寿命を決めておかないと止め忘れがちです。`docker run -d` は完全なコンテナー ID を標準出力に返すため、そのまま `obit docker add` に渡せます。
+
+```powershell
+# PowerShell
+$cid = docker run -d --name tmp-redis redis:7
+if ($LASTEXITCODE -eq 0) { obit docker add $cid 4h }
+```
+
+```bash
+# Bash / zsh (no name required; pass the returned ID directly)
+cid=$(docker run -d redis:7) && obit docker add "$cid" 4h
+```
+
+`obit docker add <name-or-id> <lifespan>` はコンテナー名、短い ID、または完全な 64 文字 ID を受け取り、`--at` や `--note` オプションはありません。登録すると台帳番号と期限時刻（`#<id> docker:<name> (<12-char-id>)  expires <time>`）を表示します。`docker run --rm` は付けないでください。AutoRemove 付きのコンテナーは停止と同時に Docker が削除するため、`obit docker add` は登録を拒否します。期限前に延長または追跡解除する場合は、`obit docker list` か `obit list` に出た番号で `obit extend <id> <lifespan>` または `obit spare <id>` を実行します。
+
+## 保持期間中に停止済みコンテナーを確認・復活する
+
+期限切れで `docker stop` されたコンテナーは、稼働中の追跡一覧である `obit docker list` から墓地へ移り、`[graveyard] retention_days`（既定は 7 日間）の保持期間に入ります。保持期間中の停止済みコンテナーを確認・復活するには次のコマンドを使います。
+
+```powershell
+obit graveyard                 # list all restorable burials; containers show as docker:<name> (<12-char-id>) with purge countdown
+obit graveyard --json          # machine-readable output; filter burials where kind == "container"
+obit stats                     # total graveyard count and the next purge time
+obit resurrect <id>            # start the stopped container by its numeric graveyard ID and stop tracking it
+```
+
+`obit docker add` で手動登録したコンテナーはプロジェクトディレクトリに紐付かないため、`obit graveyard --here` には表示されません。`--here` に一致するのはプロジェクト経由で自動登録または提案承認されたコンテナーだけです。デスクトップ版ではトレイメニューで墓地の件数と直近 10 件までの埋葬項目を確認でき（項目をクリックするとそのまま復活します）、ウィンドウの「Graveyard」ページでは名前で検索し、残りの保持期間を確認して選んで復活できます。コンテナー停止時や永久削除の直前にバックグラウンドからシステム通知は送られないため、保持期間中に見直すときは `obit graveyard` かウィンドウの墓地ページを確認してください。
+
 ## ボリュームに寿命を設定する・すぐに埋葬する
 
 ボリュームは自動登録されません。明示的に登録または埋葬したものだけが対象です。イメージやネットワークは削除しません。

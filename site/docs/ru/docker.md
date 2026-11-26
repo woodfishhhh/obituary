@@ -8,6 +8,36 @@ obit docker list               # registered containers (--json works too)
 obit resurrect <id>            # start a container that was stopped at expiry
 ```
 
+## Назначить срок жизни сразу при запуске контейнера
+
+Временные контейнеры чаще всего забывают остановить, когда срок не задан в момент запуска. Команда `docker run -d` выводит полный ID контейнера в стандартный вывод, и его можно сразу передать в `obit docker add`:
+
+```powershell
+# PowerShell
+$cid = docker run -d --name tmp-redis redis:7
+if ($LASTEXITCODE -eq 0) { obit docker add $cid 4h }
+```
+
+```bash
+# Bash / zsh (no name required; pass the returned ID directly)
+cid=$(docker run -d redis:7) && obit docker add "$cid" 4h
+```
+
+`obit docker add <name-or-id> <lifespan>` принимает имя контейнера, короткий ID или полный 64-символьный ID и не поддерживает флаги `--at` и `--note`. После регистрации команда выводит номер записи и время истечения (`#<id> docker:<name> (<12-char-id>)  expires <time>`). Не добавляйте `--rm` к `docker run`: Docker удаляет контейнеры с AutoRemove сразу после остановки, поэтому `obit docker add` отказывается их регистрировать. До истечения срока можно использовать номер из `obit docker list` или `obit list` с командами `obit extend <id> <lifespan>` и `obit spare <id>`.
+
+## Проверить и воскресить остановленные контейнеры в период хранения
+
+Когда срок жизни контейнера истекает и выполняется `docker stop`, он исчезает из `obit docker list` (где показаны только активные отслеживаемые контейнеры) и попадает на кладбище на срок `[graveyard] retention_days` (по умолчанию 7 дней). Просмотреть или вернуть остановленные контейнеры в этот период можно так:
+
+```powershell
+obit graveyard                 # list all restorable burials; containers show as docker:<name> (<12-char-id>) with purge countdown
+obit graveyard --json          # machine-readable output; filter burials where kind == "container"
+obit stats                     # total graveyard count and the next purge time
+obit resurrect <id>            # start the stopped container by its numeric graveyard ID and stop tracking it
+```
+
+Контейнеры, зарегистрированные вручную через `obit docker add`, не привязаны к каталогу проекта и поэтому не попадают в выдачу `obit graveyard --here`; под `--here` попадают только контейнеры из автоматической регистрации или одобренного предложения проекта. На рабочем столе меню в трее показывает общее число записей на кладбище и до 10 последних похороненных объектов (нажатие сразу воскрешает запись), а на странице кладбища в окне программы можно искать по имени, видеть обратный отсчёт до удаления и воскрешать выбранные записи. Фоновый процесс не отправляет системные уведомления при остановке контейнера или перед окончательным удалением, поэтому для проверки остановленных контейнеров до конца срока хранения открывайте `obit graveyard` или страницу кладбища.
+
 ## Назначить тому срок или похоронить его сразу
 
 Тома не регистрируются автоматически. Obituary обрабатывает только тома, которые вы явно зарегистрировали или похоронили, и не удаляет образы и сети.
