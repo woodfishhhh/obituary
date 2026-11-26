@@ -22,7 +22,7 @@ func (e *Engine) RefreshProposals() error {
 	}
 	groups := make(map[string][]core.Proposal)
 	for _, p := range st.Proposals {
-		if p.Kind == core.ProposalWatch || p.Kind == core.ProposalWatchBurial || p.Kind == core.ProposalContainer {
+		if p.Kind == core.ProposalWatch || p.Kind == core.ProposalWatchBurial || p.Kind == core.ProposalContainer || p.Kind == core.ProposalGraveyardQuota {
 			continue
 		}
 		groups[p.Project] = append(groups[p.Project], p)
@@ -221,7 +221,26 @@ func (e *Engine) approveWatchProposal(p core.Proposal, r *core.ProposalResult) b
 		}
 		return true
 	}
+	if p.Kind == core.ProposalGraveyardQuota {
+		e.approveQuotaProposal(p, r)
+		return true
+	}
 	return false
+}
+
+func (e *Engine) approveQuotaProposal(p core.Proposal, r *core.ProposalResult) {
+	outcome, err := e.Svc.ApproveQuotaProposal(p)
+	if err == nil && outcome.Action != core.ActionBuried {
+		err = errors.New(outcome.Detail)
+	}
+	if err != nil {
+		r.Error = err.Error()
+		if errors.Is(err, core.ErrProposalChanged) {
+			r.ErrorCode = core.ErrorCodeProposalChanged
+		}
+		return
+	}
+	r.Results = []core.Result{{Ref: outcome.Path, Item: &outcome.Item}}
 }
 
 func (e *Engine) approveCandidates(p core.Proposal, located locations, class string) ([]core.Result, []core.Candidate, error) {

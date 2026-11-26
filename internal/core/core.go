@@ -310,3 +310,14 @@ const ActionProposed = lifecycle.ActionProposed
 type WatchBurialReview = lifecycle.WatchBurialReview
 
 type WatchStatus = lifecycle.WatchStatus
+
+const (
+	ProposalGraveyardQuota = lifecycle.ProposalGraveyardQuota
+	ActionQuotaExceeded    = lifecycle.ActionQuotaExceeded
+	PurgeBasisQuotaFIFO    = lifecycle.PurgeBasisQuotaFIFO
+)
+
+type QuotaBurialReview = lifecycle.QuotaBurialReview
+type QuotaOverflow = lifecycle.QuotaOverflow
+type QuotaEvictionItem = lifecycle.QuotaEvictionItem
+type QuotaEviction = lifecycle.QuotaEviction

@@ -160,3 +160,47 @@ func TestSettingsReportLifetimeClearing(t *testing.T) {
 		t.Fatalf("after one burial: %+v %v", out.Lifetime, err)
 	}
 }
+
+func TestGraveyardMaxSizePreviewAndApply(t *testing.T) {
+	testenv.WindowsOnly(t, "GUI settings include Windows desktop integration; POSIX ships the CLI")
+	a, root := fixture(t)
+	f1 := filepath.Join(root, "work", "a.bin")
+	f2 := filepath.Join(root, "work", "b.bin")
+	write(t, f1, strings.Repeat("a", 3000))
+	write(t, f2, strings.Repeat("b", 3000))
+	if _, err := a.deps.Service.Bury([]string{f1}, false, ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.deps.Service.Bury([]string{f2}, false, ""); err != nil {
+		t.Fatal(err)
+	}
+	// Read-only preview reports 1 oldest item evicted without touching disk or config.
+	preview, err := a.PreviewGraveyardQuotaEviction("4000")
+	if err != nil || preview.BeforeBytes != 6000 || preview.PurgedCount != 1 || preview.FreedBytes != 3000 || preview.AfterBytes != 3000 {
+		t.Fatalf("preview: %+v %v", preview, err)
+	}
+	page, err := a.Graveyard(GraveyardQuery{Limit: 50})
+	if err != nil || page.Total != 2 || page.GraveBytes != 6000 || page.GraveMaxBytes != 0 {
+		t.Fatalf("graveyard after preview: %+v %v", page, err)
+	}
+	// Applying lower limit writes config and runs FIFO eviction.
+	plan, err := a.PlanGraveyardMaxSize("4000")
+	if err != nil || len(plan.Changes) != 1 {
+		t.Fatalf("plan: %+v %v", plan, err)
+	}
+	receipt, err := a.ApplyPlan(plan.ID)
+	if err != nil || receipt.QuotaEviction == nil || receipt.QuotaEviction.PurgedCount != 1 {
+		t.Fatalf("apply: %+v %v", receipt, err)
+	}
+	s, err := a.Settings()
+	if err != nil || s.GraveyardMaxSize != "4000" || s.GraveyardMaxBytes != 4000 || s.GraveCount != 1 || s.GraveBytes != 3000 {
+		t.Fatalf("settings after apply: %+v %v", s, err)
+	}
+	page, err = a.Graveyard(GraveyardQuery{Limit: 50})
+	if err != nil || page.Total != 1 || page.GraveBytes != 3000 || page.GraveMaxBytes != 4000 {
+		t.Fatalf("graveyard after apply: %+v %v", page, err)
+	}
+	if _, err := a.PreviewGraveyardQuotaEviction("-1GB"); err == nil {
+		t.Fatal("expected negative max size to fail")
+	}
+}

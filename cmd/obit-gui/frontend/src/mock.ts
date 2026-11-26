@@ -1,6 +1,6 @@
 // An in-memory stand-in for the Go backend, used by `pnpm dev` and the
 // playground. Actions change its state, so a preview behaves like the app.
-import type { Api, AutoHandled, Burial, Candidate, Item, Plan, PlanReceipt, Proposal, ProposalMode, ProposalResult, RuleFile, Settings, UpdateInfo, WatchPolicy } from "./types";
+import type { Api, AutoHandled, Burial, Candidate, Item, Plan, PlanReceipt, Proposal, ProposalMode, ProposalResult, QuotaEviction, RuleFile, Settings, UpdateInfo, WatchPolicy } from "./types";
 
 export type Scenario = "normal" | "busy" | "empty";
 
@@ -80,10 +80,50 @@ type Receipt = { id: number; class: AutoHandled["class"]; at: string };
 
 export function createMockApi(scenario: Scenario = "normal"): Api {
   const s = seed(scenario);
+  const quotaDemo = typeof location !== "undefined" && new URLSearchParams(location.search).get("quotaDemo") === "1";
+  const MiB = 1024 ** 2;
+  const GiB = 1024 ** 3;
+  const parseQuota = (raw: string): { norm: string; bytes: number } => {
+    const trimmed = raw.trim();
+    if (!trimmed || trimmed === "0" || trimmed.toLowerCase() === "unlimited") return { norm: "", bytes: 0 };
+    const m = /^(\d+(?:\.\d+)?)\s*(b|kb|kib|k|mb|mib|m|gb|gib|g)?$/i.exec(trimmed);
+    if (!m) throw new Error(`invalid size ${raw}`);
+    const n = Number(m[1]);
+    if (!Number.isFinite(n) || n <= 0) throw new Error(`size must be positive: ${raw}`);
+    const u = (m[2] ?? "b").toLowerCase();
+    const mult = u.startsWith("g") ? GiB : u.startsWith("m") ? MiB : u.startsWith("k") ? 1024 : 1;
+    const unit = u.startsWith("g") ? "GB" : u.startsWith("m") ? "MB" : u.startsWith("k") ? "KB" : "";
+    return { norm: `${n}${unit}`, bytes: Math.round(n * mult) };
+  };
+  if (quotaDemo) {
+    s.proposals.unshift({
+      id: 40,
+      kind: "graveyard-quota",
+      project: SHOP,
+      createdAt: at(-0.2),
+      candidates: [{ path: `${SHOP}\\models\\training-weights-fp16.bin`, lifespan: "quota", rule: "单件体积 850.0 MB 超出墓地容量上限 500.0 MB，未移入墓地；请选择永久删除、延长、不再跟踪，或调高墓地容量上限", size: 850 * MiB }],
+      quotaReview: { itemBytes: 850 * MiB, maxBytes: 500 * MiB, reason: "bury", isDir: false },
+    });
+  }
+  const diskBurials = () => s.burials.filter((b) => !b.kind);
+  const diskBytes = () => diskBurials().reduce((n, b) => n + b.size, 0);
+  const previewEviction = (maxBytes: number): QuotaEviction => {
+    const beforeBytes = diskBytes();
+    if (maxBytes <= 0 || beforeBytes <= maxBytes) return { maxBytes, beforeBytes, afterBytes: beforeBytes, freedBytes: 0, purgedCount: 0, items: [] };
+    const ordered = [...diskBurials()].sort((a, b) => +new Date(a.buriedAt) - +new Date(b.buriedAt) || a.id - b.id);
+    let rem = beforeBytes;
+    const items: QuotaEviction["items"] = [];
+    for (const b of ordered) {
+      if (rem <= maxBytes) break;
+      rem -= b.size;
+      items.push({ id: b.id, path: b.path, size: b.size, buriedAt: b.buriedAt });
+    }
+    return { maxBytes, beforeBytes, afterBytes: Math.max(0, rem), freedBytes: beforeBytes - Math.max(0, rem), purgedCount: items.length, items };
+  };
   // "auto" resolves the way the backend does from the Windows display
   // language; the browser's language stands in for it here.
   const windowsLanguage = () => (navigator.language.toLowerCase().startsWith("zh") ? "zh-CN" : "en");
-  const settings: Settings = { capabilities: { contextMenu: true, taskbar: true, startMenu: true, desktopShortcut: true }, mode: "graveyard", retentionDays: 7, configPath: "C:\\Users\\me\\AppData\\Roaming\\obituary\\config.toml", contextMenuInstalled: true, contextMenuCurrent: true, contextMenuDetail: "", autostart: true, paused: false, language: "auto", effectiveLanguage: windowsLanguage(), sessionSummary: false, sessionCleanup: true, downloads: DL, trayIcon: true, taskbar: true, startMenu: true, desktopShortcut: true,
+  const settings: Settings = { capabilities: { contextMenu: true, taskbar: true, startMenu: true, desktopShortcut: true }, mode: "graveyard", retentionDays: 7, graveyardMaxSize: quotaDemo ? "500MB" : "", graveyardMaxBytes: quotaDemo ? 500 * MiB : 0, configPath: "C:\\Users\\me\\AppData\\Roaming\\obituary\\config.toml", contextMenuInstalled: true, contextMenuCurrent: true, contextMenuDetail: "", autostart: true, paused: false, language: "auto", effectiveLanguage: windowsLanguage(), sessionSummary: false, sessionCleanup: true, downloads: DL, trayIcon: true, taskbar: true, startMenu: true, desktopShortcut: true,
     lifetime: scenario === "empty" ? { buried: 0, buriedBytes: 0, purgedBytes: 0, resurrected: 0 } : { buried: 216, buriedBytes: 1_395_864_371, purgedBytes: 29_884_416, resurrected: 2 } };
   const watches: WatchPolicy[] = scenario === "empty" ? [] : [{ id: 3, path: DL, lifespan: "2w", age: "first-seen", createdAt: at(-500), consent: "approved", rev: 1, approvedRev: 1 }];
   const plans = new Map<string, () => PlanReceipt>();
@@ -139,13 +179,15 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
   return {
     Summary: () => wait({
       trackedCount: s.items.length, graveCount: s.burials.length, graveBytes: s.burials.reduce((n, b) => n + b.size, 0),
+      graveMaxBytes: settings.graveyardMaxBytes ?? 0,
+      quotaPendingCount: s.proposals.filter((p) => p.kind === "graveyard-quota").length,
       pendingGraveCount: 0, decisionCount: s.proposals.length + s.rules.filter((r) => r.status !== "trusted").length + s.items.filter((x) => x.nextAttempt?.startsWith("9999")).length, paused: settings.paused,
       autoMode: proposalMode,
     }),
     Graveyard: ({ filter }) => {
       const rows = s.burials.filter((b) => !filter || b.path.toLowerCase().includes(filter.toLowerCase()))
         .sort((a, b) => +new Date(b.buriedAt) - +new Date(a.buriedAt)).map((b) => ({ id: b.id, status: "buried", burial: b }));
-      return wait({ rows, total: rows.length, pendingCount: 0, hasMore: false, nextAfter: "", restored: [] });
+      return wait({ rows, total: rows.length, pendingCount: 0, graveBytes: diskBytes(), graveMaxBytes: settings.graveyardMaxBytes ?? 0, hasMore: false, nextAfter: "", restored: [] });
     },
     Resurrect: (refs) => {
       const results = refs.map((ref) => {
@@ -189,6 +231,24 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
     PlanProposalMode: (mode) => plan("proposalMode", mode === proposalMode ? [] : [{ target: "[proposals] mode", before: proposalMode, after: mode }], () => { proposalMode = mode; }),
     Approve: (refs, fingerprints) => wait({ results: refs.map((ref, i) => decide(ref, fingerprints[i], true)) }),
     Reject: (refs, fingerprints) => wait({ results: refs.map((ref, i) => decide(ref, fingerprints[i], false)) }),
+    PurgeQuotaProposal: (ref, seen) => {
+      const i = s.proposals.findIndex((p) => p.id === idOf(ref));
+      if (i < 0) return wait({ results: [{ ref, error: "没有这个提议" }] });
+      const p = s.proposals[i];
+      if (seen !== fingerprint(p)) return wait({ results: [{ ref, error: "提议已变化，请重新查看", errorCode: "proposal_changed" }], errorCode: "proposal_changed" });
+      s.proposals.splice(i, 1);
+      return wait({ results: [{ ref, proposal: view(p), results: [{ ref: p.candidates[0]?.path ?? ref, action: "purged" }] }] });
+    },
+    ExtendQuotaProposal: (ref, seen, lifespan) => {
+      const i = s.proposals.findIndex((p) => p.id === idOf(ref));
+      if (i < 0) return wait({ results: [{ ref, error: "没有这个提议" }] });
+      const p = s.proposals[i];
+      if (seen !== fingerprint(p)) return wait({ results: [{ ref, error: "提议已变化，请重新查看", errorCode: "proposal_changed" }], errorCode: "proposal_changed" });
+      s.proposals.splice(i, 1);
+      const path = p.candidates[0]?.path ?? ref;
+      s.items.push({ id: ++nextItem, path, isDir: !!p.quotaReview?.isDir, createdAt: new Date().toISOString(), expiresAt: at(hoursOf(lifespan) || 24), source: "cli" });
+      return wait({ results: [{ ref, proposal: view(p), results: [{ ref: path, action: "added" }] }] });
+    },
     Rules: () => wait({ rules: s.rules.map((r) => ({ ...r })) }),
     Trust: (path) => { const r = s.rules.find((x) => x.path === path)!; r.status = "trusted"; return wait({ ...r }); },
     Untrust: (path) => { const r = s.rules.find((x) => x.path === path)!; r.status = "untrusted"; return wait({ action: "untrusted", path, changed: true }); },
@@ -203,11 +263,32 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
     PickFolder: () => wait(DL.replace("Downloads", "Videos\\Captures")),
     ShowInFolder: () => wait(undefined),
     RemoveWatch: (path) => { const i = watches.findIndex((w) => w.path === path); if (i >= 0) watches.splice(i, 1); return wait({ action: "removed", changed: i >= 0 }); },
-    Settings: () => wait({ ...settings, proposalMode }),
+    Settings: () => wait({ ...settings, graveCount: diskBurials().length, graveBytes: diskBytes(), proposalMode }),
     PlanSettings: (mode, days) => plan("settings", [
       ...(mode !== settings.mode ? [{ target: "[graveyard] mode", before: settings.mode, after: mode }] : []),
       ...(days !== settings.retentionDays ? [{ target: "[graveyard] retention_days", before: String(settings.retentionDays), after: String(days) }] : []),
     ], () => { settings.mode = mode; settings.retentionDays = days; }),
+    PreviewGraveyardQuotaEviction: (maxSize) => {
+      const { bytes: maxBytes } = parseQuota(maxSize);
+      return wait(previewEviction(maxBytes));
+    },
+    PlanGraveyardMaxSize: (maxSize) => {
+      const { norm, bytes: maxBytes } = parseQuota(maxSize);
+      const changes = norm === (settings.graveyardMaxSize ?? "") ? [] : [{ target: "[graveyard] max_size", before: settings.graveyardMaxSize ?? "", after: norm }];
+      return plan("graveyardMaxSize", changes, () => {
+        settings.graveyardMaxSize = norm;
+        settings.graveyardMaxBytes = maxBytes;
+        const ev = previewEviction(maxBytes);
+        if (ev.items?.length) {
+          const drop = new Set(ev.items.map((x) => x.id));
+          for (let i = s.burials.length - 1; i >= 0; i--) {
+            if (drop.has(s.burials[i].id)) s.burials.splice(i, 1);
+          }
+          return { action: "graveyardMaxSize", changed: true, applied: [], remaining: [], quotaEviction: ev };
+        }
+        return { action: "graveyardMaxSize", changed: changes.length > 0, applied: [], remaining: [] };
+      });
+    },
     PlanContextMenu: (on) => {
       const entries: [string, string, string][] = [
         ["*\\shell\\Obituary.Mark", "文件的右键菜单", "写讣告"],

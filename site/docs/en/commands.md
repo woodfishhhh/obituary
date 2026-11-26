@@ -251,8 +251,11 @@ Usage: `obit config [flags]`
 | Option | Short | Default | Description |
 | --- | --- | --- | --- |
 | `--create` | none | `false` | write a config file with the defaults |
+| `--dry-run` | none | `false` | preview what --max-size would change and purge without modifying files |
 | `--help` | `-h` | `false` | help for config |
 | `--language` | none | `""` | set the language: auto, en or zh-CN |
+| `--max-size` | none | `""` | set graveyard capacity limit (e.g. 5GB, 500MB, 0 or unlimited to disable) |
+| `--yes` | none | `false` | apply a lower --max-size and purge oldest graves without prompting (agents: ask the user first) |
 
 ### `obit config telemetry`
 

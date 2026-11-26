@@ -8,6 +8,7 @@ Das Konfigurationsverzeichnis ist unter Windows `%APPDATA%\obituary`, unter macO
 | --- | --- | --- |
 | `graveyard.mode` | `graveyard` | `graveyard`, `recycle` |
 | `graveyard.retention_days` | `7` | eine ganze Zahl von 1 bis 3650 |
+| `graveyard.max_size` | `""` (unbegrenzt) | eine Größe wie `500MB`, `5GB`, `10GiB` oder Bytezahl; `""`, `0` oder `unlimited` deaktiviert die Grenze |
 | `proposals.mode` | `off` | `off`, `tiered`, `auto`, `ask` |
 | `hooks.session_cleanup` | `true` | `true`, `false` |
 | `hooks.session_summary` | `false` | `true`, `false` |
@@ -29,6 +30,8 @@ Das Konfigurationsverzeichnis ist unter Windows `%APPDATA%\obituary`, unter macO
 Standardmäßig landet etwas, dessen Lebensdauer abgelaufen ist, auf dem Friedhof von Obituary. `graveyard.retention_days` Tage lang (7, wenn du nichts änderst) kannst du es mit `obit resurrect` an seinen Platz zurückholen; erst danach wird es endgültig gelöscht. Die Zahl kann zwischen 1 und 3650 liegen.
 
 Unter Windows und Linux aktiviert `graveyard.mode = "recycle"` den Systempapierkorb. Stelle die Dateien dort wieder her, nicht mit `obit resurrect`. Unter macOS gibt es nur den Friedhof.
+
+`graveyard.max_size` ist standardmäßig leer (keine Kapazitätsgrenze). Mit einer Größe wie `500MB`, `5GB`, `10GiB` oder einer Bytezahl zählt Obituary nur den Speicherplatz lokaler Dateien und Ordner im Friedhof (rekursiv ohne symbolischen Links zu folgen; Container zählen nicht mit). Überschreitet ein normaler Eintrag zusammen mit dem Bestand die Grenze, werden die ältesten Gräber zuerst endgültig gelöscht, bis der Bestand wieder innerhalb der Grenze liegt. Ist ein einzelnes Element allein größer als die Grenze, bleibt es sicher an seinem Platz, ohne ältere Gräber zu räumen, und wandert in die Entscheidungsliste, damit du es endgültig löschen, verlängern, nicht mehr verfolgen oder die Grenze erhöhen kannst. Beim Senken der Grenze mit `obit config --max-size` zeigt Obituary eine Vorschau und fragt nach Bestätigung (`--dry-run` als Vorschau, `--yes` ohne Rückfrage).
 
 ## Automatische Registrierung und Agentensitzungen
 

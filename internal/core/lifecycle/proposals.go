@@ -44,7 +44,7 @@ func (s *Service) PruneProposal(p Proposal, stale []Candidate) error {
 
 // PruneDeletedProposal checks deletion again while serializing with decisions.
 func (s *Service) PruneDeletedProposal(p Proposal) error {
-	if p.Kind == ProposalWatch || p.Kind == ProposalWatchBurial || p.Kind == ProposalContainer {
+	if p.Kind == ProposalWatch || p.Kind == ProposalWatchBurial || p.Kind == ProposalContainer || p.Kind == ProposalGraveyardQuota {
 		return fmt.Errorf("proposal kind %q does not use project deletion evidence", p.Kind)
 	}
 	return s.pruneProposal(p, p.Candidates, "project deleted", func() error {
@@ -445,6 +445,9 @@ func (s *Service) recordProposalRejection(st *State, idx int, r ProposalResult) 
 	}
 	if r.Proposal.Kind == ProposalWatchBurial {
 		rejectWatchBurial(st, r.Proposal, s.now())
+	}
+	if r.Proposal.Kind == ProposalGraveyardQuota {
+		s.rejectQuotaProposal(st, r.Proposal, s.now())
 	}
 	if r.Proposal.Kind == ProposalLeftovers || r.Proposal.Kind == ProposalContainer {
 		rememberRejectedLeftovers(st, r.Proposal, s.now())

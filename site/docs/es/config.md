@@ -8,6 +8,7 @@ El directorio de configuración es `%APPDATA%\obituary` en Windows, `~/Library/A
 | --- | --- | --- |
 | `graveyard.mode` | `graveyard` | `graveyard`, `recycle` |
 | `graveyard.retention_days` | `7` | un entero de 1 a 3650 |
+| `graveyard.max_size` | `""` (sin límite) | un tamaño como `500MB`, `5GB`, `10GiB` o bytes; `""`, `0` o `unlimited` desactiva el límite |
 | `proposals.mode` | `off` | `off`, `tiered`, `auto`, `ask` |
 | `hooks.session_cleanup` | `true` | `true`, `false` |
 | `hooks.session_summary` | `false` | `true`, `false` |
@@ -29,6 +30,8 @@ El directorio de configuración es `%APPDATA%\obituary` en Windows, `~/Library/A
 De forma predeterminada, lo que agota su vida útil va al cementerio de Obituary. Durante `graveyard.retention_days` días (7 si no lo cambias) puedes devolverlo a su sitio con `obit resurrect`; solo pasado ese plazo se elimina para siempre. El número puede ser cualquiera entre 1 y 3650.
 
 En Windows y Linux, `graveyard.mode = "recycle"` usa la papelera del sistema. Restaura los archivos desde la papelera, no con `obit resurrect`. macOS solo admite el cementerio.
+
+`graveyard.max_size` está vacío por defecto (sin límite de capacidad). Si se define un tamaño como `500MB`, `5GB`, `10GiB` o una cantidad de bytes, Obituary cuenta solo el espacio en disco de los archivos y carpetas locales enterrados (sin seguir enlaces simbólicos y excluyendo contenedores). Cuando un entierro normal hace que el total supere el límite, las tumbas más antiguas se purgan primero hasta volver al límite. Si un único elemento supera el límite por sí solo, permanece intacto en su sitio sin vaciar el cementerio y pasa a la cola de decisiones para que elijas eliminarlo permanentemente, ampliarlo, dejar de seguirlo o subir el límite. Reducir el límite con `obit config --max-size` muestra una vista previa y pide confirmación (`--dry-run` solo previsualiza y `--yes` confirma sin preguntar).
 
 ## Registro automático y sesiones de agentes
 

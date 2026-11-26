@@ -251,8 +251,11 @@ Usage: `obit config [flags]`
 | Paramètre | Court | Valeur par défaut | Description |
 | --- | --- | --- | --- |
 | `--create` | aucun | `false` | Écrire un fichier de configuration avec les valeurs par défaut |
+| `--dry-run` | aucun | `false` | Prévisualiser ce que --max-size modifierait et purgerait sans modifier aucun fichier |
 | `--help` | `-h` | `false` | Aide pour config |
 | `--language` | aucun | `""` | Définir la langue : auto, en ou zh-CN |
+| `--max-size` | aucun | `""` | Définir la limite de capacité du cimetière (par ex. 5GB, 500MB, 0 ou unlimited pour désactiver) |
+| `--yes` | aucun | `false` | Appliquer un --max-size inférieur et purger les tombes les plus anciennes sans demander confirmation (agents : demandez d’abord à l’utilisateur) |
 
 ### `obit config telemetry`
 

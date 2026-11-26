@@ -2,8 +2,9 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { Container, File, Folder, TriangleAlert, X, type LucideIcon } from "lucide-react";
 import { Component, createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
 import { errorText, useApi } from "./api";
-import { duration, lifeLeft, noteText, splitPath, when } from "./format";
+import { bytes, duration, lifeLeft, noteText, splitPath, when } from "./format";
 import { t } from "./i18n";
+import type { PageId } from "./shell";
 
 // ── Buttons and small parts ─────────────────────────────────────────────
 
@@ -105,6 +106,24 @@ export function Outcome({ note, onClose }: { note: OutcomeNote; onClose: () => v
 
 const FrameContext = createContext<HTMLElement | null>(null);
 export const FrameProvider = FrameContext.Provider;
+
+const NavContext = createContext<((page: PageId) => void) | null>(null);
+export const NavProvider = NavContext.Provider;
+export const useNavigate = () => useContext(NavContext);
+
+export function GraveQuotaBar({ used, max }: { used: number; max?: number }) {
+  if (!max || max <= 0) return null;
+  const ratio = Math.min(1, Math.max(0, used / max));
+  const tone = used >= max ? "danger" : ratio >= 0.8 ? "warn" : "";
+  return (
+    <div className={`quota-bar${tone ? ` ${tone}` : ""}`} role="status">
+      <div className="quota-bar-text">{t("quota.bar", bytes(used), bytes(max))}</div>
+      <div className="quota-bar-track" aria-hidden>
+        <span className="quota-bar-fill" style={{ width: `${(ratio * 100).toFixed(1)}%` }} />
+      </div>
+    </div>
+  );
+}
 
 // ── Confirm ────────────────────────────────────────────────────────────
 

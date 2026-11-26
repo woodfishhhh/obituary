@@ -80,6 +80,8 @@ export function useGraves(filter: string) {
   const pending = rows.filter((r) => r.status !== "buried");
   const sel = useSelection(useMemo(() => graves.map((g) => g.id), [graves]));
   const bytes = graves.reduce((n, g) => n + g.size, 0);
+  const graveBytes = q.data?.graveBytes ?? bytes;
+  const graveMaxBytes = q.data?.graveMaxBytes ?? 0;
 
   async function run(method: "Resurrect" | "Purge", ids: number[], before?: () => Promise<void>) {
     if (!ids.length) return false;
@@ -102,7 +104,7 @@ export function useGraves(filter: string) {
   }
 
   return {
-    ...q, rows, graves, pending, sel, bytes,
+    ...q, rows, graves, pending, sel, bytes, graveBytes, graveMaxBytes,
     resurrect: (ids: number[] = sel.chosen, before?: () => Promise<void>) => run("Resurrect", ids, before),
     purge: (ids: number[] = sel.chosen, before?: () => Promise<void>) => run("Purge", ids, before),
   };

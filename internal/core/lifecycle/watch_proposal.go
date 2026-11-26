@@ -120,6 +120,13 @@ func (s *Service) ApproveWatchBurial(p Proposal) (Outcome, error) {
 	tx.approvedWatch, tx.Mode = &p, ModeGraveyard
 	roots := tx.resolveGraveyardRoots(st, it.Path)
 	out := tx.settle(it, false, ReasonBury, roots)
+	if out.Action == ActionBuried && s.GraveyardMaxBytes > 0 {
+		ev, evErr := s.EnforceGraveyardQuota(false)
+		if ev.PurgedCount > 0 || ev.FailedCount > 0 {
+			out.QuotaEviction = ev.summary()
+		}
+		out.err = errors.Join(out.err, evErr)
+	}
 	if out.Action == ActionRetry {
 		// An unchanged file decision stays pending, so it can be approved again
 		// immediately after the holder closes without an intervening sweep.

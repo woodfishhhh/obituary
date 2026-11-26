@@ -73,6 +73,8 @@ type Service struct {
 	Mode string
 	// Retention is how long burials stay restorable (DefaultRetention if 0).
 	Retention time.Duration
+	// GraveyardMaxBytes caps local disk burials in the graveyard (0 means unlimited).
+	GraveyardMaxBytes int64
 	// WatchStableWindow is the quiet interval for folder policies (10m if zero).
 	WatchStableWindow  time.Duration
 	WatchFileProposals bool // POSIX regular files require individual approval

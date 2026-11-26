@@ -585,6 +585,26 @@ var defaultMessages = map[string]*goi18n.Message{
 	"cli.init.verbose_requires_show": &goi18n.Message{ID: "cli.init.verbose_requires_show", Other: "--verbose only applies to --show"},
 
 	"cli.init.not_installed_list": &goi18n.Message{ID: "cli.init.not_installed_list", Other: "  not installed ({{.Count}}): {{.Names}}"},
+
+	"cli.label.quota_exceeded":                   &goi18n.Message{ID: "cli.label.quota_exceeded", Other: "quota-exceeded"},
+	"cli.label.graveyard_quota":                  &goi18n.Message{ID: "cli.label.graveyard_quota", Other: "graveyard-quota"},
+	"cli.quota.overflow":                         &goi18n.Message{ID: "cli.quota.overflow", Other: "{{.Path}} ({{.Size}}) exceeds graveyard capacity limit {{.Limit}}. Left safely in place and added to pending decisions (#{{.ProposalID}}); not moved into the graveyard and no existing graves were evicted. Review it in Obituary's Pending Decisions (permanent delete, extend, or stop tracking) or raise graveyard.max_size in Settings / `obit config --max-size`. Agents: do not bypass Obituary with raw rm."},
+	"cli.quota.overflow_dry_run":                 &goi18n.Message{ID: "cli.quota.overflow_dry_run", Other: "{{.Path}} ({{.Size}}) exceeds graveyard capacity limit {{.Limit}}; would remain in place and move to pending decisions without evicting existing graves."},
+	"cli.quota.evicted":                          &goi18n.Message{ID: "cli.quota.evicted", Other: "Graveyard exceeded capacity limit {{.Limit}}: automatically purged {{.Count}} oldest item(s) (freed {{.Freed}}), current usage {{.Used}} / {{.Limit}}."},
+	"cli.quota.evicted_dry_run":                  &goi18n.Message{ID: "cli.quota.evicted_dry_run", Other: "Graveyard exceeds capacity limit {{.Limit}}: would purge {{.Count}} oldest item(s) (free {{.Freed}}), leaving {{.Used}} / {{.Limit}}."},
+	"cli.quota.eviction_partial_failed":          &goi18n.Message{ID: "cli.quota.eviction_partial_failed", Other: "{{.Failed}} oldest graveyard item(s) could not be purged right now and will be retried later."},
+	"cli.stats.graveyard_quota":                  &goi18n.Message{ID: "cli.stats.graveyard_quota", Other: "\ngraveyard    %d  %s / %s"},
+	"cli.stats.quota_pending":                    &goi18n.Message{ID: "cli.stats.quota_pending", Other: "\nquota pending %d  (oversized items left in place; run obit proposals or open Pending Decisions)"},
+	"cli.daemon.graveyard_quota":                 &goi18n.Message{ID: "cli.daemon.graveyard_quota", Other: "graveyard: %s / %s\n"},
+	"cli.daemon.quota_pending":                   &goi18n.Message{ID: "cli.daemon.quota_pending", Other: "quota pending: %d (oversized items awaiting your decision; run obit proposals)\n"},
+	"cli.graveyard.quota_usage":                  &goi18n.Message{ID: "cli.graveyard.quota_usage", Other: "graveyard usage: %s / %s (oldest burials are automatically purged first when over limit)\n"},
+	"cli.config.create_conflict":                 &goi18n.Message{ID: "cli.config.create_conflict", Other: "--create cannot be combined with --language or --max-size"},
+	"cli.config.max_size_flag_requires_max_size": &goi18n.Message{ID: "cli.config.max_size_flag_requires_max_size", Other: "--yes and --dry-run only apply to --max-size"},
+	"cli.config.max_size_preview":                &goi18n.Message{ID: "cli.config.max_size_preview", Other: "Current graveyard usage is {{.Used}}. Setting graveyard.max_size to {{.Limit}} will immediately and permanently purge {{.Count}} oldest item(s) (freeing {{.Freed}}), leaving {{.After}}."},
+	"cli.config.max_size_confirm":                &goi18n.Message{ID: "cli.config.max_size_confirm", Other: "Apply this lower graveyard limit and permanently purge those oldest items? [y/N] "},
+	"cli.config.max_size_not_a_terminal":         &goi18n.Message{ID: "cli.config.max_size_not_a_terminal", Other: "not a terminal: lowering graveyard.max_size below current usage permanently purges oldest graves; re-run with --yes to confirm (agents: ask the user first)"},
+	"cli.config.max_size_canceled":               &goi18n.Message{ID: "cli.config.max_size_canceled", Other: "canceled; graveyard.max_size was not changed"},
+	"cli.config.max_size_unlimited":              &goi18n.Message{ID: "cli.config.max_size_unlimited", Other: "unlimited"},
 }
 
 // Localizer is the application-facing wrapper around go-i18n. Keeping the

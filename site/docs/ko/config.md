@@ -8,6 +8,7 @@ Obituary의 설정은 설정 디렉터리에 있는 `config.toml`에 씁니다. 
 | --- | --- | --- |
 | `graveyard.mode` | `graveyard` | `graveyard`, `recycle` |
 | `graveyard.retention_days` | `7` | 1에서 3650 사이의 정수 |
+| `graveyard.max_size` | `""` (제한 없음) | `500MB`, `5GB`, `10GiB` 같은 크기 또는 바이트 수(`""`, `0`, `unlimited`는 제한 없음) |
 | `proposals.mode` | `off` | `off`, `tiered`, `auto`, `ask` |
 | `hooks.session_cleanup` | `true` | `true`, `false` |
 | `hooks.session_summary` | `false` | `true`, `false` |
@@ -29,6 +30,8 @@ Obituary의 설정은 설정 디렉터리에 있는 `config.toml`에 씁니다. 
 기본적으로 수명이 다한 항목은 Obituary의 묘지로 들어갑니다. `graveyard.retention_days`일 동안(기본 7일)은 `obit resurrect`로 원래 자리에 되돌릴 수 있고, 그 기간이 지나야 영구적으로 삭제됩니다. 이 일수는 1에서 3650 사이에서 바꿀 수 있습니다.
 
 Windows와 Linux에서는 `graveyard.mode = "recycle"`로 시스템 휴지통을 사용할 수 있습니다. `obit resurrect`가 아니라 휴지통에서 복원하세요. macOS에서는 묘지만 지원합니다.
+
+`graveyard.max_size`는 기본적으로 비어 있습니다(제한 없음). `500MB`, `5GB`, `10GiB` 같은 크기나 바이트 수를 지정하면 묘지에 있는 로컬 파일과 디렉터리 용량만 계산합니다(심볼릭 링크는 따라가지 않으며 컨테이너는 제외). 일반 매장으로 전체 사용량이 상한을 넘으면 상한 이하가 될 때까지 가장 오래전에 매장된 항목부터 자동으로 영구 삭제합니다. 항목 하나가 상한보다 크면 묘지로 옮기거나 기존 묘지를 비우지 않고 원래 자리에 안전하게 둔 채 결정 대기 목록으로 보냅니다. `obit config --max-size`로 상한을 낮출 때는 삭제될 항목을 먼저 미리 보여 주고 확인을 받습니다(`--dry-run` 미리 보기, `--yes` 비대화형 확인).
 
 ## 자동 등록과 에이전트 세션
 

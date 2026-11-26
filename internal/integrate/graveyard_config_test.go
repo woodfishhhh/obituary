@@ -263,3 +263,51 @@ func TestGraveyardConfigPreservesCaseAliases(t *testing.T) {
 		}
 	}
 }
+
+func TestPlanGraveyardMaxSizeConfig(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	original := "# keep comment\n[graveyard]\nmode = 'graveyard'\nretention_days = 7\n"
+	if err := os.WriteFile(path, []byte(original), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	ch, err := PlanGraveyardMaxSizeConfig(path, "5GB")
+	if err != nil {
+		t.Fatalf("plan 5GB: %v", err)
+	}
+	if err := Apply([]Change{ch}); err != nil {
+		t.Fatalf("apply 5GB: %v", err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := config.Parse(data, path)
+	if err != nil || cfg.Graveyard.MaxSize != "5GB" || cfg.Graveyard.MaxBytes() != 5<<30 || cfg.Graveyard.RetentionDays != 7 {
+		t.Fatalf("parsed after 5GB: %+v %v", cfg.Graveyard, err)
+	}
+	if !strings.Contains(string(data), "# keep comment") {
+		t.Fatalf("comment lost: %q", data)
+	}
+	same, err := PlanGraveyardMaxSizeConfig(path, "5GB")
+	if err != nil || same.Action != "unchanged" {
+		t.Fatalf("expected unchanged, got %+v %v", same, err)
+	}
+	clearCh, err := PlanGraveyardMaxSizeConfig(path, "unlimited")
+	if err != nil {
+		t.Fatalf("plan unlimited: %v", err)
+	}
+	if err := Apply([]Change{clearCh}); err != nil {
+		t.Fatalf("apply unlimited: %v", err)
+	}
+	cleared, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg, err = config.Parse(cleared, path)
+	if err != nil || cfg.Graveyard.MaxSize != "" || cfg.Graveyard.MaxBytes() != 0 {
+		t.Fatalf("parsed after clear: %+v %v", cfg.Graveyard, err)
+	}
+	if _, err := PlanGraveyardMaxSizeConfig(path, "-1GB"); err == nil {
+		t.Fatal("expected negative size to fail")
+	}
+}

@@ -16,11 +16,13 @@ import (
 )
 
 type GraveyardListing struct {
-	Burials      []ledger.Burial     `json:"burials"`
-	Pending      []core.PendingGrave `json:"pending"`
-	PendingCount int                 `json:"pendingCount"`
-	Restored     []core.GraveResult  `json:"restored,omitempty"`
-	Warning      string              `json:"warning,omitempty"`
+	Burials       []ledger.Burial     `json:"burials"`
+	Pending       []core.PendingGrave `json:"pending"`
+	PendingCount  int                 `json:"pendingCount"`
+	GraveBytes    int64               `json:"graveBytes,omitempty"`
+	GraveMaxBytes int64               `json:"graveMaxBytes,omitempty"`
+	Restored      []core.GraveResult  `json:"restored,omitempty"`
+	Warning       string              `json:"warning,omitempty"`
 }
 
 func NewCmd() *cobra.Command {
@@ -48,7 +50,10 @@ func NewCmd() *cobra.Command {
 					return err
 				}
 			}
-			listing := GraveyardListing{Burials: view.Burials, Pending: view.Pending, PendingCount: len(view.Pending), Restored: view.Restored}
+			listing := GraveyardListing{Burials: view.Burials, Pending: view.Pending, PendingCount: len(view.Pending), GraveMaxBytes: svc.GraveyardMaxBytes, Restored: view.Restored}
+			if svc.GraveyardMaxBytes > 0 {
+				_, listing.GraveBytes, _ = svc.GraveyardDiskUsage()
+			}
 			if scanErr != nil {
 				listing.Warning = scanErr.Error()
 			}
@@ -69,6 +74,9 @@ func printListing(listing GraveyardListing, scanErr error) error {
 	}
 	if len(listing.Burials) == 0 && len(listing.Pending) == 0 && scanErr == nil {
 		fmt.Println(cmdutil.Text("cli.graveyard.empty"))
+		if listing.GraveMaxBytes > 0 {
+			fmt.Printf(cmdutil.Text("cli.graveyard.quota_usage"), textutil.Bytes(listing.GraveBytes), textutil.Bytes(listing.GraveMaxBytes))
+		}
 		return nil
 	}
 	w := cmdutil.Table(os.Stdout, cmdutil.Language())
@@ -78,6 +86,9 @@ func printListing(listing GraveyardListing, scanErr error) error {
 	}
 	if err := w.Flush(); err != nil {
 		return err
+	}
+	if listing.GraveMaxBytes > 0 {
+		fmt.Printf(cmdutil.Text("cli.graveyard.quota_usage"), textutil.Bytes(listing.GraveBytes), textutil.Bytes(listing.GraveMaxBytes))
 	}
 	fmt.Printf(cmdutil.Text("cli.daemon.pending_recovery"), len(listing.Pending))
 	for _, p := range listing.Pending {

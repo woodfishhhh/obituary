@@ -33,18 +33,20 @@ func (s *Service) Tick() (outcomes []Outcome, purged []GraveResult, err error) {
 
 // Outcome is what a sweep did, or would do, with one due item.
 type Outcome struct {
-	Item         Item      `json:"item"`
-	Action       string    `json:"action"`
-	Path         string    `json:"path"` // where the object was found
-	Grave        string    `json:"grave,omitempty"`
-	GraveID      *Identity `json:"graveId,omitempty"`
-	Size         int64     `json:"size,omitempty"`
-	Detail       string    `json:"detail,omitempty"`
-	Burial       *Burial   `json:"burial,omitempty"`
-	err          error     // a ledger failure, distinct from a retryable filesystem outcome
-	retryCommand string    // selected from the pre-move ledger's discoverable roots
-	searched     bool      // the full repository search passed before store.lock
-	lifespans    *lifespanSnapshot
+	Item          Item           `json:"item"`
+	Action        string         `json:"action"`
+	Path          string         `json:"path"` // where the object was found
+	Grave         string         `json:"grave,omitempty"`
+	GraveID       *Identity      `json:"graveId,omitempty"`
+	Size          int64          `json:"size,omitempty"`
+	Detail        string         `json:"detail,omitempty"`
+	Burial        *Burial        `json:"burial,omitempty"`
+	QuotaOverflow *QuotaOverflow `json:"quotaOverflow,omitempty"`
+	QuotaEviction *QuotaEviction `json:"quotaEviction,omitempty"`
+	err           error          // a ledger failure, distinct from a retryable filesystem outcome
+	retryCommand  string         // selected from the pre-move ledger's discoverable roots
+	searched      bool           // the full repository search passed before store.lock
+	lifespans     *lifespanSnapshot
 }
 
 // A failing burial is retried at growing intervals, up to a day apart, and
@@ -114,14 +116,26 @@ func (s *Service) sweep(dryRun bool, blocked map[int64]bool) (outcomes []Outcome
 	roots = s.resolveMissingGraveyardRoots(roots, s.graveyardRoots(state))
 	if !dryRun && !s.recycleMode() {
 		batchOut, err := s.sweepBurials(state, roots, blocked)
-		return append(outcomes, batchOut...), errors.Join(auditErr, err)
+		outcomes = append(outcomes, batchOut...)
+		if !commitFailed(err) {
+			var quotaErr error
+			outcomes, quotaErr = s.applySweepQuota(outcomes, false)
+			err = errors.Join(err, quotaErr)
+		}
+		return outcomes, errors.Join(auditErr, err)
 	}
-	return s.sweepItems(state, dryRun, roots, blocked, outcomes, auditErr)
+	outcomes, err = s.sweepItems(state, dryRun, roots, blocked, outcomes, auditErr)
+	if !commitFailed(err) {
+		var quotaErr error
+		outcomes, quotaErr = s.applySweepQuota(outcomes, dryRun)
+		err = errors.Join(err, quotaErr)
+	}
+	return outcomes, err
 }
 
 func (s *Service) sweepItems(state State, dryRun bool, roots []resolvedGraveyardRoot, blocked map[int64]bool, outcomes []Outcome, auditErr error) ([]Outcome, error) {
 	for _, snapshot := range state.Items {
-		if blocked[snapshot.ID] || !snapshot.Due(s.now()) || awaitingWatchBurial(&state, snapshot) {
+		if blocked[snapshot.ID] || !snapshot.Due(s.now()) || awaitingWatchBurial(&state, snapshot) || awaitingQuotaDecision(&state, snapshot, s.GraveyardMaxBytes) {
 			continue
 		}
 		//nolint:nestif // volume expiry has a distinct commit path from file expiry.
@@ -162,7 +176,7 @@ func (s *Service) sweepItems(state State, dryRun bool, roots []resolvedGraveyard
 			}
 			auditErr = errors.Join(auditErr, err)
 		}
-		if outcome.Action != ActionBuried {
+		if outcome.Action != ActionBuried && outcome.Action != ActionQuotaExceeded {
 			auditErr = errors.Join(auditErr, s.Store.RecordCommitted(Event{Time: s.now(), Action: outcome.Action, ID: item.ID, Path: outcome.Path, Detail: outcome.Detail}))
 		}
 	}
@@ -190,7 +204,7 @@ func (s *Service) claim(id int64) (Item, bool, error) {
 		return Item{}, false, err
 	}
 	idx := state.Index(id)
-	if idx < 0 || !state.Items[idx].Due(s.now()) || awaitingWatchBurial(&state, state.Items[idx]) {
+	if idx < 0 || !state.Items[idx].Due(s.now()) || awaitingWatchBurial(&state, state.Items[idx]) || awaitingQuotaDecision(&state, state.Items[idx], s.GraveyardMaxBytes) {
 		return Item{}, false, nil
 	}
 	return state.Items[idx], true, nil
@@ -198,7 +212,7 @@ func (s *Service) claim(id int64) (Item, bool, error) {
 
 // commit writes a sweep outcome back, but only onto the revision it processed.
 func (s *Service) commit(o Outcome) error {
-	if o.err != nil || o.Action == ActionBuried || o.Action == ActionRecoveryPending || o.Action == ActionSkipped || o.Action == ActionProposed {
+	if o.err != nil || o.Action == ActionBuried || o.Action == ActionRecoveryPending || o.Action == ActionSkipped || o.Action == ActionProposed || o.Action == ActionQuotaExceeded {
 		return o.err // burial was committed in the same transaction as its move
 	}
 	return s.Store.UpdateHot(func(st *State) error {
@@ -208,7 +222,7 @@ func (s *Service) commit(o Outcome) error {
 }
 
 func (s *Service) commitOutcome(st *State, o Outcome) {
-	if o.Action == ActionSkipped || o.Action == ActionProposed {
+	if o.Action == ActionSkipped || o.Action == ActionProposed || o.Action == ActionQuotaExceeded {
 		return
 	}
 	idx := st.Index(o.Item.ID)

@@ -306,7 +306,13 @@ Data lives in `%LOCALAPPDATA%\obituary`: `store.json` (ledger), `audit.jsonl` (a
 [graveyard]
 mode = "graveyard"      # or "recycle": files go to the system Recycle Bin, directories to the graveyard for recovery with obit resurrect
 retention_days = 7      # days the graveyard keeps things
+max_size = ""           # optional graveyard capacity limit, e.g. "500MB", "5GB", "10GiB"; empty, "0" or "unlimited" disables it
 ```
+
+When `max_size` is set (or via `obit config --max-size 5GB`), Obituary tracks the disk usage of local file and directory burials currently in the graveyard (recursively summing actual bytes without following symbolic links; container burials without a disk payload are excluded):
+
+- **FIFO auto-purge when total usage exceeds the limit**: when burying a normal item pushes graveyard usage over `max_size`, Obituary purges the oldest graves first (`buried_at` ascending, then ID ascending) through the verified purge path until usage is back within the limit, recording `graveyard_capacity_fifo` in the audit log. Lowering the limit via `obit config --max-size` or the desktop Settings page previews which graves would be purged and asks for confirmation before saving and purging (`--dry-run` previews without changes; `--yes` skips the prompt in scripts).
+- **Single item larger than the limit stays in place**: if an item itself exceeds `max_size`, Obituary leaves it untouched at its original path, neither burying it nor evicting existing graves, and sends it to the **For you** queue (`obit proposals` or the window's For you page) so you can permanently delete it, extend its lifespan, stop tracking it, or raise the limit.
 
 A misspelled key makes the configuration invalid instead of being ignored: the error and `obit doctor` name the file, line and key, and suggest the closest correct key (for example `retention` → `retention_days`). Otherwise a typo would leave the default in force and graves would be purged earlier than you expect.
 

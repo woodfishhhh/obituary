@@ -187,7 +187,11 @@ func (s *Service) commitPurge(r GraveResult) error {
 			st.Stats.Purged++
 			st.Stats.PurgedBytes += b.Size
 		}
-		queueAudit(st, Event{Time: s.now(), Action: r.Action, ID: b.ID, Path: b.Path, Detail: b.Grave})
+		detail := b.Grave
+		if r.Detail != "" {
+			detail = r.Detail + ": " + b.Grave
+		}
+		queueAudit(st, Event{Time: s.now(), Action: r.Action, ID: b.ID, Path: b.Path, Detail: detail})
 		return nil
 	})
 }

@@ -104,6 +104,14 @@ func report(results []core.GraveResult, err error, dryRun, asJSON bool) error {
 		}
 		return fmt.Sprintf("#%d %s%s  %s  (%s)", r.Burial.ID, verb, cmdutil.Localizer().Label(r.Action), r.Burial.Path, textutil.Bytes(r.Burial.Size))
 	})
+	if !asJSON {
+		l := cmdutil.Localizer()
+		for _, r := range results {
+			if r.QuotaEviction != nil {
+				cmdutil.PrintQuotaEviction(os.Stderr, l, r.QuotaEviction, dryRun)
+			}
+		}
+	}
 	if err := cmdutil.Committed(err); err != nil {
 		return err
 	}

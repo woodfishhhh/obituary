@@ -596,3 +596,63 @@ func TestDecisionsShowModeAndWhatWentInWithoutAsking(t *testing.T) {
 		t.Fatalf("undo must keep the file: %v", err)
 	}
 }
+
+func TestGUIQuotaDecisionsPurgeAndExtend(t *testing.T) {
+	a, root := fixture(t)
+	a.deps.Service.GraveyardMaxBytes = 5000
+	oldPath := filepath.Join(root, "work", "old.bin")
+	write(t, oldPath, strings.Repeat("o", 4000))
+	if _, err := a.deps.Service.Bury([]string{oldPath}, false, ""); err != nil {
+		t.Fatal(err)
+	}
+
+	// Oversized file #1: permanent delete via GUI leaves old grave intact.
+	huge1 := filepath.Join(root, "work", "huge1.bin")
+	write(t, huge1, strings.Repeat("h", 8000))
+	if _, err := a.deps.Service.Bury([]string{huge1}, false, ""); err != nil {
+		t.Fatal(err)
+	}
+	sum, err := a.Summary()
+	if err != nil || sum.QuotaPendingCount != 1 || sum.DecisionCount != 1 {
+		t.Fatalf("summary with quota decision: %+v %v", sum, err)
+	}
+	rows, err := a.Proposals()
+	if err != nil || len(rows.Proposals) != 1 || rows.Proposals[0].Kind != core.ProposalGraveyardQuota || rows.Proposals[0].QuotaReview == nil {
+		t.Fatalf("quota proposal missing: %+v %v", rows, err)
+	}
+	p1 := rows.Proposals[0]
+	purgeReply, err := a.PurgeQuotaProposal(ref(p1.ID), p1.Fingerprint)
+	if err != nil || purgeReply.Error != "" || len(purgeReply.Results) != 1 || purgeReply.Results[0].Error != "" {
+		t.Fatalf("PurgeQuotaProposal: %+v %v", purgeReply, err)
+	}
+	if _, err := os.Stat(huge1); !os.IsNotExist(err) {
+		t.Fatalf("huge1 should be permanently deleted, stat=%v", err)
+	}
+	page, err := a.Graveyard(GraveyardQuery{Limit: 50})
+	if err != nil || page.Total != 1 {
+		t.Fatalf("old grave must stay intact: %+v %v", page, err)
+	}
+
+	// Oversized file #2: extend via GUI tracks it and clears pending decision.
+	huge2 := filepath.Join(root, "work", "huge2.bin")
+	write(t, huge2, strings.Repeat("k", 7000))
+	if _, err := a.deps.Service.Bury([]string{huge2}, false, ""); err != nil {
+		t.Fatal(err)
+	}
+	rows, err = a.Proposals()
+	if err != nil || len(rows.Proposals) != 1 {
+		t.Fatalf("second quota proposal: %+v %v", rows, err)
+	}
+	p2 := rows.Proposals[0]
+	extReply, err := a.ExtendQuotaProposal(ref(p2.ID), p2.Fingerprint, "3d")
+	if err != nil || extReply.Error != "" || len(extReply.Results) != 1 || extReply.Results[0].Error != "" {
+		t.Fatalf("ExtendQuotaProposal: %+v %v", extReply, err)
+	}
+	if _, err := os.Stat(huge2); err != nil {
+		t.Fatalf("extended file must stay in place: %v", err)
+	}
+	rows, err = a.Proposals()
+	if err != nil || len(rows.Proposals) != 0 {
+		t.Fatalf("extended quota proposal should be cleared: %+v %v", rows, err)
+	}
+}

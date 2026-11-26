@@ -110,11 +110,18 @@ type UI struct {
 type Graveyard struct {
 	Mode          string `toml:"mode"`
 	RetentionDays int    `toml:"retention_days"`
+	MaxSize       string `toml:"max_size"`
 }
 
 // Retention is how long burials stay restorable before they are purged.
 func (g Graveyard) Retention() time.Duration {
 	return time.Duration(g.RetentionDays) * 24 * time.Hour
+}
+
+// MaxBytes is the configured graveyard capacity limit in bytes (0 = unlimited).
+func (g Graveyard) MaxBytes() int64 {
+	n, _ := ParseByteSize(g.MaxSize) // validated by Parse
+	return n
 }
 
 // Default returns the built-in configuration.
@@ -136,6 +143,10 @@ const Template = `# Obituary configuration. Every key is optional; these are the
 mode = "graveyard"
 # Days a burial stays restorable before it is purged for good.
 retention_days = 7
+# Maximum total size of local files in the graveyard before oldest burials are
+# purged first (FIFO). Empty, "0" or "unlimited" disables the limit.
+# Examples: "500MB", "5GB", "10GiB", "1024M".
+max_size = ""
 
 # A declaration confirms local execution on this Windows machine in this shell.
 # Values: "bash" or "powershell"; keys are agent names used by obit hook.
@@ -352,6 +363,9 @@ func (c Config) validate(path string) error {
 	}
 	if c.Graveyard.RetentionDays < 1 || c.Graveyard.RetentionDays > 3650 {
 		return fmt.Errorf("%s: graveyard.retention_days must be between 1 and 3650", path)
+	}
+	if _, err := ParseByteSize(c.Graveyard.MaxSize); err != nil {
+		return fmt.Errorf("%s: graveyard.max_size: %w", path, err)
 	}
 	return nil
 }

@@ -4,7 +4,7 @@ import { RefreshContext, useLoad } from "./hooks";
 import { lang } from "./i18n";
 import type { PageId } from "./shell";
 import type { Variant } from "./theme";
-import { ConfirmProvider, FrameProvider, PageBoundary, ToastProvider } from "./ui";
+import { ConfirmProvider, FrameProvider, NavProvider, PageBoundary, ToastProvider } from "./ui";
 
 export type { PageId } from "./shell";
 
@@ -35,9 +35,11 @@ export default function App({ variant, page: forced, style }: { variant: Variant
           <ToastProvider>
             <ConfirmProvider>
               {/* Keyed by language: the shell's memoised labels are rebuilt on a switch. */}
-              <PageBoundary key={`${variant.id}:${page}:${language}`} onHome={() => setPage(nav[0])}>
-                <Shell key={language} page={page} nav={nav} setPage={setPage} summary={s} refresh={bump} />
-              </PageBoundary>
+              <NavProvider value={setPage}>
+                <PageBoundary key={`${variant.id}:${page}:${language}`} onHome={() => setPage(nav[0])}>
+                  <Shell key={language} page={page} nav={nav} setPage={setPage} summary={s} refresh={bump} />
+                </PageBoundary>
+              </NavProvider>
             </ConfirmProvider>
           </ToastProvider>
         </RefreshContext.Provider>

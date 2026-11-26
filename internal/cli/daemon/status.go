@@ -8,8 +8,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
+	"github.com/woodfishhhh/obituary/internal/config"
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/textutil"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
@@ -19,6 +21,9 @@ type DaemonStatus struct {
 	Autostart          string     `json:"autostart,omitempty"`
 	Home               string     `json:"home"`
 	Tracked            int        `json:"tracked"`
+	GraveBytes         int64      `json:"graveBytes,omitempty"`
+	GraveMaxBytes      int64      `json:"graveMaxBytes,omitempty"`
+	QuotaPendingCount  int        `json:"quotaPendingCount,omitempty"`
 	PendingRecovery    int        `json:"pendingRecovery"`
 	RecoveryWarning    string     `json:"recoveryWarning,omitempty"`
 	NextDue            *time.Time `json:"nextDue,omitempty"`
@@ -60,8 +65,16 @@ func readStatus(home string) (DaemonStatus, error) {
 	}
 	st := DaemonStatus{Running: cmdutil.RunnerRunning(home), Autostart: cmdutil.RunnerAutostart(), Home: home, Tracked: len(state.Items),
 		ScheduleInstalled: cmdutil.RunnerInstalled(), ScheduleServesHome: cmdutil.RunnerServes(home)}
-	pending, scanErr := (&core.Service{Store: ledger.Store{Home: home}, FS: winfs.FS{}}).PendingGraves()
+	svc := &core.Service{Store: ledger.Store{Home: home}, FS: winfs.FS{}}
+	pending, scanErr := svc.PendingGraves()
 	st.PendingRecovery = len(pending)
+	st.QuotaPendingCount = ledger.QuotaPendingCount(state)
+	if cfg, cfgErr := config.Load(); cfgErr == nil {
+		st.GraveMaxBytes = cfg.Graveyard.MaxBytes()
+		if st.GraveMaxBytes > 0 {
+			_, st.GraveBytes, _ = svc.GraveyardDiskUsage()
+		}
+	}
 	if scanErr != nil {
 		st.RecoveryWarning = scanErr.Error()
 	}
@@ -95,6 +108,12 @@ func printStatus(st DaemonStatus) {
 		running = cmdutil.Text("cli.daemon.running")
 	}
 	fmt.Printf(cmdutil.Text("cli.daemon.status"), mode, running, st.Home, st.Tracked)
+	if st.GraveMaxBytes > 0 {
+		fmt.Printf(cmdutil.Text("cli.daemon.graveyard_quota"), textutil.Bytes(st.GraveBytes), textutil.Bytes(st.GraveMaxBytes))
+	}
+	if st.QuotaPendingCount > 0 {
+		fmt.Printf(cmdutil.Text("cli.daemon.quota_pending"), st.QuotaPendingCount)
+	}
 	fmt.Printf(cmdutil.Text("cli.daemon.pending_recovery"), st.PendingRecovery)
 	if st.RecoveryWarning != "" {
 		fmt.Fprintln(os.Stderr, cmdutil.Text("cli.warning_prefix"), st.RecoveryWarning)

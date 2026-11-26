@@ -8,6 +8,7 @@ Le répertoire de configuration est `%APPDATA%\obituary` sous Windows, `~/Librar
 | --- | --- | --- |
 | `graveyard.mode` | `graveyard` | `graveyard`, `recycle` |
 | `graveyard.retention_days` | `7` | un entier de 1 à 3650 |
+| `graveyard.max_size` | `""` (illimité) | une taille telle que `500MB`, `5GB`, `10GiB` ou un nombre d’octets ; `""`, `0` ou `unlimited` désactive la limite |
 | `proposals.mode` | `off` | `off`, `tiered`, `auto`, `ask` |
 | `hooks.session_cleanup` | `true` | `true`, `false` |
 | `hooks.session_summary` | `false` | `true`, `false` |
@@ -29,6 +30,8 @@ Le répertoire de configuration est `%APPDATA%\obituary` sous Windows, `~/Librar
 Par défaut, un élément dont la durée de vie est écoulée entre dans le cimetière d’Obituary. Pendant `graveyard.retention_days` jours (7 si vous ne changez rien), vous pouvez le remettre à sa place avec `obit resurrect` ; c’est seulement après ce délai qu’il est supprimé définitivement. Ce nombre peut aller de 1 à 3650.
 
 Sous Windows et Linux, `graveyard.mode = "recycle"` utilise la Corbeille du système. Restaurez les fichiers depuis celle-ci, et non avec `obit resurrect`. Sous macOS, seul le cimetière est disponible.
+
+`graveyard.max_size` est vide par défaut (aucune limite de capacité). Lorsqu’une taille telle que `500MB`, `5GB`, `10GiB` ou un nombre d’octets est définie, Obituary comptabilise uniquement l’espace disque des fichiers et dossiers locaux enterrés (sans suivre les liens symboliques et sans compter les conteneurs). Quand un enterrement normal fait dépasser la limite, les tombes les plus anciennes sont purgées en premier jusqu’à repasser sous la limite. Si un seul élément dépasse la limite à lui seul, il reste à sa place sans vider les tombes existantes et rejoint la file de décisions pour vous laisser le supprimer définitivement, le prolonger, arrêter le suivi ou relever la limite. Abaisser la limite avec `obit config --max-size` affiche un aperçu et demande confirmation (`--dry-run` prévisualise, `--yes` confirme sans invite).
 
 ## Enregistrement automatique et sessions d’agent
 

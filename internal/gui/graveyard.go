@@ -26,13 +26,15 @@ type GraveRow struct {
 }
 
 type GraveyardPage struct {
-	Rows         []GraveRow         `json:"rows"`
-	Total        int                `json:"total"`
-	PendingCount int                `json:"pendingCount"`
-	HasMore      bool               `json:"hasMore"`
-	NextAfter    string             `json:"nextAfter"`
-	Restored     []core.GraveResult `json:"restored"`
-	Error        string             `json:"error,omitempty"`
+	Rows          []GraveRow         `json:"rows"`
+	Total         int                `json:"total"`
+	PendingCount  int                `json:"pendingCount"`
+	GraveBytes    int64              `json:"graveBytes"`
+	GraveMaxBytes int64              `json:"graveMaxBytes"`
+	HasMore       bool               `json:"hasMore"`
+	NextAfter     string             `json:"nextAfter"`
+	Restored      []core.GraveResult `json:"restored"`
+	Error         string             `json:"error,omitempty"`
 }
 
 // Use a stable key so removals between pages cannot shift unread entries behind
@@ -97,7 +99,17 @@ func (a *API) Graveyard(query GraveyardQuery) (GraveyardPage, error) {
 		return GraveyardPage{}, readErr
 	}
 	rows := graveRows(view, query.Filter)
-	page := GraveyardPage{Rows: []GraveRow{}, Total: len(rows), PendingCount: len(view.Pending), Restored: list(view.Restored), Error: errorText(readErr)}
+	maxBytes := a.deps.Service.GraveyardMaxBytes
+	if cfg, cfgErr := a.readConfig(); cfgErr == nil {
+		maxBytes = cfg.Graveyard.MaxBytes()
+	}
+	var diskBytes int64
+	for _, b := range view.Burials {
+		if b.Kind == "" {
+			diskBytes += b.Size
+		}
+	}
+	page := GraveyardPage{Rows: []GraveRow{}, Total: len(rows), PendingCount: len(view.Pending), GraveBytes: diskBytes, GraveMaxBytes: maxBytes, Restored: list(view.Restored), Error: errorText(readErr)}
 	for _, row := range rows {
 		if cursor != nil && compareGraves(rowCursor(row, query.Filter), *cursor) <= 0 {
 			continue

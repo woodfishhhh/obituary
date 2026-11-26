@@ -179,6 +179,7 @@ type Proposal struct {
 	WatchID      int64              `json:"watchId,omitempty"`
 	WatchReview  *WatchReview       `json:"watchReview,omitempty"`
 	WatchBurial  *WatchBurialReview `json:"watchBurial,omitempty"`
+	QuotaReview  *QuotaBurialReview `json:"quotaReview,omitempty"`
 }
 
 // Size is the total size of the candidates.

@@ -566,6 +566,20 @@
         "ru": "Записать файл конфигурации со значениями по умолчанию"
       }
     },
+    "--dry-run": {
+      "source": "preview what --max-size would change and purge without modifying files",
+      "translations": {
+        "zh": "预演 --max-size 会改动什么及将火化哪些墓地，不修改任何文件",
+        "zh-TW": "預演 --max-size 會更動什麼與將火化哪些墓地，不修改任何檔案",
+        "ja": "--max-size による変更内容と完全削除される墓地をプレビューし、ファイルを変更しない",
+        "ko": "파일을 수정하지 않고 --max-size 변경 내용과 영구 삭제될 묘지 항목을 미리 봅니다",
+        "es": "Previsualizar qué cambiaría y eliminaría --max-size sin modificar archivos",
+        "fr": "Prévisualiser ce que --max-size modifierait et purgerait sans modifier aucun fichier",
+        "de": "Vorschau darauf zeigen, was --max-size ändern und endgültig löschen würde, ohne Dateien zu verändern",
+        "pt-BR": "Pré-visualizar o que --max-size alteraria e excluiria permanentemente sem modificar arquivos",
+        "ru": "Показать предпросмотр изменений и удаления для --max-size без изменения файлов"
+      }
+    },
     "--help": {
       "source": "help for config",
       "translations": {
@@ -592,6 +606,34 @@
         "de": "Die Sprache festlegen: auto, en oder zh-CN",
         "pt-BR": "Definir o idioma: auto, en ou zh-CN",
         "ru": "Задать язык: auto, en или zh-CN"
+      }
+    },
+    "--max-size": {
+      "source": "set graveyard capacity limit (e.g. 5GB, 500MB, 0 or unlimited to disable)",
+      "translations": {
+        "zh": "设置墓地容量上限（如 5GB、500MB；0 或 unlimited 表示不限制）",
+        "zh-TW": "設定墓地容量上限（例如 5GB、500MB；0 或 unlimited 表示不限制）",
+        "ja": "墓地の容量上限を設定する（例: 5GB、500MB、0 または unlimited で無制限）",
+        "ko": "묘지 용량 상한을 설정합니다(예: 5GB, 500MB, 0 또는 unlimited는 제한 없음)",
+        "es": "Establecer el límite de capacidad del cementerio (p. ej., 5GB, 500MB, 0 o unlimited para desactivarlo)",
+        "fr": "Définir la limite de capacité du cimetière (par ex. 5GB, 500MB, 0 ou unlimited pour désactiver)",
+        "de": "Kapazitätsgrenze des Friedhofs festlegen (z. B. 5GB, 500MB, 0 oder unlimited zum Deaktivieren)",
+        "pt-BR": "Definir o limite de capacidade do cemitério (ex.: 5GB, 500MB, 0 ou unlimited para desativar)",
+        "ru": "Задать лимит объёма кладбища (например, 5GB, 500MB, 0 или unlimited для отключения)"
+      }
+    },
+    "--yes": {
+      "source": "apply a lower --max-size and purge oldest graves without prompting (agents: ask the user first)",
+      "translations": {
+        "zh": "不提示确认即应用更低的 --max-size 并火化最早的墓地（agent 请先征得用户同意）",
+        "zh-TW": "不提示確認即套用更低的 --max-size 並火化最早的墓地（agent 請先徵得使用者同意）",
+        "ja": "確認プロンプトなしでより低い --max-size を適用し最も古い墓地を完全削除する（エージェントは先にユーザーへ確認すること）",
+        "ko": "확인 없이 더 낮은 --max-size를 적용하고 가장 오래된 묘지를 영구 삭제합니다(에이전트는 먼저 사용자에게 확인하세요)",
+        "es": "Aplicar un --max-size más bajo y purgar las tumbas más antiguas sin pedir confirmación (agentes: preguntad primero al usuario)",
+        "fr": "Appliquer un --max-size inférieur et purger les tombes les plus anciennes sans demander confirmation (agents : demandez d’abord à l’utilisateur)",
+        "de": "Ein niedrigeres --max-size ohne Rückfrage anwenden und die ältesten Gräber endgültig löschen (Agenten: zuerst den Benutzer fragen)",
+        "pt-BR": "Aplicar um --max-size menor e excluir permanentemente as sepulturas mais antigas sem confirmar (agentes: perguntem primeiro ao usuário)",
+        "ru": "Применить меньший --max-size и навсегда удалить самые старые могилы без подтверждения (агентам: сначала спросите пользователя)"
       }
     }
   },

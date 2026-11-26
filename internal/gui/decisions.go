@@ -107,6 +107,28 @@ func (a *API) Reject(refs, fingerprints []string) (ProposalReply, error) {
 	return ProposalReply{Results: list(results), Error: errorText(err), ErrorCode: proposalErrorCode(err)}, nil
 }
 
+// PurgeQuotaProposal permanently deletes the single reviewed oversized object
+// via Obituary's verified grave-and-purge path without evicting existing graves.
+func (a *API) PurgeQuotaProposal(ref, fingerprint string) (ProposalReply, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	res, err := a.deps.Service.PurgeQuotaProposal(ref, fingerprint)
+	return ProposalReply{Results: []core.ProposalResult{res}, Error: errorText(err), ErrorCode: proposalErrorCode(err)}, nil
+}
+
+// ExtendQuotaProposal gives the reviewed oversized object a fresh lifespan and
+// clears its pending quota decision without moving or deleting the object.
+func (a *API) ExtendQuotaProposal(ref, fingerprint, lifespan string) (ProposalReply, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	d, err := core.ParseDuration(lifespan)
+	if err != nil {
+		return ProposalReply{Results: []core.ProposalResult{}}, err
+	}
+	res, err := a.deps.Service.ExtendQuotaProposal(ref, fingerprint, d)
+	return ProposalReply{Results: []core.ProposalResult{res}, Error: errorText(err), ErrorCode: proposalErrorCode(err)}, nil
+}
+
 func proposalErrorCode(err error) string {
 	if errors.Is(err, core.ErrProposalChanged) {
 		return core.ErrorCodeProposalChanged

@@ -251,8 +251,11 @@ Verwendung: `obit config [flags]`
 | Parameter | Kurz | Standardwert | Beschreibung |
 | --- | --- | --- | --- |
 | `--create` | keiner | `false` | Eine Konfigurationsdatei mit den Standardwerten schreiben |
+| `--dry-run` | keiner | `false` | Vorschau darauf zeigen, was --max-size ändern und endgültig löschen würde, ohne Dateien zu verändern |
 | `--help` | `-h` | `false` | Hilfe zu config |
 | `--language` | keiner | `""` | Die Sprache festlegen: auto, en oder zh-CN |
+| `--max-size` | keiner | `""` | Kapazitätsgrenze des Friedhofs festlegen (z. B. 5GB, 500MB, 0 oder unlimited zum Deaktivieren) |
+| `--yes` | keiner | `false` | Ein niedrigeres --max-size ohne Rückfrage anwenden und die ältesten Gräber endgültig löschen (Agenten: zuerst den Benutzer fragen) |
 
 ### `obit config telemetry`
 

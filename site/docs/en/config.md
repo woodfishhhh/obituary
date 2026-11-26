@@ -8,6 +8,7 @@ The configuration directory is `%APPDATA%\obituary` on Windows, `~/Library/Appli
 | --- | --- | --- |
 | `graveyard.mode` | `graveyard` | `graveyard`, `recycle` |
 | `graveyard.retention_days` | `7` | an integer from 1 to 3650 |
+| `graveyard.max_size` | `""` (unlimited) | a size such as `500MB`, `5GB`, `10GiB`, or byte count; `""`, `0` or `unlimited` disables the limit |
 | `proposals.mode` | `off` | `off`, `tiered`, `auto`, `ask` |
 | `hooks.session_cleanup` | `true` | `true`, `false` |
 | `hooks.session_summary` | `false` | `true`, `false` |
@@ -29,6 +30,8 @@ The configuration directory is `%APPDATA%\obituary` on Windows, `~/Library/Appli
 By default an item whose lifespan has run out goes into Obituary's own graveyard. For `graveyard.retention_days` days (7 unless you change it) you can put it back with `obit resurrect`; only after that is it deleted for good. The number can be anything from 1 to 3650.
 
 On Windows and Linux, set `graveyard.mode` to `recycle` to use the system Trash. Restore from the Trash, not with `obit resurrect`. macOS supports the graveyard only.
+
+`graveyard.max_size` is empty by default (no capacity limit). When set to a size such as `500MB`, `5GB`, `10GiB` or a byte count, Obituary tracks local file and directory burials in the graveyard (recursively without following symbolic links; container burials are excluded). When a normal burial pushes total usage above the limit, the oldest graves are purged first (`buried_at` ascending, then ID) until usage is back within the limit. When a single item is larger than the limit on its own, it stays safely in place without clearing older graves and moves into the For you queue so you can permanently delete, extend, untrack, or raise the limit. Lowering the limit with `obit config --max-size` previews and confirms what will be purged (`--dry-run` previews, `--yes` confirms non-interactively).
 
 ## Automatic registration and agent sessions
 

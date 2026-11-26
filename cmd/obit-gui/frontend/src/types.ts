@@ -4,6 +4,8 @@ export interface Summary {
   trackedCount: number;
   graveCount: number;
   graveBytes: number;
+  graveMaxBytes?: number;
+  quotaPendingCount?: number;
   pendingGraveCount: number;
   decisionCount: number;
   paused: boolean;
@@ -51,6 +53,8 @@ export interface GraveyardPage {
   rows: GraveRow[];
   total: number;
   pendingCount: number;
+  graveBytes?: number;
+  graveMaxBytes?: number;
   hasMore: boolean;
   nextAfter: string;
   restored: GraveResult[];
@@ -81,12 +85,39 @@ export interface Candidate {
   size: number;
 }
 
+export interface QuotaBurialReview {
+  itemId?: number;
+  itemRev?: number;
+  itemBytes: number;
+  maxBytes: number;
+  reason?: string;
+  isDir?: boolean;
+}
+
+export interface QuotaEvictionItem {
+  id: number;
+  path: string;
+  size: number;
+  buriedAt: string;
+}
+
+export interface QuotaEviction {
+  maxBytes: number;
+  beforeBytes: number;
+  afterBytes: number;
+  freedBytes: number;
+  purgedCount: number;
+  failedCount?: number;
+  items?: QuotaEvictionItem[];
+}
+
 export interface Proposal {
   id: number;
   kind: string;
   project: string;
   createdAt: string;
   candidates: Candidate[];
+  quotaReview?: QuotaBurialReview;
   // The version the user is looking at (internal/gui ReviewedProposal).
   // Approve and Reject send it back; a proposal that changed since is refused.
   fingerprint: string;
@@ -148,6 +179,10 @@ export interface Settings {
   };
   mode: "graveyard" | "recycle" | string;
   retentionDays: number;
+  graveyardMaxSize?: string;
+  graveyardMaxBytes?: number;
+  graveCount?: number;
+  graveBytes?: number;
   configPath: string;
   contextMenuInstalled: boolean;
   contextMenuCurrent: boolean;
@@ -193,6 +228,7 @@ export interface PlanReceipt {
   changed: boolean;
   applied?: string[] | null;
   remaining?: string[] | null;
+  quotaEviction?: QuotaEviction;
   error?: string;
 }
 
@@ -281,6 +317,8 @@ export interface Api {
   Proposals(): Promise<{ proposals: Proposal[]; handled?: AutoHandled[]; mode?: ProposalMode | string }>;
   Approve(refs: string[], fingerprints: string[]): Promise<BatchReply<ProposalResult>>;
   Reject(refs: string[], fingerprints: string[]): Promise<BatchReply<ProposalResult>>;
+  PurgeQuotaProposal?(ref: string, fingerprint: string): Promise<BatchReply<ProposalResult>>;
+  ExtendQuotaProposal?(ref: string, fingerprint: string, lifespan: string): Promise<BatchReply<ProposalResult>>;
   Rules(): Promise<{ rules: RuleFile[] }>;
   Trust(path: string, reviewedSHA256: string): Promise<RuleFile>;
   Untrust(path: string): Promise<{ action: string; path?: string; changed: boolean }>;
@@ -293,6 +331,8 @@ export interface Api {
   RemoveWatch(path: string): Promise<{ action: string; changed: boolean }>;
   Settings(): Promise<Settings>;
   PlanSettings(mode: string, retentionDays: number): Promise<Plan>;
+  PreviewGraveyardQuotaEviction?(maxSize: string): Promise<QuotaEviction>;
+  PlanGraveyardMaxSize?(maxSize: string): Promise<Plan>;
   PlanContextMenu(enabled: boolean): Promise<Plan>;
   PlanAutostart(enabled: boolean): Promise<Plan>;
   PlanPause(paused: boolean): Promise<Plan>;

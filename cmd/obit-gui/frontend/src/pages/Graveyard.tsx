@@ -4,7 +4,7 @@ import { useApi } from "../api";
 import { bytes, when } from "../format";
 import { useLoad, useRefresh } from "../hooks";
 import { t } from "../i18n";
-import { Button, Empty, Head, LifeLine, NameCell, SelectionBar, Skeleton, isContainer, useBatch, useConfirm, useResurrectReport } from "../ui";
+import { Button, Empty, GraveQuotaBar, Head, LifeLine, NameCell, SelectionBar, Skeleton, isContainer, useBatch, useConfirm, useResurrectReport } from "../ui";
 
 const pendingTone: Record<string, string> = { pending: "warn", interrupted: "warn", purging: "warn", empty: "warn", unverifiable: "danger" };
 const pendingText = (status: string): [string, string] | undefined =>
@@ -57,6 +57,7 @@ export default function Graveyard({ embedded = false }: { embedded?: boolean }) 
         }
       >
         {data?.total ? t("grave.deck", data.total, bytes(size)) : t("grave.deckEmpty")}
+        <GraveQuotaBar used={data?.graveBytes ?? size} max={data?.graveMaxBytes} />
       </Head>
       {error ? <div className="notice error">{t("grave.readError", error)}</div> : null}
       {data?.pendingCount ? <div className="notice warn">{t("grave.pending", data.pendingCount)}</div> : null}

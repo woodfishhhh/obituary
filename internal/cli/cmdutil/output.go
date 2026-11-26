@@ -98,8 +98,13 @@ func printBuryResult(r core.GraveResult, describe func(core.GraveResult) string)
 	if r.Warning != "" {
 		fmt.Fprintln(os.Stderr, language.Text("cli.warning", map[string]any{"Text": r.Warning}))
 	}
+	if r.QuotaOverflow != nil {
+		fmt.Fprintln(os.Stderr, FormatQuotaOverflow(language, r.QuotaOverflow, false))
+		return
+	}
 	if r.Error == "" {
 		fmt.Println(describe(r))
+		PrintQuotaEviction(os.Stderr, language, r.QuotaEviction, false)
 		return
 	}
 	detail := r.Error

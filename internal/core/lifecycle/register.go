@@ -274,6 +274,7 @@ func saveRegistration(st *State, ref string, c *candidate, idx int, replacement 
 		}
 		st.NextID++
 		st.Items = append(st.Items, item)
+		dropQuotaProposal(st, item.ID, &identity)
 		return Result{Ref: ref, Action: ActionAdded, Item: &item}
 	}
 	item := &st.Items[idx]
@@ -288,6 +289,7 @@ func saveRegistration(st *State, ref string, c *candidate, idx int, replacement 
 	}
 	item.Attempts, item.NextAttempt, item.LastError = 0, time.Time{}, ""
 	item.Rev++
+	dropQuotaProposal(st, item.ID, &identity)
 	copied := *item
 	return Result{Ref: ref, Action: ActionUpdated, Item: &copied}
 }

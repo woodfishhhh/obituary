@@ -32,8 +32,10 @@ func (s *Service) entomb(st *State, b *Burial, inside map[string]bool) error {
 	st.Stats.BuriedBytes += b.Size
 	queueAudit(st, Event{Time: s.now(), Action: ActionBuried, ID: b.ID, Path: b.Path, Detail: b.Grave})
 	dropWatchBurial(st, b.ID)
+	dropQuotaProposal(st, b.ID, b.Identity)
 	for _, child := range b.Children {
 		dropWatchBurial(st, child.ID)
+		dropQuotaProposal(st, child.ID, child.Identity)
 	}
 	st.Items = slices.DeleteFunc(st.Items, func(it Item) bool {
 		return it.ID == b.ID || slices.ContainsFunc(b.Children, func(child BuriedChild) bool { return it.ID == child.ID })
@@ -87,8 +89,8 @@ func (s *Service) bury(paths []string, force bool, note, source string) (results
 	return s.buryPaths(paths, force, note, source)
 }
 
-func (s *Service) buryPaths(paths []string, force bool, note, source string) ([]GraveResult, error) {
-	results := make([]GraveResult, len(paths))
+func (s *Service) buryPaths(paths []string, force bool, note, source string) (results []GraveResult, finalErr error) {
+	results = make([]GraveResult, len(paths))
 	for i, ref := range paths {
 		results[i] = GraveResult{Ref: ref, Action: ActionNotExecuted, Error: "not executed: an earlier operation failed"}
 	}
@@ -100,6 +102,11 @@ func (s *Service) buryPaths(paths []string, force bool, note, source string) ([]
 		return results, err
 	}
 	defer release()
+	defer func() {
+		if !commitFailed(finalErr) {
+			finalErr = errors.Join(finalErr, s.applyBuryQuota(results))
+		}
+	}()
 	recovery, err := s.recoverManifests(paths...)
 	if commitFailed(err) {
 		return s.failedBuryRecovery(paths, results, recovery), err
@@ -243,7 +250,10 @@ func (s *Service) recoveredBuryRef(ref, abs string, burials []Burial, err error)
 // finishBuryRef returns ledger failures to abort the batch, keeps other failed
 // outcomes in the receipt, and reports audit failures without stopping it.
 func (s *Service) finishBuryRef(ref string, item Item, o Outcome, audited bool) (GraveResult, error) {
-	r := GraveResult{Ref: ref, Action: o.Action, Burial: o.Burial}
+	r := GraveResult{Ref: ref, Action: o.Action, Burial: o.Burial, QuotaOverflow: o.QuotaOverflow}
+	if o.Action == ActionQuotaExceeded {
+		r.Detail = o.Detail
+	}
 	if o.Action == ActionBuried && item.Identity != nil && item.Identity.RequirePersistent() != nil {
 		r.Warning = "buried while its inode was pinned; creation time unavailable: later recovery and purge cannot verify this object; preserve the grave and recover it manually"
 	}
@@ -269,7 +279,7 @@ func (s *Service) finishBuryRef(ref string, item Item, o Outcome, audited bool) 
 			r.Error = "object was not buried: " + o.Action
 		}
 	}
-	if o.Action != ActionBuried && !audited {
+	if o.Action != ActionBuried && o.Action != ActionQuotaExceeded && !audited {
 		auditErr = errors.Join(auditErr, s.Store.RecordCommitted(Event{Time: s.now(), Action: o.Action, ID: item.ID, Path: item.Path, Detail: o.Detail}))
 	}
 	return r, auditErr

@@ -30,7 +30,7 @@ func (s *Service) sweepBurials(state State, roots []resolvedGraveyardRoot, block
 		return err
 	}
 	for _, snapshot := range state.Items {
-		if blocked[snapshot.ID] || !snapshot.Due(s.now()) || awaitingWatchBurial(&state, snapshot) {
+		if blocked[snapshot.ID] || !snapshot.Due(s.now()) || awaitingWatchBurial(&state, snapshot) || awaitingQuotaDecision(&state, snapshot, s.GraveyardMaxBytes) {
 			continue
 		}
 		if refresh {
@@ -42,7 +42,7 @@ func (s *Service) sweepBurials(state State, roots []resolvedGraveyardRoot, block
 			refresh = false
 		}
 		idx := current.Index(snapshot.ID)
-		if idx < 0 || !current.Items[idx].Due(s.now()) || awaitingWatchBurial(&current, current.Items[idx]) {
+		if idx < 0 || !current.Items[idx].Due(s.now()) || awaitingWatchBurial(&current, current.Items[idx]) || awaitingQuotaDecision(&current, current.Items[idx], s.GraveyardMaxBytes) {
 			continue
 		}
 		item := current.Items[idx]
@@ -196,7 +196,9 @@ func (s *Service) moveBurialPrefix(st *State, pending []*preparedBurial, owners 
 			if reason == ReasonExpired {
 				s.commitOutcome(st, p.out)
 			}
-			queueAudit(st, Event{Time: s.now(), Action: p.out.Action, ID: p.out.Item.ID, Path: p.out.Path, Detail: p.out.Detail})
+			if p.out.Action != ActionQuotaExceeded {
+				queueAudit(st, Event{Time: s.now(), Action: p.out.Action, ID: p.out.Item.ID, Path: p.out.Path, Detail: p.out.Detail})
+			}
 		}
 	}
 	return processed, nil, nil

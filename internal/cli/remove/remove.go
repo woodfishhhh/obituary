@@ -71,10 +71,16 @@ func RemovePaths(svc *core.Service, opts guardrm.RemoveOptions, name string, dir
 		if result.Action == core.ActionBuried || result.Action == core.ActionRecoveryPending {
 			buried = true
 		}
-		if result.Error != "" {
+		if result.QuotaOverflow != nil {
+			fmt.Fprintln(os.Stderr, cmdutil.FormatQuotaOverflow(cmdutil.Localizer(), result.QuotaOverflow, false))
+			failed = true
+		} else if result.Error != "" {
 			report(ref, errors.New(result.Error))
 		} else if opts.Verbose && result.Action != "" {
 			printRemoved(name, ref, result.Action)
+		}
+		if result.QuotaEviction != nil {
+			cmdutil.PrintQuotaEviction(os.Stderr, cmdutil.Localizer(), result.QuotaEviction, false)
 		}
 	}
 	if err := cmdutil.Committed(burialErr); err != nil {

@@ -24,6 +24,10 @@ type Settings struct {
 	DesktopShortcut      bool          `json:"desktopShortcut"`
 	Mode                 string        `json:"mode"`
 	RetentionDays        int           `json:"retentionDays"`
+	GraveyardMaxSize     string        `json:"graveyardMaxSize"`
+	GraveyardMaxBytes    int64         `json:"graveyardMaxBytes"`
+	GraveCount           int           `json:"graveCount"`
+	GraveBytes           int64         `json:"graveBytes"`
 	ConfigPath           string        `json:"configPath"`
 	ContextMenuInstalled bool          `json:"contextMenuInstalled"`
 	ContextMenuCurrent   bool          `json:"contextMenuCurrent"`
@@ -94,7 +98,10 @@ func (a *API) Settings() (Settings, error) {
 		}
 	}
 	paused, err := app.Paused(a.deps.Service.Store.Home)
-	return Settings{Capabilities: platformCapabilities(), TrayIcon: cfg.UI.Tray, Taskbar: cfg.UI.Taskbar, StartMenu: start != "", DesktopShortcut: desktop != "", Lifetime: lifetime, Downloads: downloadsFolder(), Mode: cfg.Graveyard.Mode, RetentionDays: cfg.Graveyard.RetentionDays, Language: cfg.UI.Language, EffectiveLanguage: language,
+	graveCount, graveBytes, _ := a.deps.Service.GraveyardDiskUsage()
+	return Settings{Capabilities: platformCapabilities(), TrayIcon: cfg.UI.Tray, Taskbar: cfg.UI.Taskbar, StartMenu: start != "", DesktopShortcut: desktop != "", Lifetime: lifetime, Downloads: downloadsFolder(), Mode: cfg.Graveyard.Mode, RetentionDays: cfg.Graveyard.RetentionDays,
+		GraveyardMaxSize: cfg.Graveyard.MaxSize, GraveyardMaxBytes: cfg.Graveyard.MaxBytes(), GraveCount: graveCount, GraveBytes: graveBytes,
+		Language: cfg.UI.Language, EffectiveLanguage: language,
 		ConfigPath: filepath.Join(a.deps.ConfigDir, "config.toml"), ContextMenuInstalled: menu.Installed,
 		ContextMenuCurrent: menu.Current, ContextMenuDetail: menu.Detail, Autostart: startup.Before != "", Paused: paused,
 		SessionSummary: cfg.Hooks.SessionSummary, SessionCleanup: cfg.Hooks.SessionCleanup, ProposalMode: cfg.Proposals.Mode}, err
@@ -114,16 +121,18 @@ type Plan struct {
 	Changes []ChangePreview `json:"changes"`
 }
 type pendingPlan struct {
-	view      Plan
-	apply     func() error
-	applyMenu func() (contextmenu.ApplyReceipt, error)
+	view       Plan
+	apply      func() error
+	applyMenu  func() (contextmenu.ApplyReceipt, error)
+	applyQuota func() (core.QuotaEviction, error)
 }
 
 type PlanReceipt struct {
 	Receipt
-	Applied   []string `json:"applied"`
-	Remaining []string `json:"remaining"`
-	Error     string   `json:"error,omitempty"`
+	Applied       []string            `json:"applied"`
+	Remaining     []string            `json:"remaining"`
+	QuotaEviction *core.QuotaEviction `json:"quotaEviction,omitempty"`
+	Error         string              `json:"error,omitempty"`
 }
 
 func (a *API) savePlan(action string, changes []ChangePreview, apply func() error) Plan {
@@ -235,6 +244,79 @@ func (a *API) ApplyPlan(id string) (PlanReceipt, error) {
 		return PlanReceipt{Receipt: Receipt{Action: plan.view.Action, Changed: len(out.Applied) > 0},
 			Applied: list(out.Applied), Remaining: list(out.Remaining), Error: errorText(err)}, nil
 	}
+	if plan.applyQuota != nil {
+		ev, err := plan.applyQuota()
+		var summary *core.QuotaEviction
+		if ev.PurgedCount > 0 || ev.FailedCount > 0 {
+			ev.Results = nil
+			summary = &ev
+		}
+		return PlanReceipt{Receipt: Receipt{Action: plan.view.Action, Changed: err == nil && len(plan.view.Changes) > 0},
+			Applied: []string{}, Remaining: []string{}, QuotaEviction: summary}, err
+	}
 	err := plan.apply()
 	return PlanReceipt{Receipt: Receipt{Action: plan.view.Action, Changed: err == nil && len(plan.view.Changes) > 0}, Applied: []string{}, Remaining: []string{}}, err
+}
+
+// PreviewGraveyardQuotaEviction inspects what lowering [graveyard] max_size
+// would evict without modifying config.toml, the ledger, or any file on disk.
+func (a *API) PreviewGraveyardQuotaEviction(maxSize string) (core.QuotaEviction, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	_, maxBytes, err := config.NormalizeByteSize(maxSize)
+	if err != nil {
+		return core.QuotaEviction{}, err
+	}
+	if maxBytes == 0 {
+		_, used, err := a.deps.Service.GraveyardDiskUsage()
+		return core.QuotaEviction{MaxBytes: 0, BeforeBytes: used, AfterBytes: used}, err
+	}
+	ev, err := a.deps.Service.PreviewGraveyardQuotaEviction(maxBytes)
+	ev.Results = nil
+	return ev, err
+}
+
+// PlanGraveyardMaxSize previews saving [graveyard] max_size; applying it
+// updates config.toml, updates the live service limit, and runs FIFO eviction.
+func (a *API) PlanGraveyardMaxSize(maxSize string) (Plan, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	norm, maxBytes, err := config.NormalizeByteSize(maxSize)
+	if err != nil {
+		return Plan{}, err
+	}
+	path := filepath.Join(a.deps.ConfigDir, "config.toml")
+	old, err := a.readConfig()
+	if err != nil {
+		return Plan{}, err
+	}
+	if old.Graveyard.MaxSize == norm {
+		return a.savePlan("graveyardMaxSize", []ChangePreview{}, func() error { return nil }), nil
+	}
+	change, err := integrate.PlanGraveyardMaxSizeConfig(path, norm)
+	if err != nil {
+		return Plan{}, err
+	}
+	preview := []ChangePreview{{Target: path, Before: "max_size=" + old.Graveyard.MaxSize, After: "max_size=" + norm}}
+	a.nextPlan++
+	view := Plan{ID: strconv.FormatUint(a.nextPlan, 10), Action: "graveyardMaxSize", Changes: preview}
+	a.plan = &pendingPlan{view: view, applyQuota: func() (core.QuotaEviction, error) {
+		if err := integrate.Apply([]integrate.Change{change}); err != nil {
+			return core.QuotaEviction{}, err
+		}
+		cfg, err := a.readConfig()
+		if err != nil {
+			return core.QuotaEviction{}, err
+		}
+		a.deps.Service.GraveyardMaxBytes = cfg.Graveyard.MaxBytes()
+		if maxBytes <= 0 {
+			return core.QuotaEviction{}, nil
+		}
+		ev, evErr := a.deps.Service.EnforceGraveyardQuota(false)
+		if core.OnlyAuditErrors(evErr) {
+			evErr = nil
+		}
+		return ev, evErr
+	}}
+	return view, nil
 }

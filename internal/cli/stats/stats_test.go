@@ -256,3 +256,36 @@ func TestDeleteStatsAfterRecovery(t *testing.T) {
 		}
 	}
 }
+
+func TestStatsShowsGraveyardQuotaAndPendingReminder(t *testing.T) {
+	clitest.IsolateRunner(t)
+	repo, _ := clitest.CommandDir(t)
+	clitest.WriteFixture(t, filepath.Join(os.Getenv("OBIT_CONFIG_DIR"), "config.toml"), "[graveyard]\nmax_size = '5000'\n")
+	svc, err := cmdutil.Open()
+	if err != nil {
+		t.Fatal(err)
+	}
+	small := filepath.Join(repo, "small.bin")
+	huge := filepath.Join(repo, "huge.bin")
+	if err := os.WriteFile(small, bytes.Repeat([]byte("s"), 2000), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(huge, bytes.Repeat([]byte("h"), 7000), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Bury([]string{small}, false, ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Bury([]string{huge}, false, ""); err != nil {
+		t.Fatal(err)
+	}
+	out, _, err := clitest.Execute(t, NewCmd())
+	if err != nil || !strings.Contains(out, "2.0 KiB / 4.9 KiB") || !strings.Contains(out, "quota pending 1") {
+		t.Fatalf("stats text missing quota usage/pending: %s %v", out, err)
+	}
+	jsonOut, _, err := clitest.Execute(t, NewCmd(), "--json")
+	var got core.Summary
+	if err != nil || json.Unmarshal([]byte(jsonOut), &got) != nil || got.GraveMaxBytes != 5000 || got.QuotaPendingCount != 1 {
+		t.Fatalf("stats json missing quota fields: %s %+v %v", jsonOut, got, err)
+	}
+}

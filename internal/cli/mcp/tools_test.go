@@ -560,3 +560,52 @@ func TestMCPListsLegacyLongNotes(t *testing.T) {
 		t.Fatalf("display truncation changed ledger: %v", err)
 	}
 }
+
+func TestMCPBuryQuotaOverflowAndFIFOEviction(t *testing.T) {
+	clitest.IsolateRunner(t)
+	repo, _ := clitest.CommandDir(t)
+	clitest.WriteFixture(t, filepath.Join(os.Getenv("OBIT_CONFIG_DIR"), "config.toml"), "[graveyard]\nmax_size = '5000'\n")
+	svc, err := cmdutil.Open()
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := clitest.ConnectMCP(t, NewServer(svc, "0.1.0-dev"))
+
+	f1 := filepath.Join(repo, "f1.bin")
+	f2 := filepath.Join(repo, "f2.bin")
+	huge := filepath.Join(repo, "huge.bin")
+	for p, n := range map[string]int{f1: 3000, f2: 3000, huge: 8000} {
+		if err := os.WriteFile(p, []byte(strings.Repeat("x", n)), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	clitest.CallMCP(t, s, "obit_bury", map[string]any{"paths": []string{f1}}, false, nil)
+
+	// Plan A via MCP: returns error with clear AI reminder, keeps file and old grave.
+	rOver := clitest.CallMCP(t, s, "obit_bury", map[string]any{"paths": []string{huge}}, true, nil)
+	encodedOver, _ := json.Marshal(rOver)
+	if !strings.Contains(string(encodedOver), "quota-exceeded") || !strings.Contains(string(encodedOver), "raw rm") {
+		t.Fatalf("MCP Plan A response missing AI guidance: %s", encodedOver)
+	}
+	if _, err := os.Stat(huge); err != nil {
+		t.Fatalf("oversized file missing after MCP Plan A: %v", err)
+	}
+
+	// FIFO via MCP: buries f2, evicts f1, attaches structured quotaEviction + warning.
+	rFIFO := clitest.CallMCP(t, s, "obit_bury", map[string]any{"paths": []string{f2}}, false, nil)
+	encodedFIFO, _ := json.Marshal(rFIFO)
+	if !strings.Contains(string(encodedFIFO), `"quotaEviction"`) || !strings.Contains(string(encodedFIFO), "automatically purged 1 oldest") {
+		t.Fatalf("MCP FIFO response missing eviction notice: %s", encodedFIFO)
+	}
+
+	// obit_stats exposes graveMaxBytes and quotaPendingCount.
+	var summary core.Summary
+	rStats := clitest.CallMCP(t, s, "obit_stats", struct{}{}, false, &summary)
+	if summary.GraveMaxBytes != 5000 || summary.QuotaPendingCount != 1 {
+		t.Fatalf("MCP stats missing quota fields: %+v", summary)
+	}
+	encodedStats, _ := json.Marshal(rStats)
+	if !strings.Contains(string(encodedStats), "graveyard.max_size") {
+		t.Fatalf("MCP stats missing quota pending warning: %s", encodedStats)
+	}
+}

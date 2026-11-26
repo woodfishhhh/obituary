@@ -41,6 +41,34 @@ func PlanGraveyardConfig(path, mode string, retentionDays int) (Change, error) {
 	return setIntegrationData(ch, data), nil
 }
 
+// PlanGraveyardMaxSizeConfig updates [graveyard] max_size while preserving comments and formatting.
+func PlanGraveyardMaxSizeConfig(path, maxSize string) (Change, error) {
+	ch, err := readIntegrationChange(Scope{Global: true}, path)
+	if err != nil {
+		return ch, err
+	}
+	if _, err := config.Parse(ch.orig, path); err != nil {
+		return ch, err
+	}
+	canonical, _, err := config.NormalizeByteSize(maxSize)
+	if err != nil {
+		return ch, err
+	}
+	data := ch.orig
+	if !ch.existed {
+		data = []byte(config.Template)
+	}
+	data, err = setConfigValue(data, "graveyard", "max_size", strconv.Quote(canonical))
+	if err != nil {
+		return ch, err
+	}
+	if _, err := config.Parse(data, path); err != nil {
+		return ch, err
+	}
+	ch.Detail = fmt.Sprintf("graveyard.max_size=%q", canonical)
+	return setIntegrationData(ch, data), nil
+}
+
 func tomlKeys(n *unstable.Node) []string {
 	var keys []string
 	iter := n.Key()

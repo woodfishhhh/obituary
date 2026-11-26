@@ -1,4 +1,4 @@
-import { Check, CheckCheck, EyeOff, FileCode2, Inbox, RotateCcw, ShieldCheck, ShieldOff, TimerReset, X } from "lucide-react";
+import { Check, CheckCheck, EyeOff, FileCode2, Flame, HardDrive, Inbox, RotateCcw, Settings as SettingsIcon, ShieldCheck, ShieldOff, TimerReset, X } from "lucide-react";
 import { useState } from "react";
 import { errorText, useApi } from "../api";
 import { approvalReceipt } from "../approval";
@@ -7,10 +7,10 @@ import { bytes, extendedTo, lifespanText, ruleOrigin, rulePattern, underProject,
 import { useLoad, useRefresh } from "../hooks";
 import { askDecisions, setAskDecisions } from "../prefs";
 import type { AutoHandled, Item, Proposal, ProposalMode, RuleFile } from "../types";
-import { Button, Empty, Head, LifeLine, NameCell, Outcome, Seg, Skeleton, isContainer, useConfirm, useToast, type OutcomeNote } from "../ui";
+import { Button, Empty, Head, LifeLine, NameCell, Outcome, Seg, Skeleton, isContainer, useConfirm, useNavigate, useToast, type OutcomeNote } from "../ui";
 import { extendSpans, spanLabel } from "../variants/shared";
 
-const kinds = ["onboard", "large", "leftovers", "watch-policy", "watch-burial", "container"] as const;
+const kinds = ["onboard", "large", "leftovers", "watch-policy", "watch-burial", "graveyard-quota", "container"] as const;
 const kindText = (kind: string) => ((kinds as readonly string[]).includes(kind) ? t(`kind.${kind as (typeof kinds)[number]}`) : kind);
 const ruleTone: Record<string, string> = { untrusted: "warn", changed: "danger", trusted: "ok" };
 export const modes: ProposalMode[] = ["off", "tiered", "auto", "ask"];
@@ -35,8 +35,8 @@ export default function Decisions() {
   // A failed burial is due by definition, so the next 24 hours hold them all.
   const failed = (data?.[2].items ?? []).filter((it) => it.lastError && (stuck(it) || !waitingWatch(it.lastError)));
   const waiting = proposals.length + pending.length + failed.filter(stuck).length;
-  // An expired folder moves now when approved; it is never part of "approve all".
-  const batchable = proposals.filter((p) => p.kind !== "watch-burial");
+  // An expired folder or oversized quota item is never part of "approve all".
+  const batchable = proposals.filter((p) => p.kind !== "watch-burial" && p.kind !== "graveyard-quota");
 
   // One proposal at a time, each with the fingerprint shown on its card, so a
   // proposal that changed meanwhile is refused instead of half-applied.
@@ -88,7 +88,9 @@ export default function Decisions() {
           {batchable.length > 1 ? <Button kind="primary" icon={CheckCheck} onClick={approveAll}>{t("dec.approveAll", batchable.length)}</Button> : null}
         </div>
       ) : null}
-      {proposals.map((p) => <ProposalCard key={`${p.id}-${p.fingerprint}`} p={p} onOutcome={setNote} />)}
+      {proposals.map((p) => p.kind === "graveyard-quota"
+        ? <QuotaDecisionCard key={`${p.id}-${p.fingerprint}`} p={p} onOutcome={setNote} />
+        : <ProposalCard key={`${p.id}-${p.fingerprint}`} p={p} onOutcome={setNote} />)}
       {pending.length ? <div className="section-title">{t("dec.rules")}</div> : null}
       {pending.map((r) => <RuleCard key={r.path} r={r} />)}
       {trusted.length ? <details><summary className="hint">{t("dec.trusted", trusted.length)}</summary>{trusted.map((r) => <RuleCard key={r.path} r={r} />)}</details> : null}
@@ -225,6 +227,118 @@ const PROPOSAL_CHANGED = "proposal_changed";
 
 function candidateDetails(receipt: ReturnType<typeof approvalReceipt>): [string,string][] {
   return receipt.rows.map(r => [r.ref, r.pending ? t("dec.pendingItem", r.error ?? "") : r.error ? t("dec.failedItem", r.error) : t("dec.appliedItem")]);
+}
+
+function QuotaDecisionCard({ p, onOutcome }: { p: Proposal; onOutcome: (note: OutcomeNote | null) => void }) {
+  const api = useApi();
+  const { bump } = useRefresh();
+  const confirm = useConfirm();
+  const toast = useToast();
+  const navigate = useNavigate();
+  const [span, setSpan] = useState("1d");
+  const c = p.candidates[0];
+  const itemBytes = p.quotaReview?.itemBytes ?? c?.size ?? 0;
+  const maxBytes = p.quotaReview?.maxBytes ?? 0;
+  const path = c?.path ?? "";
+
+  async function extendItem() {
+    if (!api.ExtendQuotaProposal) return;
+    try {
+      const reply = await api.ExtendQuotaProposal(`#${p.id}`, p.fingerprint, span);
+      const failure = reply.error || reply.results[0]?.error;
+      if (failure) {
+        onOutcome({ title: t("dec.failed", p.id, true), text: failure });
+        toast(failure, "error");
+      } else {
+        onOutcome(null);
+        toast(t("quota.dec.extended", spanLabel(span)));
+      }
+    } catch (error) {
+      toast(errorText(error), "error");
+    }
+    bump();
+  }
+
+  async function spareItem() {
+    const ok = await confirm({
+      title: t("ask.cancel", 1),
+      body: <><p>{t("ask.cancelBody")}</p><ul><li>{path}</li></ul></>,
+      ok: t("stopTracking"),
+    });
+    if (!ok) return;
+    try {
+      const reply = await api.Reject([`#${p.id}`], [p.fingerprint]);
+      const failure = reply.error || reply.results[0]?.error;
+      if (failure) {
+        onOutcome({ title: t("dec.failed", p.id, false), text: failure });
+        toast(failure, "error");
+      } else {
+        onOutcome(null);
+        toast(t("quota.dec.spared", path));
+      }
+    } catch (error) {
+      toast(errorText(error), "error");
+    }
+    bump();
+  }
+
+  async function purgeItem() {
+    if (!api.PurgeQuotaProposal) return;
+    const ok = await confirm({
+      title: t("quota.dec.askPurge"),
+      body: <><p>{t("quota.dec.purgeBody", bytes(itemBytes))}</p><ul><li>{path}</li></ul></>,
+      ok: t("quota.dec.purge"),
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      const reply = await api.PurgeQuotaProposal(`#${p.id}`, p.fingerprint);
+      const failure = reply.error || reply.results[0]?.error;
+      if (failure) {
+        onOutcome({ title: t("dec.failed", p.id, true), text: failure });
+        toast(failure, "error");
+      } else {
+        onOutcome(null);
+        toast(t("quota.dec.purged", path));
+      }
+    } catch (error) {
+      toast(errorText(error), "error");
+    }
+    bump();
+  }
+
+  return (
+    <section className="card panel quota-dec-card">
+      <div className="panel-head">
+        <HardDrive size={16} aria-hidden />
+        <span className="panel-title">{kindText(p.kind)}</span>
+        {maxBytes > 0 ? <span className="tag warn">{bytes(itemBytes)} / {bytes(maxBytes)}</span> : null}
+        <span className="grow" />
+        <span className="hint">#{p.id}，{when(p.createdAt)}</span>
+      </div>
+      <p className="quota-dec-reason">{maxBytes > 0 ? t("quota.dec.reason", bytes(itemBytes), bytes(maxBytes)) : c?.rule}</p>
+      {c ? (
+        <div className="quota-dec-item">
+          <NameCell path={path} isDir={p.quotaReview?.isDir} />
+          <span className="num">{bytes(itemBytes)}</span>
+        </div>
+      ) : null}
+      <div className="quota-dec-foot">
+        {api.ExtendQuotaProposal ? (
+          <>
+            <select className="select" aria-label={t("howLong")} value={span} onChange={(e) => setSpan(e.target.value)}>
+              {extendSpans().map(([v, label]) => <option key={v} value={v}>{t("extendBy", label)}</option>)}
+            </select>
+            <Button icon={TimerReset} onClick={extendItem}>{t("extend")}</Button>
+          </>
+        ) : null}
+        <Button icon={EyeOff} onClick={spareItem}>{t("stopTracking")}</Button>
+        {navigate ? <Button icon={SettingsIcon} onClick={() => navigate("settings")}>{t("quota.dec.raiseLimit")}</Button> : null}
+        <span className="grow" />
+        {api.PurgeQuotaProposal ? <Button kind="danger" icon={Flame} onClick={purgeItem}>{t("quota.dec.purge")}</Button> : null}
+      </div>
+    </section>
+  );
 }
 
 function ProposalCard({ p, onOutcome }: { p: Proposal; onOutcome: (note: OutcomeNote | null) => void }) {

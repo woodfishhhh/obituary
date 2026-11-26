@@ -12,6 +12,7 @@ import Settings from "../../pages/Settings";
 import { t, useTrackingHint } from "../../i18n";
 import Notices from "../../notices";
 import { pageTitle, type ShellProps } from "../../shell";
+import { GraveQuotaBar } from "../../ui";
 import { DAY, extendSpans, hm, md, nameOf, remaining, sourceLabel, span, Star, useGraves, useItems, weekday } from "../shared";
 import { columnTemplate } from "./columns";
 import "./calendar.css";
@@ -116,10 +117,10 @@ function Name({ name }: { name: string }) {
   return <span className="cal-name"><span>{name.slice(0, cut)}</span><span>{name.slice(cut)}</span></span>;
 }
 
-function Head({ title, deck, children }: { title: string; deck: ReactNode; children?: ReactNode }) {
+function Head({ title, deck, extra, children }: { title: string; deck: ReactNode; extra?: ReactNode; children?: ReactNode }) {
   return (
     <div className="cal-head">
-      <div className="cal-head-text"><h1>{title}</h1><p>{deck}</p></div>
+      <div className="cal-head-text"><h1>{title}</h1><p>{deck}</p>{extra}</div>
       <div className="cal-actions">{children}</div>
     </div>
   );
@@ -149,7 +150,8 @@ function Graves() {
   const k = g.sel.chosen.length;
   return (
     <div className="cal-page">
-      <Head title={t("head.graveyard")} deck={n ? t("cal.graveDeck", n, bytes(g.bytes)) : t("cal.graveDeckEmpty")}>
+      <Head title={t("head.graveyard")} deck={n ? t("cal.graveDeck", n, bytes(g.bytes)) : t("cal.graveDeckEmpty")}
+        extra={<GraveQuotaBar used={g.graveBytes} max={g.graveMaxBytes} />}>
         <label className="cal-search"><Search size={14} aria-hidden /><input type="search" placeholder={t("filterByPath")} aria-label={t("filterByPath")} value={filter} onChange={(e) => setFilter(e.target.value)} /></label>
         <span className="cal-picked" aria-live="polite">{k ? t("cal.pickedGraves", k) : t("cal.pickGraves")}</span>
         <button type="button" className="cal-btn gold" disabled={!k} onClick={() => g.resurrect()}><Star size={13} />{t("resurrect")}</button>

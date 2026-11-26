@@ -77,7 +77,7 @@ func printDecisions(results []core.ProposalResult, approve bool) {
 		for _, res := range r.Results {
 			if res.Error != "" {
 				fmt.Printf(cmdutil.Text("cli.proposals.skipped"), res.Ref, res.Error)
-			} else if r.Proposal.Kind == core.ProposalWatchBurial {
+			} else if r.Proposal.Kind == core.ProposalWatchBurial || r.Proposal.Kind == core.ProposalGraveyardQuota {
 				fmt.Printf(cmdutil.Text("cli.proposals.buried"), res.Item.ID, res.Item.Path)
 			} else {
 				fmt.Printf(cmdutil.Text("cli.proposals.expires"), res.Item.ID, res.Item.Path, cmdutil.When(res.Item.ExpiresAt))

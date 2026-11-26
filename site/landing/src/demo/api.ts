@@ -44,7 +44,8 @@ export function createDemoApi(lang: Lang): { api: Api; items: () => DemoItem[]; 
     Graveyard: ({ filter }) => {
       const rows = burials.filter((b) => !filter || b.path.toLowerCase().includes(filter.toLowerCase()))
         .sort((a, b) => +new Date(b.buriedAt) - +new Date(a.buriedAt)).map((b) => ({ id: b.id, status: "buried", burial: b }));
-      return wait({ rows, total: rows.length, pendingCount: 0, hasMore: false, nextAfter: "", restored: [] });
+      const graveBytes = burials.filter((b) => !b.kind).reduce((n, b) => n + b.size, 0);
+      return wait({ rows, total: rows.length, pendingCount: 0, graveBytes, graveMaxBytes: 0, hasMore: false, nextAfter: "", restored: [] });
     },
     Resurrect: (refs) => wait({
       results: refs.map((ref) => {

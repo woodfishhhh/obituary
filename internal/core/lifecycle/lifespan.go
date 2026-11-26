@@ -74,10 +74,12 @@ func (s *Service) mutate(refs []string, action string, apply func(*State, int)) 
 				continue
 			}
 			id := st.Items[idx].ID
+			identity := st.Items[idx].Identity
 			st.Items[idx].Path = path
 			after := st.Items[idx]
 			apply(st, idx)
 			dropWatchBurial(st, id)
+			dropQuotaProposal(st, id, identity)
 			if j := st.Index(id); j >= 0 {
 				after = st.Items[j]
 			}

@@ -30,7 +30,8 @@ func Open() (*core.Service, error) {
 	svc := &core.Service{
 		Docker: docker.CLI{},
 		Store:  core.Store{Home: home}, Guard: Guard(home), FS: winfs.FS{},
-		Mode: cfg.Graveyard.Mode, Retention: cfg.Graveyard.Retention(), WatchStableWindow: cfg.Watch.Stability(), WatchFileProposals: cfg.Watch.FileExpiry == "propose", SessionSummary: cfg.Hooks.SessionSummary,
+		Mode: cfg.Graveyard.Mode, Retention: cfg.Graveyard.Retention(), GraveyardMaxBytes: cfg.Graveyard.MaxBytes(),
+		WatchStableWindow: cfg.Watch.Stability(), WatchFileProposals: cfg.Watch.FileExpiry == "propose", SessionSummary: cfg.Hooks.SessionSummary,
 		SessionCleanup: cfg.Hooks.SessionCleanup, ProposalMode: cfg.Proposals.Mode,
 		Owner: auto.Owner, OwnerBatch: auto.OwnerBatch, PrepareOwners: auto.PrepareOwners,
 	}
@@ -55,6 +56,7 @@ func configured(svc *core.Service) (*core.Service, config.Config, error) {
 	}
 	svc = svc.WithContext(svc.Store.Context())
 	svc.Mode, svc.Retention = cfg.Graveyard.Mode, cfg.Graveyard.Retention()
+	svc.GraveyardMaxBytes = cfg.Graveyard.MaxBytes()
 	svc.WatchStableWindow = cfg.Watch.Stability()
 	svc.WatchFileProposals = cfg.Watch.FileExpiry == "propose"
 	svc.ProposalMode = cfg.Proposals.Mode

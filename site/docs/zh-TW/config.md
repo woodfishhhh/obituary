@@ -8,6 +8,7 @@
 | --- | --- | --- |
 | `graveyard.mode` | `graveyard` | `graveyard`、`recycle` |
 | `graveyard.retention_days` | `7` | 1 到 3650 的整數 |
+| `graveyard.max_size` | `""`（不限制） | 容量字串（例如 `500MB`、`5GB`、`10GiB`）、位元組數，`0` / `""` / `unlimited` 表示不限制 |
 | `proposals.mode` | `off` | `off`、`tiered`、`auto`、`ask` |
 | `hooks.session_cleanup` | `true` | `true`、`false` |
 | `hooks.session_summary` | `false` | `true`、`false` |
@@ -29,6 +30,8 @@
 預設情況下，壽命用完的項目會進訃告自己的墓地，在 `graveyard.retention_days` 天內（預設 7 天）可以用 `obit resurrect` 放回原處，超過這個期限才會被永久刪除。天數可以在 1 到 3650 之間調整。
 
 Windows 和 Linux 可將 `graveyard.mode` 設為 `recycle`。請從系統資源回收筒還原，不能用 `obit resurrect`。macOS 僅支援墓地。
+
+`graveyard.max_size` 預設留空（不限制墓地容量）。設為具體容量（例如 `500MB`、`5GB`、`10GiB` 或位元組數）後，僅統計墓地裡本機檔案與目錄的實際占用（不跟隨符號連結，不含容器）：正常下葬導致總占用超限時，會依最早下葬順序自動火化最舊的墓地直到降回上限以內；單件本身大於上限時不移入墓地也不清空舊墓地，而是安全留在原處並轉入「待你決定」佇列，由你決定永久刪除、延長、不再追蹤或調高上限。使用 `obit config --max-size` 調低上限時會先預演並確認，可搭配 `--dry-run` 預覽、`--yes` 非互動確認。
 
 ## 自動登記與 agent 工作階段
 

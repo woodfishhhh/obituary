@@ -42,9 +42,16 @@ func NewCmd() *cobra.Command {
 			if sum.NextDue != nil {
 				fmt.Printf(cmdutil.Text("cli.stats.next_due"), cmdutil.When(*sum.NextDue))
 			}
-			fmt.Printf(cmdutil.Text("cli.stats.graveyard"), sum.Graves, textutil.Bytes(sum.GraveBytes))
+			if sum.GraveMaxBytes > 0 {
+				fmt.Printf(cmdutil.Text("cli.stats.graveyard_quota"), sum.Graves, textutil.Bytes(sum.GraveBytes), textutil.Bytes(sum.GraveMaxBytes))
+			} else {
+				fmt.Printf(cmdutil.Text("cli.stats.graveyard"), sum.Graves, textutil.Bytes(sum.GraveBytes))
+			}
 			if sum.NextPurge != nil {
 				fmt.Printf(cmdutil.Text("cli.stats.next_purge"), cmdutil.When(*sum.NextPurge))
+			}
+			if sum.QuotaPendingCount > 0 {
+				fmt.Printf(cmdutil.Text("cli.stats.quota_pending"), sum.QuotaPendingCount)
 			}
 			fmt.Printf(cmdutil.Text("cli.stats.buried"), l.Buried, textutil.Bytes(l.BuriedBytes))
 			fmt.Printf(cmdutil.Text("cli.stats.reclaimed"), l.Purged, textutil.Bytes(l.PurgedBytes))

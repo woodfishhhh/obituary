@@ -1,19 +1,19 @@
-import { AppWindow, Archive, CalendarClock, ClipboardList, FolderInput, FolderOpen, Inbox, LayoutGrid, ListChecks, Monitor, MousePointerClick, PanelBottom, PauseCircle, Plus, Power, Sparkles, Trash2 } from "lucide-react";
-import { Fragment, useState, type ReactNode } from "react";
+import { AppWindow, Archive, CalendarClock, ClipboardList, FolderInput, FolderOpen, HardDrive, Inbox, LayoutGrid, ListChecks, Monitor, MousePointerClick, PanelBottom, PauseCircle, Plus, Power, Sparkles, Trash2 } from "lucide-react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { errorText, useApi } from "../api";
 import { bytes, lifespanText, when } from "../format";
 import { useLoad, useRefresh } from "../hooks";
 import { askDecisions, setAskDecisions } from "../prefs";
 import { t, useLangChoice } from "../i18n";
-import type { Lifetime, Plan, PlanReceipt, ProposalMode, WatchPolicy } from "../types";
-import { Button, Head, Outcome, Seg, Skeleton, useConfirm, useToast, type OutcomeNote } from "../ui";
+import type { Lifetime, Plan, PlanReceipt, ProposalMode, Settings as SettingsData, WatchPolicy } from "../types";
+import { Button, GraveQuotaBar, Head, Outcome, Seg, Skeleton, useConfirm, useToast, type OutcomeNote } from "../ui";
 import About from "./About";
 import Appearance from "./Appearance";
 import { modes } from "./Decisions";
 
 const watchActive = (p: WatchPolicy) => p.consent === undefined || (p.consent === "approved" && (p.approvedRev ?? 0) === (p.rev ?? 0));
 const ages = (): [string, string][] => [["first-seen", t("set.age.firstSeen")], ["modified", t("set.age.modified")]];
-const actions = ["settings", "contextMenu", "autostart", "pause", "language", "sessionSummary", "sessionCleanup", "proposalMode", "updateCheck", "trayIcon", "taskbar", "startMenu", "desktopShortcut"] as const;
+const actions = ["settings", "graveyardMaxSize", "contextMenu", "autostart", "pause", "language", "sessionSummary", "sessionCleanup", "proposalMode", "updateCheck", "trayIcon", "taskbar", "startMenu", "desktopShortcut"] as const;
 const actionText = (action: string) => ((actions as readonly string[]).includes(action) ? t(`set.action.${action as (typeof actions)[number]}`) : action);
 
 export default function Settings() {
@@ -121,6 +121,8 @@ export default function Settings() {
         </Setting>
       </div>
 
+      {api.PlanGraveyardMaxSize ? <GraveyardQuotaCard s={s} /> : null}
+
       {(!s.capabilities || Object.values(s.capabilities).some(Boolean)) && <><div className="section-title">{t("set.entry")}</div>
       <div className="card">
         {s.capabilities?.trayVisibility !== false && s.trayIcon !== undefined && api.PlanTrayIcon ? (
@@ -202,6 +204,161 @@ function Setting({ icon: Icon, label, desc, children }: { icon: typeof Archive; 
 
 function Switch({ on, label, onToggle }: { on: boolean; label: string; onToggle: () => void }) {
   return <button type="button" role="switch" className="switch" aria-checked={on} aria-label={label} onClick={onToggle} />;
+}
+
+const quotaPresets: [string, string, "MB" | "GB", string][] = [
+  ["1GB", "1", "GB", "1 GB"],
+  ["5GB", "5", "GB", "5 GB"],
+  ["10GB", "10", "GB", "10 GB"],
+  ["20GB", "20", "GB", "20 GB"],
+];
+
+function splitQuotaLimit(maxBytes: number): { amount: string; unit: "MB" | "GB" } {
+  if (!maxBytes || maxBytes <= 0) return { amount: "5", unit: "GB" };
+  const GiB = 1024 ** 3;
+  const MiB = 1024 ** 2;
+  if (maxBytes >= GiB && maxBytes % GiB === 0) return { amount: String(maxBytes / GiB), unit: "GB" };
+  if (maxBytes >= MiB) return { amount: String(Number((maxBytes / MiB).toFixed(2))), unit: "MB" };
+  return { amount: String(Number((maxBytes / MiB).toFixed(3))), unit: "MB" };
+}
+
+function GraveyardQuotaCard({ s }: { s: SettingsData }) {
+  const api = useApi();
+  const { bump } = useRefresh();
+  const confirm = useConfirm();
+  const toast = useToast();
+  const currentMax = s.graveyardMaxBytes ?? 0;
+  const saved = splitQuotaLimit(currentMax);
+  const [enabled, setEnabled] = useState(currentMax > 0);
+  const [amount, setAmount] = useState(saved.amount);
+  const [unit, setUnit] = useState<"MB" | "GB">(saved.unit);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const next = splitQuotaLimit(currentMax);
+    setEnabled(currentMax > 0);
+    setAmount(next.amount);
+    setUnit(next.unit);
+  }, [currentMax, s.graveyardMaxSize]);
+
+  const parsed = Number(amount.trim());
+  const valid = Number.isFinite(parsed) && parsed > 0;
+  const candidate = valid ? `${parsed}${unit}` : "";
+  const candidateBytes = valid ? Math.round(parsed * (unit === "GB" ? 1024 ** 3 : 1024 ** 2)) : 0;
+  const dirty = enabled && (currentMax <= 0 || candidateBytes !== currentMax);
+
+  async function toggleEnabled() {
+    if (enabled) {
+      if (currentMax <= 0) {
+        setEnabled(false);
+        return;
+      }
+      setBusy(true);
+      try {
+        const plan = await api.PlanGraveyardMaxSize!("");
+        await api.ApplyPlan(plan.id);
+        toast(t("quota.savedUnlimited"));
+        bump();
+      } catch (error) {
+        toast(errorText(error), "error");
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+    setEnabled(true);
+  }
+
+  async function saveLimit() {
+    if (!valid || !candidate) {
+      toast(t("quota.invalid"), "error");
+      return;
+    }
+    setBusy(true);
+    try {
+      const preview = api.PreviewGraveyardQuotaEviction ? await api.PreviewGraveyardQuotaEviction(candidate) : null;
+      if (preview && preview.purgedCount > 0) {
+        const ok = await confirm({
+          title: t("quota.lowerTitle"),
+          body: (
+            <>
+              <p>{t("quota.lowerBody", bytes(preview.beforeBytes), bytes(preview.maxBytes), preview.purgedCount, bytes(preview.freedBytes), bytes(preview.afterBytes))}</p>
+              {preview.items?.length ? (
+                <ul>{preview.items.map((item) => <li key={item.id}>{item.path} ({bytes(item.size)})</li>)}</ul>
+              ) : null}
+            </>
+          ),
+          ok: t("quota.lowerOk"),
+          danger: true,
+        });
+        if (!ok) return;
+      }
+      const plan = await api.PlanGraveyardMaxSize!(candidate);
+      if (!plan.changes.length) {
+        toast(t("set.already"));
+        return;
+      }
+      const receipt = await api.ApplyPlan(plan.id);
+      if (receipt.quotaEviction && receipt.quotaEviction.purgedCount > 0) {
+        const ev = receipt.quotaEviction;
+        toast(t("quota.savedEvicted", bytes(ev.maxBytes), ev.purgedCount, bytes(ev.freedBytes), bytes(ev.afterBytes)));
+      } else {
+        toast(t("quota.saved", `${parsed} ${unit}`));
+      }
+      bump();
+    } catch (error) {
+      toast(errorText(error), "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <div className="section-title">{t("quota.title")}</div>
+      <section className="card quota-card" aria-label={t("quota.title")}>
+        <div className="quota-head">
+          <span className="setting-icon"><HardDrive aria-hidden /></span>
+          <div className="quota-head-info">
+            <div className="quota-head-title">
+              <span>{t("quota.title")}</span>
+              <span className={`tag${currentMax > 0 ? " ok" : ""}`}>{currentMax > 0 ? bytes(currentMax) : t("quota.unlimited")}</span>
+            </div>
+            <div className="quota-usage-row">
+              <span>{t("quota.usage", bytes(s.graveBytes ?? 0), s.graveCount ?? 0)}</span>
+            </div>
+            {currentMax > 0 ? <GraveQuotaBar used={s.graveBytes ?? 0} max={currentMax} /> : null}
+          </div>
+          <Switch on={enabled} label={t("quota.limitToggle")} onToggle={toggleEnabled} />
+        </div>
+        {enabled ? (
+          <div className="quota-controls">
+            <div className="quota-presets" role="group" aria-label={t("quota.presets")}>
+              <span className="hint">{t("quota.presets")}</span>
+              {quotaPresets.map(([key, n, u, label]) => (
+                <button key={key} type="button" className="quota-preset" aria-pressed={amount === n && unit === u}
+                  onClick={() => { setAmount(n); setUnit(u); }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="quota-custom">
+              <span className="hint">{t("quota.custom")}</span>
+              <input className="input" type="number" min={1} step="any" style={{ width: 96 }} aria-label={t("quota.custom")} value={amount} onChange={(e) => setAmount(e.target.value)} />
+              <select className="select" aria-label={t("set.unitLabel")} value={unit} onChange={(e) => setUnit(e.target.value as "MB" | "GB")}>
+                <option value="MB">MB</option>
+                <option value="GB">GB</option>
+              </select>
+              <Button kind="primary" disabled={busy || !valid || !dirty} onClick={saveLimit}>{t("quota.save")}</Button>
+            </div>
+            <p className="quota-note">{t("quota.planAHint")}</p>
+          </div>
+        ) : (
+          <p className="quota-note">{t("quota.desc")}</p>
+        )}
+      </section>
+    </>
+  );
 }
 
 // A folder, a number and a unit: no paths or "2w" to type unless wanted.

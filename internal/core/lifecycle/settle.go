@@ -116,6 +116,9 @@ func (s *Service) prepareSettlement(item Item, dryRun bool, reason string, roots
 	if reason == ReasonExpired && item.Source == "watch" && (item.IsDir || posixWatchFile(item) && s.WatchFileProposals) {
 		return s.proposeWatchBurial(out, dryRun)
 	}
+	if quotaOut, deferred := s.checkBurialQuota(out, dryRun, reason); deferred {
+		return quotaOut
+	}
 	lifespans, err := s.preflightChildLifespans(state, item, target, reason)
 	if err != nil {
 		return failedMove(out, err)

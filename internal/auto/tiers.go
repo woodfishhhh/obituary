@@ -157,7 +157,7 @@ func (e *Engine) AutoApprovePending() error {
 	}
 	var errs error
 	for _, p := range st.Proposals {
-		if p.Kind == core.ProposalWatch || p.Kind == core.ProposalWatchBurial {
+		if p.Kind == core.ProposalWatch || p.Kind == core.ProposalWatchBurial || p.Kind == core.ProposalGraveyardQuota {
 			continue
 		}
 		if _, err := e.autoApprove(p.ID); err != nil {

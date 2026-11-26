@@ -3,11 +3,13 @@ package sweep
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/textutil"
 )
 
 func NewCmd() *cobra.Command {
@@ -59,11 +61,21 @@ func printOutcomes(outcomes []core.Outcome, dryRun bool) {
 	if len(outcomes) == 0 {
 		fmt.Println(cmdutil.Text("cli.sweep.nothing_is_due"))
 	}
+	l := cmdutil.Localizer()
 	verb := ""
 	if dryRun {
 		verb = cmdutil.Text("cli.preview.would_be")
 	}
 	for _, o := range outcomes {
-		fmt.Printf("#%d %s%s %s %s\n", o.Item.ID, verb, cmdutil.Localizer().Label(o.Action), o.Path, o.Detail)
+		if o.QuotaOverflow != nil {
+			fmt.Fprintln(os.Stderr, cmdutil.FormatQuotaOverflow(l, o.QuotaOverflow, dryRun))
+		} else if o.Action == core.ActionPurged && o.Detail == core.PurgeBasisQuotaFIFO {
+			fmt.Printf("#%d %s%s %s (%s) [%s]\n", o.Item.ID, verb, l.Label(o.Action), o.Path, textutil.Bytes(o.Size), o.Detail)
+		} else {
+			fmt.Printf("#%d %s%s %s %s\n", o.Item.ID, verb, l.Label(o.Action), o.Path, o.Detail)
+		}
+		if o.QuotaEviction != nil {
+			cmdutil.PrintQuotaEviction(os.Stderr, l, o.QuotaEviction, dryRun)
+		}
 	}
 }

@@ -64,9 +64,15 @@ func run(cmd *cobra.Command, args []string) error {
 		if result.Action == core.ActionBuried || result.Action == core.ActionRecoveryPending {
 			buried = true
 		}
-		if result.Error != "" {
+		if result.QuotaOverflow != nil {
+			fmt.Fprintln(os.Stderr, cmdutil.FormatQuotaOverflow(cmdutil.Localizer(), result.QuotaOverflow, false))
+			failed = true
+		} else if result.Error != "" {
 			itemError(result.Ref, errors.New(result.Error))
 			failed = true
+		}
+		if result.QuotaEviction != nil {
+			cmdutil.PrintQuotaEviction(os.Stderr, cmdutil.Localizer(), result.QuotaEviction, false)
 		}
 	}
 	if err := cmdutil.Committed(err); err != nil {

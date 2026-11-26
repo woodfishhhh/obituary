@@ -54,7 +54,8 @@ func ProposalFingerprint(p Proposal) string {
 		Candidates             []Candidate
 		WatchReview            *WatchReview
 		WatchBurial            *WatchBurialReview
-	}{p.ID, p.WatchID, p.Kind, p.Project, p.Session, p.CandidateSeq, p.Candidates, p.WatchReview, p.WatchBurial})
+		QuotaReview            *QuotaBurialReview
+	}{p.ID, p.WatchID, p.Kind, p.Project, p.Session, p.CandidateSeq, p.Candidates, p.WatchReview, p.WatchBurial, p.QuotaReview})
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:])
 }

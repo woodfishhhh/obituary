@@ -11,6 +11,7 @@ import Settings from "../../pages/Settings";
 import { t, useTrackingHint } from "../../i18n";
 import Notices from "../../notices";
 import { pageTitle, type ShellProps } from "../../shell";
+import { GraveQuotaBar } from "../../ui";
 import { extendSpans, folderOf, hm, md, nameOf, parts, pause, remaining, sourceLabel, span, Star, useGraves, useItems, type Burial, type Item } from "../shared";
 import "./vigil.css";
 
@@ -127,6 +128,7 @@ function Graves() {
     <div className="vg-split">
       <section className="vg-list" aria-label={t("page.graveyard")}>
         <ListHead title={t("head.graveyard")} deck={g.graves.length ? t("vg.deck", g.graves.length, bytes(g.bytes)) : t("vg.deckEmpty")}>
+          <GraveQuotaBar used={g.graveBytes} max={g.graveMaxBytes} />
           <label className="vg-search"><Search size={14} aria-hidden /><input type="search" placeholder={t("filterByPath")} aria-label={t("filterByPath")} value={filter} onChange={(e) => setFilter(e.target.value)} /></label>
         </ListHead>
         {g.error ? <p className="vg-alert">{t("grave.readError", g.error)}</p> : null}

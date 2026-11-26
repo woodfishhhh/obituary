@@ -11,6 +11,7 @@ import Settings from "../../pages/Settings";
 import { t, useTrackingHint } from "../../i18n";
 import Notices from "../../notices";
 import { pageTitle, type ShellProps } from "../../shell";
+import { GraveQuotaBar } from "../../ui";
 import { extendSpans, folderOf, hm, md, nameOf, parts, remaining, sourceLabel, span, Star, pause, useGraves, useItems } from "../shared";
 import "./notice.css";
 
@@ -58,12 +59,13 @@ export default function NoticeShell({ page, nav, setPage, summary: s, refresh }:
   );
 }
 
-function PageHead({ title, deck, tools }: { title: string; deck: ReactNode; tools?: ReactNode }) {
+function PageHead({ title, deck, extra, tools }: { title: string; deck: ReactNode; extra?: ReactNode; tools?: ReactNode }) {
   return (
     <div className="nt-head">
       <div className="nt-head-text">
         <h2>{title}</h2>
         <p className="nt-deck">{deck}</p>
+        {extra}
       </div>
       {tools ? <div className="nt-tools">{tools}</div> : null}
     </div>
@@ -96,6 +98,7 @@ function Graves() {
       <PageHead
         title={t("head.graveyard")}
         deck={n ? t("nt.deck", n, bytes(g.bytes)) : t("nt.deckEmpty")}
+        extra={<GraveQuotaBar used={g.graveBytes} max={g.graveMaxBytes} />}
         tools={<>
           <label className="nt-search"><Search aria-hidden /><input type="search" placeholder={t("nt.search")} aria-label={t("nt.search")} value={filter} onChange={(e) => setFilter(e.target.value)} /></label>
           <button type="button" className="nt-link" disabled={!n} onClick={g.sel.toggleAll}>{g.sel.all ? t("selectNone") : t("selectAll")}</button>

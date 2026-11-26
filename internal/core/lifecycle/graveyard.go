@@ -34,17 +34,19 @@ const (
 
 // GraveResult describes what happened to one burial or requested path.
 type GraveResult struct {
-	Err             error   `json:"-"`
-	Ref             string  `json:"ref"`
-	Action          string  `json:"action,omitempty"`
-	Burial          *Burial `json:"burial,omitempty"`
-	Path            string  `json:"path,omitempty"`  // where a resurrected item now lies
-	Grave           string  `json:"grave,omitempty"` // moved location when burial commit is still pending
-	Detail          string  `json:"detail,omitempty"`
-	Error           string  `json:"error,omitempty"`
-	Warning         string  `json:"warning,omitempty"`
-	RecoveryCount   int     `json:"recoveryCount,omitempty"` // supplemental receipts, before display limiting
-	RecoveryOmitted int     `json:"recoveryOmitted,omitempty"`
+	Err             error          `json:"-"`
+	Ref             string         `json:"ref"`
+	Action          string         `json:"action,omitempty"`
+	Burial          *Burial        `json:"burial,omitempty"`
+	Path            string         `json:"path,omitempty"`  // where a resurrected item now lies
+	Grave           string         `json:"grave,omitempty"` // moved location when burial commit is still pending
+	Detail          string         `json:"detail,omitempty"`
+	Error           string         `json:"error,omitempty"`
+	Warning         string         `json:"warning,omitempty"`
+	RecoveryCount   int            `json:"recoveryCount,omitempty"` // supplemental receipts, before display limiting
+	RecoveryOmitted int            `json:"recoveryOmitted,omitempty"`
+	QuotaOverflow   *QuotaOverflow `json:"quotaOverflow,omitempty"`
+	QuotaEviction   *QuotaEviction `json:"quotaEviction,omitempty"`
 }
 
 func errorText(err error) string {

@@ -2,9 +2,11 @@ package mcp
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/textutil"
 )
 
 // Every response is an object, including partial failures. Receipts survive
@@ -55,10 +57,44 @@ func mcpGraves(results []core.GraveResult, err error) mcpReply {
 		}
 	}
 	out := mcpCommittedResult(map[string]any{"results": results}, err, committed)
-	if core.GraveFailed(results) && out.Error == "" {
+	if msg := mcpQuotaOverflowMessage(results); msg != "" {
+		out.Error = msg
+	} else if core.GraveFailed(results) && out.Error == "" {
 		out.Error = "one or more burials failed; results contain individual errors"
 	}
+	if note := mcpQuotaEvictionWarning(results); note != "" {
+		if out.Warning != "" {
+			out.Warning += "; "
+		}
+		out.Warning += note
+	}
 	return out
+}
+
+func mcpQuotaOverflowMessage(results []core.GraveResult) string {
+	var parts []string
+	for _, r := range results {
+		if r.QuotaOverflow == nil {
+			continue
+		}
+		o := r.QuotaOverflow
+		parts = append(parts, fmt.Sprintf("%s (%s) exceeds graveyard capacity limit %s; left safely in place and routed to pending decisions (#%d) without evicting existing graves; ask the user to decide in Obituary or raise graveyard.max_size, and do not bypass Obituary with raw rm",
+			o.Path, textutil.Bytes(o.ItemBytes), textutil.Bytes(o.MaxBytes), o.ProposalID))
+	}
+	return strings.Join(parts, "; ")
+}
+
+func mcpQuotaEvictionWarning(results []core.GraveResult) string {
+	var parts []string
+	for _, r := range results {
+		if r.QuotaEviction == nil || r.QuotaEviction.PurgedCount == 0 {
+			continue
+		}
+		ev := r.QuotaEviction
+		parts = append(parts, fmt.Sprintf("Graveyard exceeded capacity limit %s: automatically purged %d oldest item(s) (freed %s), current usage %s / %s",
+			textutil.Bytes(ev.MaxBytes), ev.PurgedCount, textutil.Bytes(ev.FreedBytes), textutil.Bytes(ev.AfterBytes), textutil.Bytes(ev.MaxBytes)))
+	}
+	return strings.Join(parts, "; ")
 }
 
 func mcpDaemonWarning(reply mcpReply, home string) mcpReply {

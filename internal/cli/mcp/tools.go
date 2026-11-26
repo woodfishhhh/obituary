@@ -225,8 +225,12 @@ func statsMCP(svc *core.Service, _ struct{}) mcpReply {
 	}
 	counts, err := guardrm.ReadCounts(svc.Store.Home)
 	counts.Buried += sum.Lifetime.DeleteBuried
-	return mcpResult(struct {
+	reply := mcpResult(struct {
 		core.Summary
 		DeleteGuard guardrm.Counts `json:"deleteGuard"`
 	}{sum, counts}, err)
+	if sum.QuotaPendingCount > 0 {
+		reply.Warning = "Oversized item(s) exceeded graveyard.max_size and are waiting in pending decisions (obit_proposals); do not bypass Obituary with raw rm."
+	}
+	return reply
 }

@@ -60,6 +60,9 @@ func (s *Service) purgeLocked(run *purgeRun) error {
 		return s.purgeDue(b, run) || run.refs == nil && containerIntent(&state, b.ID) != nil
 	}
 	if !slices.ContainsFunc(state.Burials, due) {
+		if !run.all && run.refs == nil && s.GraveyardMaxBytes > 0 {
+			return s.purgeQuotaLocked(run)
+		}
 		return nil
 	}
 	for _, b := range state.Burials {
@@ -78,7 +81,13 @@ func (s *Service) purgeLocked(run *purgeRun) error {
 		}
 		rows, err := s.purgeExpiredBatches(state, files, blocked)
 		run.results = append(run.results, rows...)
-		return err
+		if err != nil {
+			return err
+		}
+		if !run.all && run.refs == nil && s.GraveyardMaxBytes > 0 {
+			return s.purgeQuotaLocked(run)
+		}
+		return nil
 	}
 	for _, b := range state.Burials {
 		if due(b) {
@@ -86,6 +95,9 @@ func (s *Service) purgeLocked(run *purgeRun) error {
 				return err
 			}
 		}
+	}
+	if !run.all && run.refs == nil && s.GraveyardMaxBytes > 0 {
+		return s.purgeQuotaLocked(run)
 	}
 	return nil
 }

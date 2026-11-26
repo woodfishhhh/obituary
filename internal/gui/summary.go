@@ -10,6 +10,8 @@ type Summary struct {
 	TrackedCount      int    `json:"trackedCount"`
 	GraveCount        int    `json:"graveCount"`
 	GraveBytes        int64  `json:"graveBytes"`
+	GraveMaxBytes     int64  `json:"graveMaxBytes,omitempty"`
+	QuotaPendingCount int    `json:"quotaPendingCount,omitempty"`
 	PendingGraveCount int    `json:"pendingGraveCount"`
 	DecisionCount     int    `json:"decisionCount"`
 	Paused            bool   `json:"paused"`
@@ -32,9 +34,17 @@ func (a *API) Summary() (Summary, error) {
 	if err != nil {
 		return Summary{}, err
 	}
-	out := Summary{TrackedCount: len(state.Items), DecisionCount: len(core.ExistingProposals(state.Proposals)), Paused: paused}
+	existing := core.ExistingProposals(state.Proposals)
+	quotaPending := 0
+	for _, p := range existing {
+		if p.Kind == core.ProposalGraveyardQuota {
+			quotaPending++
+		}
+	}
+	out := Summary{TrackedCount: len(state.Items), DecisionCount: len(existing), QuotaPendingCount: quotaPending, Paused: paused}
 	if cfg, err := a.readConfig(); err == nil {
 		out.AutoMode = cfg.Proposals.Mode
+		out.GraveMaxBytes = cfg.Graveyard.MaxBytes()
 	}
 	for _, it := range state.Items {
 		if it.Stuck() { // retries stopped: it waits for Retry or Stop tracking

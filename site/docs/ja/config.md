@@ -8,6 +8,7 @@ Obituary の設定は、設定ディレクトリにある `config.toml` に書�
 | --- | --- | --- |
 | `graveyard.mode` | `graveyard` | `graveyard`、`recycle` |
 | `graveyard.retention_days` | `7` | 1 から 3650 までの整数 |
+| `graveyard.max_size` | `""`（無制限） | `500MB`、`5GB`、`10GiB` などのサイズやバイト数。`""`、`0`、`unlimited` で無制限 |
 | `proposals.mode` | `off` | `off`、`tiered`、`auto`、`ask` |
 | `hooks.session_cleanup` | `true` | `true`、`false` |
 | `hooks.session_summary` | `false` | `true`、`false` |
@@ -29,6 +30,8 @@ Obituary の設定は、設定ディレクトリにある `config.toml` に書�
 既定では、寿命が尽きたものは Obituary 自身の墓地に入ります。`graveyard.retention_days` 日の間（既定は 7 日）は `obit resurrect` で元の場所に戻せて、それを過ぎてはじめて完全に削除されます。日数は 1 から 3650 の範囲で変えられます。
 
 Windows と Linux では `graveyard.mode = "recycle"` でシステムのごみ箱を使えます。復元には `obit resurrect` ではなく、ごみ箱の復元機能を使います。macOS では墓地のみ対応しています。
+
+`graveyard.max_size` は既定では空（無制限）です。`500MB`、`5GB`、`10GiB` などのサイズやバイト数を設定すると、墓地内のローカルファイルとディレクトリの使用量のみを集計します（シンボリックリンクは辿らず、コンテナーは除外）。通常の埋葬で合計が上限を超えると、上限以下に収まるまで埋葬日時が古い順に自動完全削除されます。単一の項目自体が上限を超える場合は、墓地へ移さず既存の墓地も消さずに元の場所へ安全に残し、判断待ちキューへ送ります。`obit config --max-size` で上限を引き下げると削除対象を事前にプレビューして確認を求めます（`--dry-run` でプレビュー、`--yes` で非対話確認）。
 
 ## 自動登録とエージェントのセッション
 

@@ -251,8 +251,11 @@ obit add report.zip --at "2026-12-01 18:00"
 | 参数 | 简写 | 默认值 | 说明 |
 | --- | --- | --- | --- |
 | `--create` | 无 | `false` | 按默认值写出配置文件 |
+| `--dry-run` | 无 | `false` | 预演 --max-size 会改动什么及将火化哪些墓地，不修改任何文件 |
 | `--help` | `-h` | `false` | config 的帮助 |
 | `--language` | 无 | `""` | 设置语言：auto、en 或 zh-CN |
+| `--max-size` | 无 | `""` | 设置墓地容量上限（如 5GB、500MB；0 或 unlimited 表示不限制） |
+| `--yes` | 无 | `false` | 不提示确认即应用更低的 --max-size 并火化最早的墓地（agent 请先征得用户同意） |
 
 ### `obit config telemetry`
 
