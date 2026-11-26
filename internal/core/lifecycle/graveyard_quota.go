@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
-	"github.com/woodfishhhh/obituary/internal/textutil"
 )
 
 const (
@@ -157,14 +156,30 @@ func (s *Service) GraveyardDiskUsage() (count int, total int64, err error) {
 	return count, total, nil
 }
 
+// formatQuotaBytes formats binary byte sizes identically to textutil.Bytes
+// without importing internal/textutil, which would form a POSIX test import
+// cycle via internal/testenv -> internal/runkey (runkey_unix.go) -> internal/core.
+func formatQuotaBytes(n int64) string {
+	const unit = 1024
+	if n < unit {
+		return fmt.Sprintf("%d B", n)
+	}
+	div, exp := int64(unit), 0
+	for m := n / unit; m >= unit; m /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %ciB", float64(n)/float64(div), "KMGTPE"[exp])
+}
+
 func quotaProposalRule(itemBytes, maxBytes int64) string {
 	return fmt.Sprintf("单件体积 %s 超出墓地容量上限 %s，未移入墓地；请选择永久删除、延长、不再跟踪，或调高墓地容量上限",
-		textutil.Bytes(itemBytes), textutil.Bytes(maxBytes))
+		formatQuotaBytes(itemBytes), formatQuotaBytes(maxBytes))
 }
 
 func quotaOverflowDetail(path string, itemBytes, maxBytes int64) string {
 	return fmt.Sprintf("%s (%s) exceeds graveyard capacity limit %s; left in place and moved to pending decisions without evicting existing graves",
-		path, textutil.Bytes(itemBytes), textutil.Bytes(maxBytes))
+		path, formatQuotaBytes(itemBytes), formatQuotaBytes(maxBytes))
 }
 
 // checkBurialQuota enforces Plan A before an object enters the graveyard.
@@ -506,7 +521,7 @@ func (s *Service) ApproveQuotaProposal(p Proposal) (Outcome, error) {
 	}
 	if s.GraveyardMaxBytes > 0 && size > s.GraveyardMaxBytes {
 		return Outcome{Path: path, Action: ActionQuotaExceeded, Size: size}, fmt.Errorf("%s (%s) still exceeds graveyard capacity limit %s; raise graveyard.max_size, extend, reject, or explicitly confirm permanent deletion",
-			path, textutil.Bytes(size), textutil.Bytes(s.GraveyardMaxBytes))
+			path, formatQuotaBytes(size), formatQuotaBytes(s.GraveyardMaxBytes))
 	}
 	results, err := s.Bury([]string{path}, s.quotaTrackedForce(p), "approved quota decision")
 	if err != nil && !OnlyAuditErrors(err) {
