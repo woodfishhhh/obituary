@@ -153,18 +153,18 @@ func TestSharedMCPUninstallRechecksConcurrentOwners(t *testing.T) {
 		t.Fatal(err)
 	}
 	path := filepath.Join(s.Project, ".mcp.json")
-	hooks := integrationHooks{}
-	hooks.beforeWrite = func(writing string) error {
-		if writing != path {
+	injected := false
+	hooks := integrationHooks{beforeWrite: func(writing string) error {
+		if writing != path || injected {
 			return nil
 		}
-		hooks.beforeWrite = nil
+		injected = true
 		other, err := PlanCopilotMCP(s, testenv.NativeFixture("C:/tools/obit.exe"), false)
 		if err != nil {
 			return err
 		}
 		return Apply(other)
-	}
+	}}
 	err = applyWithHooks(plan, hooks)
 	if !strings.Contains(read(t, path), `"obituary"`) {
 		t.Fatalf("concurrent owner registration was deleted: %v", err)

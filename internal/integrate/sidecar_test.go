@@ -206,12 +206,15 @@ func TestSidecarMigrationRechecksBothLocations(t *testing.T) {
 			if changeNew {
 				changed = testSidecarPath(t, asset.Path)
 			}
-			hooks := integrationHooks{}
-			hooks.beforeWrite = func(string) error {
-				hooks.beforeWrite = nil
+			injected := false
+			hooks := integrationHooks{beforeWrite: func(string) error {
+				if injected {
+					return nil
+				}
+				injected = true
 				writeIntegrationFile(t, changed, "user edit")
 				return nil
-			}
+			}}
 			if applyWithHooks(plan, hooks) == nil || read(t, changed) != "user edit" {
 				t.Fatal("concurrent edit overwritten")
 			}

@@ -96,18 +96,18 @@ func TestSharedAgentRulesUninstallRechecksConcurrentOwners(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	hooks := integrationHooks{}
-	hooks.beforeWrite = func(writing string) error {
-		if writing != path {
+	injected := false
+	hooks := integrationHooks{beforeWrite: func(writing string) error {
+		if writing != path || injected {
 			return nil
 		}
-		hooks.beforeWrite = nil
+		injected = true
 		other, err := planSharedAgentRules(s, path, "kimi", false)
 		if err != nil {
 			return err
 		}
 		return Apply(other)
-	}
+	}}
 	err = applyWithHooks(plan, hooks)
 	data, readErr := os.ReadFile(path)
 	if readErr != nil || !strings.Contains(string(data), blockBegin) {

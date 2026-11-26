@@ -100,11 +100,14 @@ func TestManagedAssetReceiptRechecksLegacyUnderLock(t *testing.T) {
 		t.Fatal(err)
 	}
 	legacy := ManagedAssetReceiptPath(asset.Path)
-	hooks := integrationHooks{}
-	hooks.beforeWrite = func(string) error {
-		hooks.beforeWrite = nil
+	injected := false
+	hooks := integrationHooks{beforeWrite: func(string) error {
+		if injected {
+			return nil
+		}
+		injected = true
 		return os.WriteFile(legacy, []byte("edited during lock acquisition"), 0600)
-	}
+	}}
 	if err := applyWithHooks(plan, hooks); err == nil {
 		t.Fatal("stale migration accepted")
 	}
