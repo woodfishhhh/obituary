@@ -13,14 +13,9 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-var beforeLabelsCommit func() error
-var beforeLabelsWrite func() error
-var beforeLabelsPublish func(string) error
-var beforeLabelsDelete func() error
-
-func labelsCommitHook() error {
-	if beforeLabelsCommit != nil {
-		return beforeLabelsCommit()
+func (p *Plan) labelsCommitHook() error {
+	if p.beforeLabelsCommit != nil {
+		return p.beforeLabelsCommit()
 	}
 	return nil
 }
@@ -110,8 +105,8 @@ func (p *Plan) check(root *os.Root) error {
 }
 
 func (p *Plan) write(root *os.Root) error {
-	if beforeLabelsWrite != nil {
-		if err := beforeLabelsWrite(); err != nil {
+	if p.beforeLabelsWrite != nil {
+		if err := p.beforeLabelsWrite(); err != nil {
 			return err
 		}
 	}
@@ -146,8 +141,8 @@ func (p *Plan) prepareRemoval(old *os.File) error {
 }
 
 func (p *Plan) deleteOriginal(old *os.File) error {
-	if beforeLabelsDelete != nil {
-		if err := beforeLabelsDelete(); err != nil {
+	if p.beforeLabelsDelete != nil {
+		if err := p.beforeLabelsDelete(); err != nil {
 			return err
 		}
 	}
@@ -180,8 +175,8 @@ func (p *Plan) writeReplacement(root *os.Root, old *os.File) (err error) {
 	if err != nil {
 		return err
 	}
-	if beforeLabelsPublish != nil {
-		if err := beforeLabelsPublish(filepath.Join(p.dir, name)); err != nil {
+	if p.beforeLabelsPublish != nil {
+		if err := p.beforeLabelsPublish(filepath.Join(p.dir, name)); err != nil {
 			return err
 		}
 	}
@@ -208,7 +203,7 @@ func (p *Plan) replace(root *os.Root, temporary, old *os.File) error {
 		if err := p.check(root); err != nil {
 			return err
 		}
-		if err := labelsCommitHook(); err != nil {
+		if err := p.labelsCommitHook(); err != nil {
 			return err
 		}
 		return winfs.RenameCommitFile(temporary, buf)

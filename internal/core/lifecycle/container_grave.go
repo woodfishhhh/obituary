@@ -88,34 +88,10 @@ func checkContainerBurial(st *State, b Burial) error {
 
 func (s *Service) prepareContainerPurge(r *GraveResult, dryRun bool) (bool, error) {
 	b := *r.Burial
-	p := ContainerIntent{Operation: "rm", Burial: &b}
-	if !dryRun {
-		if err := s.bindContainer(&p); err != nil {
-			r.Error = err.Error()
-			return true, nil
-		}
-	}
-	got, err := s.inspectContainer(p)
-	action := ""
-	if errors.Is(err, docker.ErrNotFound) {
-		action, err = ActionLost, nil
-		if b.PurgeIntent != nil {
-			action = ActionPurged
-		}
-	}
+	action, err := s.containerPurgeAction(b, dryRun)
 	if err != nil {
 		r.Error = err.Error()
 		return true, nil
-	}
-	if action == "" {
-		reclaimed, err := got.Reclaimed(*b.Container)
-		if err != nil {
-			r.Error = err.Error()
-			return true, nil
-		}
-		if reclaimed {
-			action = ActionResurrected
-		}
 	}
 	if action == "" {
 		return false, nil
@@ -143,6 +119,33 @@ func (s *Service) prepareContainerPurge(r *GraveResult, dryRun bool) (bool, erro
 		}
 	}
 	return true, err
+}
+
+func (s *Service) containerPurgeAction(b Burial, dryRun bool) (string, error) {
+	p := ContainerIntent{Operation: "rm", Burial: &b}
+	if !dryRun {
+		if err := s.bindContainer(&p); err != nil {
+			return "", err
+		}
+	}
+	got, err := s.inspectContainer(p)
+	if errors.Is(err, docker.ErrNotFound) {
+		if b.PurgeIntent != nil {
+			return ActionPurged, nil
+		}
+		return ActionLost, nil
+	}
+	if err != nil {
+		return "", err
+	}
+	reclaimed, err := got.Reclaimed(*b.Container)
+	if err != nil {
+		return "", err
+	}
+	if reclaimed {
+		return ActionResurrected, nil
+	}
+	return "", nil
 }
 
 func (s *Service) purgeContainer(r *GraveResult, dryRun bool) error {

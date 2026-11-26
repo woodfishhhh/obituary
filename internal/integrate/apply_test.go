@@ -207,7 +207,7 @@ func TestApplyPinsMissingHostDirectory(t *testing.T) {
 		t.Fatal(err)
 	}
 	attempted, swapped := false, false
-	beforeIntegrationWrite = func(string) error {
+	hooks := integrationHooks{beforeWrite: func(string) error {
 		attempted = true
 		if err := os.MkdirAll(dir, 0o700); err != nil {
 			return err
@@ -218,15 +218,13 @@ func TestApplyPinsMissingHostDirectory(t *testing.T) {
 		makeIntegrationJunction(t, dir, outside)
 		swapped = true
 		return nil
-	}
+	}}
 	t.Cleanup(func() {
-		beforeIntegrationWrite = nil
 		if swapped {
 			_ = os.Remove(dir)
 		}
 	})
-	err = Apply(plan)
-	beforeIntegrationWrite = nil
+	err = applyWithHooks(plan, hooks)
 	if !attempted || swapped {
 		t.Fatalf("host configuration parent was not pinned: attempted=%v swapped=%v Apply=%v", attempted, swapped, err)
 	}

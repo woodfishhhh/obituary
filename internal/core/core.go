@@ -42,6 +42,10 @@ func OnlyAuditErrors(err error) bool {
 	return lifecycle.OnlyAuditErrors(err)
 }
 
+func HasAuditWarning(err error) bool {
+	return lifecycle.HasAuditWarning(err)
+}
+
 type AutoExemption = lifecycle.AutoExemption
 
 type BurialOperation = lifecycle.BurialOperation

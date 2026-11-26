@@ -96,19 +96,19 @@ func TestSharedAgentRulesUninstallRechecksConcurrentOwners(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	beforeIntegrationWrite = func(writing string) error {
+	hooks := integrationHooks{}
+	hooks.beforeWrite = func(writing string) error {
 		if writing != path {
 			return nil
 		}
-		beforeIntegrationWrite = nil
+		hooks.beforeWrite = nil
 		other, err := planSharedAgentRules(s, path, "kimi", false)
 		if err != nil {
 			return err
 		}
 		return Apply(other)
 	}
-	t.Cleanup(func() { beforeIntegrationWrite = nil })
-	err = Apply(plan)
+	err = applyWithHooks(plan, hooks)
 	data, readErr := os.ReadFile(path)
 	if readErr != nil || !strings.Contains(string(data), blockBegin) {
 		t.Fatalf("concurrent owner rules were deleted: %v; read=%v", err, readErr)

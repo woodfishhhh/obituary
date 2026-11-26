@@ -70,7 +70,7 @@ func TestManagedAssetReceiptHoldsLockThroughMigrationAndRemoval(t *testing.T) {
 			t.Fatal(err)
 		}
 		calls := 0
-		beforeIntegrationWrite = func(string) error {
+		hooks := integrationHooks{beforeWrite: func(string) error {
 			calls++
 			if calls == 1 {
 				return nil
@@ -81,12 +81,10 @@ func TestManagedAssetReceiptHoldsLockThroughMigrationAndRemoval(t *testing.T) {
 				t.Fatal("receipt transaction lock released before completion")
 			}
 			return err
-		}
-		t.Cleanup(func() { beforeIntegrationWrite = nil })
-		if err := Apply(plan); err != nil {
+		}}
+		if err := applyWithHooks(plan, hooks); err != nil {
 			t.Fatal(err)
 		}
-		beforeIntegrationWrite = nil
 		if calls < 3 {
 			t.Fatal("did not exercise receipt transaction", calls)
 		}
@@ -102,12 +100,12 @@ func TestManagedAssetReceiptRechecksLegacyUnderLock(t *testing.T) {
 		t.Fatal(err)
 	}
 	legacy := ManagedAssetReceiptPath(asset.Path)
-	beforeIntegrationWrite = func(string) error {
-		beforeIntegrationWrite = nil
+	hooks := integrationHooks{}
+	hooks.beforeWrite = func(string) error {
+		hooks.beforeWrite = nil
 		return os.WriteFile(legacy, []byte("edited during lock acquisition"), 0600)
 	}
-	t.Cleanup(func() { beforeIntegrationWrite = nil })
-	if err := Apply(plan); err == nil {
+	if err := applyWithHooks(plan, hooks); err == nil {
 		t.Fatal("stale migration accepted")
 	}
 	if read(t, legacy) != "edited during lock acquisition" {

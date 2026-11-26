@@ -27,12 +27,12 @@ func (l *sharedApplyLocks) close() {
 
 // The existing write seam also covers the scheduling gap between preflight
 // and locking. The target invokes it again under the lock before its own I/O.
-func (l *sharedApplyLocks) beforeWrite(ch Change, changes []Change) error {
+func (l *sharedApplyLocks) beforeWrite(ch Change, changes []Change, hooks integrationHooks) error {
 	if l.locked || len(sharedApplyIntents(changes))+len(relocatedApplyIntents(changes)) == 0 {
 		return nil
 	}
-	if beforeIntegrationWrite != nil {
-		if err := beforeIntegrationWrite(ch.Path); err != nil {
+	if hooks.beforeWrite != nil {
+		if err := hooks.beforeWrite(ch.Path); err != nil {
 			return err
 		}
 	}

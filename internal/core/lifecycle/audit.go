@@ -30,3 +30,5 @@ func commitFailed(err error) bool {
 }
 
 func OnlyAuditErrors(err error) bool { return ledger.OnlyAuditErrors(err) }
+
+func HasAuditWarning(err error) bool { return ledger.HasAuditWarning(err) }
