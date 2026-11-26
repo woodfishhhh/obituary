@@ -21,8 +21,10 @@ const labels = {
   'pt-BR': ['Referência de parâmetros', 'Aliases', 'Uso', 'Parâmetro', 'Curto', 'Padrão', 'Descrição', 'nenhum'],
   ru: ['Справочник параметров', 'Псевдонимы', 'Использование', 'Параметр', 'Кратко', 'По умолчанию', 'Описание', 'нет'],
 };
-const removeItemUsage = readFileSync(join(repo, 'internal', 'cli', 'removeitem', 'remove-item.go'), 'utf8').split('\n').find(line => line.includes('Use:'))?.split('"')[1];
-const removeItemSummary = readFileSync(join(repo, 'internal', 'cli', 'removeitem', 'remove-item.go'), 'utf8').split(String.fromCharCode(10)).find(line => line.includes('Long:'))?.split(String.fromCharCode(96))[1];
+const readText = file => readFileSync(file, 'utf8').replaceAll('\r\n', '\n');
+const removeItemSource = readText(join(repo, 'internal', 'cli', 'removeitem', 'remove-item.go'));
+const removeItemUsage = removeItemSource.split('\n').find(line => line.includes('Use:'))?.split('"')[1];
+const removeItemSummary = removeItemSource.split('\n').find(line => line.includes('Long:'))?.split('`')[1];
 const exampleLabels = { zh: '示例：', 'zh-TW': '範例：', ja: '例：', ko: '예시:', es: 'Ejemplos:', fr: 'Exemples :', de: 'Beispiele:', 'pt-BR': 'Exemplos:', ru: 'Примеры:' };
 
 function run(exe, args) {
@@ -118,10 +120,11 @@ function main() {
     const locales = englishOnly ? ['en'] : Object.keys(labels);
     for (const locale of locales) {
       const file = join(docs, locale === 'zh' ? 'commands.md' : join(locale, 'commands.md'));
-      const source = readFileSync(file, 'utf8');
+      const raw = readFileSync(file, 'utf8');
+      const source = raw.replaceAll('\r\n', '\n');
       const expected = replaceBlock(source, render(commands, catalog, locale));
       if (check && source !== expected) throw new Error(`command reference is stale: ${file}`);
-      if (!check && source !== expected) writeFileSync(file, expected);
+      if (!check && raw !== expected) writeFileSync(file, expected);
     }
     console.log(`${check ? 'Checked' : 'Generated'} ${commands.length} commands × ${locales.length} locales.`);
   } finally {

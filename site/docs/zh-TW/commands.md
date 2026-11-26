@@ -1049,8 +1049,6 @@ obit mktemp 2h --name screenshots
 
 ### `obit watch`
 
-若要逐項核准，請在 `[watch]` 設定 `file_expiry = "propose"`。以 `obit proposals` 檢閱，再用 `obit approve <ID>` 核准。到期的子資料夾仍只會產生提議，在 macOS 和 Linux 上即使核准也會保留。
-
 為資料夾中的每個第一層子項目各自設定壽命
 
 用法: `obit watch <directory> <lifespan> | watch --list | watch --remove <directory> [flags]`

@@ -1040,8 +1040,6 @@ Obituary 연동과 백그라운드 서비스를 제거합니다. 기본적으로
 
 ### `obit watch`
 
-개별 승인이 필요하면 `[watch]`에 `file_expiry = "propose"`를 설정하고 `obit proposals`로 검토한 뒤 `obit approve <ID>`로 승인하세요. 만료된 하위 폴더는 계속 제안만 생성하며 macOS와 Linux에서는 승인해도 그대로 남습니다.
-
 폴더의 최상위 하위 항목마다 각각 수명을 지정합니다
 
 사용법: `obit watch <directory> <lifespan> | watch --list | watch --remove <directory> [flags]`
