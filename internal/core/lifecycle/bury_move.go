@@ -185,8 +185,9 @@ func (s *Service) movePrepared(st *State, p *preparedBurial, reason string) erro
 			return nil
 		}
 	}
+	var gitCheckedAt time.Time
 	if reason == ReasonExpired && automatic(out.Item) || s.approvedWatch != nil {
-		action, detail, err := s.finalGitForMove(out.Item, real, p.owner)
+		action, detail, checkedAt, err := s.finalGitForMove(out.Item, real, p.owner)
 		if err != nil {
 			return err
 		}
@@ -194,10 +195,15 @@ func (s *Service) movePrepared(st *State, p *preparedBurial, reason string) erro
 			out.Action, out.Detail = action, detail
 			return nil
 		}
+		gitCheckedAt = checkedAt
 	}
 	if snap := out.lifespans; snap != nil && snap.changes != nil {
 		if err := snap.changes.Check(); err != nil {
 			*out = failedMove(*out, err)
+			return nil
+		}
+		if !gitCheckedAt.IsZero() && time.Since(gitCheckedAt) > gitMoveFreshness {
+			out.Action, out.Detail = ActionRetry, "final Git verification expired during directory change check"
 			return nil
 		}
 	}

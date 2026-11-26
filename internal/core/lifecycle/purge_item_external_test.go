@@ -184,16 +184,9 @@ func TestPurgeSupportsPOSIXSpecialEntries(t *testing.T) {
 		{
 			name: "closed-unix-socket",
 			prepare: func(t *testing.T, _ *fixture, payload string) func(*testing.T) {
-				shortDir, err := os.MkdirTemp("/tmp", "obit-socket-")
-				if err != nil {
-					t.Fatal(err)
-				}
-				t.Cleanup(func() { _ = os.RemoveAll(shortDir) })
-				socketPath := filepath.Join(shortDir, "s")
-				if len(socketPath) >= 104 {
-					t.Fatalf("socket path exceeds sockaddr_un limit: %d bytes", len(socketPath))
-				}
-				listener, err := net.Listen("unix", socketPath)
+				t.Chdir(payload)
+				const name = "s.sock" // Keep the bind address short even under a long TMPDIR.
+				listener, err := net.Listen("unix", name)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -201,10 +194,7 @@ func TestPurgeSupportsPOSIXSpecialEntries(t *testing.T) {
 				if err := listener.Close(); err != nil {
 					t.Fatal(err)
 				}
-				graveSocket := filepath.Join(payload, "sock")
-				if err := os.Rename(socketPath, graveSocket); err != nil {
-					t.Fatal(err)
-				}
+				graveSocket := filepath.Join(payload, name)
 				if _, err := os.Lstat(graveSocket); err != nil {
 					t.Fatalf("closed socket node missing: %v", err)
 				}

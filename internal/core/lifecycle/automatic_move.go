@@ -48,19 +48,19 @@ func (s *Service) verificationBudget(item Item, real string, owners *ownershipBa
 // Git's index may be atomically published during an earlier move, even within
 // 10 ms. Reusing an answer requires a fresh proof of the same index generation.
 // Call only after Guard, Rev, child lifespans, manifest writes and rules finish.
-func (s *Service) finalGitForMove(item Item, real string, owners *ownershipBatch) (action, detail string, err error) {
+func (s *Service) finalGitForMove(item Item, real string, owners *ownershipBatch) (action, detail string, checkedAt time.Time, err error) {
 	if s.OwnerBatch == nil && s.Owner == nil {
-		return "", "", nil
+		return "", "", time.Time{}, nil
 	}
 	budget, err := s.verificationBudget(item, real, owners)
 	if err != nil {
-		return "", "", err
+		return "", "", time.Time{}, err
 	}
 	ctx, cancel := context.WithTimeout(s.Store.Context(), budget)
 	defer cancel()
 	for {
 		if err := ctx.Err(); err != nil {
-			return ActionRetry, "final Git verification budget exhausted: " + err.Error(), nil
+			return ActionRetry, "final Git verification budget exhausted: " + err.Error(), time.Time{}, nil
 		}
 		started := time.Now()
 		var owner Ownership
@@ -77,19 +77,17 @@ func (s *Service) finalGitForMove(item Item, real string, owners *ownershipBatch
 			owner.CheckedAt = started
 		}
 		if errors.Is(owner.Err, errOwnerSnapshotRefresh) {
-			return "", "", owner.Err
+			return "", "", time.Time{}, owner.Err
 		}
 		if action, detail := automaticOwnerVerdict(item, owner); action != "" {
-			return action, detail, nil
+			return action, detail, time.Time{}, nil
 		}
 		if err := s.burialStep("git-checked"); err != nil {
-			return "", "", err
+			return "", "", time.Time{}, err
 		}
-		// A stalled caller cannot spend an arbitrarily old permission to move.
-		// The check is adjacent to the return to MovePinned; OS scheduling and
-		// the single in-flight pinned operation are not hard real-time bounds.
+		// Carry the original check time through any remaining directory-change check.
 		if time.Since(owner.CheckedAt) <= gitMoveFreshness {
-			return "", "", nil
+			return "", "", owner.CheckedAt, nil
 		}
 	}
 }

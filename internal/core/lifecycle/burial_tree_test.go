@@ -10,35 +10,8 @@ import (
 	"testing"
 	"time"
 
-	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	core "github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
-
-type wideInventoryFS struct {
-	core.FS
-	beforeScan, beforeCheck func()
-}
-
-func (f wideInventoryFS) NewDirectoryChanges(path string) (corefs.DirectoryChanges, error) {
-	changes, err := f.FS.NewDirectoryChanges(path)
-	if err != nil {
-		return nil, err
-	}
-	f.beforeScan()
-	return wideInventoryCheck{changes, f.beforeCheck}, nil
-}
-
-type wideInventoryCheck struct {
-	corefs.DirectoryChanges
-	before func()
-}
-
-func (c wideInventoryCheck) Check() error {
-	if c.before != nil {
-		c.before()
-	}
-	return c.DirectoryChanges.Check()
-}
 
 func TestLargeBurialInventoryYieldsAndRevalidates(t *testing.T) {
 	for _, change := range []bool{false, true} {
