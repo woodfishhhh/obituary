@@ -108,7 +108,7 @@ export const ko: Strings = {
     lookLabel: "외관",
     pageLabel: "페이지",
     notes: {
-      calendar: "한 열이 하루이고, 파일은 매장되거나 영구 삭제되는 날에 놓입니다. 이후 날짜로 끌면 그날까지 연장됩니다.",
+      calendar: "한 열이 하루이고, 파일은 매장되거나 영구 삭제되는 날에 놓입니다. 이후 날짜로 끌어 연장하거나 날짜 머리글을 클릭해 해당 날짜를 일괄 선택해 작업할 수 있습니다.",
       palette: "한 줄 입력으로 키보드만 사용합니다. 파일을 찾아 Enter로 부활시키거나 연장합니다.",
     } as Record<LookId, string>,
     pageNotes: {
@@ -174,8 +174,8 @@ export const ko: Strings = {
     handHead: "직접 설치",
     handLine: {
       windows: "아래 세 가지 중 하나를 고르고, 설치한 뒤 obit doctor로 점검합니다.",
-      macos: "아래 두 가지 중 하나를 고르고, 설치한 뒤 obit doctor로 점검합니다. 트레이, 작은 창, 오른쪽 클릭 메뉴는 Windows에만 있으므로 여기서는 obit list, obit graveyard, obit resurrect를 씁니다.",
-      linux: "설치 스크립트로 설치하고, 설치한 뒤 obit doctor로 점검합니다. 트레이, 작은 창, 오른쪽 클릭 메뉴는 Windows에만 있으므로 여기서는 obit list, obit graveyard, obit resurrect를 씁니다.",
+      macos: "아래 두 가지 중 하나로 CLI를 설치하고 obit doctor로 점검합니다. 유니버설 DMG로 작은 창과 메뉴 막대 아이콘도 쓸 수 있으며 Finder 빠른 동작과 날짜 태그를 지원합니다.",
+      linux: "설치 스크립트로 CLI를 설치하고 obit doctor로 점검합니다. Ubuntu 24.04 amd64에서는 .deb로 창과 트레이도 쓸 수 있으며 Nautilus와 Dolphin 메뉴를 지원합니다.",
     } as Record<Os, string>,
     mirrorHandLine: "설치 스크립트를 쓰거나 압축 파일을 직접 받고, 설치한 뒤 obit doctor로 점검합니다.",
     platformLabel: "운영체제",

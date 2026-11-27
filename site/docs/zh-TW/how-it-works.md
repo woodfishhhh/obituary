@@ -17,8 +17,9 @@
 
 ```toml
 [graveyard]
-mode = "graveyard"      # 或 "recycle"：直接进系统回收站
-retention_days = 7      # 墓地保留天数
+mode = "graveyard"      # 或 "recycle"：一般檔案進系統資源回收筒，目錄進訃告墓地
+retention_days = 7      # 墓地保留天數
+max_size = ""           # 可選容量上限，如 "5GB"；超限時依最早下葬順序自動刪除，單件超限則留在原處等你決定
 ```
 
 設定檔位於 `%APPDATA%\obituary\config.toml`。`obit config` 可顯示設定，`obit config --create` 則會寫入附有註解的預設設定檔。

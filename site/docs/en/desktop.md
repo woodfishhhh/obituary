@@ -73,6 +73,7 @@ The tray needs a desktop that provides StatusNotifierItem, and GNOME does not by
 
 - The home page's top bar says "Auto registration: off" or "on"; click it to open Settings. Both the top of For you and Settings switch it: Off (the default: only what agents and you register goes in), Tiered, Fully automatic and Ask about everything; see [What goes in](./auto-register). What went in without asking is listed further down under Handled automatically, each with one-click Undo (the countdown stops, it stays where it is) and Keep longer.
 - Items that were due but could not be buried (another program holding a file open, say) are listed under "Burials that failed" on For you, with the reason and when it is tried next. Obituary tries again after a while, waiting longer each time, and after repeated failures it stops and waits for you: Retry buries it again now, Stop tracking leaves it where it is.
+- In Settings you can set a graveyard capacity limit (presets or a custom size); lowering the limit previews which graves will be purged and asks for confirmation first. When a limit is active, Graveyard shows a usage bar, and any single item larger than the limit stays in place under For you so you can permanently delete, extend, stop tracking, or raise the limit.
 - While Docker is not running, a container proposal's Approve is unavailable and the card says why; approve it once Docker is up.
 - Trusting a `.obitrules` file trusts exactly the version shown in the window.
 - The window, tray and context menu follow `[ui] language` in `config.toml` (`auto`, `zh-CN` or `en`; `auto` follows Windows). You can switch it in Settings.
@@ -90,7 +91,7 @@ Switch in Settings → Appearance. It changes only how the window looks on this 
 
 | Look | What it is |
 |---|---|
-| Calendar | A column per day; each file sits on the day it is buried or cremated. Drag it to a later day to extend it. |
+| Calendar | A column per day; each file sits on the day it is buried or cremated. Drag it to a later day to extend it, or click a day header to select all items for that day and extend, bury, resurrect, or permanently purge them in a batch from the bottom capsule bar (with separate confirmations for burial and permanent purge). |
 | One line | One line of input, all from the keyboard: find a file, press Enter to resurrect or extend. |
 | Tunnel | A 3D tunnel of time: the closer, the sooner it expires. Scroll to move through time. |
 | Vigil | Dark, with a lamp for each file; the dimmer the lamp, the sooner it expires. |

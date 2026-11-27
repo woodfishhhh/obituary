@@ -73,6 +73,7 @@ L’icône de notification nécessite un bureau qui fournisse StatusNotifierItem
 
 - La barre en haut de l’accueil indique « Auto registration: off » ou « on ». Cliquez dessus pour accéder aux réglages. En haut de For you ou dans Settings, choisissez entre désactivé (par défaut, seuls les éléments que vous ou l’agent enregistrez sont pris en compte), par niveaux, entièrement automatique ou toujours demander. Voir [Éléments enregistrés](./auto-register). Plus bas, « Handled automatically » liste les enregistrements sans demande préalable. Un clic suffit pour les annuler (le décompte s’arrête et l’élément reste en place) ou prolonger leur durée de vie.
 - Un fichier arrivé à échéance mais impossible à enterrer, par exemple parce qu’un autre programme le garde ouvert, apparaît dans « Burials that failed » sur la page For you, avec le motif et l’heure du prochain essai. Obituary espace progressivement ses tentatives. Si les échecs se répètent, il attend votre décision : « Retry » réessaie immédiatement, « Stop tracking » arrête le suivi et laisse l’élément en place.
+- Dans Settings, vous pouvez définir une limite de capacité du cimetière (préréglages ou taille personnalisée) ; baisser la limite affiche d’abord l’aperçu des tombes supprimées avant confirmation. Quand une limite est active, Graveyard affiche une barre d’occupation et tout élément seul supérieur à la limite reste en place dans For you.
 - Si Docker ne tourne pas, le bouton d’approbation d’une proposition de conteneur est désactivé et la carte en indique la raison. Approuvez-la une fois Docker démarré.
 - La confiance accordée à un fichier `.obitrules` approuve exactement la version affichée dans la fenêtre.
 - La langue de la fenêtre, de la zone de notification et du menu contextuel suit `[ui] language` dans `config.toml` (`auto`, `zh-CN` ou `en` ; `auto` reprend la langue de Windows). Vous pouvez aussi la changer dans les réglages.
@@ -90,7 +91,7 @@ Choisissez une apparence dans Settings → Appearance. Le changement est immédi
 
 | Apparence | Description |
 |---|---|
-| Calendrier | Une colonne par jour. Chaque fichier apparaît à sa date d’enterrement ou de suppression définitive. Faites-le glisser vers un autre jour pour prolonger sa durée de vie. |
+| Calendrier | Une colonne par jour. Chaque fichier apparaît à sa date d’enterrement ou de suppression définitive. Faites-le glisser vers un autre jour pour prolonger sa durée de vie, ou cliquez sur l’en-tête d’un jour pour tout sélectionner et prolonger, enterrer, ressusciter ou supprimer définitivement par lot depuis la barre capsule en bas (avec confirmations distinctes). |
 | Une ligne | Une seule ligne de saisie, tout au clavier : cherchez un fichier et appuyez sur Entrée pour le ressusciter ou prolonger sa durée de vie. |
 | Tunnel | Le temps est représenté par un tunnel en 3D : plus le fichier est proche, plus son échéance est imminente. Faites défiler pour parcourir les dates. |
 | Veille | Fond sombre avec une lampe par fichier. Plus elle est faible, plus l’échéance est proche. |

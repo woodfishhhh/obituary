@@ -51,16 +51,16 @@
 
 - **為檔案和資料夾設定壽命。** `obit add debug.log 2h` 到期後會下葬；用 `--at` 指定時間，隨時用 `extend` 延長，或用 `spare` 停止追蹤。
 - **由 agent 決定什麼要進來。** `obit init` 會把讣告加入 agent 的指示（`OBIT.md`、Agent Skill、MCP 可選）。agent 用 `obit mark` 為寫下的除錯腳本、日誌和截圖設定壽命，用 `obit mktemp` 取得暫存空間，把拿不準的東西用 `obit bury` 下葬，也會登記編輯時留下的 `*.bak` 檔案。
-- **你也能加入自己的檔案。** Windows 上在檔案總管右鍵檔案或資料夾（可一次多選），選擇「Add to Obituary」後指定 1、7 或 30 天，或「Bury now (recoverable)」；也能替 Downloads 這類資料夾設定政策。
+- **你也能加入自己的檔案。** 在 Windows 檔案總管、macOS Finder「快速動作」或 Linux Nautilus / Dolphin 右鍵檔案或資料夾（可一次多選），設定 1、7、30 天或立即下葬；也能替 Downloads 這類資料夾設定政策。
 - **需要時再開啟自動登記。** 預設關閉，不會自行加入任何東西。從設定開啟後，會依規則（`.playwright-mcp/`、`test-results/`、`*.log`、編輯時留下的 `*.bak`、`*.orig`、`*~` 等）以及 hook 看到的寫入登記，提供分級、全自動和全部詢問三種模式。依賴、建置輸出和快取在任何模式都不會自動登記，Git 追蹤中的檔案也不會碰。常駐程序會在寫入後處理自動登記，剛寫入的檔案可能要稍候片刻才會出現在 `obit list` 中。
 - **工作階段結束時整理。** agent 即將停止時，讣告會列出這次工作階段建立、尚未分類的檔案，請它為除錯腳本、日誌和截圖設定壽命或下葬，同時保留交付成果；每個工作階段最多一次。
 - **agent 刪掉的東西都能回來。** 開啟刪除護欄後，agent 的 `rm -rf`、`git clean` 等命令會被攔下，並收到等價的 `obit` 命令；改用後東西會進墓地而不是消失。
-- **先下葬，再永久刪除。** 墓地預設保留所有東西七天；`obit resurrect` 會放回原處，絕不覆蓋現在那裡的檔案。
+- **先下葬，再永久刪除。** 墓地預設保留所有東西七天；`obit resurrect` 會放回原處，絕不覆蓋現在那裡的檔案。可選設 `[graveyard] max_size`（`obit config --max-size`）限制墓地容量：超限時依最早下葬順序自動永久刪除最舊墓地，單個超限項目則安全留在原處等你決定。
 - **依檔案身分追蹤，而不是檔名。** 每筆記錄都保存磁碟區序號和 128 位元檔案 ID，因此改名或搬移後仍能找到；如果原路徑出現另一個檔案，則會保持不動。
 - **Claude Code 和 Codex。** `obit init` 會註冊 hook 和 Agent Skill；MCP 伺服器可選，`--uninstall` 只移除讣告加入的內容。
 - **像 Everything 一樣常駐 Windows 系統匣。** `obit init` 會在登入時啟動系統匣圖示；選單可查看最近的下葬、點擊復活、暫停自動清理並開啟讣告小視窗。Windows 工作排程器仍作為備援。
-- **Windows / Ubuntu 24.04 amd64 小視窗。** Expiring、Graveyard、For you、Settings 和 Logs 讓你不用命令列就能復活檔案、核准提案和變更設定（`obit-gui.exe`，或系統匣選單的「Open Obituary」）。支援中文和英文，以及八種外觀。 在 Ubuntu 上從應用程式選單開啟訃告。
-- **檔案總管右鍵選單和日期（Windows）。** 右鍵檔案或資料夾（可多選）→「Add to Obituary」→ 1、7 或 30 天，或「Bury now (recoverable)」；Windows 11 位於「Show more options」。Downloads 和桌面上的追蹤項目會顯示為「name (11-13 burial)」（簡體中文介面則顯示「name（11-13 下葬）」），實際檔名不變。
+- **小視窗（Windows / macOS / Ubuntu 24.04 amd64）。** Expiring、Graveyard、For you、Settings 和 Logs 讓你不用命令列就能復活檔案、核准提案、在月曆按天多選批次操作和變更設定。支援中文和英文，以及八種外觀。
+- **右鍵選單和下葬日期。** 在 Windows 檔案總管（Windows 11 位於「Show more options」）、macOS Finder「快速動作」或 Linux Nautilus 指令稿 / Dolphin 選單右鍵設定壽命或立即下葬；檔案總管（隨介面語言更新）以及 Finder、Dolphin 皆顯示下葬日期標籤，實際檔名不變。
 - **Docker 容器。** `obit docker add <container> 3d` 為容器設定壽命；到期時用 `docker stop` 停止（`obit resurrect` 會重新啟動），保留期後才用 `docker rm` 移除。開啟自動登記後，agent 工作階段為專案啟動的容器也會登記，之後會告知你。
 - 執行 `obit mark --docker-volume cache 3d`（也可以用 `add`）讓 `cache` 在三天後下葬；要立即下葬，請執行 `obit bury --docker-volume -- cache`。資料卷不會自動登記。訃告只處理你明確登記或下葬的資料卷，不會刪除映像檔或網路。
 - **資料夾政策。** `obit watch Downloads 2w` 會讓其中每個新檔案兩週後下葬。到期的子資料夾只會產生提案，核准後才下葬；政策本身也需要你核准。
@@ -103,7 +103,7 @@ Read https://obituary.woodfish.site/agent-install.md and follow it to install Ob
 - 臨時切換：執行命令前設定 OBIT_LANG=en 或 OBIT_LANG=zh-CN。
 - 儲存設定：執行 obit config --language en、obit config --language zh-CN 或 obit config --language auto。
 - 自動選擇：移除 OBIT_LANG，並保持 ui.language = auto；讣告會依序檢查設定、LC_ALL、LC_MESSAGES、LANG 與作業系統介面語言。
-- 本階段已翻譯：list、bury、resurrect 的輸出與說明，以及 Windows 系統匣和原生選單文字。Hook 與 MCP 協議文字保持英文且穩定。
+- 適用範圍：給人看的命令列輸出、系統匣、小視窗與檔案總管選單均跟隨該語言設定；Hook 與 MCP 協議文字保持英文且穩定。
 
 ## 快速上手
 

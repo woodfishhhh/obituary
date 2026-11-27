@@ -113,7 +113,7 @@ export const ptBR: Strings = {
     lookLabel: "Visual",
     pageLabel: "Página",
     notes: {
-      calendar: "Uma coluna por dia; cada arquivo fica no dia em que é enterrado ou excluído. Arraste-o para um dia posterior para prolongá-lo.",
+      calendar: "Uma coluna por dia; cada arquivo fica no dia em que é enterrado ou excluído. Arraste-o para um dia posterior para prolongá-lo ou clique no cabeçalho do dia para selecionar em lote.",
       palette: "Uma linha de entrada, tudo pelo teclado: encontre um arquivo e pressione Enter para ressuscitar ou prolongar.",
     } as Record<LookId, string>,
     pageNotes: {
@@ -179,8 +179,8 @@ export const ptBR: Strings = {
     handHead: "Manualmente",
     handLine: {
       windows: "Escolha uma das três e depois rode obit doctor para conferir a instalação.",
-      macos: "Escolha uma das duas e depois rode obit doctor para conferir a instalação. A bandeja, a janela pequena e os menus de contexto existem só no Windows; aqui, obit list, obit graveyard e obit resurrect fazem o trabalho.",
-      linux: "Use o script de instalação e depois rode obit doctor para conferir a instalação. A bandeja, a janela pequena e os menus de contexto existem só no Windows; aqui, obit list, obit graveyard e obit resurrect fazem o trabalho.",
+      macos: "Escolha uma das duas opções para a CLI e rode obit doctor para conferir a instalação; o DMG universal também traz a janela pequena e a barra de menus, com Ações Rápidas e etiquetas no Finder.",
+      linux: "Use o script de instalação para a CLI e rode obit doctor para conferir a instalação; no Ubuntu 24.04 amd64 o .deb também traz a janela e a bandeja, com ações no Nautilus e no Dolphin.",
     } as Record<Os, string>,
     mirrorHandLine: "Use o script de instalação ou baixe o arquivo e depois rode obit doctor para conferir a instalação.",
     platformLabel: "Plataforma",

@@ -73,6 +73,7 @@ Das Symbol im Infobereich braucht einen Desktop, der StatusNotifierItem bereitst
 
 - Die obere Leiste der Startseite zeigt „Auto registration: off“ oder „on“. Ein Klick öffnet die Einstellungen. Oben auf For you und unter Settings kannst du zwischen aus (Standard: nur du und der Agent registrieren), abgestuft, vollautomatisch und immer nachfragen wählen; siehe [Was registriert wird](./auto-register). Weiter unten stehen unter „Handled automatically“ die ohne Rückfrage registrierten Einträge. Je Eintrag kannst du die Registrierung mit einem Klick rückgängig machen (die Frist endet, der Eintrag bleibt an Ort und Stelle) oder die Lebensdauer verlängern.
 - Fällige Einträge, die nicht begraben werden konnten, etwa weil ein Programm die Datei offen hält, erscheinen unter „Burials that failed“ auf For you. Dort stehen Grund und nächster Versuch. Die Wartezeit zwischen den Versuchen wächst. Nach wiederholten Fehlern wartet Obituary auf dich: „Retry“ versucht es sofort erneut, „Stop tracking“ lässt den Eintrag an seinem Platz und beendet die Überwachung.
+- Unter Settings lässt sich eine Kapazitätsgrenze für den Friedhof festlegen (Vorgaben oder eigene Größe); vor dem Absenken zeigt eine Vorschau die betroffenen Gräber zur Bestätigung. Bei aktiver Grenze zeigt Graveyard einen Belegungsbalken, und einzelne zu große Einträge bleiben an ihrem Platz unter For you.
 - Läuft Docker nicht, ist „Approve“ bei Containervorschlägen nicht verfügbar. Die Karte nennt den Grund. Sobald Docker läuft, kannst du den Vorschlag genehmigen.
 - Wenn du einer `.obitrules` vertraust, gilt das nur für die im Fenster angezeigte Version.
 - Fenster, Infobereich und Kontextmenü verwenden `[ui] language` aus `config.toml` (`auto`, `zh-CN` oder `en`; `auto` übernimmt die Windows-Sprache). Du kannst die Sprache auch in den Einstellungen ändern.
@@ -90,7 +91,7 @@ Unter Settings → Appearance wechselst du die Ansicht. Das wirkt sofort und nur
 
 | Ansicht | Beschreibung |
 |---|---|
-| Kalender | Eine Spalte pro Tag; jede Datei steht am Tag des Begrabens oder der dauerhaften Löschung. Ziehe sie auf einen späteren Tag, um die Lebensdauer zu verlängern. |
+| Kalender | Eine Spalte pro Tag; jede Datei steht am Tag des Begrabens oder der dauerhaften Löschung. Ziehe sie auf einen späteren Tag, um die Lebensdauer zu verlängern, oder klicke eine Tagesüberschrift, um alle Einträge dieses Tages auszuwählen und über die untere Aktionsleiste gesammelt zu verlängern, zu begraben, wiederzubeleben oder dauerhaft zu löschen (mit getrennter Bestätigung). |
 | Eine Zeile | Eine Eingabezeile, alles per Tastatur: Datei suchen und mit Enter wiederbeleben oder verlängern. |
 | Tunnel | Ein 3D-Zeittunnel: Je näher eine Datei steht, desto früher läuft sie ab. Scrolle durch die Zeit. |
 | Nachtwache | Dunkle Ansicht, eine Lampe pro Datei. Je schwächer das Licht, desto näher der Ablauf. |

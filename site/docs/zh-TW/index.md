@@ -11,9 +11,9 @@ Windows 10 / 11、macOS 和 Linux（x64 和 ARM64）：
 | 安裝方式 | Scoop、`install.ps1` 指令碼（winget 審核中） | Homebrew、`install.sh` 指令碼 | `install.sh` 指令碼 |
 | 到期檢查 | 常駐系統匣程序，工作排程器作為備援 | 使用者的 launchd 代理程式 | `systemd --user` 計時器；沒有 systemd 時使用使用者 crontab |
 | 命令列、墓地與復活、自動登記（可選）、刪除護欄、agent 整合（hook、Skill、MCP）、Docker 容器、資料夾策略 | 有 | 有 | 有 |
-| 系統匣、小視窗、開始功能表和桌面捷徑 | 有 | 改用命令列：`obit list`、`obit graveyard`、`obit resurrect` | 與 macOS 相同 |
+| 系統匣、小視窗、開始功能表和桌面捷徑 | 有 | macOS 通用 DMG：[小視窗與選單列系統匣](./desktop) | Ubuntu 24.04 amd64：[小視窗與系統匣](./desktop) |
 | 檔案管理員的右鍵選單與下葬日期 | 檔案總管 | Finder：快速動作、日期標籤 | Nautilus：指令稿 · Dolphin：選單、日期標籤 |
-| 資源回收筒模式 | 有 | 僅墓地 | 僅墓地 |
+| 資源回收筒模式 | 有 | 僅墓地 | 有 |
 
 **最簡單的方法：讓 agent 幫你處理。** 把這句話傳給你使用的 agent（Claude Code、Codex、Cursor……都可以）。它會安裝 Obituary、連接到自己，並在需要你決定的地方停下來：
 

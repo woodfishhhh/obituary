@@ -108,7 +108,7 @@ export const zh = {
     lookLabel: "外观",
     pageLabel: "页面",
     notes: {
-      calendar: "每一列是一天，文件排在它下葬或火化的那天；拖到后面某天就延长到那天。",
+      calendar: "每一列是一天，文件排在它下葬或火化的那天；拖到后面某天就延长到那天，点列头可全选当天批量操作。",
       palette: "一行输入，键盘直达：搜文件，回车复活或延长。",
     } as Record<LookId, string>,
     pageNotes: {
@@ -174,8 +174,8 @@ export const zh = {
     handHead: "自己装",
     handLine: {
       windows: "下面三种方式任选其一，装好后执行 obit doctor 体检。",
-      macos: "下面两种方式任选其一，装好后执行 obit doctor 体检。托盘、小窗口和右键菜单只在 Windows 上有，这里用 obit list、obit graveyard、obit resurrect。",
-      linux: "用安装脚本安装，装好后执行 obit doctor 体检。托盘、小窗口和右键菜单只在 Windows 上有，这里用 obit list、obit graveyard、obit resurrect。",
+      macos: "下面两种方式任选其一安装命令行，装好后执行 obit doctor 体检；也可以直接下载通用 DMG 使用小窗口与菜单栏托盘，支持 Finder 快速操作和日期标签。",
+      linux: "用安装脚本安装命令行，装好后执行 obit doctor 体检；Ubuntu 24.04 amd64 也可以安装 .deb 使用小窗口与托盘，支持 Nautilus 和 Dolphin 菜单。",
     } as Record<Os, string>,
     mirrorHandLine: "用安装脚本，或者直接下载压缩包；装好后执行 obit doctor 体检。",
     platformLabel: "系统",

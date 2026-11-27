@@ -11,9 +11,9 @@ Windows 10 / 11, macOS et Linux (x64 et ARM64) :
 | Installer avec | Scoop, le script `install.ps1` (winget en cours d’examen) | Homebrew, le script `install.sh` | le script `install.sh` |
 | Vérification des échéances | processus résident dans la zone de notification, Planificateur de tâches en secours | agent launchd de l’utilisateur | minuteur `systemd --user` ; crontab utilisateur sans systemd |
 | CLI, cimetière et résurrection, enregistrement automatique (facultatif), garde de suppression, intégration aux agents (hooks, Skill, MCP), conteneurs Docker, politiques de dossiers | oui | oui | oui |
-| Zone de notification, petite fenêtre, menu Démarrer et raccourcis du bureau | oui | utilisez plutôt la CLI : `obit list`, `obit graveyard`, `obit resurrect` | comme sur macOS |
+| Zone de notification, petite fenêtre, menu Démarrer et raccourcis du bureau | oui | DMG universel macOS : [fenêtre et barre des menus](./desktop) | Ubuntu 24.04 amd64 : [fenêtre et zone de notification](./desktop) |
 | Menu contextuel et dates d’enterrement dans le gestionnaire de fichiers | Explorateur | Finder : Actions rapides, Étiquettes de date | Nautilus : Scripts · Dolphin : menu, Étiquettes de date |
-| Mode Corbeille | oui | cimetière uniquement | cimetière uniquement |
+| Mode Corbeille | oui | cimetière uniquement | oui |
 
 **Le plus simple : laissez votre agent s’en charger.** Envoyez cette phrase à l’agent que vous utilisez (Claude Code, Codex, Cursor, etc.). Il installe Obituary, se connecte à lui-même et s’arrête lorsque la décision vous revient.
 

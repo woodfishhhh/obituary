@@ -17,8 +17,9 @@
 
 ```toml
 [graveyard]
-mode = "graveyard"      # or "recycle": straight to the system Recycle Bin
+mode = "graveyard"      # or "recycle": files go to system Trash, directories to the graveyard
 retention_days = 7      # days the graveyard keeps things
+max_size = ""           # optional capacity limit, e.g. "5GB"; purges oldest graves first, oversized items wait for your review
 ```
 
 設定ファイルは `%APPDATA%\obituary\config.toml` です。`obit config` で現在の内容を表示し、`obit config --create` でコメント付きの既定ファイルを作成できます。

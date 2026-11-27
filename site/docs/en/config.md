@@ -82,6 +82,7 @@ A value out of range is reported the same way, with the setting and what it allo
 obit config                  # file location, data directory and the values in force
 obit config --create         # write the commented default file
 obit config --language en    # save the interface language: auto, en or zh-CN
+obit config --max-size 5GB   # set a graveyard capacity limit (--dry-run previews, --yes confirms)
 obit config telemetry off    # turn usage statistics off (on turns them back on)
 ```
 

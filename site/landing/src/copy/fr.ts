@@ -113,7 +113,7 @@ export const fr: Strings = {
     lookLabel: "Aspect",
     pageLabel: "Page",
     notes: {
-      calendar: "Une colonne par jour ; chaque fichier se place au jour où il est enterré ou supprimé. Faites-le glisser vers un jour ultérieur pour le prolonger.",
+      calendar: "Une colonne par jour ; chaque fichier se place au jour où il est enterré ou supprimé. Faites-le glisser vers un jour ultérieur pour le prolonger, ou cliquez sur l’en-tête d’un jour pour agir en lot.",
       palette: "Une ligne de saisie, tout au clavier : trouvez un fichier, puis Entrée pour le ressusciter ou le prolonger.",
     } as Record<LookId, string>,
     pageNotes: {
@@ -179,8 +179,8 @@ export const fr: Strings = {
     handHead: "À la main",
     handLine: {
       windows: "Choisissez l’une des trois, puis lancez obit doctor pour vérifier l’installation.",
-      macos: "Choisissez l’une des deux, puis lancez obit doctor pour vérifier l’installation. La zone de notification, la petite fenêtre et les menus contextuels sont propres à Windows ; ici, obit list, obit graveyard et obit resurrect font le travail.",
-      linux: "Utilisez le script d’installation, puis lancez obit doctor pour vérifier l’installation. La zone de notification, la petite fenêtre et les menus contextuels sont propres à Windows ; ici, obit list, obit graveyard et obit resurrect font le travail.",
+      macos: "Choisissez l’une des deux options pour la CLI, puis lancez obit doctor ; le DMG universel fournit aussi la petite fenêtre et la barre des menus, avec Actions rapides et étiquettes du Finder.",
+      linux: "Utilisez le script d’installation pour la CLI, puis lancez obit doctor ; sous Ubuntu 24.04 amd64, le paquet .deb fournit aussi la fenêtre et l’icône système, avec les actions Nautilus et Dolphin.",
     } as Record<Os, string>,
     mirrorHandLine: "Utilisez le script d’installation ou téléchargez l’archive, puis lancez obit doctor pour vérifier l’installation.",
     platformLabel: "Plateforme",

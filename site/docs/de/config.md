@@ -82,6 +82,7 @@ Ein Wert außerhalb des Bereichs wird genauso gemeldet, mit der Einstellung und 
 obit config                  # Dateispeicherort, Datenverzeichnis und die geltenden Werte
 obit config --create         # schreibt die kommentierte Standarddatei
 obit config --language en    # speichert die Oberflächensprache: auto, en oder zh-CN
+obit config --max-size 5GB   # legt eine Kapazitätsgrenze für den Friedhof fest (--dry-run Vorschau, --yes bestätigen)
 obit config telemetry off    # schaltet die Nutzungsstatistik aus (on schaltet sie wieder ein)
 ```
 

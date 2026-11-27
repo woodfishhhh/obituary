@@ -82,6 +82,7 @@ Une valeur hors limites est signalée de la même façon, avec le réglage et ce
 obit config                  # emplacement du fichier, répertoire de données et valeurs en vigueur
 obit config --create         # écrit le fichier par défaut commenté
 obit config --language en    # enregistre la langue de l’interface : auto, en ou zh-CN
+obit config --max-size 5GB   # définit la limite de capacité du cimetière (--dry-run aperçu, --yes confirmation)
 obit config telemetry off    # désactive les statistiques d’utilisation (on les réactive)
 ```
 

@@ -82,6 +82,7 @@ Un valor fuera de rango se notifica igual, con el ajuste y lo que admite, por ej
 obit config                  # ubicación del archivo, directorio de datos y valores en vigor
 obit config --create         # escribe el archivo predeterminado con comentarios
 obit config --language en    # guarda el idioma de la interfaz: auto, en o zh-CN
+obit config --max-size 5GB   # fija el límite de capacidad del cementerio (--dry-run previsualiza, --yes confirma)
 obit config telemetry off    # desactiva las estadísticas de uso (on las vuelve a activar)
 ```
 

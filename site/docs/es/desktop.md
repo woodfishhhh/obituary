@@ -73,6 +73,7 @@ La bandeja necesita un escritorio que ofrezca StatusNotifierItem, y GNOME no lo 
 
 - La barra superior de la página de inicio indica «Auto registration: off» u «on». Púlsala para abrir los ajustes. Tanto en la parte superior de For you como en Settings puedes elegir entre desactivado (por defecto: solo entra lo que registráis tú y el agente), escalonado, totalmente automático o preguntar siempre. Consulta [Qué se registra](./auto-register). Más abajo, «Handled automatically» muestra lo registrado sin preguntar. Con un clic puedes deshacer el registro (se detiene la cuenta atrás y el elemento queda en su sitio) o prolongar la vida útil.
 - Si un elemento caduca pero no se puede enterrar, por ejemplo porque otro programa mantiene abierto el archivo, aparece en «Burials that failed» de For you, con el motivo y la fecha del siguiente intento. Obituary reintenta a intervalos cada vez mayores. Tras varios fallos se detiene: «Retry» vuelve a intentarlo ahora y «Stop tracking» deja el elemento en su sitio sin seguirlo.
+- En Settings puedes fijar un límite de capacidad del cementerio (preajustes o tamaño personalizado); al reducir el límite se muestra una vista previa de las tumbas que se eliminarán antes de confirmar. Con un límite activo, Graveyard muestra una barra de uso y cualquier elemento individual mayor que el límite permanece en su sitio dentro de For you.
 - Mientras Docker no esté en ejecución, no podrás aprobar propuestas de contenedores. La tarjeta explica el motivo. Podrás aprobarlas cuando Docker esté en marcha.
 - Al confiar en un archivo `.obitrules`, solo confías en la versión exacta que aparece en la ventana.
 - La ventana, la bandeja y el menú contextual usan `[ui] language` de `config.toml` (`auto`, `zh-CN` o `en`; `auto` sigue el idioma de Windows). También puedes cambiarlo en los ajustes.
@@ -90,7 +91,7 @@ Elige uno en Settings → Appearance. El cambio es inmediato y solo afecta a la 
 
 | Estilo | Descripción |
 |---|---|
-| Calendario | Una columna por día. Cada archivo aparece en la fecha de su entierro o eliminación definitiva. Arrástralo a una fecha posterior para ampliar su vida útil. |
+| Calendario | Una columna por día. Cada archivo aparece en la fecha de su entierro o eliminación definitiva. Arrástralo a una fecha posterior para ampliar su vida útil, o haz clic en el encabezado de un día para seleccionar todos sus elementos y prolongar, enterrar, resucitar o eliminar definitivamente en lote desde la barra inferior (con confirmaciones distintas para entierro y eliminación definitiva). |
 | Una línea | Un solo campo de entrada, todo desde el teclado: busca un archivo y pulsa Intro para resucitarlo o ampliar su vida útil. |
 | Túnel | Un túnel temporal en 3D. Cuanto más cerca está un archivo, antes caduca. Usa la rueda para recorrer el tiempo. |
 | Vigilia | Fondo oscuro con una luz por archivo. Cuanto más tenue es la luz, menos tiempo queda. |

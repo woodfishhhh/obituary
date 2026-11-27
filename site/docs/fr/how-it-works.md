@@ -17,8 +17,9 @@ La durée de conservation se règle dans la configuration. Vous pouvez aussi env
 
 ```toml
 [graveyard]
-mode = "graveyard"      # or "recycle": straight to the system Recycle Bin
+mode = "graveyard"      # or "recycle": files go to system Trash, directories to the graveyard
 retention_days = 7      # days the graveyard keeps things
+max_size = ""           # optional capacity limit, e.g. "5GB"; purges oldest graves first, oversized items wait for your review
 ```
 
 Le fichier de configuration est `%APPDATA%\obituary\config.toml`. `obit config` affiche les réglages ; `obit config --create` écrit un fichier commenté avec les valeurs par défaut.

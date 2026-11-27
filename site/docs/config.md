@@ -82,6 +82,7 @@ obit: 配置文件有错误：…\config.toml:2: unknown key "graveyard.retentio
 obit config                  # 文件位置、数据目录和当前生效的值
 obit config --create         # 写出带注释的默认文件
 obit config --language en    # 把界面语言写进配置：auto、en 或 zh-CN
+obit config --max-size 5GB   # 设置墓地容量上限（--dry-run 预演，--yes 非交互确认）
 obit config telemetry off    # 关闭使用统计（on 重新打开）
 ```
 

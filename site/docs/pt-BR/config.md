@@ -82,6 +82,7 @@ Um valor fora do intervalo é relatado do mesmo jeito, com a configuração e o 
 obit config                  # local do arquivo, diretório de dados e os valores em vigor
 obit config --create         # escreve o arquivo padrão comentado
 obit config --language en    # salva o idioma da interface: auto, en ou zh-CN
+obit config --max-size 5GB   # define o limite de capacidade do cemitério (--dry-run prévia, --yes confirma)
 obit config telemetry off    # desativa as estatísticas de uso (on volta a ativá-las)
 ```
 

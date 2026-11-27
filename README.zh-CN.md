@@ -52,16 +52,16 @@
 
 - **给文件和文件夹设寿命**：`obit add debug.log 2h`，寿命一到就下葬进墓地；也可以指定时刻（`--at`），随时续命（`extend`）或饶它一命（`spare`）。
 - **AI 自己决定什么进讣告**：`obit init` 把讣告写进 agent 的说明（`OBIT.md`、Agent Skill，MCP 可选）。agent 写调试脚本、日志、截图时自己 `obit mark` 给它寿命，要临时目录用 `obit mktemp`，拿不准的东西 `obit bury`；编辑时留下的 `*.bak` 也由它顺手登记。
-- **你自己放进来**：Windows 上在资源管理器里右键文件或文件夹（可以多选），选「放进讣告」再选 1 天、7 天或 30 天，或者「现在埋掉（可恢复）」；也可以给下载这类文件夹设策略。
+- **你自己放进来**：在 Windows 资源管理器、macOS Finder「快速操作」或 Linux Nautilus / Dolphin 里右键文件或文件夹（可以多选），设 1 天、7 天、30 天或「现在埋掉（可恢复）」；也可以给下载这类文件夹设策略。
 - **自动登记按需打开**：默认关闭，什么都不会自己进讣告。在设置里打开后，按规则（`.playwright-mcp/`、`test-results/`、`*.log`、编辑时留下的 `*.bak`、`*.orig`、`*~` 等）和 hook 看到的写入自动登记，可选分级（agent 这次会话新建的直接进，会话前就在的先问你）、全自动或全部都问。依赖、构建产物和缓存在任何模式下都不自动登记；被 Git 跟踪的文件永远不碰。常驻进程会在写入后处理自动登记，刚写的文件可能要稍等片刻才会出现在 `obit list` 中。
 - **收工整理**：会话快结束时，讣告把 agent 这次新建、还没归类的文件列给它，请它自己把调试脚本、日志、截图登记寿命或下葬，正式成果留下。每个会话最多一次。
 - **agent 删掉的东西都能复活**：开启删除护栏后，agent 的 `rm -rf`、`git clean` 这类删除命令会被拦下，讣告告诉它一条等价的 `obit` 命令；改用之后，东西进墓地而不是消失。
-- **先下葬，再火化**：墓地默认保留 7 天，期间随时 `obit resurrect` 放回原处，绝不覆盖已有文件。
+- **先下葬，再火化**：墓地默认保留 7 天，期间随时 `obit resurrect` 放回原处，绝不覆盖已有文件。可选设置 `[graveyard] max_size`（`obit config --max-size`）限制墓地容量：超限时按最早下葬顺序自动火化最旧墓地，单个超限条目则安全留在原处等你决定。
 - **认文件，不认文件名**：每条记录都存着卷序列号和 128 位文件 ID，文件改名或移动了照样找得到；原路径上换成了别的文件，就不碰它。
 - **接入 Claude Code 和 Codex**：`obit init` 注册 hook 和 Agent Skill，MCP 服务可选；`--uninstall` 只删讣告加的东西。
 - **托盘常驻，像 Everything**（Windows）：`obit init` 让托盘图标随登录启动，菜单里能看最近下葬的、点一下复活、暂停自动清理、打开讣告的小窗口；Windows 任务计划留作兜底。
-- **一个小窗口**（Windows / Ubuntu 24.04 amd64）：即将下葬、即将火化（墓地）、待你决定、设置、日志五页，不会用命令行也能复活文件、批准提议、改设置（`obit-gui.exe`，托盘菜单「打开讣告」）。 Ubuntu 上从应用列表打开讣告。
-- **右键菜单和资源管理器里的日期**（Windows）：右键文件或文件夹（可多选）→「放进讣告」→ 1 天、7 天、30 天或「现在埋掉（可恢复）」，Windows 11 在「显示更多选项」里；下载、桌面里被跟踪的东西显示成「名字（11-13 下葬）」，真实文件名不变。
+- **一个小窗口**（Windows / macOS / Ubuntu 24.04 amd64）：即将下葬、即将火化（墓地）、待你决定、设置、日志五页，不用命令行也能复活文件、批准提议、在日历里按天多选批量操作和改设置。中英文界面，八种外观。
+- **右键菜单和下葬日期**：在 Windows 资源管理器（Windows 11 在「显示更多选项」里）、macOS Finder「快速操作」或 Linux Nautilus 脚本 / Dolphin 菜单里右键设寿命或立刻下葬；资源管理器（随界面语言刷新）以及 Finder、Dolphin 均支持显示下葬日期标签，不改真实文件名。
 - **Docker 容器**：`obit docker add <容器> 3d` 给容器设寿命；到期先 `docker stop`（`obit resurrect` 就是重新启动），保留期过后才 `docker rm`。打开自动登记后，agent 会话里为这个项目新起的容器也会登记，事后告诉你。
 - 运行 `obit mark --docker-volume cache 3d`（也可用 `add`）让 `cache` 三天后下葬；要立即下葬，运行 `obit bury --docker-volume -- cache`。卷不会自动登记。讣告只处理你明确登记或下葬的卷，不删除镜像和网络。
 - **文件夹策略**：`obit watch 下载目录 2w`，放进来的文件各自两周后进墓地；子文件夹到期时只生成提议，等你批准才下葬（策略本身也要你批准）。
@@ -104,7 +104,7 @@ Read https://obituary.woodfish.site/agent-install.md and follow it to install Ob
 - 临时切换：在运行命令前设置 OBIT_LANG=en 或 OBIT_LANG=zh-CN。
 - 保存设置：运行 obit config --language en、obit config --language zh-CN 或 obit config --language auto。
 - 自动选择：删除 OBIT_LANG，并保持 ui.language = auto；讣告会依次检查配置、LC_ALL、LC_MESSAGES、LANG 和操作系统界面语言。
-- 本阶段已翻译：list、bury、resurrect 的输出和帮助，以及 Windows 托盘和原生菜单文字。Hook 和 MCP 协议文字保持英文且稳定。
+- 适用范围：给人看的命令行输出、托盘、小窗口和资源管理器菜单均跟随该语言设置；Hook 和 MCP 协议文字保持英文且稳定。
 
 ## 快速上手
 

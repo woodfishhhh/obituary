@@ -73,6 +73,7 @@ A bandeja precisa de um desktop que ofereça StatusNotifierItem, e o GNOME não 
 
 - A barra superior da página inicial mostra “Auto registration: off” ou “on”. Clique nela para abrir as configurações. No topo de For you ou em Settings você pode desativar o registro (padrão: só entra o que você e o agente registram), usar o modo em camadas, deixar tudo automático ou perguntar sempre. Veja [O que é registrado](./auto-register). A seção “Handled automatically”, mais abaixo, lista os itens registrados sem perguntar. Um clique desfaz o registro (a contagem para e o item fica no lugar) ou estende a vida útil.
 - Se um item expirar e não puder ser enterrado, por exemplo porque outro programa mantém o arquivo aberto, ele aparecerá em “Burials that failed” na página For you, com o motivo e a hora da próxima tentativa. O Obituary aumenta o intervalo entre as tentativas. Depois de repetidas falhas, ele espera sua decisão: “Retry” tenta de novo agora; “Stop tracking” encerra o acompanhamento e deixa o item no lugar.
+- Em Settings você pode definir um limite de capacidade do cemitério (predefinições ou valor personalizado); antes de reduzir o limite, uma prévia mostra as sepulturas que serão excluídas para confirmação. Com o limite ativo, Graveyard exibe uma barra de uso e itens individuais maiores que o limite permanecem no lugar em For you.
 - Com o Docker parado, o botão de aprovação de uma proposta de contêiner fica indisponível. O cartão explica o motivo. Você poderá aprovar quando o Docker iniciar.
 - Ao confiar em um arquivo `.obitrules`, você aprova exatamente a versão mostrada na janela.
 - A janela, a bandeja e o menu de contexto seguem `[ui] language` em `config.toml` (`auto`, `zh-CN` ou `en`; `auto` usa o idioma do Windows). Você também pode alterar o idioma nas configurações.
@@ -90,7 +91,7 @@ Escolha o tema em Settings → Appearance. A mudança é imediata e afeta apenas
 
 | Tema | Descrição |
 |---|---|
-| Calendário | Uma coluna por dia. Cada arquivo aparece na data do enterro ou da exclusão permanente. Arraste-o para uma data posterior para prolongar a vida útil. |
+| Calendário | Uma coluna por dia. Cada arquivo aparece na data do enterro ou da exclusão permanente. Arraste-o para uma data posterior para prolongar a vida útil, ou clique no cabeçalho de um dia para selecionar todos os itens e prolongar, enterrar, ressuscitar ou excluir definitivamente em lote pela barra inferior (com confirmações separadas). |
 | Uma linha | Uma única linha de entrada, só pelo teclado: encontre o arquivo e pressione Enter para ressuscitá-lo ou prolongar a vida útil. |
 | Túnel | Um túnel do tempo em 3D. Quanto mais perto o arquivo, mais cedo ele expira. Role para percorrer as datas. |
 | Vigília | Uma luz por arquivo sobre fundo escuro. Quanto mais fraca a luz, mais próximo o vencimento. |

@@ -108,7 +108,7 @@ export const ja: Strings = {
     lookLabel: "表示",
     pageLabel: "ページ",
     notes: {
-      calendar: "1 列が 1 日で、ファイルは埋葬または永久削除される日に並びます。後の日へドラッグすると、その日まで延長されます。",
+      calendar: "1 列が 1 日で、ファイルは埋葬または永久削除される日に並びます。後の日へドラッグして延長でき、列ヘッダーのクリックでその日を一括選択して操作できます。",
       palette: "1 行の入力でキーボードだけで操作できます。ファイルを探して Enter で復活または延長。",
     } as Record<LookId, string>,
     pageNotes: {
@@ -174,8 +174,8 @@ export const ja: Strings = {
     handHead: "自分でインストール",
     handLine: {
       windows: "下の 3 つから 1 つを選び、インストールしたら obit doctor で確認します。",
-      macos: "下の 2 つから 1 つを選び、インストールしたら obit doctor で確認します。トレイ、小さなウィンドウ、右クリックメニューは Windows だけなので、ここでは obit list、obit graveyard、obit resurrect を使います。",
-      linux: "インストールスクリプトを実行し、終わったら obit doctor で確認します。トレイ、小さなウィンドウ、右クリックメニューは Windows だけなので、ここでは obit list、obit graveyard、obit resurrect を使います。",
+      macos: "下の 2 つから 1 つを選んで CLI を入れ、obit doctor で確認します。小さなウィンドウとメニューバーにはユニバーサル DMG も利用でき、Finder のクイックアクションと日付タグに対応します。",
+      linux: "インストールスクリプトで CLI を入れ、obit doctor で確認します。Ubuntu 24.04 amd64 では .deb でウィンドウとトレイも利用でき、Nautilus と Dolphin のメニューに対応します。",
     } as Record<Os, string>,
     mirrorHandLine: "インストールスクリプトを使うか、アーカイブを直接ダウンロードし、インストールしたら obit doctor で確認します。",
     platformLabel: "OS",

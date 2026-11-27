@@ -108,7 +108,7 @@ export const zhTW: Strings = {
     lookLabel: "外觀",
     pageLabel: "頁面",
     notes: {
-      calendar: "每一欄是一天，檔案排在它下葬或永久刪除的那一天；拖到之後的某一天，就延長到那一天。",
+      calendar: "每一欄是一天，檔案排在它下葬或永久刪除的那一天；拖到之後的某一天就延長到那一天，點選日期列標頭可全選當天批次操作。",
       palette: "一行輸入，鍵盤直達：搜尋檔案，按 Enter 復活或延長。",
     } as Record<LookId, string>,
     pageNotes: {
@@ -174,8 +174,8 @@ export const zhTW: Strings = {
     handHead: "自己裝",
     handLine: {
       windows: "下面三種方式任選其一，裝好後執行 obit doctor 做健康檢查。",
-      macos: "下面兩種方式任選其一，裝好後執行 obit doctor 做健康檢查。系統匣、小視窗和右鍵選單只在 Windows 上有，這裡用 obit list、obit graveyard、obit resurrect。",
-      linux: "用安裝腳本安裝，裝好後執行 obit doctor 做健康檢查。系統匣、小視窗和右鍵選單只在 Windows 上有，這裡用 obit list、obit graveyard、obit resurrect。",
+      macos: "下面兩種方式任選其一安裝命令列，裝好後執行 obit doctor 做健康檢查；也可直接下載通用 DMG 使用小視窗與選單列系統匣，支援 Finder 快速動作與日期標籤。",
+      linux: "用安裝腳本安裝命令列，裝好後執行 obit doctor 做健康檢查；Ubuntu 24.04 amd64 也可安裝 .deb 使用小視窗與系統匣，支援 Nautilus 與 Dolphin 選單。",
     } as Record<Os, string>,
     mirrorHandLine: "用安裝腳本，或者直接下載壓縮檔；裝好後執行 obit doctor 做健康檢查。",
     platformLabel: "系統",

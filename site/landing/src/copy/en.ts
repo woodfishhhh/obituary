@@ -112,7 +112,7 @@ export const en: Strings = {
     lookLabel: "Look",
     pageLabel: "Page",
     notes: {
-      calendar: "A column per day; each file sits on the day it is buried or cremated. Drag it to a later day to extend it.",
+      calendar: "A column per day; each file sits on the day it is buried or cremated. Drag it to a later day to extend it, or click a day header to select the whole day for batch actions.",
       palette: "One line of input, all from the keyboard: find a file, press Enter to resurrect or extend.",
     },
     pageNotes: {
@@ -178,8 +178,8 @@ export const en: Strings = {
     handHead: "By hand",
     handLine: {
       windows: "Pick one of the three, then run obit doctor to check the installation.",
-      macos: "Pick one of the two, then run obit doctor to check the installation. The tray, small window and context menus are Windows-only; here obit list, obit graveyard and obit resurrect do their work.",
-      linux: "Use the install script, then run obit doctor to check the installation. The tray, small window and context menus are Windows-only; here obit list, obit graveyard and obit resurrect do their work.",
+      macos: "Pick one of the two for the CLI, then run obit doctor to check the installation; or download the universal DMG for the small window and menu bar tray. Finder Quick Actions and date tags are supported too.",
+      linux: "Use the install script for the CLI, then run obit doctor to check the installation; on Ubuntu 24.04 amd64 you can also install the .deb for the small window and tray. Nautilus and Dolphin actions are supported too.",
     },
     mirrorHandLine: "Use the install script or download the archive, then run obit doctor to check the installation.",
     platformLabel: "Platform",

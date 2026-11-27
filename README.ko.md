@@ -51,16 +51,16 @@ Obituary는 에이전트가 필요해서 만들어졌습니다. 버전 0.0.1이 
 
 - **파일과 폴더에 수명을 부여합니다.** `obit add debug.log 2h`는 시간이 되면 매장합니다. `--at`으로 시점을 지정하고, 언제든 `extend`로 연장하거나 `spare`로 추적을 멈출 수 있습니다.
 - **무엇을 넣을지는 에이전트가 결정합니다.** `obit init`은 에이전트 지침에 Obituary를 추가합니다(`OBIT.md`, Agent Skill, MCP는 선택 사항). 에이전트는 `obit mark`로 작성한 디버그 스크립트, 로그, 스크린샷에 수명을 부여하고 `obit mktemp`로 임시 공간을 만들며, 확신이 없는 것은 `obit bury`로 매장하고 편집 중 남긴 `*.bak` 파일도 등록합니다.
-- **여러분의 파일도 추가할 수 있습니다.** Windows에서 탐색기의 파일이나 폴더를 오른쪽 클릭하고(여러 개 선택 가능) “Add to Obituary”를 선택한 뒤 1일, 7일, 30일 또는 “Bury now (recoverable)”를 지정하세요. Downloads 같은 폴더에 정책을 설정할 수도 있습니다.
+- **여러분의 파일도 추가할 수 있습니다.** Windows 탐색기, macOS Finder 빠른 동작, Linux Nautilus / Dolphin에서 파일이나 폴더를 오른쪽 클릭(여러 개 선택 가능)해 1일·7일·30일 수명을 주거나 지금 매장할 수 있으며, Downloads 같은 폴더에 정책을 설정할 수도 있습니다.
 - **원할 때 자동 등록을 켭니다.** 기본값은 꺼짐이라 아무것도 자동으로 들어가지 않습니다. 설정에서 켜면 규칙(`.playwright-mcp/`, `test-results/`, `*.log`, 편집 중 남은 `*.bak`, `*.orig`, `*~` 등)과 hook이 본 쓰기를 등록합니다. 단계형, 완전 자동, 모든 항목 확인의 세 모드가 있습니다. 의존성, 빌드 출력, 캐시는 어떤 모드에서도 자동 등록하지 않으며 Git으로 추적되는 파일도 건드리지 않습니다. 상주 프로세스가 파일을 쓴 뒤 자동 등록을 처리하므로 새 파일이 `obit list`에 표시되기까지 잠시 걸릴 수 있습니다.
 - **세션 종료 정리.** 에이전트가 멈추려 하면 Obituary는 이번 세션에서 만들었지만 아직 분류하지 않은 파일을 보여 주고, 결과물은 남긴 채 디버그 스크립트, 로그, 스크린샷에 수명을 부여하거나 매장하도록 합니다. 세션당 최대 한 번입니다.
 - **에이전트가 삭제한 것도 돌아옵니다.** 삭제 가드가 켜져 있으면 `rm -rf`, `git clean` 같은 명령이 중지되고 동등한 `obit` 명령이 안내됩니다. 그 명령을 사용하면 항목은 사라지지 않고 묘지로 갑니다.
-- **먼저 매장하고 나중에 영구 삭제합니다.** 묘지는 기본 7일 동안 모든 항목을 보관합니다. `obit resurrect`는 원래 위치로 되돌리며 현재 그곳에 있는 항목을 덮어쓰지 않습니다.
+- **먼저 매장하고 나중에 영구 삭제합니다.** 묘지는 기본 7일 동안 모든 항목을 보관합니다. `obit resurrect`는 원래 위치로 되돌리며 현재 그곳에 있는 항목을 덮어쓰지 않습니다. 선택 사항인 `[graveyard] max_size`(`obit config --max-size`)를 설정하면 용량 초과 시 가장 오래된 묘지부터 자동 삭제되며, 단일 항목이 한도를 넘으면 기존 묘지를 비우지 않고 제자리에 둔 채 확인 대기 목록으로 보냅니다.
 - **이름이 아니라 파일 ID로 추적합니다.** 모든 기록에는 볼륨 일련 번호와 128비트 파일 ID가 저장되므로 이름을 바꾸거나 이동해도 찾을 수 있고, 원래 경로에 다른 파일이 생기면 건드리지 않습니다.
 - **Claude Code와 Codex.** `obit init`은 hook과 Agent Skill을 등록합니다. MCP 서버는 선택 사항이며 `--uninstall`은 Obituary가 추가한 것만 제거합니다.
 - **Windows에서 Everything처럼 트레이에 상주합니다.** `obit init`은 로그인할 때 트레이 아이콘을 시작합니다. 메뉴에서 최근 매장을 보고 복원하거나 자동 정리를 일시 중지하고 Obituary의 작은 창을 열 수 있습니다. Windows 작업 스케줄러는 예비 수단으로 남습니다.
-- **작은 창(Windows / Ubuntu 24.04 amd64).** Expiring, Graveyard, For you, Settings, Logs에서 명령줄 없이 파일을 복원하고 제안을 승인하며 설정을 바꿀 수 있습니다(`obit-gui.exe` 또는 트레이 메뉴의 “Open Obituary”). 중국어와 영어, 8가지 외관을 제공합니다. Ubuntu에서는 앱 목록에서 Obituary를 엽니다.
-- **탐색기의 컨텍스트 메뉴와 날짜(Windows).** 파일이나 폴더를 오른쪽 클릭하고(여러 개 선택 가능) → “Add to Obituary” → 1일, 7일, 30일 또는 “Bury now (recoverable)”를 선택합니다. Windows 11에서는 “Show more options” 아래에 있습니다. Downloads와 Desktop의 추적 항목은 실제 파일명은 그대로 둔 채 영어 인터페이스에서는 “name (11-13 burial)”로, 중국어 간체 인터페이스에서는 “name（11-13 下葬）”로 표시됩니다.
+- **작은 창(Windows / macOS / Ubuntu 24.04 amd64).** Expiring, Graveyard, For you, Settings, Logs에서 명령줄 없이 파일 부활, 제안 승인, 달력의 날짜별 다중 선택 일괄 작업, 설정 변경을 할 수 있습니다. 중국어와 영어, 8가지 외관을 제공합니다.
+- **컨텍스트 메뉴와 매장 날짜.** Windows 탐색기(Windows 11은 “Show more options”), macOS Finder 빠른 동작, Linux Nautilus 스크립트 / Dolphin 메뉴에서 수명을 주거나 즉시 매장할 수 있습니다. 탐색기(인터페이스 언어에 맞춰 갱신)와 Finder·Dolphin 날짜 태그는 실제 파일명을 바꾸지 않고 매장 날짜를 표시합니다.
 - **Docker 컨테이너.** `obit docker add <container> 3d`는 컨테이너에 수명을 부여합니다. 만료되면 `docker stop`으로 중지하고(`obit resurrect`로 다시 시작), 보관 기간이 지난 뒤에만 `docker rm`으로 제거합니다. 자동 등록을 켜면 프로젝트용 에이전트 세션이 시작한 컨테이너도 등록되고 나중에 알려 줍니다.
 - `obit mark --docker-volume cache 3d`(`add`도 가능)를 실행하면 `cache`를 3일 뒤에 매장합니다. 지금 매장하려면 `obit bury --docker-volume -- cache`를 실행하세요. 볼륨은 자동으로 등록되지 않습니다. 직접 등록하거나 매장하도록 지정한 볼륨만 처리하며 이미지와 네트워크는 삭제하지 않습니다.
 - **폴더 정책.** `obit watch Downloads 2w`는 그곳에 들어오는 모든 파일을 2주 뒤 매장합니다. 만료된 하위 폴더는 제안만 만들고 승인한 뒤 매장합니다. 정책 자체도 승인이 필요합니다.
@@ -103,7 +103,7 @@ Obituary는 현재 English와 간체 중국어를 지원합니다. CLI, 트레�
 - 임시 전환: 명령을 실행하기 전에 OBIT_LANG=en 또는 OBIT_LANG=zh-CN을 설정합니다.
 - 저장: obit config --language en, obit config --language zh-CN 또는 obit config --language auto를 실행합니다.
 - 자동 선택: OBIT_LANG를 지우고 ui.language = auto로 두면 설정, LC_ALL, LC_MESSAGES, LANG, 운영체제 UI 언어를 차례로 확인합니다.
-- 이번 단계에서 번역된 항목: list, bury, resurrect 출력과 도움말, Windows 트레이와 기본 메뉴 텍스트입니다. Hook과 MCP 프로토콜 텍스트는 영어로 안정적으로 유지됩니다.
+- 적용 범위: 사람용 CLI 출력, 트레이, 작은 창, 탐색기 메뉴가 이 언어 설정을 따릅니다. Hook과 MCP 프로토콜 텍스트는 영어로 안정적으로 유지됩니다.
 
 ## 빠른 시작
 

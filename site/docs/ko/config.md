@@ -82,6 +82,7 @@ obit: config file has errors: …\config.toml:2: unknown key "graveyard.retentio
 obit config                  # 파일 위치, 데이터 디렉터리, 현재 적용 중인 값
 obit config --create         # 주석 달린 기본 파일 만들기
 obit config --language en    # 표시 언어 저장: auto, en, zh-CN
+obit config --max-size 5GB   # 묘지 용량 한도 설정(--dry-run 미리 보기, --yes 비대화형 확인)
 obit config telemetry off    # 사용 통계 끄기(on이면 다시 켜기)
 ```
 

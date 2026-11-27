@@ -82,6 +82,7 @@ obit: config file has errors: …\config.toml:2: unknown key "graveyard.retentio
 obit config                  # ファイルの場所、データディレクトリ、有効な値
 obit config --create         # コメント付きの既定ファイルを書き出す
 obit config --language en    # 表示言語を保存する: auto、en、zh-CN
+obit config --max-size 5GB   # 墓地の容量上限を設定（--dry-run でプレビュー、--yes で確認省略）
 obit config telemetry off    # 使用統計をオフにする（on で再びオン）
 ```
 

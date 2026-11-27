@@ -11,9 +11,9 @@ Obituary runs on Windows 10 / 11, macOS and Linux (x64 and ARM64). The Windows s
 | Install with | Scoop, the `install.ps1` script (winget in review) | Homebrew, the `install.sh` script | the `install.sh` script |
 | Expiry checks | resident tray process, Task Scheduler as a fallback | user launchd agent | `systemd --user` timer; a user crontab without systemd |
 | CLI, graveyard and resurrection, automatic registration (optional), delete guard, agent integration (hooks, Skill, MCP), Docker containers, folder policies | yes | yes | yes |
-| Tray, small window, Start menu and desktop shortcuts | yes | the CLI instead: `obit list`, `obit graveyard`, `obit resurrect` | as on macOS |
+| Tray, small window, Start menu and desktop shortcuts | yes | Window and menu bar tray on macOS (universal DMG) | Window and tray on Ubuntu 24.04 amd64 (`.deb`); CLI on other distros |
 | Context menu and burial dates in the file manager | Explorer | Finder: Quick Actions, Date tags | Nautilus: Scripts · Dolphin: menu, Date tags |
-| Recycle Bin mode | yes | graveyard only | graveyard only |
+| Recycle Bin mode | yes | graveyard only | yes |
 
 With desktop supervision enabled, the tray handles expiries as they occur and an independent job checks once an hour. Editions without a tray check every five minutes.
 
@@ -82,10 +82,10 @@ Run `obit daemon enable --dry-run` to review the scheduler, then `obit daemon en
 ## 3. Check the installation
 
 ```powershell
-obit doctor
+obit doctor              # short summary, one line per area; full details go into a local HTML report (--open, --verbose, --json)
 ```
 
-It checks PATH, the background process, each agent connection, the data folder and the configuration, and says what to do about anything it finds.
+It checks PATH, the background process, each agent connection, file manager menus, the data folder and the configuration, printing the reason and a copyable fix under any area that needs attention.
 
 ## Updates
 

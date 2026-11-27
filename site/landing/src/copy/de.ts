@@ -108,7 +108,7 @@ export const de: Strings = {
     lookLabel: "Ansicht",
     pageLabel: "Seite",
     notes: {
-      calendar: "Eine Spalte pro Tag; jede Datei steht an dem Tag, an dem sie begraben oder gelöscht wird. Ziehe sie auf einen späteren Tag, um sie zu verlängern.",
+      calendar: "Eine Spalte pro Tag; jede Datei steht an dem Tag, an dem sie begraben oder gelöscht wird. Ziehe sie auf einen späteren Tag zum Verlängern oder klicke eine Tagesüberschrift für Stapelaktionen.",
       palette: "Eine Eingabezeile, alles per Tastatur: Datei suchen, mit Enter wiederbeleben oder verlängern.",
     } as Record<LookId, string>,
     pageNotes: {
@@ -174,8 +174,8 @@ export const de: Strings = {
     handHead: "Von Hand",
     handLine: {
       windows: "Wähle eine der drei Möglichkeiten und führe danach obit doctor aus, um die Installation zu prüfen.",
-      macos: "Wähle eine der zwei Möglichkeiten und führe danach obit doctor aus, um die Installation zu prüfen. Tray, kleines Fenster und Kontextmenüs gibt es nur unter Windows; hier erledigen obit list, obit graveyard und obit resurrect die Arbeit.",
-      linux: "Nutze das Installationsskript und führe danach obit doctor aus, um die Installation zu prüfen. Tray, kleines Fenster und Kontextmenüs gibt es nur unter Windows; hier erledigen obit list, obit graveyard und obit resurrect die Arbeit.",
+      macos: "Wähle eine der zwei Möglichkeiten für die CLI und prüfe die Installation mit obit doctor; das universelle DMG bietet auch Fenster und Menüleiste, dazu Finder-Schnellaktionen und Datums-Tags.",
+      linux: "Installiere die CLI per Skript und prüfe sie mit obit doctor; unter Ubuntu 24.04 amd64 liefert das .deb auch Fenster und Infobereich, dazu Aktionen für Nautilus und Dolphin.",
     } as Record<Os, string>,
     mirrorHandLine: "Nutze das Installationsskript oder lade das Archiv herunter und führe danach obit doctor aus, um die Installation zu prüfen.",
     platformLabel: "Plattform",
