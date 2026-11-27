@@ -124,17 +124,15 @@ func TestSidecarUninstallRemovesLegacyAndNewLocations(t *testing.T) {
 					t.Fatal(err)
 				}
 				stop := errors.New("stop before legacy cleanup")
-				beforeIntegrationWrite = func(path string) error {
+				hooks := integrationHooks{beforeWrite: func(path string) error {
 					if path == asset.Path+".lock" {
 						return stop
 					}
 					return nil
-				}
-				t.Cleanup(func() { beforeIntegrationWrite = nil })
-				if !errors.Is(Apply(plan), stop) {
+				}}
+				if !errors.Is(applyWithHooks(plan, hooks), stop) {
 					t.Fatal("interruption not reached")
 				}
-				beforeIntegrationWrite = nil
 			}
 			plan, err := planSharedRegistration(s, asset, nil, []string{asset.Owner}, true)
 			applyIntegration(t, plan, err)
@@ -208,13 +206,16 @@ func TestSidecarMigrationRechecksBothLocations(t *testing.T) {
 			if changeNew {
 				changed = testSidecarPath(t, asset.Path)
 			}
-			beforeIntegrationWrite = func(string) error {
-				beforeIntegrationWrite = nil
+			injected := false
+			hooks := integrationHooks{beforeWrite: func(string) error {
+				if injected {
+					return nil
+				}
+				injected = true
 				writeIntegrationFile(t, changed, "user edit")
 				return nil
-			}
-			t.Cleanup(func() { beforeIntegrationWrite = nil })
-			if Apply(plan) == nil || read(t, changed) != "user edit" {
+			}}
+			if applyWithHooks(plan, hooks) == nil || read(t, changed) != "user edit" {
 				t.Fatal("concurrent edit overwritten")
 			}
 		})

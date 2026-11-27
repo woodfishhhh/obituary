@@ -64,30 +64,48 @@ func (s *Service) existingRestoreAncestor(b Burial, dir string) (string, []strin
 	var missing []string
 	for {
 		info, err := os.Lstat(nearest)
-		if err == nil && info.Mode().IsRegular() {
-			if runtime.GOOS != "windows" {
-				if changed, err := s.firstChangedRestoreParent(b); err != nil {
-					return "", nil, err
-				} else if changed != nil {
-					if changedInfo, statErr := os.Lstat(changed.Path); statErr == nil && changedInfo.Mode().IsRegular() {
-						return "", nil, occupiedRestoreParent(changed.Path, b.Parents)
-					}
-					return "", nil, changedRestoreParent(changed.Path, changed)
-				}
-			}
-			return "", nil, occupiedRestoreParent(nearest, b.Parents)
-		}
 		if err == nil {
+			if info.Mode().IsRegular() {
+				return s.existingRestoreFile(b, nearest)
+			}
 			break
 		}
 		// POSIX reports ENOTDIR below a file; keep walking up to name that file.
-		if !os.IsNotExist(err) && !errors.Is(err, syscall.ENOTDIR) || pathutil.Parent(nearest) == nearest {
+		if !missingRestoreAncestor(err, nearest) {
 			return "", nil, err
 		}
 		missing = append(missing, filepath.Base(nearest))
 		nearest = pathutil.Parent(nearest)
 	}
 	return nearest, missing, nil
+}
+
+func (s *Service) existingRestoreFile(b Burial, path string) (string, []string, error) {
+	if changed, missing, found, err := s.changedRestoreFile(b); found || err != nil {
+		return changed, missing, err
+	}
+	return "", nil, occupiedRestoreParent(path, b.Parents)
+}
+
+func (s *Service) changedRestoreFile(b Burial) (string, []string, bool, error) {
+	if runtime.GOOS == "windows" {
+		return "", nil, false, nil
+	}
+	changed, err := s.firstChangedRestoreParent(b)
+	if err != nil {
+		return "", nil, false, err
+	}
+	if changed == nil {
+		return "", nil, false, nil
+	}
+	if changedInfo, statErr := os.Lstat(changed.Path); statErr == nil && changedInfo.Mode().IsRegular() {
+		return "", nil, true, occupiedRestoreParent(changed.Path, b.Parents)
+	}
+	return "", nil, true, changedRestoreParent(changed.Path, changed)
+}
+
+func missingRestoreAncestor(err error, path string) bool {
+	return (os.IsNotExist(err) || errors.Is(err, syscall.ENOTDIR)) && pathutil.Parent(path) != path
 }
 
 func (s *Service) firstChangedRestoreParent(b Burial) (*BurialParent, error) {

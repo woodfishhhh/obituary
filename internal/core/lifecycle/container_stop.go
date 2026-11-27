@@ -6,9 +6,9 @@ import (
 	"github.com/woodfishhhh/obituary/internal/docker"
 )
 
-func (s *Service) stopContainer(item Item, dryRun bool) (out Outcome) {
+func (s *Service) stopContainer(item Item, dryRun, requireDue bool, reason string) (out Outcome) {
 	out = Outcome{Item: item, Path: item.Path, Action: ActionRetry}
-	p := ContainerIntent{Operation: "stop", Phase: "prepared", Item: &item}
+	p := ContainerIntent{Operation: "stop", Reason: containerBurialReason(reason), Phase: "prepared", Item: &item}
 	if dryRun {
 		_, err := s.inspectContainer(p)
 		if err != nil {
@@ -23,7 +23,7 @@ func (s *Service) stopContainer(item Item, dryRun bool) (out Outcome) {
 			out.Detail = err.Error()
 			return nil
 		}
-		if err := s.beginContainerIntent(&p); err != nil {
+		if err := s.beginContainerIntent(&p, requireDue); err != nil {
 			if errors.Is(err, ErrUnsafe) {
 				out.Action = ActionSkipped
 				return nil
@@ -172,7 +172,7 @@ func (s *Service) observeRunningStop(p ContainerIntent, out *Outcome) error {
 }
 
 func (s *Service) commitContainerBurial(st *State, p ContainerIntent, out *Outcome) {
-	b := s.containerBurial(*p.Item)
+	b := s.containerBurial(*p.Item, p.Reason)
 	idx := st.Index(containerIntentID(p))
 	st.Items = append(st.Items[:idx], st.Items[idx+1:]...)
 	st.Burials = append(st.Burials, b)
@@ -182,6 +182,13 @@ func (s *Service) commitContainerBurial(st *State, p ContainerIntent, out *Outco
 	out.Action, out.Burial, out.Detail = ActionBuried, &b, ""
 }
 
-func (s *Service) containerBurial(item Item) Burial {
-	return Burial{Kind: KindContainer, Container: item.Container, ID: item.ID, Path: item.Path, BuriedAt: s.now(), PurgeAt: s.now().Add(s.retention()), Reason: ReasonExpired, Note: item.Note, Source: item.Source, Project: item.Project, Session: item.Session}
+func (s *Service) containerBurial(item Item, reason string) Burial {
+	return Burial{Kind: KindContainer, Container: item.Container, ID: item.ID, Path: item.Path, BuriedAt: s.now(), PurgeAt: s.now().Add(s.retention()), Reason: containerBurialReason(reason), Note: item.Note, Source: item.Source, Project: item.Project, Session: item.Session}
+}
+
+func containerBurialReason(reason string) string {
+	if reason == ReasonBury {
+		return ReasonBury
+	}
+	return ReasonExpired
 }

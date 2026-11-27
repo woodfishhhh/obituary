@@ -68,8 +68,8 @@ func (p *integrationTarget) publish(c Change, tmp *os.File) error {
 	if err := tmp.Sync(); err != nil {
 		return err
 	}
-	if beforeIntegrationCommit != nil {
-		if err := beforeIntegrationCommit(c.Path); err != nil {
+	if p.hooks.beforeCommit != nil {
+		if err := p.hooks.beforeCommit(c.Path); err != nil {
 			return err
 		}
 	}
@@ -124,8 +124,8 @@ func (p *integrationTarget) removeOriginal(c Change) error {
 	if _, err := p.verifiedPOSIXOriginal(c); err != nil {
 		return err
 	}
-	if beforeIntegrationCommit != nil {
-		if err := beforeIntegrationCommit(c.Path); err != nil {
+	if p.hooks.beforeCommit != nil {
+		if err := p.hooks.beforeCommit(c.Path); err != nil {
 			return err
 		}
 	}

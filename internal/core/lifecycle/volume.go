@@ -16,6 +16,8 @@ import (
 
 const KindDockerVolume = ledger.KindDockerVolume
 
+var errDockerVolumeLifespanChanged = errors.New("docker volume lifespan changed during archival")
+
 func (s *Service) volumeClient() (docker.VolumeClient, error) {
 	client, ok := s.Docker.(docker.VolumeClient)
 	if !ok || client == nil {
@@ -196,7 +198,7 @@ func (s *Service) archiveAndRemoveVolume(client docker.VolumeClient, item Item, 
 	err = s.Store.UpdateGraveyard(func(st *State) error {
 		idx := st.Index(item.ID)
 		if idx < 0 || st.Items[idx].Kind != KindDockerVolume || st.Items[idx].Volume == nil || !st.Items[idx].Volume.Same(*item.Volume) {
-			return errors.New("docker volume lifespan changed during archival")
+			return errDockerVolumeLifespanChanged
 		}
 		if err := entombDockerVolume(st, b, s.now()); err != nil {
 			return err
@@ -204,6 +206,9 @@ func (s *Service) archiveAndRemoveVolume(client docker.VolumeClient, item Item, 
 		return nil
 	})
 	if err != nil {
+		if !errors.Is(err, errDockerVolumeLifespanChanged) {
+			result.Err = err
+		}
 		return err
 	}
 	result.Action, result.Burial, result.Grave = ActionBuried, &b, b.Grave
@@ -262,10 +267,7 @@ func (s *Service) settleDockerVolume(item Item, dryRun bool, reason string) Outc
 		return out
 	}
 	result := s.buryDockerVolume(item, reason)
-	out.Action, out.Detail, out.Burial, out.Grave, out.Size = result.Action, result.Error, result.Burial, result.Grave, result.BurialSize()
-	if result.Error != "" {
-		out.err = errors.New(result.Error)
-	}
+	out.Action, out.Detail, out.Burial, out.Grave, out.Size, out.err = result.Action, result.Error, result.Burial, result.Grave, result.BurialSize(), result.Err
 	return out
 }
 

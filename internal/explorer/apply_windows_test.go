@@ -32,11 +32,10 @@ func TestLabelsCommitBlocksEditorSave(t *testing.T) {
 				t.Fatal(err)
 			}
 			attempted := false
-			beforeLabelsCommit = func() error {
+			p.beforeLabelsCommit = func() error {
 				attempted = true
 				return tryLabelEditorSave(dir)
 			}
-			t.Cleanup(func() { beforeLabelsCommit = nil })
 			if err := p.Apply(); err != nil || !attempted {
 				t.Fatalf("verified label commit failed: %v (attempted=%v)", err, attempted)
 			}
@@ -73,9 +72,8 @@ func TestLabelsFinalStreamsPreserveConcurrentEdit(t *testing.T) {
 				}
 				return writeSharedStream(stream, "new data") // Same size exercises the hash.
 			}
-			beforeLabelsPublish = func(string) error { return edit() }
-			beforeLabelsDelete = edit
-			t.Cleanup(func() { beforeLabelsPublish, beforeLabelsDelete = nil, nil })
+			p.beforeLabelsPublish = func(string) error { return edit() }
+			p.beforeLabelsDelete = edit
 			if err := p.Apply(); err == nil || !bytes.Equal(readINI(t, dir), p.before.data) {
 				t.Fatalf("concurrent stream edit lost: %v", err)
 			}
@@ -87,7 +85,7 @@ func TestLabelsFinalStreamsPreserveConcurrentEdit(t *testing.T) {
 			} else if err != nil || string(got) != "new data" {
 				t.Fatalf("concurrent stream edit lost: %q %v", got, err)
 			}
-			beforeLabelsPublish, beforeLabelsDelete = nil, nil
+			p.beforeLabelsPublish, p.beforeLabelsDelete = nil, nil
 			applyDates(t, dir, dates)
 			assertNoLabelTemporary(t, dir)
 		})
@@ -131,7 +129,7 @@ func TestLabelsFinalSecurityPreservesConcurrentDACL(t *testing.T) {
 		t.Fatal(err)
 	}
 	path, changed := filepath.Join(dir, iniName), ""
-	beforeLabelsPublish = func(string) error {
+	p.beforeLabelsPublish = func(string) error {
 		if err := windows.SetNamedSecurityInfo(path, windows.SE_FILE_OBJECT, windows.DACL_SECURITY_INFORMATION|windows.PROTECTED_DACL_SECURITY_INFORMATION, nil, nil, acl, nil); err != nil {
 			return err
 		}
@@ -143,7 +141,6 @@ func TestLabelsFinalSecurityPreservesConcurrentDACL(t *testing.T) {
 		// value so this regression proves the security comparison itself.
 		return errors.Join(err, setAttributes(path, p.before.attrs))
 	}
-	t.Cleanup(func() { beforeLabelsPublish = nil })
 	if err := p.Apply(); err == nil || changed == "" || !bytes.Equal(readINI(t, dir), p.before.data) {
 		t.Fatalf("concurrent security edit lost: %v", err)
 	}
@@ -151,7 +148,7 @@ func TestLabelsFinalSecurityPreservesConcurrentDACL(t *testing.T) {
 	if err != nil || got.String() != changed {
 		t.Fatalf("concurrent security edit lost: %v %v", got, err)
 	}
-	beforeLabelsPublish = nil
+	p.beforeLabelsPublish = nil
 	applyDates(t, dir, dates)
 }
 
@@ -185,8 +182,7 @@ func TestLabelsCreatePreservesConcurrentFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	const user = "[User]\nImportant=preserve me\n"
-	beforeLabelsCommit = func() error { return os.WriteFile(filepath.Join(dir, iniName), []byte(user), 0o600) }
-	t.Cleanup(func() { beforeLabelsCommit = nil })
+	p.beforeLabelsCommit = func() error { return os.WriteFile(filepath.Join(dir, iniName), []byte(user), 0o600) }
 	if err := p.Apply(); err == nil || string(readINI(t, dir)) != user {
 		t.Fatalf("label creation overwrote concurrent file: %v", err)
 	}
@@ -238,10 +234,9 @@ func TestLabelsFinalVerificationPreservesEdits(t *testing.T) {
 				if kind == "content" {
 					user = []byte("[User]\nImportant=preserve me\n")
 				}
-				beforeLabelsWrite = func() error {
+				p.beforeLabelsWrite = func() error {
 					return saveBeforeLabelCommit(dir, user, p.before.attrs, kind == "identity")
 				}
-				t.Cleanup(func() { beforeLabelsWrite = nil })
 				if err := p.Apply(); err == nil || !bytes.Equal(readINI(t, dir), user) {
 					t.Fatalf("final label verification lost user edit: %s remove=%v err=%v", kind, remove, err)
 				}
@@ -281,14 +276,13 @@ func TestLabelsProtectTemporarySource(t *testing.T) {
 					t.Fatal(err)
 				}
 				attempted := false
-				beforeLabelsPublish = func(path string) error {
+				p.beforeLabelsPublish = func(path string) error {
 					attempted = true
 					if err := attackLabelTemporary(path, attack); !errors.Is(err, windows.ERROR_SHARING_VIOLATION) {
 						t.Errorf("label temporary source was not protected: %s: %v", attack, err)
 					}
 					return nil
 				}
-				t.Cleanup(func() { beforeLabelsPublish = nil })
 				if err := p.Apply(); err != nil || !attempted || !bytes.Equal(readINI(t, dir), p.after) {
 					t.Fatalf("label temporary source published wrong content: %v", err)
 				}
@@ -341,8 +335,7 @@ func TestLabelsCleanupTemporaryAfterFailure(t *testing.T) {
 				t.Fatal(err)
 			}
 			rejected := errors.New("reject label publication")
-			beforeLabelsPublish = func(string) error { return rejected }
-			t.Cleanup(func() { beforeLabelsPublish = nil })
+			p.beforeLabelsPublish = func(string) error { return rejected }
 			if err := p.Apply(); !errors.Is(err, rejected) {
 				t.Fatalf("label commit rejection: %v", err)
 			}
@@ -393,7 +386,7 @@ func testLabelsTemporaryParentSwap(t *testing.T, kind string, reject bool) {
 	if err := p.check(root); err != nil {
 		t.Fatal(err)
 	}
-	beforeLabelsWrite = func() error {
+	p.beforeLabelsWrite = func() error {
 		if err := os.Rename(dir, moved); err != nil {
 			return err
 		}
@@ -409,7 +402,7 @@ func testLabelsTemporaryParentSwap(t *testing.T, kind string, reject bool) {
 	}
 	observed := false
 	rejected := errors.New("reject label publication after parent swap")
-	beforeLabelsPublish = func(string) error {
+	p.beforeLabelsPublish = func(string) error {
 		observed = true
 		entries, err := os.ReadDir(dir)
 		if err != nil || len(entries) != 1 || entries[0].Name() != "sentinel" {
@@ -421,7 +414,7 @@ func testLabelsTemporaryParentSwap(t *testing.T, kind string, reject bool) {
 		return nil
 	}
 	t.Cleanup(func() {
-		beforeLabelsWrite, beforeLabelsPublish = nil, nil
+		p.beforeLabelsWrite, p.beforeLabelsPublish = nil, nil
 		if kind == "junction" {
 			_ = os.Remove(dir) // Remove this fixture's link, never its target.
 		}

@@ -35,16 +35,18 @@ func TestLabelsRefuseResourceAttributes(t *testing.T) {
 					dates["report.log"] = dates["report.log"].Add(24 * time.Hour)
 				}
 				edit := func() error { return addResourceAttribute(path) }
-				if concurrent {
-					beforeLabelsPublish = func(string) error { return edit() }
-					beforeLabelsDelete = edit
-					t.Cleanup(func() { beforeLabelsPublish, beforeLabelsDelete = nil, nil })
-				} else if err := edit(); err != nil {
-					t.Fatal(err)
+				if !concurrent {
+					if err := edit(); err != nil {
+						t.Fatal(err)
+					}
 				}
 				p, err := prepareLabels(t, dir, dates)
 				if err != nil {
 					t.Fatal(err)
+				}
+				if concurrent {
+					p.beforeLabelsPublish = func(string) error { return edit() }
+					p.beforeLabelsDelete = edit
 				}
 				err = p.Apply()
 				if err == nil || !strings.Contains(err.Error(), "unsupported visible security") || !bytes.Equal(readINI(t, dir), p.before.data) {

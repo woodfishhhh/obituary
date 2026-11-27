@@ -57,39 +57,16 @@ func (s *Service) recyclePrepared(out Outcome, reason string) Outcome {
 // It is never authority to move: burialRevision runs again under store.lock.
 func (s *Service) prepareSettlement(item Item, dryRun bool, reason string, roots []resolvedGraveyardRoot, state *State) Outcome {
 	batchSnapshot := state != nil
-	out := Outcome{Item: item, Path: item.Path}
-	if item.Identity == nil {
-		out.Action, out.Detail = ActionRefused, "record has no file identity; add the path again"
+	out, moved := s.settlementTarget(item, reason)
+	if out.Action != "" || out.err != nil {
 		return out
 	}
-	if reason == ReasonExpired {
-		if err := item.Identity.RequirePersistent(); err != nil {
-			out.Action, out.Detail = ActionRetry, err.Error()
-			return out
-		}
-	}
-	target, moved, verdict, detail := s.locate(item)
-	if verdict != "" {
-		out.Action, out.Detail = verdict, detail
+	state, out = s.settlementState(state, out)
+	if out.err != nil {
 		return out
 	}
-	out.Path = target
-	id, mode, err := s.FS.Inspect(target)
-	if err != nil {
-		return failedMove(out, err)
-	}
-	if id != *item.Identity {
-		return failedMove(out, errors.New("settlement target changed before inspection"))
-	}
-	item.IsDir = item.IsDir || mode.IsDir()
-	out.Item = item
-	if state == nil {
-		current, err := s.Store.Read()
-		if err != nil {
-			return ledgerOutcome(out, err)
-		}
-		state = &current
-	}
+	target := out.Path
+	item = out.Item
 	if s.insideGraveyard(roots, target) {
 		out.Action, out.Detail = ActionRetry, "recovery warning: tracked object is in the graveyard without a verified manifest; see obit doctor"
 		if !dryRun {
@@ -125,6 +102,47 @@ func (s *Service) prepareSettlement(item Item, dryRun bool, reason string, roots
 	}
 	out.lifespans = lifespans
 	return s.finishSettlementPreparation(out, dryRun, reason, roots, state, batchSnapshot)
+}
+
+func (s *Service) settlementTarget(item Item, reason string) (Outcome, bool) {
+	out := Outcome{Item: item, Path: item.Path}
+	if item.Identity == nil {
+		out.Action, out.Detail = ActionRefused, "record has no file identity; add the path again"
+		return out, false
+	}
+	if reason == ReasonExpired {
+		if err := item.Identity.RequirePersistent(); err != nil {
+			out.Action, out.Detail = ActionRetry, err.Error()
+			return out, false
+		}
+	}
+	target, moved, verdict, detail := s.locate(item)
+	if verdict != "" {
+		out.Action, out.Detail = verdict, detail
+		return out, false
+	}
+	out.Path = target
+	id, mode, err := s.FS.Inspect(target)
+	if err != nil {
+		return failedMove(out, err), false
+	}
+	if id != *item.Identity {
+		return failedMove(out, errors.New("settlement target changed before inspection")), false
+	}
+	item.IsDir = item.IsDir || mode.IsDir()
+	out.Item = item
+	return out, moved
+}
+
+func (s *Service) settlementState(state *State, out Outcome) (*State, Outcome) {
+	if state == nil {
+		current, err := s.Store.Read()
+		if err != nil {
+			return nil, ledgerOutcome(out, err)
+		}
+		state = &current
+	}
+	return state, out
 }
 
 func settlementGuardFailure(out Outcome, err error) Outcome {

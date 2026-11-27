@@ -2,6 +2,7 @@ package gui
 
 import (
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/docker"
+	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
 func TestContainerBackendLists(t *testing.T) {
@@ -114,5 +116,94 @@ func TestRetryMakesAStuckItemDue(t *testing.T) {
 	}
 	if _, err := a.Retry(nil); err == nil {
 		t.Fatal("empty refs accepted")
+	}
+}
+
+func TestBuryBatchUndoPartialAndCrossState(t *testing.T) {
+	a, root := fixture(t)
+	firstPath := filepath.Join(root, "first.bin")
+	secondPath := filepath.Join(root, "second.bin")
+	first := add(t, a, firstPath, time.Now().Add(24*time.Hour))
+	second := add(t, a, secondPath, time.Now().Add(48*time.Hour))
+	write(t, firstPath, strings.Repeat("x", 300))
+	write(t, secondPath, strings.Repeat("y", 700))
+	already := bury(t, a, filepath.Join(root, "already.bin"))
+
+	if _, err := a.Bury(nil); err == nil {
+		t.Fatal("empty refs accepted")
+	}
+	out, err := a.Bury([]string{"#" + ref(first.ID), "#" + ref(already.ID), "#" + ref(second.ID), "#999999"})
+	if err != nil {
+		t.Fatalf("Bury: %v", err)
+	}
+	if len(out.BuriedIDs) != 2 || out.BuriedIDs[0] != first.ID || out.BuriedIDs[1] != second.ID {
+		t.Fatalf("unexpected BuriedIDs: %+v", out)
+	}
+	if out.Results[1].Error == "" || out.Results[3].Error == "" {
+		t.Fatalf("cross-state and missing refs must report errors: %+v", out.Results)
+	}
+	// Verify graveyard rows carry accurate byte sizes for total size calculation.
+	page, err := a.Graveyard(GraveyardQuery{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sizes := map[int64]int64{}
+	for _, row := range page.Rows {
+		if row.Burial != nil {
+			sizes[row.ID] = row.Burial.Size
+		}
+	}
+	if sizes[first.ID] != 300 || sizes[second.ID] != 700 {
+		t.Fatalf("burial sizes missing: %+v", sizes)
+	}
+	// Undo via Resurrect restores both newly buried items in place.
+	undoRefs := []string{"#" + ref(out.BuriedIDs[0]), "#" + ref(out.BuriedIDs[1])}
+	restored, err := a.Resurrect(undoRefs)
+	if err != nil || len(restored.Results) != 2 || restored.Results[0].Action != core.ActionResurrected || restored.Results[1].Action != core.ActionResurrected {
+		t.Fatalf("undo resurrect: %+v %v", restored, err)
+	}
+}
+
+func TestBuriedIDsKeepsBuriedRecordWithCleanupError(t *testing.T) {
+	ids := buriedIDs([]core.GraveResult{
+		{Ref: "#1", Action: core.ActionBuried, Burial: &core.Burial{ID: 1}},
+		{Ref: "#2", Action: core.ActionBuried, Burial: &core.Burial{ID: 2}, Error: "manifest locked during cleanup"},
+		{Ref: "#3", Action: core.ActionRecycled},
+		{Ref: "#4", Action: core.ActionRefused, Error: "refused"},
+	})
+	if len(ids) != 2 || ids[0] != 1 || ids[1] != 2 {
+		t.Fatalf("buriedIDs = %v, want [1 2]", ids)
+	}
+}
+
+type fakeRecycleFS struct {
+	winfs.FS
+	recycled []string
+}
+
+func (f *fakeRecycleFS) Recycle(path string, _ core.Identity) error {
+	f.recycled = append(f.recycled, path)
+	return os.Remove(path)
+}
+
+func TestBuryAndUpcomingStayAlignedInRecycleModeAfterDiskConfigEdit(t *testing.T) {
+	a, root := fixture(t)
+	rfs := &fakeRecycleFS{}
+	a.deps.Service.FS = rfs
+	a.deps.Service.Mode = core.ModeRecycle
+	// Externally edit config.toml to graveyard while the live GUI service runs in recycle mode.
+	write(t, filepath.Join(a.deps.ConfigDir, "config.toml"), "[graveyard]\nmode = \"graveyard\"\n")
+
+	plain := add(t, a, filepath.Join(root, "plain.txt"), time.Now().Add(time.Hour))
+	up, err := a.Upcoming("")
+	if err != nil || up.Mode != core.ModeRecycle {
+		t.Fatalf("Upcoming mode = %q, err = %v; want recycle", up.Mode, err)
+	}
+	reply, err := a.Bury([]string{"#" + ref(plain.ID)})
+	if err != nil || len(reply.Results) != 1 || reply.Results[0].Action != core.ActionRecycled || len(reply.BuriedIDs) != 0 {
+		t.Fatalf("Bury should recycle plain file matching Upcoming.Mode: %+v %v", reply, err)
+	}
+	if len(rfs.recycled) != 1 {
+		t.Fatalf("expected 1 recycled file, got %v", rfs.recycled)
 	}
 }

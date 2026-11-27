@@ -169,8 +169,7 @@ func (e *Engine) approve(refs []string, claim func(int, string) (core.Proposal, 
 		}
 		var pending []core.Candidate
 		r.Results, pending, err = e.approveCandidates(p, located, "")
-		var audit *core.AuditError
-		if errors.As(err, &audit) && core.OnlyAuditErrors(err) {
+		if core.HasAuditWarning(err) && core.OnlyAuditErrors(err) {
 			auditErr = err
 		} else if err != nil {
 			retryErr = errors.Join(retryErr, err)
@@ -253,8 +252,7 @@ func (e *Engine) approveCandidates(p core.Proposal, located locations, class str
 		if retry {
 			pending = append(pending, c)
 		}
-		var audit *core.AuditError
-		if errors.As(err, &audit) {
+		if core.HasAuditWarning(err) {
 			auditErr = err
 		} else if err != nil {
 			retryErr = errors.Join(retryErr, err)
@@ -300,8 +298,7 @@ func (e *Engine) approveCandidate(p core.Proposal, c core.Candidate, located loc
 		AutoClass:    class,
 		BeforeCommit: func() error { return e.checkApprovalRules(p.Project) },
 	})
-	var audit *core.AuditError
-	if err != nil && !errors.As(err, &audit) {
+	if err != nil && !core.HasAuditWarning(err) {
 		res.Error = err.Error()
 		return []core.Result{res}, true, err
 	}

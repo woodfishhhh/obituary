@@ -28,7 +28,7 @@ func TestSharedApplyHoldsResourceLockThroughWrites(t *testing.T) {
 					t.Fatal(err)
 				}
 				checks, before := 0, 0
-				beforeIntegrationWrite = func(string) error {
+				hooks := integrationHooks{beforeWrite: func(string) error {
 					before++
 					if before == 1 {
 						return nil // scheduling gap before Apply acquires the resource locks
@@ -39,7 +39,7 @@ func TestSharedApplyHoldsResourceLockThroughWrites(t *testing.T) {
 						t.Fatal("shared resource lock released before receipt commit")
 					}
 					return err
-				}
+				}}
 				afterWrite := func(string) error {
 					checks++
 					release, ok, err := ledger.TryLockExclusive(ManagedAssetReceiptPath(testSidecarPath(t, path+".obituary-owners")) + ".lock")
@@ -49,11 +49,10 @@ func TestSharedApplyHoldsResourceLockThroughWrites(t *testing.T) {
 					}
 					return err
 				}
-				t.Cleanup(func() { beforeIntegrationWrite = nil })
-				if err := apply(plan, afterWrite); err != nil {
+				hooks.afterWrite = afterWrite
+				if err := applyWithHooks(plan, hooks); err != nil {
 					t.Fatal(err)
 				}
-				beforeIntegrationWrite = nil
 				if uninstall && before < 4 {
 					t.Fatalf("did not exercise all transaction removals: %d", before)
 				}

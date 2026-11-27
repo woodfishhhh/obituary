@@ -17,6 +17,7 @@ type Summary struct {
 	Paused            bool   `json:"paused"`
 	Error             string `json:"error,omitempty"`
 	AutoMode          string `json:"autoMode,omitempty"` // [proposals] mode, for the home page
+	Mode              string `json:"mode,omitempty"`     // [graveyard] mode: graveyard or recycle
 }
 
 func (a *API) Summary() (Summary, error) {
@@ -41,7 +42,13 @@ func (a *API) Summary() (Summary, error) {
 			quotaPending++
 		}
 	}
-	out := Summary{TrackedCount: len(state.Items), DecisionCount: len(existing), QuotaPendingCount: quotaPending, Paused: paused}
+	out := Summary{
+		TrackedCount:      len(state.Items),
+		DecisionCount:     len(existing),
+		QuotaPendingCount: quotaPending,
+		Paused:            paused,
+		Mode:              a.effectiveMode(),
+	}
 	if cfg, err := a.readConfig(); err == nil {
 		out.AutoMode = cfg.Proposals.Mode
 		out.GraveMaxBytes = cfg.Graveyard.MaxBytes()

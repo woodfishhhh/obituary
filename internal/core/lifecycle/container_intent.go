@@ -44,7 +44,7 @@ func dropContainerIntent(st *State, p ContainerIntent) {
 	}
 }
 
-func (s *Service) beginContainerIntent(p *ContainerIntent) error {
+func (s *Service) beginContainerIntent(p *ContainerIntent, requireDue bool) error {
 	p.Token, p.At = rand.Text(), s.now()
 	return s.Store.UpdateGraveyard(func(st *State) error {
 		if containerIntent(st, containerIntentID(*p)) != nil {
@@ -54,7 +54,7 @@ func (s *Service) beginContainerIntent(p *ContainerIntent) error {
 			return errAuditBacklog
 		}
 		if p.Item != nil {
-			if !sameContainerItem(st, *p.Item) || !st.Items[st.Index(containerIntentID(*p))].Due(s.now()) {
+			if !sameContainerItem(st, *p.Item) || (requireDue && !st.Items[st.Index(containerIntentID(*p))].Due(s.now())) {
 				return ErrUnsafe
 			}
 		} else if err := checkContainerBurial(st, *p.Burial); err != nil {

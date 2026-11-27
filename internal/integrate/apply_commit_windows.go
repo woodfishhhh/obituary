@@ -63,7 +63,7 @@ func (p *integrationTarget) commitOriginal(c Change) (*os.File, error) {
 		err = checkIntegrationIdentity(c, info)
 	}
 	if err == nil {
-		err = integrationCommitHook(c.Path)
+		err = integrationCommitHook(c.Path, p.hooks)
 	}
 	if err == nil && c.relocated == nil && !c.generated {
 		if backupErr := p.backupChange(c, data, true); backupErr != nil {
@@ -77,9 +77,9 @@ func (p *integrationTarget) commitOriginal(c Change) (*os.File, error) {
 	return f, nil
 }
 
-func integrationCommitHook(path string) error {
-	if beforeIntegrationCommit != nil {
-		return beforeIntegrationCommit(path)
+func integrationCommitHook(path string, hooks integrationHooks) error {
+	if hooks.beforeCommit != nil {
+		return hooks.beforeCommit(path)
 	}
 	return nil
 }
@@ -122,7 +122,7 @@ func (p *integrationTarget) preparePublish(c Change) error {
 		if err := p.checkOriginal(c); err != nil {
 			return err
 		}
-		return integrationCommitHook(c.Path)
+		return integrationCommitHook(c.Path, p.hooks)
 	}
 	old, err := p.commitOriginal(c)
 	if err != nil {

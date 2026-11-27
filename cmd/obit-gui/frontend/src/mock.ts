@@ -182,7 +182,7 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
       graveMaxBytes: settings.graveyardMaxBytes ?? 0,
       quotaPendingCount: s.proposals.filter((p) => p.kind === "graveyard-quota").length,
       pendingGraveCount: 0, decisionCount: s.proposals.length + s.rules.filter((r) => r.status !== "trusted").length + s.items.filter((x) => x.nextAttempt?.startsWith("9999")).length, paused: settings.paused,
-      autoMode: proposalMode,
+      autoMode: proposalMode, mode: settings.mode,
     }),
     Graveyard: ({ filter }) => {
       const rows = s.burials.filter((b) => !filter || b.path.toLowerCase().includes(filter.toLowerCase()))
@@ -201,14 +201,25 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
     Purge: (refs) => {
       const results = refs.map((ref) => {
         const i = s.burials.findIndex((b) => b.id === idOf(ref));
-        if (i >= 0) s.burials.splice(i, 1);
+        if (i < 0) return { ref, error: "not found" };
+        s.burials.splice(i, 1);
         return { ref, action: "purged" };
+      });
+      return wait({ results });
+    },
+    ExtendGraves: (refs, lifespan) => {
+      const add = hoursOf(lifespan) || 24;
+      const results = refs.map((ref) => {
+        const b = s.burials.find((x) => x.id === idOf(ref));
+        if (!b) return { ref, error: "not found" };
+        b.purgeAt = new Date(Math.max(+new Date(b.purgeAt), Date.now()) + add * hour).toISOString();
+        return { ref, action: "extended", burial: { ...b }, path: b.path };
       });
       return wait({ results });
     },
     Upcoming: (within) => {
       const limit = within === "24h" ? 24 * hour : within === "7d" ? 168 * hour : Infinity;
-      return wait({ items: s.items.filter((it) => +new Date(it.expiresAt) - Date.now() < limit).sort((a, b) => +new Date(a.expiresAt) - +new Date(b.expiresAt)) });
+      return wait({ items: s.items.filter((it) => +new Date(it.expiresAt) - Date.now() < limit).sort((a, b) => +new Date(a.expiresAt) - +new Date(b.expiresAt)), mode: settings.mode });
     },
     Extend: (refs, lifespan) => {
       const add = hoursOf(lifespan) || 24;
@@ -218,6 +229,33 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
         return { ref, action: "extended" };
       });
       return wait({ results });
+    },
+    Bury: (refs) => {
+      const buriedIds: number[] = [];
+      const results = refs.map((ref) => {
+        const i = s.items.findIndex((x) => x.id === idOf(ref));
+        if (i < 0) return { ref, error: "not tracked" };
+        const [it] = s.items.splice(i, 1);
+        if (settings.mode === "recycle" && !it.isDir && !it.kind) {
+          return { ref, action: "recycled", path: it.path };
+        }
+        const nowIso = new Date().toISOString();
+        const burial: Burial = {
+          id: it.id,
+          path: it.path,
+          isDir: it.isDir,
+          kind: it.kind,
+          container: it.container,
+          size: it.kind === "container" ? 0 : it.isDir ? 18_874_368 : 2_621_440,
+          buriedAt: nowIso,
+          purgeAt: new Date(Date.now() + settings.retentionDays * 24 * hour).toISOString(),
+          note: it.note,
+        };
+        s.burials.unshift(burial);
+        buriedIds.push(burial.id);
+        return { ref, action: "buried", burial: { ...burial }, path: burial.path };
+      });
+      return wait({ results, buriedIds });
     },
     Retry: (refs) => {
       refs.forEach((ref) => { const it = s.items.find((x) => x.id === idOf(ref)); if (it) { it.lastError = undefined; it.nextAttempt = undefined; } });

@@ -12,6 +12,7 @@ import (
 type ContainerIntent struct {
 	Token        string     `json:"token"`
 	Operation    string     `json:"operation"`
+	Reason       string     `json:"reason,omitempty"`
 	At           time.Time  `json:"at"`
 	Item         *Item      `json:"item,omitempty"`
 	Burial       *Burial    `json:"burial,omitempty"`
@@ -63,6 +64,11 @@ func validateContainerIntents(st State) error {
 		seen[ContainerIntentID(p)] = true
 		switch p.Phase {
 		case "", "prepared", "sent", "confirmed":
+		default:
+			return docker.ErrIdentity
+		}
+		switch p.Reason {
+		case "", ReasonExpired, ReasonBury:
 		default:
 			return docker.ErrIdentity
 		}

@@ -23,18 +23,17 @@ type integrationTarget struct {
 	root     *os.Root
 	name     string
 	location integrationLocation
+	hooks    integrationHooks
 	// backedUp is the backup written beside the file, which gets a lifespan.
 	backedUp string
 }
 
-// Test seam after pinning the destination parent, before any mutation in it.
-var beforeIntegrationWrite func(string) error
-
-// Test seam after the final content check, while the existing file is locked.
-var beforeIntegrationCommit func(string) error
-
-// Test seam after verification and locking, before temporary-file creation.
-var beforeIntegrationTemporary func(*integrationTarget) error
+type integrationHooks struct {
+	beforeWrite     func(string) error
+	beforeCommit    func(string) error
+	beforeTemporary func(*integrationTarget) error
+	afterWrite      func(string) error
+}
 
 // Root.OpenRoot uses Windows Openat with FILE_SHARE_DELETE. That is safe for
 // our handle-relative writes, but an external host will reopen an absolute
@@ -244,8 +243,8 @@ func (p *integrationTarget) backup(data []byte, write bool) error {
 }
 
 func (p *integrationTarget) write(c Change) (err error) {
-	if beforeIntegrationWrite != nil {
-		if err := beforeIntegrationWrite(c.Path); err != nil {
+	if p.hooks.beforeWrite != nil {
+		if err := p.hooks.beforeWrite(c.Path); err != nil {
 			return err
 		}
 	}
@@ -260,8 +259,8 @@ func (p *integrationTarget) write(c Change) (err error) {
 	if c.delete {
 		return p.removeOriginal(c)
 	}
-	if beforeIntegrationTemporary != nil {
-		if err := beforeIntegrationTemporary(p); err != nil {
+	if p.hooks.beforeTemporary != nil {
+		if err := p.hooks.beforeTemporary(p); err != nil {
 			return err
 		}
 	}

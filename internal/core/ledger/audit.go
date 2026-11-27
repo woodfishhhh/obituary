@@ -66,6 +66,12 @@ func OnlyAuditErrors(err error) bool {
 	return false
 }
 
+// HasAuditWarning reports whether an error includes a committed audit failure.
+func HasAuditWarning(err error) bool {
+	var audit *AuditError
+	return errors.As(err, &audit)
+}
+
 const auditLimit = 4 << 20 // rotate after 4 MiB
 
 const auditLineLimit = 1 << 20

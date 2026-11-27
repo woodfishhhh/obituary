@@ -28,18 +28,22 @@ type snapshot struct {
 
 // Plan holds the exact original snapshot. Apply refuses stale content or identity.
 type Plan struct {
-	authorized  authorization
-	dir         string
-	directory   os.FileInfo
-	dirAttrs    uint32
-	before      snapshot
-	after       []byte
-	remove      bool
-	fileAttrs   uint32
-	folderAttrs uint32
-	names       []string
-	streams     streamSnapshot
-	security    *windows.SECURITY_DESCRIPTOR
+	authorized          authorization
+	dir                 string
+	directory           os.FileInfo
+	dirAttrs            uint32
+	before              snapshot
+	after               []byte
+	remove              bool
+	fileAttrs           uint32
+	folderAttrs         uint32
+	names               []string
+	streams             streamSnapshot
+	security            *windows.SECURITY_DESCRIPTOR
+	beforeLabelsCommit  func() error
+	beforeLabelsWrite   func() error
+	beforeLabelsPublish func(string) error
+	beforeLabelsDelete  func() error
 }
 
 // Prepare plans a complete set of dates for this directory. Existing user keys
