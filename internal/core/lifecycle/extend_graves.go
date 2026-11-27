@@ -6,6 +6,12 @@ import (
 	"time"
 )
 
+type extendTarget struct {
+	ref string
+	id  int64
+	err error
+}
+
 // ExtendGraves pushes the cremation deadline of each referenced burial back
 // by d (counted from now if retention has already elapsed). Active tracked
 // items and burials currently being purged are refused in their result slots.
@@ -25,9 +31,9 @@ func (s *Service) ExtendGraves(refs []string, d time.Duration) ([]GraveResult, e
 			return readErr
 		}
 		auditErr = errors.Join(auditErr, readErr)
-		manifestErr := s.cleanExtendManifests(state, refs)
+		targets, manifestErr := s.prepareExtendGraves(state, refs)
 		return s.Store.UpdateGraveyard(func(st *State) error {
-			events = s.applyExtendGraves(st, refs, now, d, manifestErr, results)
+			events = s.applyExtendGraves(st, targets, now, d, manifestErr, results)
 			return nil
 		})
 	})
@@ -37,15 +43,22 @@ func (s *Service) ExtendGraves(refs []string, d time.Duration) ([]GraveResult, e
 	return results, errors.Join(auditErr, err, s.Store.RecordCommitted(events...))
 }
 
-func (s *Service) cleanExtendManifests(st State, refs []string) map[int64]error {
+func (s *Service) prepareExtendGraves(st State, refs []string) ([]extendTarget, map[int64]error) {
+	targets := make([]extendTarget, len(refs))
 	seen := make(map[int64]bool, len(refs))
 	errs := make(map[int64]error)
-	for _, ref := range refs {
+	for i, ref := range refs {
 		idx, err := s.findBurial(&st, ref)
-		if err != nil || idx < 0 {
+		if err != nil {
+			targets[i] = extendTarget{ref: ref, err: err}
+			continue
+		}
+		if idx < 0 {
+			targets[i] = extendTarget{ref: ref, err: missingBurial(ref)}
 			continue
 		}
 		b := st.Burials[idx]
+		targets[i] = extendTarget{ref: ref, id: b.ID}
 		if seen[b.ID] || b.Kind != "" || b.PurgeIntent != nil || b.IdentityMismatch != "" {
 			continue
 		}
@@ -54,7 +67,7 @@ func (s *Service) cleanExtendManifests(st State, refs []string) map[int64]error 
 			errs[b.ID] = err
 		}
 	}
-	return errs
+	return targets, errs
 }
 
 func canExtendBurial(st *State, b *Burial, manifestErr map[int64]error) error {
@@ -70,17 +83,17 @@ func canExtendBurial(st *State, b *Burial, manifestErr map[int64]error) error {
 	return manifestErr[b.ID]
 }
 
-func (s *Service) applyExtendGraves(st *State, refs []string, now time.Time, d time.Duration, manifestErr map[int64]error, results []GraveResult) []Event {
+func (s *Service) applyExtendGraves(st *State, targets []extendTarget, now time.Time, d time.Duration, manifestErr map[int64]error, results []GraveResult) []Event {
 	var events []Event
-	for i, ref := range refs {
-		results[i].Ref = ref
-		idx, err := s.findBurial(st, ref)
-		if err != nil {
-			results[i].Error, results[i].Err = err.Error(), err
+	for i, target := range targets {
+		results[i].Ref = target.ref
+		if target.err != nil {
+			results[i].Error, results[i].Err = target.err.Error(), target.err
 			continue
 		}
+		idx := st.BurialIndex(target.id)
 		if idx < 0 {
-			results[i].Err = missingBurial(ref)
+			results[i].Err = missingBurial(target.ref)
 			results[i].Error = results[i].Err.Error()
 			continue
 		}

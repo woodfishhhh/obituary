@@ -48,7 +48,16 @@ export function needsBuryConfirm(selectedIds: readonly number[], laterIds: reado
   return laterIds.every((id) => picked.has(id));
 }
 
+export type EffectiveBuryMode = "graveyard" | "recycle" | "unknown";
+
+export function resolveEffectiveBuryMode(upcomingMode?: string, summaryMode?: string): EffectiveBuryMode {
+  const raw = upcomingMode || summaryMode;
+  if (raw === "recycle" || raw === "graveyard") return raw;
+  return "unknown";
+}
+
 export interface BuryPolicy {
+  disabled: boolean;
   askConfirm: boolean;
   recycleCount: number;
   graveCount: number;
@@ -56,26 +65,31 @@ export interface BuryPolicy {
 
 // In recycle mode, plain files go straight to the system Recycle Bin and cannot
 // be undone inside Obituary, so any selection containing a plain file always asks.
+// Until the effective burial mode is known, plain-file bury actions stay disabled
+// instead of degrading to an unconfirmed graveyard bury.
 export function evaluateBuryPolicy(
   items: readonly Pick<Item, "id" | "isDir" | "kind">[],
   selectedIds: readonly number[],
   laterIds: readonly number[],
-  recycleMode: boolean,
+  mode: EffectiveBuryMode,
 ): BuryPolicy {
-  let recycleCount = 0;
-  let graveCount = 0;
-  if (recycleMode) {
-    const picked = new Set(selectedIds);
-    for (const item of items) {
-      if (!picked.has(item.id)) continue;
-      if (!item.isDir && !item.kind) recycleCount++;
-      else graveCount++;
-    }
-  } else {
-    graveCount = selectedIds.length;
+  const picked = new Set(selectedIds);
+  let plainCount = 0;
+  let nonPlainCount = 0;
+  for (const item of items) {
+    if (!picked.has(item.id)) continue;
+    if (!item.isDir && !item.kind) plainCount++;
+    else nonPlainCount++;
   }
+  if (mode === "unknown") {
+    const disabled = plainCount > 0;
+    const askConfirm = disabled || needsBuryConfirm(selectedIds, laterIds);
+    return { disabled, askConfirm, recycleCount: 0, graveCount: nonPlainCount };
+  }
+  const recycleCount = mode === "recycle" ? plainCount : 0;
+  const graveCount = mode === "recycle" ? nonPlainCount : selectedIds.length;
   const askConfirm = recycleCount > 0 || needsBuryConfirm(selectedIds, laterIds);
-  return { askConfirm, recycleCount, graveCount };
+  return { disabled: false, askConfirm, recycleCount, graveCount };
 }
 
 // ActionBuried with a burial record is only emitted after a committed burial,
@@ -92,20 +106,38 @@ export function extractBuriedIds(reply: BuryReply): number[] {
 export interface BuryOutcomeSummary {
   buriedIds: number[];
   recycledCount: number;
+  warningCount: number;
   failedCount: number;
+  hasWarnings: boolean;
   hasErrors: boolean;
+}
+
+function isCommittedBurialRow(r: GraveResult, buriedIdSet: ReadonlySet<number>): boolean {
+  if (r.action !== "buried") return false;
+  if (r.burial?.id != null) return true;
+  const refId = Number(r.ref.replace(/^#/, ""));
+  return Number.isFinite(refId) && buriedIdSet.has(refId);
 }
 
 export function summarizeBuryReply(reply: BuryReply): BuryOutcomeSummary {
   const results = reply.results ?? [];
   const buriedIds = extractBuriedIds(reply);
+  const buriedIdSet = new Set(buriedIds);
   let recycledCount = 0;
+  let warningCount = 0;
   let failedCount = 0;
   for (const r of results) {
-    if (r.error) failedCount++;
-    else if (r.action === "recycled") recycledCount++;
+    if (isCommittedBurialRow(r, buriedIdSet)) {
+      if (r.error) warningCount++;
+    } else if (r.error) {
+      failedCount++;
+    } else if (r.action === "recycled") {
+      recycledCount++;
+    }
   }
-  return { buriedIds, recycledCount, failedCount, hasErrors: !!reply.error || failedCount > 0 };
+  const hasWarnings = warningCount > 0 || (!!reply.error && (buriedIds.length > 0 || recycledCount > 0));
+  const hasErrors = !!reply.error || failedCount > 0 || warningCount > 0;
+  return { buriedIds, recycledCount, warningCount, failedCount, hasWarnings, hasErrors };
 }
 
 export function countRenamedResurrections(

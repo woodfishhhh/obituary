@@ -277,7 +277,7 @@ export interface Api {
   Purge(refs: string[]): Promise<BatchReply<GraveResult>>;
   // Missing on an older backend.
   ExtendGraves?(refs: string[], lifespan: string): Promise<BatchReply<GraveResult>>;
-  Upcoming(within: "" | "24h" | "7d"): Promise<{ items: Item[] }>;
+  Upcoming(within: "" | "24h" | "7d"): Promise<{ items: Item[]; mode?: "graveyard" | "recycle" | string }>;
   Extend(refs: string[], lifespan: string): Promise<BatchReply<Result>>;
   Cancel(refs: string[]): Promise<BatchReply<Result>>;
   // Missing on an older backend.

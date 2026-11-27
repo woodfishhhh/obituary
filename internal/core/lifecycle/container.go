@@ -130,7 +130,7 @@ func (s *Service) sweepContainers(state *State, dryRun bool) ([]Outcome, error) 
 		if blocked[it.ID] || !it.Due(s.now()) {
 			continue
 		}
-		out := s.stopContainer(it, dryRun, true)
+		out := s.stopContainer(it, dryRun, true, ReasonExpired)
 		rows = append(rows, out)
 		if out.err != nil {
 			return rows, out.err

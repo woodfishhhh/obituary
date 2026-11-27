@@ -10,6 +10,7 @@ import {
   evaluateBuryPolicy,
   extractBuriedIds,
   needsBuryConfirm,
+  resolveEffectiveBuryMode,
   selectedGraveTotals,
   summarizeBuryReply,
   toggleColumnSelection,
@@ -108,43 +109,92 @@ test("extractBuriedIds keeps committed graveyard burials even when post-commit c
   );
 });
 
-test("recycle mode forces bury confirmation whenever plain files are selected and summarizes outcomes honestly", () => {
+test("effective bury mode resolution blocks plain files while mode is unknown and forces recycle confirm when recycle", () => {
   const items = [
     { id: 1, isDir: false },
     { id: 2, isDir: true },
     { id: 3, isDir: false, kind: "container" },
   ];
 
+  // Upcoming.mode takes precedence even when Summary is still loading or failed.
+  assert.equal(resolveEffectiveBuryMode("recycle", undefined), "recycle");
+  assert.equal(resolveEffectiveBuryMode("graveyard", "recycle"), "graveyard");
+  assert.equal(resolveEffectiveBuryMode(undefined, "recycle"), "recycle");
+  assert.equal(resolveEffectiveBuryMode(undefined, undefined), "unknown");
+  assert.equal(resolveEffectiveBuryMode("", ""), "unknown");
+
+  // Unknown mode (e.g. Summary loading/failed and older backend without Upcoming.mode):
+  // plain files stay disabled instead of degrading to unconfirmed graveyard bury;
+  // folder/container-only selections remain enabled because they always go to the graveyard.
+  assert.deepEqual(evaluateBuryPolicy(items, [1], [], "unknown"), { disabled: true, askConfirm: true, recycleCount: 0, graveCount: 0 });
+  assert.deepEqual(evaluateBuryPolicy(items, [1, 2], [], "unknown"), { disabled: true, askConfirm: true, recycleCount: 0, graveCount: 1 });
+  assert.deepEqual(evaluateBuryPolicy(items, [2, 3], [], "unknown"), { disabled: false, askConfirm: false, recycleCount: 0, graveCount: 2 });
+
   // In graveyard mode, <10 without whole Later runs directly without confirm.
-  assert.deepEqual(evaluateBuryPolicy(items, [1], [], false), { askConfirm: false, recycleCount: 0, graveCount: 1 });
+  assert.deepEqual(evaluateBuryPolicy(items, [1], [], "graveyard"), { disabled: false, askConfirm: false, recycleCount: 0, graveCount: 1 });
 
   // In recycle mode, even 1 plain file forces confirmation; folder/container-only stays direct when <10.
-  assert.deepEqual(evaluateBuryPolicy(items, [1], [], true), { askConfirm: true, recycleCount: 1, graveCount: 0 });
-  assert.deepEqual(evaluateBuryPolicy(items, [1, 2, 3], [], true), { askConfirm: true, recycleCount: 1, graveCount: 2 });
-  assert.deepEqual(evaluateBuryPolicy(items, [2, 3], [], true), { askConfirm: false, recycleCount: 0, graveCount: 2 });
+  assert.deepEqual(evaluateBuryPolicy(items, [1], [], "recycle"), { disabled: false, askConfirm: true, recycleCount: 1, graveCount: 0 });
+  assert.deepEqual(evaluateBuryPolicy(items, [1, 2, 3], [], "recycle"), { disabled: false, askConfirm: true, recycleCount: 1, graveCount: 2 });
+  assert.deepEqual(evaluateBuryPolicy(items, [2, 3], [], "recycle"), { disabled: false, askConfirm: false, recycleCount: 0, graveCount: 2 });
 
-  // Mixed bury + recycle + cleanup warning preserves buriedIds, recycledCount and hasErrors.
-  const summary = summarizeBuryReply({
+  // Committed burial with post-commit cleanup warning is counted as a warning, NOT a failure,
+  // while preserving buriedIds for Undo and accurate recycledCount.
+  const cleanupWarn = summarizeBuryReply({
     results: [
       { ref: "#1", action: "recycled", path: "a.txt" },
       { ref: "#2", action: "buried", error: "manifest locked", burial: { id: 2, path: "dir", isDir: true, size: 10, buriedAt: "", purgeAt: "" } },
     ],
   });
-  assert.deepEqual(summary, { buriedIds: [2], recycledCount: 1, failedCount: 1, hasErrors: true });
+  assert.deepEqual(cleanupWarn, {
+    buriedIds: [2],
+    recycledCount: 1,
+    warningCount: 1,
+    failedCount: 0,
+    hasWarnings: true,
+    hasErrors: true,
+  });
+
+  // Mixed committed burial (with cleanup warning) + genuine failure counts them separately.
+  const warnAndFail = summarizeBuryReply({
+    buriedIds: [2],
+    results: [
+      { ref: "#2", action: "buried", error: "manifest locked", burial: { id: 2, path: "dir", isDir: true, size: 10, buriedAt: "", purgeAt: "" } },
+      { ref: "#3", action: "refused", error: "in use" },
+    ],
+  });
+  assert.deepEqual(warnAndFail, {
+    buriedIds: [2],
+    recycledCount: 0,
+    warningCount: 1,
+    failedCount: 1,
+    hasWarnings: true,
+    hasErrors: true,
+  });
 
   // Pure recycle reply has no undoable buriedIds.
   const pureRecycle = summarizeBuryReply({
     results: [{ ref: "#1", action: "recycled", path: "a.txt" }],
   });
-  assert.deepEqual(pureRecycle, { buriedIds: [], recycledCount: 1, failedCount: 0, hasErrors: false });
+  assert.deepEqual(pureRecycle, {
+    buriedIds: [],
+    recycledCount: 1,
+    warningCount: 0,
+    failedCount: 0,
+    hasWarnings: false,
+    hasErrors: false,
+  });
 
-  // Honest zh/en recycle copy.
+  // Honest zh/en recycle and cleanup warning copy.
   assert.match(zh["ask.buryNowRecycleBody"], /回收站/);
   assert.match(en["ask.buryNowRecycleBody"], /Recycle Bin/);
   assert.match(zh["ask.buryNowMixedBody"](1, 2), /1 个普通文件.*2 项/);
   assert.match(en["ask.buryNowMixedBody"](1, 2), /1 plain file.*2 items/);
   assert.match(zh["cal.buriedAndRecycledToast"](2, 1), /2 项移入墓地.*1 项移入系统回收站/);
   assert.match(en["cal.buriedAndRecycledToast"](2, 1), /2 items to the graveyard and 1 item to the Recycle Bin/);
+  assert.match(zh["cal.buriedAndRecycledWarning"](1, 1, 1), /1 项有清理告警/);
+  assert.match(en["cal.buriedAndRecycledWarning"](1, 1, 1), /1 cleanup warning/);
+  assert.doesNotMatch(en["cal.buriedAndRecycledWarning"](1, 1, 1), /failed/);
 });
 
 test("countRenamedResurrections detects collision renames and undo copy avoids promising in-place restore", () => {

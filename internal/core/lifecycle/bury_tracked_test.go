@@ -1,6 +1,8 @@
 package lifecycle_test
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -158,8 +160,76 @@ func TestBuryTrackedStopsUnexpiredContainerWhileSweepSkipsIt(t *testing.T) {
 	if len(rows) != 1 || rows[0].Action != core.ActionBuried || rows[0].Error != "" || rows[0].Burial == nil {
 		t.Fatalf("unexpired container should bury: %+v", rows)
 	}
-	if d.row.Running || len(f.items()) != 0 || len(f.burials()) != 1 {
-		t.Fatalf("container not buried cleanly: running=%v items=%d burials=%d", d.row.Running, len(f.items()), len(f.burials()))
+	if rows[0].Burial.Reason != core.ReasonBury {
+		t.Fatalf("manual container bury receipt reason = %q, want %q", rows[0].Burial.Reason, core.ReasonBury)
+	}
+	burials := f.burials()
+	if d.row.Running || len(f.items()) != 0 || len(burials) != 1 {
+		t.Fatalf("container not buried cleanly: running=%v items=%d burials=%d", d.row.Running, len(f.items()), len(burials))
+	}
+	if burials[0].Reason != core.ReasonBury {
+		t.Fatalf("persisted manual container burial reason = %q, want %q", burials[0].Reason, core.ReasonBury)
+	}
+}
+
+type interruptedAfterStopSent struct {
+	*containerStub
+	err error
+}
+
+func (d interruptedAfterStopSent) Stop(_ context.Context, _ docker.Identity, beforeSend func(docker.Container) error) error {
+	if err := beforeSend(d.row); err != nil {
+		return err
+	}
+	d.row.Running = false
+	return d.err
+}
+
+func TestBuryTrackedContainerInterruptedStopRecoveryPreservesBuryReason(t *testing.T) {
+	f, d, it := containerFixture(t)
+	f.svc.Docker = interruptedAfterStopSent{containerStub: d, err: errors.New("connection lost after stop sent")}
+
+	// Manual BuryTracked on unexpired container is interrupted after the stop is sent.
+	rows, err := f.svc.BuryTracked([]string{fmt.Sprintf("#%d", it.ID)})
+	if err != nil {
+		t.Fatalf("BuryTracked: %v", err)
+	}
+	if len(rows) != 1 || rows[0].Action != core.ActionRetry {
+		t.Fatalf("expected retry after interrupted stop, got: %+v", rows)
+	}
+	st, err := f.svc.Store.ReadSnapshot()
+	if err != nil || len(st.ContainerIntents) != 1 || st.ContainerIntents[0].Reason != core.ReasonBury || len(st.Burials) != 0 {
+		t.Fatalf("expected pending bury intent before recovery: intents=%+v burials=%d err=%v", st.ContainerIntents, len(st.Burials), err)
+	}
+
+	// Recovery later commits the stopped container and must preserve ReasonBury.
+	f.svc.Docker = d
+	recovered, err := f.svc.Sweep(false)
+	if err != nil {
+		t.Fatalf("Sweep recovery: %v", err)
+	}
+	if len(recovered) != 1 || recovered[0].Action != core.ActionBuried || recovered[0].Burial == nil || recovered[0].Burial.Reason != core.ReasonBury {
+		t.Fatalf("recovered manual container bury outcome = %+v", recovered)
+	}
+	burials := f.burials()
+	if len(burials) != 1 || burials[0].Reason != core.ReasonBury {
+		t.Fatalf("recovered persisted burial reason = %+v", burials)
+	}
+}
+
+func TestSweepExpiredContainerRecordsExpiredReason(t *testing.T) {
+	f, _, _ := containerFixture(t)
+	f.clock = f.clock.Add(2 * time.Hour)
+	rows, err := f.svc.Sweep(false)
+	if err != nil {
+		t.Fatalf("Sweep: %v", err)
+	}
+	if len(rows) != 1 || rows[0].Action != core.ActionBuried || rows[0].Burial == nil || rows[0].Burial.Reason != core.ReasonExpired {
+		t.Fatalf("expired container sweep outcome = %+v", rows)
+	}
+	burials := f.burials()
+	if len(burials) != 1 || burials[0].Reason != core.ReasonExpired {
+		t.Fatalf("persisted expired container burial = %+v", burials)
 	}
 }
 

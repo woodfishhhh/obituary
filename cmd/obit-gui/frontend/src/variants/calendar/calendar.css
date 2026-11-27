@@ -248,14 +248,15 @@
   cursor: pointer;
   transition: background-color 120ms, border-color 120ms, color 120ms, filter 120ms, transform 100ms;
 }
-.cal-cap-btn:hover { background: var(--hover); }
-.cal-cap-btn:active { transform: scale(0.97); }
+.cal-cap-btn:disabled { opacity: 0.48; cursor: not-allowed; }
+.cal-cap-btn:not(:disabled):hover { background: var(--hover); }
+.cal-cap-btn:not(:disabled):active { transform: scale(0.97); }
 .cal-cap-btn.bury {
   border-color: color-mix(in srgb, var(--cobalt) 28%, var(--line-2));
   background: var(--accent-soft);
   color: var(--cobalt);
 }
-.cal-cap-btn.bury:hover {
+.cal-cap-btn.bury:not(:disabled):hover {
   border-color: color-mix(in srgb, var(--cobalt) 46%, var(--line-2));
   background: color-mix(in srgb, var(--cobalt) 14%, var(--panel));
 }
@@ -315,6 +316,47 @@
   .cal-cap-sep { display: none; }
   .cal-board[data-selecting="true"] .cal-day-body { padding-bottom: 124px; }
   [data-variant="calendar"]:has(.cal-capsule) .toasts { bottom: 130px; }
+}
+
+/* Compact layout for minimum-height windows (e.g. 600x400): tighten chrome and
+   dock the batch capsule below the scrolling day grid so the last card always
+   scrolls completely clear of the capsule without altering 600x600+ layouts. */
+@media (max-height: 460px) {
+  .cal { grid-template-rows: 40px minmax(0, 1fr); }
+  .cal-tabs button { height: 26px; }
+  .cal-icon { width: 28px; height: 28px; }
+  .cal-page { padding: 8px 14px 8px; }
+  .cal-head { align-items: center; gap: 10px; margin-bottom: 6px; }
+  .cal-head h1 { font-size: 18px; line-height: 1.15; }
+  .cal-head p { margin-top: 2px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-search { height: 28px; }
+  .cal-day-head { padding: 5px 8px 7px 10px; }
+  .cal-day-label b { font-size: 18px; }
+  .cal-day-label b.later { font-size: 14px; }
+  .cal-board { flex-direction: column; }
+  .cal-cols { width: 100%; min-height: 0; }
+  .cal-day-body { padding: 6px 6px 8px; }
+  .cal-board[data-selecting="true"] .cal-day-body { padding-bottom: 10px; }
+  .cal-capsule {
+    position: static;
+    left: auto;
+    bottom: auto;
+    transform: none;
+    animation: none;
+    flex: none;
+    align-self: center;
+    margin: 4px 8px 6px;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 14px;
+    max-width: calc(100% - 16px);
+  }
+  .cal-cap-count { font-size: 12px; }
+  .cal-cap-select, .cal-cap-btn { height: 26px; font-size: 12px; border-radius: 8px; }
+  .cal-cap-select { padding: 0 6px; }
+  .cal-cap-btn { padding: 0 8px; gap: 4px; }
+  .cal-cap-btn.ghost { padding: 0 6px; }
+  [data-variant="calendar"]:has(.cal-capsule) .toasts { bottom: 64px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

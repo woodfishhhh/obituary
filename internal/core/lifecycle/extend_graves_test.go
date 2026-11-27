@@ -2,6 +2,7 @@ package lifecycle_test
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -212,5 +213,80 @@ func TestExtendGravesRejectsRestoreIntentUnverifiableMismatchAndContainerIntent(
 		if idx < 0 || !st.Burials[idx].PurgeAt.Equal(want) {
 			t.Fatalf("burial #%d PurgeAt mutated: got %v, want %v", id, st.Burials[idx].PurgeAt, want)
 		}
+	}
+}
+
+type transientLongPathFS struct {
+	core.FS
+	target string
+	calls  int
+}
+
+func (fs *transientLongPathFS) LongPath(path string) (string, bool, error) {
+	if strings.EqualFold(filepath.Clean(path), filepath.Clean(fs.target)) {
+		fs.calls++
+		if fs.calls == 1 {
+			return "", false, os.ErrPermission
+		}
+	}
+	return fs.FS.LongPath(path)
+}
+
+func TestExtendGravesTransientPathLookupFailureDoesNotBypassManifestCheck(t *testing.T) {
+	f := newFixture(t)
+	p := writePayload(t, f.dir, "transient-path.log", "payload")
+	buried, err := f.svc.Bury([]string{p}, false, "")
+	if err != nil || len(buried) != 1 || buried[0].Burial == nil {
+		t.Fatalf("seed bury: %+v %v", buried, err)
+	}
+	b := *buried[0].Burial
+	manifest := filepath.Dir(b.Grave) + ".json"
+	mb := b
+	mb.Size = 0
+	raw, err := json.Marshal(struct {
+		Version int `json:"version"`
+		core.Burial
+	}{Version: 1, Burial: mb})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(manifest, append(raw, '\n'), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	wrapped := &transientLongPathFS{FS: f.svc.FS, target: b.Path}
+	f.svc.FS = wrapped
+
+	rows, err := f.svc.ExtendGraves([]string{b.Path}, 24*time.Hour)
+	if err != nil {
+		t.Fatalf("ExtendGraves returned top-level error: %v", err)
+	}
+	if wrapped.calls != 1 {
+		t.Fatalf("LongPath calls = %d, want 1 (must not re-resolve after preflight error)", wrapped.calls)
+	}
+	if len(rows) != 1 || rows[0].Action == core.ActionExtended || !errors.Is(rows[0].Err, os.ErrPermission) {
+		t.Fatalf("expected permission refusal, got: %+v", rows)
+	}
+
+	st, err := f.svc.Store.ReadSnapshot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	idx := st.BurialIndex(b.ID)
+	if idx < 0 || !st.Burials[idx].PurgeAt.Equal(b.PurgeAt) {
+		t.Fatalf("PurgeAt mutated after failed lookup: got %v, want %v", st.Burials[idx].PurgeAt, b.PurgeAt)
+	}
+	if !exists(manifest) {
+		t.Fatal("v1 manifest disappeared unexpectedly")
+	}
+
+	// Restore normal FS and verify the burial was not left unverifiable and still resurrects cleanly.
+	f.svc.FS = wrapped.FS
+	res, err := f.svc.Resurrect([]string{fmt.Sprintf("#%d", b.ID)})
+	if err != nil || len(res) != 1 || res[0].Action != core.ActionResurrected || res[0].Error != "" {
+		t.Fatalf("Resurrect after refused ExtendGraves: %+v %v", res, err)
+	}
+	if read(t, p) != "payload" {
+		t.Fatal("resurrected payload mismatch")
 	}
 }

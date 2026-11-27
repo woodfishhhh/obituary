@@ -15,7 +15,7 @@ import Notices from "../../notices";
 import { pageTitle, type ShellProps } from "../../shell";
 import { DAY, extendSpans, hm, md, nameOf, remaining, sourceLabel, span, Star, useGraves, useItems, weekday } from "../shared";
 import { columnTemplate } from "./columns";
-import { columnSelectionState, evaluateBuryPolicy, toggleColumnSelection, UNDO_TOAST_MS } from "./selection";
+import { columnSelectionState, evaluateBuryPolicy, resolveEffectiveBuryMode, toggleColumnSelection, UNDO_TOAST_MS } from "./selection";
 import "./calendar.css";
 
 const startOfDay = (t: number) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return +d; };
@@ -41,7 +41,7 @@ export default function CalendarShell({ page, nav, setPage, summary: s, refresh 
         <button type="button" className="cal-icon" aria-label={t("refresh")} title={t("refresh")} onClick={refresh}><RefreshCw size={15} aria-hidden /></button>
       </header>
       <main className="cal-main" key={page}>
-        {page === "graveyard" ? <Graves /> : page === "upcoming" ? <Upcoming recycleMode={s?.mode === "recycle"} /> : (
+        {page === "graveyard" ? <Graves /> : page === "upcoming" ? <Upcoming summaryMode={s?.mode} /> : (
           <div className="cal-shared">{page === "decisions" ? <Decisions /> : page === "settings" ? <Settings /> : <Logs />}</div>
         )}
       </main>
@@ -241,7 +241,7 @@ function Graves() {
 
 // ── 即将下葬: the burial calendar ─────────────────────────────────────
 
-function Upcoming({ recycleMode = false }: { recycleMode?: boolean }) {
+function Upcoming({ summaryMode }: { summaryMode?: string }) {
   const emptyHint = useTrackingHint("cal.upQuietText");
   const it = useItems("");
   const [lifespan, setLifespan] = useState("1d");
@@ -255,6 +255,8 @@ function Upcoming({ recycleMode = false }: { recycleMode?: boolean }) {
   const today = it.items.filter((x) => dayIndex(x.expiresAt) === 0).length;
   const laterIds = it.items.filter((x) => dayIndex(x.expiresAt) >= DAYS).map((x) => x.id);
   const toggleCol = (colIds: number[]) => it.sel.update((cur) => toggleColumnSelection(cur, colIds));
+  const effectiveMode = resolveEffectiveBuryMode(it.mode, summaryMode);
+  const buryPolicy = evaluateBuryPolicy(it.items, it.sel.chosen, laterIds, effectiveMode);
 
   // Dropping on a later day extends by whole days, keeping the time of day.
   function move(id: number, from: number, to: number) {
@@ -266,14 +268,14 @@ function Upcoming({ recycleMode = false }: { recycleMode?: boolean }) {
   }
 
   function burySelected() {
-    const policy = evaluateBuryPolicy(it.items, it.sel.chosen, laterIds, recycleMode);
-    void it.bury(it.sel.chosen, { askConfirm: policy.askConfirm, recycleMode, undoDurationMs: UNDO_TOAST_MS });
+    if (buryPolicy.disabled) return;
+    void it.bury(it.sel.chosen, { askConfirm: buryPolicy.askConfirm, mode: effectiveMode, undoDurationMs: UNDO_TOAST_MS });
   }
 
   const capsule = (
     <CapsuleBar count={k} onClear={it.sel.clear}>
       {it.canBury ? (
-        <button type="button" className="cal-cap-btn bury" onClick={burySelected}><Archive size={14} aria-hidden />{t("buryNow")}</button>
+        <button type="button" className="cal-cap-btn bury" disabled={buryPolicy.disabled} onClick={burySelected}><Archive size={14} aria-hidden />{t("buryNow")}</button>
       ) : null}
       <span className="cal-cap-group">
         <select className="cal-cap-select" aria-label={t("howLong")} value={lifespan} onChange={(e) => setLifespan(e.target.value)}>

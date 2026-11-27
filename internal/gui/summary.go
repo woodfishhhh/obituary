@@ -37,13 +37,10 @@ func (a *API) Summary() (Summary, error) {
 		TrackedCount:  len(state.Items),
 		DecisionCount: len(core.ExistingProposals(state.Proposals)),
 		Paused:        paused,
-		Mode:          a.deps.Service.Mode,
+		Mode:          a.effectiveMode(),
 	}
 	if cfg, err := a.readConfig(); err == nil {
 		out.AutoMode = cfg.Proposals.Mode
-		if cfg.Graveyard.Mode != "" {
-			out.Mode = cfg.Graveyard.Mode
-		}
 	}
 	for _, it := range state.Items {
 		if it.Stuck() { // retries stopped: it waits for Retry or Stop tracking

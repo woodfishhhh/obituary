@@ -2,6 +2,7 @@ package gui
 
 import (
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/docker"
+	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
 func TestContainerBackendLists(t *testing.T) {
@@ -171,5 +173,37 @@ func TestBuriedIDsKeepsBuriedRecordWithCleanupError(t *testing.T) {
 	})
 	if len(ids) != 2 || ids[0] != 1 || ids[1] != 2 {
 		t.Fatalf("buriedIDs = %v, want [1 2]", ids)
+	}
+}
+
+type fakeRecycleFS struct {
+	winfs.FS
+	recycled []string
+}
+
+func (f *fakeRecycleFS) Recycle(path string, _ core.Identity) error {
+	f.recycled = append(f.recycled, path)
+	return os.Remove(path)
+}
+
+func TestBuryAndUpcomingStayAlignedInRecycleModeAfterDiskConfigEdit(t *testing.T) {
+	a, root := fixture(t)
+	rfs := &fakeRecycleFS{}
+	a.deps.Service.FS = rfs
+	a.deps.Service.Mode = core.ModeRecycle
+	// Externally edit config.toml to graveyard while the live GUI service runs in recycle mode.
+	write(t, filepath.Join(a.deps.ConfigDir, "config.toml"), "[graveyard]\nmode = \"graveyard\"\n")
+
+	plain := add(t, a, filepath.Join(root, "plain.txt"), time.Now().Add(time.Hour))
+	up, err := a.Upcoming("")
+	if err != nil || up.Mode != core.ModeRecycle {
+		t.Fatalf("Upcoming mode = %q, err = %v; want recycle", up.Mode, err)
+	}
+	reply, err := a.Bury([]string{"#" + ref(plain.ID)})
+	if err != nil || len(reply.Results) != 1 || reply.Results[0].Action != core.ActionRecycled || len(reply.BuriedIDs) != 0 {
+		t.Fatalf("Bury should recycle plain file matching Upcoming.Mode: %+v %v", reply, err)
+	}
+	if len(rfs.recycled) != 1 {
+		t.Fatalf("expected 1 recycled file, got %v", rfs.recycled)
 	}
 }

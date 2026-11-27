@@ -11,6 +11,15 @@ import (
 
 type ItemList struct {
 	Items []core.Item `json:"items"`
+	// Effective [graveyard] mode executed by Bury: graveyard or recycle.
+	Mode string `json:"mode,omitempty"`
+}
+
+func (a *API) effectiveMode() string {
+	if a.deps.Service.Mode == core.ModeRecycle {
+		return core.ModeRecycle
+	}
+	return core.ModeGraveyard
 }
 
 // Within is empty, "24h" or "7d". Already overdue entries remain visible.
@@ -38,7 +47,7 @@ func (a *API) Upcoming(within string) (ItemList, error) {
 		}
 		return cmp.Compare(a.ID, b.ID)
 	})
-	return ItemList{Items: items}, nil
+	return ItemList{Items: items, Mode: a.effectiveMode()}, nil
 }
 
 func (a *API) Extend(refs []string, lifespan string) (ItemReply, error) {

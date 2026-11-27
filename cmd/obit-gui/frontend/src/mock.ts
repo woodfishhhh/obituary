@@ -177,7 +177,7 @@ export function createMockApi(scenario: Scenario = "normal"): Api {
     },
     Upcoming: (within) => {
       const limit = within === "24h" ? 24 * hour : within === "7d" ? 168 * hour : Infinity;
-      return wait({ items: s.items.filter((it) => +new Date(it.expiresAt) - Date.now() < limit).sort((a, b) => +new Date(a.expiresAt) - +new Date(b.expiresAt)) });
+      return wait({ items: s.items.filter((it) => +new Date(it.expiresAt) - Date.now() < limit).sort((a, b) => +new Date(a.expiresAt) - +new Date(b.expiresAt)), mode: settings.mode });
     },
     Extend: (refs, lifespan) => {
       const add = hoursOf(lifespan) || 24;

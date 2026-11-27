@@ -8,7 +8,7 @@ import { useLoad, useRefresh } from "../hooks";
 import { t } from "../i18n";
 import type { Burial, BuryReply, Item } from "../types";
 import { useBatch, useConfirm, useResurrectReport, useToast } from "../ui";
-import { countRenamedResurrections, selectedGraveTotals, summarizeBuryReply } from "./calendar/selection";
+import { countRenamedResurrections, resolveEffectiveBuryMode, selectedGraveTotals, summarizeBuryReply, type EffectiveBuryMode } from "./calendar/selection";
 
 // ── Time ────────────────────────────────────────────────────────────────
 
@@ -186,10 +186,13 @@ export function useItems(range: "" | "24h" | "7d" = "") {
     return true;
   }
 
-  async function bury(ids: number[] = sel.chosen, opts?: { askConfirm?: boolean; recycleMode?: boolean; undoDurationMs?: number }) {
+  async function bury(ids: number[] = sel.chosen, opts?: { askConfirm?: boolean; mode?: EffectiveBuryMode; undoDurationMs?: number }) {
     if (!ids.length || !api.Bury) return false;
     const picked = items.filter((it) => ids.includes(it.id));
-    const recycleCount = opts?.recycleMode ? picked.filter((it) => !it.isDir && !it.kind).length : 0;
+    const effectiveMode = resolveEffectiveBuryMode(opts?.mode, q.data?.mode);
+    const plainCount = picked.filter((it) => !it.isDir && !it.kind).length;
+    if (effectiveMode === "unknown" && plainCount > 0) return false;
+    const recycleCount = effectiveMode === "recycle" ? plainCount : 0;
     const graveCount = picked.length - recycleCount;
     if (opts?.askConfirm || recycleCount > 0) {
       const paths = picked.map((it) => it.path);
@@ -214,7 +217,7 @@ export function useItems(range: "" | "24h" | "7d" = "") {
       toast(errorText(err), "error");
       return false;
     }
-    const { buriedIds, recycledCount, failedCount, hasErrors } = summarizeBuryReply(reply);
+    const { buriedIds, recycledCount, warningCount, failedCount, hasWarnings, hasErrors } = summarizeBuryReply(reply);
     sel.clear();
     bump();
     if (buriedIds.length > 0) {
@@ -236,12 +239,35 @@ export function useItems(range: "" | "24h" | "7d" = "") {
           toast(errorText(err), "error");
         }
       };
-      const text = recycledCount > 0
-        ? (hasErrors ? t("cal.buriedAndRecycledPartial", buriedIds.length, recycledCount, failedCount) : t("cal.buriedAndRecycledToast", buriedIds.length, recycledCount))
-        : (hasErrors ? t("cal.buriedPartial", buriedIds.length, failedCount) : t("cal.buriedToast", buriedIds.length));
+      let text: string;
+      if (recycledCount > 0) {
+        if (failedCount > 0) {
+          const base = t("cal.buriedAndRecycledPartial", buriedIds.length, recycledCount, failedCount);
+          text = hasWarnings ? t("cal.withWarning", base, t("cal.cleanupWarning", warningCount)) : base;
+        } else if (hasWarnings) {
+          text = t("cal.buriedAndRecycledWarning", buriedIds.length, recycledCount, warningCount);
+        } else {
+          text = t("cal.buriedAndRecycledToast", buriedIds.length, recycledCount);
+        }
+      } else if (failedCount > 0) {
+        const base = t("cal.buriedPartial", buriedIds.length, failedCount);
+        text = hasWarnings ? t("cal.withWarning", base, t("cal.cleanupWarning", warningCount)) : base;
+      } else if (hasWarnings) {
+        text = t("cal.buriedWarning", buriedIds.length, warningCount);
+      } else {
+        text = t("cal.buriedToast", buriedIds.length);
+      }
       toast(text, hasErrors ? "error" : "", { label: t("undo"), run: undo, durationMs: opts?.undoDurationMs ?? 5000, dismissOnRun: true });
     } else if (recycledCount > 0) {
-      const text = hasErrors ? t("cal.recycledPartial", recycledCount, failedCount) : t("cal.recycledToast", recycledCount);
+      let text: string;
+      if (failedCount > 0) {
+        const base = t("cal.recycledPartial", recycledCount, failedCount);
+        text = hasWarnings ? t("cal.withWarning", base, t("cal.cleanupWarning", warningCount)) : base;
+      } else if (hasWarnings) {
+        text = t("cal.recycledWarning", recycledCount, warningCount);
+      } else {
+        text = t("cal.recycledToast", recycledCount);
+      }
       toast(text, hasErrors ? "error" : "");
     } else {
       report(reply, t("buryNow"));
@@ -249,7 +275,7 @@ export function useItems(range: "" | "24h" | "7d" = "") {
     return true;
   }
 
-  return { ...q, items, sel, canBury: !!api.Bury, extend, cancel, bury };
+  return { ...q, items, mode: q.data?.mode, sel, canBury: !!api.Bury, extend, cancel, bury };
 }
 
 export type { Burial, Item };
