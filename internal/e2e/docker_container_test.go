@@ -72,22 +72,25 @@ func (f *realDockerFixture) nextName(tag string) string {
 
 func (f *realDockerFixture) startContainer(name, sentinel string, extraArgs ...string) string {
 	f.t.Helper()
-	_, _ = runDockerAllowFailure("", "rm", "-f", name)
-	f.t.Cleanup(func() { _, _ = runDockerAllowFailure("", "rm", "-f", name) })
+	_, _ = runDockerAllowFailure("", "rm", "-f", "--", name)
+	f.t.Cleanup(func() { _, _ = runDockerAllowFailure("", "rm", "-f", "--", name) })
 	args := []string{"run", "-d", "--stop-signal=SIGKILL", "--name", name}
 	args = append(args, extraArgs...)
-	args = append(args, containerTestImage, "sh", "-c", `printf "%s" "$1" > /tmp/obit-layer.txt; exec sleep 600`, "_", sentinel)
+	args = append(args, containerTestImage, "sleep", "600")
 	id := runDocker(f.t, args...)
 	if len(id) != 64 {
 		f.t.Fatalf("expected 64-char container ID for %s, got %q", name, id)
+	}
+	if sentinel != "" {
+		runDocker(f.t, "exec", id, "sh", "-c", `printf "%s" "$1" > /tmp/obit-layer.txt`, "_", sentinel)
 	}
 	return id
 }
 
 func (f *realDockerFixture) createVolume(name, sentinel string) {
 	f.t.Helper()
-	_, _ = runDockerAllowFailure("", "volume", "rm", "-f", name)
-	f.t.Cleanup(func() { _, _ = runDockerAllowFailure("", "volume", "rm", "-f", name) })
+	_, _ = runDockerAllowFailure("", "volume", "rm", "-f", "--", name)
+	f.t.Cleanup(func() { _, _ = runDockerAllowFailure("", "volume", "rm", "-f", "--", name) })
 	runDocker(f.t, "volume", "create", "--", name)
 	runDocker(f.t, "run", "--rm", "--mount", "type=volume,source="+name+",destination=/data", containerTestImage, "sh", "-c", `printf "%s" "$1" > /data/sentinel.txt`, "_", sentinel)
 }
@@ -139,7 +142,7 @@ func testContainerSessionOwnershipAndFullID(t *testing.T) {
 	f := newRealDockerFixture(t)
 	repo := initTempGitRepo(t)
 
-	preID := f.startContainer(f.nextName("pre"), "pre", "--mount", "type=bind,source="+repo+",destination=/work")
+	preID := f.startContainer(f.nextName("pre"), "", "--mount", "type=bind,source="+repo+",destination=/work")
 	preCreated := containerCreated(t, preID)
 	f.now = preCreated.Add(50 * time.Millisecond)
 	for !time.Now().UTC().After(f.now) {
@@ -149,11 +152,11 @@ func testContainerSessionOwnershipAndFullID(t *testing.T) {
 		t.Fatalf("snapshot: %v", err)
 	}
 
-	bindID := f.startContainer(f.nextName("bind"), "bind", "--mount", "type=bind,source="+repo+",destination=/work")
-	composeID := f.startContainer(f.nextName("compose"), "compose", "--label", "com.docker.compose.project.working_dir="+repo)
-	unattrID := f.startContainer(f.nextName("unattr"), "unattr")
+	bindID := f.startContainer(f.nextName("bind"), "", "--mount", "type=bind,source="+repo+",destination=/work")
+	composeID := f.startContainer(f.nextName("compose"), "", "--label", "com.docker.compose.project.working_dir="+repo)
+	unattrID := f.startContainer(f.nextName("unattr"), "")
 	autoRmName := f.nextName("autorm")
-	autoRmID := f.startContainer(autoRmName, "autorm", "--rm")
+	autoRmID := f.startContainer(autoRmName, "", "--rm")
 	_ = autoRmID
 
 	if _, err := f.svc.AddContainer(autoRmName, lifecycle.AddOptions{ExpiresAt: f.now.Add(time.Hour)}); !errors.Is(err, docker.ErrAutoRemove) {
@@ -201,7 +204,7 @@ func testContainerExpiryStopResurrectAndManualBury(t *testing.T) {
 	}
 
 	nameMan := f.nextName("manual")
-	idMan := f.startContainer(nameMan, "layer-man-153")
+	idMan := f.startContainer(nameMan, "")
 	itMan, err := f.svc.AddContainer(nameMan, lifecycle.AddOptions{ExpiresAt: f.now.Add(24 * time.Hour)})
 	if err != nil || itMan.Container == nil || itMan.Container.ID != idMan {
 		t.Fatalf("AddContainer manual: item=%+v err=%v", itMan, err)
@@ -253,20 +256,20 @@ func testContainerExpiryStopResurrectAndManualBury(t *testing.T) {
 func testContainerManualRestartProtected(t *testing.T) {
 	f := newRealDockerFixture(t)
 	nameRun := f.nextName("restart-run")
-	idRun := f.startContainer(nameRun, "layer-run")
+	idRun := f.startContainer(nameRun, "")
 	itRun, err := f.svc.AddContainer(nameRun, lifecycle.AddOptions{ExpiresAt: f.now.Add(time.Hour)})
 	if err != nil {
 		t.Fatal(err)
 	}
 	nameDrift := f.nextName("restart-drift")
-	idDrift := f.startContainer(nameDrift, "layer-drift")
+	idDrift := f.startContainer(nameDrift, "")
 	itDrift, err := f.svc.AddContainer(nameDrift, lifecycle.AddOptions{ExpiresAt: f.now.Add(time.Hour)})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	f.now = f.now.Add(2 * time.Hour)
-	if rows, err := f.svc.Sweep(false); err != nil || len(rows) != 2 {
+	if rows, err := f.svc.Sweep(false); err != nil || len(rows) != 2 || rows[0].Action != lifecycle.ActionBuried || rows[1].Action != lifecycle.ActionBuried {
 		t.Fatalf("sweep: %+v %v", rows, err)
 	}
 
@@ -302,12 +305,12 @@ func testContainerSameNameReplacementProtected(t *testing.T) {
 	f := newRealDockerFixture(t)
 	// Case A: active tracked container replaced externally with same name before sweep.
 	nameA := f.nextName("swap-active")
-	idA1 := f.startContainer(nameA, "orig-a")
+	idA1 := f.startContainer(nameA, "")
 	if _, err := f.svc.AddContainer(nameA, lifecycle.AddOptions{ExpiresAt: f.now.Add(time.Hour)}); err != nil {
 		t.Fatal(err)
 	}
 	runDocker(t, "rm", "-f", "--", idA1)
-	idA2 := f.startContainer(nameA, "replacement-a")
+	idA2 := f.startContainer(nameA, "")
 	if idA1 == idA2 {
 		t.Fatal("replacement container unexpectedly kept the same ID")
 	}
@@ -322,7 +325,7 @@ func testContainerSameNameReplacementProtected(t *testing.T) {
 
 	// Case B: buried container replaced externally with same name before retention purge.
 	nameB := f.nextName("swap-buried")
-	idB1 := f.startContainer(nameB, "orig-b")
+	idB1 := f.startContainer(nameB, "")
 	if _, err := f.svc.AddContainer(nameB, lifecycle.AddOptions{ExpiresAt: f.now.Add(time.Hour)}); err != nil {
 		t.Fatal(err)
 	}
@@ -331,7 +334,7 @@ func testContainerSameNameReplacementProtected(t *testing.T) {
 		t.Fatalf("bury before replacement: %+v %v", rows, err)
 	}
 	runDocker(t, "rm", "-f", "--", idB1)
-	idB2 := f.startContainer(nameB, "replacement-b")
+	idB2 := f.startContainer(nameB, "")
 
 	f.now = f.now.Add(8 * 24 * time.Hour)
 	_, purged, err := f.svc.Tick()
@@ -345,12 +348,12 @@ func testContainerSameNameReplacementProtected(t *testing.T) {
 
 func testContainerPurgePreservesVolumeAndImage(t *testing.T) {
 	f := newRealDockerFixture(t)
-	imageBefore := runDocker(t, "image", "inspect", "--format", "{{.Id}}", "--", containerTestImage)
 	volName := f.nextName("vol")
 	f.createVolume(volName, "vol-sentinel-e2e")
+	imageBefore := runDocker(t, "image", "inspect", "--format", "{{.Id}}", "--", containerTestImage)
 
 	cName := f.nextName("purge")
-	cID := f.startContainer(cName, "layer-purge", "--mount", "type=volume,source="+volName+",destination=/data")
+	cID := f.startContainer(cName, "", "--mount", "type=volume,source="+volName+",destination=/data")
 	if _, err := f.svc.AddContainer(cName, lifecycle.AddOptions{ExpiresAt: f.now.Add(time.Hour)}); err != nil {
 		t.Fatal(err)
 	}
