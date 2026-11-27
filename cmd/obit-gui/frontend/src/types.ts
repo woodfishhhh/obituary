@@ -4,6 +4,7 @@ export interface Summary {
   trackedCount: number;
   graveCount: number;
   graveBytes: number;
+  graveQuotaBytes?: number;
   graveMaxBytes?: number;
   quotaPendingCount?: number;
   pendingGraveCount: number;
@@ -146,6 +147,7 @@ export interface ProposalResult {
   ref: string;
   proposal?: Proposal;
   results?: Result[];
+  quotaEviction?: QuotaEviction;
   error?: string;
   errorCode?: string;
 }
@@ -219,6 +221,7 @@ export interface Plan {
   id: string;
   action: string;
   changes: { key?: string; target: string; before: string; after: string }[];
+  quotaPreview?: QuotaEviction;
 }
 
 // What ApplyPlan did (internal/gui PlanReceipt). For the context menu,
@@ -320,8 +323,8 @@ export interface Api {
   Bury?(refs: string[]): Promise<BuryReply>;
   // Missing on an older backend.
   Retry?(refs: string[]): Promise<BatchReply<Result>>;
-  // handled and mode are missing on an older backend.
-  Proposals(): Promise<{ proposals: Proposal[]; handled?: AutoHandled[]; mode?: ProposalMode | string }>;
+  // handled, mode, and graveMaxBytes are missing on an older backend.
+  Proposals(): Promise<{ proposals: Proposal[]; handled?: AutoHandled[]; mode?: ProposalMode | string; graveMaxBytes?: number }>;
   Approve(refs: string[], fingerprints: string[]): Promise<BatchReply<ProposalResult>>;
   Reject(refs: string[], fingerprints: string[]): Promise<BatchReply<ProposalResult>>;
   PurgeQuotaProposal?(ref: string, fingerprint: string): Promise<BatchReply<ProposalResult>>;

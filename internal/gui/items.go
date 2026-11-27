@@ -92,7 +92,11 @@ func (a *API) Bury(refs []string) (BuryReply, error) {
 	if err := requireRefs(refs); err != nil {
 		return BuryReply{Results: []core.GraveResult{}, BuriedIDs: []int64{}}, err
 	}
-	results, err := a.deps.Service.BuryTracked(refs)
+	svc, err := a.service()
+	if err != nil {
+		return BuryReply{Results: []core.GraveResult{}, BuriedIDs: []int64{}, Error: errorText(err)}, nil
+	}
+	results, err := svc.BuryTracked(refs)
 	return BuryReply{Results: list(results), BuriedIDs: buriedIDs(results), Error: errorText(err)}, nil
 }
 

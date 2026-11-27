@@ -41,14 +41,15 @@ type QuotaEvictionItem struct {
 
 // QuotaEviction summarizes FIFO capacity eviction (previewed or executed).
 type QuotaEviction struct {
-	MaxBytes    int64               `json:"maxBytes"`
-	BeforeBytes int64               `json:"beforeBytes"`
-	AfterBytes  int64               `json:"afterBytes"`
-	FreedBytes  int64               `json:"freedBytes"`
-	PurgedCount int                 `json:"purgedCount"`
-	FailedCount int                 `json:"failedCount,omitempty"`
-	Items       []QuotaEvictionItem `json:"items,omitempty"`
-	Results     []GraveResult       `json:"results,omitempty"`
+	MaxBytes      int64               `json:"maxBytes"`
+	BeforeBytes   int64               `json:"beforeBytes"`
+	AfterBytes    int64               `json:"afterBytes"`
+	FreedBytes    int64               `json:"freedBytes"`
+	PurgedCount   int                 `json:"purgedCount"`
+	FailedCount   int                 `json:"failedCount,omitempty"`
+	Items         []QuotaEvictionItem `json:"items,omitempty"`
+	Results       []GraveResult       `json:"results,omitempty"`
+	GraveyardHash string              `json:"-"`
 }
 
 func (e QuotaEviction) summary() *QuotaEviction {
@@ -57,7 +58,7 @@ func (e QuotaEviction) summary() *QuotaEviction {
 	return &cp
 }
 
-func isLocalDiskBurial(b Burial) bool { return b.Kind == "" }
+func isQuotaManagedBurial(b Burial) bool { return b.Kind == "" && b.Source != "quota-decision" }
 
 func isNonFollowedEntry(info os.FileInfo) bool {
 	return info.Mode()&(os.ModeSymlink|os.ModeIrregular) != 0 || isReparse(info)
@@ -125,7 +126,7 @@ func measureDirEntry(d fs.DirEntry, ignoreErrors bool) (size int64, skipDir bool
 }
 
 func effectiveBurialBytes(b Burial) int64 {
-	if !isLocalDiskBurial(b) {
+	if !isQuotaManagedBurial(b) {
 		return 0
 	}
 	if b.Size > 0 {
@@ -140,20 +141,38 @@ func effectiveBurialBytes(b Burial) int64 {
 }
 
 // GraveyardDiskUsage returns the count and total byte size of local disk
-// burials currently stored in the graveyard, excluding non-local container items.
+// burials currently stored in the graveyard, excluding non-local container
+// items and temporary permanent-delete graves.
 func (s *Service) GraveyardDiskUsage() (count int, total int64, err error) {
-	st, err := s.Store.ReadSnapshot()
+	st, err := s.Store.Inspect()
 	if err != nil {
 		return 0, 0, err
 	}
 	for _, b := range st.Burials {
-		if !isLocalDiskBurial(b) {
+		if !isQuotaManagedBurial(b) {
 			continue
 		}
 		count++
 		total += effectiveBurialBytes(b)
 	}
 	return count, total, nil
+}
+
+// GraveyardSnapshotHash returns the current committed graveyard snapshot hash
+// without acquiring locks or creating directories.
+func (s *Service) GraveyardSnapshotHash() (string, error) {
+	st, err := s.Store.Inspect()
+	if err != nil {
+		return "", err
+	}
+	return graveyardHash(st), nil
+}
+
+func graveyardHash(st State) string {
+	if st.Graveyard == nil {
+		return ""
+	}
+	return st.Graveyard.Hash
 }
 
 // formatQuotaBytes formats binary byte sizes identically to textutil.Bytes
@@ -178,7 +197,7 @@ func quotaProposalRule(itemBytes, maxBytes int64) string {
 }
 
 func quotaOverflowDetail(path string, itemBytes, maxBytes int64) string {
-	return fmt.Sprintf("%s (%s) exceeds graveyard capacity limit %s; left in place and moved to pending decisions without evicting existing graves",
+	return fmt.Sprintf("%s (%s) exceeds graveyard capacity limit %s; left in place and moved to pending decisions without evicting existing graves; ask the user to decide in Obituary or raise graveyard.max_size; do not bypass Obituary with raw rm",
 		path, formatQuotaBytes(itemBytes), formatQuotaBytes(maxBytes))
 }
 
@@ -192,6 +211,7 @@ func (s *Service) checkBurialQuota(out Outcome, dryRun bool, reason string) (Out
 	if err != nil {
 		return failedMove(out, err), true
 	}
+	out.Size = itemSize
 	if itemSize <= s.GraveyardMaxBytes {
 		return out, false
 	}
@@ -201,7 +221,6 @@ func (s *Service) checkBurialQuota(out Outcome, dryRun bool, reason string) (Out
 		MaxBytes:  s.GraveyardMaxBytes,
 	}
 	out.Action = ActionQuotaExceeded
-	out.Size = itemSize
 	out.Detail = quotaOverflowDetail(out.Path, itemSize, s.GraveyardMaxBytes)
 	out.QuotaOverflow = overflow
 	if dryRun {
@@ -230,6 +249,7 @@ func (s *Service) recordQuotaOverflow(item Item, path string, itemBytes int64, r
 				return err
 			}
 		}
+		dropWatchBurial(st, item.ID)
 		proposalID = s.upsertQuotaProposal(st, item, cleanPath, itemBytes, reason)
 		auditID := item.ID
 		if st.Index(item.ID) < 0 {
@@ -249,21 +269,14 @@ func (s *Service) upsertQuotaProposal(st *State, item Item, cleanPath string, it
 		trackedID = item.ID
 	}
 	review := &QuotaBurialReview{
-		ItemID:    trackedID,
-		ItemRev:   item.Rev,
-		Identity:  *item.Identity,
-		ItemBytes: itemBytes,
-		MaxBytes:  s.GraveyardMaxBytes,
-		Reason:    reason,
-		IsDir:     item.IsDir,
+		ItemID: trackedID, ItemRev: item.Rev, Identity: *item.Identity,
+		ItemBytes: itemBytes, MaxBytes: s.GraveyardMaxBytes, Reason: reason, IsDir: item.IsDir,
 	}
 	cand := Candidate{
-		Path:     cleanPath,
-		Lifespan: "quota",
-		Rule:     quotaProposalRule(itemBytes, s.GraveyardMaxBytes),
-		Size:     itemBytes,
-		Reason:   "graveyard_capacity_exceeded",
+		Path: cleanPath, Lifespan: "quota", Rule: quotaProposalRule(itemBytes, s.GraveyardMaxBytes),
+		Size: itemBytes, Reason: "graveyard_capacity_exceeded",
 	}
+	watchID, watchBurial := s.quotaWatchReview()
 	for i := range st.Proposals {
 		p := &st.Proposals[i]
 		if !matchesQuotaProposal(*p, trackedID, item.Identity) {
@@ -271,23 +284,28 @@ func (s *Service) upsertQuotaProposal(st *State, item Item, cleanPath string, it
 		}
 		p.CandidateSeq++
 		cand.Rev = p.CandidateSeq
-		p.Project = item.Project
-		p.QuotaReview = review
-		p.Candidates = []Candidate{cand}
+		p.Project, p.QuotaReview, p.Candidates = item.Project, review, []Candidate{cand}
+		if watchBurial != nil {
+			p.WatchID, p.WatchBurial = watchID, watchBurial
+		}
 		return p.ID
 	}
+	cand.Rev = 1
 	p := Proposal{
-		ID:           st.NextID,
-		Kind:         ProposalGraveyardQuota,
-		Project:      item.Project,
-		CreatedAt:    s.now(),
-		CandidateSeq: 1,
-		Candidates:   []Candidate{{Path: cand.Path, Lifespan: cand.Lifespan, Rule: cand.Rule, Size: cand.Size, Reason: cand.Reason, Rev: 1}},
-		QuotaReview:  review,
+		ID: st.NextID, Kind: ProposalGraveyardQuota, Project: item.Project, CreatedAt: s.now(),
+		CandidateSeq: 1, Candidates: []Candidate{cand},
+		WatchID: watchID, WatchBurial: watchBurial, QuotaReview: review,
 	}
 	st.NextID++
 	st.Proposals = append(st.Proposals, p)
 	return p.ID
+}
+
+func (s *Service) quotaWatchReview() (int64, *WatchBurialReview) {
+	if s.approvedWatch == nil {
+		return 0, nil
+	}
+	return s.approvedWatch.WatchID, s.approvedWatch.WatchBurial
 }
 
 func matchesQuotaProposal(p Proposal, trackedID int64, id *Identity) bool {
@@ -311,17 +329,15 @@ func dropQuotaProposal(st *State, id int64, identity *Identity) {
 }
 
 // PreviewGraveyardQuotaEviction calculates which oldest local graveyard items
-// would be evicted under maxBytes without modifying any files or ledger state.
+// would be evicted under maxBytes without acquiring locks or creating files.
 func (s *Service) PreviewGraveyardQuotaEviction(maxBytes int64) (QuotaEviction, error) {
-	var ev QuotaEviction
-	err := s.withGraveyardLock(func() error {
-		ro := *s
-		ro.readOnlyOwners = true
-		var innerErr error
-		ev, innerErr = ro.enforceGraveyardQuotaLocked(true, maxBytes)
-		return innerErr
-	})
-	return ev, err
+	state, err := s.Store.Inspect()
+	if err != nil {
+		return QuotaEviction{}, err
+	}
+	ro := *s
+	ro.readOnlyOwners = true
+	return ro.enforceGraveyardQuotaOnState(state, true, maxBytes)
 }
 
 // EnforceGraveyardQuota purges the oldest local disk burials in strict FIFO
@@ -350,8 +366,12 @@ func (s *Service) enforceGraveyardQuotaLocked(dryRun bool, maxBytes int64) (Quot
 	if err != nil {
 		return QuotaEviction{}, err
 	}
+	return s.enforceGraveyardQuotaOnState(state, dryRun, maxBytes)
+}
+
+func (s *Service) enforceGraveyardQuotaOnState(state State, dryRun bool, maxBytes int64) (QuotaEviction, error) {
 	candidates, beforeBytes := sortedQuotaCandidates(state.Burials)
-	ev := QuotaEviction{MaxBytes: maxBytes, BeforeBytes: beforeBytes, AfterBytes: beforeBytes}
+	ev := QuotaEviction{MaxBytes: maxBytes, BeforeBytes: beforeBytes, AfterBytes: beforeBytes, GraveyardHash: graveyardHash(state)}
 	if maxBytes <= 0 || beforeBytes <= maxBytes {
 		return ev, nil
 	}
@@ -369,6 +389,9 @@ func (s *Service) enforceGraveyardQuotaLocked(dryRun bool, maxBytes int64) (Quot
 		if r.Error != "" || fatalErr != nil {
 			ev.FailedCount++
 			ev.Results = append(ev.Results, r)
+			if r.Burial != nil && r.Burial.PurgeIntent != nil {
+				remaining -= sz
+			}
 			if fatalErr != nil {
 				ev.AfterBytes = max(int64(0), remaining)
 				return ev, errors.Join(fatalErr, auditErr)
@@ -381,6 +404,9 @@ func (s *Service) enforceGraveyardQuotaLocked(dryRun bool, maxBytes int64) (Quot
 			ev.PurgedCount++
 			ev.Items = append(ev.Items, QuotaEvictionItem{ID: b.ID, Path: b.Path, Size: sz, BuriedAt: b.BuriedAt})
 			ev.Results = append(ev.Results, r)
+			if !dryRun && ev.PurgedCount%sweepBatchSize == 0 {
+				auditErr = errors.Join(auditErr, s.Store.FlushAudit())
+			}
 		}
 	}
 	ev.AfterBytes = max(int64(0), remaining)
@@ -392,7 +418,7 @@ func (s *Service) enforceGraveyardQuotaLocked(dryRun bool, maxBytes int64) (Quot
 
 func (s *Service) readQuotaState(dryRun bool) (State, error) {
 	if dryRun {
-		return s.Store.ReadSnapshot()
+		return s.Store.Inspect()
 	}
 	return s.Store.Read()
 }
@@ -401,7 +427,7 @@ func sortedQuotaCandidates(burials []Burial) ([]Burial, int64) {
 	candidates := make([]Burial, 0, len(burials))
 	var total int64
 	for _, b := range burials {
-		if !isLocalDiskBurial(b) {
+		if !isQuotaManagedBurial(b) || b.PurgeIntent != nil {
 			continue
 		}
 		candidates = append(candidates, b)
@@ -417,6 +443,9 @@ func sortedQuotaCandidates(burials []Burial) ([]Burial, int64) {
 }
 
 func (s *Service) evictOneQuotaBurial(b Burial, state State, blocked string, dryRun bool) (GraveResult, error, error) {
+	if dryRun && b.Grave == "" {
+		return GraveResult{Ref: fmt.Sprintf("#%d", b.ID), Burial: &b, Action: ActionPurged, Detail: PurgeBasisQuotaFIFO}, nil, nil
+	}
 	if blocked != "" {
 		r, err := s.blockedPurge(b, blocked, dryRun)
 		r.Detail = PurgeBasisQuotaFIFO
@@ -439,13 +468,41 @@ func (s *Service) evictOneQuotaBurial(b Burial, state State, blocked string, dry
 }
 
 func (s *Service) purgeQuotaLocked(run *purgeRun) error {
-	ev, err := s.enforceGraveyardQuotaLocked(run.dryRun, s.GraveyardMaxBytes)
+	var (
+		ev  QuotaEviction
+		err error
+	)
+	if run.dryRun {
+		state, readErr := s.Store.Inspect()
+		if readErr != nil {
+			return readErr
+		}
+		ro := *s
+		ro.readOnlyOwners = true
+		ev, err = ro.enforceGraveyardQuotaOnState(projectPurgedBurials(state, run.results), true, s.GraveyardMaxBytes)
+	} else {
+		ev, err = s.enforceGraveyardQuotaLocked(false, s.GraveyardMaxBytes)
+	}
 	run.results = append(run.results, ev.Results...)
 	if commitFailed(err) {
 		return err
 	}
 	run.auditErr = errors.Join(run.auditErr, err)
 	return nil
+}
+
+func projectPurgedBurials(state State, results []GraveResult) State {
+	removed := make(map[int64]bool, len(results))
+	for _, r := range results {
+		if r.Burial != nil && (r.Action == ActionPurged || r.Action == ActionLost) {
+			removed[r.Burial.ID] = true
+		}
+	}
+	if len(removed) == 0 {
+		return state
+	}
+	state.Burials = slices.DeleteFunc(slices.Clone(state.Burials), func(b Burial) bool { return removed[b.ID] })
+	return state
 }
 
 func (s *Service) applyBuryQuota(results []GraveResult) error {
@@ -472,15 +529,7 @@ func (s *Service) applySweepQuota(outcomes []Outcome, dryRun bool) ([]Outcome, e
 	if s.GraveyardMaxBytes <= 0 {
 		return outcomes, nil
 	}
-	var (
-		ev  QuotaEviction
-		err error
-	)
-	if dryRun {
-		ev, err = s.PreviewGraveyardQuotaEviction(s.GraveyardMaxBytes)
-	} else {
-		ev, err = s.EnforceGraveyardQuota(false)
-	}
+	ev, err := s.runSweepQuota(outcomes, dryRun)
 	if ev.PurgedCount == 0 && ev.FailedCount == 0 {
 		return outcomes, err
 	}
@@ -490,6 +539,9 @@ func (s *Service) applySweepQuota(outcomes []Outcome, dryRun bool) ([]Outcome, e
 			outcomes[i].QuotaEviction = summary
 			return outcomes, err
 		}
+	}
+	if len(ev.Items) == 0 && ev.FailedCount > 0 {
+		return appendFailedSweepQuota(outcomes, ev, summary), err
 	}
 	for i, item := range ev.Items {
 		out := Outcome{
@@ -507,241 +559,53 @@ func (s *Service) applySweepQuota(outcomes []Outcome, dryRun bool) ([]Outcome, e
 	return outcomes, err
 }
 
-// ApproveQuotaProposal buries a quota-pending object once it fits within the
-// current graveyard capacity limit; otherwise it refuses without deleting anything.
-func (s *Service) ApproveQuotaProposal(p Proposal) (Outcome, error) {
-	p, err := s.verifyQuotaProposal(p.ID, ProposalFingerprint(p))
+func (s *Service) runSweepQuota(outcomes []Outcome, dryRun bool) (QuotaEviction, error) {
+	if !dryRun {
+		return s.EnforceGraveyardQuota(false)
+	}
+	state, err := s.Store.Inspect()
 	if err != nil {
-		return Outcome{}, err
+		return QuotaEviction{}, err
 	}
-	path := p.Candidates[0].Path
-	size, err := measureLocalSize(path)
-	if err != nil {
-		return Outcome{Path: path}, err
-	}
-	if s.GraveyardMaxBytes > 0 && size > s.GraveyardMaxBytes {
-		return Outcome{Path: path, Action: ActionQuotaExceeded, Size: size}, fmt.Errorf("%s (%s) still exceeds graveyard capacity limit %s; raise graveyard.max_size, extend, reject, or explicitly confirm permanent deletion",
-			path, formatQuotaBytes(size), formatQuotaBytes(s.GraveyardMaxBytes))
-	}
-	results, err := s.Bury([]string{path}, s.quotaTrackedForce(p), "approved quota decision")
-	if err != nil && !OnlyAuditErrors(err) {
-		return Outcome{Path: path}, err
-	}
-	if len(results) == 0 {
-		return Outcome{Path: path}, errors.New("no burial result returned")
-	}
-	r := results[0]
-	out := Outcome{Path: path, Action: r.Action, Burial: r.Burial, Detail: r.Error, QuotaOverflow: r.QuotaOverflow, QuotaEviction: r.QuotaEviction}
-	if r.Burial != nil {
-		out.Item = Item{ID: r.Burial.ID, Path: r.Burial.Path, IsDir: r.Burial.IsDir}
-	}
-	return out, err
+	state = projectSweepBurials(state, outcomes, s.now())
+	ro := *s
+	ro.readOnlyOwners = true
+	return ro.enforceGraveyardQuotaOnState(state, true, s.GraveyardMaxBytes)
 }
 
-// PurgeQuotaProposal permanently deletes ONLY the reviewed oversized object by
-// pinning it into an exclusive grave and running verified Purge on that grave
-// alone, never calling os.RemoveAll on user content and never evicting old graves.
-func (s *Service) PurgeQuotaProposal(ref, fingerprint string) (ProposalResult, error) {
-	r := ProposalResult{Ref: ref}
-	id, err := parseProposalRef(ref)
-	if err != nil {
-		r.Error = err.Error()
-		return r, err
-	}
-	release, err := s.lockProposals()
-	if err != nil {
-		r.Error = err.Error()
-		return r, err
-	}
-	defer release()
-	p, err := s.verifyQuotaProposal(id, fingerprint)
-	if err != nil {
-		return quotaProposalErr(r, err), err
-	}
-	r.Proposal = p
-	path := p.Candidates[0].Path
-	if err := s.verifyQuotaLiveObject(path, p.QuotaReview.Identity); err != nil {
-		return quotaProposalErr(r, err), err
-	}
-	buried, err := s.buryQuotaOnly(path, s.quotaTrackedForce(p))
-	if err != nil {
-		return quotaProposalErr(r, err), err
-	}
-	if err := s.purgeQuotaSingleGrave(buried.ID); err != nil {
-		return quotaProposalErr(r, err), err
-	}
-	r.Results = []Result{{Ref: path, Action: ActionPurged}}
-	return r, nil
-}
-
-// ExtendQuotaProposal gives a quota-pending object a fresh future lifespan and
-// clears its pending decision without moving or deleting the object.
-func (s *Service) ExtendQuotaProposal(ref, fingerprint string, d time.Duration) (ProposalResult, error) {
-	r := ProposalResult{Ref: ref}
-	id, err := parseProposalRef(ref)
-	if err != nil {
-		r.Error = err.Error()
-		return r, err
-	}
-	if d <= 0 || d > MaxLifespan {
-		err = fmt.Errorf("lifespan must be positive and at most %s", MaxLifespan)
-		r.Error = err.Error()
-		return r, err
-	}
-	release, err := s.lockProposals()
-	if err != nil {
-		r.Error = err.Error()
-		return r, err
-	}
-	defer release()
-	p, err := s.verifyQuotaProposal(id, fingerprint)
-	if err != nil {
-		return quotaProposalErr(r, err), err
-	}
-	r.Proposal = p
-	results, err := s.extendQuotaTarget(p, d)
-	r.Results = results
-	if err != nil {
-		r.Error = err.Error()
-	} else if Failed(results) {
-		r.Error = results[0].Error
-	}
-	return r, err
-}
-
-func (s *Service) extendQuotaTarget(p Proposal, d time.Duration) ([]Result, error) {
-	st, err := s.Store.ReadHot()
-	if err != nil {
-		return nil, err
-	}
-	if p.QuotaReview.ItemID > 0 {
-		idx := st.Index(p.QuotaReview.ItemID)
-		if idx >= 0 && st.Items[idx].Identity != nil && *st.Items[idx].Identity == p.QuotaReview.Identity {
-			return s.Extend([]string{fmt.Sprint(p.QuotaReview.ItemID)}, d)
+func projectSweepBurials(state State, outcomes []Outcome, now time.Time) State {
+	burials := slices.Clone(state.Burials)
+	for _, out := range outcomes {
+		if out.Action != ActionBuried || out.Item.Kind != "" {
+			continue
 		}
-	}
-	results, err := s.Add([]string{p.Candidates[0].Path}, AddOptions{
-		ExpiresAt: s.now().Add(d),
-		Source:    "cli",
-		Project:   p.Project,
-		Note:      fmt.Sprintf("extended from quota decision #%d", p.ID),
-	})
-	if err != nil && !OnlyAuditErrors(err) {
-		return results, err
-	}
-	if !Failed(results) {
-		dropErr := s.Store.UpdateHot(func(st *State) error {
-			dropQuotaProposal(st, p.QuotaReview.ItemID, &p.QuotaReview.Identity)
-			return nil
-		})
-		err = errors.Join(err, dropErr)
-	}
-	return results, err
-}
-
-func (s *Service) verifyQuotaProposal(id int64, fingerprint string) (Proposal, error) {
-	st, err := s.Store.ReadHot()
-	if err != nil {
-		return Proposal{}, err
-	}
-	idx := st.ProposalIndex(id)
-	if idx < 0 {
-		return Proposal{}, fmt.Errorf("#%d is not a pending proposal", id)
-	}
-	p := st.Proposals[idx]
-	if p.Kind != ProposalGraveyardQuota || p.QuotaReview == nil || len(p.Candidates) != 1 {
-		return Proposal{}, fmt.Errorf("#%d is not a graveyard quota decision", id)
-	}
-	if err := checkProposalReview(p, fingerprint); err != nil {
-		return Proposal{}, err
-	}
-	return p, nil
-}
-
-func (s *Service) verifyQuotaLiveObject(path string, want Identity) error {
-	got, err := s.FS.Identify(path)
-	if err != nil {
-		return err
-	}
-	if got != want {
-		return fmt.Errorf("%s changed since review: %w", path, ErrUnsafe)
-	}
-	return nil
-}
-
-func (s *Service) quotaTrackedForce(p Proposal) bool {
-	if p.QuotaReview == nil || p.QuotaReview.ItemID == 0 {
-		return false
-	}
-	st, err := s.Store.ReadHot()
-	if err != nil {
-		return false
-	}
-	idx := st.Index(p.QuotaReview.ItemID)
-	return idx >= 0 && st.Items[idx].Force
-}
-
-func (s *Service) buryQuotaOnly(path string, force bool) (*Burial, error) {
-	tx := *s
-	tx.GraveyardMaxBytes = 0
-	tx.Mode = ModeGraveyard
-	results, err := tx.bury([]string{path}, force, "quota_exceeded_permanent_delete", "quota-decision")
-	if err != nil && !OnlyAuditErrors(err) {
-		return nil, err
-	}
-	if len(results) == 0 || results[0].Action != ActionBuried || results[0].Burial == nil {
-		msg := "could not move oversized object into temporary grave"
-		if len(results) > 0 && results[0].Error != "" {
-			msg = results[0].Error
+		sz := out.Size
+		if sz <= 0 {
+			sz, _ = measureLocalSize(out.Path)
 		}
-		return nil, errors.New(msg)
+		burials = append(burials, Burial{ID: out.Item.ID, Path: out.Path, Size: sz, BuriedAt: now})
 	}
-	return results[0].Burial, nil
+	state.Burials = burials
+	return state
 }
 
-func (s *Service) purgeQuotaSingleGrave(burialID int64) error {
-	tx := *s
-	tx.GraveyardMaxBytes = 0
-	results, err := tx.PurgeRefs([]string{fmt.Sprint(burialID)}, false)
-	if err != nil && !OnlyAuditErrors(err) {
-		return err
-	}
-	if len(results) == 0 || results[0].Error != "" || results[0].Action != ActionPurged {
-		msg := fmt.Sprintf("could not purge grave #%d", burialID)
-		if len(results) > 0 && results[0].Error != "" {
-			msg = results[0].Error
+func appendFailedSweepQuota(outcomes []Outcome, ev QuotaEviction, summary *QuotaEviction) []Outcome {
+	for i, r := range ev.Results {
+		var id int64
+		var path string
+		if r.Burial != nil {
+			id, path = r.Burial.ID, r.Burial.Path
 		}
-		return errors.New(msg)
-	}
-	return nil
-}
-
-func quotaProposalErr(r ProposalResult, err error) ProposalResult {
-	r.Error = err.Error()
-	if errors.Is(err, ErrProposalChanged) {
-		r.ErrorCode = ErrorCodeProposalChanged
-	}
-	return r
-}
-
-func (s *Service) rejectQuotaProposal(st *State, p Proposal, at time.Time) {
-	if p.QuotaReview == nil {
-		return
-	}
-	path := ""
-	if len(p.Candidates) > 0 {
-		path = p.Candidates[0].Path
-	}
-	auditID := p.ID
-	if p.QuotaReview.ItemID > 0 {
-		if i := st.Index(p.QuotaReview.ItemID); i >= 0 && (st.Items[i].Identity == nil || *st.Items[i].Identity == p.QuotaReview.Identity) {
-			it := st.Items[i]
-			auditID = it.ID
-			s.spareWatchObject(st, it.WatchID, it.Identity, it.Path, "spared")
-			s.spareAutomaticObject(st, it.Identity, it.Path)
-			s.forgetAutoReceipt(st, it)
-			st.Items = append(st.Items[:i], st.Items[i+1:]...)
+		out := Outcome{
+			Item:   Item{ID: id, Path: path},
+			Action: ActionBlocked,
+			Path:   path,
+			Detail: r.Error,
 		}
+		if i == len(ev.Results)-1 {
+			out.QuotaEviction = summary
+		}
+		outcomes = append(outcomes, out)
 	}
-	queueAudit(st, Event{Time: at, Action: ActionCanceled, ID: auditID, Path: path, Detail: "graveyard_quota_decision_rejected: kept in place and stopped tracking"})
+	return outcomes
 }

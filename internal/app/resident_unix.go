@@ -276,7 +276,7 @@ func (r *Resident) readState() (core.State, bool) {
 
 // nextDue adds the graveyard's next purge to what the hot ledger has due.
 func (r *Resident) nextDue(hot core.State) (time.Time, bool) {
-	next, has := hot.NextDue()
+	next, has := hot.NextDueFor(currentGraveyardMaxBytes(r.Service))
 	if g := r.graves; g != nil && g.has && (!has || g.next.Before(next)) {
 		return g.next, true
 	}

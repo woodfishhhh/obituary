@@ -87,12 +87,17 @@ func mcpQuotaOverflowMessage(results []core.GraveResult) string {
 func mcpQuotaEvictionWarning(results []core.GraveResult) string {
 	var parts []string
 	for _, r := range results {
-		if r.QuotaEviction == nil || r.QuotaEviction.PurgedCount == 0 {
+		ev := r.QuotaEviction
+		if ev == nil || (ev.PurgedCount == 0 && ev.FailedCount == 0) {
 			continue
 		}
-		ev := r.QuotaEviction
-		parts = append(parts, fmt.Sprintf("Graveyard exceeded capacity limit %s: automatically purged %d oldest item(s) (freed %s), current usage %s / %s",
-			textutil.Bytes(ev.MaxBytes), ev.PurgedCount, textutil.Bytes(ev.FreedBytes), textutil.Bytes(ev.AfterBytes), textutil.Bytes(ev.MaxBytes)))
+		if ev.PurgedCount > 0 {
+			parts = append(parts, fmt.Sprintf("Graveyard exceeded capacity limit %s: automatically purged %d oldest item(s) (freed %s), current usage %s / %s",
+				textutil.Bytes(ev.MaxBytes), ev.PurgedCount, textutil.Bytes(ev.FreedBytes), textutil.Bytes(ev.AfterBytes), textutil.Bytes(ev.MaxBytes)))
+		}
+		if ev.FailedCount > 0 {
+			parts = append(parts, fmt.Sprintf("%d oldest graveyard item(s) could not be purged right now and will be retried later", ev.FailedCount))
+		}
 	}
 	return strings.Join(parts, "; ")
 }

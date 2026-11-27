@@ -121,9 +121,16 @@ func (st *State) FindIdentity(id Identity) int {
 
 // NextDue returns the earliest moment any item or burial needs attention.
 func (st *State) NextDue() (time.Time, bool) {
+	return st.NextDueFor(0)
+}
+
+// NextDueFor returns the earliest moment any item or burial needs attention
+// under the active graveyard capacity limit (0 means unlimited), skipping
+// expired items already waiting on a pending quota decision.
+func (st *State) NextDueFor(maxBytes int64) (time.Time, bool) {
 	var next time.Time
 	for _, item := range st.Items {
-		if AwaitingWatchBurial(st, item) {
+		if AwaitingWatchBurial(st, item) || AwaitingQuotaDecision(st, item, maxBytes) {
 			continue
 		}
 		due := item.ExpiresAt

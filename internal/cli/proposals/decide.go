@@ -83,5 +83,8 @@ func printDecisions(results []core.ProposalResult, approve bool) {
 				fmt.Printf(cmdutil.Text("cli.proposals.expires"), res.Item.ID, res.Item.Path, cmdutil.When(res.Item.ExpiresAt))
 			}
 		}
+		if r.QuotaEviction != nil {
+			cmdutil.PrintQuotaEviction(os.Stderr, cmdutil.Localizer(), r.QuotaEviction, false)
+		}
 	}
 }

@@ -609,3 +609,41 @@ func TestMCPBuryQuotaOverflowAndFIFOEviction(t *testing.T) {
 		t.Fatalf("MCP stats missing quota pending warning: %s", encodedStats)
 	}
 }
+
+func TestMCPRefreshesGraveyardMaxSizeWithoutRestart(t *testing.T) {
+	clitest.IsolateRunner(t)
+	repo, _ := clitest.CommandDir(t)
+	cfgPath := filepath.Join(os.Getenv("OBIT_CONFIG_DIR"), "config.toml")
+	clitest.WriteFixture(t, cfgPath, "[graveyard]\nmax_size = '5000'\n")
+	svc, err := cmdutil.Open()
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := clitest.ConnectMCP(t, NewServer(svc, "0.1.0-dev"))
+
+	f1 := filepath.Join(repo, "f1.bin")
+	huge := filepath.Join(repo, "huge.bin")
+	clitest.WriteFixture(t, f1, strings.Repeat("a", 3000))
+	clitest.WriteFixture(t, huge, strings.Repeat("b", 8000))
+	clitest.CallMCP(t, s, "obit_bury", map[string]any{"paths": []string{f1}}, false, nil)
+
+	// Clear max_size externally while MCP session stays alive.
+	clitest.WriteFixture(t, cfgPath, "[graveyard]\nmax_size = ''\n")
+
+	var summary core.Summary
+	clitest.CallMCP(t, s, "obit_stats", struct{}{}, false, &summary)
+	if summary.GraveMaxBytes != 0 {
+		t.Fatalf("MCP stats used stale GraveMaxBytes = %d, want 0", summary.GraveMaxBytes)
+	}
+	// Burying 8KB file now succeeds without Plan A and without evicting f1.
+	var buried struct{ Results []core.GraveResult }
+	clitest.CallMCP(t, s, "obit_bury", map[string]any{"paths": []string{huge}}, false, &buried)
+	if len(buried.Results) != 1 || buried.Results[0].Action != core.ActionBuried || buried.Results[0].QuotaEviction != nil {
+		t.Fatalf("MCP bury used stale limit: %+v", buried.Results)
+	}
+	var listing graveyardcmd.GraveyardListing
+	clitest.CallMCP(t, s, "obit_graveyard", struct{}{}, false, &listing)
+	if len(listing.Burials) != 2 {
+		t.Fatalf("old grave was evicted under stale MCP limit: %d burials", len(listing.Burials))
+	}
+}

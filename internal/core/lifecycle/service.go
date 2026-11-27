@@ -57,15 +57,16 @@ type Service struct {
 	beforePurgeDelete func()             // after durable pre-delete persistence
 	afterBurialStep   func(string) error // interruption without cleanup
 	// Only successful durable owner claims in this operation are cached.
-	confirmedOwners map[string]bool
-	readOnlyOwners  bool // diagnostics validate legacy markers without migrating them
-	burialOperation *BurialOperation
-	approvedWatch   *Proposal                  // request-local explicit directory burial approval
-	deletionCheck   func(string) (bool, error) // command-specific checks, outside ledger locks
-	Store           Store
-	Guard           Guard
-	FS              FS
-	Now             func() time.Time
+	confirmedOwners  map[string]bool
+	readOnlyOwners   bool // diagnostics validate legacy markers without migrating them
+	burialOperation  *BurialOperation
+	approvedWatch    *Proposal                  // request-local explicit directory burial approval
+	expectedIdentity *Identity                  // request-local reviewed object identity for quota decisions
+	deletionCheck    func(string) (bool, error) // command-specific checks, outside ledger locks
+	Store            Store
+	Guard            Guard
+	FS               FS
+	Now              func() time.Time
 	// AfterChange refreshes optional presentation after locks are released.
 	// It must report failures itself and never change the operation's result.
 	AfterChange func(*Service)

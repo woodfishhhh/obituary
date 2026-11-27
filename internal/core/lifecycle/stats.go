@@ -53,6 +53,7 @@ type Summary struct {
 	NextDue           *time.Time `json:"nextDue,omitempty"`
 	Graves            int        `json:"graves"`
 	GraveBytes        int64      `json:"graveBytes"`
+	GraveQuotaBytes   int64      `json:"graveQuotaBytes,omitempty"`
 	GraveMaxBytes     int64      `json:"graveMaxBytes,omitempty"`
 	QuotaPendingCount int        `json:"quotaPendingCount,omitempty"`
 	NextPurge         *time.Time `json:"nextPurge,omitempty"`
@@ -72,6 +73,9 @@ func (s *Service) Summarize() (Summary, error) {
 		GraveMaxBytes:     s.GraveyardMaxBytes,
 		QuotaPendingCount: ledger.QuotaPendingCount(state),
 		Lifetime:          state.Stats,
+	}
+	if s.GraveyardMaxBytes > 0 {
+		sum.GraveQuotaBytes = graveyard.LocalBytes
 	}
 	for _, item := range state.Items {
 		if sum.NextDue == nil || item.ExpiresAt.Before(*sum.NextDue) {

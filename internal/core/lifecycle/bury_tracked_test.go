@@ -258,3 +258,31 @@ func TestBuryTrackedContinuesPastRefusedDockerVolume(t *testing.T) {
 		t.Fatalf("subsequent file should still bury: %+v exists=%v", rows[1], exists(filePath))
 	}
 }
+
+func TestBuryTrackedEnforcesGraveyardQuotaFIFO(t *testing.T) {
+	f := newFixture(t)
+	oldFile := writePayload(t, f.dir, "old-tracked.bin", strings.Repeat("o", 3000))
+	oldRows, err := f.svc.Bury([]string{oldFile}, false, "")
+	if err != nil || core.GraveFailed(oldRows) {
+		t.Fatalf("seed old burial: %+v %v", oldRows, err)
+	}
+	f.clock = f.clock.Add(time.Minute)
+
+	newFile := writePayload(t, f.dir, "new-tracked.bin", strings.Repeat("n", 3000))
+	item := f.add(newFile, 24*time.Hour)
+	f.svc.GraveyardMaxBytes = 4000
+
+	rows, err := f.svc.BuryTracked([]string{fmt.Sprintf("#%d", item.ID)})
+	if err != nil || core.GraveFailed(rows) {
+		t.Fatalf("BuryTracked: %+v %v", rows, err)
+	}
+	if len(rows) != 1 || rows[0].Action != core.ActionBuried {
+		t.Fatalf("expected buried result: %+v", rows)
+	}
+	if rows[0].QuotaEviction == nil || rows[0].QuotaEviction.PurgedCount != 1 || rows[0].QuotaEviction.Items[0].ID != oldRows[0].Burial.ID {
+		t.Fatalf("BuryTracked must enforce FIFO quota eviction: %+v", rows[0].QuotaEviction)
+	}
+	if len(f.burials()) != 1 || f.burials()[0].ID != item.ID {
+		t.Fatalf("expected only new tracked burial remaining: %+v", f.burials())
+	}
+}

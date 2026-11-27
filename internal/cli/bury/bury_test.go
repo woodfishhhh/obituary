@@ -318,3 +318,26 @@ func TestBuryPendingReceiptCarriesLocationAndRetry(t *testing.T) {
 		})
 	}
 }
+
+func TestBuryJSONQuotaOverflowWarnsAgainstRawRm(t *testing.T) {
+	clitest.IsolateRunner(t)
+	repo, _ := clitest.CommandDir(t)
+	clitest.WriteFixture(t, filepath.Join(os.Getenv("OBIT_CONFIG_DIR"), "config.toml"), "[graveyard]\nmax_size = '5000'\n")
+	huge := filepath.Join(repo, "huge.bin")
+	clitest.WriteFixture(t, huge, strings.Repeat("x", 8000))
+
+	out, _, err := clitest.Execute(t, NewCmd(), "--json", huge)
+	if err == nil {
+		t.Fatalf("expected non-zero exit on Plan A overflow, out=%s", out)
+	}
+	var results []core.GraveResult
+	if jerr := json.Unmarshal([]byte(out), &results); jerr != nil || len(results) != 1 {
+		t.Fatalf("bury --json decode: out=%s err=%v", out, jerr)
+	}
+	if results[0].Action != core.ActionQuotaExceeded || results[0].QuotaOverflow == nil {
+		t.Fatalf("expected quota-exceeded receipt, got %+v", results[0])
+	}
+	if !strings.Contains(results[0].Detail, "do not bypass Obituary with raw rm") {
+		t.Fatalf("bury --json missing raw rm warning: %q", results[0].Detail)
+	}
+}

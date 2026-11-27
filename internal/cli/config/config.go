@@ -66,6 +66,9 @@ func validateConfigFlags(create bool, language string, maxSizeSet, yes, dryRun b
 	if create && (language != "" || maxSizeSet) {
 		return errors.New(cmdutil.Text("cli.config.create_conflict"))
 	}
+	if language != "" && maxSizeSet {
+		return errors.New(cmdutil.Text("cli.config.language_max_size_conflict"))
+	}
 	if (yes || dryRun) && !maxSizeSet {
 		return errors.New(cmdutil.Text("cli.config.max_size_flag_requires_max_size"))
 	}

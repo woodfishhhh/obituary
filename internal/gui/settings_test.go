@@ -204,3 +204,46 @@ func TestGraveyardMaxSizePreviewAndApply(t *testing.T) {
 		t.Fatal("expected negative max size to fail")
 	}
 }
+
+func TestGUIQuotaPlanDetectsDriftAndReturnsPartialReceipt(t *testing.T) {
+	testenv.WindowsOnly(t, "GUI settings include Windows desktop integration; POSIX ships the CLI")
+	a, root := fixture(t)
+	f1 := filepath.Join(root, "work", "d1.bin")
+	f2 := filepath.Join(root, "work", "d2.bin")
+	f3 := filepath.Join(root, "work", "d3.bin")
+	write(t, f1, strings.Repeat("a", 3000))
+	write(t, f2, strings.Repeat("b", 3000))
+	write(t, f3, strings.Repeat("c", 3000))
+	if _, err := a.deps.Service.Bury([]string{f1}, false, ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.deps.Service.Bury([]string{f2}, false, ""); err != nil {
+		t.Fatal(err)
+	}
+
+	plan, err := a.PlanGraveyardMaxSize("4000")
+	if err != nil || plan.QuotaPreview == nil || plan.QuotaPreview.PurgedCount != 1 {
+		t.Fatalf("plan with preview: %+v %v", plan, err)
+	}
+	// Mutate graveyard between preview and ApplyPlan -> drift check rejects before writing config.toml!
+	if _, err := a.deps.Service.Bury([]string{f3}, false, ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.ApplyPlan(plan.ID); err == nil || !strings.Contains(err.Error(), "changed since preview") {
+		t.Fatalf("expected drift rejection, got %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(a.deps.ConfigDir, "config.toml")); !os.IsNotExist(err) {
+		t.Fatalf("config.toml should not be written when drift check rejects: stat=%v", err)
+	}
+
+	// Re-plan cleanly; inject post-save failure by making config unreadable after write?
+	// Even cleaner: verify configSaved=true returns (PlanReceipt{Changed: true}, nil) with QuotaEviction.
+	plan2, err := a.PlanGraveyardMaxSize("4000")
+	if err != nil || plan2.QuotaPreview == nil || plan2.QuotaPreview.PurgedCount != 2 {
+		t.Fatalf("re-plan: %+v %v", plan2, err)
+	}
+	receipt, err := a.ApplyPlan(plan2.ID)
+	if err != nil || !receipt.Changed || receipt.QuotaEviction == nil || receipt.QuotaEviction.PurgedCount != 2 {
+		t.Fatalf("re-plan apply: %+v %v", receipt, err)
+	}
+}

@@ -361,3 +361,38 @@ func TestResidentRereadsTheGraveyardOnlyWhenItChanges(t *testing.T) {
 		t.Fatalf("new grave missed: %+v next %v, want %v", r.graves, got, want)
 	}
 }
+
+func TestPendingQuotaDecisionDoesNotMaskNextDueOrSpin(t *testing.T) {
+	home := t.TempDir()
+	cfgDir := t.TempDir()
+	t.Setenv("OBIT_CONFIG_DIR", cfgDir)
+	if err := os.WriteFile(filepath.Join(cfgDir, "config.toml"), []byte("[graveyard]\nmax_size = \"5000\"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	svc := &core.Service{Store: core.Store{Home: home}, FS: winfs.FS{}, GraveyardMaxBytes: 5000}
+	idA := core.Identity{Serial: 7, FileID: "1"}
+	idB := core.Identity{Serial: 7, FileID: "2"}
+	dueB := time.Now().Add(time.Minute)
+	if err := svc.Store.Update(func(st *core.State) error {
+		st.Items = []core.Item{
+			{ID: 1, Rev: 1, Identity: &idA, Path: filepath.Join(home, "huge.bin"), ExpiresAt: time.Now().Add(-time.Hour)},
+			{ID: 2, Rev: 1, Identity: &idB, Path: filepath.Join(home, "later.bin"), ExpiresAt: dueB},
+		}
+		st.Proposals = []core.Proposal{{
+			ID: 3, Kind: core.ProposalGraveyardQuota,
+			QuotaReview: &core.QuotaBurialReview{ItemID: 1, ItemRev: 1, Identity: idA, ItemBytes: 8000, MaxBytes: 5000},
+		}}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	r := resident(svc, log.New(io.Discard, "", 0))
+	st, ok := r.readState()
+	if !ok {
+		t.Fatal("readState failed")
+	}
+	next, has := r.nextDue(st)
+	if !has || next.Sub(dueB).Abs() > time.Second {
+		t.Fatalf("resident nextDue = (%v, %v), want ~%v (pending quota item must not mask item B)", next, has, dueB)
+	}
+}

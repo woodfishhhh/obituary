@@ -178,6 +178,9 @@ func TestGraveyardQuotaPlanAOversizedItemPreservesOldGraves(t *testing.T) {
 	if len(rows) != 1 || rows[0].Action != core.ActionQuotaExceeded || rows[0].QuotaOverflow == nil {
 		t.Fatalf("expected Plan A quota-exceeded receipt, got %+v", rows)
 	}
+	if !strings.Contains(rows[0].Detail, "do not bypass Obituary with raw rm") {
+		t.Fatalf("quota overflow detail missing raw rm warning: %q", rows[0].Detail)
+	}
 	if rows[0].QuotaOverflow.ItemBytes != 8000 || rows[0].QuotaOverflow.MaxBytes != 5000 || rows[0].QuotaOverflow.ProposalID == 0 {
 		t.Fatalf("unexpected quotaOverflow payload: %+v", rows[0].QuotaOverflow)
 	}
@@ -541,5 +544,191 @@ func TestGraveyardQuotaConcurrentBuryAndPurgeSafe(t *testing.T) {
 	}
 	if total > f.svc.GraveyardMaxBytes {
 		t.Fatalf("final usage %d exceeded limit %d", total, f.svc.GraveyardMaxBytes)
+	}
+}
+
+func TestGraveyardQuotaPurgeIntentFailureDoesNotDoubleEvict(t *testing.T) {
+	f := newFixture(t)
+	f.svc.GraveyardMaxBytes = 100000
+
+	p1 := writeSizedFile(t, f, "pi-1.bin", 3000)
+	r1, err := f.svc.Bury([]string{p1}, false, "")
+	if err != nil || core.GraveFailed(r1) {
+		t.Fatalf("bury p1: %+v %v", r1, err)
+	}
+	f.clock = f.clock.Add(time.Minute)
+	p2 := writeSizedFile(t, f, "pi-2.bin", 3000)
+	r2, err := f.svc.Bury([]string{p2}, false, "")
+	if err != nil || core.GraveFailed(r2) {
+		t.Fatalf("bury p2: %+v %v", r2, err)
+	}
+	f.clock = f.clock.Add(time.Minute)
+	p3 := writeSizedFile(t, f, "pi-3.bin", 3000)
+	r3, err := f.svc.Bury([]string{p3}, false, "")
+	if err != nil || core.GraveFailed(r3) {
+		t.Fatalf("bury p3: %+v %v", r3, err)
+	}
+
+	// Verify passes, beginPurge commits PurgeIntent, then PurgeGrave fails with ErrPermission.
+	failFS := &failingPurgeGraveFS{FS: f.fs, dir: filepath.Dir(r1[0].Burial.Grave), fail: true, err: os.ErrPermission}
+	f.svc.FS = failFS
+	f.svc.GraveyardMaxBytes = 6000
+	ev, err := f.svc.EnforceGraveyardQuota(false)
+	if err != nil {
+		t.Fatalf("enforce: %v", err)
+	}
+	if ev.FailedCount != 1 || ev.PurgedCount != 0 {
+		t.Fatalf("expected #1 failed with PurgeIntent and #2 NOT evicted, got %+v", ev)
+	}
+	if !exists(r2[0].Burial.Grave) || !exists(r3[0].Burial.Grave) {
+		t.Fatal("innocent #2 or #3 grave was double-evicted after #1 committed PurgeIntent")
+	}
+	st, _ := f.svc.Store.Read()
+	idx1 := st.BurialIndex(r1[0].Burial.ID)
+	if idx1 < 0 || st.Burials[idx1].PurgeIntent == nil {
+		t.Fatalf("expected PurgeIntent persisted on #1, got %+v", st.Burials)
+	}
+
+	// Unlock and advance past backoff: Purge completes ONLY #1, preserving #2 and #3.
+	failFS.fail = false
+	f.clock = f.clock.Add(2 * time.Minute)
+	purged, err := f.svc.Purge(false, false)
+	if err != nil || core.GraveFailed(purged) {
+		t.Fatalf("Purge after unlock: %+v %v", purged, err)
+	}
+	if len(purged) != 1 || purged[0].Burial.ID != r1[0].Burial.ID {
+		t.Fatalf("expected only #1 purged after unlock, got %+v", purged)
+	}
+	if len(f.burials()) != 2 || !exists(r2[0].Burial.Grave) || !exists(r3[0].Burial.Grave) {
+		t.Fatalf("expected #2 and #3 preserved, got %+v", f.burials())
+	}
+}
+
+func TestGraveyardQuotaDryRunProjections(t *testing.T) {
+	t.Run("purge-dry-run-does-not-double-report-due-grave", func(t *testing.T) {
+		f := newFixture(t)
+		p1 := writeSizedFile(t, f, "exp1.bin", 3000)
+		r1, err := f.svc.Bury([]string{p1}, false, "")
+		if err != nil || core.GraveFailed(r1) {
+			t.Fatalf("bury p1: %+v %v", r1, err)
+		}
+		f.clock = f.clock.Add(2 * 24 * time.Hour)
+		p2 := writeSizedFile(t, f, "fresh2.bin", 3000)
+		r2, err := f.svc.Bury([]string{p2}, false, "")
+		if err != nil || core.GraveFailed(r2) {
+			t.Fatalf("bury p2: %+v %v", r2, err)
+		}
+		// Advance so p1 is past 7d retention, p2 is still fresh (5d old).
+		f.clock = f.clock.Add(6 * 24 * time.Hour)
+		f.svc.GraveyardMaxBytes = 4000
+		res, err := f.svc.Purge(false, true)
+		if err != nil {
+			t.Fatalf("Purge dry-run: %v", err)
+		}
+		if len(res) != 1 || res[0].Burial == nil || res[0].Burial.ID != r1[0].Burial.ID {
+			t.Fatalf("purge --dry-run must report due grave once with no spurious FIFO: %+v", res)
+		}
+	})
+
+	t.Run("sweep-dry-run-projects-fifo-for-incoming-burials", func(t *testing.T) {
+		f := newFixture(t)
+		p1 := writeSizedFile(t, f, "existing.bin", 3000)
+		r1, err := f.svc.Bury([]string{p1}, false, "")
+		if err != nil || core.GraveFailed(r1) {
+			t.Fatalf("bury p1: %+v %v", r1, err)
+		}
+		f.clock = f.clock.Add(time.Minute)
+		p2 := writeSizedFile(t, f, "due-now.bin", 3000)
+		f.add(p2, time.Hour)
+		f.clock = f.clock.Add(2 * time.Hour)
+		f.svc.GraveyardMaxBytes = 4000
+
+		outcomes, err := f.svc.Sweep(true)
+		if err != nil {
+			t.Fatalf("Sweep dry-run: %v", err)
+		}
+		if len(outcomes) != 1 || outcomes[0].Action != core.ActionBuried {
+			t.Fatalf("unexpected sweep dry-run outcomes: %+v", outcomes)
+		}
+		ev := outcomes[0].QuotaEviction
+		if ev == nil || ev.PurgedCount != 1 || len(ev.Items) != 1 || ev.Items[0].ID != r1[0].Burial.ID {
+			t.Fatalf("sweep --dry-run must project FIFO eviction of #%d, got %+v", r1[0].Burial.ID, ev)
+		}
+	})
+}
+
+func TestSweepQuotaAllFailedProducesBlockedOutcome(t *testing.T) {
+	f := newFixture(t)
+	p1 := writeSizedFile(t, f, "blk1.bin", 3000)
+	r1, err := f.svc.Bury([]string{p1}, false, "")
+	if err != nil || core.GraveFailed(r1) {
+		t.Fatalf("bury p1: %+v %v", r1, err)
+	}
+	f.svc.FS = unreadableGraveFS{FS: f.fs, dir: filepath.Dir(r1[0].Burial.Grave)}
+	f.svc.GraveyardMaxBytes = 1000
+	outcomes, err := f.svc.Sweep(false)
+	if err != nil {
+		t.Fatalf("Sweep: %v", err)
+	}
+	if len(outcomes) != 1 || outcomes[0].Action != core.ActionBlocked || outcomes[0].QuotaEviction == nil || outcomes[0].QuotaEviction.FailedCount != 1 {
+		t.Fatalf("expected ActionBlocked outcome when all quota evictions fail, got %+v", outcomes)
+	}
+}
+
+func TestPreviewGraveyardQuotaDoesNotCreateLockFiles(t *testing.T) {
+	home := filepath.Join(t.TempDir(), "nonexistent-home")
+	svc := &core.Service{Store: core.Store{Home: home}}
+	ev, err := svc.PreviewGraveyardQuotaEviction(5000)
+	if err != nil || ev.BeforeBytes != 0 || ev.PurgedCount != 0 {
+		t.Fatalf("preview on empty home: %+v %v", ev, err)
+	}
+	if _, err := os.Stat(home); !os.IsNotExist(err) {
+		t.Fatalf("PreviewGraveyardQuotaEviction must not create home dir or lock files: stat=%v", err)
+	}
+}
+
+func TestSummarizeExcludesDockerVolumeFromGraveQuotaBytes(t *testing.T) {
+	f := newFixture(t)
+	p1 := writeSizedFile(t, f, "local-500.bin", 500)
+	if rows, err := f.svc.Bury([]string{p1}, false, ""); err != nil || core.GraveFailed(rows) {
+		t.Fatalf("bury local: %+v %v", rows, err)
+	}
+	if err := f.svc.Store.UpdateGraveyard(func(st *core.State) error {
+		st.Burials = append(st.Burials, core.Burial{
+			ID: st.NextID, Kind: core.KindDockerVolume, Path: "docker-volume:vol1", Size: 2000,
+			Volume:   &docker.Volume{Name: "vol1", Driver: "local", Scope: "local", CreatedAt: f.clock, Target: docker.Target{Context: "test", Endpoint: "unix:///docker.sock", DaemonID: "daemon", OSType: "linux"}},
+			BuriedAt: f.clock, PurgeAt: f.clock.Add(24 * time.Hour), Reason: core.ReasonBury,
+		})
+		st.NextID++
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	f.svc.GraveyardMaxBytes = 1000
+	sum, err := f.svc.Summarize()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sum.GraveBytes != 2500 || sum.GraveQuotaBytes != 500 || sum.GraveMaxBytes != 1000 {
+		t.Fatalf("Summarize mismatch: %+v, want GraveBytes=2500 GraveQuotaBytes=500 GraveMaxBytes=1000", sum)
+	}
+}
+
+func TestGraveyardQuotaFlushesAuditPeriodically(t *testing.T) {
+	f := newFixture(t)
+	for i := range 36 {
+		p := writeSizedFile(t, f, fmt.Sprintf("batch-%02d.bin", i), 200)
+		if rows, err := f.svc.Bury([]string{p}, false, ""); err != nil || core.GraveFailed(rows) {
+			t.Fatalf("bury %d: %+v %v", i, rows, err)
+		}
+		f.clock = f.clock.Add(time.Second)
+	}
+	f.svc.GraveyardMaxBytes = 400
+	ev, err := f.svc.EnforceGraveyardQuota(false)
+	if err != nil {
+		t.Fatalf("EnforceGraveyardQuota across >32 items: %v", err)
+	}
+	if ev.PurgedCount != 34 || ev.AfterBytes != 400 {
+		t.Fatalf("unexpected eviction count: %+v", ev)
 	}
 }

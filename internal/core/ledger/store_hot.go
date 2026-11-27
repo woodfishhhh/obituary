@@ -77,9 +77,10 @@ func (s Store) ReadActive() (State, error) {
 
 // GraveyardSummary contains only the fields needed by stats and summary UI.
 type GraveyardSummary struct {
-	Count     int
-	Bytes     int64
-	NextPurge time.Time
+	Count      int
+	Bytes      int64
+	LocalBytes int64
+	NextPurge  time.Time
 }
 
 // ReadSummary avoids unpacking cold burial evidence and, like ReadCommittedHot,
@@ -175,6 +176,9 @@ func summaryFromState(st State) GraveyardSummary {
 	for _, b := range st.Burials {
 		summary.Count++
 		summary.Bytes += b.Size
+		if b.Kind == "" && b.Source != "quota-decision" {
+			summary.LocalBytes += b.Size
+		}
 		if summary.Count == 1 || b.PurgeAt.Before(summary.NextPurge) {
 			summary.NextPurge = b.PurgeAt
 		}
@@ -263,6 +267,9 @@ func (s Store) summarize(st State, snap graveyardSummarySnapshot) (GraveyardSumm
 	for _, b := range snap.Burials {
 		summary.Count++
 		summary.Bytes += b.Size
+		if b.Kind == "" && b.Source != "quota-decision" {
+			summary.LocalBytes += b.Size
+		}
 		if summary.Count == 1 || b.PurgeAt.Before(summary.NextPurge) {
 			summary.NextPurge = b.PurgeAt
 		}

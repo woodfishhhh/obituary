@@ -38,9 +38,19 @@ func applyMaxSize(cmd *cobra.Command, raw string, yes, dryRun bool) error {
 		printMaxSizePreview(normalized, preview)
 		return nil
 	}
-	if preview.PurgedCount > 0 && !yes {
+	overLimit := maxBytes > 0 && preview.BeforeBytes > maxBytes
+	if overLimit && !yes {
 		if err := confirmMaxSizeEviction(cmd, preview); err != nil {
 			return err
+		}
+	}
+	if overLimit && svc != nil {
+		currentHash, err := svc.GraveyardSnapshotHash()
+		if err != nil {
+			return err
+		}
+		if currentHash != preview.GraveyardHash {
+			return errors.New(cmdutil.Text("cli.config.max_size_graveyard_changed"))
 		}
 	}
 	if err := integrate.Apply([]integrate.Change{change}); err != nil {
@@ -70,7 +80,7 @@ func previewMaxSizeEviction(maxBytes int64) (*core.Service, core.QuotaEviction, 
 
 func printMaxSizePreview(normalized string, ev core.QuotaEviction) {
 	fmt.Printf("max_size = %q\n", normalized)
-	if ev.PurgedCount == 0 {
+	if ev.MaxBytes <= 0 || ev.BeforeBytes <= ev.MaxBytes {
 		return
 	}
 	printEvictionSummary(ev)
@@ -87,6 +97,11 @@ func printEvictionSummary(ev core.QuotaEviction) {
 	}))
 	for _, item := range ev.Items {
 		fmt.Fprintf(os.Stderr, "  #%d  %s  (%s)\n", item.ID, item.Path, textutil.Bytes(item.Size))
+	}
+	if ev.FailedCount > 0 {
+		fmt.Fprintln(os.Stderr, l.Text("cli.quota.eviction_partial_failed", map[string]any{
+			"Failed": ev.FailedCount,
+		}))
 	}
 }
 

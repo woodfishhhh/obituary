@@ -1,4 +1,4 @@
-import { Check, CheckCheck, EyeOff, FileCode2, Flame, HardDrive, Inbox, RotateCcw, Settings as SettingsIcon, ShieldCheck, ShieldOff, TimerReset, X } from "lucide-react";
+import { Archive, Check, CheckCheck, EyeOff, FileCode2, Flame, HardDrive, Inbox, RotateCcw, Settings as SettingsIcon, ShieldCheck, ShieldOff, TimerReset, X } from "lucide-react";
 import { useState } from "react";
 import { errorText, useApi } from "../api";
 import { approvalReceipt } from "../approval";
@@ -29,6 +29,7 @@ export default function Decisions() {
   const proposals = data?.[0].proposals ?? [];
   const handled = data?.[0].handled ?? [];
   const mode = data?.[0].mode;
+  const graveMaxBytes = data?.[0].graveMaxBytes;
   const rules = data?.[1].rules ?? [];
   const pending = rules.filter((r) => r.status !== "trusted");
   const trusted = rules.filter((r) => r.status === "trusted");
@@ -89,7 +90,7 @@ export default function Decisions() {
         </div>
       ) : null}
       {proposals.map((p) => p.kind === "graveyard-quota"
-        ? <QuotaDecisionCard key={`${p.id}-${p.fingerprint}`} p={p} onOutcome={setNote} />
+        ? <QuotaDecisionCard key={`${p.id}-${p.fingerprint}`} p={p} graveMaxBytes={graveMaxBytes} onOutcome={setNote} />
         : <ProposalCard key={`${p.id}-${p.fingerprint}`} p={p} onOutcome={setNote} />)}
       {pending.length ? <div className="section-title">{t("dec.rules")}</div> : null}
       {pending.map((r) => <RuleCard key={r.path} r={r} />)}
@@ -229,7 +230,7 @@ function candidateDetails(receipt: ReturnType<typeof approvalReceipt>): [string,
   return receipt.rows.map(r => [r.ref, r.pending ? t("dec.pendingItem", r.error ?? "") : r.error ? t("dec.failedItem", r.error) : t("dec.appliedItem")]);
 }
 
-function QuotaDecisionCard({ p, onOutcome }: { p: Proposal; onOutcome: (note: OutcomeNote | null) => void }) {
+function QuotaDecisionCard({ p, graveMaxBytes, onOutcome }: { p: Proposal; graveMaxBytes?: number; onOutcome: (note: OutcomeNote | null) => void }) {
   const api = useApi();
   const { bump } = useRefresh();
   const confirm = useConfirm();
@@ -238,8 +239,37 @@ function QuotaDecisionCard({ p, onOutcome }: { p: Proposal; onOutcome: (note: Ou
   const [span, setSpan] = useState("1d");
   const c = p.candidates[0];
   const itemBytes = p.quotaReview?.itemBytes ?? c?.size ?? 0;
-  const maxBytes = p.quotaReview?.maxBytes ?? 0;
+  const recordedMax = p.quotaReview?.maxBytes ?? 0;
+  const effectiveMax = graveMaxBytes !== undefined ? graveMaxBytes : recordedMax;
+  const fitsNow = graveMaxBytes !== undefined && (graveMaxBytes === 0 || itemBytes <= graveMaxBytes);
   const path = c?.path ?? "";
+
+  async function approveItem() {
+    try {
+      const reply = await api.Approve([`#${p.id}`], [p.fingerprint]);
+      const receipt = approvalReceipt(reply, t("dec.noReply"));
+      if (receipt.error) {
+        const changed = receipt.code === PROPOSAL_CHANGED;
+        onOutcome(changed
+          ? { title: t("dec.changed", p.id, true), text: t("dec.changedText") }
+          : { title: t("dec.failed", p.id, true), text: receipt.error });
+        toast(changed ? t("dec.changedToast", p.id) : receipt.error, "error");
+      } else {
+        onOutcome(null);
+        const ev = receipt.quotaEviction;
+        if (ev && ev.purgedCount > 0) {
+          toast(t("quota.dec.buriedEvicted", ev.purgedCount, bytes(ev.freedBytes), bytes(ev.afterBytes)));
+        } else if (ev && (ev.failedCount ?? 0) > 0) {
+          toast(t("quota.dec.buriedFailed", ev.failedCount!), "error");
+        } else {
+          toast(t("dec.buried"));
+        }
+      }
+    } catch (error) {
+      toast(errorText(error), "error");
+    }
+    bump();
+  }
 
   async function extendItem() {
     if (!api.ExtendQuotaProposal) return;
@@ -312,11 +342,17 @@ function QuotaDecisionCard({ p, onOutcome }: { p: Proposal; onOutcome: (note: Ou
       <div className="panel-head">
         <HardDrive size={16} aria-hidden />
         <span className="panel-title">{kindText(p.kind)}</span>
-        {maxBytes > 0 ? <span className="tag warn">{bytes(itemBytes)} / {bytes(maxBytes)}</span> : null}
+        {fitsNow
+          ? <span className="tag ok">{effectiveMax > 0 ? `${bytes(itemBytes)} / ${bytes(effectiveMax)}` : t("quota.unlimited")}</span>
+          : effectiveMax > 0 ? <span className="tag warn">{bytes(itemBytes)} / {bytes(effectiveMax)}</span> : null}
         <span className="grow" />
         <span className="hint">#{p.id}，{when(p.createdAt)}</span>
       </div>
-      <p className="quota-dec-reason">{maxBytes > 0 ? t("quota.dec.reason", bytes(itemBytes), bytes(maxBytes)) : c?.rule}</p>
+      <p className="quota-dec-reason">
+        {fitsNow
+          ? t("quota.dec.fitsReason", bytes(itemBytes), effectiveMax > 0 ? bytes(effectiveMax) : t("quota.unlimited"))
+          : effectiveMax > 0 ? t("quota.dec.reason", bytes(itemBytes), bytes(effectiveMax)) : c?.rule}
+      </p>
       {c ? (
         <div className="quota-dec-item">
           <NameCell path={path} isDir={p.quotaReview?.isDir} />
@@ -324,6 +360,7 @@ function QuotaDecisionCard({ p, onOutcome }: { p: Proposal; onOutcome: (note: Ou
         </div>
       ) : null}
       <div className="quota-dec-foot">
+        {fitsNow ? <Button kind="primary" icon={Archive} onClick={approveItem}>{t("quota.dec.buryNow")}</Button> : null}
         {api.ExtendQuotaProposal ? (
           <>
             <select className="select" aria-label={t("howLong")} value={span} onChange={(e) => setSpan(e.target.value)}>
@@ -333,7 +370,7 @@ function QuotaDecisionCard({ p, onOutcome }: { p: Proposal; onOutcome: (note: Ou
           </>
         ) : null}
         <Button icon={EyeOff} onClick={spareItem}>{t("stopTracking")}</Button>
-        {navigate ? <Button icon={SettingsIcon} onClick={() => navigate("settings")}>{t("quota.dec.raiseLimit")}</Button> : null}
+        {!fitsNow && navigate ? <Button icon={SettingsIcon} onClick={() => navigate("settings")}>{t("quota.dec.raiseLimit")}</Button> : null}
         <span className="grow" />
         {api.PurgeQuotaProposal ? <Button kind="danger" icon={Flame} onClick={purgeItem}>{t("quota.dec.purge")}</Button> : null}
       </div>
@@ -397,8 +434,15 @@ function ProposalCard({ p, onOutcome }: { p: Proposal; onOutcome: (note: Outcome
       return;
     }
     const done = receipt?.rows.length || p.candidates.length;
+    const ev = receipt?.quotaEviction;
     onOutcome(null);
-    toast(approve ? burial ? t("dec.buried") : t("dec.approved", done) : t("dec.rejected", p.id));
+    if (approve && ev && ev.purgedCount > 0) {
+      toast(t("quota.dec.buriedEvicted", ev.purgedCount, bytes(ev.freedBytes), bytes(ev.afterBytes)));
+    } else if (approve && ev && (ev.failedCount ?? 0) > 0) {
+      toast(t("quota.dec.buriedFailed", ev.failedCount!), "error");
+    } else {
+      toast(approve ? burial ? t("dec.buried") : t("dec.approved", done) : t("dec.rejected", p.id));
+    }
   }
   return (
     <section className="card panel">

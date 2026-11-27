@@ -71,4 +71,24 @@ func TestConfigMaxSizePreviewConfirmAndApply(t *testing.T) {
 	if _, _, err := clitest.Execute(t, NewCmd(), "--max-size", "-5GB"); err == nil {
 		t.Fatal("expected negative --max-size to fail")
 	}
+
+	// --language and --max-size are mutually exclusive (prevents partial writes on --dry-run).
+	if _, _, err := clitest.Execute(t, NewCmd(), "--language", "en", "--max-size", "4000", "--dry-run"); err == nil {
+		t.Fatal("expected --language + --max-size to be rejected")
+	}
+}
+
+func TestConfigMaxSizeDryRunDoesNotCreateLockFiles(t *testing.T) {
+	clitest.IsolateRunner(t)
+	emptyHome := filepath.Join(t.TempDir(), "fresh-home")
+	cfgDir := t.TempDir()
+	t.Setenv("OBIT_HOME", emptyHome)
+	t.Setenv("OBIT_CONFIG_DIR", cfgDir)
+	out, _, err := clitest.Execute(t, NewCmd(), "--max-size", "4000", "--dry-run")
+	if err != nil || !strings.Contains(out, `max_size = "4000"`) {
+		t.Fatalf("dry-run on empty home: out=%q err=%v", out, err)
+	}
+	if _, err := os.Stat(emptyHome); !os.IsNotExist(err) {
+		t.Fatalf("dry-run must not create data dir or .lock files: stat=%v", err)
+	}
 }

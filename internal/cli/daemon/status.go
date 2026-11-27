@@ -89,7 +89,7 @@ func readStatus(home string) (DaemonStatus, error) {
 	default:
 		st.Mode = "off"
 	}
-	if next, ok := state.NextDue(); ok {
+	if next, ok := state.NextDueFor(st.GraveMaxBytes); ok {
 		st.NextDue = &next
 	}
 	return st, nil

@@ -84,7 +84,7 @@ func tickInBackground(svc *core.Service) {
 		hook.Logf(svc.Store.Home, "background tick: %v", err)
 		return
 	}
-	next, ok := state.NextDue()
+	next, ok := state.NextDueFor(svc.GraveyardMaxBytes)
 	due := ok && !next.After(time.Now())
 	if due || svc.Store.HasDeferredObservations() {
 		if err := RunOnce(svc.Store.Home); err != nil {

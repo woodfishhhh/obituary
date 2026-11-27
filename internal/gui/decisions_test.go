@@ -656,3 +656,53 @@ func TestGUIQuotaDecisionsPurgeAndExtend(t *testing.T) {
 		t.Fatalf("extended quota proposal should be cleared: %+v %v", rows, err)
 	}
 }
+
+func TestGUIRefreshesMaxSizeAndApprovesOversizedAfterLimitRaise(t *testing.T) {
+	a, root := fixture(t)
+	cfgPath := filepath.Join(a.deps.ConfigDir, "config.toml")
+	write(t, cfgPath, "[graveyard]\nmax_size = \"5000\"\n")
+	a.deps.Service.GraveyardMaxBytes = 5000
+
+	huge := filepath.Join(root, "work", "huge-raise.bin")
+	write(t, huge, strings.Repeat("x", 8000))
+	if _, err := a.deps.Service.Bury([]string{huge}, false, ""); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := a.Proposals()
+	if err != nil || len(rows.Proposals) != 1 || rows.GraveMaxBytes != 5000 {
+		t.Fatalf("initial proposals: %+v %v", rows, err)
+	}
+
+	// Edit config.toml externally to raise max_size -> GUI Proposals & Approve pick it up immediately.
+	write(t, cfgPath, "[graveyard]\nmax_size = \"20000\"\n")
+	rows, err = a.Proposals()
+	if err != nil || rows.GraveMaxBytes != 20000 {
+		t.Fatalf("Proposals must expose updated GraveMaxBytes=20000, got %+v %v", rows, err)
+	}
+	p := rows.Proposals[0]
+	appReply, err := a.Approve([]string{ref(p.ID)}, []string{p.Fingerprint})
+	if err != nil || appReply.Error != "" || len(appReply.Results) != 1 || appReply.Results[0].Error != "" {
+		t.Fatalf("Approve after external config raise: %+v %v", appReply, err)
+	}
+	if _, err := os.Stat(huge); !os.IsNotExist(err) {
+		t.Fatalf("approved quota item should be buried, stat=%v", err)
+	}
+
+	// Also verify API.Bury picks up updated max_size from config.toml (Item #143 + #5).
+	write(t, cfgPath, "[graveyard]\nmax_size = \"4000\"\n")
+	f1 := filepath.Join(root, "work", "bury1.bin")
+	f2 := filepath.Join(root, "work", "bury2.bin")
+	write(t, f1, strings.Repeat("a", 3000))
+	write(t, f2, strings.Repeat("b", 3000))
+	addRes, err := a.deps.Service.Add([]string{f1, f2}, core.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
+	if err != nil || len(addRes) != 2 || core.Failed(addRes) {
+		t.Fatalf("add f1/f2: %+v %v", addRes, err)
+	}
+	if _, err := a.Bury([]string{"#" + ref(addRes[0].Item.ID)}); err != nil {
+		t.Fatal(err)
+	}
+	reply, err := a.Bury([]string{"#" + ref(addRes[1].Item.ID)})
+	if err != nil || len(reply.Results) != 1 || reply.Results[0].QuotaEviction == nil || reply.Results[0].QuotaEviction.PurgedCount < 1 {
+		t.Fatalf("API.Bury must enforce refreshed config.toml max_size: %+v %v", reply, err)
+	}
+}

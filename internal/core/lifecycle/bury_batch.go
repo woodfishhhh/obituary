@@ -102,8 +102,14 @@ func (s *Service) inspectBuryRequest(ref string, force bool, recovery recovery) 
 
 func (s *Service) inspectImmediate(ref string, force bool) (*candidate, error) {
 	c, err := s.inspect(ref, force)
-	if err != nil || c.identity.RequirePersistent() == nil {
+	if err != nil {
 		return c, err
+	}
+	if s.expectedIdentity != nil && c.identity != *s.expectedIdentity {
+		return nil, ErrProposalChanged
+	}
+	if c.identity.RequirePersistent() == nil {
+		return c, nil
 	}
 	backend, ok := s.FS.(interface{ BeginImmediate() (FS, func()) })
 	if !ok {
@@ -118,6 +124,10 @@ func (s *Service) inspectImmediate(ref string, force bool) (*candidate, error) {
 	if err != nil {
 		release()
 		return nil, err
+	}
+	if s.expectedIdentity != nil && c.identity != *s.expectedIdentity {
+		release()
+		return nil, ErrProposalChanged
 	}
 	c.immediateFS, c.release = scoped, release
 	return c, nil

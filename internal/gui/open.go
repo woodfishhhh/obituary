@@ -26,7 +26,12 @@ func Open() (*API, error) {
 		return nil, err
 	}
 	guiExe, daemonExe := companionExecutables(filepath.Dir(exe))
-	return New(Dependencies{Service: svc, Engine: app.Engine(svc), ConfigDir: dir,
+	api, err := New(Dependencies{Service: svc, Engine: app.Engine(svc), ConfigDir: dir,
 		Executable: guiExe, Daemon: daemonExe,
 		ContextMenu: contextmenu.UserRegistry(), RunKey: runkey.Current})
+	if err != nil {
+		return nil, err
+	}
+	api.configLoaded = true
+	return api, nil
 }

@@ -204,6 +204,7 @@ func (e *Engine) approveWatchProposal(p core.Proposal, r *core.ProposalResult) b
 			}
 		} else {
 			r.Results = []core.Result{{Ref: outcome.Path, Item: &outcome.Item}}
+			r.QuotaEviction = outcome.QuotaEviction
 		}
 		return true
 	}
@@ -229,7 +230,7 @@ func (e *Engine) approveWatchProposal(p core.Proposal, r *core.ProposalResult) b
 
 func (e *Engine) approveQuotaProposal(p core.Proposal, r *core.ProposalResult) {
 	outcome, err := e.Svc.ApproveQuotaProposal(p)
-	if err == nil && outcome.Action != core.ActionBuried {
+	if err == nil && outcome.Action != core.ActionBuried && outcome.Action != core.ActionRecycled {
 		err = errors.New(outcome.Detail)
 	}
 	if err != nil {
@@ -240,6 +241,7 @@ func (e *Engine) approveQuotaProposal(p core.Proposal, r *core.ProposalResult) {
 		return
 	}
 	r.Results = []core.Result{{Ref: outcome.Path, Item: &outcome.Item}}
+	r.QuotaEviction = outcome.QuotaEviction
 }
 
 func (e *Engine) approveCandidates(p core.Proposal, located locations, class string) ([]core.Result, []core.Candidate, error) {

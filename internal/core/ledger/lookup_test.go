@@ -47,3 +47,32 @@ func TestFindPathPrefersExactAndRejectsAmbiguousASCII(t *testing.T) {
 		t.Fatalf("ambiguous ASCII path accepted: %v", err)
 	}
 }
+
+func TestNextDueForSkipsPendingQuotaDecision(t *testing.T) {
+	now := time.Now().UTC()
+	idA := core.Identity{Serial: 1, FileID: "1"}
+	idB := core.Identity{Serial: 1, FileID: "2"}
+	dueA := now.Add(-time.Hour)
+	dueB := now.Add(time.Minute)
+	st := core.State{
+		Items: []core.Item{
+			{ID: 1, Rev: 1, Identity: &idA, Path: "a.bin", ExpiresAt: dueA},
+			{ID: 2, Rev: 1, Identity: &idB, Path: "b.bin", ExpiresAt: dueB},
+		},
+		Proposals: []core.Proposal{{
+			ID: 3, Kind: core.ProposalGraveyardQuota,
+			QuotaReview: &core.QuotaBurialReview{ItemID: 1, ItemRev: 1, Identity: idA, ItemBytes: 8000, MaxBytes: 5000},
+		}},
+	}
+	if got, ok := st.NextDueFor(5000); !ok || !got.Equal(dueB) {
+		t.Fatalf("NextDueFor(5000) = (%v, %v), want %v (must skip pending quota item)", got, ok, dueB)
+	}
+	// Raising limit unblocks A so it becomes due again immediately.
+	if got, ok := st.NextDueFor(10000); !ok || !got.Equal(dueA) {
+		t.Fatalf("NextDueFor(10000) = (%v, %v), want %v", got, ok, dueA)
+	}
+	// Unlimited (0) keeps NextDue() backward-compatible and unblocks A.
+	if got, ok := st.NextDue(); !ok || !got.Equal(dueA) {
+		t.Fatalf("NextDue() = (%v, %v), want %v", got, ok, dueA)
+	}
+}

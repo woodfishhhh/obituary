@@ -56,9 +56,13 @@ func (s *Service) prepareBurial(out Outcome, reason string) *preparedBurial {
 		p.out = ledgerOutcome(out, err)
 		return p
 	}
+	purgeAt := now.Add(s.retention())
+	if out.Item.Source == "quota-decision" {
+		purgeAt = now
+	}
 	b := Burial{ID: out.Item.ID, Path: out.Path, Grave: grave, GraveID: graveID,
 		Parents: parents, LongNames: longNames,
-		Identity: out.Item.Identity, IsDir: out.Item.IsDir, BuriedAt: now, PurgeAt: now.Add(s.retention()),
+		Identity: out.Item.Identity, IsDir: out.Item.IsDir, BuriedAt: now, PurgeAt: purgeAt,
 		Reason: reason, Note: out.Item.Note, Source: out.Item.Source, Project: out.Item.Project, Session: out.Item.Session, WatchID: out.Item.WatchID}
 	if reason == ReasonBury {
 		b.Operation = s.burialOperation

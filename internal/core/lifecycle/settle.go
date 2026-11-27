@@ -95,6 +95,8 @@ func (s *Service) prepareSettlement(item Item, dryRun bool, reason string, roots
 	}
 	if quotaOut, deferred := s.checkBurialQuota(out, dryRun, reason); deferred {
 		return quotaOut
+	} else {
+		out = quotaOut
 	}
 	lifespans, err := s.preflightChildLifespans(state, item, target, reason)
 	if err != nil {

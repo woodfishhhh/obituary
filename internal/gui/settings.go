@@ -66,6 +66,45 @@ func (a *API) readConfig() (config.Config, error) {
 	return config.Parse(data, path)
 }
 
+// service returns a request-local shallow copy of the service refreshed from
+// config.toml so external CLI/editor changes take effect without restarting
+// the GUI. Tests that configure a.deps.Service in memory without writing
+// config.toml keep their in-memory settings until config.toml is loaded.
+func (a *API) service() (*core.Service, error) {
+	path := filepath.Join(a.deps.ConfigDir, "config.toml")
+	data, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		if !a.configLoaded {
+			cp := *a.deps.Service
+			return &cp, nil
+		}
+		return applyServiceConfig(a.deps.Service, config.Default()), nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	cfg, err := config.Parse(data, path)
+	if err != nil {
+		return nil, err
+	}
+	a.configLoaded = true
+	return applyServiceConfig(a.deps.Service, cfg), nil
+}
+
+func applyServiceConfig(base *core.Service, cfg config.Config) *core.Service {
+	cp := *base
+	// Preserve live Mode so Summary, Upcoming, and Bury stay aligned with the
+	// GUI session's delete mode until changed via PlanSettings.
+	cp.Retention = cfg.Graveyard.Retention()
+	cp.GraveyardMaxBytes = cfg.Graveyard.MaxBytes()
+	cp.WatchStableWindow = cfg.Watch.Stability()
+	cp.WatchFileProposals = cfg.Watch.FileExpiry == "propose"
+	cp.SessionSummary = cfg.Hooks.SessionSummary
+	cp.SessionCleanup = cfg.Hooks.SessionCleanup
+	cp.ProposalMode = cfg.Proposals.Mode
+	return &cp
+}
+
 func (a *API) Settings() (Settings, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -116,15 +155,16 @@ type ChangePreview struct {
 	After  string `json:"after"`
 }
 type Plan struct {
-	ID      string          `json:"id"`
-	Action  string          `json:"action"`
-	Changes []ChangePreview `json:"changes"`
+	ID           string              `json:"id"`
+	Action       string              `json:"action"`
+	Changes      []ChangePreview     `json:"changes"`
+	QuotaPreview *core.QuotaEviction `json:"quotaPreview,omitempty"`
 }
 type pendingPlan struct {
 	view       Plan
 	apply      func() error
 	applyMenu  func() (contextmenu.ApplyReceipt, error)
-	applyQuota func() (core.QuotaEviction, error)
+	applyQuota func() (bool, core.QuotaEviction, error)
 }
 
 type PlanReceipt struct {
@@ -245,13 +285,17 @@ func (a *API) ApplyPlan(id string) (PlanReceipt, error) {
 			Applied: list(out.Applied), Remaining: list(out.Remaining), Error: errorText(err)}, nil
 	}
 	if plan.applyQuota != nil {
-		ev, err := plan.applyQuota()
+		configSaved, ev, err := plan.applyQuota()
 		var summary *core.QuotaEviction
 		if ev.PurgedCount > 0 || ev.FailedCount > 0 {
 			ev.Results = nil
 			summary = &ev
 		}
-		return PlanReceipt{Receipt: Receipt{Action: plan.view.Action, Changed: err == nil && len(plan.view.Changes) > 0},
+		if configSaved {
+			return PlanReceipt{Receipt: Receipt{Action: plan.view.Action, Changed: true},
+				Applied: []string{}, Remaining: []string{}, QuotaEviction: summary, Error: errorText(err)}, nil
+		}
+		return PlanReceipt{Receipt: Receipt{Action: plan.view.Action, Changed: false},
 			Applied: []string{}, Remaining: []string{}, QuotaEviction: summary}, err
 	}
 	err := plan.apply()
@@ -297,26 +341,54 @@ func (a *API) PlanGraveyardMaxSize(maxSize string) (Plan, error) {
 	if err != nil {
 		return Plan{}, err
 	}
+	var quotaPreview *core.QuotaEviction
+	var previewHash string
+	var needDriftCheck bool
+	if maxBytes > 0 {
+		ev, err := a.deps.Service.PreviewGraveyardQuotaEviction(maxBytes)
+		if err != nil {
+			return Plan{}, err
+		}
+		previewHash = ev.GraveyardHash
+		needDriftCheck = ev.BeforeBytes > maxBytes
+		ev.Results = nil
+		quotaPreview = &ev
+	}
 	preview := []ChangePreview{{Target: path, Before: "max_size=" + old.Graveyard.MaxSize, After: "max_size=" + norm}}
 	a.nextPlan++
-	view := Plan{ID: strconv.FormatUint(a.nextPlan, 10), Action: "graveyardMaxSize", Changes: preview}
-	a.plan = &pendingPlan{view: view, applyQuota: func() (core.QuotaEviction, error) {
-		if err := integrate.Apply([]integrate.Change{change}); err != nil {
-			return core.QuotaEviction{}, err
-		}
-		cfg, err := a.readConfig()
-		if err != nil {
-			return core.QuotaEviction{}, err
-		}
-		a.deps.Service.GraveyardMaxBytes = cfg.Graveyard.MaxBytes()
-		if maxBytes <= 0 {
-			return core.QuotaEviction{}, nil
-		}
-		ev, evErr := a.deps.Service.EnforceGraveyardQuota(false)
-		if core.OnlyAuditErrors(evErr) {
-			evErr = nil
-		}
-		return ev, evErr
+	view := Plan{ID: strconv.FormatUint(a.nextPlan, 10), Action: "graveyardMaxSize", Changes: preview, QuotaPreview: quotaPreview}
+	a.plan = &pendingPlan{view: view, applyQuota: func() (bool, core.QuotaEviction, error) {
+		return a.applyGraveyardMaxSizePlan(change, maxBytes, needDriftCheck, previewHash)
 	}}
 	return view, nil
+}
+
+func (a *API) applyGraveyardMaxSizePlan(change integrate.Change, maxBytes int64, needDriftCheck bool, previewHash string) (bool, core.QuotaEviction, error) {
+	if needDriftCheck {
+		currentHash, err := a.deps.Service.GraveyardSnapshotHash()
+		if err != nil {
+			return false, core.QuotaEviction{}, err
+		}
+		if currentHash != previewHash {
+			return false, core.QuotaEviction{}, errors.New("graveyard changed since preview; preview again")
+		}
+	}
+	if err := integrate.Apply([]integrate.Change{change}); err != nil {
+		return false, core.QuotaEviction{}, err
+	}
+	cfg, err := a.readConfig()
+	if err != nil {
+		return true, core.QuotaEviction{}, err
+	}
+	a.configLoaded = true
+	a.deps.Service.GraveyardMaxBytes = cfg.Graveyard.MaxBytes()
+	if maxBytes <= 0 {
+		return true, core.QuotaEviction{}, nil
+	}
+	svc := applyServiceConfig(a.deps.Service, cfg)
+	ev, evErr := svc.EnforceGraveyardQuota(false)
+	if core.OnlyAuditErrors(evErr) {
+		evErr = nil
+	}
+	return true, ev, evErr
 }

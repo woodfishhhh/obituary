@@ -46,10 +46,10 @@ func Engine(svc *core.Service) *auto.Engine {
 	return &auto.Engine{Svc: svc, Trust: rules.TrustStore{Path: filepath.Join(svc.Store.Home, "trusted_rules.json")}}
 }
 
-// configured takes one fresh configuration snapshot, as the resident can
-// outlive a GUI configuration edit, without mutating the service shared with
-// the folder watcher. A malformed configuration stops the work.
-func configured(svc *core.Service) (*core.Service, config.Config, error) {
+// Configured takes one fresh configuration snapshot, as long-lived processes
+// (resident, MCP, GUI) can outlive a configuration edit, without mutating the
+// shared service. A malformed configuration stops the work.
+func Configured(svc *core.Service) (*core.Service, config.Config, error) {
 	cfg, err := config.Load()
 	if err != nil {
 		return nil, cfg, err
@@ -59,14 +59,23 @@ func configured(svc *core.Service) (*core.Service, config.Config, error) {
 	svc.GraveyardMaxBytes = cfg.Graveyard.MaxBytes()
 	svc.WatchStableWindow = cfg.Watch.Stability()
 	svc.WatchFileProposals = cfg.Watch.FileExpiry == "propose"
+	svc.SessionSummary = cfg.Hooks.SessionSummary
+	svc.SessionCleanup = cfg.Hooks.SessionCleanup
 	svc.ProposalMode = cfg.Proposals.Mode
 	return svc, cfg, nil
+}
+
+func currentGraveyardMaxBytes(svc *core.Service) int64 {
+	if cfg, err := config.Load(); err == nil {
+		return cfg.Graveyard.MaxBytes()
+	}
+	return svc.GraveyardMaxBytes
 }
 
 // ReplayObservations absorbs the writes hooks queued while the ledger was
 // busy, without the rest of a tick.
 func ReplayObservations(svc *core.Service) error {
-	svc, _, err := configured(svc)
+	svc, _, err := Configured(svc)
 	if err != nil {
 		return err
 	}
@@ -81,7 +90,7 @@ func Tick(svc *core.Service) ([]core.Outcome, []core.GraveResult, error) {
 	}
 	// Before the configuration is read: it may switch automatic registration off.
 	migrateErr := migrateAutoOff(svc)
-	svc, cfg, err := configured(svc)
+	svc, cfg, err := Configured(svc)
 	if err != nil {
 		return nil, nil, err
 	}

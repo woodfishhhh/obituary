@@ -34,9 +34,10 @@ type API struct {
 	deps Dependencies
 	// Wails calls methods concurrently. Serialize access to the service's
 	// mutable configuration and to the one confirmation currently displayed.
-	mu       sync.Mutex
-	nextPlan uint64
-	plan     *pendingPlan
+	mu           sync.Mutex
+	nextPlan     uint64
+	plan         *pendingPlan
+	configLoaded bool
 	// pickFolder opens the window's folder dialog (SetFolderPicker).
 	pickFolder func() (string, error)
 	setTaskbar func(bool) error

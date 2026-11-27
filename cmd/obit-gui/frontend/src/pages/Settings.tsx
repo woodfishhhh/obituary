@@ -256,12 +256,16 @@ function GraveyardQuotaCard({ s }: { s: SettingsData }) {
       setBusy(true);
       try {
         const plan = await api.PlanGraveyardMaxSize!("");
-        await api.ApplyPlan(plan.id);
-        toast(t("quota.savedUnlimited"));
-        bump();
+        const receipt = await api.ApplyPlan(plan.id);
+        if (receipt.error) {
+          toast(t("quota.savedError", t("quota.unlimited"), receipt.error), "error");
+        } else {
+          toast(t("quota.savedUnlimited"));
+        }
       } catch (error) {
         toast(errorText(error), "error");
       } finally {
+        bump();
         setBusy(false);
       }
       return;
@@ -276,13 +280,24 @@ function GraveyardQuotaCard({ s }: { s: SettingsData }) {
     }
     setBusy(true);
     try {
-      const preview = api.PreviewGraveyardQuotaEviction ? await api.PreviewGraveyardQuotaEviction(candidate) : null;
-      if (preview && preview.purgedCount > 0) {
+      const plan = await api.PlanGraveyardMaxSize!(candidate);
+      if (!plan.changes.length) {
+        toast(t("set.already"));
+        return;
+      }
+      const preview = plan.quotaPreview ?? (api.PreviewGraveyardQuotaEviction ? await api.PreviewGraveyardQuotaEviction(candidate) : null);
+      if (preview && preview.maxBytes > 0 && preview.beforeBytes > preview.maxBytes) {
+        const failed = preview.failedCount ?? 0;
         const ok = await confirm({
           title: t("quota.lowerTitle"),
           body: (
             <>
-              <p>{t("quota.lowerBody", bytes(preview.beforeBytes), bytes(preview.maxBytes), preview.purgedCount, bytes(preview.freedBytes), bytes(preview.afterBytes))}</p>
+              <p>
+                {preview.purgedCount > 0
+                  ? t("quota.lowerBody", bytes(preview.beforeBytes), bytes(preview.maxBytes), preview.purgedCount, bytes(preview.freedBytes), bytes(preview.afterBytes))
+                  : t("quota.lowerBlockedBody", bytes(preview.beforeBytes), bytes(preview.maxBytes), failed)}
+              </p>
+              {preview.purgedCount > 0 && failed > 0 ? <p>{t("quota.evictFailed", failed)}</p> : null}
               {preview.items?.length ? (
                 <ul>{preview.items.map((item) => <li key={item.id}>{item.path} ({bytes(item.size)})</li>)}</ul>
               ) : null}
@@ -293,22 +308,28 @@ function GraveyardQuotaCard({ s }: { s: SettingsData }) {
         });
         if (!ok) return;
       }
-      const plan = await api.PlanGraveyardMaxSize!(candidate);
-      if (!plan.changes.length) {
-        toast(t("set.already"));
-        return;
-      }
       const receipt = await api.ApplyPlan(plan.id);
-      if (receipt.quotaEviction && receipt.quotaEviction.purgedCount > 0) {
-        const ev = receipt.quotaEviction;
+      const ev = receipt.quotaEviction;
+      const failed = ev?.failedCount ?? 0;
+      if (receipt.error) {
+        if (ev && ev.purgedCount > 0) {
+          toast(t("quota.savedEvictedError", bytes(ev.maxBytes), ev.purgedCount, bytes(ev.freedBytes), receipt.error), "error");
+        } else {
+          toast(t("quota.savedError", `${parsed} ${unit}`, receipt.error), "error");
+        }
+      } else if (ev && ev.purgedCount > 0 && failed > 0) {
+        toast(t("quota.savedEvictedPartial", bytes(ev.maxBytes), ev.purgedCount, bytes(ev.freedBytes), bytes(ev.afterBytes), failed), "error");
+      } else if (ev && ev.purgedCount > 0) {
         toast(t("quota.savedEvicted", bytes(ev.maxBytes), ev.purgedCount, bytes(ev.freedBytes), bytes(ev.afterBytes)));
+      } else if (failed > 0) {
+        toast(t("quota.savedBlocked", `${parsed} ${unit}`, failed), "error");
       } else {
         toast(t("quota.saved", `${parsed} ${unit}`));
       }
-      bump();
     } catch (error) {
       toast(errorText(error), "error");
     } finally {
+      bump();
       setBusy(false);
     }
   }

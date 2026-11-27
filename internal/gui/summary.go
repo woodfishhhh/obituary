@@ -10,6 +10,7 @@ type Summary struct {
 	TrackedCount      int    `json:"trackedCount"`
 	GraveCount        int    `json:"graveCount"`
 	GraveBytes        int64  `json:"graveBytes"`
+	GraveQuotaBytes   int64  `json:"graveQuotaBytes,omitempty"`
 	GraveMaxBytes     int64  `json:"graveMaxBytes,omitempty"`
 	QuotaPendingCount int    `json:"quotaPendingCount,omitempty"`
 	PendingGraveCount int    `json:"pendingGraveCount"`
@@ -77,6 +78,9 @@ func (a *API) Summary() (Summary, error) {
 		seen[row.ID] = true
 		out.GraveCount++
 		out.GraveBytes += row.Burial.Size
+		if row.Burial.Kind == "" && row.Burial.Source != "quota-decision" {
+			out.GraveQuotaBytes += row.Burial.Size
+		}
 	}
 	return out, nil
 }

@@ -43,7 +43,11 @@ func NewCmd() *cobra.Command {
 				fmt.Printf(cmdutil.Text("cli.stats.next_due"), cmdutil.When(*sum.NextDue))
 			}
 			if sum.GraveMaxBytes > 0 {
-				fmt.Printf(cmdutil.Text("cli.stats.graveyard_quota"), sum.Graves, textutil.Bytes(sum.GraveBytes), textutil.Bytes(sum.GraveMaxBytes))
+				if sum.GraveBytes != sum.GraveQuotaBytes {
+					fmt.Printf(cmdutil.Text("cli.stats.graveyard_quota_total"), sum.Graves, textutil.Bytes(sum.GraveQuotaBytes), textutil.Bytes(sum.GraveMaxBytes), textutil.Bytes(sum.GraveBytes))
+				} else {
+					fmt.Printf(cmdutil.Text("cli.stats.graveyard_quota"), sum.Graves, textutil.Bytes(sum.GraveQuotaBytes), textutil.Bytes(sum.GraveMaxBytes))
+				}
 			} else {
 				fmt.Printf(cmdutil.Text("cli.stats.graveyard"), sum.Graves, textutil.Bytes(sum.GraveBytes))
 			}

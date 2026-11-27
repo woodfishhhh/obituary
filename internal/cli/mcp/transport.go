@@ -16,6 +16,11 @@ func addMCPTool[I any](server *mcp.Server, svc *core.Service, name, description 
 		Name: name, Description: description,
 		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: readOnly},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in I) (*mcp.CallToolResult, any, error) {
+		svc, _, err := app.Configured(svc)
+		if err != nil {
+			out := boundMCPReply(mcpResult(nil, err))
+			return &mcp.CallToolResult{IsError: true}, out, nil
+		}
 		out := boundMCPReply(run(svc.WithContext(ctx), in))
 		if out.Error == "" {
 			app.ObserveUsage()

@@ -27,6 +27,8 @@ type ProposalList struct {
 	Handled []core.AutoHandled `json:"handled"`
 	// Mode is [proposals] mode: tiered, auto or ask.
 	Mode string `json:"mode"`
+	// GraveMaxBytes is the currently effective [graveyard] max_size (0 means unlimited).
+	GraveMaxBytes int64 `json:"graveMaxBytes"`
 }
 type ProposalReply struct {
 	ErrorCode string                `json:"errorCode,omitempty"`
@@ -45,10 +47,12 @@ func (a *API) Proposals() (ProposalList, error) {
 		rows.Proposals = append(rows.Proposals, ReviewedProposal{Proposal: p.Proposal, Fingerprint: core.ProposalFingerprint(p.Proposal), Blocked: p.Blocked})
 	}
 	rows.Handled = state.AutoHandled()
-	cfg, cfgErr := a.readConfig()
-	rows.Mode = cfg.Proposals.Mode
-	if cfgErr != nil {
+	if svc, svcErr := a.service(); svcErr == nil {
+		rows.Mode = svc.Proposals()
+		rows.GraveMaxBytes = svc.GraveyardMaxBytes
+	} else {
 		rows.Mode = a.deps.Service.Proposals()
+		rows.GraveMaxBytes = a.deps.Service.GraveyardMaxBytes
 	}
 	return rows, err
 }
@@ -89,8 +93,12 @@ func (a *API) Approve(refs, fingerprints []string) (ProposalReply, error) {
 	if err := requireRefs(refs); err != nil {
 		return ProposalReply{Results: []core.ProposalResult{}}, err
 	}
+	svc, err := a.service()
+	if err != nil {
+		return ProposalReply{Results: []core.ProposalResult{}, Error: errorText(err)}, nil
+	}
 	// Request-local rules also observe edits made outside this GUI.
-	engine := &auto.Engine{Svc: a.deps.Service, Trust: a.deps.Engine.Trust}
+	engine := &auto.Engine{Svc: svc, Trust: a.deps.Engine.Trust}
 	results, err := engine.ApproveReviewed(refs, fingerprints)
 	// Watch approvals are handled by Engine.Approve, as in the CLI. Its
 	// registrations are reconciled by the resident's directory notifications.
@@ -112,7 +120,11 @@ func (a *API) Reject(refs, fingerprints []string) (ProposalReply, error) {
 func (a *API) PurgeQuotaProposal(ref, fingerprint string) (ProposalReply, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	res, err := a.deps.Service.PurgeQuotaProposal(ref, fingerprint)
+	svc, err := a.service()
+	if err != nil {
+		return ProposalReply{Results: []core.ProposalResult{}, Error: errorText(err)}, nil
+	}
+	res, err := svc.PurgeQuotaProposal(ref, fingerprint)
 	return ProposalReply{Results: []core.ProposalResult{res}, Error: errorText(err), ErrorCode: proposalErrorCode(err)}, nil
 }
 
@@ -125,7 +137,11 @@ func (a *API) ExtendQuotaProposal(ref, fingerprint, lifespan string) (ProposalRe
 	if err != nil {
 		return ProposalReply{Results: []core.ProposalResult{}}, err
 	}
-	res, err := a.deps.Service.ExtendQuotaProposal(ref, fingerprint, d)
+	svc, err := a.service()
+	if err != nil {
+		return ProposalReply{Results: []core.ProposalResult{}, Error: errorText(err)}, nil
+	}
+	res, err := svc.ExtendQuotaProposal(ref, fingerprint, d)
 	return ProposalReply{Results: []core.ProposalResult{res}, Error: errorText(err), ErrorCode: proposalErrorCode(err)}, nil
 }
 

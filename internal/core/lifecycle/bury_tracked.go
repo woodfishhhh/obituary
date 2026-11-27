@@ -32,8 +32,8 @@ func (s *Service) BuryTracked(refs []string) (results []GraveResult, err error) 
 	return s.buryTrackedRefs(refs)
 }
 
-func (s *Service) buryTrackedRefs(refs []string) ([]GraveResult, error) {
-	results := make([]GraveResult, len(refs))
+func (s *Service) buryTrackedRefs(refs []string) (results []GraveResult, finalErr error) {
+	results = make([]GraveResult, len(refs))
 	for i, ref := range refs {
 		results[i] = GraveResult{Ref: ref, Action: ActionNotExecuted, Error: "not executed: an earlier operation failed"}
 	}
@@ -45,6 +45,11 @@ func (s *Service) buryTrackedRefs(refs []string) ([]GraveResult, error) {
 		return results, err
 	}
 	defer release()
+	defer func() {
+		if !commitFailed(finalErr) {
+			finalErr = errors.Join(finalErr, s.applyBuryQuota(results))
+		}
+	}()
 	recovery, err := s.recoverManifests()
 	if commitFailed(err) {
 		return results, err

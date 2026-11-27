@@ -264,12 +264,13 @@ func (s *Service) MarkNotifiedBatch(ids []int64, session string) ([]bool, error)
 
 // ProposalResult is the outcome of approving or rejecting one proposal.
 type ProposalResult struct {
-	ErrorCode string   `json:"errorCode,omitempty"`
-	Ref       string   `json:"ref"`
-	Proposal  Proposal `json:"proposal"`
-	Results   []Result `json:"results,omitempty"`   // one per candidate on approval
-	Remaining []string `json:"remaining,omitempty"` // reviewed candidates retained for retry after settlement
-	Error     string   `json:"error,omitempty"`
+	ErrorCode     string         `json:"errorCode,omitempty"`
+	Ref           string         `json:"ref"`
+	Proposal      Proposal       `json:"proposal"`
+	Results       []Result       `json:"results,omitempty"`       // one per candidate on approval
+	Remaining     []string       `json:"remaining,omitempty"`     // reviewed candidates retained for retry after settlement
+	QuotaEviction *QuotaEviction `json:"quotaEviction,omitempty"` // FIFO eviction triggered by approval burial
+	Error         string         `json:"error,omitempty"`
 }
 
 func parseProposalRef(ref string) (int64, error) {

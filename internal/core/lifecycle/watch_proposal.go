@@ -149,6 +149,13 @@ func (s *Service) checkWatchBurialReview(st *State, p Proposal) error {
 	if err != nil {
 		return err
 	}
+	if p.Kind == ProposalGraveyardQuota {
+		if !reflect.DeepEqual(current.WatchBurial, p.WatchBurial) {
+			st.Proposals[st.ProposalIndex(p.ID)].WatchBurial = current.WatchBurial
+			return ErrProposalChanged
+		}
+		return nil
+	}
 	current.ID, current.CreatedAt, current.Notified = p.ID, p.CreatedAt, p.Notified
 	if ProposalFingerprint(current) != ProposalFingerprint(p) {
 		st.Proposals[st.ProposalIndex(p.ID)] = current
@@ -169,7 +176,8 @@ func dropWatchBurial(st *State, id int64) {
 
 func watchBurialItem(st *State, p Proposal) (Item, error) {
 	idx := st.ProposalIndex(p.ID)
-	if p.Kind != ProposalWatchBurial || p.WatchBurial == nil || len(p.Candidates) != 1 || idx < 0 {
+	validKind := p.Kind == ProposalWatchBurial || p.Kind == ProposalGraveyardQuota
+	if !validKind || p.WatchBurial == nil || len(p.Candidates) != 1 || idx < 0 {
 		return Item{}, ErrProposalChanged
 	}
 	if err := checkProposalReview(st.Proposals[idx], ProposalFingerprint(p)); err != nil {

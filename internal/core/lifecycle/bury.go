@@ -179,6 +179,10 @@ func (s *Service) buryRef(ref string, force bool, note, source string, recovery 
 	if err != nil {
 		return s.recoveredBuryRef(ref, abs, recovery.burials, err), nil
 	}
+	if s.expectedIdentity != nil && c.identity != *s.expectedIdentity {
+		r.Err, r.Error = ErrProposalChanged, ErrProposalChanged.Error()
+		return r, nil
+	}
 	item, err := s.reserveBuryItem(c)
 	if commitFailed(err) {
 		r.Action, r.Error = ActionNotExecuted, err.Error()
@@ -227,7 +231,7 @@ func (s *Service) reserveBuryItem(c *candidate) (Item, error) {
 func (s *Service) recoveredBuryRef(ref, abs string, burials []Burial, err error) GraveResult {
 	r := GraveResult{Ref: ref}
 	if !errors.Is(err, ErrNotFound) {
-		r.Error = err.Error()
+		r.Err, r.Error = err, err.Error()
 		return r
 	}
 	st := State{Burials: burials}
