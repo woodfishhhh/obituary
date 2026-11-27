@@ -1271,3 +1271,96 @@ func TestDockerVolumePruneGuidance(t *testing.T) {
 		t.Fatalf("Docker deletion received file guidance: %q", got)
 	}
 }
+
+func TestWSLUnregisterGuidance(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name       string
+		shell      guardrm.Shell
+		command    string
+		wantExport string
+	}{
+		{"named-bash", guardrm.Bash, "wsl --unregister Ubuntu-24.04", "wsl --export Ubuntu-24.04 <backup.tar>"},
+		{"named-ps", guardrm.PowerShell, `C:\Windows\System32\WSL.EXE --Unregister=Debian`, "wsl --export Debian <backup.tar>"},
+		{"named-cmd", guardrm.CMD, `wsl.exe --unregister Ubuntu`, "wsl --export Ubuntu <backup.tar>"},
+		{"bare", guardrm.Bash, "wsl --unregister", "wsl --export <distro> <backup.tar>"},
+		{"dynamic", guardrm.Bash, "wsl --unregister $DISTRO", "wsl --export <distro> <backup.tar>"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got := deletionGuidance(Event{Command: tc.command, Shell: tc.shell}, "unsupported command structure: wsl", func() string {
+				t.Fatal("wsl --unregister guidance must not resolve obit executable")
+				return ""
+			})
+			for _, phrase := range []string{
+				"Obituary's delete guard is on:",
+				"wsl --unregister",
+				"ext4.vhdx",
+				tc.wantExport,
+			} {
+				if !strings.Contains(got, phrase) {
+					t.Errorf("guidance lacks %q: %q", phrase, got)
+				}
+			}
+			for _, forbidden := range []string{"<path>", "git-clean", "obit bury"} {
+				if strings.Contains(got, forbidden) {
+					t.Errorf("guidance should not contain %q: %q", forbidden, got)
+				}
+			}
+		})
+	}
+}
+
+func TestWSLUnregisterHookDecisions(t *testing.T) {
+	t.Setenv("OBIT_GUARD_RM", "1")
+	t.Setenv("OBIT_DISABLED", "0")
+	for _, tc := range []struct {
+		name       string
+		agent      string
+		cwd        string
+		tool       string
+		input      map[string]any
+		wantDeny   bool
+		wantExport string
+	}{
+		{"claude-bash", "claude", `C:\repo`, "Bash", map[string]any{"command": "wsl --unregister Ubuntu-24.04"}, true, "wsl --export Ubuntu-24.04 <backup.tar>"},
+		{"claude-ps", "claude", `C:\repo`, "PowerShell", map[string]any{"command": `WSL.EXE --Unregister Ubuntu`}, true, "wsl --export Ubuntu <backup.tar>"},
+		{"claude-bash-cmd-c", "claude", `C:\repo`, "Bash", map[string]any{"command": `cmd /c "wsl --unregister Debian"`}, true, "wsl --export Debian <backup.tar>"},
+		{"claude-bash-ps-cmd", "claude", `C:\repo`, "Bash", map[string]any{"command": `powershell -Command "wsl --unregister Ubuntu"`}, true, "wsl --export Ubuntu <backup.tar>"},
+		{"codex-cmd-shell", "codex", `C:\repo`, "exec_command", map[string]any{"cmd": "wsl --unregister Ubuntu", "shell": "cmd.exe"}, true, "wsl --export Ubuntu <backup.tar>"},
+		{"codex-cmd-argv", "codex", `C:\repo`, "local_shell", map[string]any{"command": []string{"cmd.exe", "/c", "wsl --unregister Ubuntu"}}, true, "wsl --export Ubuntu <backup.tar>"},
+		{"codex-cmd-argv-outer-quotes", "codex", `C:\repo`, "local_shell", map[string]any{"command": []string{"cmd.exe", "/c", `""C:\Program Files\WSL\wsl.exe" --unregister Ubuntu"`}}, true, "wsl --export Ubuntu <backup.tar>"},
+		{"codex-cmd-argv-quoted-redir", "codex", `C:\repo`, "local_shell", map[string]any{"command": []string{"cmd.exe", "/c", `"wsl --unregister Ubuntu" 2>nul`}}, true, "wsl --export Ubuntu <backup.tar>"},
+		{"codex-cmd-argv-outer-quotes-redir", "codex", `C:\repo`, "local_shell", map[string]any{"command": []string{"cmd.exe", "/c", `""C:\Program Files\WSL\wsl.exe" --unregister Ubuntu" 2>&1`}}, true, "wsl --export Ubuntu <backup.tar>"},
+		{"codex-cmd-argv-quoted-chain-trail", "codex", `C:\repo`, "local_shell", map[string]any{"command": []string{"cmd.exe", "/c", `"echo ok && wsl --unregister Ubuntu" && echo done`}}, true, "wsl --export Ubuntu <backup.tar>"},
+		{"codex-ps-cmd-c-redir", "codex", `C:\repo`, "exec_command", map[string]any{"cmd": `cmd /c "wsl --unregister Ubuntu" 2>&1`, "shell": "pwsh"}, true, "wsl --export Ubuntu <backup.tar>"},
+		{"claude-ps-cmd-c-redir", "claude", `C:\repo`, "PowerShell", map[string]any{"command": `cmd /c "wsl --unregister Ubuntu" 2>$null`}, true, "wsl --export Ubuntu <backup.tar>"},
+		{"codex-cmd-at-space", "codex", `C:\repo`, "exec_command", map[string]any{"cmd": `@ wsl --unregister Ubuntu`, "shell": "cmd.exe"}, true, "wsl --export Ubuntu <backup.tar>"},
+		{"claude-ps-cmd-c-at-space", "claude", `C:\repo`, "PowerShell", map[string]any{"command": `cmd /c "@ wsl --unregister Ubuntu"`}, true, "wsl --export Ubuntu <backup.tar>"},
+		{"codex-pwsh-argv", "codex", `C:\repo`, "local_shell", map[string]any{"command": []string{"pwsh.exe", "-NoProfile", "-Command", "wsl --unregister Ubuntu"}}, true, "wsl --export Ubuntu <backup.tar>"},
+		{"claude-bash-safe-list", "claude", `C:\repo`, "Bash", map[string]any{"command": "wsl --list -v"}, false, ""},
+		{"claude-bash-safe-export", "claude", `C:\repo`, "Bash", map[string]any{"command": "wsl --export Ubuntu backup.tar"}, false, ""},
+		{"claude-bash-safe-echo", "claude", `C:\repo`, "Bash", map[string]any{"command": "wsl -d Ubuntu -- echo --unregister"}, false, ""},
+		{"codex-cmd-safe-list", "codex", `C:\repo`, "exec_command", map[string]any{"cmd": "wsl --status", "shell": "cmd.exe"}, false, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			home := t.TempDir()
+			e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: home}}}
+			payload, _ := json.Marshal(map[string]any{
+				"hook_event_name": "PreToolUse",
+				"cwd":             tc.cwd,
+				"tool_name":       tc.tool,
+				"tool_input":      tc.input,
+			})
+			var out bytes.Buffer
+			Run(tc.agent, e, bytes.NewReader(payload), &out, nil)
+			denied := bytes.Contains(out.Bytes(), []byte(`"permissionDecision":"deny"`))
+			if denied != tc.wantDeny {
+				t.Fatalf("denied=%v, want %v; output=%s", denied, tc.wantDeny, out.String())
+			}
+			if tc.wantExport != "" && !strings.Contains(out.String(), tc.wantExport) {
+				t.Fatalf("output lacks %q: %s", tc.wantExport, out.String())
+			}
+		})
+	}
+}

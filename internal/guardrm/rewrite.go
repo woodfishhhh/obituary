@@ -18,6 +18,7 @@ type Shell string
 const (
 	Bash       Shell = "bash"
 	PowerShell Shell = "powershell"
+	CMD        Shell = "cmd"
 	Uncertain  Shell = "uncertain" // Windows cwd without explicit shell evidence
 )
 

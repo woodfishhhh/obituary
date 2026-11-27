@@ -18,6 +18,8 @@ func Deletion(command string, shell Shell) string {
 		return bashDeletion(command)
 	case PowerShell:
 		return powerShellDeletion(command)
+	case CMD:
+		return cmdLineWSLDeletion(command, 0)
 	}
 	return ""
 }
@@ -218,6 +220,10 @@ func commandBase(word string) string {
 // commandDeletion checks one simple command's decoded words. Path-qualified
 // names count (/usr/bin/rm, rm.exe): only the final name selects the program.
 func commandDeletion(words []string, powerShell bool) string {
+	return commandDeletionDepth(words, powerShell, 0)
+}
+
+func commandDeletionDepth(words []string, powerShell bool, wrapperDepth int) string {
 	if len(words) == 0 {
 		return ""
 	}
@@ -230,6 +236,12 @@ func commandDeletion(words []string, powerShell bool) string {
 		return gitDeletion(words[1:])
 	case name == "docker":
 		return dockerDeletion(words[1:])
+	case name == "wsl":
+		return wslDeletion(words[1:])
+	case name == "cmd":
+		return cmdWSLDeletion(words[1:], wrapperDepth)
+	case name == "powershell" || name == "pwsh":
+		return psWrapperWSLDeletion(words[1:], wrapperDepth)
 	case powerShell && removeItemAlias(name):
 		if name != base {
 			return name // a native rm.exe or rmdir.exe, not the alias
@@ -288,17 +300,22 @@ func cleanPreview(args []string) bool {
 // the $(…) inside expandable strings are read as code. Each statement keeps
 // its decoded words, with NUL for dynamic parts.
 type psScanner struct {
-	s     string
-	i     int
-	depth int
-	found string
+	s            string
+	i            int
+	depth        int
+	wrapperDepth int
+	found        string
 }
 
 // maxNesting is far beyond real commands and keeps the stack small.
 const maxNesting = 256
 
 func powerShellDeletion(s string) string {
-	p := psScanner{s: s}
+	return powerShellDeletionDepth(s, 0)
+}
+
+func powerShellDeletionDepth(s string, wrapperDepth int) string {
+	p := psScanner{s: s, wrapperDepth: wrapperDepth}
 	p.code(0, false)
 	return p.found
 }
@@ -318,7 +335,7 @@ func (p *psScanner) code(close byte, table bool) {
 			words = words[1:] // dot-sourcing runs the command too
 		}
 		if p.found == "" && !key {
-			p.found = commandDeletion(words, true)
+			p.found = commandDeletionDepth(words, true, p.wrapperDepth)
 		}
 		words = nil
 	}
@@ -329,8 +346,8 @@ func (p *psScanner) code(close byte, table bool) {
 		case close != 0 && c == close:
 			p.i++
 			return
-		case c == '=' && len(words) > 1 && strings.TrimSuffix(commandBase(words[0]), ".exe") == "docker" && strings.HasPrefix(words[len(words)-1], "-"):
-			// Native Docker flags use --flag=value; this is not a PowerShell assignment.
+		case c == '=' && len(words) > 1 && nativeEqualsCommand(words[0]) && strings.HasPrefix(words[len(words)-1], "-"):
+			// Native Docker and WSL flags use --flag=value; this is not a PowerShell assignment.
 			p.i++
 			words[len(words)-1] += "=" + p.word()
 		case strings.HasPrefix(p.s[p.i:], "`\r\n"):

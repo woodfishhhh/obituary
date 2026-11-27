@@ -8,6 +8,8 @@ obit init -g --guard-rm                 # Claude Code; add --agent codex for Cod
 
 削除ガードは `docker volume rm`、`docker volume remove`、`docker volume prune`、`docker compose down -v`（または `--volumes`）、`docker system prune --volumes` を認識します。単純な `docker volume rm` で名前が明示されている場合に限り、`obit bury --docker-volume` を提案します。
 
+削除ガードは、WSL ディストリビューション全体と仮想ディスク（`ext4.vhdx`）を永久に削除する `wsl --unregister`（`wsl.exe`、フルパス、`=` 形式、`cmd /c` や `powershell -Command` 経由の呼び出しを含む）も停止します。Obituary は WSL ディストリビューションを埋葬・復元しないため、拒否メッセージでは手動確認前のバックアップ手順として `wsl --export <distro> <backup.tar>` を案内します。`wsl --list`、`wsl --status`、`wsl --export`、`wsl --terminate`、`wsl --shutdown` などの読み取り専用または非破壊コマンドはそのまま通ります。
+
 ## 実際の実行例
 
 ガードを有効にすると、フックは Claude Code の Bash 呼び出し `rm -rf build` を受け取り、次のように返しました。`rm` は実行されていません。

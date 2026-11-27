@@ -8,6 +8,8 @@ obit init -g --guard-rm                 # Claude Code; add --agent codex for Cod
 
 Der Löschschutz erkennt `docker volume rm`, `docker volume remove`, `docker volume prune`, `docker compose down -v` (oder `--volumes`) und `docker system prune --volumes`. Nur bei einem einfachen `docker volume rm` mit ausdrücklichen Namen schlägt er `obit bury --docker-volume` vor.
 
+Der Löschschutz stoppt außerdem `wsl --unregister` (einschließlich `wsl.exe`, vollständiger Pfade, `=`-Schreibweisen sowie Aufrufen über `cmd /c` oder `powershell -Command`), da dadurch die gesamte WSL-Distribution samt virtueller Festplatte (`ext4.vhdx`) dauerhaft zerstört wird. Obituary kann WSL-Distributionen weder begraben noch wiederbeleben; der Ablehnungshinweis verweist vor einer manuellen Bestätigung auf `wsl --export <distro> <backup.tar>` als Sicherungsschritt. Lesende oder nicht destruktive Befehle wie `wsl --list`, `wsl --status`, `wsl --export`, `wsl --terminate` und `wsl --shutdown` laufen weiter.
+
 ## Ein echter Lauf
 
 Bei aktivem Löschschutz erhielt der Hook einen Claude-Code-Bash-Aufruf, `rm -rf build`, und antwortete wie folgt; `rm` wurde nie ausgeführt:

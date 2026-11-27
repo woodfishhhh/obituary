@@ -8,6 +8,8 @@ obit init -g --guard-rm                 # Claude Code；Codex 加 --agent codex�
 
 刪除防護能辨識 `docker volume rm`、`docker volume remove`、`docker volume prune`、`docker compose down -v`（或 `--volumes`）及 `docker system prune --volumes`。只有直接以 `docker volume rm` 指定卷名時才建議改用 `obit bury --docker-volume`，不會猜測批次清理的目標。
 
+刪除防護也會攔截會永久銷毀整個發行版及其虛擬磁碟（`ext4.vhdx`）的 `wsl --unregister`（包含 `wsl.exe`、完整路徑、`=` 寫法以及透過 `cmd /c`、`powershell -Command` 呼叫的形式）。WSL 發行版不納入訃告下葬與復活，攔下時會提示先執行 `wsl --export <distro> <backup.tar>` 匯出備份，再由使用者確認手動執行；`wsl --list`、`wsl --status`、`wsl --export`、`wsl --terminate`、`wsl --shutdown` 等唯讀或非銷毀命令不受影響。
+
 ## 一次真實的執行
 
 開啟刪除護欄後，hook 收到一個 Claude Code Bash 呼叫 `rm -rf build`，回覆如下；`rm` 從未執行：

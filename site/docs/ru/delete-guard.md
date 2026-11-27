@@ -8,6 +8,8 @@ obit init -g --guard-rm                 # Claude Code; add --agent codex for Cod
 
 Защита от удаления распознаёт `docker volume rm`, `docker volume remove`, `docker volume prune`, `docker compose down -v` (или `--volumes`) и `docker system prune --volumes`. Замена на `obit bury --docker-volume` предлагается только для простой команды `docker volume rm` с явными именами.
 
+Защита от удаления также останавливает `wsl --unregister` (включая `wsl.exe`, полные пути, запись с `=` и вызовы через `cmd /c` или `powershell -Command`), поскольку эта команда безвозвратно удаляет весь дистрибутив WSL и его виртуальный диск (`ext4.vhdx`). Obituary не хоронит и не воскрешает дистрибутивы WSL; в сообщении об отказе перед ручным подтверждением указывается резервное копирование через `wsl --export <distro> <backup.tar>`. Команды только для чтения и неразрушающие команды вроде `wsl --list`, `wsl --status`, `wsl --export`, `wsl --terminate` и `wsl --shutdown` проходят свободно.
+
 ## Реальный запуск
 
 При включённой защите хук получил Bash-вызов Claude Code, `rm -rf build`, и ответил следующим образом; `rm` не выполнялась:
