@@ -8,6 +8,8 @@ obit init -g --guard-rm                 # Claude Code; add --agent codex for Cod
 
 A proteção contra exclusão reconhece `docker volume rm`, `docker volume remove`, `docker volume prune`, `docker compose down -v` (ou `--volumes`) e `docker system prune --volumes`. Ela só sugere `obit bury --docker-volume` para um `docker volume rm` simples com nomes explícitos.
 
+A proteção contra exclusão também interrompe `wsl --unregister` (incluindo `wsl.exe`, caminhos completos, a forma com `=` e chamadas via `cmd /c` ou `powershell -Command`), que destrói permanentemente toda a distribuição WSL e seu disco virtual (`ext4.vhdx`). O Obituary não enterra nem ressuscita distribuições WSL; a recusa aponta `wsl --export <distro> <backup.tar>` como etapa de backup antes da confirmação manual. Comandos somente leitura ou não destrutivos como `wsl --list`, `wsl --status`, `wsl --export`, `wsl --terminate` e `wsl --shutdown` passam normalmente.
+
 ## Uma execução real
 
 Com o guardião ativo, o hook recebeu uma chamada Bash do Claude Code, `rm -rf build`, e respondeu assim; `rm` nunca foi executado:

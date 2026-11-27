@@ -78,6 +78,9 @@ func deletionGuidance(ev Event, why string, resolve func() string) string {
 	if strings.Contains(deletion, "docker ") {
 		return "Obituary's delete guard is on: this Docker command can delete volume data. No exact equivalent applies; review the explicit volume names on the intended Docker daemon."
 	}
+	if _, after, ok := strings.Cut(deletion, "wsl --unregister"); ok {
+		return wslUnregisterGuidance(strings.TrimSpace(after))
+	}
 	executable := resolve()
 	// Statements, not instructions: the agent reads this as tool context.
 	const discovered = " For targets selected at runtime, the safe alternative is to list and review the paths first, then give them as explicit operands to `%s rm -- <path>...`."
@@ -86,6 +89,14 @@ func deletionGuidance(ev Event, why string, resolve func() string) string {
 		reason = fmt.Sprintf("Obituary's delete guard is on: `%s` deletes permanently and no exact obit equivalent applies to this command. `obit bury <path>...` provides restorable deletion for literal paths, `obit git-clean` for git clean, through the installed obit executable."+discovered, deletion, "obit")
 	}
 	return reason
+}
+
+func wslUnregisterGuidance(distro string) string {
+	target := "<distro>"
+	if distro != "" {
+		target = distro
+	}
+	return fmt.Sprintf("Obituary's delete guard is on: `wsl --unregister` permanently deletes the entire WSL distribution and its virtual disk (`ext4.vhdx`), which Obituary cannot bury or resurrect. No obit equivalent applies; the safe backup step before manual user confirmation is `wsl --export %s <backup.tar>`.", target)
 }
 
 func deleteGuardContext(ev Event) (guardrm.Context, string) {
@@ -99,6 +110,8 @@ func deleteGuardContext(ev Event) (guardrm.Context, string) {
 		why = "WSL requires bash in a mounted Windows directory"
 	} else if context.Shell == guardrm.PowerShell && !windowsCwd(ev.Cwd) {
 		why = "PowerShell deletion requires a Windows working directory"
+	} else if context.Shell == guardrm.CMD && !windowsCwd(ev.Cwd) {
+		why = "CMD deletion requires a Windows working directory"
 	}
 	return context, why
 }
@@ -238,6 +251,12 @@ func codexArgvCommand(raw []any, shell guardrm.Shell) (string, guardrm.Shell, st
 	}
 	if len(args) >= 3 {
 		base := strings.ToLower(args[0][strings.LastIndexAny(args[0], `/\`)+1:])
+		if base == "cmd" || base == "cmd.exe" {
+			if cmd, ok := codexCmdArgv(args[1:]); ok {
+				return cmd, guardrm.CMD, ""
+			}
+			return string(encoded), shell, "unsupported CMD argv"
+		}
 		if base == "pwsh" || base == "pwsh.exe" || base == "powershell" || base == "powershell.exe" {
 			for i := 1; i < len(args)-1; i++ {
 				switch strings.ToLower(args[i]) {
@@ -255,6 +274,22 @@ func codexArgvCommand(raw []any, shell guardrm.Shell) (string, guardrm.Shell, st
 	return string(encoded), shell, "unsupported shell argv"
 }
 
+func codexCmdArgv(args []string) (string, bool) {
+	for i := 0; i < len(args)-1; i++ {
+		switch strings.ToLower(args[i]) {
+		case "/d", "/s", "/q", "/a", "/u":
+		case "/c", "/k":
+			if i == len(args)-2 {
+				return args[i+1], true
+			}
+			return "", false
+		default:
+			return "", false
+		}
+	}
+	return "", false
+}
+
 func windowsCwd(cwd string) bool {
 	return len(cwd) >= 3 && isLetter(cwd[0]) && cwd[1] == ':' && (cwd[2] == '\\' || cwd[2] == '/')
 }
@@ -265,6 +300,8 @@ func shellName(path string) guardrm.Shell {
 		return guardrm.Bash
 	case "pwsh", "pwsh.exe", "powershell", "powershell.exe":
 		return guardrm.PowerShell
+	case "cmd", "cmd.exe":
+		return guardrm.CMD
 	}
 	return ""
 }

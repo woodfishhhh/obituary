@@ -8,6 +8,8 @@ obit init -g --guard-rm                 # Claude Code; add --agent codex for Cod
 
 삭제 가드는 `docker volume rm`, `docker volume remove`, `docker volume prune`, `docker compose down -v`(또는 `--volumes`), `docker system prune --volumes`를 인식합니다. 단순한 `docker volume rm` 명령에 볼륨 이름이 명시된 경우에만 `obit bury --docker-volume`를 제안합니다.
 
+삭제 가드는 WSL 배포판 전체와 가상 디스크(`ext4.vhdx`)를 영구 삭제하는 `wsl --unregister`(`wsl.exe`, 전체 경로, `=` 형식, `cmd /c` 및 `powershell -Command` 경유 호출 포함)도 차단합니다. Obituary는 WSL 배포판을 매장하거나 부활시키지 않으므로, 거부 안내에서는 수동 확인 전 백업 단계로 `wsl --export <distro> <backup.tar>`를 제시합니다. `wsl --list`, `wsl --status`, `wsl --export`, `wsl --terminate`, `wsl --shutdown` 같은 읽기 전용 또는 비파괴 명령은 그대로 통과합니다.
+
 ## 실제 실행 예
 
 삭제 가드를 켜면 훅이 Claude Code의 Bash 호출 `rm -rf build`을 받아 다음과 같이 응답합니다. `rm`은 실행되지 않습니다.

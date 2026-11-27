@@ -479,6 +479,12 @@ func TestDeleteGuardMutations(t *testing.T) {
 		{"detect-whatif-preview", "internal/guardrm/detect.go",
 			`arg == "-wi" ||`, `false && arg == "-wi" ||`,
 			"./internal/hook", "TestRemoveItemBinding"},
+		{"detect-wsl-unregister", "internal/guardrm/detect.go",
+			`case name == "wsl":`, `case name == "wsl-disabled":`,
+			"./internal/guardrm", "TestWSLUnregisterDeletion"},
+		{"hook-wsl-unregister-guidance", "internal/hook/delete_guard.go",
+			`if _, after, ok := strings.Cut(deletion, "wsl --unregister"); ok {`, `if _, after, ok := strings.Cut(deletion, "wsl --unregister"); false && ok {`,
+			"./internal/hook", "TestWSLUnregisterGuidance"},
 		// Purging a selection skips retention, so the user confirms it.
 		{"purge-confirmation", "internal/cli/purge/purge.go",
 			"if (all || len(args) > 0) && !dryRun && !yes {", "if false && (all || len(args) > 0) && !dryRun && !yes {",

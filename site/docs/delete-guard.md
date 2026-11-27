@@ -8,6 +8,8 @@ obit init -g --guard-rm                 # Claude Code；Codex 加 --agent codex�
 
 删除护栏能识别 `docker volume rm`、`docker volume remove`、`docker volume prune`、`docker compose down -v`（或 `--volumes`）和 `docker system prune --volumes`。只有直接用 `docker volume rm` 指定卷名时，才建议改用 `obit bury --docker-volume`；不会猜测批量清理会删哪些卷。
 
+删除护栏还会拦截会永久销毁整个发行版及其虚拟磁盘（`ext4.vhdx`）的 `wsl --unregister`（含 `wsl.exe`、完整路径、`=` 写法以及经 `cmd /c`、`powershell -Command` 调用的形态）。WSL 发行版不纳入讣告自动下葬与复活，拦下时会提示先执行 `wsl --export <distro> <backup.tar>` 导出备份，再由你确认手动执行；`wsl --list`、`wsl --status`、`wsl --export`、`wsl --terminate`、`wsl --shutdown` 等只读或非销毁命令不受影响。
+
 ## 一次真实的输出
 
 删除护栏打开时，hook 收到 Claude Code 的一次 Bash 调用 `rm -rf build`，回复如下，`rm` 没有执行：

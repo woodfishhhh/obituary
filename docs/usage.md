@@ -192,6 +192,7 @@ obit init -g --guard-rm                 # Claude Code；Codex 加 --agent codex�
 
 - **只拦不改。** 讣告不改写 agent 的命令：Claude Code 会按改写后的命令检查权限，改写会让你设的 `deny` 规则失效。拦下再让 agent 自己发出等价命令，你的所有权限规则照常生效。
 - **出现字面的删除就拦。** 命令里任何一个命令位置上出现 `rm`、`rmdir`、`git clean`、`Remove-Item`（含 `del`、`rd`、`ri` 这些别名），不论在 `&&`、`||`、`;`、管道、`$(…)`、子 shell、条件还是循环里，都拦下这一次执行，例如 `rm -rf build && npm run build`、`rm -rf build 2>/dev/null`、`git clean -fdx && npm ci`。字符串、注释、`echo` 的参数里的 `rm` 不算；`rm --help`、`git clean -n`、`Remove-Item -WhatIf` 只是预览，也不算。
+- **拦截 `wsl --unregister`。** 删除护栏还会拦截会永久销毁整个发行版及其虚拟磁盘（`ext4.vhdx`）的 `wsl --unregister`（含 `wsl.exe`、完整路径、`=` 写法以及经 `cmd /c`、`powershell -Command` 调用的形态）。WSL 发行版不纳入讣告自动下葬与复活，拦下时会提示先执行 `wsl --export <distro> <backup.tar>` 导出备份，再由你确认手动执行；`wsl --list`、`wsl --status`、`wsl --export`、`wsl --terminate`、`wsl --shutdown` 等只读或非销毁命令不受影响。
 - **运行时才选出的目标先列出再下葬。** Bash 的 `find -delete`、`find -exec rm`（含 `-execdir`）和 `xargs rm`，以及 PowerShell 的 `Get-ChildItem … | Remove-Item`，都会被拦下，但不提供等价改写。先列出并核对目标，再把明确的路径逐项或批量交给 `obit rm -- <路径>...`；只查找或列出路径的 `find` 不受影响。护栏不分析任意包装命令，例如 `sudo rm` 和 `bash -c '…'`。
 - **Windows 上的 Codex，引号里的替换也查。** Codex 在 Windows 上会把命令再交给另一层 shell，引号可能在那一层失效，按 Bash 规则只是文字的内容也可能被执行。所以 Windows 上 Codex 的命令里，反引号片段和 `$(…)` 片段不论出现在引号、带引号的 heredoc 还是注释里，都按 Bash 和 PowerShell 两种读法检查，里面出现删除就拦下。带反引号的文字用编辑工具写进文件、再把文件路径交给命令，就不会被拦。
 - **不会退回成真删。** `obit rm` / `obit remove-item` / `obit git-clean` 的每个路径都走下葬；被 Guard 拒绝（盘符根、系统目录、用户目录本身等）时照 `rm` 的格式报错、返回非零。
