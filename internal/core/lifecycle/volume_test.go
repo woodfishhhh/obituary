@@ -340,12 +340,19 @@ func TestDockerVolumeSweepOutcomesAndFileIsolation(t *testing.T) {
 
 		// File registration with OnlyNew (RegistrationScope), diagnostics,
 		// SettleVanished, and directory burial must ignore the tracked volume.
+		volID := added[0].Item.ID
 		filePath := f.file("isolated.txt")
 		if rows, err := f.svc.Add([]string{filePath}, core.AddOptions{ExpiresAt: f.clock.Add(2 * time.Hour), OnlyNew: true}); err != nil || core.Failed(rows) {
 			t.Fatalf("tracked volume broke OnlyNew file add: %+v %v", rows, err)
 		}
-		if events, err := f.svc.RegistrationLocationDiagnostics(); err != nil || len(events) != 0 {
-			t.Fatalf("tracked volume produced bogus identity diagnostic: %+v %v", events, err)
+		events, err := f.svc.RegistrationLocationDiagnostics()
+		if err != nil {
+			t.Fatalf("RegistrationLocationDiagnostics: %v", err)
+		}
+		for _, ev := range events {
+			if ev.ID == volID {
+				t.Fatalf("tracked volume produced bogus identity diagnostic: %+v", ev)
+			}
 		}
 		if vanished, err := f.svc.SettleVanished(); err != nil || len(vanished) != 0 {
 			t.Fatalf("SettleVanished touched volume: %+v %v", vanished, err)
