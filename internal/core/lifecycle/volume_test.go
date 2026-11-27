@@ -409,3 +409,354 @@ func TestDockerVolumeSweepOutcomesAndFileIsolation(t *testing.T) {
 		}
 	})
 }
+
+func rewriteVolumeBurial(t *testing.T, f *fixture, id int64, edit func(*core.Burial)) core.Burial {
+	t.Helper()
+	var updated core.Burial
+	err := f.svc.Store.UpdateGraveyard(func(st *core.State) error {
+		idx := st.BurialIndex(id)
+		if idx < 0 {
+			return fmt.Errorf("missing burial #%d", id)
+		}
+		edit(&st.Burials[idx])
+		updated = st.Burials[idx]
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return updated
+}
+
+func TestDockerVolumePurgeAndResurrectRejectOutsideGraveyardRoot(t *testing.T) {
+	t.Run("outside-root-without-intent", func(t *testing.T) {
+		f, client := volumeFixture(t)
+		rows, err := f.svc.BuryDockerVolumes([]string{"cache"}, "explicit")
+		if err != nil || len(rows) != 1 || rows[0].Action != core.ActionBuried {
+			t.Fatalf("bury: %+v %v", rows, err)
+		}
+		b := rows[0].Burial
+		otherDir := filepath.Join(t.TempDir(), "other-home", "graveyard", "docker-volumes", filepath.Base(filepath.Dir(b.Grave)))
+		if err := os.MkdirAll(otherDir, 0700); err != nil {
+			t.Fatal(err)
+		}
+		otherArchive := filepath.Join(otherDir, "volume.tar")
+		data, err := os.ReadFile(b.Grave)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(otherArchive, data, 0600); err != nil {
+			t.Fatal(err)
+		}
+		otherManifest := otherArchive + ".json"
+		if err := os.WriteFile(otherManifest, fmt.Appendf(nil, `{"version":1,"id":%d,"kind":"docker-volume","grave":%q,"volumeArchiveDigest":%q,"volumePhase":"removed"}`, b.ID, otherArchive, b.VolumeArchiveDigest), 0600); err != nil {
+			t.Fatal(err)
+		}
+		rewriteVolumeBurial(t, f, b.ID, func(cur *core.Burial) {
+			cur.Grave = otherArchive
+		})
+
+		// Resurrect must also refuse archives outside current OBIT_HOME.
+		resRows, err := f.svc.Resurrect([]string{fmt.Sprintf("#%d", b.ID)})
+		if err != nil || len(resRows) != 1 || resRows[0].Action == core.ActionResurrected || resRows[0].Error == "" || !client.removed {
+			t.Fatalf("resurrect accepted archive outside OBIT_HOME: %+v removed=%v err=%v", resRows, client.removed, err)
+		}
+
+		// Tick and explicit Purge must refuse and leave external files intact.
+		f.clock = f.clock.Add(8 * 24 * time.Hour)
+		_, purged, err := f.svc.Tick()
+		if err != nil || len(purged) != 1 || purged[0].Action == core.ActionPurged || purged[0].Error == "" {
+			t.Fatalf("tick purged archive outside OBIT_HOME: %+v err=%v", purged, err)
+		}
+		if _, err := os.Stat(otherArchive); err != nil {
+			t.Fatalf("external archive was deleted: %v", err)
+		}
+		if _, err := os.Stat(otherManifest); err != nil {
+			t.Fatalf("external manifest was deleted: %v", err)
+		}
+		if _, err := os.Stat(otherDir); err != nil {
+			t.Fatalf("external dir was deleted: %v", err)
+		}
+	})
+
+	t.Run("outside-root-with-intent", func(t *testing.T) {
+		f, _ := volumeFixture(t)
+		rows, err := f.svc.BuryDockerVolumes([]string{"cache"}, "explicit")
+		if err != nil || len(rows) != 1 || rows[0].Action != core.ActionBuried {
+			t.Fatalf("bury: %+v %v", rows, err)
+		}
+		b := rows[0].Burial
+		otherDir := filepath.Join(t.TempDir(), "other-home", "graveyard", "docker-volumes", filepath.Base(filepath.Dir(b.Grave)))
+		if err := os.MkdirAll(otherDir, 0700); err != nil {
+			t.Fatal(err)
+		}
+		otherArchive := filepath.Join(otherDir, "volume.tar")
+		data, err := os.ReadFile(b.Grave)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(otherArchive, data, 0600); err != nil {
+			t.Fatal(err)
+		}
+		rewriteVolumeBurial(t, f, b.ID, func(cur *core.Burial) {
+			cur.Grave = otherArchive
+			cur.PurgeIntent = &core.PurgeIntent{VerifiedAt: f.clock, Basis: "volume retention elapsed"}
+		})
+
+		f.clock = f.clock.Add(8 * 24 * time.Hour)
+		purged, err := f.svc.PurgeRefs([]string{fmt.Sprintf("#%d", b.ID)}, false)
+		if err != nil || len(purged) != 1 || purged[0].Action == core.ActionPurged || purged[0].Error == "" {
+			t.Fatalf("purge with intent deleted archive outside OBIT_HOME: %+v err=%v", purged, err)
+		}
+		if _, err := os.Stat(otherArchive); err != nil {
+			t.Fatalf("external archive was deleted under PurgeIntent: %v", err)
+		}
+		if _, err := os.Stat(otherDir); err != nil {
+			t.Fatalf("external dir was deleted under PurgeIntent: %v", err)
+		}
+	})
+
+	t.Run("outside-empty-dir-missing-path-with-intent", func(t *testing.T) {
+		f, _ := volumeFixture(t)
+		rows, err := f.svc.BuryDockerVolumes([]string{"cache"}, "explicit")
+		if err != nil || len(rows) != 1 || rows[0].Action != core.ActionBuried {
+			t.Fatalf("bury: %+v %v", rows, err)
+		}
+		b := rows[0].Burial
+		extDir := filepath.Join(t.TempDir(), "victim-empty-dir")
+		if err := os.MkdirAll(extDir, 0700); err != nil {
+			t.Fatal(err)
+		}
+		missingPath := filepath.Join(extDir, "missing")
+		rewriteVolumeBurial(t, f, b.ID, func(cur *core.Burial) {
+			cur.Grave = missingPath
+			cur.PurgeIntent = &core.PurgeIntent{VerifiedAt: f.clock, Basis: "volume retention elapsed"}
+		})
+
+		f.clock = f.clock.Add(8 * 24 * time.Hour)
+		purged, err := f.svc.PurgeRefs([]string{fmt.Sprintf("#%d", b.ID)}, false)
+		if err != nil || len(purged) != 1 || purged[0].Action == core.ActionPurged || purged[0].Error == "" {
+			t.Fatalf("purge with intent accepted missing path outside OBIT_HOME: %+v err=%v", purged, err)
+		}
+		if _, err := os.Stat(extDir); err != nil {
+			t.Fatalf("external empty directory was deleted: %v", err)
+		}
+	})
+
+	t.Run("symlink-archive-dir-escape", func(t *testing.T) {
+		f, client := volumeFixture(t)
+		rows, err := f.svc.BuryDockerVolumes([]string{"cache"}, "explicit")
+		if err != nil || len(rows) != 1 || rows[0].Action != core.ActionBuried {
+			t.Fatalf("bury: %+v %v", rows, err)
+		}
+		b := rows[0].Burial
+		graveDir := filepath.Dir(b.Grave)
+		extDir := filepath.Join(t.TempDir(), "symlink-target")
+		if err := os.MkdirAll(extDir, 0700); err != nil {
+			t.Fatal(err)
+		}
+		data, err := os.ReadFile(b.Grave)
+		if err != nil {
+			t.Fatal(err)
+		}
+		extArchive := filepath.Join(extDir, "volume.tar")
+		if err := os.WriteFile(extArchive, data, 0600); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.RemoveAll(graveDir); err != nil {
+			t.Fatal(err)
+		}
+		directoryLink(t, graveDir, extDir)
+
+		resRows, err := f.svc.Resurrect([]string{fmt.Sprintf("#%d", b.ID)})
+		if err != nil || len(resRows) != 1 || resRows[0].Action == core.ActionResurrected || resRows[0].Error == "" || !client.removed {
+			t.Fatalf("resurrect followed symlinked archive directory: %+v removed=%v err=%v", resRows, client.removed, err)
+		}
+
+		f.clock = f.clock.Add(8 * 24 * time.Hour)
+		_, purged, err := f.svc.Tick()
+		if err != nil || len(purged) != 1 || purged[0].Action == core.ActionPurged || purged[0].Error == "" {
+			t.Fatalf("tick followed symlinked archive directory: %+v err=%v", purged, err)
+		}
+		if _, err := os.Stat(extArchive); err != nil {
+			t.Fatalf("symlink target archive was deleted: %v", err)
+		}
+	})
+}
+
+func TestDockerVolumePurgeRefusesMismatchedOrInvalidManifest(t *testing.T) {
+	cases := []struct {
+		name  string
+		write func(t *testing.T, b *core.Burial) []byte
+	}{
+		{
+			name: "wrong-id",
+			write: func(t *testing.T, b *core.Burial) []byte {
+				return fmt.Appendf(nil, `{"version":1,"id":%d,"kind":"docker-volume","grave":%q,"volumeArchiveDigest":%q,"volumePhase":"removed"}`, b.ID+1, b.Grave, b.VolumeArchiveDigest)
+			},
+		},
+		{
+			name: "wrong-version",
+			write: func(t *testing.T, b *core.Burial) []byte {
+				return fmt.Appendf(nil, `{"version":2,"id":%d,"kind":"docker-volume","grave":%q,"volumeArchiveDigest":%q,"volumePhase":"removed"}`, b.ID, b.Grave, b.VolumeArchiveDigest)
+			},
+		},
+		{
+			name: "wrong-kind",
+			write: func(t *testing.T, b *core.Burial) []byte {
+				return fmt.Appendf(nil, `{"version":1,"id":%d,"kind":"container","grave":%q,"volumeArchiveDigest":%q,"volumePhase":"removed"}`, b.ID, b.Grave, b.VolumeArchiveDigest)
+			},
+		},
+		{
+			name: "tampered-grave-path",
+			write: func(t *testing.T, b *core.Burial) []byte {
+				return fmt.Appendf(nil, `{"version":1,"id":%d,"kind":"docker-volume","grave":%q,"volumeArchiveDigest":%q,"volumePhase":"removed"}`, b.ID, filepath.Join(t.TempDir(), "volume.tar"), b.VolumeArchiveDigest)
+			},
+		},
+		{
+			name: "wrong-digest",
+			write: func(t *testing.T, b *core.Burial) []byte {
+				return fmt.Appendf(nil, `{"version":1,"id":%d,"kind":"docker-volume","grave":%q,"volumeArchiveDigest":"sha256:0000000000000000000000000000000000000000000000000000000000000000","volumePhase":"removed"}`, b.ID, b.Grave)
+			},
+		},
+		{
+			name: "oversized-manifest",
+			write: func(t *testing.T, b *core.Burial) []byte {
+				prefix := fmt.Appendf(nil, `{"version":1,"id":%d,"kind":"docker-volume","grave":%q,"volumeArchiveDigest":%q,"volumePhase":"removed","note":"`, b.ID, b.Grave, b.VolumeArchiveDigest)
+				pad := bytes.Repeat([]byte("a"), (1<<20)+64)
+				return append(append(prefix, pad...), []byte(`"}`)...)
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f, _ := volumeFixture(t)
+			rows, err := f.svc.BuryDockerVolumes([]string{"cache"}, "explicit")
+			if err != nil || len(rows) != 1 || rows[0].Action != core.ActionBuried {
+				t.Fatalf("bury: %+v %v", rows, err)
+			}
+			b := rows[0].Burial
+			if err := os.WriteFile(b.Grave+".json", tc.write(t, b), 0600); err != nil {
+				t.Fatal(err)
+			}
+			f.clock = f.clock.Add(8 * 24 * time.Hour)
+			_, purged, err := f.svc.Tick()
+			if err != nil || len(purged) != 1 || purged[0].Action == core.ActionPurged || purged[0].Error == "" {
+				t.Fatalf("mismatched/invalid manifest was not refused: %+v err=%v", purged, err)
+			}
+			if _, err := os.Stat(b.Grave); err != nil {
+				t.Fatalf("archive was deleted despite invalid manifest: %v", err)
+			}
+			if _, err := os.Stat(b.Grave + ".json"); err != nil {
+				t.Fatalf("invalid manifest was deleted: %v", err)
+			}
+			if len(f.burials()) != 1 {
+				t.Fatalf("burial should remain after refusal: %+v", f.burials())
+			}
+		})
+	}
+}
+
+func TestDockerVolumePurgeIntentResumeAndResurrectRefusal(t *testing.T) {
+	t.Run("resume-missing-archive-even-if-clock-rolled-back", func(t *testing.T) {
+		f, _ := volumeFixture(t)
+		rows, err := f.svc.BuryDockerVolumes([]string{"cache"}, "explicit")
+		if err != nil || len(rows) != 1 || rows[0].Action != core.ActionBuried {
+			t.Fatalf("bury: %+v %v", rows, err)
+		}
+		b := rows[0].Burial
+		rewriteVolumeBurial(t, f, b.ID, func(cur *core.Burial) {
+			cur.PurgeIntent = &core.PurgeIntent{VerifiedAt: f.clock.Add(8 * 24 * time.Hour), Basis: "volume retention elapsed"}
+		})
+		if err := os.Remove(b.Grave); err != nil {
+			t.Fatal(err)
+		}
+
+		// Clock is still before PurgeAt (clock rollback after beginPurge + archive delete).
+		if !b.PurgeAt.After(f.clock) {
+			t.Fatalf("expected clock %v before PurgeAt %v", f.clock, b.PurgeAt)
+		}
+		_, purged, err := f.svc.Tick()
+		if err != nil || len(purged) != 1 || purged[0].Action != core.ActionPurged || purged[0].Error != "" {
+			t.Fatalf("failed to resume interrupted volume purge: %+v err=%v", purged, err)
+		}
+		if _, err := os.Stat(filepath.Dir(b.Grave)); !os.IsNotExist(err) {
+			t.Fatalf("empty volume archive directory remained after resume: %v", err)
+		}
+		st, err := f.svc.Store.Read()
+		if err != nil || len(st.Burials) != 0 || st.Stats.Purged != 1 {
+			t.Fatalf("post-resume state unexpected: burials=%+v stats=%+v err=%v", st.Burials, st.Stats, err)
+		}
+	})
+
+	t.Run("resume-when-archive-dir-already-removed", func(t *testing.T) {
+		f, _ := volumeFixture(t)
+		rows, err := f.svc.BuryDockerVolumes([]string{"cache"}, "explicit")
+		if err != nil || len(rows) != 1 || rows[0].Action != core.ActionBuried {
+			t.Fatalf("bury: %+v %v", rows, err)
+		}
+		b := rows[0].Burial
+		rewriteVolumeBurial(t, f, b.ID, func(cur *core.Burial) {
+			cur.PurgeIntent = &core.PurgeIntent{VerifiedAt: f.clock.Add(8 * 24 * time.Hour), Basis: "volume retention elapsed"}
+		})
+		if err := os.RemoveAll(filepath.Dir(b.Grave)); err != nil {
+			t.Fatal(err)
+		}
+
+		purged, err := f.svc.PurgeRefs([]string{fmt.Sprintf("#%d", b.ID)}, false)
+		if err != nil || len(purged) != 1 || purged[0].Action != core.ActionPurged || purged[0].Error != "" {
+			t.Fatalf("failed to finish purge after archive dir removal: %+v err=%v", purged, err)
+		}
+		if len(f.burials()) != 0 {
+			t.Fatalf("burial remained after resumed purge: %+v", f.burials())
+		}
+	})
+
+	t.Run("resurrect-refused-during-in-progress-purge", func(t *testing.T) {
+		f, client := volumeFixture(t)
+		rows, err := f.svc.BuryDockerVolumes([]string{"cache"}, "explicit")
+		if err != nil || len(rows) != 1 || rows[0].Action != core.ActionBuried {
+			t.Fatalf("bury: %+v %v", rows, err)
+		}
+		b := rows[0].Burial
+		rewriteVolumeBurial(t, f, b.ID, func(cur *core.Burial) {
+			cur.PurgeIntent = &core.PurgeIntent{VerifiedAt: f.clock, Basis: "volume retention elapsed"}
+		})
+
+		resRows, err := f.svc.Resurrect([]string{fmt.Sprintf("#%d", b.ID)})
+		wantMsg := fmt.Sprintf("#%d: purge is in progress; retry obit purge %d", b.ID, b.ID)
+		if err != nil || len(resRows) != 1 || resRows[0].Action == core.ActionResurrected || resRows[0].Error != wantMsg || !client.removed {
+			t.Fatalf("resurrect did not refuse in-progress purge: %+v removed=%v err=%v", resRows, client.removed, err)
+		}
+		if _, err := os.Stat(b.Grave); err != nil {
+			t.Fatalf("archive deleted during refused resurrect: %v", err)
+		}
+		if len(f.burials()) != 1 {
+			t.Fatalf("burial removed during refused resurrect: %+v", f.burials())
+		}
+	})
+}
+
+func TestDockerVolumeNotBlockedByFileGraveyardScanFailure(t *testing.T) {
+	f, client := volumeFixture(t)
+	added, err := f.svc.AddDockerVolume([]string{"cache"}, core.AddOptions{ExpiresAt: f.clock.Add(time.Hour)})
+	if err != nil || core.Failed(added) {
+		t.Fatalf("add volume: %+v %v", added, err)
+	}
+	volID := added[0].Item.ID
+	fileGraveRoot := filepath.Join(f.svc.Store.Home, "graveyard")
+	f.svc.FS = rootFailureFS{testFS: f.fs, root: fileGraveRoot}
+
+	f.clock = f.clock.Add(2 * time.Hour)
+	rows, _ := f.svc.Sweep(false)
+	var buried bool
+	for _, out := range rows {
+		if out.Item.ID == volID && out.Action == core.ActionBuried {
+			buried = true
+		}
+	}
+	if !buried || !client.removed {
+		t.Fatalf("file graveyard root scan failure blocked Docker volume sweep: rows=%+v removed=%v", rows, client.removed)
+	}
+}
