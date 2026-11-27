@@ -44,6 +44,7 @@ type menu struct {
 	loadLanguage                    func() i18n.Language
 	rowCancel                       context.CancelFunc
 	actions                         chan func() error
+	activate                        chan struct{}
 }
 
 // Run keeps the native loop on the main thread to meet its threading contract;
@@ -66,6 +67,9 @@ func Run(svc *lifecycle.Service, logger *log.Logger) error {
 	done := make(chan error, 1)
 	systray.Run(func() {
 		m := newMenu(r)
+		if _, err := installDoubleClickHook(m.triggerOpenGUI); err != nil {
+			logger.Printf("tray double-click: %v", err)
+		}
 		go followVisibility(ctx, logger)
 		go func() { done <- r.Run(ctx); systray.Quit() }()
 		go m.run(ctx, cancel, changed, logger)
@@ -89,6 +93,13 @@ func newMenu(r *app.Resident) *menu {
 	}, config.UILanguage)
 }
 
+func (m *menu) triggerOpenGUI() {
+	select {
+	case m.activate <- struct{}{}:
+	default:
+	}
+}
+
 func (m *menu) run(ctx context.Context, cancel context.CancelFunc, changed <-chan struct{}, logger *log.Logger) {
 	m.refresh(ctx)
 	defer m.rowCancel()
@@ -103,6 +114,8 @@ func (m *menu) run(ctx context.Context, cancel context.CancelFunc, changed <-cha
 		case <-m.open.clicks():
 			err = openDirectory(m.resident.Service.Store.Home)
 		case <-m.gui.clicks():
+			err = m.openGUI.open()
+		case <-m.activate:
 			err = m.openGUI.open()
 		case <-m.update.clicks():
 			err = m.openGUI.open()

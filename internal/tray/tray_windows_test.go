@@ -150,3 +150,76 @@ func TestMissingGUIClickNotifiesWithoutLaunching(t *testing.T) {
 		})
 	}
 }
+
+func TestDoubleClickOpensGUIAndCoalesces(t *testing.T) {
+	home := t.TempDir()
+	items := &fakeItem{}
+	r := &app.Resident{Service: &lifecycle.Service{Store: ledger.Store{Home: home}}}
+	started := make(chan string, 2)
+	release := make(chan struct{})
+	gui := guiAction{enabled: true, path: "fixture-gui", start: func(path string) error {
+		started <- path
+		<-release
+		return nil
+	}}
+	m := makeMenu(r, gui, menuUI{addItem: items.AddSubMenuItem, addSeparator: func() {}, tooltip: func(string) {}, notify: func(string, string) error { return nil }}, func() i18n.Language { return i18n.Chinese })
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() { defer close(done); m.run(ctx, cancel, make(chan struct{}), log.New(io.Discard, "", 0)) }()
+	defer func() { cancel(); <-done }()
+
+	m.triggerOpenGUI()
+	select {
+	case path := <-started:
+		if path != "fixture-gui" {
+			t.Fatal(path)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("double-click did not open GUI")
+	}
+	m.triggerOpenGUI()
+	m.triggerOpenGUI()
+	close(release)
+	select {
+	case path := <-started:
+		if path != "fixture-gui" {
+			t.Fatal(path)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("coalesced double-click did not run")
+	}
+	select {
+	case extra := <-started:
+		t.Fatalf("unexpected extra launch: %s", extra)
+	case <-time.After(100 * time.Millisecond):
+	}
+}
+
+func TestDoubleClickMissingGUINotifies(t *testing.T) {
+	for _, language := range []i18n.Language{i18n.Chinese, i18n.English} {
+		t.Run(string(language), func(t *testing.T) {
+			root := t.TempDir()
+			items, told := &fakeItem{}, make(chan string, 1)
+			r := &app.Resident{Service: &lifecycle.Service{Store: ledger.Store{Home: root}}}
+			gui := newGUIAction(filepath.Join(root, "obitd.exe"), func(string) error {
+				t.Error("missing executable launched")
+				return nil
+			})
+			m := makeMenu(r, gui, menuUI{addItem: items.AddSubMenuItem, addSeparator: func() {}, tooltip: func(string) {},
+				notify: func(title, text string) error { told <- title + " | " + text; return nil }}, func() i18n.Language { return language })
+			ctx, cancel := context.WithCancel(context.Background())
+			done := make(chan struct{})
+			go func() { defer close(done); m.run(ctx, cancel, make(chan struct{}), log.New(io.Discard, "", 0)) }()
+			defer func() { cancel(); <-done }()
+			m.triggerOpenGUI()
+			select {
+			case got := <-told:
+				if !strings.Contains(got, gui.path) || !strings.Contains(got, "obit doctor") || !strings.HasPrefix(got, language.Text(i18n.NotCompleted)) {
+					t.Fatal(got)
+				}
+			case <-time.After(time.Second):
+				t.Fatal("missing GUI was not reported on double-click")
+			}
+		})
+	}
+}

@@ -55,11 +55,11 @@ grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt insta
 
 インストール後は、アプリケーション一覧から Obituary を開きます。小窓は GTK 3 と WebKitGTK 4.1 を使い、どちらも apt がパッケージと一緒にインストールします。プログラムは `/usr/libexec/obituary/` に置かれ、PATH には入りません。ターミナルで `obit` を使いたい場合は、インストールスクリプトでコマンドラインを別に入れてください。
 
-トレイにはデスクトップ側が StatusNotifierItem を提供している必要があり、GNOME は既定では提供していません。その場合も、拡張機能を入れずにアプリケーション一覧から同じウィンドウを開けますが、トレイアイコンは出ません。次回のログイン時にトレイを自動で出したいときは、Settings で「Start the tray at sign-in」をオンにします。オフにすると、Obituary が書いた自動起動のエントリが削除されます。アンインストールは[アンインストール](./uninstall)を参照してください。
+トレイにはデスクトップ側が StatusNotifierItem を提供している必要があり、GNOME は既定では提供していません。その場合も、拡張機能を入れずにアプリケーション一覧から同じウィンドウを開けますが、トレイアイコンは出ません。StatusNotifierItem の `Activate` を送るデスクトップ（KDE など）では、トレイアイコンの左クリックで小窓を直接開き、右クリックでメニューを開きます。次回のログイン時にトレイを自動で出したいときは、Settings で「Start the tray at sign-in」をオンにします。オフにすると、Obituary が書いた自動起動のエントリが削除されます。アンインストールは[アンインストール](./uninstall)を参照してください。
 
 ## トレイ
 
-`obit init` を実行すると、ログイン時にトレイアイコンが表示されます。メニューから次の操作ができます。
+`obit init` を実行すると、ログイン時にトレイアイコンが表示されます。トレイアイコンを左ダブルクリックすると小窓を直接開いたり前面に出したりでき、右クリックでトレイメニューを開きます。メニューから次の操作ができます。
 
 - 最近埋葬した項目を表示し、クリックして復活する。
 - 24 時間以内に期限が切れる項目を確認する。
@@ -69,7 +69,7 @@ grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt insta
 
 ## 小窓
 
-`obit-gui.exe` には Expiring、Graveyard、For you、Settings、Logs の 5 ページがあります。スタートメニューの「Obituary」、デスクトップのショートカット、トレイの「Open Obituary」から開けます。
+`obit-gui.exe` には Expiring、Graveyard、For you、Settings、Logs の 5 ページがあります。スタートメニューの「Obituary」、デスクトップのショートカット、トレイアイコンの左ダブルクリック、トレイの「Open Obituary」から開けます。
 
 - ホーム上部の「Auto registration: off」または「on」をクリックすると設定が開きます。For you の上部または Settings で、無効（既定。ユーザーとエージェントが登録したものだけ）、段階的、全自動、すべて確認の 4 モードを切り替えられます。[登録の対象](./auto-register)を参照してください。確認なしで登録された項目は下の「Handled automatically」に並びます。各項目はワンクリックで登録を取り消して元の場所に残すか、寿命を延長できます。取り消すとカウントダウンは止まります。
 - 期限が切れても埋葬できなかった項目（他のプログラムが開いているファイルなど）は、For you の「Burials that failed」に理由と次回の試行時刻が表示されます。再試行の間隔は徐々に長くなり、失敗が続くとユーザーの判断を待ちます。「Retry」は今すぐ再試行、「Stop tracking」は追跡をやめて項目を元の場所に残します。

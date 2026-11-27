@@ -55,11 +55,11 @@ grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt insta
 
 Ouvrez ensuite Obituary depuis la liste des applications. La fenêtre utilise GTK 3 et WebKitGTK 4.1, et apt les installe avec le paquet. Les programmes se trouvent dans `/usr/libexec/obituary/`, qui n’est pas dans votre PATH ; pour utiliser `obit` dans un terminal, installez la ligne de commande séparément avec le script d’installation.
 
-L’icône de notification nécessite un bureau qui fournisse StatusNotifierItem, ce que GNOME ne fait pas par défaut. Vous y ouvrez la même fenêtre depuis la liste des applications, sans aucune extension, mais il n’y a pas d’icône. Pour que l’icône apparaisse à votre prochaine ouverture de session, activez « Start the tray at sign-in » dans Settings ; le désactiver supprime l’entrée de démarrage qu’Obituary a écrite. Pour la désinstallation, voir [Désinstallation](./uninstall).
+L’icône de notification nécessite un bureau qui fournisse StatusNotifierItem, ce que GNOME ne fait pas par défaut. Vous y ouvrez la même fenêtre depuis la liste des applications, sans aucune extension, mais il n’y a pas d’icône. Sur les bureaux qui envoient `Activate` via StatusNotifierItem (comme KDE), un clic gauche sur l’icône ouvre directement la fenêtre et un clic droit ouvre le menu. Pour que l’icône apparaisse à votre prochaine ouverture de session, activez « Start the tray at sign-in » dans Settings ; le désactiver supprime l’entrée de démarrage qu’Obituary a écrite. Pour la désinstallation, voir [Désinstallation](./uninstall).
 
 ## L’icône de notification
 
-`obit init` affiche une icône dans la zone de notification à l’ouverture de session. Son menu permet de :
+`obit init` affiche une icône dans la zone de notification à l’ouverture de session. Un double-clic gauche sur l’icône ouvre ou ramène directement au premier plan la petite fenêtre, et un clic droit ouvre le menu de la zone de notification. Son menu permet de :
 
 - voir les derniers éléments enterrés et cliquer sur l’un d’eux pour le ressusciter ;
 - consulter les éléments qui expirent dans les 24 heures ;
@@ -69,7 +69,7 @@ L’icône de notification nécessite un bureau qui fournisse StatusNotifierItem
 
 ## La petite fenêtre
 
-`obit-gui.exe` comporte cinq pages : Expiring, Graveyard, For you, Settings et Logs. Le raccourci « Obituary » du menu Démarrer, celui du Bureau et « Open Obituary » dans la zone de notification ouvrent tous la même fenêtre.
+`obit-gui.exe` comporte cinq pages : Expiring, Graveyard, For you, Settings et Logs. Le raccourci « Obituary » du menu Démarrer, celui du Bureau, un double-clic sur l’icône de notification et « Open Obituary » dans son menu ouvrent tous la même fenêtre.
 
 - La barre en haut de l’accueil indique « Auto registration: off » ou « on ». Cliquez dessus pour accéder aux réglages. En haut de For you ou dans Settings, choisissez entre désactivé (par défaut, seuls les éléments que vous ou l’agent enregistrez sont pris en compte), par niveaux, entièrement automatique ou toujours demander. Voir [Éléments enregistrés](./auto-register). Plus bas, « Handled automatically » liste les enregistrements sans demande préalable. Un clic suffit pour les annuler (le décompte s’arrête et l’élément reste en place) ou prolonger leur durée de vie.
 - Un fichier arrivé à échéance mais impossible à enterrer, par exemple parce qu’un autre programme le garde ouvert, apparaît dans « Burials that failed » sur la page For you, avec le motif et l’heure du prochain essai. Obituary espace progressivement ses tentatives. Si les échecs se répètent, il attend votre décision : « Retry » réessaie immédiatement, « Stop tracking » arrête le suivi et laisse l’élément en place.

@@ -55,11 +55,11 @@ grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt insta
 
 Después abre Obituary desde la lista de aplicaciones. La ventana usa GTK 3 y WebKitGTK 4.1, y apt los instala junto con el paquete. Los programas están en `/usr/libexec/obituary/`, que no está en tu PATH; para usar `obit` en una terminal, instala la línea de comandos por separado con el script de instalación.
 
-La bandeja necesita un escritorio que ofrezca StatusNotifierItem, y GNOME no lo hace de forma predeterminada. Allí abres la misma ventana desde la lista de aplicaciones, sin ninguna extensión, pero no hay icono en la bandeja. Para que la bandeja aparezca en tu próximo inicio de sesión, activa «Start the tray at sign-in» en Settings; al desactivarlo se elimina la entrada de inicio que escribió Obituary. Para desinstalar, consulta [Desinstalación](./uninstall).
+La bandeja necesita un escritorio que ofrezca StatusNotifierItem, y GNOME no lo hace de forma predeterminada. Allí abres la misma ventana desde la lista de aplicaciones, sin ninguna extensión, pero no hay icono en la bandeja. En escritorios que envían `Activate` de StatusNotifierItem (como KDE), un clic izquierdo en el icono abre la ventana directamente y el clic derecho abre el menú. Para que la bandeja aparezca en tu próximo inicio de sesión, activa «Start the tray at sign-in» en Settings; al desactivarlo se elimina la entrada de inicio que escribió Obituary. Para desinstalar, consulta [Desinstalación](./uninstall).
 
 ## Bandeja del sistema
 
-`obit init` hace que aparezca un icono en la bandeja al iniciar sesión. Desde su menú puedes:
+`obit init` hace que aparezca un icono en la bandeja al iniciar sesión. Un doble clic izquierdo en el icono abre o enfoca directamente la pequeña ventana, y un clic derecho abre el menú de la bandeja. Desde su menú puedes:
 
 - ver los entierros recientes y pulsar en uno para resucitarlo;
 - consultar los elementos que caducan en las próximas 24 horas;
@@ -69,7 +69,7 @@ La bandeja necesita un escritorio que ofrezca StatusNotifierItem, y GNOME no lo 
 
 ## La pequeña ventana
 
-`obit-gui.exe` tiene cinco páginas: Expiring, Graveyard, For you, Settings y Logs. Puedes abrir la ventana desde «Obituary» en Inicio, desde el acceso directo del escritorio o con «Open Obituary» en la bandeja.
+`obit-gui.exe` tiene cinco páginas: Expiring, Graveyard, For you, Settings y Logs. Puedes abrir la ventana desde «Obituary» en Inicio, desde el acceso directo del escritorio, con un doble clic en el icono de la bandeja o con «Open Obituary» en el menú de la bandeja.
 
 - La barra superior de la página de inicio indica «Auto registration: off» u «on». Púlsala para abrir los ajustes. Tanto en la parte superior de For you como en Settings puedes elegir entre desactivado (por defecto: solo entra lo que registráis tú y el agente), escalonado, totalmente automático o preguntar siempre. Consulta [Qué se registra](./auto-register). Más abajo, «Handled automatically» muestra lo registrado sin preguntar. Con un clic puedes deshacer el registro (se detiene la cuenta atrás y el elemento queda en su sitio) o prolongar la vida útil.
 - Si un elemento caduca pero no se puede enterrar, por ejemplo porque otro programa mantiene abierto el archivo, aparece en «Burials that failed» de For you, con el motivo y la fecha del siguiente intento. Obituary reintenta a intervalos cada vez mayores. Tras varios fallos se detiene: «Retry» vuelve a intentarlo ahora y «Stop tracking» deja el elemento en su sitio sin seguirlo.

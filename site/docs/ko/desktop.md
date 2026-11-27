@@ -55,11 +55,11 @@ grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt insta
 
 설치한 뒤에는 앱 목록에서 Obituary를 엽니다. 작은 창은 GTK 3와 WebKitGTK 4.1을 쓰며, 둘 다 apt가 패키지와 함께 설치합니다. 프로그램은 `/usr/libexec/obituary/`에 놓이고 PATH에는 들어가지 않습니다. 터미널에서 `obit`을 쓰려면 설치 스크립트로 명령줄을 따로 설치하세요.
 
-트레이는 데스크톱이 StatusNotifierItem을 제공해야 하는데, GNOME은 기본으로 제공하지 않습니다. 그럴 때도 확장 기능 없이 앱 목록에서 같은 창을 열 수 있지만, 트레이 아이콘은 없습니다. 다음 로그인 때 트레이가 자동으로 나타나게 하려면 Settings에서 ‘Start the tray at sign-in’을 켜세요. 끄면 Obituary가 쓴 자동 시작 항목이 삭제됩니다. 제거는 [제거](./uninstall)를 참고하세요.
+트레이는 데스크톱이 StatusNotifierItem을 제공해야 하는데, GNOME은 기본으로 제공하지 않습니다. 그럴 때도 확장 기능 없이 앱 목록에서 같은 창을 열 수 있지만, 트레이 아이콘은 없습니다. StatusNotifierItem `Activate`를 보내는 데스크톱(예: KDE)에서는 트레이 아이콘을 왼쪽 클릭하면 창이 바로 열리고 오른쪽 클릭하면 메뉴가 열립니다. 다음 로그인 때 트레이가 자동으로 나타나게 하려면 Settings에서 ‘Start the tray at sign-in’을 켜세요. 끄면 Obituary가 쓴 자동 시작 항목이 삭제됩니다. 제거는 [제거](./uninstall)를 참고하세요.
 
 ## 트레이
 
-`obit init`을 실행하면 로그인할 때 트레이 아이콘이 나타납니다. 메뉴에는 다음 항목이 있습니다.
+`obit init`을 실행하면 로그인할 때 트레이 아이콘이 나타납니다. 트레이 아이콘을 왼쪽 더블클릭하면 작은 창을 바로 열거나 앞으로 가져오고, 오른쪽 클릭하면 트레이 메뉴가 열립니다. 메뉴에는 다음 항목이 있습니다.
 
 - 최근 매장한 항목: 클릭하면 부활합니다.
 - 앞으로 24시간 안에 만료되는 항목
@@ -69,7 +69,7 @@ grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt insta
 
 ## 작은 창
 
-`obit-gui.exe`에는 Expiring, Graveyard, For you, Settings, Logs의 다섯 페이지가 있습니다. 시작 메뉴의 ‘Obituary’, 바탕 화면 바로 가기, 트레이 메뉴의 ‘Open Obituary’ 중 어느 것으로든 열 수 있습니다.
+`obit-gui.exe`에는 Expiring, Graveyard, For you, Settings, Logs의 다섯 페이지가 있습니다. 시작 메뉴의 ‘Obituary’, 바탕 화면 바로 가기, 트레이 아이콘 왼쪽 더블클릭, 트레이 메뉴의 ‘Open Obituary’ 중 어느 것으로든 열 수 있습니다.
 
 - 홈 화면 위쪽에 ‘Auto registration: off’ 또는 ‘on’이 표시되며 클릭하면 설정이 열립니다. For you 상단이나 Settings에서 끄기(기본값으로 사용자와 에이전트가 등록한 항목만 포함), 단계별, 완전 자동, 매번 확인 중 하나를 선택합니다. [등록 대상](./auto-register)을 참고하세요. 승인 없이 등록된 항목은 아래의 ‘Handled automatically’에 표시됩니다. 항목마다 한 번의 클릭으로 등록을 취소해 카운트다운을 멈추고 제자리에 두거나 수명을 연장할 수 있습니다.
 - 만료 후에도 다른 프로그램이 파일을 열고 있는 등의 이유로 매장하지 못한 항목은 For you의 ‘Burials that failed’에 사유 및 다음 재시도 시각과 함께 표시됩니다. 재시도 간격은 점차 길어지며 실패가 반복되면 멈추고 사용자의 결정을 기다립니다. ‘Retry’는 즉시 다시 시도하고 ‘Stop tracking’은 추적을 끝내고 항목을 제자리에 둡니다.

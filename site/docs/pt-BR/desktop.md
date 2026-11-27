@@ -55,11 +55,11 @@ grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt insta
 
 Depois, abra o Obituary pela lista de aplicativos. A janela usa GTK 3 e WebKitGTK 4.1, e o apt os instala junto com o pacote. Os programas ficam em `/usr/libexec/obituary/`, que não está no seu PATH; para usar `obit` em um terminal, instale a linha de comando separadamente com o script de instalação.
 
-A bandeja precisa de um desktop que ofereça StatusNotifierItem, e o GNOME não oferece por padrão. Ali você abre a mesma janela pela lista de aplicativos, sem nenhuma extensão, mas não há ícone na bandeja. Para que o ícone apareça no seu próximo login, ative “Start the tray at sign-in” em Settings; desativá-lo apaga a entrada de inicialização que o Obituary escreveu. Para desinstalar, veja [Desinstalação](./uninstall).
+A bandeja precisa de um desktop que ofereça StatusNotifierItem, e o GNOME não oferece por padrão. Ali você abre a mesma janela pela lista de aplicativos, sem nenhuma extensão, mas não há ícone na bandeja. Em desktops que enviam `Activate` pelo StatusNotifierItem (como o KDE), um clique esquerdo no ícone abre a janela diretamente e o clique direito abre o menu. Para que o ícone apareça no seu próximo login, ative “Start the tray at sign-in” em Settings; desativá-lo apaga a entrada de inicialização que o Obituary escreveu. Para desinstalar, veja [Desinstalação](./uninstall).
 
 ## Bandeja do sistema
 
-`obit init` configura o ícone da bandeja para aparecer no login. No menu, você pode:
+`obit init` configura o ícone da bandeja para aparecer no login. Um clique duplo com o botão esquerdo no ícone abre ou foca a pequena janela diretamente, e o clique direito abre o menu da bandeja. No menu, você pode:
 
 - ver os itens enterrados recentemente e clicar em um deles para ressuscitá-lo;
 - consultar itens que expiram nas próximas 24 horas;
@@ -69,7 +69,7 @@ A bandeja precisa de um desktop que ofereça StatusNotifierItem, e o GNOME não 
 
 ## A pequena janela
 
-`obit-gui.exe` tem cinco páginas: Expiring, Graveyard, For you, Settings e Logs. A entrada “Obituary” no menu Iniciar, o atalho da área de trabalho e “Open Obituary” na bandeja abrem a mesma janela.
+`obit-gui.exe` tem cinco páginas: Expiring, Graveyard, For you, Settings e Logs. A entrada “Obituary” no menu Iniciar, o atalho da área de trabalho, um clique duplo no ícone da bandeja e “Open Obituary” no menu da bandeja abrem a mesma janela.
 
 - A barra superior da página inicial mostra “Auto registration: off” ou “on”. Clique nela para abrir as configurações. No topo de For you ou em Settings você pode desativar o registro (padrão: só entra o que você e o agente registram), usar o modo em camadas, deixar tudo automático ou perguntar sempre. Veja [O que é registrado](./auto-register). A seção “Handled automatically”, mais abaixo, lista os itens registrados sem perguntar. Um clique desfaz o registro (a contagem para e o item fica no lugar) ou estende a vida útil.
 - Se um item expirar e não puder ser enterrado, por exemplo porque outro programa mantém o arquivo aberto, ele aparecerá em “Burials that failed” na página For you, com o motivo e a hora da próxima tentativa. O Obituary aumenta o intervalo entre as tentativas. Depois de repetidas falhas, ele espera sua decisão: “Retry” tenta de novo agora; “Stop tracking” encerra o acompanhamento e deixa o item no lugar.

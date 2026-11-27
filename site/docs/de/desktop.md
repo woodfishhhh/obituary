@@ -55,11 +55,11 @@ grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt insta
 
 Öffne danach Obituary aus der Anwendungsliste. Das Fenster nutzt GTK 3 und WebKitGTK 4.1, und apt installiert beides mit dem Paket. Die Programme liegen in `/usr/libexec/obituary/`, das nicht in deinem PATH steht; um `obit` im Terminal zu nutzen, installiere die Befehlszeile gesondert mit dem Installationsskript.
 
-Das Symbol im Infobereich braucht einen Desktop, der StatusNotifierItem bereitstellt, und GNOME tut das standardmäßig nicht. Dort öffnest du dasselbe Fenster aus der Anwendungsliste, ohne Erweiterung, aber es gibt kein Symbol. Damit das Symbol bei deiner nächsten Anmeldung erscheint, schalte in den Settings „Start the tray at sign-in“ ein; schaltest du es aus, wird der Autostart-Eintrag gelöscht, den Obituary geschrieben hat. Zum Deinstallieren siehe [Deinstallation](./uninstall).
+Das Symbol im Infobereich braucht einen Desktop, der StatusNotifierItem bereitstellt, und GNOME tut das standardmäßig nicht. Dort öffnest du dasselbe Fenster aus der Anwendungsliste, ohne Erweiterung, aber es gibt kein Symbol. Auf Desktops, die StatusNotifierItem `Activate` senden (etwa KDE), öffnet ein Linksklick auf das Symbol direkt das Fenster und ein Rechtsklick das Menü. Damit das Symbol bei deiner nächsten Anmeldung erscheint, schalte in den Settings „Start the tray at sign-in“ ein; schaltest du es aus, wird der Autostart-Eintrag gelöscht, den Obituary geschrieben hat. Zum Deinstallieren siehe [Deinstallation](./uninstall).
 
 ## Das Symbol im Infobereich
 
-`obit init` richtet ein Symbol im Infobereich ein, das bei der Anmeldung erscheint. Sein Menü bietet:
+`obit init` richtet ein Symbol im Infobereich ein, das bei der Anmeldung erscheint. Ein Doppelklick auf das Symbol öffnet oder fokussiert direkt das kleine Fenster, ein Rechtsklick öffnet das Tray-Menü. Sein Menü bietet:
 
 - die zuletzt begrabenen Einträge; klicke einen an, um ihn wiederzubeleben;
 - Einträge, die innerhalb der nächsten 24 Stunden ablaufen;
@@ -69,7 +69,7 @@ Das Symbol im Infobereich braucht einen Desktop, der StatusNotifierItem bereitst
 
 ## Das kleine Fenster
 
-`obit-gui.exe` hat fünf Seiten: Expiring, Graveyard, For you, Settings und Logs. Du öffnest das Fenster über „Obituary“ im Startmenü, die Desktop-Verknüpfung oder „Open Obituary“ im Tray-Menü.
+`obit-gui.exe` hat fünf Seiten: Expiring, Graveyard, For you, Settings und Logs. Du öffnest das Fenster über „Obituary“ im Startmenü, die Desktop-Verknüpfung, einen Doppelklick auf das Tray-Symbol oder „Open Obituary“ im Tray-Menü.
 
 - Die obere Leiste der Startseite zeigt „Auto registration: off“ oder „on“. Ein Klick öffnet die Einstellungen. Oben auf For you und unter Settings kannst du zwischen aus (Standard: nur du und der Agent registrieren), abgestuft, vollautomatisch und immer nachfragen wählen; siehe [Was registriert wird](./auto-register). Weiter unten stehen unter „Handled automatically“ die ohne Rückfrage registrierten Einträge. Je Eintrag kannst du die Registrierung mit einem Klick rückgängig machen (die Frist endet, der Eintrag bleibt an Ort und Stelle) oder die Lebensdauer verlängern.
 - Fällige Einträge, die nicht begraben werden konnten, etwa weil ein Programm die Datei offen hält, erscheinen unter „Burials that failed“ auf For you. Dort stehen Grund und nächster Versuch. Die Wartezeit zwischen den Versuchen wächst. Nach wiederholten Fehlern wartet Obituary auf dich: „Retry“ versucht es sofort erneut, „Stop tracking“ lässt den Eintrag an seinem Platz und beendet die Überwachung.

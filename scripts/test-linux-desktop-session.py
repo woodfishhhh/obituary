@@ -44,6 +44,7 @@ def until(read):
 def probe():
     sender, path = json.loads(until(lambda: (work / 'registered').exists() and (work / 'registered').read_text()))
     obj = bus.get_object(sender, path)
+    assert not bool(obj.Get('org.kde.StatusNotifierItem', 'ItemIsMenu', dbus_interface='org.freedesktop.DBus.Properties'))
     menu_path = obj.Get('org.kde.StatusNotifierItem', 'Menu', dbus_interface='org.freedesktop.DBus.Properties')
     menu = dbus.Interface(bus.get_object(sender, menu_path), 'com.canonical.dbusmenu')
 

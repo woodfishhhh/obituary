@@ -55,11 +55,11 @@ grep -F "  $file" checksums.txt | sha256sum --check --strict - && sudo apt insta
 
 Afterwards open Obituary from the application list. The window uses GTK 3 and WebKitGTK 4.1, and apt installs them with the package. The programs live in `/usr/libexec/obituary/`, which is not on your PATH; to use `obit` in a terminal, install the command line separately with the install script.
 
-The tray needs a desktop that provides StatusNotifierItem, and GNOME does not by default. There you open the same window from the application list, with no extension, but there is no tray icon. To have the tray appear at your next login, turn on "Start the tray at sign-in" in Settings; turning it off deletes the startup entry Obituary wrote. For uninstalling, see [Uninstall](./uninstall).
+The tray needs a desktop that provides StatusNotifierItem, and GNOME does not by default. There you open the same window from the application list, with no extension, but there is no tray icon. On desktops that send StatusNotifierItem `Activate` (such as KDE), left-clicking the tray icon opens the window directly and right-clicking opens the menu. To have the tray appear at your next login, turn on "Start the tray at sign-in" in Settings; turning it off deletes the startup entry Obituary wrote. For uninstalling, see [Uninstall](./uninstall).
 
 ## The Windows tray
 
-`obit init` starts a tray icon at login. Its menu has:
+`obit init` starts a tray icon at login. Double-click the tray icon to open or focus the small window directly, and right-click it to open the tray menu. Its menu has:
 
 - recent burials (click one to resurrect it);
 - items due within 24 hours;
@@ -69,7 +69,7 @@ The tray needs a desktop that provides StatusNotifierItem, and GNOME does not by
 
 ## The Windows window
 
-`obit-gui.exe` has five pages: Expiring, Graveyard, For you, Settings and Logs. "Obituary" in Start, the desktop shortcut and "Open Obituary" in the tray menu all open it.
+`obit-gui.exe` has five pages: Expiring, Graveyard, For you, Settings and Logs. "Obituary" in Start, the desktop shortcut, double-clicking the tray icon and "Open Obituary" in the tray menu all open it.
 
 - The home page's top bar says "Auto registration: off" or "on"; click it to open Settings. Both the top of For you and Settings switch it: Off (the default: only what agents and you register goes in), Tiered, Fully automatic and Ask about everything; see [What goes in](./auto-register). What went in without asking is listed further down under Handled automatically, each with one-click Undo (the countdown stops, it stays where it is) and Keep longer.
 - Items that were due but could not be buried (another program holding a file open, say) are listed under "Burials that failed" on For you, with the reason and when it is tried next. Obituary tries again after a while, waiting longer each time, and after repeated failures it stops and waits for you: Retry buries it again now, Stop tracking leaves it where it is.

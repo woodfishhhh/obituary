@@ -35,7 +35,7 @@ type menuUI struct {
 }
 
 func makeMenu(r *app.Resident, gui guiAction, ui menuUI, language func() i18n.Language) *menu {
-	m := &menu{resident: r, openGUI: gui, ui: ui, loadLanguage: language, actions: make(chan func() error, 16)}
+	m := &menu{resident: r, openGUI: gui, ui: ui, loadLanguage: language, actions: make(chan func() error, 16), activate: make(chan struct{}, 1)}
 	m.gui = ui.addItem("", "")
 	// Native menus only append, so the release item waits hidden under the
 	// window item instead of landing below Quit when a release appears.
