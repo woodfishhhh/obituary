@@ -11,7 +11,8 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 func TestMenuResurrectsLatestWithoutProjectAndKeepsExistingFile(t *testing.T) {
@@ -30,7 +31,7 @@ func TestMenuResurrectsLatestWithoutProjectAndKeepsExistingFile(t *testing.T) {
 		paths = append(paths, path)
 		clitest.WriteFixture(t, path, name)
 		rows, err := svc.Bury([]string{path}, false, "")
-		if err != nil || core.GraveFailed(rows) {
+		if err != nil || lifecycle.GraveFailed(rows) {
 			t.Fatal(rows, err)
 		}
 		clock = clock.Add(time.Minute)
@@ -57,7 +58,7 @@ func TestMenuLatestRecoveryDoesNotFallBack(t *testing.T) {
 		t.Run(mode, func(t *testing.T) {
 			svc, older, newer := clitest.BurialRetryFixture(t, mode)
 			oldOpen := cmdutil.Open
-			cmdutil.Open = func() (*core.Service, error) { return svc, nil }
+			cmdutil.Open = func() (*lifecycle.Service, error) { return svc, nil }
 			t.Cleanup(func() { cmdutil.Open = oldOpen })
 			out, stderr, err := clitest.Execute(t, NewCmd(), "resurrect", "ignored-selection")
 			if mode == "committed" && err != nil {
@@ -105,7 +106,7 @@ func TestMenuPolicyAndEmptyGraveyard(t *testing.T) {
 }
 
 func TestMenuLatestRejectsPendingRecovery(t *testing.T) {
-	view := &core.GraveyardView{Burials: []core.Burial{{ID: 1, BuriedAt: time.Now()}}, Pending: []core.PendingGrave{{}}}
+	view := &lifecycle.GraveyardView{Burials: []ledger.Burial{{ID: 1, BuriedAt: time.Now()}}, Pending: []lifecycle.PendingGrave{{}}}
 	if ref, _, err := latest(view); err == nil || ref != "" {
 		t.Fatal(ref, err)
 	}

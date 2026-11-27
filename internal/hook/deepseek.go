@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 )
@@ -43,7 +43,7 @@ func (deepseekAdapter) Decode(raw []byte, invocation Invocation) (Event, error) 
 		return Event{}, ErrSkip
 	}
 	if in.SessionID != "" {
-		ev.Session = core.NormalizeSession("deepseek-harness:" + in.SessionID)
+		ev.Session = lifecycle.NormalizeSession("deepseek-harness:" + in.SessionID)
 	}
 	local := deepseekLocal() && deepseekWindowsPath(in.Cwd)
 	if in.Event == "PreToolUse" {

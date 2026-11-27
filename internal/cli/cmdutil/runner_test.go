@@ -12,7 +12,8 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
@@ -25,7 +26,7 @@ func TestDeferredExplorerSync(t *testing.T) {
 		want     int
 	}{{"unchanged", 0, false, nil, 0}, {"coalesced", 2, false, nil, 1}, {"resident", 2, true, nil, 0}, {"failed-spawn", 1, false, errors.New("spawn failed"), 1}} {
 		t.Run(tc.name, func(t *testing.T) {
-			svc := &core.Service{Store: core.Store{Home: t.TempDir()}, FS: winfs.FS{}}
+			svc := &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}, FS: winfs.FS{}}
 			oldOnce, oldRunning := cmdutil.RunOnce, cmdutil.RunnerRunning
 			t.Cleanup(func() { cmdutil.RunOnce, cmdutil.RunnerRunning = oldOnce, oldRunning })
 			calls := 0
@@ -41,7 +42,7 @@ func TestDeferredExplorerSync(t *testing.T) {
 			for range tc.writes {
 				path := filepath.Join(t.TempDir(), "debug.log")
 				clitest.WriteFixture(t, path, "fixture")
-				results, err := svc.Add([]string{path}, core.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
+				results, err := svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
 				if err != nil || len(results) != 1 || results[0].Item == nil {
 					t.Fatalf("registration failed: %+v %v", results, err)
 				}
@@ -66,7 +67,7 @@ func TestDeferredExplorerSync(t *testing.T) {
 func TestRunnerTickDetectsManifestWithoutDueItem(t *testing.T) {
 	for _, name := range []string{"1-pending.json", "1-broken.JSON", "1-incomplete.json.tmp", "unrelated.txt", ""} {
 		t.Run(name, func(t *testing.T) {
-			svc := &core.Service{Store: core.Store{Home: t.TempDir()}}
+			svc := &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}}
 			if name != "" {
 				clitest.WriteFixture(t, filepath.Join(svc.Store.Home, "graveyard", name), "{not parsed by hook")
 			}
@@ -93,7 +94,7 @@ func TestRunnerTickDetectsManifestWithoutDueItem(t *testing.T) {
 }
 
 func TestManifestRecoveryTriggerBacksOffAcrossRunners(t *testing.T) {
-	svc := &core.Service{Store: core.Store{Home: t.TempDir()}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}}
 	manifest := filepath.Join(svc.Store.Home, "graveyard", "1-broken.json")
 	clitest.WriteFixture(t, manifest, "{broken")
 	previous := cmdutil.RunOnce
@@ -141,8 +142,8 @@ func TestManifestRecoveryTriggerBacksOffAcrossRunners(t *testing.T) {
 	if calls != 4 {
 		t.Fatalf("unchanged manifest not retried after quiet period: %d", calls)
 	}
-	if err := svc.Store.Update(func(st *core.State) error {
-		st.Items = append(st.Items, core.Item{ID: 3, ExpiresAt: time.Now().Add(-time.Minute)})
+	if err := svc.Store.Update(func(st *ledger.State) error {
+		st.Items = append(st.Items, ledger.Item{ID: 3, ExpiresAt: time.Now().Add(-time.Minute)})
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -154,7 +155,7 @@ func TestManifestRecoveryTriggerBacksOffAcrossRunners(t *testing.T) {
 }
 
 func TestFailedRecoverySpawnRemainsRetryable(t *testing.T) {
-	svc := &core.Service{Store: core.Store{Home: t.TempDir()}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}}
 	clitest.WriteFixture(t, filepath.Join(svc.Store.Home, "graveyard", "1-broken.json"), "{broken")
 	previous := cmdutil.RunOnce
 	t.Cleanup(func() { cmdutil.RunOnce = previous })
@@ -208,5 +209,5 @@ func TestManifestRecoveryHelperProcess(t *testing.T) {
 		_, err = f.WriteString("spawn\n")
 		return err
 	}
-	cmdutil.Runner(&core.Service{Store: core.Store{Home: home}}).Tick()
+	cmdutil.Runner(&lifecycle.Service{Store: ledger.Store{Home: home}}).Tick()
 }

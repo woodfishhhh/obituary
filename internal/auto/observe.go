@@ -13,7 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"github.com/woodfishhhh/obituary/internal/project"
 )
@@ -29,7 +30,7 @@ const LeftoverLifespan = "3d"
 
 // Notice tells the agent about a proposal it has not heard of yet.
 type Notice struct {
-	Proposal core.Proposal
+	Proposal ledger.Proposal
 	Created  bool
 }
 
@@ -80,7 +81,7 @@ func (e *Engine) Observe(paths []string, session string) ([]Decision, []Notice, 
 
 // ObserveCaptured preserves each hook event's identity across lock waits.
 // Decisions keep the input order, so retries queue the exact captured event.
-func (e *Engine) ObserveCaptured(rows []core.Observation) ([]Decision, []Notice, error) {
+func (e *Engine) ObserveCaptured(rows []ledger.Observation) ([]Decision, []Notice, error) {
 	e.sets = nil
 	if e.off() {
 		var paths []string
@@ -121,7 +122,7 @@ func (e *Engine) observe(paths []string, opts Options, located locations) ([]Dec
 	if e.off() {
 		return offDecisions(paths), nil, nil
 	}
-	opts.Session = core.NormalizeSession(opts.Session)
+	opts.Session = lifecycle.NormalizeSession(opts.Session)
 	state, err := e.Svc.Store.ReadHot()
 	if err != nil {
 		var decisions []Decision
@@ -144,7 +145,7 @@ func (e *Engine) observe(paths []string, opts Options, located locations) ([]Dec
 	return decisions, notices, failures
 }
 
-func (e *Engine) observePath(ref string, opts Options, state *core.State, located locations) (Decision, *Notice) {
+func (e *Engine) observePath(ref string, opts Options, state *ledger.State, located locations) (Decision, *Notice) {
 	if state.ObservationCompleted(opts.Observed) {
 		return Decision{Path: ref, Action: Skipped, Reason: "observation already completed"}, nil
 	}
@@ -155,7 +156,7 @@ func (e *Engine) observePath(ref string, opts Options, state *core.State, locate
 	// or hook calls (worktrees and index replacement must stay Git's job).
 	// Units the proposal mode lets in without asking go through Apply too;
 	// their class is decided once (approved projects decide after sizing).
-	approved := state.Projects[core.ProjectKey(matchedProject.Root)].Consent == core.ConsentApproved
+	approved := state.Projects[ledger.ProjectKey(matchedProject.Root)].Consent == ledger.ConsentApproved
 	if d.Action == WouldRegister && !approved {
 		opts.AutoClass = e.directClass(matchedProject.Root, d.Unit, opts)
 	}
@@ -176,7 +177,7 @@ func (e *Engine) observePath(ref string, opts Options, state *core.State, locate
 	return d, n
 }
 
-func (e *Engine) observeRegistration(ref string, d Decision, matchedProject project.Project, opts Options, state *core.State, located locations) (Decision, *Notice) {
+func (e *Engine) observeRegistration(ref string, d Decision, matchedProject project.Project, opts Options, state *ledger.State, located locations) (Decision, *Notice) {
 	proj, ok, err := project.Find(d.Unit)
 	if err != nil {
 		return failedDecision(d, err), nil
@@ -185,19 +186,19 @@ func (e *Engine) observeRegistration(ref string, d Decision, matchedProject proj
 		d.Action, d.Reason = Skipped, "not inside a Git work tree"
 		return d, nil
 	}
-	if state.Projects[core.ProjectKey(proj.Root)].Consent == core.ConsentDeclined {
+	if state.Projects[ledger.ProjectKey(proj.Root)].Consent == ledger.ConsentDeclined {
 		d.Action, d.Reason = Skipped, "automatic registration declined"
 		return d, nil
 	}
 	bytes, files := size(d.Unit)
-	approved := state.Projects[core.ProjectKey(proj.Root)].Consent == core.ConsentApproved
+	approved := state.Projects[ledger.ProjectKey(proj.Root)].Consent == ledger.ConsentApproved
 	if approved && bytes <= LargeBytes && files <= LargeFiles {
 		opts.AutoClass = "" // the user approved this project: no receipt, as before
 		return e.applyObservedUnit(ref, d, opts, state, located), nil
 	}
 	// Approved large units bypass Apply, so they need its vetting
 	// gate before becoming proposals as well.
-	if state.Projects[core.ProjectKey(matchedProject.Root)].Consent == core.ConsentApproved {
+	if state.Projects[ledger.ProjectKey(matchedProject.Root)].Consent == ledger.ConsentApproved {
 		if d = e.vetDecision(d, proj, state, located); d.Action == WouldRegister {
 			opts.AutoClass = e.directClass(proj.Root, d.Unit, opts)
 		}
@@ -213,7 +214,7 @@ func (e *Engine) observeRegistration(ref string, d Decision, matchedProject proj
 	return e.proposeObservedUnit(d, proj.Root, opts, bytes, approved)
 }
 
-func (e *Engine) applyObservedUnit(ref string, d Decision, opts Options, state *core.State, located locations) Decision {
+func (e *Engine) applyObservedUnit(ref string, d Decision, opts Options, state *ledger.State, located locations) Decision {
 	applied, err := e.apply([]string{d.Unit}, opts, located)
 	if len(applied) == 0 {
 		return failedDecision(d, err)
@@ -227,11 +228,11 @@ func (e *Engine) applyObservedUnit(ref string, d Decision, opts Options, state *
 }
 
 func (e *Engine) proposeObservedUnit(d Decision, root string, opts Options, bytes int64, approved bool) (Decision, *Notice) {
-	kind := core.ProposalOnboard
+	kind := ledger.ProposalOnboard
 	if approved {
-		kind = core.ProposalLarge
+		kind = ledger.ProposalLarge
 	}
-	n, err := e.propose(kind, root, opts.Session, []core.Candidate{{Path: d.Unit, Lifespan: d.Lifespan, Rule: d.Rule, Size: bytes}}, opts.Observed)
+	n, err := e.propose(kind, root, opts.Session, []ledger.Candidate{{Path: d.Unit, Lifespan: d.Lifespan, Rule: d.Rule, Size: bytes}}, opts.Observed)
 	if err != nil {
 		return inspectionDecision(d, err), nil
 	}
@@ -248,7 +249,7 @@ func mergeObserveNotice(notices []Notice, n Notice) []Notice {
 	return notices
 }
 
-func (e *Engine) propose(kind, root, session string, cands []core.Candidate, observed *core.Observation) (*Notice, error) {
+func (e *Engine) propose(kind, root, session string, cands []ledger.Candidate, observed *ledger.Observation) (*Notice, error) {
 	if len(cands) == 0 {
 		return nil, nil
 	}
@@ -274,7 +275,7 @@ type snapshot struct {
 var unsafeSession = regexp.MustCompile(`[^A-Za-z0-9_-]+`)
 
 func (e *Engine) snapshotPath(root, session string) string {
-	sum := sha256.Sum256([]byte(core.ProjectKey(root)))
+	sum := sha256.Sum256([]byte(ledger.ProjectKey(root)))
 	return filepath.Join(e.Svc.Store.Home, "sessions", hex.EncodeToString(sum[:6])+"-"+unsafeSession.ReplaceAllString(session, "_")+".json")
 }
 

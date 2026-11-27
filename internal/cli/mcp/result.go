@@ -5,7 +5,8 @@ import (
 	"strings"
 
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/textutil"
 )
 
@@ -34,32 +35,32 @@ func mcpCommittedResult(data any, err error, committed bool) mcpReply {
 	return r
 }
 
-func mcpItems(results []core.Result, err error) mcpReply {
+func mcpItems(results []lifecycle.Result, err error) mcpReply {
 	committed := len(results) > 0
 	for _, r := range results {
 		committed = committed && r.Action != "" && r.Error == ""
 	}
 	out := mcpCommittedResult(map[string]any{"results": results}, err, committed)
-	if core.Failed(results) && out.Error == "" {
+	if lifecycle.Failed(results) && out.Error == "" {
 		out.Error = "one or more items failed; results contain individual errors"
 	}
 	return out
 }
 
-func mcpGraves(results []core.GraveResult, err error) mcpReply {
+func mcpGraves(results []lifecycle.GraveResult, err error) mcpReply {
 	committed := len(results) > 0
 	for _, r := range results {
-		committed = committed && (r.Action == core.ActionBuried || r.Action == core.ActionResurrected || r.Action == core.ActionRecycled) && r.Error == ""
+		committed = committed && (r.Action == ledger.ActionBuried || r.Action == ledger.ActionResurrected || r.Action == ledger.ActionRecycled) && r.Error == ""
 	}
 	for i := range results {
-		if results[i].Action == core.ActionRecycled && results[i].Error == "" {
+		if results[i].Action == ledger.ActionRecycled && results[i].Error == "" {
 			results[i].Detail = cmdutil.RecycleRecovery
 		}
 	}
 	out := mcpCommittedResult(map[string]any{"results": results}, err, committed)
 	if msg := mcpQuotaOverflowMessage(results); msg != "" {
 		out.Error = msg
-	} else if core.GraveFailed(results) && out.Error == "" {
+	} else if lifecycle.GraveFailed(results) && out.Error == "" {
 		out.Error = "one or more burials failed; results contain individual errors"
 	}
 	if note := mcpQuotaEvictionWarning(results); note != "" {
@@ -71,7 +72,7 @@ func mcpGraves(results []core.GraveResult, err error) mcpReply {
 	return out
 }
 
-func mcpQuotaOverflowMessage(results []core.GraveResult) string {
+func mcpQuotaOverflowMessage(results []lifecycle.GraveResult) string {
 	var parts []string
 	for _, r := range results {
 		if r.QuotaOverflow == nil {
@@ -84,7 +85,7 @@ func mcpQuotaOverflowMessage(results []core.GraveResult) string {
 	return strings.Join(parts, "; ")
 }
 
-func mcpQuotaEvictionWarning(results []core.GraveResult) string {
+func mcpQuotaEvictionWarning(results []lifecycle.GraveResult) string {
 	var parts []string
 	for _, r := range results {
 		ev := r.QuotaEviction

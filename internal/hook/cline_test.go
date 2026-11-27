@@ -8,7 +8,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func TestClineBridge(t *testing.T) {
@@ -81,7 +81,7 @@ func TestClineContextBudget(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t)
 	for i := 0; i < 9; i++ {
-		_, _, _, err := e.engine.Svc.Propose(core.ProposalLeftovers, e.root, fmt.Sprint(i), []core.Candidate{{Path: e.write(fmt.Sprintf("leftover-%d.txt", i)), Lifespan: "3d"}})
+		_, _, _, err := e.engine.Svc.Propose(ledger.ProposalLeftovers, e.root, fmt.Sprint(i), []ledger.Candidate{{Path: e.write(fmt.Sprintf("leftover-%d.txt", i)), Lifespan: "3d"}})
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -11,7 +11,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	resurrectcmd "github.com/woodfishhhh/obituary/internal/cli/resurrect"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 )
 
@@ -32,7 +32,7 @@ func TestEmptyDirectoryRaceStaysRestorable(t *testing.T) {
 	}
 	svc.FS = concurrentBurialFS{FS: svc.FS, before: func(path string) { clitest.WriteFixture(t, filepath.Join(path, "arrived"), "concurrent write") }}
 	old := cmdutil.Open
-	cmdutil.Open = func() (*core.Service, error) { return svc, nil }
+	cmdutil.Open = func() (*lifecycle.Service, error) { return svc, nil }
 	t.Cleanup(func() { cmdutil.Open = old })
 	if _, _, err := clitest.Execute(t, NewCmd(), "empty"); err != nil {
 		t.Fatal(err)

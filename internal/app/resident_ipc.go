@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/daemonipc"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/listing"
@@ -18,7 +18,7 @@ import (
 // It returns the function that closes the endpoint, or nil when there is none:
 // hooks then register directly and the list reads the ledger itself, as they did
 // before a resident existed, and the resident's other work is unaffected.
-func serveHookEndpoint(svc *core.Service, logger *log.Logger) func() error {
+func serveHookEndpoint(svc *lifecycle.Service, logger *log.Logger) func() error {
 	if os.Getenv("OBIT_TEST_NO_RESIDENT_IPC") == "1" { // tests of the direct-write fallback
 		return nil
 	}
@@ -34,7 +34,7 @@ func serveHookEndpoint(svc *core.Service, logger *log.Logger) func() error {
 // printList is the output of `obit list` for the caller's settings. The ledger is
 // read as the command reads it (committed, never waiting for a writer), but the
 // decoded copy is kept until store.json changes.
-func printList(svc *core.Service, req daemonipc.ListRequest) ([]byte, error) {
+func printList(svc *lifecycle.Service, req daemonipc.ListRequest) ([]byte, error) {
 	if language := i18n.Language(req.Language); language != i18n.English && language != i18n.Chinese {
 		return nil, fmt.Errorf("unsupported language %q", req.Language)
 	}

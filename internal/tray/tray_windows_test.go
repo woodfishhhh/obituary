@@ -12,7 +12,8 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/app"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 )
 
@@ -20,7 +21,7 @@ func TestUpdateMenuLocalizedAndOpensGUI(t *testing.T) {
 	t.Setenv("OBIT_LANG", "")
 	home := t.TempDir()
 	items := &fakeItem{}
-	r := &app.Resident{Service: &core.Service{Store: core.Store{Home: home}}}
+	r := &app.Resident{Service: &lifecycle.Service{Store: ledger.Store{Home: home}}}
 	opened := make(chan string, 1)
 	gui := guiAction{enabled: true, path: "fixture-gui", start: func(path string) error { opened <- path; return nil }}
 	language := i18n.Chinese
@@ -93,7 +94,7 @@ func TestRowTitleNamesDayFileAndFolder(t *testing.T) {
 
 func TestFailedClickIsToldAfterTheMenuCloses(t *testing.T) {
 	items := &fakeItem{}
-	r := &app.Resident{Service: &core.Service{Store: core.Store{Home: t.TempDir()}}}
+	r := &app.Resident{Service: &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}}}
 	told := make(chan string, 1)
 	m := makeMenu(r, guiAction{}, menuUI{addItem: items.AddSubMenuItem, addSeparator: func() {}, tooltip: func(string) {},
 		notify: func(title, text string) error { told <- title + " | " + text; return nil }}, func() i18n.Language { return i18n.Chinese })
@@ -119,7 +120,7 @@ func TestMissingGUIClickNotifiesWithoutLaunching(t *testing.T) {
 		t.Run(string(language), func(t *testing.T) {
 			root := t.TempDir()
 			items, told := &fakeItem{}, make(chan string, 1)
-			r := &app.Resident{Service: &core.Service{Store: core.Store{Home: root}}}
+			r := &app.Resident{Service: &lifecycle.Service{Store: ledger.Store{Home: root}}}
 			gui := newGUIAction(filepath.Join(root, "obitd.exe"), func(string) error {
 				t.Error("missing executable launched")
 				return nil

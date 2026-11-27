@@ -12,7 +12,8 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	doctorcmd "github.com/woodfishhhh/obituary/internal/cli/doctor"
 	graveyardcmd "github.com/woodfishhhh/obituary/internal/cli/graveyard"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 func TestPOSIXQuarantineDiagnostics(t *testing.T) {
@@ -25,11 +26,11 @@ func TestPOSIXQuarantineDiagnostics(t *testing.T) {
 		t.Fatal(err)
 	}
 	rows, err := svc.Bury([]string{path}, false, "")
-	if err != nil || core.GraveFailed(rows) {
+	if err != nil || lifecycle.GraveFailed(rows) {
 		t.Fatalf("bury: %+v %v", rows, err)
 	}
 	detail := "identity mismatch; never purge; content retained at " + rows[0].Burial.Grave + "; inspect both locations and manually move the retained object to an unused name"
-	if err := store.UpdateGraveyard(func(st *core.State) error { st.Burials[0].IdentityMismatch = detail; return nil }); err != nil {
+	if err := store.UpdateGraveyard(func(st *ledger.State) error { st.Burials[0].IdentityMismatch = detail; return nil }); err != nil {
 		t.Fatal(err)
 	}
 	out, _, err := clitest.Execute(t, graveyardcmd.NewCmd(), []string{}...)

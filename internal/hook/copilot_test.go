@@ -13,7 +13,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 )
 
@@ -192,7 +192,7 @@ func TestCopilotSessionIdentityAndLifecycle(t *testing.T) {
 		in := map[string]any{"sessionId": id, "cwd": testenv.NativeFixture("C:/repo"), "source": "startup"}
 		raw, _ := json.Marshal(in)
 		ev, err := Decode(copilotAdapter{}, raw, Invocation{Agent: "copilot", Event: host})
-		if err != nil || ev.Session != core.NormalizeSession("copilot:"+id) {
+		if err != nil || ev.Session != lifecycle.NormalizeSession("copilot:"+id) {
 			t.Fatalf("%+v %v", ev, err)
 		}
 		delete(in, "sessionId")

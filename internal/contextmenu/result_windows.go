@@ -8,7 +8,8 @@ import (
 	"strings"
 
 	"github.com/woodfishhhh/obituary/internal/config"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
 )
@@ -63,10 +64,10 @@ func saveSelectionResult(text string) (string, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return "", err
 	}
-	release, err := core.LockFile(path+".lock", true)
+	release, err := ledger.LockFile(path+".lock", true)
 	if err != nil {
 		return "", err
 	}
 	defer release()
-	return path, core.WriteMetadata(path, []byte(text))
+	return path, lifecycle.WriteMetadata(path, []byte(text))
 }

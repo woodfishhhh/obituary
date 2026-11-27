@@ -17,7 +17,8 @@ import (
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/buildinfo"
 	"github.com/woodfishhhh/obituary/internal/config"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/update"
 	"golang.org/x/sys/windows"
@@ -47,7 +48,7 @@ type menu struct {
 
 // Run keeps the native loop on the main thread to meet its threading contract;
 // menu callbacks and the background service use Go goroutines.
-func Run(svc *core.Service, logger *log.Logger) error {
+func Run(svc *lifecycle.Service, logger *log.Logger) error {
 	r, err := app.NewResident(svc, logger)
 	if err != nil || r == nil {
 		return err
@@ -194,7 +195,7 @@ func (m *menu) recentRows(ctx context.Context) error {
 		id := burial.ID
 		go m.listen(ctx, row, func() error {
 			result, err := m.resident.Restore(id)
-			if result.Action == core.ActionResurrected {
+			if result.Action == ledger.ActionResurrected {
 				m.tell(i18n.Resurrected, strings.TrimSpace(result.Path+" "+result.Warning))
 			}
 			return err

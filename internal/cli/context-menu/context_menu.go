@@ -8,7 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 func NewCmd() *cobra.Command {
@@ -34,7 +35,7 @@ func proposePolicies(cmd *cobra.Command, paths []string) error {
 	}
 	svc = svc.WithContext(cmd.Context())
 	for _, path := range paths {
-		p, err := svc.SetWatch(path, "30d", core.WatchFirstSeen)
+		p, err := svc.SetWatch(path, "30d", ledger.WatchFirstSeen)
 		if err != nil {
 			return err
 		}
@@ -67,26 +68,26 @@ func resurrectLatest(cmd *cobra.Command) error {
 		return err
 	}
 	if restored != nil {
-		return cmdutil.ReportGraves([]core.GraveResult{*restored}, false, restoredText)
+		return cmdutil.ReportGraves([]lifecycle.GraveResult{*restored}, false, restoredText)
 	}
 	rows, err := svc.Resurrect([]string{ref})
 	reportErr := cmdutil.ReportGraves(rows, false, restoredText)
 	return errors.Join(cmdutil.Committed(err), reportErr)
 }
 
-func restoredText(r core.GraveResult) string {
+func restoredText(r lifecycle.GraveResult) string {
 	return fmt.Sprintf(cmdutil.Text("cli.context_menu.resurrected"), r.Burial.ID, r.Path)
 }
 
-func latest(view *core.GraveyardView) (string, *core.GraveResult, error) {
+func latest(view *lifecycle.GraveyardView) (string, *lifecycle.GraveResult, error) {
 	// A scan/recovery problem must not silently select an older deletion.
 	for _, pending := range view.Pending {
-		if pending.Burial == nil || !slices.ContainsFunc(view.Restored, func(r core.GraveResult) bool { return r.Burial.ID == pending.Burial.ID }) {
+		if pending.Burial == nil || !slices.ContainsFunc(view.Restored, func(r lifecycle.GraveResult) bool { return r.Burial.ID == pending.Burial.ID }) {
 			return "", nil, errors.New(cmdutil.Text("cli.context_menu.recovery_needed"))
 		}
 	}
-	var best *core.Burial
-	var receipt *core.GraveResult
+	var best *ledger.Burial
+	var receipt *lifecycle.GraveResult
 	for _, b := range view.Burials {
 		if newer(b, best) {
 			copy := b
@@ -105,6 +106,6 @@ func latest(view *core.GraveyardView) (string, *core.GraveResult, error) {
 	return strconv.FormatInt(best.ID, 10), receipt, nil
 }
 
-func newer(b core.Burial, best *core.Burial) bool {
+func newer(b ledger.Burial, best *ledger.Burial) bool {
 	return best == nil || b.BuriedAt.After(best.BuriedAt) || b.BuriedAt.Equal(best.BuriedAt) && b.ID > best.ID
 }

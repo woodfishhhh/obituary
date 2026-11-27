@@ -15,7 +15,8 @@ import (
 	"testing"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 	"golang.org/x/sys/windows"
@@ -242,7 +243,7 @@ func TestPreToolUseDeny(t *testing.T) {
 				os.WriteFile(filepath.Join(home, "store.json"), []byte("broken"), 0o600)
 				t.Setenv("PATH", "")
 				t.Setenv("OBIT_GUARD_RM", "1")
-				e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: home}}}
+				e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: home}}}
 				tool, key, run := "Bash", "command", Claude
 				if agent == "codex" {
 					tool, key, run = "local_shell", "command", Codex
@@ -343,7 +344,7 @@ func TestCodexShellInputs(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: t.TempDir()}}}
+		e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}}}
 		var out bytes.Buffer
 		Codex(e, bytes.NewReader(data), &out, nil)
 		want := "`" + expectedGuardExecutable(t, guardrm.Bash) + " rm -rf build`"
@@ -386,7 +387,7 @@ func BenchmarkPreToolUse(b *testing.B) {
 	for _, agent := range []string{"claude", "codex"} {
 		for _, command := range []string{"git status --short", "rm -rf build", "rm -f *.log"} {
 			b.Run(agent+"/"+command, func(b *testing.B) {
-				e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: b.TempDir()}}}
+				e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: b.TempDir()}}}
 				tool, key, run := "Bash", "command", Claude
 				if agent == "codex" {
 					tool, key, run = "exec_command", "cmd", Codex
@@ -551,7 +552,7 @@ func TestGitRmPassesThrough(t *testing.T) {
 
 func TestPreToolUseAuditAndFailures(t *testing.T) {
 	home := t.TempDir()
-	e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: home}}}
+	e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: home}}}
 	run := func(command string) string {
 		data, _ := json.Marshal(map[string]any{"hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": map[string]string{"command": command}})
 		var out bytes.Buffer
@@ -623,7 +624,7 @@ func TestPreToolUseAuditFailureStillDenies(t *testing.T) {
 				if err := guardrm.Record(home, guardrm.AuditEvent{Kind: "denied"}); err == nil {
 					t.Fatal("fixture did not prevent audit append")
 				}
-				e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: home}}}
+				e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: home}}}
 				tool, key, run := "Bash", "command", Claude
 				if agent == "codex" {
 					tool, key, run = "exec_command", "cmd", Codex
@@ -651,7 +652,7 @@ func TestPreToolUseDisabled(t *testing.T) {
 				t.Run(agent, func(t *testing.T) {
 					t.Setenv("OBIT_GUARD_RM", "1")
 					t.Setenv("OBIT_DISABLED", "0")
-					e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: t.TempDir()}}}
+					e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}}}
 					tool, key, run := "Bash", "command", Claude
 					if agent == "codex" {
 						tool, key, run = "exec_command", "cmd", Codex
@@ -686,7 +687,7 @@ func TestDeleteSkippedScopeAudited(t *testing.T) {
 	} {
 		t.Run(tc.cwd+tc.command, func(t *testing.T) {
 			home := t.TempDir()
-			e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: home}}}
+			e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: home}}}
 			data, _ := json.Marshal(map[string]any{"hook_event_name": "PreToolUse", "cwd": tc.cwd, "tool_name": "exec_command", "tool_input": map[string]string{"cmd": tc.command, "shell": tc.shell}})
 			var out bytes.Buffer
 			Codex(e, bytes.NewReader(data), &out, nil)
@@ -706,7 +707,7 @@ func TestDeleteUnknownShellAudit(t *testing.T) {
 	t.Setenv("OBIT_HOOK_AUDIT", "1")
 	for _, command := range []string{"rm -rf build", "rmdir empty", `Remove-Item -Recurse -Force .\build`} {
 		home := t.TempDir()
-		e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: home}}}
+		e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: home}}}
 		payload, _ := json.Marshal(map[string]any{"hook_event_name": "PreToolUse", "cwd": `C:\work`, "tool_name": "exec_command", "tool_input": map[string]string{"cmd": command}})
 		var out bytes.Buffer
 		Codex(e, bytes.NewReader(payload), &out, nil)
@@ -874,7 +875,7 @@ func TestPreToolUseLongCommandStillDenies(t *testing.T) {
 				}
 				data, _ := json.Marshal(map[string]any{"hook_event_name": "PreToolUse", "cwd": cwd, "tool_name": tool, "tool_input": map[string]string{key: command, "shell": "bash"}})
 				var out bytes.Buffer
-				run(&auto.Engine{Svc: &core.Service{Store: core.Store{Home: home}}}, bytes.NewReader(data), &out, nil)
+				run(&auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: home}}}, bytes.NewReader(data), &out, nil)
 				var response claudeOutput
 				if err := json.Unmarshal(out.Bytes(), &response); err != nil {
 					t.Fatalf("long command lost deny: %q %v", out.String(), err)
@@ -925,7 +926,7 @@ func TestPreToolUseSummaryNormalizesCommandNames(t *testing.T) {
 				}
 				data, _ := json.Marshal(map[string]any{"hook_event_name": "PreToolUse", "cwd": t.TempDir(), "tool_name": tool, "tool_input": map[string]string{key: tc.command, "shell": tc.shell}})
 				var out bytes.Buffer
-				run(&auto.Engine{Svc: &core.Service{Store: core.Store{Home: home}}}, bytes.NewReader(data), &out, nil)
+				run(&auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: home}}}, bytes.NewReader(data), &out, nil)
 				var reply claudeOutput
 				if err := json.Unmarshal(out.Bytes(), &reply); err != nil {
 					t.Fatalf("missing denial: %q %v", out.String(), err)
@@ -994,7 +995,7 @@ func TestDeleteGuardDeniesDeletionWithoutEquivalent(t *testing.T) {
 			}
 			data, _ := json.Marshal(map[string]any{"hook_event_name": "PreToolUse", "cwd": cwd, "tool_name": tc.tool, "tool_input": input})
 			var out bytes.Buffer
-			Run(tc.agent, &auto.Engine{Svc: &core.Service{Store: core.Store{Home: home}}}, bytes.NewReader(data), &out, nil)
+			Run(tc.agent, &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: home}}}, bytes.NewReader(data), &out, nil)
 			var response claudeOutput
 			if err := json.Unmarshal(out.Bytes(), &response); err != nil {
 				t.Fatalf("no denial: %q %v", out.String(), err)

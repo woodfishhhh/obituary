@@ -18,7 +18,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/daemonipc"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 	"golang.org/x/sys/windows"
@@ -28,8 +28,8 @@ import (
 // it exits before or after the durable queue write, never answers after it, or
 // refuses the request. The hook is the real binary either way.
 func runInterruptedResident(stage string) int {
-	store := core.Store{Home: os.Getenv("OBIT_HOME")}
-	_, err := daemonipc.Serve(store.Home, func(rows []core.Observation) error {
+	store := ledger.Store{Home: os.Getenv("OBIT_HOME")}
+	_, err := daemonipc.Serve(store.Home, func(rows []ledger.Observation) error {
 		switch stage {
 		case "before-queue":
 			os.Exit(83)
@@ -64,12 +64,12 @@ func TestInterruptedResidentHookReplaysExactlyOnce(t *testing.T) {
 			writeFixture(t, path, "artifact")
 			testenv.InitRepo(t, repo)
 			t.Chdir(repo)
-			store := core.Store{Home: filepath.Join(root, "data")}
+			store := ledger.Store{Home: filepath.Join(root, "data")}
 			t.Setenv("OBIT_HOME", store.Home)
 			t.Setenv("OBIT_CONFIG_DIR", filepath.Join(root, "config"))
 			autoOn(t, "")
-			if err := store.Update(func(st *core.State) error {
-				st.Projects = map[string]core.ProjectState{core.ProjectKey(repo): {Consent: core.ConsentApproved}}
+			if err := store.Update(func(st *ledger.State) error {
+				st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(repo): {Consent: ledger.ConsentApproved}}
 				return nil
 			}); err != nil {
 				t.Fatal(err)
@@ -147,8 +147,8 @@ func TestConcurrentHookProcessesPreserveEveryObservation(t *testing.T) {
 		t.Skip("starts 20 native hooks with a real Git repository and fsync")
 	}
 	root, store := commandRepoDirect(t)
-	if err := store.Update(func(st *core.State) error {
-		st.Projects = map[string]core.ProjectState{core.ProjectKey(root): {Consent: core.ConsentApproved}}
+	if err := store.Update(func(st *ledger.State) error {
+		st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(root): {Consent: ledger.ConsentApproved}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -158,7 +158,7 @@ func TestConcurrentHookProcessesPreserveEveryObservation(t *testing.T) {
 		paths[i] = filepath.Join(root, fmt.Sprintf("debug-%02d.log", i))
 		writeFixture(t, paths[i], "artifact")
 	}
-	release, err := core.LockFile(filepath.Join(store.Home, "store.lock"), true)
+	release, err := ledger.LockFile(filepath.Join(store.Home, "store.lock"), true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,7 +178,7 @@ func TestConcurrentHookProcessesPreserveEveryObservation(t *testing.T) {
 		t.Fatalf("contended writes lost: %d %v", len(rows), err)
 	}
 	for _, row := range rows {
-		if row.Host != "codex" || row.Event != "PostToolUse" || core.ProjectKey(row.Project) != core.ProjectKey(root) || row.Identity == nil {
+		if row.Host != "codex" || row.Event != "PostToolUse" || ledger.ProjectKey(row.Project) != ledger.ProjectKey(root) || row.Identity == nil {
 			t.Fatalf("request metadata missing: %+v", row)
 		}
 	}
@@ -231,7 +231,7 @@ func startQueuedHooks(t *testing.T, root string, paths []string) ([]*exec.Cmd, [
 	return cmds, outputs
 }
 
-func waitForQueueItems(t *testing.T, store core.Store, count int) {
+func waitForQueueItems(t *testing.T, store ledger.Store, count int) {
 	t.Helper()
 	for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); time.Sleep(10 * time.Millisecond) {
 		st, err := store.Inspect()
@@ -251,7 +251,7 @@ func TestHookQueueUnwritableFailsOpen(t *testing.T) {
 	writeFixture(t, path, "artifact")
 	// The resident created the queue directory; deny adding files to it.
 	clitest.DenyAccess(t, filepath.Join(store.Home, "observations"), windows.FILE_WRITE_DATA) // add file, on a directory
-	release, err := core.LockFile(filepath.Join(store.Home, "store.lock"), true)
+	release, err := ledger.LockFile(filepath.Join(store.Home, "store.lock"), true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -276,7 +276,7 @@ func TestQueuedHookProcessLatencyReport(t *testing.T) {
 	root, store := commandRepoDirect(t)
 	path := filepath.Join(root, "debug.log")
 	writeFixture(t, path, "artifact")
-	release, err := core.LockFile(filepath.Join(store.Home, "store.lock"), true)
+	release, err := ledger.LockFile(filepath.Join(store.Home, "store.lock"), true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -326,8 +326,8 @@ func TestHookQueueReplaySurvivesKilledProcess(t *testing.T) {
 		t.Fatal(err)
 	}
 	svc.AfterChange = nil
-	if err := svc.Store.Update(func(st *core.State) error {
-		st.Projects = map[string]core.ProjectState{core.ProjectKey(repo): {Consent: core.ConsentApproved}}
+	if err := svc.Store.Update(func(st *ledger.State) error {
+		st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(repo): {Consent: ledger.ConsentApproved}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -357,9 +357,9 @@ func TestHookQueueReplaySurvivesKilledProcess(t *testing.T) {
 	}
 }
 
-func killReplayAfterCommit(t *testing.T, store core.Store, repo string) {
+func killReplayAfterCommit(t *testing.T, store ledger.Store, repo string) {
 	t.Helper()
-	release, err := core.LockFile(filepath.Join(store.Home, "audit.lock"), true)
+	release, err := ledger.LockFile(filepath.Join(store.Home, "audit.lock"), true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -386,8 +386,8 @@ func TestResidentTakesHookWritesWhileTheLedgerIsLocked(t *testing.T) {
 		t.Skip("starts 20 native hooks with a real Git repository and fsync")
 	}
 	root, store := commandRepo(t)
-	if err := store.Update(func(st *core.State) error {
-		st.Projects = map[string]core.ProjectState{core.ProjectKey(root): {Consent: core.ConsentApproved}}
+	if err := store.Update(func(st *ledger.State) error {
+		st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(root): {Consent: ledger.ConsentApproved}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -397,7 +397,7 @@ func TestResidentTakesHookWritesWhileTheLedgerIsLocked(t *testing.T) {
 		paths[i] = filepath.Join(root, fmt.Sprintf("debug-%02d.log", i))
 		writeFixture(t, paths[i], "artifact")
 	}
-	release, err := core.LockFile(filepath.Join(store.Home, "store.lock"), true)
+	release, err := ledger.LockFile(filepath.Join(store.Home, "store.lock"), true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -492,6 +492,6 @@ func waitFor(t *testing.T, ready func() bool) {
 	home := os.Getenv("OBIT_HOME")
 	log, _ := os.ReadFile(filepath.Join(home, "obitd.log"))
 	hookLog, _ := os.ReadFile(filepath.Join(home, "hook.log"))
-	st, _ := core.Store{Home: home}.Inspect()
+	st, _ := ledger.Store{Home: home}.Inspect()
 	t.Fatalf("the resident did not reach the expected ledger state: items=%d proposals=%d\nobitd.log: %s\nhook.log: %s", len(st.Items), len(st.Proposals), log, hookLog)
 }

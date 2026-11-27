@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 )
 
@@ -58,7 +58,7 @@ func (BridgeAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
 		Source: input.Source, Command: input.Command, Shell: input.Shell, SkipReason: input.SkipReason,
 		DeferContext: !input.ContextDelivery}
 	if input.Session != "" {
-		ev.Session = core.NormalizeSession(input.Agent + ":" + input.Session)
+		ev.Session = lifecycle.NormalizeSession(input.Agent + ":" + input.Session)
 	}
 	native, reachable := NativePath(input.Cwd)
 	if !input.Local || !reachable || !filepath.IsAbs(native) {

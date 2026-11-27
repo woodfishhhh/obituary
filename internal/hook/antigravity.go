@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 // https://antigravity.google/docs/hooks (2026-11-09). The hook event is passed
@@ -37,7 +37,7 @@ func (antigravityAdapter) Decode(raw []byte, invocation Invocation) (Event, erro
 		return Event{}, ErrSkip
 	}
 	if in.Session != "" {
-		ev.Session = core.NormalizeSession("antigravity:" + in.Session)
+		ev.Session = lifecycle.NormalizeSession("antigravity:" + in.Session)
 	}
 	if ev.Name == "PreToolUse" {
 		if ev.Tool == "run_command" {

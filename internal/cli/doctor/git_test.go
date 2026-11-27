@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
@@ -98,7 +97,7 @@ func TestGitTimeoutRetry(t *testing.T) {
 		{ledger.ActionRetry, "could not ask Git whether it is tracked: context canceled", 0, false},
 		{ledger.ActionRetry, "could not ask Git whether it is tracked: access denied", 0, false},
 		{ledger.ActionRetry, "Guard: context deadline exceeded", 0, false},
-		{core.ActionBuried, "could not ask Git whether it is tracked: context deadline exceeded", 0, false},
+		{ledger.ActionBuried, "could not ask Git whether it is tracked: context deadline exceeded", 0, false},
 	} {
 		if got := gitTimeoutRetry(ledger.Event{Time: now.Add(-tc.age), Action: tc.action, Detail: tc.detail}, now); got != tc.want {
 			t.Errorf("Git timeout classification: %+v got=%v", tc, got)

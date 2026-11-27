@@ -8,7 +8,8 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/project"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
@@ -24,9 +25,9 @@ func TestReplayRegistersAfterGitTimeout(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Replay registers only with automatic registration on.
-	svc := &core.Service{Store: core.Store{Home: home}, FS: winfs.FS{}, ProposalMode: core.ProposalsTiered}
-	if err := svc.Store.Update(func(st *core.State) error {
-		st.Projects = map[string]core.ProjectState{core.ProjectKey(root): {Consent: core.ConsentApproved}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: home}, FS: winfs.FS{}, ProposalMode: lifecycle.ProposalsTiered}
+	if err := svc.Store.Update(func(st *ledger.State) error {
+		st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(root): {Consent: ledger.ConsentApproved}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)

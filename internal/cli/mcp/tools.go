@@ -7,8 +7,8 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/core/lifespan"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 	"github.com/woodfishhhh/obituary/internal/project"
@@ -51,7 +51,7 @@ type mcpExtendInput struct {
 
 // MCP has no caller cwd or reliable session. Only a common Git project of all
 // explicit operands can scope its batch; never borrow the server's directory.
-func mcpBurialService(svc *core.Service, paths []string) (*core.Service, error) {
+func mcpBurialService(svc *lifecycle.Service, paths []string) (*lifecycle.Service, error) {
 	root, common := "", true
 	for i, path := range paths {
 		p, found, err := project.Find(path)
@@ -71,12 +71,12 @@ func mcpBurialService(svc *core.Service, paths []string) (*core.Service, error) 
 	return svc.BeginBurial("", root)
 }
 
-func NewServer(svc *core.Service, version string) *mcp.Server {
+func NewServer(svc *lifecycle.Service, version string) *mcp.Server {
 	s := mcp.NewServer(&mcp.Implementation{Name: "obituary", Version: version}, nil)
 	addMCPTool(s, svc, "obit_mark", "Registers absolute paths with a lifespan, as obit add does. Re-registering resets expiry. Guard and identity checks apply.", false, markMCP)
 	addMCPTool(s, svc, "obit_mktemp", "Creates and registers a temporary directory with a lifespan. The explicit absolute cwd selects the Git project; outside Git the system temporary directory is used.", false, mktempMCP)
 	buryDescription := "Moves absolute paths into the restorable graveyard immediately, with the same Guard and identity checks as obit bury."
-	if svc.Mode == core.ModeRecycle {
+	if svc.Mode == lifecycle.ModeRecycle {
 		buryDescription = "Moves files to the system Recycle Bin. Restore files from the Recycle Bin. Directories move to the verified graveyard and can be restored with obit_resurrect."
 	}
 	addMCPTool(s, svc, "obit_bury", buryDescription, false, buryMCP)
@@ -90,7 +90,7 @@ func NewServer(svc *core.Service, version string) *mcp.Server {
 	return s
 }
 
-func markMCP(svc *core.Service, in mcpMarkInput) mcpReply {
+func markMCP(svc *lifecycle.Service, in mcpMarkInput) mcpReply {
 	if err := mcpPaths(in.Paths, false); err != nil {
 		return mcpResult(nil, err)
 	}
@@ -112,7 +112,7 @@ func markMCP(svc *core.Service, in mcpMarkInput) mcpReply {
 		}
 		expires = now.Add(d)
 	}
-	results, err := svc.Add(in.Paths, core.AddOptions{ExpiresAt: expires, Force: in.Force, Note: in.Note})
+	results, err := svc.Add(in.Paths, lifecycle.AddOptions{ExpiresAt: expires, Force: in.Force, Note: in.Note})
 	reply := mcpItems(results, err)
 	if cmdutil.AnyOK(results) {
 		reply = mcpDaemonWarning(reply, svc.Store.Home)
@@ -120,7 +120,7 @@ func markMCP(svc *core.Service, in mcpMarkInput) mcpReply {
 	return reply
 }
 
-func mktempMCP(svc *core.Service, in mcpTempInput) mcpReply {
+func mktempMCP(svc *lifecycle.Service, in mcpTempInput) mcpReply {
 	if err := mcpPaths([]string{in.Cwd}, false); err != nil {
 		return mcpResult(nil, err)
 	}
@@ -136,7 +136,7 @@ func mktempMCP(svc *core.Service, in mcpTempInput) mcpReply {
 	return reply
 }
 
-func buryMCP(svc *core.Service, in mcpBuryInput) mcpReply {
+func buryMCP(svc *lifecycle.Service, in mcpBuryInput) mcpReply {
 	if err := mcpPaths(in.Paths, false); err != nil {
 		return mcpResult(nil, err)
 	}
@@ -147,7 +147,7 @@ func buryMCP(svc *core.Service, in mcpBuryInput) mcpReply {
 	results, err := svc.Bury(in.Paths, in.Force, in.Note)
 	reply := mcpGraves(results, err)
 	for _, r := range results {
-		if r.Action == core.ActionBuried || r.Action == core.ActionRecoveryPending {
+		if r.Action == ledger.ActionBuried || r.Action == ledger.ActionRecoveryPending {
 			reply = mcpDaemonWarning(reply, svc.Store.Home)
 			break
 		}
@@ -155,7 +155,7 @@ func buryMCP(svc *core.Service, in mcpBuryInput) mcpReply {
 	return reply
 }
 
-func resurrectMCP(svc *core.Service, in mcpRefsInput) mcpReply {
+func resurrectMCP(svc *lifecycle.Service, in mcpRefsInput) mcpReply {
 	if err := mcpReferences(in.Refs, true, true); err != nil {
 		return mcpResult(nil, err)
 	}
@@ -163,7 +163,7 @@ func resurrectMCP(svc *core.Service, in mcpRefsInput) mcpReply {
 	return mcpGraves(results, err)
 }
 
-func extendMCP(svc *core.Service, in mcpExtendInput) mcpReply {
+func extendMCP(svc *lifecycle.Service, in mcpExtendInput) mcpReply {
 	if err := mcpPaths(in.Refs, true); err != nil {
 		return mcpResult(nil, err)
 	}
@@ -175,7 +175,7 @@ func extendMCP(svc *core.Service, in mcpExtendInput) mcpReply {
 	return mcpItems(results, err)
 }
 
-func spareMCP(svc *core.Service, in mcpRefsInput) mcpReply {
+func spareMCP(svc *lifecycle.Service, in mcpRefsInput) mcpReply {
 	if err := mcpPaths(in.Refs, true); err != nil {
 		return mcpResult(nil, err)
 	}
@@ -183,12 +183,12 @@ func spareMCP(svc *core.Service, in mcpRefsInput) mcpReply {
 	return mcpItems(results, err)
 }
 
-func listMCP(svc *core.Service, in mcpPageInput) mcpReply {
+func listMCP(svc *lifecycle.Service, in mcpPageInput) mcpReply {
 	st, err := svc.Store.Read()
 	return mcpPageResult("items", st.Items, func(it ledger.Item) int64 { return it.ID }, in, err)
 }
 
-func graveyardMCP(svc *core.Service, in mcpGraveyardInput) mcpReply {
+func graveyardMCP(svc *lifecycle.Service, in mcpGraveyardInput) mcpReply {
 	if in.Here != "" {
 		if err := mcpPaths([]string{in.Here}, false); err != nil {
 			return mcpResult(nil, err)
@@ -213,12 +213,12 @@ func graveyardMCP(svc *core.Service, in mcpGraveyardInput) mcpReply {
 	return reply
 }
 
-func proposalsMCP(svc *core.Service, in mcpPageInput) mcpReply {
+func proposalsMCP(svc *lifecycle.Service, in mcpPageInput) mcpReply {
 	st, err := svc.Store.Read()
-	return mcpPageResult("proposals", core.ExistingProposals(st.Proposals), func(p ledger.Proposal) int64 { return p.ID }, in, err)
+	return mcpPageResult("proposals", lifecycle.ExistingProposals(st.Proposals), func(p ledger.Proposal) int64 { return p.ID }, in, err)
 }
 
-func statsMCP(svc *core.Service, _ struct{}) mcpReply {
+func statsMCP(svc *lifecycle.Service, _ struct{}) mcpReply {
 	sum, err := svc.Summarize()
 	if err != nil {
 		return mcpResult(nil, err)
@@ -226,7 +226,7 @@ func statsMCP(svc *core.Service, _ struct{}) mcpReply {
 	counts, err := guardrm.ReadCounts(svc.Store.Home)
 	counts.Buried += sum.Lifetime.DeleteBuried
 	reply := mcpResult(struct {
-		core.Summary
+		lifecycle.Summary
 		DeleteGuard guardrm.Counts `json:"deleteGuard"`
 	}{sum, counts}, err)
 	if sum.QuotaPendingCount > 0 {

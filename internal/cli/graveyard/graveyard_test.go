@@ -19,8 +19,8 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	daemoncmd "github.com/woodfishhhh/obituary/internal/cli/daemon"
 	mcpcmd "github.com/woodfishhhh/obituary/internal/cli/mcp"
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
@@ -37,7 +37,7 @@ func TestGraveyardHereTextAndJSON(t *testing.T) {
 		t.Fatal(err)
 	}
 	rows, err := svc.Bury(paths, false, "")
-	if err != nil || core.GraveFailed(rows) {
+	if err != nil || lifecycle.GraveFailed(rows) {
 		t.Fatal(rows, err)
 	}
 	t.Chdir(filepath.Join(repo, "a"))
@@ -141,7 +141,7 @@ func BenchmarkGraveyardJSON(b *testing.B) {
 				if err != nil {
 					b.Fatal(err)
 				}
-				st.Burials = append(st.Burials, ledger.Burial{ID: int64(n + i + 1), Path: filepath.Join(base, fmt.Sprintf("old-%d", i), "buried"), Grave: grave, Identity: &objectID, GraveID: &graveID, BuriedAt: now, PurgeAt: now.Add(24 * time.Hour), Reason: core.ReasonBury})
+				st.Burials = append(st.Burials, ledger.Burial{ID: int64(n + i + 1), Path: filepath.Join(base, fmt.Sprintf("old-%d", i), "buried"), Grave: grave, Identity: &objectID, GraveID: &graveID, BuriedAt: now, PurgeAt: now.Add(24 * time.Hour), Reason: ledger.ReasonBury})
 			}
 			if err := store.Update(func(current *ledger.State) error { *current = st; return nil }); err != nil {
 				b.Fatal(err)
@@ -190,7 +190,7 @@ func TestGraveyardIncludesConcurrentRecovery(t *testing.T) {
 	svc, _, pending := clitest.PendingCommandBurial(t, false)
 	finish := clitest.RecoverDuringGraveyardRead(t, svc)
 	original := cmdutil.Open
-	cmdutil.Open = func() (*core.Service, error) { return svc, nil }
+	cmdutil.Open = func() (*lifecycle.Service, error) { return svc, nil }
 	t.Cleanup(func() { cmdutil.Open = original })
 	for range 2 {
 		out, _, err := clitest.Execute(t, NewCmd(), "--json")
@@ -221,8 +221,8 @@ func TestGraveyardShowsContainedLifespans(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rows, err := svc.Add([]string{filepath.Dir(child), child}, core.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
-	if err != nil || core.Failed(rows) {
+	rows, err := svc.Add([]string{filepath.Dir(child), child}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
+	if err != nil || lifecycle.Failed(rows) {
 		t.Fatalf("add: %+v, %v", rows, err)
 	}
 	svc.Now = func() time.Time { return rows[0].Item.ExpiresAt }
@@ -278,9 +278,9 @@ func TestPendingManifestVisibleInQueries(t *testing.T) {
 			}
 			out, _, err := clitest.Execute(t, NewCmd(), "--json")
 			var graves struct {
-				Burials      []ledger.Burial     `json:"burials"`
-				Pending      []core.PendingGrave `json:"pending"`
-				PendingCount int                 `json:"pendingCount"`
+				Burials      []ledger.Burial          `json:"burials"`
+				Pending      []lifecycle.PendingGrave `json:"pending"`
+				PendingCount int                      `json:"pendingCount"`
 			}
 			if err != nil || json.Unmarshal([]byte(out), &graves) != nil || graves.PendingCount != 1 || len(graves.Pending) != 1 || len(graves.Burials) != 0 {
 				t.Errorf("graveyard pending receipt: %s, %v", out, err)

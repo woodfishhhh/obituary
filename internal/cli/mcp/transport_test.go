@@ -16,7 +16,8 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 func TestMCPCancelWaitingForLedger(t *testing.T) {
@@ -33,8 +34,8 @@ func TestMCPCancelWaitingForLedger(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			results, err := svc.Add([]string{path}, core.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
-			if err != nil || core.Failed(results) {
+			results, err := svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
+			if err != nil || lifecycle.Failed(results) {
 				t.Fatalf("setup: %v %v", results, err)
 			}
 			ref := fmt.Sprint(results[0].Item.ID)
@@ -57,7 +58,7 @@ func TestMCPCancelWaitingForLedger(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			release, err := core.LockFile(filepath.Join(store.Home, "store.lock"), true)
+			release, err := ledger.LockFile(filepath.Join(store.Home, "store.lock"), true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -141,7 +142,7 @@ func TestMCPCancelBeforeCommit(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := store.Update(func(*core.State) error { return nil }); err != nil {
+			if err := store.Update(func(*ledger.State) error { return nil }); err != nil {
 				t.Fatal(err)
 			}
 			args := map[string]any{"paths": []string{path}}
@@ -261,7 +262,7 @@ func TestMCPLargeIDRoundTrip(t *testing.T) {
 	clitest.IsolateRunner(t)
 	repo, store := clitest.CommandDir(t)
 	const id int64 = 9007199254740993
-	if err := store.Update(func(st *core.State) error { st.NextID = id; return nil }); err != nil {
+	if err := store.Update(func(st *ledger.State) error { st.NextID = id; return nil }); err != nil {
 		t.Fatal(err)
 	}
 	svc, err := cmdutil.Open()
@@ -289,7 +290,7 @@ func TestMCPLargeIDRoundTrip(t *testing.T) {
 		t.Fatalf("large ID call: %+v %v", r, err)
 	}
 	var envelope struct {
-		Data struct{ Results []core.Result }
+		Data struct{ Results []lifecycle.Result }
 	}
 	if err := json.Unmarshal([]byte(r.Content[0].(*mcp.TextContent).Text), &envelope); err != nil {
 		t.Fatal(err)
@@ -324,7 +325,7 @@ func TestMCPLargeIDRoundTrip(t *testing.T) {
 		if err != nil || r.IsError {
 			t.Fatalf("large cursor call: %+v %v", r, err)
 		}
-		var page struct{ Data struct{ Items []core.Item } }
+		var page struct{ Data struct{ Items []ledger.Item } }
 		if err := json.Unmarshal([]byte(r.Content[0].(*mcp.TextContent).Text), &page); err != nil {
 			t.Fatal(err)
 		}

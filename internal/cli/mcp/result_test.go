@@ -12,7 +12,8 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 )
 
@@ -20,9 +21,9 @@ func TestMCPPartialBurialKeepsReceipts(t *testing.T) {
 	s, repo, starts := mcpFixture(t)
 	path := filepath.Join(repo, "partial.log")
 	clitest.WriteFixture(t, path, "recoverable")
-	var result struct{ Results []core.GraveResult }
+	var result struct{ Results []lifecycle.GraveResult }
 	clitest.CallMCP(t, s, "obit_bury", map[string]any{"paths": []string{path, repo}}, true, &result)
-	if len(result.Results) != 2 || result.Results[0].Action != core.ActionBuried || result.Results[1].Error == "" || len(*starts) != 1 {
+	if len(result.Results) != 2 || result.Results[0].Action != ledger.ActionBuried || result.Results[1].Error == "" || len(*starts) != 1 {
 		t.Fatalf("partial receipts/daemon lost: %+v %v", result, *starts)
 	}
 	if _, err := os.Stat(filepath.Join(repo, ".git")); err != nil {
@@ -34,15 +35,15 @@ func TestMCPResurrectPreflightAuditFailureIsError(t *testing.T) {
 	s, repo, _ := mcpFixture(t)
 	path := filepath.Join(repo, "restore.log")
 	clitest.WriteFixture(t, path, "still buried")
-	var graves struct{ Results []core.GraveResult }
+	var graves struct{ Results []lifecycle.GraveResult }
 	clitest.CallMCP(t, s, "obit_bury", map[string]any{"paths": []string{path}}, false, &graves)
 	burial := graves.Results[0].Burial
 	other := filepath.Join(repo, "duplicate.log")
 	clitest.WriteFixture(t, other, "legacy duplicate")
-	var marked struct{ Results []core.Result }
+	var marked struct{ Results []lifecycle.Result }
 	clitest.CallMCP(t, s, "obit_mark", map[string]any{"paths": []string{other}, "lifespan": "1d"}, false, &marked)
-	store := core.Store{Home: os.Getenv("OBIT_HOME")}
-	if err := store.UpdateHot(func(st *core.State) error {
+	store := ledger.Store{Home: os.Getenv("OBIT_HOME")}
+	if err := store.UpdateHot(func(st *ledger.State) error {
 		duplicate := st.Items[0]
 		duplicate.ID = st.NextID
 		st.NextID++
@@ -118,7 +119,7 @@ func TestMCPAuditWarningKeepsCommittedResult(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(os.Getenv("OBIT_HOME"), "audit.jsonl"), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	var result struct{ Results []core.Result }
+	var result struct{ Results []lifecycle.Result }
 	r := clitest.CallMCP(t, s, "obit_mark", map[string]any{"paths": []string{path}, "lifespan": "1d"}, false, &result)
 	data, err := json.Marshal(r.StructuredContent)
 	if err != nil {
@@ -128,7 +129,7 @@ func TestMCPAuditWarningKeepsCommittedResult(t *testing.T) {
 	if err := json.Unmarshal(data, &reply); err != nil || reply.Warning == "" || len(result.Results) != 1 || result.Results[0].Item == nil || len(*starts) != 1 {
 		t.Fatalf("committed result not reported: %s %v", data, err)
 	}
-	var list struct{ Items []core.Item }
+	var list struct{ Items []ledger.Item }
 	clitest.CallMCP(t, s, "obit_list", struct{}{}, false, &list)
 	if len(list.Items) != 1 {
 		t.Fatal("audit warning hid registration")

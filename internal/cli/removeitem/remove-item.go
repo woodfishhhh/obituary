@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	removecmd "github.com/woodfishhhh/obituary/internal/cli/remove"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 	"golang.org/x/sys/windows"
 )
@@ -61,7 +61,7 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 	results, err := svc.BuryDeletionChecked(opts.Paths, false, "remove-item", check)
 	for _, result := range results {
-		if result.Action == core.ActionBuried || result.Action == core.ActionRecoveryPending {
+		if result.Action == ledger.ActionBuried || result.Action == ledger.ActionRecoveryPending {
 			buried = true
 		}
 		if result.QuotaOverflow != nil {

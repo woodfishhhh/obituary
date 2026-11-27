@@ -12,8 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
 	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"golang.org/x/sys/unix"
 )
 
@@ -61,14 +62,14 @@ func TestPOSIXBurialAndResurrection(t *testing.T) {
 		t.Fatal(err)
 	}
 	now := time.Now()
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(dir, "data")}, FS: FS{}, Now: func() time.Time { return now }}
-	rows, err := svc.Add([]string{source}, core.AddOptions{ExpiresAt: now.Add(time.Hour)})
-	if err != nil || core.Failed(rows) {
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(dir, "data")}, FS: FS{}, Now: func() time.Time { return now }}
+	rows, err := svc.Add([]string{source}, lifecycle.AddOptions{ExpiresAt: now.Add(time.Hour)})
+	if err != nil || lifecycle.Failed(rows) {
 		t.Fatalf("register: %+v %v", rows, err)
 	}
 	now = now.Add(2 * time.Hour)
 	out, err := svc.Sweep(false)
-	if err != nil || len(out) != 1 || out[0].Action != core.ActionBuried {
+	if err != nil || len(out) != 1 || out[0].Action != ledger.ActionBuried {
 		t.Fatalf("sweep: %+v %v", out, err)
 	}
 	state, err := svc.Store.ReadSnapshot()
@@ -76,7 +77,7 @@ func TestPOSIXBurialAndResurrection(t *testing.T) {
 		t.Fatalf("burial not committed: %+v %v", state, err)
 	}
 	results, err := svc.Resurrect([]string{source})
-	if err != nil || core.GraveFailed(results) || len(results) != 1 || results[0].Action != core.ActionResurrected {
+	if err != nil || lifecycle.GraveFailed(results) || len(results) != 1 || results[0].Action != ledger.ActionResurrected {
 		t.Fatalf("resurrect: %+v %v", results, err)
 	}
 	data, err := os.ReadFile(source)
@@ -84,7 +85,7 @@ func TestPOSIXBurialAndResurrection(t *testing.T) {
 		t.Fatalf("payload changed: %q %v", data, err)
 	}
 	buried, err := svc.Bury([]string{source}, false, "")
-	if err != nil || core.GraveFailed(buried) {
+	if err != nil || lifecycle.GraveFailed(buried) {
 		t.Fatalf("manual burial: %+v %v", buried, err)
 	}
 	if _, err := os.Stat(source); !errors.Is(err, os.ErrNotExist) {
@@ -102,14 +103,14 @@ func TestPOSIXBurialWithChildren(t *testing.T) {
 	makePOSIXPayload(t, child, false, "child content")
 	want := posixID(t, child)
 	now := time.Now()
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(dir, "data")}, FS: FS{}, Now: func() time.Time { return now }}
-	added, err := svc.Add([]string{child}, core.AddOptions{ExpiresAt: now.Add(time.Hour)})
-	if err != nil || core.Failed(added) {
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(dir, "data")}, FS: FS{}, Now: func() time.Time { return now }}
+	added, err := svc.Add([]string{child}, lifecycle.AddOptions{ExpiresAt: now.Add(time.Hour)})
+	if err != nil || lifecycle.Failed(added) {
 		t.Fatalf("add child: %+v %v", added, err)
 	}
 	now = now.Add(2 * time.Hour)
 	rows, err := svc.Bury([]string{parent}, false, "")
-	if err != nil || core.GraveFailed(rows) {
+	if err != nil || lifecycle.GraveFailed(rows) {
 		t.Fatalf("directory with child did not bury: %+v %v", rows, err)
 	}
 	st, err := svc.Store.ReadSnapshot()
@@ -117,16 +118,16 @@ func TestPOSIXBurialWithChildren(t *testing.T) {
 		t.Fatalf("child lifespan not retired: %+v %v", st, err)
 	}
 	rows, err = svc.Resurrect([]string{parent})
-	if err != nil || core.GraveFailed(rows) {
+	if err != nil || lifecycle.GraveFailed(rows) {
 		t.Fatalf("restore directory with child: %+v %v", rows, err)
 	}
 	assertPOSIXPayload(t, child, false, want, "child content")
 	rows, err = svc.Bury([]string{parent}, false, "")
-	if err != nil || core.GraveFailed(rows) {
+	if err != nil || lifecycle.GraveFailed(rows) {
 		t.Fatalf("rebury: %+v %v", rows, err)
 	}
 	rows, err = svc.PurgeRefs([]string{fmt.Sprint(rows[0].Burial.ID)}, false)
-	if err != nil || core.GraveFailed(rows) || len(rows) != 1 || rows[0].Action != core.ActionPurged {
+	if err != nil || lifecycle.GraveFailed(rows) || len(rows) != 1 || rows[0].Action != ledger.ActionPurged {
 		t.Fatalf("purge: %+v %v", rows, err)
 	}
 }
@@ -267,14 +268,14 @@ func TestPOSIXReturnedRaceRetainsEntry(t *testing.T) {
 		mustPOSIXRename(t, other, source)
 	}}
 	now := time.Now()
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(dir, "data")}, FS: fs, Now: func() time.Time { return now }}
-	rows, err := svc.Add([]string{source}, core.AddOptions{ExpiresAt: now.Add(time.Hour)})
-	if err != nil || core.Failed(rows) {
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(dir, "data")}, FS: fs, Now: func() time.Time { return now }}
+	rows, err := svc.Add([]string{source}, lifecycle.AddOptions{ExpiresAt: now.Add(time.Hour)})
+	if err != nil || lifecycle.Failed(rows) {
 		t.Fatalf("add: %+v %v", rows, err)
 	}
 	now = now.Add(2 * time.Hour)
 	out, err := svc.Sweep(false)
-	if err != nil || len(out) != 1 || out[0].Action != core.ActionRetry {
+	if err != nil || len(out) != 1 || out[0].Action != ledger.ActionRetry {
 		t.Fatalf("race outcome: %+v %v", out, err)
 	}
 	st, err := svc.Store.ReadSnapshot()
@@ -296,14 +297,14 @@ func TestPOSIXQuarantineNeverPurges(t *testing.T) {
 		mustPOSIXRename(t, other, source)
 	}, beforeRollback: func() { makePOSIXPayload(t, source, false, "occupied") }}
 	now := time.Now()
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(dir, "data")}, FS: fs, Now: func() time.Time { return now }}
-	rows, err := svc.Add([]string{source}, core.AddOptions{ExpiresAt: now.Add(time.Hour)})
-	if err != nil || core.Failed(rows) {
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(dir, "data")}, FS: fs, Now: func() time.Time { return now }}
+	rows, err := svc.Add([]string{source}, lifecycle.AddOptions{ExpiresAt: now.Add(time.Hour)})
+	if err != nil || lifecycle.Failed(rows) {
 		t.Fatalf("register: %+v %v", rows, err)
 	}
 	now = now.Add(2 * time.Hour)
 	out, err := svc.Sweep(false)
-	if err != nil || len(out) != 1 || out[0].Action != core.ActionRetry {
+	if err != nil || len(out) != 1 || out[0].Action != ledger.ActionRetry {
 		t.Fatalf("quarantine: %+v %v", out, err)
 	}
 	svc.FS = FS{}

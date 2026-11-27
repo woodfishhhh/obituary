@@ -15,7 +15,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	coreledger "github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 )
 
@@ -357,8 +357,8 @@ func TestCodexEnvironmentPatchLeavesLocalFilesUnregistered(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := e.engine.Svc.Store.Update(func(st *core.State) error {
-				st.Projects = map[string]core.ProjectState{core.ProjectKey(e.root): {Consent: core.ConsentApproved}}
+			if err := e.engine.Svc.Store.Update(func(st *coreledger.State) error {
+				st.Projects = map[string]coreledger.ProjectState{coreledger.ProjectKey(e.root): {Consent: coreledger.ConsentApproved}}
 				return nil
 			}); err != nil {
 				t.Fatal(err)

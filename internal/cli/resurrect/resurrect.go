@@ -3,7 +3,7 @@ package resurrect
 import (
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 )
 
@@ -26,7 +26,7 @@ func NewCmd() *cobra.Command {
 				return err
 			}
 			svc = svc.WithContext(cmd.Context())
-			var restored []core.GraveResult
+			var restored []lifecycle.GraveResult
 			if last {
 				session, project := cmdutil.BurialScope()
 				args, restored, err = svc.LastBurialRefs(session, project)
@@ -37,7 +37,7 @@ func NewCmd() *cobra.Command {
 			results, err := svc.Resurrect(args)
 			results = append(restored, results...)
 			language := cmdutil.Localizer()
-			reportErr := cmdutil.ReportGraves(results, asJSON, func(r core.GraveResult) string {
+			reportErr := cmdutil.ReportGraves(results, asJSON, func(r lifecycle.GraveResult) string {
 				return language.Text("cli.resurrect.result", map[string]any{"ID": r.Burial.ID, "Path": r.Path})
 			})
 			if err := cmdutil.Committed(err); err != nil {

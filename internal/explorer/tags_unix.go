@@ -11,13 +11,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/guard"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 	"golang.org/x/sys/unix"
 )
 
-func projectLabels(svc *core.Service, index string, state core.State, receipts map[string]directory, options Options) error {
+func projectLabels(svc *lifecycle.Service, index string, state ledger.State, receipts map[string]directory, options Options) error {
 	if receipts == nil {
 		receipts = map[string]directory{}
 	}
@@ -53,7 +55,7 @@ func projectLabels(svc *core.Service, index string, state core.State, receipts m
 }
 
 // collectWanted records, for every tracked item that should carry a date tag, the tag it wants.
-func collectWanted(svc *core.Service, state core.State, receipts map[string]directory, options Options, wanted map[string]string) error {
+func collectWanted(svc *lifecycle.Service, state ledger.State, receipts map[string]directory, options Options, wanted map[string]string) error {
 	for _, it := range state.Items {
 		if it.Identity == nil {
 			continue
@@ -81,7 +83,7 @@ func collectWanted(svc *core.Service, state core.State, receipts map[string]dire
 }
 
 // taggable reports whether the scope, Git and Guard rules allow a tag on the item.
-func taggable(svc *core.Service, it core.Item, options Options) (bool, error) {
+func taggable(svc *lifecycle.Service, it ledger.Item, options Options) (bool, error) {
 	inScope, err := inFolders(svc.FS, filepath.Dir(it.Path), options.Folders)
 	if err != nil {
 		return false, err
@@ -96,7 +98,7 @@ func taggable(svc *core.Service, it core.Item, options Options) (bool, error) {
 		}
 	}
 	err = svc.Guard.CheckContext(svc.Store.Context(), it.Path, true)
-	var refused *core.RefusedError
+	var refused *guard.RefusedError
 	if errors.As(err, &refused) {
 		return false, nil
 	}
@@ -104,12 +106,12 @@ func taggable(svc *core.Service, it core.Item, options Options) (bool, error) {
 }
 
 // relocated follows a receipt's file into the graveyard once it has been buried.
-func relocated(state core.State, r directory) string {
+func relocated(state ledger.State, r directory) string {
 	for _, b := range state.Burials {
 		if b.Identity != nil && *b.Identity == r.Identity {
 			return b.Grave
 		}
-		if b.IsDir && slices.ContainsFunc(b.Children, func(c core.BuriedChild) bool { return c.Identity != nil && *c.Identity == r.Identity }) {
+		if b.IsDir && slices.ContainsFunc(b.Children, func(c ledger.BuriedChild) bool { return c.Identity != nil && *c.Identity == r.Identity }) {
 			rel, err := filepath.Rel(b.Path, r.Path)
 			if err == nil && filepath.IsLocal(rel) {
 				return filepath.Join(b.Grave, rel)

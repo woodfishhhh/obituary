@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/core/lifespan"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/texttable"
@@ -30,18 +30,18 @@ type Options struct {
 
 // Write prints items as of now, in the caller's language.
 func Write(w io.Writer, items []ledger.Item, now time.Time, opt Options) error {
-	svc := &core.Service{WatchStableWindow: opt.StableWindow}
+	svc := &lifecycle.Service{WatchStableWindow: opt.StableWindow}
 	if opt.JSON {
 		return writeJSON(w, svc, items, now)
 	}
 	return writeTable(w, svc, items, now, i18n.NewLocalizer(opt.Language))
 }
 
-func writeJSON(w io.Writer, svc *core.Service, items []ledger.Item, now time.Time) error {
+func writeJSON(w io.Writer, svc *lifecycle.Service, items []ledger.Item, now time.Time) error {
 	type row struct {
 		ledger.Item
-		Stability       *core.WatchStatus `json:"stability,omitempty"`
-		IdentityWarning string            `json:"identityWarning,omitempty"`
+		Stability       *lifecycle.WatchStatus `json:"stability,omitempty"`
+		IdentityWarning string                 `json:"identityWarning,omitempty"`
 	}
 	rows := make([]row, 0, len(items))
 	for _, it := range items {
@@ -52,7 +52,7 @@ func writeJSON(w io.Writer, svc *core.Service, items []ledger.Item, now time.Tim
 	return enc.Encode(rows)
 }
 
-func writeTable(w io.Writer, svc *core.Service, items []ledger.Item, now time.Time, language *i18n.Localizer) error {
+func writeTable(w io.Writer, svc *lifecycle.Service, items []ledger.Item, now time.Time, language *i18n.Localizer) error {
 	if len(items) == 0 {
 		_, err := fmt.Fprintln(w, language.Text("cli.list.empty", nil))
 		return err
@@ -70,7 +70,7 @@ func writeTable(w io.Writer, svc *core.Service, items []ledger.Item, now time.Ti
 	return out.Flush()
 }
 
-func note(svc *core.Service, item ledger.Item, now time.Time, language *i18n.Localizer) string {
+func note(svc *lifecycle.Service, item ledger.Item, now time.Time, language *i18n.Localizer) string {
 	note := item.Note
 	if item.Stuck() {
 		// Extend clears the failure count, so it is the command-line Retry.

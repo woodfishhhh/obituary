@@ -6,7 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 func NewCmd() *cobra.Command {
@@ -32,14 +33,14 @@ func NewCmd() *cobra.Command {
 				if r.Error != "" {
 					fmt.Fprintln(os.Stderr, cmdutil.Text("cli.error_prefix"), cmdutil.ReferenceText(cmdutil.Localizer(), r.Err, r.Error))
 				} else {
-					if r.Item.Kind == core.KindContainer {
+					if r.Item.Kind == ledger.KindContainer {
 						fmt.Printf(cmdutil.Text("cli.cancel.canceled_container_kept"), r.Item.ID, r.Item.Path)
 					} else {
 						fmt.Printf(cmdutil.Text("cli.cancel.canceled_kept_on_disk"), r.Item.ID, r.Item.Path)
 					}
 				}
 			}
-			if core.Failed(results) {
+			if lifecycle.Failed(results) {
 				return cmdutil.ErrReported
 			}
 			return nil

@@ -10,7 +10,7 @@ import (
 	"os"
 
 	"github.com/woodfishhhh/obituary/internal/cli/uninstall"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/integrate"
 )
 
@@ -37,7 +37,7 @@ func run() error {
 		if err := integrate.Apply(changes); err != nil {
 			return err
 		}
-		return (core.Store{Home: os.Getenv("OBIT_HOME")}).Update(func(*core.State) error { return nil })
+		return (ledger.Store{Home: os.Getenv("OBIT_HOME")}).Update(func(*ledger.State) error { return nil })
 	}
 	cmd := uninstall.NewInstallerTestCmd()
 	cmd.SetArgs(os.Args[2:])

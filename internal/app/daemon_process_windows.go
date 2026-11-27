@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -75,7 +75,7 @@ func writeProcessReceipt(path string, closed bool, runErr error) error {
 	if err != nil {
 		return err
 	}
-	return core.WriteMetadata(path, data)
+	return lifecycle.WriteMetadata(path, data)
 }
 
 func readDaemonProcess(home string) (daemonProcess, error) {
@@ -84,7 +84,7 @@ func readDaemonProcess(home string) (daemonProcess, error) {
 
 func readProcessReceipt(path string) (daemonProcess, error) {
 	var p daemonProcess
-	data, err := core.ReadMetadata(path)
+	data, err := lifecycle.ReadMetadata(path)
 	if err == nil {
 		err = json.Unmarshal(data, &p)
 	}

@@ -10,7 +10,7 @@ Consider marking a file: the CLI parses its path and lifespan, the application o
 | Host hooks | Translate host payloads into `internal/hook.Event`. A runner takes slow work off the tool-call path. |
 | `internal/integrate` | Plan changes to host configuration, then check the original content before applying the plan so concurrent edits survive. |
 | `internal/app`, `obitd` | Assemble platform services and wake the background worker. The core still decides what is eligible. |
-| `internal/core`, `internal/core/ledger` | Check safety rules and identity; coordinate moves, ledger revisions, recovery and audit records. |
+| `internal/core/lifecycle`, `internal/core/ledger`, `internal/core/guard`, `internal/core/fs` | Check safety rules and identity; coordinate moves, ledger revisions, recovery and audit records. |
 
 ## After the deadline
 

@@ -10,7 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 func FuzzLogs(f *testing.F) {
@@ -26,7 +27,7 @@ func FuzzLogs(f *testing.F) {
 	f.Add([]byte("\nlast\n"), int32(20000), uint8(255), "", "", "", "")
 	f.Add([]byte("2026-11-10T10:00:00Z [WARN] warning\n"), int32(1), uint8(1), "WARN", "2026-11-10T10:00:00Z", "2026-11-10T10:00:00Z", "warning")
 	home := f.TempDir()
-	a := &API{deps: Dependencies{Service: &core.Service{Store: core.Store{Home: home}}}}
+	a := &API{deps: Dependencies{Service: &lifecycle.Service{Store: ledger.Store{Home: home}}}}
 	f.Fuzz(func(t *testing.T, data []byte, limit int32, style uint8, level, from, to, text string) {
 		source := []string{"hook.log", "obitd.log", "hook-audit.log", "audit.jsonl"}[style%4]
 		query := LogQuery{Source: source, Lines: int(limit), Level: level, From: from, To: to, Text: text}

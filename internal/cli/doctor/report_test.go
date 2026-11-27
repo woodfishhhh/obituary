@@ -13,7 +13,6 @@ import (
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/hook"
 )
@@ -138,7 +137,7 @@ func TestExpiredReportIsBuried(t *testing.T) {
 	}
 	svc.Now = func() time.Time { return time.Now().Add(app.ReportLifespan + time.Minute) }
 	outcomes, err := svc.Sweep(false)
-	if err != nil || len(outcomes) != 1 || outcomes[0].Action != core.ActionBuried {
+	if err != nil || len(outcomes) != 1 || outcomes[0].Action != ledger.ActionBuried {
 		t.Fatalf("sweep: %+v %v", outcomes, err)
 	}
 	if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {

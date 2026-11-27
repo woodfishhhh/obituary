@@ -15,7 +15,9 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/guard"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/hook"
 	"github.com/woodfishhhh/obituary/internal/rules"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
@@ -315,11 +317,11 @@ func pluginEngine(t *testing.T, approved bool) (string, *auto.Engine) {
 	}
 	testenv.InitRepo(t, root)
 	// Plugins report writes; automatic registration must be on to see them.
-	e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: home}, Guard: core.Guard{System: []string{home}}, FS: winfs.FS{}, ProposalMode: core.ProposalsTiered}, Trust: rules.TrustStore{Path: filepath.Join(home, "trust.json")}}
+	e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: home}, Guard: guard.Guard{System: []string{home}}, FS: winfs.FS{}, ProposalMode: lifecycle.ProposalsTiered}, Trust: rules.TrustStore{Path: filepath.Join(home, "trust.json")}}
 	e.Svc.Owner, e.Svc.Recheck = auto.Owner, e.RecheckRules
 	if approved {
-		if err := e.Svc.Store.Update(func(st *core.State) error {
-			st.Projects = map[string]core.ProjectState{core.ProjectKey(root): {Consent: core.ConsentApproved}}
+		if err := e.Svc.Store.Update(func(st *ledger.State) error {
+			st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(root): {Consent: ledger.ConsentApproved}}
 			return nil
 		}); err != nil {
 			t.Fatal(err)

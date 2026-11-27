@@ -8,7 +8,8 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/woodfishhhh/obituary/internal/core"
+	coreledger "github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 // Run is the resident/tray entry point. The caller owns cancellation and
@@ -16,7 +17,7 @@ import (
 // The interval provides full reconciliation after missed events or outages.
 // Consume both channels to handle changes and watcher errors; close the watcher
 // on exit. Windows uses fsnotify's ReadDirectoryChangesW backend.
-func Run(ctx context.Context, svc *core.Service, interval time.Duration, report func(error)) error {
+func Run(ctx context.Context, svc *lifecycle.Service, interval time.Duration, report func(error)) error {
 	if interval <= 0 {
 		return fmt.Errorf("watch reconciliation interval must be positive")
 	}
@@ -35,9 +36,9 @@ type watchSource struct {
 	Errors <-chan error
 }
 
-func run(ctx context.Context, svc *core.Service, interval time.Duration, report func(error), w watchSource) error {
+func run(ctx context.Context, svc *lifecycle.Service, interval time.Duration, report func(error), w watchSource) error {
 	svc = svc.WithContext(ctx)
-	r := &resident{svc: svc, watcher: w, policies: make(map[int64]core.WatchPolicy), report: report}
+	r := &resident{svc: svc, watcher: w, policies: make(map[int64]coreledger.WatchPolicy), report: report}
 	ledger, folders, failures, drained := r.drain()
 	defer func() { _ = w.Close(); <-drained }()
 	if _, err := svc.Watches(); err != nil {
@@ -89,9 +90,9 @@ func run(ctx context.Context, svc *core.Service, interval time.Duration, report 
 const settleQuiet, settleMax = 300 * time.Millisecond, 2 * time.Second
 
 type resident struct {
-	svc      *core.Service
+	svc      *lifecycle.Service
 	watcher  watchSource
-	policies map[int64]core.WatchPolicy
+	policies map[int64]coreledger.WatchPolicy
 	report   func(error)
 }
 
@@ -107,9 +108,9 @@ func (r *resident) refresh(all bool) {
 		r.record(err)
 		return
 	}
-	next := make(map[int64]core.WatchPolicy)
+	next := make(map[int64]coreledger.WatchPolicy)
 	for _, p := range policies {
-		if p.Consent != core.ConsentApproved {
+		if p.Consent != coreledger.ConsentApproved {
 			continue
 		}
 		path, err := r.svc.WatchPath(p)

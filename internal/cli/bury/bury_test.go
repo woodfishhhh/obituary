@@ -15,7 +15,8 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	mcpcmd "github.com/woodfishhhh/obituary/internal/cli/mcp"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"golang.org/x/sys/windows"
 )
 
@@ -52,14 +53,14 @@ func TestBuryRecoveryReceiptLimit(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		b := core.Burial{ID: int64(i + 1), Path: path, Grave: filepath.Join(dir, filepath.Base(path)), Identity: &id, GraveID: &graveID}
-		receipts = append(receipts, map[string]any{"kind": core.ActionResurrected, "burial": b, "path": path, "resurrect": map[string]any{"parent": parent, "name": filepath.Base(path)}})
+		b := ledger.Burial{ID: int64(i + 1), Path: path, Grave: filepath.Join(dir, filepath.Base(path)), Identity: &id, GraveID: &graveID}
+		receipts = append(receipts, map[string]any{"kind": ledger.ActionResurrected, "burial": b, "path": path, "resurrect": map[string]any{"parent": parent, "name": filepath.Base(path)}})
 	}
 	encoded, err := json.Marshal(receipts)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := svc.Store.Update(func(st *core.State) error { st.NextID = 202; return json.Unmarshal(encoded, &st.RestoreCleanups) }); err != nil {
+	if err := svc.Store.Update(func(st *ledger.State) error { st.NextID = 202; return json.Unmarshal(encoded, &st.RestoreCleanups) }); err != nil {
 		t.Fatal(err)
 	}
 	clitest.WriteFixture(t, filepath.Join(svc.Store.Home, "audit.jsonl"), "")
@@ -70,15 +71,15 @@ func TestBuryRecoveryReceiptLimit(t *testing.T) {
 	}
 	defer windows.CloseHandle(h)
 	previous := cmdutil.Open
-	cmdutil.Open = func() (*core.Service, error) { return svc, nil }
+	cmdutil.Open = func() (*lifecycle.Service, error) { return svc, nil }
 	t.Cleanup(func() { cmdutil.Open = previous })
 	for _, mode := range []string{"mcp", "json"} {
 		path := filepath.Join(repo, "new-"+mode+".txt")
 		clitest.WriteFixture(t, path, "new burial")
-		var results []core.GraveResult
+		var results []lifecycle.GraveResult
 		if mode == "mcp" {
 			session := clitest.ConnectMCP(t, mcpcmd.NewServer(svc, "0.1.0-dev"))
-			var data struct{ Results []core.GraveResult }
+			var data struct{ Results []lifecycle.GraveResult }
 			r := clitest.CallMCP(t, session, "obit_bury", map[string]any{"paths": []string{path}}, false, &data)
 			encoded, err := json.Marshal(r)
 			if err != nil || len(encoded) > 1<<20 {
@@ -91,7 +92,7 @@ func TestBuryRecoveryReceiptLimit(t *testing.T) {
 				t.Fatalf("CLI burial reply: %s %v", out, err)
 			}
 		}
-		if len(results) != 21 || results[0].Burial == nil || results[0].Burial.Path != path || results[0].Action != core.ActionBuried || results[0].RecoveryCount != 201 || results[0].RecoveryOmitted != 181 || !strings.Contains(results[0].Warning, "181") || !strings.Contains(results[0].Warning, "obit log --lines ") {
+		if len(results) != 21 || results[0].Burial == nil || results[0].Burial.Path != path || results[0].Action != ledger.ActionBuried || results[0].RecoveryCount != 201 || results[0].RecoveryOmitted != 181 || !strings.Contains(results[0].Warning, "181") || !strings.Contains(results[0].Warning, "obit log --lines ") {
 			t.Fatalf("burial recovery receipts unbounded or current input lost: mode=%s rows=%d first=%+v", mode, len(results), results[0])
 		}
 	}
@@ -118,7 +119,7 @@ func TestBuryPrintsRecoveredResurrection(t *testing.T) {
 	}
 	defer windows.CloseHandle(h)
 	old := cmdutil.Open
-	cmdutil.Open = func() (*core.Service, error) { return svc, nil }
+	cmdutil.Open = func() (*lifecycle.Service, error) { return svc, nil }
 	t.Cleanup(func() { cmdutil.Open = old })
 	out, stderr, _ := clitest.Execute(t, NewCmd(), filepath.Join(filepath.Dir(paths[0]), "absent"))
 	if !strings.Contains(out, "resurrected") || !strings.Contains(out, "recovered") || strings.Contains(out, "restorable until") || !strings.Contains(stderr, "warning:") {
@@ -160,7 +161,7 @@ func TestBuryCommandReportsFailureWithoutRegistration(t *testing.T) {
 			}
 			svc.FS = failMoveFS{svc.FS}
 			original := cmdutil.Open
-			cmdutil.Open = func() (*core.Service, error) { return svc, nil }
+			cmdutil.Open = func() (*lifecycle.Service, error) { return svc, nil }
 			t.Cleanup(func() { cmdutil.Open = original })
 			args := []string{path}
 			if asJSON {
@@ -177,7 +178,7 @@ func TestBuryCommandReportsFailureWithoutRegistration(t *testing.T) {
 			if asJSON {
 				var rows []struct {
 					Action string
-					Item   *core.Item
+					Item   *ledger.Item
 				}
 				if json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 1 || rows[0].Item != nil || stderr != "" {
 					t.Fatalf("JSON must report failure without a new item: %s %s", out, stderr)
@@ -215,7 +216,7 @@ func TestBuryCommandReportsPartialSuccess(t *testing.T) {
 				}
 			}}
 			original := cmdutil.Open
-			cmdutil.Open = func() (*core.Service, error) { return svc, nil }
+			cmdutil.Open = func() (*lifecycle.Service, error) { return svc, nil }
 			t.Cleanup(func() { cmdutil.Open = original })
 			args := append([]string(nil), paths...)
 			if asJSON {
@@ -226,8 +227,8 @@ func TestBuryCommandReportsPartialSuccess(t *testing.T) {
 				t.Fatalf("partial failure must return error and serve the completed burial: %s %s, %v, %v", out, stderr, err, *starts)
 			}
 			if asJSON {
-				var rows []core.GraveResult
-				if json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 3 || rows[0].Action != core.ActionBuried || rows[0].Burial == nil || rows[1].Error == "" || rows[2].Action != "not executed" {
+				var rows []lifecycle.GraveResult
+				if json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 3 || rows[0].Action != ledger.ActionBuried || rows[0].Burial == nil || rows[1].Error == "" || rows[2].Action != "not executed" {
 					t.Fatalf("partial JSON receipt missing: %s %s", out, stderr)
 				}
 				for i := range rows {
@@ -276,11 +277,11 @@ func TestBuryPendingReceiptCarriesLocationAndRetry(t *testing.T) {
 				}
 			})
 			previous := cmdutil.Open
-			cmdutil.Open = func() (*core.Service, error) { return svc, nil }
+			cmdutil.Open = func() (*lifecycle.Service, error) { return svc, nil }
 			t.Cleanup(func() { cmdutil.Open = previous })
 			var rows []struct {
 				Action, Grave, Detail string
-				Burial                *core.Burial
+				Burial                *ledger.Burial
 			}
 			var out string
 			if strings.HasPrefix(format, "mcp") {
@@ -302,7 +303,7 @@ func TestBuryPendingReceiptCarriesLocationAndRetry(t *testing.T) {
 				t.Fatalf("pending fixture: %+v %v", pending, err)
 			}
 			grave := pending[0].Burial.Grave
-			if !strings.Contains(out, core.ActionRecoveryPending) || !strings.Contains(out, "rerun obit reap") {
+			if !strings.Contains(out, ledger.ActionRecoveryPending) || !strings.Contains(out, "rerun obit reap") {
 				t.Fatalf("pending burial receipt omitted location or retry: %s", out)
 			}
 			if format != "text" {
@@ -330,11 +331,11 @@ func TestBuryJSONQuotaOverflowWarnsAgainstRawRm(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected non-zero exit on Plan A overflow, out=%s", out)
 	}
-	var results []core.GraveResult
+	var results []lifecycle.GraveResult
 	if jerr := json.Unmarshal([]byte(out), &results); jerr != nil || len(results) != 1 {
 		t.Fatalf("bury --json decode: out=%s err=%v", out, jerr)
 	}
-	if results[0].Action != core.ActionQuotaExceeded || results[0].QuotaOverflow == nil {
+	if results[0].Action != ledger.ActionQuotaExceeded || results[0].QuotaOverflow == nil {
 		t.Fatalf("expected quota-exceeded receipt, got %+v", results[0])
 	}
 	if !strings.Contains(results[0].Detail, "do not bypass Obituary with raw rm") {

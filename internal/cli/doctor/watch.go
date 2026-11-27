@@ -5,20 +5,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 type WatchCheck struct {
-	Policies         int              `json:"policies"`
-	Pending          int              `json:"pending"`
-	Unavailable      int              `json:"unavailable"`
-	Unstable         int              `json:"unstable"`
-	Exclusions       int              `json:"exclusions"`
-	Exemptions       int              `json:"exemptions"`
-	FirstUnavailable string           `json:"firstUnavailable,omitempty"`
-	FirstUnstable    string           `json:"firstUnstable,omitempty"`
-	Skipped          []core.WatchSkip `json:"skipped,omitempty"`
+	Policies         int                   `json:"policies"`
+	Pending          int                   `json:"pending"`
+	Unavailable      int                   `json:"unavailable"`
+	Unstable         int                   `json:"unstable"`
+	Exclusions       int                   `json:"exclusions"`
+	Exemptions       int                   `json:"exemptions"`
+	FirstUnavailable string                `json:"firstUnavailable,omitempty"`
+	FirstUnstable    string                `json:"firstUnstable,omitempty"`
+	Skipped          []lifecycle.WatchSkip `json:"skipped,omitempty"`
 }
 
 func (lang diagnostics) diagnoseWatches(state ledger.State, err error, now time.Time, watchPath func(ledger.WatchPolicy) (string, error)) DoctorCheck {
@@ -37,8 +37,8 @@ func (lang diagnostics) diagnoseWatches(state ledger.State, err error, now time.
 		}
 		path, err := watchPath(policy)
 		if err == nil {
-			var skips []core.WatchSkip
-			skips, err = core.WatchDownloadSkips(path)
+			var skips []lifecycle.WatchSkip
+			skips, err = lifecycle.WatchDownloadSkips(path)
 			w.Skipped = append(w.Skipped, skips...)
 		}
 		if err != nil {

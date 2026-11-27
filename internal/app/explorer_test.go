@@ -15,12 +15,13 @@ import (
 	"unicode/utf16"
 
 	"github.com/woodfishhhh/obituary/internal/config"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
-func explorerService(t *testing.T) (*core.Service, string) {
+func explorerService(t *testing.T) (*lifecycle.Service, string) {
 	t.Helper()
 	t.Setenv("OBIT_HOME", t.TempDir())
 	t.Setenv("OBIT_CONFIG_DIR", t.TempDir())
@@ -55,9 +56,9 @@ func labelText(t *testing.T, dir string) string {
 	return string(utf16.Decode(units))
 }
 
-func addLabel(t *testing.T, svc *core.Service, path string) string {
+func addLabel(t *testing.T, svc *lifecycle.Service, path string) string {
 	t.Helper()
-	r, err := svc.Add([]string{path}, core.AddOptions{ExpiresAt: svc.Now().Add(3 * 24 * time.Hour)})
+	r, err := svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: svc.Now().Add(3 * 24 * time.Hour)})
 	if err != nil || len(r) != 1 || r[0].Error != "" || r[0].Item == nil {
 		t.Fatalf("add: %+v %v", r, err)
 	}
@@ -234,12 +235,12 @@ func TestExplorerBurialAndResurrection(t *testing.T) {
 	path := filepath.Join(dir, "report.log")
 	addLabel(t, svc, path)
 	r, err := svc.Bury([]string{path}, false, "")
-	if err != nil || len(r) != 1 || r[0].Action != core.ActionBuried {
+	if err != nil || len(r) != 1 || r[0].Action != ledger.ActionBuried {
 		t.Fatalf("bury: %+v %v", r, err)
 	}
 	assertNoINI(t, dir)
 	r, err = svc.Resurrect([]string{strconv.FormatInt(r[0].Burial.ID, 10)})
-	if err != nil || len(r) != 1 || r[0].Action != core.ActionResurrected {
+	if err != nil || len(r) != 1 || r[0].Action != ledger.ActionResurrected {
 		t.Fatalf("resurrect: %+v %v", r, err)
 	}
 	assertNoINI(t, dir)
@@ -260,11 +261,11 @@ func TestExplorerFailureDoesNotFailBurialOrResurrection(t *testing.T) {
 		t.Fatal(err)
 	}
 	r, err := svc.Bury([]string{path}, false, "")
-	if err != nil || len(r) != 1 || r[0].Action != core.ActionBuried {
+	if err != nil || len(r) != 1 || r[0].Action != ledger.ActionBuried {
 		t.Fatalf("label failure blocked bury: %+v %v", r, err)
 	}
 	r, err = svc.Resurrect([]string{strconv.FormatInt(r[0].Burial.ID, 10)})
-	if err != nil || len(r) != 1 || r[0].Action != core.ActionResurrected {
+	if err != nil || len(r) != 1 || r[0].Action != ledger.ActionResurrected {
 		t.Fatalf("label failure blocked resurrection: %+v %v", r, err)
 	}
 	data, err := os.ReadFile(filepath.Join(svc.Store.Home, "explorer.log"))
@@ -289,7 +290,7 @@ func TestExplorerGitOptInAndDisableCleanup(t *testing.T) {
 	testenv.InitRepo(t, dir)
 	addLabel(t, svc, filepath.Join(dir, "report.log"))
 	assertNoINI(t, dir)
-	svc.AfterChange = func(current *core.Service) {
+	svc.AfterChange = func(current *lifecycle.Service) {
 		syncExplorer(current, config.Config{Explorer: config.Explorer{Enabled: true, InGit: true, Everywhere: true}})
 	}
 	svc.AfterChange(svc)
@@ -302,7 +303,7 @@ func TestExplorerGitOptInAndDisableCleanup(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "another.txt"), []byte("keep"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	svc.AfterChange = func(current *core.Service) { syncExplorer(current, config.Config{}) }
+	svc.AfterChange = func(current *lifecycle.Service) { syncExplorer(current, config.Config{}) }
 	svc.AfterChange(svc)
 	assertNoINI(t, dir)
 }
@@ -330,7 +331,7 @@ func TestExplorerTracksMovedParentAndBuriedChildLabels(t *testing.T) {
 	}
 	svc.Now = func() time.Time { return time.Date(2026, 11, 14, 0, 0, 0, 0, time.Local) }
 	r, err := svc.Bury([]string{moved}, false, "")
-	if err != nil || len(r) != 1 || r[0].Action != core.ActionBuried {
+	if err != nil || len(r) != 1 || r[0].Action != ledger.ActionBuried {
 		t.Fatalf("bury: %+v %v", r, err)
 	}
 	grave, err := svc.FS.Locate(identity)
@@ -339,7 +340,7 @@ func TestExplorerTracksMovedParentAndBuriedChildLabels(t *testing.T) {
 	}
 	assertNoINI(t, grave)
 	r, err = svc.Resurrect([]string{strconv.FormatInt(r[0].Burial.ID, 10)})
-	if err != nil || len(r) != 1 || r[0].Action != core.ActionResurrected {
+	if err != nil || len(r) != 1 || r[0].Action != ledger.ActionResurrected {
 		t.Fatalf("restore: %+v %v", r, err)
 	}
 	assertNoINI(t, moved)
@@ -373,7 +374,7 @@ func TestExplorerLogRotates(t *testing.T) {
 	if err := os.WriteFile(path, []byte(old), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	logExplorerError(&core.Service{Store: core.Store{Home: home}}, os.ErrPermission)
+	logExplorerError(&lifecycle.Service{Store: ledger.Store{Home: home}}, os.ErrPermission)
 	if data, err := os.ReadFile(path + ".1"); err != nil || string(data) != old {
 		t.Fatalf("full log not rotated: %d bytes %v", len(data), err)
 	}

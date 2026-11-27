@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 	"github.com/woodfishhhh/obituary/internal/textutil"
 )
@@ -33,7 +33,7 @@ func NewCmd() *cobra.Command {
 			guardCounts.Buried += sum.Lifetime.DeleteBuried // retain pre-ledger audit counts
 			if asJSON {
 				return cmdutil.PrintJSON(struct {
-					core.Summary
+					lifecycle.Summary
 					DeleteGuard guardrm.Counts `json:"deleteGuard"`
 				}{sum, guardCounts})
 			}

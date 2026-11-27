@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func TestLongHomeConnectsToSameResident(t *testing.T) {
@@ -17,11 +17,11 @@ func TestLongHomeConnectsToSameResident(t *testing.T) {
 	if err := os.Mkdir(home, 0700); err != nil {
 		t.Fatal(err)
 	}
-	stop, err := Serve(home, func([]core.Observation) error { return nil }, nil)
+	stop, err := Serve(home, func([]ledger.Observation) error { return nil }, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Submit(context.Background(), home, []core.Observation{{Token: "test"}}); err != nil {
+	if _, err := Submit(context.Background(), home, []ledger.Observation{{Token: "test"}}); err != nil {
 		t.Error(err)
 	}
 	if err := stop(); err != nil {

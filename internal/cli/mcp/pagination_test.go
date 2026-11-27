@@ -14,8 +14,8 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 func TestMCPGraveyardKeepsBoundaryIDGroup(t *testing.T) {
@@ -42,7 +42,7 @@ func TestMCPGraveyardKeepsBoundaryIDGroup(t *testing.T) {
 		var envelope struct {
 			Data struct {
 				Burials   []ledger.Burial
-				Pending   []core.PendingGrave
+				Pending   []lifecycle.PendingGrave
 				NextAfter string
 				Total     int
 				HasMore   bool
@@ -67,16 +67,16 @@ func TestMCPGraveyardSingleIDGroupLimit(t *testing.T) {
 	for _, count := range []int{2, 200, 201} {
 		t.Run(fmt.Sprint(count), func(t *testing.T) {
 			t.Parallel()
-			pending := make([]core.PendingGrave, count)
+			pending := make([]lifecycle.PendingGrave, count)
 			for i := range pending {
-				pending[i] = core.PendingGrave{Burial: &ledger.Burial{ID: 1}, Status: "unverifiable"}
+				pending[i] = lifecycle.PendingGrave{Burial: &ledger.Burial{ID: 1}, Status: "unverifiable"}
 			}
 			page := mcpGravePage(nil, pending, mcpPageInput{Limit: 1}, nil)
 			if count > 200 {
 				if !strings.Contains(page.Error, "too many records share one ID") {
 					t.Fatalf("oversized single ID group was accepted: %+v", page)
 				}
-			} else if page.Error != "" || len(page.Data.(map[string]any)["pending"].([]core.PendingGrave)) != count {
+			} else if page.Error != "" || len(page.Data.(map[string]any)["pending"].([]lifecycle.PendingGrave)) != count {
 				t.Fatalf("single ID group was split: %+v", page)
 			}
 		})
@@ -177,7 +177,7 @@ func TestMCPGraveyardCursorSurvivesChanges(t *testing.T) {
 				path := filepath.Join(repo, fmt.Sprintf("%d.log", i))
 				clitest.WriteFixture(t, path, "buried")
 				got, err := svc.Bury([]string{path}, false, "")
-				if err != nil || core.GraveFailed(got) {
+				if err != nil || lifecycle.GraveFailed(got) {
 					t.Fatalf("bury: %+v %v", got, err)
 				}
 			}
@@ -195,7 +195,7 @@ func TestMCPGraveyardCursorSurvivesChanges(t *testing.T) {
 				path := filepath.Join(repo, "5.log")
 				clitest.WriteFixture(t, path, "new")
 				got, err := svc.Bury([]string{path}, false, "")
-				if err != nil || core.GraveFailed(got) {
+				if err != nil || lifecycle.GraveFailed(got) {
 					t.Fatal(got, err)
 				}
 				want = append(want, 5)
@@ -205,7 +205,7 @@ func TestMCPGraveyardCursorSurvivesChanges(t *testing.T) {
 					ref, want = "3", []int64{4}
 				}
 				got, err := svc.Resurrect([]string{ref})
-				if err != nil || core.GraveFailed(got) {
+				if err != nil || lifecycle.GraveFailed(got) {
 					t.Fatal(got, err)
 				}
 			}
@@ -246,7 +246,7 @@ func TestMCPGraveyardMergesPendingByID(t *testing.T) {
 	s := clitest.ConnectMCP(t, NewServer(svc, "0.1.0-dev"))
 	var page struct {
 		Burials   []ledger.Burial
-		Pending   []core.PendingGrave
+		Pending   []lifecycle.PendingGrave
 		NextAfter string
 		HasMore   bool
 	}
@@ -257,7 +257,7 @@ func TestMCPGraveyardMergesPendingByID(t *testing.T) {
 	after := page.NextAfter
 	page = struct {
 		Burials   []ledger.Burial
-		Pending   []core.PendingGrave
+		Pending   []lifecycle.PendingGrave
 		NextAfter string
 		HasMore   bool
 	}{}

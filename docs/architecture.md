@@ -48,18 +48,18 @@ flowchart TD
 
 一个二进制做所有判断，hook 只是把各家的 JSON 换成同一种 `hook.Event`。`obitd` 只是换了个入口的同一套 `core.Service`。
 
-`internal/core` 按职责分成子包，根包只保留原来的名字（类型别名和转发），外部包可以照旧写 `core.X`：
+`internal/core` 按职责拆分为以下子包，调用方直接导入对应子包（根包不再保留门面转发）：
 
 | 子包 | 负责 |
 |---|---|
 | `core/lifecycle` | `Service` 和它的全部操作：登记、续命、收割、下葬、复活、火化、提议、监视、容器 |
 | `core/ledger` | 账本：热账本 `store.json` 和不可变的墓地快照、事务、锁、审计 |
 | `core/guard` | 哪些路径可以给寿命：登记时和下葬前各查一次，数据目录和必须保住的位置连同祖先一律拒绝 |
-| `core/fs` | `core.FS` 接口和身份类型 |
+| `core/fs` | `core/fs.FS` 接口和身份类型 |
 | `core/lifespan` | 寿命和时间的解析、格式化 |
 | `core/internal/fileio`、`core/internal/pathcheck` | 落盘同步和路径检查，只给 core 的子包用 |
 
-导入只往下走：`core → lifecycle → ledger / guard / lifespan / fs`，子包从不反过来导入根 `core`。
+导入只往下走：`lifecycle → ledger / guard / lifespan / fs`，下层子包从不反过来导入上层子包。
 
 ## 原则
 
@@ -363,7 +363,7 @@ POSIX 身份不只记录设备号和 inode：删除重建可能立即复用 inod
 
 高位为零表示没有可用的持久身份，包括旧 POSIX 账本。该类对象不能登记寿命，旧条目到期保留，`list` 和 `doctor` 提示检查路径后重新 `obit mark`。显式重新登记替换旧身份，不自动迁移。立即 `bury` / `rm` 在独立的操作作用域内固定 fd 后重新识别对象，并保持 fd 打开直到提交，因此仍可移动；没有持久身份的墓地只能人工恢复，后续自动恢复和火化均拒绝。Windows 身份格式及移动语义不变。
 
-`internal/core` 只通过这个接口碰文件系统，`internal/winfs` 是 Windows 实现，测试用不进回收站的 `testFS`：
+`internal/core/*` 只通过这个接口（`internal/core/fs.FS`）碰文件系统，`internal/winfs` 是平台实现，测试用不进回收站的 `testFS`：
 
 | 方法 | 承诺 |
 |---|---|

@@ -12,7 +12,8 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/integrate"
 	"github.com/woodfishhhh/obituary/internal/project"
 )
@@ -76,15 +77,15 @@ func TestWorkBuddyInstalledMCPLocalRoundTrip(t *testing.T) {
 			t.Cleanup(func() { session.Close() })
 			path := filepath.Join(dir, "可恢复 sample.txt")
 			writeFixture(t, path, "local WorkBuddy MCP round trip")
-			var buried struct{ Results []core.GraveResult }
+			var buried struct{ Results []lifecycle.GraveResult }
 			clitest.CallMCP(t, session, "obit_bury", map[string]any{"paths": []string{path}}, false, &buried)
-			if len(buried.Results) != 1 || buried.Results[0].Action != core.ActionBuried || buried.Results[0].Burial == nil {
+			if len(buried.Results) != 1 || buried.Results[0].Action != ledger.ActionBuried || buried.Results[0].Burial == nil {
 				t.Fatal("burial receipt", buried)
 			}
 			if _, err := os.Stat(path); !os.IsNotExist(err) {
 				t.Fatal("file not buried", err)
 			}
-			var graves struct{ Burials []core.Burial }
+			var graves struct{ Burials []ledger.Burial }
 			clitest.CallMCP(t, session, "obit_graveyard", map[string]any{}, false, &graves)
 			id := buried.Results[0].Burial.ID
 			if len(graves.Burials) != 1 || graves.Burials[0].ID != id {

@@ -19,8 +19,9 @@ import (
 	daemoncmd "github.com/woodfishhhh/obituary/internal/cli/daemon"
 	initcmd "github.com/woodfishhhh/obituary/internal/cli/init"
 	"github.com/woodfishhhh/obituary/internal/config"
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/hook"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
@@ -194,17 +195,17 @@ func TestDoctorWarnsForUnverifiedWatchDirectory(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "tree", "file.zip")
 	clitest.WriteFixture(t, path, "fresh")
 	rows, err := svc.Bury([]string{filepath.Dir(path)}, false, "")
-	if err != nil || core.GraveFailed(rows) {
+	if err != nil || lifecycle.GraveFailed(rows) {
 		t.Fatalf("bury: %+v %v", rows, err)
 	}
 	b := *rows[0].Burial
-	b.Size, b.Source, b.Reason = 0, "watch", core.ReasonExpired
+	b.Size, b.Source, b.Reason = 0, "watch", ledger.ReasonExpired
 	data, err := json.Marshal(struct {
 		Version int `json:"version"`
 		ledger.Burial
-		WatchCheck core.WatchSnapshot `json:"watchCheck"`
-		WatchError string             `json:"watchError"`
-	}{3, b, core.WatchSnapshot{Identity: *b.Identity, Directory: true}, "rollback destination is occupied"})
+		WatchCheck corefs.WatchSnapshot `json:"watchCheck"`
+		WatchError string               `json:"watchError"`
+	}{3, b, corefs.WatchSnapshot{Identity: *b.Identity, Directory: true}, "rollback destination is occupied"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -231,7 +232,7 @@ func TestDoctorWarnsForEmptyGrave(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "payload.txt")
 	clitest.WriteFixture(t, path, "keep")
 	rows, err := svc.Bury([]string{path}, false, "")
-	if err != nil || core.GraveFailed(rows) {
+	if err != nil || lifecycle.GraveFailed(rows) {
 		t.Fatalf("bury: %+v %v", rows, err)
 	}
 	if err := os.Remove(rows[0].Burial.Grave); err != nil {
@@ -252,7 +253,7 @@ func TestDoctorSeesEmptyGraveWithCommittedManifest(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "payload.txt")
 	clitest.WriteFixture(t, path, "keep")
 	rows, err := svc.Bury([]string{path}, false, "")
-	if err != nil || core.GraveFailed(rows) {
+	if err != nil || lifecycle.GraveFailed(rows) {
 		t.Fatal(rows, err)
 	}
 	b := *rows[0].Burial

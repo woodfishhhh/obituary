@@ -11,8 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
 	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"golang.org/x/sys/unix"
 )
 
@@ -90,9 +91,9 @@ func TestPOSIXFailedRestoreRetainsBurialAfterParentMove(t *testing.T) {
 	}
 	makePOSIXPayload(t, source, false, "tracked")
 	want := posixID(t, source)
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(dir, "data")}, FS: FS{}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(dir, "data")}, FS: FS{}}
 	rows, err := svc.Bury([]string{source}, false, "")
-	if err != nil || core.GraveFailed(rows) {
+	if err != nil || lifecycle.GraveFailed(rows) {
 		t.Fatalf("bury: %+v %v", rows, err)
 	}
 	b := *rows[0].Burial
@@ -100,7 +101,7 @@ func TestPOSIXFailedRestoreRetainsBurialAfterParentMove(t *testing.T) {
 	mustPOSIXRename(t, filepath.Join(dir, "parent"), oldParent)
 	svc.FS = FS{rename: func(int, string, int, string) error { return unix.EINVAL }}
 	rows, err = svc.Resurrect([]string{source})
-	if err != nil || len(rows) != 1 || !core.GraveFailed(rows) {
+	if err != nil || len(rows) != 1 || !lifecycle.GraveFailed(rows) {
 		t.Fatalf("failed restore: %+v %v", rows, err)
 	}
 	if _, err := os.Stat(filepath.Join(dir, "parent")); !os.IsNotExist(err) {
@@ -124,14 +125,14 @@ func TestPOSIXRestoreLongUnicodeCollision(t *testing.T) {
 	source := filepath.Join(dir, strings.Repeat("雪", 82)+".txt")
 	makePOSIXPayload(t, source, false, "tracked")
 	want := posixID(t, source)
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(dir, "data")}, FS: FS{}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(dir, "data")}, FS: FS{}}
 	rows, err := svc.Bury([]string{source}, false, "")
-	if err != nil || core.GraveFailed(rows) {
+	if err != nil || lifecycle.GraveFailed(rows) {
 		t.Fatalf("bury: %+v %v", rows, err)
 	}
 	makePOSIXPayload(t, source, false, "occupied")
 	rows, err = svc.Resurrect([]string{source})
-	if err != nil || core.GraveFailed(rows) || len(rows) != 1 {
+	if err != nil || lifecycle.GraveFailed(rows) || len(rows) != 1 {
 		t.Fatalf("POSIX Unicode collision did not restore: %+v %v", rows, err)
 	}
 	assertPOSIXPayload(t, rows[0].Path, false, want, "tracked")
@@ -221,9 +222,9 @@ func TestPOSIXRestoreAuditsParentMovedAfterRename(t *testing.T) {
 	}
 	makePOSIXPayload(t, src, false, "tracked")
 	want := posixID(t, src)
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(dir, "home")}, FS: FS{}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(dir, "home")}, FS: FS{}}
 	rows, err := svc.Bury([]string{src}, false, "")
-	if err != nil || core.GraveFailed(rows) {
+	if err != nil || lifecycle.GraveFailed(rows) {
 		t.Fatal(rows, err)
 	}
 	svc.FS = FS{rename: func(from int, old string, to int, name string) error {
@@ -234,7 +235,7 @@ func TestPOSIXRestoreAuditsParentMovedAfterRename(t *testing.T) {
 		return nil
 	}}
 	rows, err = svc.Resurrect([]string{src})
-	if err != nil || core.GraveFailed(rows) || rows[0].Path != src {
+	if err != nil || lifecycle.GraveFailed(rows) || rows[0].Path != src {
 		t.Fatalf("lost committed receipt: %+v %v", rows, err)
 	}
 	assertPOSIXPayload(t, filepath.Join(moved, "payload"), false, want, "tracked")
@@ -262,14 +263,14 @@ func TestPOSIXRestoreRecovery(t *testing.T) {
 	}
 	makePOSIXPayload(t, source, false, "tracked")
 	want := posixID(t, source)
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(dir, "data")}, FS: FS{}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(dir, "data")}, FS: FS{}}
 	rows, err := svc.Bury([]string{source}, false, "")
-	if err != nil || core.GraveFailed(rows) {
+	if err != nil || lifecycle.GraveFailed(rows) {
 		t.Fatalf("bury: %+v %v", rows, err)
 	}
 	svc.FS = lostRestoreResultFS{}
 	rows, err = svc.Resurrect([]string{source})
-	if err != nil || !core.GraveFailed(rows) {
+	if err != nil || !lifecycle.GraveFailed(rows) {
 		t.Fatalf("interruption missing: %+v %v", rows, err)
 	}
 	mustPOSIXRename(t, source, source+"-renamed")
@@ -288,9 +289,9 @@ func TestPOSIXRestoreMismatchNeverPurges(t *testing.T) {
 	makePOSIXPayload(t, other, false, "stranger")
 	want := posixID(t, source)
 	now := time.Now()
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(dir, "data")}, FS: FS{}, Now: func() time.Time { return now }}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(dir, "data")}, FS: FS{}, Now: func() time.Time { return now }}
 	rows, err := svc.Bury([]string{source}, false, "")
-	if err != nil || core.GraveFailed(rows) {
+	if err != nil || lifecycle.GraveFailed(rows) {
 		t.Fatalf("bury: %+v %v", rows, err)
 	}
 	b := *rows[0].Burial
@@ -299,7 +300,7 @@ func TestPOSIXRestoreMismatchNeverPurges(t *testing.T) {
 		mustPOSIXRename(t, other, b.Grave)
 	}, beforeRollback: func() { makePOSIXPayload(t, b.Grave, false, "occupied") }}
 	rows, err = svc.Resurrect([]string{source})
-	if err != nil || !core.GraveFailed(rows) {
+	if err != nil || !lifecycle.GraveFailed(rows) {
 		t.Fatalf("restore race: %+v %v", rows, err)
 	}
 	svc.FS = FS{}
@@ -325,7 +326,7 @@ func TestPOSIXRestoreMismatchNeverPurges(t *testing.T) {
 		t.Fatal(err)
 	}
 	rows, err = svc.Resurrect([]string{fmt.Sprint(b.ID)})
-	if err != nil || !core.GraveFailed(rows) {
+	if err != nil || !lifecycle.GraveFailed(rows) {
 		t.Fatalf("quarantined restore accepted: %+v %v", rows, err)
 	}
 	assertPOSIXPayload(t, b.Grave, false, want, "tracked")
@@ -335,13 +336,13 @@ func TestPOSIXQuarantinedMissingGraveRetainsRecord(t *testing.T) {
 	dir := t.TempDir()
 	source := filepath.Join(dir, "source")
 	makePOSIXPayload(t, source, false, "tracked")
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(dir, "data")}, FS: FS{}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(dir, "data")}, FS: FS{}}
 	rows, err := svc.Bury([]string{source}, false, "")
-	if err != nil || core.GraveFailed(rows) {
+	if err != nil || lifecycle.GraveFailed(rows) {
 		t.Fatalf("bury: %+v %v", rows, err)
 	}
 	b := *rows[0].Burial
-	if err := svc.Store.UpdateGraveyard(func(st *core.State) error {
+	if err := svc.Store.UpdateGraveyard(func(st *ledger.State) error {
 		st.Burials[0].IdentityMismatch = "identity mismatch; never purge; manually inspect retained content"
 		return nil
 	}); err != nil {

@@ -14,7 +14,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 func TestGraveNoticeHookLifecycle(t *testing.T) {
@@ -31,7 +31,7 @@ func TestGraveNoticeHookLifecycle(t *testing.T) {
 			path := filepath.Join(root, "old", "payload.txt")
 			writeFixture(t, path, "restore this")
 			rows, err := svc.Bury([]string{filepath.Dir(path)}, false, "")
-			if err != nil || core.GraveFailed(rows) {
+			if err != nil || lifecycle.GraveFailed(rows) {
 				t.Fatal(rows, err)
 			}
 			id := rows[0].Burial.ID
@@ -57,7 +57,7 @@ func TestGraveNoticeHookLifecycle(t *testing.T) {
 				t.Fatal("new session missed notice")
 			}
 			restored, err := svc.Resurrect([]string{fmt.Sprint(id)})
-			if err != nil || core.GraveFailed(restored) {
+			if err != nil || lifecycle.GraveFailed(restored) {
 				t.Fatal(restored, err)
 			}
 			if out := call("third"); out != "" {
@@ -68,11 +68,11 @@ func TestGraveNoticeHookLifecycle(t *testing.T) {
 				t.Fatal("content changed", err)
 			}
 			rows, err = svc.Bury([]string{filepath.Dir(path)}, false, "")
-			if err != nil || core.GraveFailed(rows) {
+			if err != nil || lifecycle.GraveFailed(rows) {
 				t.Fatal(rows, err)
 			}
 			purged, err := svc.PurgeRefs([]string{fmt.Sprint(rows[0].Burial.ID)}, false)
-			if err != nil || core.GraveFailed(purged) {
+			if err != nil || lifecycle.GraveFailed(purged) {
 				t.Fatal(purged, err)
 			}
 			if out := call("fourth"); out != "" {

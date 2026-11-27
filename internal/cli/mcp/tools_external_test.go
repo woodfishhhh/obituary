@@ -8,7 +8,9 @@ import (
 	mcpcmd "github.com/woodfishhhh/obituary/internal/cli/mcp"
 	"github.com/woodfishhhh/obituary/internal/cli/purge"
 	"github.com/woodfishhhh/obituary/internal/cli/resurrect"
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -19,15 +21,15 @@ import (
 )
 
 type unreadableReceipt struct {
-	core.FS
+	corefs.FS
 	grave string
 }
 
-func (f *unreadableReceipt) MovePinned(path string, id core.Identity, dest string) error {
+func (f *unreadableReceipt) MovePinned(path string, id corefs.Identity, dest string) error {
 	f.grave = dest
 	return f.FS.MovePinned(path, id, dest)
 }
-func (f *unreadableReceipt) OpenBurialDirectory(path string, id core.Identity) (fs.ReadDirFile, error) {
+func (f *unreadableReceipt) OpenBurialDirectory(path string, id corefs.Identity) (fs.ReadDirFile, error) {
 	if path == f.grave {
 		return nil, os.ErrPermission
 	}
@@ -53,20 +55,20 @@ func TestPendingDirectoryRestoreEntryPoints(t *testing.T) {
 				t.Fatal(err)
 			}
 			keepUntil := time.Now().UTC().Add(7 * 24 * time.Hour)
-			items, err := svc.Add([]string{dir}, core.AddOptions{ExpiresAt: time.Now().Add(24 * time.Hour)})
-			if err != nil || core.Failed(items) {
+			items, err := svc.Add([]string{dir}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(24 * time.Hour)})
+			if err != nil || lifecycle.Failed(items) {
 				t.Fatal(items, err)
 			}
 			backend := svc.FS
 			svc.FS = &unreadableReceipt{FS: backend}
 			rows, err := svc.Bury([]string{dir}, true, "")
-			if err != nil || len(rows) != 1 || rows[0].Action != core.ActionRecoveryPending {
+			if err != nil || len(rows) != 1 || rows[0].Action != ledger.ActionRecoveryPending {
 				t.Fatal(rows, err)
 			}
 			svc.FS = backend
 			// Restore a pending receipt with an active registration for the member it contains.
-			child := core.Item{ID: 2, Rev: 1, Path: marker, Identity: &childID, ExpiresAt: keepUntil, Note: "keep"}
-			if err := svc.Store.UpdateHot(func(st *core.State) error {
+			child := ledger.Item{ID: 2, Rev: 1, Path: marker, Identity: &childID, ExpiresAt: keepUntil, Note: "keep"}
+			if err := svc.Store.UpdateHot(func(st *ledger.State) error {
 				if st.NextID != child.ID {
 					return fmt.Errorf("unexpected next ID %d", st.NextID)
 				}
@@ -84,14 +86,14 @@ func TestPendingDirectoryRestoreEntryPoints(t *testing.T) {
 				t.Fatal("pending grave authorized for purge")
 			}
 			if entry == "cli" {
-				if out, _, err := clitest.Execute(t, resurrect.NewCmd(), "1", "--json"); err != nil || !strings.Contains(out, core.ActionResurrected) {
+				if out, _, err := clitest.Execute(t, resurrect.NewCmd(), "1", "--json"); err != nil || !strings.Contains(out, ledger.ActionResurrected) {
 					t.Fatal(out, err)
 				}
 			} else {
 				session := clitest.ConnectMCP(t, mcpcmd.NewServer(svc, "test"))
-				var reply struct{ Results []core.GraveResult }
+				var reply struct{ Results []lifecycle.GraveResult }
 				clitest.CallMCP(t, session, "obit_resurrect", map[string]any{"refs": []string{"1"}}, false, &reply)
-				if len(reply.Results) != 1 || reply.Results[0].Action != core.ActionResurrected {
+				if len(reply.Results) != 1 || reply.Results[0].Action != ledger.ActionResurrected {
 					t.Fatal(reply)
 				}
 			}

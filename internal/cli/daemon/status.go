@@ -9,8 +9,8 @@ import (
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/config"
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/textutil"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
@@ -65,7 +65,7 @@ func readStatus(home string) (DaemonStatus, error) {
 	}
 	st := DaemonStatus{Running: cmdutil.RunnerRunning(home), Autostart: cmdutil.RunnerAutostart(), Home: home, Tracked: len(state.Items),
 		ScheduleInstalled: cmdutil.RunnerInstalled(), ScheduleServesHome: cmdutil.RunnerServes(home)}
-	svc := &core.Service{Store: ledger.Store{Home: home}, FS: winfs.FS{}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: home}, FS: winfs.FS{}}
 	pending, scanErr := svc.PendingGraves()
 	st.PendingRecovery = len(pending)
 	st.QuotaPendingCount = ledger.QuotaPendingCount(state)

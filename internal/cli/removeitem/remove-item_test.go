@@ -14,7 +14,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	resurrectcmd "github.com/woodfishhhh/obituary/internal/cli/resurrect"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"golang.org/x/sys/windows"
 )
 
@@ -358,7 +358,7 @@ func TestRemoveItemRefusals(t *testing.T) {
 	}
 	svc.Guard.Keep = append(svc.Guard.Keep, filepath.Join(repo, "protected"))
 	old := cmdutil.Open
-	cmdutil.Open = func() (*core.Service, error) { return svc, nil }
+	cmdutil.Open = func() (*lifecycle.Service, error) { return svc, nil }
 	t.Cleanup(func() { cmdutil.Open = old })
 	for _, path := range []string{"tree", "hidden", "readonly", "protected"} {
 		_, stderr, err := clitest.Execute(t, itemCommand(), "-Path", path)

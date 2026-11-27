@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/explorer"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 	"github.com/woodfishhhh/obituary/internal/watch"
@@ -20,7 +20,7 @@ func TestReconcileTopLevelAndOfflineArrivals(t *testing.T) {
 	svc, dir := fixture(t)
 	write(t, filepath.Join(dir, "one.txt"))
 	write(t, filepath.Join(dir, "tree", "nested.txt"))
-	if _, err := svc.SetWatch(dir, "30d", core.WatchFirstSeen); err != nil {
+	if _, err := svc.SetWatch(dir, "30d", ledger.WatchFirstSeen); err != nil {
 		t.Fatal(err)
 	}
 	approvePolicies(t, svc)
@@ -60,7 +60,7 @@ func TestReconcileFirstSeenStartsAfterDownload(t *testing.T) {
 	if err := os.Chtimes(part, old, old); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.SetWatch(dir, "2h", core.WatchFirstSeen); err != nil {
+	if _, err := svc.SetWatch(dir, "2h", ledger.WatchFirstSeen); err != nil {
 		t.Fatal(err)
 	}
 	approvePolicies(t, svc)
@@ -88,7 +88,7 @@ func TestReconcileSkipsLabelInfrastructure(t *testing.T) {
 	testenv.WindowsOnly(t, "Explorer label projection is Windows-only")
 	svc, dir := fixture(t)
 	write(t, filepath.Join(dir, "report.log"))
-	if _, err := svc.SetWatch(dir, "2d", core.WatchFirstSeen); err != nil {
+	if _, err := svc.SetWatch(dir, "2d", ledger.WatchFirstSeen); err != nil {
 		t.Fatal(err)
 	}
 	approvePolicies(t, svc)
@@ -129,7 +129,7 @@ func TestReconcileGitConsentTrackedChildrenAndLaterTracking(t *testing.T) {
 	write(t, filepath.Join(dir, "mixed", "tracked.txt"))
 	write(t, filepath.Join(dir, "scratch.txt"))
 	git("add", "tracked.txt", "mixed/tracked.txt")
-	p, err := svc.SetWatch(dir, "1h", core.WatchFirstSeen)
+	p, err := svc.SetWatch(dir, "1h", ledger.WatchFirstSeen)
 	if err != nil || p.Consent != "pending" {
 		t.Fatalf("first Git policy needs consent: %+v %v", p, err)
 	}
@@ -155,9 +155,9 @@ func TestReconcileGitConsentTrackedChildrenAndLaterTracking(t *testing.T) {
 	expiry := st.Items[0].ExpiresAt
 	svc.Now = func() time.Time { return expiry.Add(time.Second) }
 	outcomes, err := svc.Sweep(false)
-	want := core.ActionRefused
+	want := ledger.ActionRefused
 	if runtime.GOOS != "windows" {
-		want = core.ActionRetry // The post-expiry quiet window starts before the final Git check.
+		want = ledger.ActionRetry // The post-expiry quiet window starts before the final Git check.
 	}
 	if err != nil || len(outcomes) != 1 || outcomes[0].Action != want {
 		t.Fatalf("later Git tracking was not protected: %+v %v", outcomes, err)
@@ -169,7 +169,7 @@ func TestReconcileGitConsentTrackedChildrenAndLaterTracking(t *testing.T) {
 
 func TestReconcileReplacedDirectoryNeedsNewPolicy(t *testing.T) {
 	svc, dir := fixture(t)
-	if _, err := svc.SetWatch(dir, "30d", core.WatchFirstSeen); err != nil {
+	if _, err := svc.SetWatch(dir, "30d", ledger.WatchFirstSeen); err != nil {
 		t.Fatal(err)
 	}
 	approvePolicies(t, svc)

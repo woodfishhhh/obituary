@@ -12,7 +12,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 func geminiFixture(t *testing.T, name string) map[string]any {
@@ -163,7 +163,7 @@ func TestGeminiLifecycleAndReplies(t *testing.T) {
 		in := map[string]any{"hook_event_name": host, "session_id": id, "cwd": testenv.NativeFixture("C:/repo")}
 		raw, _ := json.Marshal(in)
 		ev, err := Decode(a, raw, Invocation{Agent: "gemini"})
-		if err != nil || ev.Session != core.NormalizeSession("gemini:"+id) {
+		if err != nil || ev.Session != lifecycle.NormalizeSession("gemini:"+id) {
 			t.Fatalf("%+v %v", ev, err)
 		}
 		data, _ := a.Encode(ev, Result{Deny: true, Reason: "no", Context: strings.Repeat("中", 2000)})

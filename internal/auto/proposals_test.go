@@ -11,7 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/rules"
 )
 
@@ -30,7 +32,7 @@ func TestApproveRefreshesRulesWithinBatch(t *testing.T) {
 			if _, err := r.engine.Trust.Trust(rule, ""); err != nil {
 				t.Fatal(err)
 			}
-			p, _, _, err := r.engine.Svc.Propose(core.ProposalLeftovers, r.root, "s", []core.Candidate{
+			p, _, _, err := r.engine.Svc.Propose(ledger.ProposalLeftovers, r.root, "s", []ledger.Candidate{
 				{Path: first, Lifespan: "30d"}, {Path: blocked, Lifespan: "30d"},
 			})
 			if err != nil {
@@ -50,7 +52,7 @@ func TestApproveRefreshesRulesWithinBatch(t *testing.T) {
 					}
 				}
 			}}
-			out, approveErr := r.engine.ApproveReviewed([]string{fmt.Sprint(p.ID)}, []string{core.ProposalFingerprint(p)})
+			out, approveErr := r.engine.ApproveReviewed([]string{fmt.Sprint(p.ID)}, []string{lifecycle.ProposalFingerprint(p)})
 			st, err := r.engine.Svc.Store.Read()
 			if err != nil || len(out) != 1 || len(out[0].Results) != 2 {
 				t.Fatalf("batch result: %+v %v %v", out, approveErr, err)
@@ -59,7 +61,7 @@ func TestApproveRefreshesRulesWithinBatch(t *testing.T) {
 				t.Fatalf("batch used stale rules or settled changed candidates: %+v %+v %v", st, out, approveErr)
 			}
 			for _, result := range out[0].Results {
-				if !strings.Contains(result.Error, "rules") || result.Action == core.ActionAdded {
+				if !strings.Contains(result.Error, "rules") || result.Action == ledger.ActionAdded {
 					t.Fatalf("batch used stale rules or settled changed candidates: %+v", out)
 				}
 			}
@@ -68,11 +70,11 @@ func TestApproveRefreshesRulesWithinBatch(t *testing.T) {
 }
 
 type approvalRulesFS struct {
-	core.FS
+	corefs.FS
 	before func()
 }
 
-func (f *approvalRulesFS) Identify(path string) (core.Identity, error) {
+func (f *approvalRulesFS) Identify(path string) (corefs.Identity, error) {
 	if f.before != nil {
 		before := f.before
 		f.before = nil
@@ -115,7 +117,7 @@ func TestApproveRechecksRulesAtCommit(t *testing.T) {
 	}
 	r := newRepo(t)
 	path := r.write("blocked.log", "keep")
-	p, _, _, err := r.engine.Svc.Propose(core.ProposalLeftovers, r.root, "s", []core.Candidate{{Path: path, Lifespan: "30d"}})
+	p, _, _, err := r.engine.Svc.Propose(ledger.ProposalLeftovers, r.root, "s", []ledger.Candidate{{Path: path, Lifespan: "30d"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,12 +141,12 @@ func TestApproveShortProjectKeepsCanonicalRegistration(t *testing.T) {
 	r := newRepo(t)
 	path := r.write("debug.log", "pending")
 	short := shortPath(t, r.root)
-	p, _, _, err := r.engine.Svc.Propose(core.ProposalLeftovers, short, "s", []core.Candidate{{Path: filepath.Join(short, "debug.log"), Lifespan: "1d"}})
+	p, _, _, err := r.engine.Svc.Propose(ledger.ProposalLeftovers, short, "s", []ledger.Candidate{{Path: filepath.Join(short, "debug.log"), Lifespan: "1d"}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	rows, err := r.engine.Approve([]string{fmt.Sprint(p.ID)})
-	if err != nil || len(rows) != 1 || len(rows[0].Results) != 1 || core.Failed(rows[0].Results) {
+	if err != nil || len(rows) != 1 || len(rows[0].Results) != 1 || lifecycle.Failed(rows[0].Results) {
 		t.Fatalf("short project refused approval: %+v %v", rows, err)
 	}
 	st, err := r.engine.Svc.Store.ReadSnapshot()
@@ -173,12 +175,12 @@ func TestApproveLongSession(t *testing.T) {
 				t.Fatalf("observe: %+v %v", st, err)
 			}
 			if legacy {
-				if err := r.engine.Svc.Store.Update(func(st *core.State) error { st.Proposals[0].Session = long; return nil }); err != nil {
+				if err := r.engine.Svc.Store.Update(func(st *ledger.State) error { st.Proposals[0].Session = long; return nil }); err != nil {
 					t.Fatal(err)
 				}
 			}
 			got, err := r.engine.Approve([]string{fmt.Sprint(st.Proposals[0].ID)})
-			if err != nil || len(got) != 1 || got[0].Error != "" || core.Failed(got[0].Results) {
+			if err != nil || len(got) != 1 || got[0].Error != "" || lifecycle.Failed(got[0].Results) {
 				t.Fatalf("long session blocked approval: %+v %v", got, err)
 			}
 			st, err = r.engine.Svc.Store.Read()
@@ -202,15 +204,15 @@ func TestRefreshProposalsRetainsUnavailableWorktreeMetadata(t *testing.T) {
 			r.commit("tracked.txt")
 			worktree := filepath.Join(t.TempDir(), "linked")
 			r.git("worktree", "add", "--detach", worktree)
-			var candidates []core.Candidate
+			var candidates []ledger.Candidate
 			for _, name := range []string{"a.log", "b.log"} {
 				path := filepath.Join(worktree, name)
 				if err := os.WriteFile(path, []byte("pending"), 0o600); err != nil {
 					t.Fatal(err)
 				}
-				candidates = append(candidates, core.Candidate{Path: path, Lifespan: "1d"})
+				candidates = append(candidates, ledger.Candidate{Path: path, Lifespan: "1d"})
 			}
-			if _, _, _, err := r.engine.Svc.Propose(core.ProposalLeftovers, worktree, "s", candidates); err != nil {
+			if _, _, _, err := r.engine.Svc.Propose(ledger.ProposalLeftovers, worktree, "s", candidates); err != nil {
 				t.Fatal(err)
 			}
 			before, err := r.engine.Svc.Store.Read()
@@ -248,7 +250,7 @@ func TestRefreshProposalsRetainsUnavailableProject(t *testing.T) {
 			t.Parallel()
 			r := newRepo(t)
 			path := r.write("candidate.log", "pending")
-			if _, _, _, err := r.engine.Svc.Propose(core.ProposalLeftovers, r.root, "s", []core.Candidate{{Path: path, Lifespan: "3d"}}); err != nil {
+			if _, _, _, err := r.engine.Svc.Propose(ledger.ProposalLeftovers, r.root, "s", []ledger.Candidate{{Path: path, Lifespan: "3d"}}); err != nil {
 				t.Fatal(err)
 			}
 			before, err := r.engine.Svc.Store.Read()
@@ -290,7 +292,7 @@ func TestRefreshProposalsRetainsUnavailableProject(t *testing.T) {
 func TestRefreshProposalsRetainsMissingProjectOnUnavailableVolume(t *testing.T) {
 	r := newEngineFixture(t)
 	root := filepath.Join(r.root, "missing")
-	p, _, _, err := r.engine.Svc.Propose(core.ProposalLeftovers, root, "s", []core.Candidate{{Path: filepath.Join(root, "candidate.log"), Lifespan: "1d"}})
+	p, _, _, err := r.engine.Svc.Propose(ledger.ProposalLeftovers, root, "s", []ledger.Candidate{{Path: filepath.Join(root, "candidate.log"), Lifespan: "1d"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -312,7 +314,7 @@ func TestRefreshProposalsBatchesProjectsAndRetriesGitFailure(t *testing.T) {
 	r := newRepo(t)
 	a, b := r.write("a.txt", "a"), r.write("b.txt", "b")
 	for i, path := range []string{a, b} {
-		if _, _, _, err := r.engine.Svc.Propose(core.ProposalLeftovers, r.root, fmt.Sprint(i), []core.Candidate{{Path: path, Lifespan: "1d"}}); err != nil {
+		if _, _, _, err := r.engine.Svc.Propose(ledger.ProposalLeftovers, r.root, fmt.Sprint(i), []ledger.Candidate{{Path: path, Lifespan: "1d"}}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -373,7 +375,7 @@ func TestProposalClaimPreservesPendingAndConcurrentCandidates(t *testing.T) {
 	t.Parallel()
 	r := newRepo(t)
 	first, second, third := r.write("first.log", "1"), r.write("second.log", "2"), r.write("third.log", "3")
-	p, _, _, err := r.engine.Svc.Propose(core.ProposalLeftovers, r.root, "session", []core.Candidate{
+	p, _, _, err := r.engine.Svc.Propose(ledger.ProposalLeftovers, r.root, "session", []ledger.Candidate{
 		{Path: first, Lifespan: "1d"}, {Path: second, Lifespan: "1d"},
 	})
 	if err != nil {
@@ -396,11 +398,11 @@ func TestProposalClaimPreservesPendingAndConcurrentCandidates(t *testing.T) {
 		if got, err := r.engine.Svc.Reject([]string{ref}); err == nil {
 			t.Fatalf("reject must not overtake an approval: %+v", got)
 		}
-		if _, _, _, err := r.engine.Svc.Propose(p.Kind, p.Project, p.Session, []core.Candidate{{Path: third, Lifespan: "1d"}}); err != nil {
+		if _, _, _, err := r.engine.Svc.Propose(p.Kind, p.Project, p.Session, []ledger.Candidate{{Path: third, Lifespan: "1d"}}); err != nil {
 			t.Fatal(err)
 		}
-		results, err := r.engine.Svc.Add([]string{first}, core.AddOptions{ExpiresAt: time.Now().Add(24 * time.Hour)})
-		if err != nil || core.Failed(results) {
+		results, err := r.engine.Svc.Add([]string{first}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(24 * time.Hour)})
+		if err != nil || lifecycle.Failed(results) {
 			t.Fatalf("add: %+v, %v", results, err)
 		}
 		if err := r.engine.Svc.ResolveProposal(claimed, claimed.Candidates[1:]); err != nil {
@@ -412,7 +414,7 @@ func TestProposalClaimPreservesPendingAndConcurrentCandidates(t *testing.T) {
 		t.Fatalf("pending and concurrently added candidates must retain their ID: %+v, %v", st.Proposals, err)
 	}
 	got, err := r.engine.Approve([]string{ref})
-	if err != nil || len(got) != 1 || core.Failed(got[0].Results) {
+	if err != nil || len(got) != 1 || lifecycle.Failed(got[0].Results) {
 		t.Fatalf("approval after release: %+v, %v", got, err)
 	}
 }
@@ -424,13 +426,13 @@ func TestApproveRetainsGuardIOFailure(t *testing.T) {
 	t.Parallel()
 	r := newRepo(t)
 	path := r.write("keep.txt", "keep")
-	p, _, _, err := r.engine.Svc.Propose(core.ProposalLeftovers, r.root, "s", []core.Candidate{{Path: path, Lifespan: "3d"}})
+	p, _, _, err := r.engine.Svc.Propose(ledger.ProposalLeftovers, r.root, "s", []ledger.Candidate{{Path: path, Lifespan: "3d"}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	r.engine.Svc.Guard.Canonical = func(string) (string, error) { return "", errors.New("temporary I/O failure") }
 	got, err := r.engine.Approve([]string{fmt.Sprint(p.ID)})
-	if len(got) != 1 || !core.Failed(got[0].Results) {
+	if len(got) != 1 || !lifecycle.Failed(got[0].Results) {
 		t.Fatalf("expected guard failure: %+v, %v", got, err)
 	}
 	st, err := r.engine.Svc.Store.Read()
@@ -446,22 +448,22 @@ func TestApproveReplacementOfGoneObject(t *testing.T) {
 	t.Parallel()
 	r := newRepo(t)
 	path := r.write("debug.log", "old")
-	old, err := r.engine.Svc.Add([]string{path}, core.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
-	if err != nil || core.Failed(old) {
+	old, err := r.engine.Svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
+	if err != nil || lifecycle.Failed(old) {
 		t.Fatalf("add: %+v, %v", old, err)
 	}
 	if err := os.Remove(path); err != nil {
 		t.Fatal(err)
 	}
 	r.write("debug.log", "new")
-	p, _, _, err := r.engine.Svc.Propose(core.ProposalLeftovers, r.root, "s", []core.Candidate{{Path: path, Lifespan: "3d"}})
+	p, _, _, err := r.engine.Svc.Propose(ledger.ProposalLeftovers, r.root, "s", []ledger.Candidate{{Path: path, Lifespan: "3d"}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	got, err := r.engine.Approve([]string{fmt.Sprint(p.ID)})
 	if runtime.GOOS != "windows" {
 		st, readErr := r.engine.Svc.Store.ReadSnapshot()
-		if !errors.Is(err, core.ErrUnsupported) || readErr != nil || len(got) != 1 || len(got[0].Results) != 1 || !core.Failed(got[0].Results) || len(st.Items) != 1 || st.Items[0].ID != old[0].Item.ID || *st.Items[0].Identity != *old[0].Item.Identity || !st.Items[0].ExpiresAt.Equal(old[0].Item.ExpiresAt) || len(st.Proposals) != 1 || len(st.Proposals[0].Candidates) != 1 {
+		if !errors.Is(err, corefs.ErrUnsupported) || readErr != nil || len(got) != 1 || len(got[0].Results) != 1 || !lifecycle.Failed(got[0].Results) || len(st.Items) != 1 || st.Items[0].ID != old[0].Item.ID || *st.Items[0].Identity != *old[0].Item.Identity || !st.Items[0].ExpiresAt.Equal(old[0].Item.ExpiresAt) || len(st.Proposals) != 1 || len(st.Proposals[0].Candidates) != 1 {
 			t.Fatalf("unlocated old identity or pending candidate was lost: %+v %+v %v %v", got, st, err, readErr)
 		}
 		if data, err := os.ReadFile(path); err != nil || string(data) != "new" {
@@ -469,7 +471,7 @@ func TestApproveReplacementOfGoneObject(t *testing.T) {
 		}
 		return
 	}
-	if err != nil || len(got) != 1 || len(got[0].Results) != 1 || core.Failed(got[0].Results) {
+	if err != nil || len(got) != 1 || len(got[0].Results) != 1 || lifecycle.Failed(got[0].Results) {
 		t.Fatalf("gone object must not refuse replacement: %+v, %v", got, err)
 	}
 	st, err := r.engine.Svc.Store.Read()
@@ -487,7 +489,7 @@ func TestReproposedClaimedPathRemainsPending(t *testing.T) {
 	now := time.Now()
 	r.engine.Svc.Now = func() time.Time { return now }
 	path := r.write("debug.log", "x")
-	p, _, _, err := r.engine.Svc.Propose(core.ProposalLeftovers, r.root, "s", []core.Candidate{{Path: path, Lifespan: "1d"}})
+	p, _, _, err := r.engine.Svc.Propose(ledger.ProposalLeftovers, r.root, "s", []ledger.Candidate{{Path: path, Lifespan: "1d"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -498,7 +500,7 @@ func TestReproposedClaimedPathRemainsPending(t *testing.T) {
 	defer release()
 	done := make(chan error, 1)
 	go func() {
-		_, _, _, err := r.engine.Svc.Propose(p.Kind, p.Project, p.Session, []core.Candidate{{Path: strings.ToUpper(path), Lifespan: "2d", Size: 42}})
+		_, _, _, err := r.engine.Svc.Propose(p.Kind, p.Project, p.Session, []ledger.Candidate{{Path: strings.ToUpper(path), Lifespan: "2d", Size: 42}})
 		done <- err
 	}()
 	if err := <-done; err != nil {
@@ -527,7 +529,7 @@ func TestApproveSettlesDefinitiveAddFailures(t *testing.T) {
 			t.Parallel()
 			r := newRepo(t)
 			path := r.write("debug.log", "keep")
-			p, _, _, err := r.engine.Svc.Propose(core.ProposalLeftovers, r.root, "s", []core.Candidate{{Path: path, Lifespan: "1d"}})
+			p, _, _, err := r.engine.Svc.Propose(ledger.ProposalLeftovers, r.root, "s", []ledger.Candidate{{Path: path, Lifespan: "1d"}})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -549,12 +551,12 @@ func TestApproveSettlesDefinitiveAddFailures(t *testing.T) {
 					}
 				}
 			case "not-found":
-				fs.err = core.ErrNotFound
+				fs.err = corefs.ErrNotFound
 			case "transient":
 				fs.err = errors.New("temporarily busy")
 			}
 			got, err := r.engine.Approve([]string{fmt.Sprint(p.ID)})
-			if len(got) != 1 || len(got[0].Results) != 1 || !core.Failed(got[0].Results) {
+			if len(got) != 1 || len(got[0].Results) != 1 || !lifecycle.Failed(got[0].Results) {
 				t.Fatalf("expected Add failure: %+v, %v", got, err)
 			}
 			st, err := r.engine.Svc.Store.Read()
@@ -596,24 +598,24 @@ func TestAutomaticAddPreservesConcurrentManualLifespan(t *testing.T) {
 				case "parent":
 					manualPath = filepath.Dir(unit)
 				}
-				var proposal core.Proposal
+				var proposal ledger.Proposal
 				if route != "rule" {
 					var err error
 					// Session leftovers and approved rule candidates share the approval gate.
-					kind := core.ProposalOnboard
+					kind := ledger.ProposalOnboard
 					if route == "leftovers" {
-						kind = core.ProposalLeftovers
+						kind = ledger.ProposalLeftovers
 					}
-					proposal, _, _, err = r.engine.Svc.Propose(kind, r.root, "s", []core.Candidate{{Path: unit, Lifespan: "3d"}})
+					proposal, _, _, err = r.engine.Svc.Propose(kind, r.root, "s", []ledger.Candidate{{Path: unit, Lifespan: "3d"}})
 					if err != nil {
 						t.Fatal(err)
 					}
 				}
 				manual := *r.engine.Svc
-				var saved core.Item
+				var saved ledger.Item
 				r.engine.Svc.FS = &interleaveAddFS{beforeAdd: func() {
-					got, err := manual.Add([]string{manualPath}, core.AddOptions{ExpiresAt: now.Add(30 * 24 * time.Hour)})
-					if err != nil || core.Failed(got) {
+					got, err := manual.Add([]string{manualPath}, lifecycle.AddOptions{ExpiresAt: now.Add(30 * 24 * time.Hour)})
+					if err != nil || lifecycle.Failed(got) {
 						t.Fatalf("manual add: %+v, %v", got, err)
 					}
 					saved = *got[0].Item

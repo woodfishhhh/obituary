@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 // docs.factory.com/harness/hooks defines the Claude-shaped envelope. The
@@ -40,7 +40,7 @@ func (droidAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
 		return Event{}, ErrSkip
 	}
 	if in.Session != "" {
-		ev.Session = core.NormalizeSession("droid:" + in.Session)
+		ev.Session = lifecycle.NormalizeSession("droid:" + in.Session)
 	}
 	if ev.Name == "PreToolUse" {
 		ev.Command = firstString(in.Input, "command")

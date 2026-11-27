@@ -6,7 +6,7 @@
 
 - `internal/cli/<命令>/`：每个命令一个包，构造函数是 `NewCmd`；`internal/cli/cmdutil` 放共用的打开服务、输出与回执（`ReportGraves`、`ErrReported`）、拉起后台进程（`runner.go`）；`internal/cli/clitest` 是只给测试用的公共辅助（文件、Git、stdio、runner、墓地夹具、MCP 连接）。
 - `cmd/obitd`：后台进程，必须用 `-ldflags=-H=windowsgui` 构建；`--home` 指定数据目录。
-- `internal/core`：跟踪列表（带修订号 `Rev`）、到期清理（逐条认领、按修订号回写、同一个 store 同时只跑一个 sweep）、安全检查（Guard）、时长解析、审计日志。访问文件系统只走 `core.FS` 接口。
+- `internal/core/*`（`lifecycle`、`ledger`、`guard`、`lifespan`、`fs`）：跟踪列表（带修订号 `Rev`）、到期清理（逐条认领、按修订号回写、同一个 store 同时只跑一个 sweep）、安全检查（Guard）、时长解析、审计日志。调用方直接导入对应子包，访问文件系统只走 `internal/core/fs.FS` 接口。
 - `internal/winfs`：`core.FS` 的 Windows 实现：128 位文件 ID（`GetFileInformationByHandleEx` / `OpenFileById`）、硬链接检查、`Canonical`（真实路径）、逐级展开长名（`longpath_windows.go`）、按序数规则比较名字（`name_windows.go`）、复活用的父目录句柄、按句柄建目录和改名（`restore_windows.go`），以及通过 `IFileOperation` vtable 移进回收站。
 - `internal/core/lifecycle` 的墓地按职责分文件：`bury.go` / `bury_move.go` / `burial_lifespans.go`（下葬：独占建坟墓、写清单、锁内复核后按句柄移动、随父目录下葬的子条目）、`resurrect.go`（复活，不覆盖）以及 `restore_intent.go` / `restore_parents.go` / `restore_creation.go` / `restore_cleanup.go`（复活意图、祖先核对、按句柄建目录与撤销、清理回执）、`abandon.go`（显式放弃核实不了的复活）、`purge.go`（火化）、`manifest.go` / `recovery.go`（清单与恢复）、`sweep.go` / `settle.go`（到期收割）、`register.go`（登记）、`lookup.go`（按编号或路径找条目和墓地记录）、`graveyard.go` / `graveyard_owner.go`（墓地根、归属标记与公共逻辑）。复活和火化之前都必须过 `verifyGrave`。
 - `internal/core/ledger` 负责账本读写、审计与待补队列、锁忙时延后处理的写入事件。Windows 文件锁、按目录句柄替换、共享删除的读取在 `internal/core/internal/fileio`。见[账本与审计](../architecture.md#账本与审计)。

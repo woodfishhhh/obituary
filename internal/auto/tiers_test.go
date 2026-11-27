@@ -9,12 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/docker"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 )
 
-func (r *repo) state() core.State {
+func (r *repo) state() ledger.State {
 	r.t.Helper()
 	st, err := r.engine.Svc.Store.Read()
 	if err != nil {
@@ -44,7 +45,7 @@ func (r *repo) snapshot(session string) {
 }
 
 // receipts maps each registered path to the class of its receipt.
-func receipts(st core.State) map[string]string {
+func receipts(st ledger.State) map[string]string {
 	out := map[string]string{}
 	for _, h := range st.AutoHandled() {
 		out[filepath.Base(h.Item.Path)] = h.Class
@@ -52,7 +53,7 @@ func receipts(st core.State) map[string]string {
 	return out
 }
 
-func candidateNames(st core.State) []string {
+func candidateNames(st ledger.State) []string {
 	var names []string
 	for _, p := range st.Proposals {
 		for _, c := range p.Candidates {
@@ -76,10 +77,10 @@ func TestTieredRegistersWhatTheAgentCreated(t *testing.T) {
 	if len(st.Proposals) != 0 || len(st.Items) != 2 {
 		t.Fatalf("created files were not registered directly: %+v %+v", got, st)
 	}
-	if want := (map[string]string{"debug.log": core.AutoCreated, "test-results": core.AutoCreated}); fmt.Sprint(receipts(st)) != fmt.Sprint(want) {
+	if want := (map[string]string{"debug.log": ledger.AutoCreated, "test-results": ledger.AutoCreated}); fmt.Sprint(receipts(st)) != fmt.Sprint(want) {
 		t.Fatalf("receipts = %v, want %v", receipts(st), want)
 	}
-	if consent := st.Projects[core.ProjectKey(r.root)].Consent; consent != "" {
+	if consent := st.Projects[ledger.ProjectKey(r.root)].Consent; consent != "" {
 		t.Fatalf("direct registration recorded consent %q", consent)
 	}
 	for _, it := range st.Items {
@@ -106,7 +107,7 @@ func TestTieredProposesWhatPredatesTheSession(t *testing.T) {
 	inResults := r.write("test-results/new.png", "x")
 	r.observe(old, inLogs, inResults)
 	st := r.state()
-	if len(st.Items) != 0 || len(st.Proposals) != 1 || st.Proposals[0].Kind != core.ProposalOnboard || len(st.Proposals[0].Candidates) != 3 {
+	if len(st.Items) != 0 || len(st.Proposals) != 1 || st.Proposals[0].Kind != ledger.ProposalOnboard || len(st.Proposals[0].Candidates) != 3 {
 		t.Fatalf("pre-existing units must stay proposals: %+v", st)
 	}
 }
@@ -170,7 +171,7 @@ func TestSessionDifferenceIsNotEvidenceOfCreation(t *testing.T) {
 		t.Skip("real Git repository")
 	}
 	t.Parallel()
-	for mode, want := range map[string]string{core.ProposalsTiered: "proposal", core.ProposalsAuto: core.AutoAll} {
+	for mode, want := range map[string]string{lifecycle.ProposalsTiered: "proposal", lifecycle.ProposalsAuto: ledger.AutoAll} {
 		t.Run(mode, func(t *testing.T) {
 			r := newRepo(t)
 			r.engine.Svc.ProposalMode = mode
@@ -200,9 +201,9 @@ func TestProposalModesForAgentFiles(t *testing.T) {
 		mode      string
 		old, made string // "" means proposed
 	}{
-		{core.ProposalsAsk, "", ""},
-		{core.ProposalsTiered, "", core.AutoCreated},
-		{core.ProposalsAuto, core.AutoAll, core.AutoCreated},
+		{lifecycle.ProposalsAsk, "", ""},
+		{lifecycle.ProposalsTiered, "", ledger.AutoCreated},
+		{lifecycle.ProposalsAuto, ledger.AutoAll, ledger.AutoCreated},
 	} {
 		t.Run(tc.mode, func(t *testing.T) {
 			r := newRepo(t)
@@ -215,7 +216,7 @@ func TestProposalModesForAgentFiles(t *testing.T) {
 			if got["old.log"] != tc.old || got["new.log"] != tc.made {
 				t.Fatalf("receipts %v, proposals %v", got, candidateNames(st))
 			}
-			if st.Projects[core.ProjectKey(r.root)].Consent != "" {
+			if st.Projects[ledger.ProjectKey(r.root)].Consent != "" {
 				t.Fatal("a mode must never record the user's consent")
 			}
 		})
@@ -228,7 +229,7 @@ func TestTrackedFilesAreNeverRegisteredInAnyMode(t *testing.T) {
 		t.Skip("real Git repository")
 	}
 	t.Parallel()
-	for _, mode := range []string{core.ProposalsAsk, core.ProposalsTiered, core.ProposalsAuto} {
+	for _, mode := range []string{lifecycle.ProposalsAsk, lifecycle.ProposalsTiered, lifecycle.ProposalsAuto} {
 		t.Run(mode, func(t *testing.T) {
 			r := newRepo(t)
 			r.engine.Svc.ProposalMode = mode
@@ -265,7 +266,7 @@ func TestDeclinedProjectIsNeverRegisteredWithoutAsking(t *testing.T) {
 	if _, err := r.engine.Svc.Reject([]string{fmt.Sprint(st.Proposals[0].ID)}); err != nil {
 		t.Fatal(err)
 	}
-	r.engine.Svc.ProposalMode = core.ProposalsAuto
+	r.engine.Svc.ProposalMode = lifecycle.ProposalsAuto
 	r.snapshot("s")
 	r.observe(r.write("new.log", "x"))
 	r.write("dist/app.js", "x")
@@ -296,7 +297,7 @@ func TestPendingProposalsAreSortedAgainByMode(t *testing.T) {
 	dist := r.write("dist/app.js", "x")
 	feature := r.write("src/feature.go", "package main // uncommitted work")
 	// Leftovers proposals made before 1.1.1 could list uncommitted files.
-	if _, _, _, err := r.engine.Svc.Propose(core.ProposalLeftovers, r.root, "old", []core.Candidate{
+	if _, _, _, err := r.engine.Svc.Propose(ledger.ProposalLeftovers, r.root, "old", []ledger.Candidate{
 		{Path: filepath.Dir(dist), Lifespan: LeftoverLifespan}, {Path: feature, Lifespan: LeftoverLifespan},
 	}); err != nil {
 		t.Fatal(err)
@@ -308,10 +309,10 @@ func TestPendingProposalsAreSortedAgainByMode(t *testing.T) {
 		pending string
 	}{
 		// dist/ is build output: withdrawn in any mode, never registered.
-		{core.ProposalsAsk, "map[]", "[leftovers:feature.go onboard:old.log]"},
-		{core.ProposalsOff, "map[]", "[leftovers:feature.go onboard:old.log]"},
-		{core.ProposalsTiered, "map[]", "[leftovers:feature.go onboard:old.log]"},
-		{core.ProposalsAuto, "map[old.log:auto]", "[leftovers:feature.go]"},
+		{lifecycle.ProposalsAsk, "map[]", "[leftovers:feature.go onboard:old.log]"},
+		{lifecycle.ProposalsOff, "map[]", "[leftovers:feature.go onboard:old.log]"},
+		{lifecycle.ProposalsTiered, "map[]", "[leftovers:feature.go onboard:old.log]"},
+		{lifecycle.ProposalsAuto, "map[old.log:auto]", "[leftovers:feature.go]"},
 	} {
 		r.engine.Svc.ProposalMode = step.mode
 		if err := r.engine.RefreshProposals(); err != nil {
@@ -321,7 +322,7 @@ func TestPendingProposalsAreSortedAgainByMode(t *testing.T) {
 		if fmt.Sprint(receipts(st)) != step.handled || fmt.Sprint(candidateNames(st)) != step.pending {
 			t.Fatalf("%s: handled %v pending %v", step.mode, receipts(st), candidateNames(st))
 		}
-		if st.Projects[core.ProjectKey(r.root)].Consent != "" {
+		if st.Projects[ledger.ProjectKey(r.root)].Consent != "" {
 			t.Fatalf("%s: settling proposals recorded consent", step.mode)
 		}
 	}
@@ -344,7 +345,7 @@ func TestSessionContainersAreRegisteredAndSparingSticks(t *testing.T) {
 		t.Fatal(err)
 	}
 	st := r.state()
-	if len(st.Items) != 1 || len(st.Proposals) != 0 || receipts(st)[filepath.Base(st.Items[0].Path)] != core.AutoContainer {
+	if len(st.Items) != 1 || len(st.Proposals) != 0 || receipts(st)[filepath.Base(st.Items[0].Path)] != ledger.AutoContainer {
 		t.Fatalf("session container not registered directly: %+v", st)
 	}
 	if _, err := r.engine.Svc.Cancel([]string{fmt.Sprint(st.Items[0].ID)}); err != nil {
@@ -367,10 +368,10 @@ func TestDirectClassFollowsTheMode(t *testing.T) {
 		opts Options
 		want string
 	}{
-		{core.ProposalsAsk, Options{Written: true}, ""},
-		{core.ProposalsOff, Options{Written: true}, ""},
-		{core.ProposalsTiered, Options{Written: true}, ""}, // no session snapshot: not proven created
-		{core.ProposalsAuto, Options{}, core.AutoAll},
+		{lifecycle.ProposalsAsk, Options{Written: true}, ""},
+		{lifecycle.ProposalsOff, Options{Written: true}, ""},
+		{lifecycle.ProposalsTiered, Options{Written: true}, ""}, // no session snapshot: not proven created
+		{lifecycle.ProposalsAuto, Options{}, ledger.AutoAll},
 		{"", Options{}, ""}, // unset means off
 	} {
 		r.engine.Svc.ProposalMode = tc.mode
@@ -431,7 +432,7 @@ func TestUnprovenSessionContainersStayProposals(t *testing.T) {
 	for _, tc := range []string{"outside a Git work tree", "claimed by two sessions"} {
 		t.Run(tc, func(t *testing.T) {
 			r := newRepo(t)
-			r.engine.Svc.ProposalMode = core.ProposalsAuto
+			r.engine.Svc.ProposalMode = lifecycle.ProposalsAuto
 			executable, state, _ := testenv.FakeDocker(t)
 			r.engine.Svc.Docker = docker.CLI{Executable: executable}
 			now := time.Date(2026, 11, 11, 12, 0, 0, 0, time.UTC)
@@ -439,15 +440,15 @@ func TestUnprovenSessionContainersStayProposals(t *testing.T) {
 			row := docker.Container{Identity: docker.Identity{ID: strings.Repeat("7", 64), Name: "bold", Created: now.Add(-time.Minute)}, Running: true}
 			testenv.WriteDocker(t, state, row)
 			id := row.Identity
-			candidate := []core.Candidate{{Kind: core.KindContainer, Container: &id, Path: id.Display(), Lifespan: LeftoverLifespan, Reason: "bind mount in project"}}
+			candidate := []ledger.Candidate{{Kind: ledger.KindContainer, Container: &id, Path: id.Display(), Lifespan: LeftoverLifespan, Reason: "bind mount in project"}}
 			proposals := []struct{ root, session string }{{t.TempDir(), "home"}} // its folder is not a Git work tree
 			if tc == "claimed by two sessions" {
 				proposals = []struct{ root, session string }{{r.root, "a"}, {r.root, "b"}}
 			}
 			// Legacy ledgers may contain duplicates; new proposals deduplicate IDs.
-			if err := r.engine.Svc.Store.UpdateHot(func(st *core.State) error {
+			if err := r.engine.Svc.Store.UpdateHot(func(st *ledger.State) error {
 				for _, p := range proposals {
-					st.Proposals = append(st.Proposals, core.Proposal{ID: st.NextID, Kind: core.ProposalContainer, Project: p.root, Session: p.session, Candidates: candidate})
+					st.Proposals = append(st.Proposals, ledger.Proposal{ID: st.NextID, Kind: ledger.ProposalContainer, Project: p.root, Session: p.session, Candidates: candidate})
 					st.NextID++
 				}
 				return nil
@@ -482,7 +483,7 @@ func TestTieredBackupsTheAgentLeaves(t *testing.T) {
 	bakery := r.write("foo.bakery.txt", "x")
 	got := r.observe(users, tracked, created, leveldb, bakery)
 	st := r.state()
-	if d := got[created]; d.Action != Registered || d.Lifespan != "1w" || receipts(st)["config.json.bak"] != core.AutoCreated {
+	if d := got[created]; d.Action != Registered || d.Lifespan != "1w" || receipts(st)["config.json.bak"] != ledger.AutoCreated {
 		t.Fatalf("agent's backup = %+v, receipts %v; want registered for a week", d, receipts(st))
 	}
 	if len(st.Items) != 1 || fmt.Sprint(candidateNames(st)) != "[onboard:settings.json.bak]" {

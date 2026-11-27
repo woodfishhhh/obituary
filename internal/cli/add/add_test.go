@@ -10,7 +10,8 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 func TestAddMigrationWarningStillPrintsResultAndStartsRunner(t *testing.T) {
@@ -23,13 +24,13 @@ func TestAddMigrationWarningStillPrintsResultAndStartsRunner(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	added, err := svc.Add([]string{oldPath}, core.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
-	if err != nil || core.Failed(added) {
+	added, err := svc.Add([]string{oldPath}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
+	if err != nil || lifecycle.Failed(added) {
 		t.Fatal(err)
 	}
 	first, second := *added[0].Item, *added[0].Item
 	second.ID = 7
-	data, err := json.Marshal(core.State{Version: 4, Items: []core.Item{first, second}})
+	data, err := json.Marshal(ledger.State{Version: 4, Items: []ledger.Item{first, second}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,7 +43,7 @@ func TestAddMigrationWarningStillPrintsResultAndStartsRunner(t *testing.T) {
 		t.Fatal(err)
 	}
 	out, stderr, err := clitest.Execute(t, NewCmd(), path, "1d", "--json")
-	var rows []core.Result
+	var rows []lifecycle.Result
 	if err != nil || json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 1 || rows[0].Item == nil || rows[0].Item.Path != path || len(*starts) != 1 || !strings.Contains(stderr, "warning:") {
 		t.Fatalf("committed result/runner lost: %s %s, %v; starts=%v", out, stderr, err, *starts)
 	}

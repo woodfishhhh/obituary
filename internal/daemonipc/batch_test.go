@@ -7,16 +7,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
-func row(token string) []core.Observation { return []core.Observation{{Token: token}} }
+func row(token string) []ledger.Observation { return []ledger.Observation{{Token: token}} }
 
 func TestBatchSharesTheNextCommitAmongRequestsThatWaited(t *testing.T) {
 	var mu sync.Mutex
 	var commits [][]string
 	started, release := make(chan struct{}), make(chan struct{})
-	handler := Batch(func(rows []core.Observation) error {
+	handler := Batch(func(rows []ledger.Observation) error {
 		mu.Lock()
 		var tokens []string
 		for _, r := range rows {
@@ -56,7 +56,7 @@ func TestBatchIsolatesABadRequestFromItsNeighbours(t *testing.T) {
 	bad := errors.New("bad request")
 	started, release := make(chan struct{}), make(chan struct{})
 	var once sync.Once
-	handler := Batch(func(rows []core.Observation) error {
+	handler := Batch(func(rows []ledger.Observation) error {
 		once.Do(func() { close(started); <-release })
 		for _, r := range rows {
 			if r.Token == "bad" {

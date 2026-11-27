@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"github.com/woodfishhhh/obituary/internal/project"
 )
@@ -23,7 +23,7 @@ type discoveredOwner struct {
 	err     error
 }
 
-func ownerGroups(ctx context.Context, paths []string, known map[string]discoveredOwner, answers []core.Ownership) map[string][]int {
+func ownerGroups(ctx context.Context, paths []string, known map[string]discoveredOwner, answers []lifecycle.Ownership) map[string][]int {
 	groups := make(map[string][]int)
 	for i, path := range paths {
 		if err := ctx.Err(); err != nil {
@@ -78,7 +78,7 @@ func queryIndex(ctx context.Context, observer *project.IndexObserver, paths []st
 
 // PrepareOwners has one sweep's lifetime. Slow path resolution happens before
 // taking store.lock; only metadata checks and bounded fallback queries run inside it.
-func PrepareOwners(ctx context.Context, paths []string, roots map[string]string) core.OwnerBatchFunc {
+func PrepareOwners(ctx context.Context, paths []string, roots map[string]string) lifecycle.OwnerBatchFunc {
 	known := make(map[string]discoveredOwner, len(paths))
 	names := make(map[string]string, len(paths))
 	directories := make(map[string]discoveredOwner)
@@ -126,7 +126,7 @@ func PrepareOwners(ctx context.Context, paths []string, roots map[string]string)
 		observer, err := (project.Project{Root: root}).ObserveIndex(ctx)
 		observers[root] = preparedIndex{observer: observer, err: err}
 	}
-	return func(ctx context.Context, paths []string) []core.Ownership {
+	return func(ctx context.Context, paths []string) []lifecycle.Ownership {
 		return queryOwners(ctx, paths, observers, known, names)
 	}
 }

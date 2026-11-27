@@ -13,7 +13,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/guard"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
+	corelifespan "github.com/woodfishhhh/obituary/internal/core/lifespan"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"github.com/woodfishhhh/obituary/internal/project"
 	"github.com/woodfishhhh/obituary/internal/rules"
@@ -21,7 +25,7 @@ import (
 
 // Engine applies rules on top of a service.
 type Engine struct {
-	Svc     *core.Service
+	Svc     *lifecycle.Service
 	Trust   rules.TrustStore
 	sets    map[string]cachedRules
 	tracked func(project.Project, string) (bool, error) // optional query seam for tests
@@ -37,7 +41,7 @@ type Options struct {
 	Source   string // defaults to "rule"
 	Session  string
 	DryRun   bool
-	Observed *core.Observation // hook's original object, checked at ledger commit
+	Observed *ledger.Observation // hook's original object, checked at ledger commit
 	// Written marks paths a hook reported the agent writing in Session.
 	Written bool
 	// AutoClass records a receipt: registered without asking (see directClass).
@@ -46,15 +50,15 @@ type Options struct {
 
 // Decision is what happened to one path.
 type Decision struct {
-	Path      string     `json:"path"`
-	Unit      string     `json:"unit,omitempty"`
-	Lifespan  string     `json:"lifespan,omitempty"`
-	Rule      string     `json:"rule,omitempty"`
-	Action    string     `json:"action"` // registered, would-register, proposed, skipped, retry
-	Reason    string     `json:"reason,omitempty"`
-	Warning   string     `json:"warning,omitempty"`
-	Err       error      `json:"-"` // retryable failure, preserved for queue acknowledgement
-	Item      *core.Item `json:"item,omitempty"`
+	Path      string       `json:"path"`
+	Unit      string       `json:"unit,omitempty"`
+	Lifespan  string       `json:"lifespan,omitempty"`
+	Rule      string       `json:"rule,omitempty"`
+	Action    string       `json:"action"` // registered, would-register, proposed, skipped, retry
+	Reason    string       `json:"reason,omitempty"`
+	Warning   string       `json:"warning,omitempty"`
+	Err       error        `json:"-"` // retryable failure, preserved for queue acknowledgement
+	Item      *ledger.Item `json:"item,omitempty"`
 	rulesFile string
 }
 
@@ -76,8 +80,8 @@ func failedDecision(d Decision, err error) Decision {
 // lookup of some other tracked object remains retryable, even for ErrUnsafe.
 func inspectionDecision(d Decision, err error) Decision {
 	d = failedDecision(d, err)
-	var refused *core.RefusedError
-	if errors.As(err, &refused) || errors.Is(err, core.ErrUnsafe) || errors.Is(err, core.ErrNotFound) || errors.Is(err, os.ErrNotExist) {
+	var refused *guard.RefusedError
+	if errors.As(err, &refused) || errors.Is(err, corefs.ErrUnsafe) || errors.Is(err, corefs.ErrNotFound) || errors.Is(err, os.ErrNotExist) {
 		d.Action, d.Err = Skipped, nil
 	}
 	return d
@@ -147,8 +151,8 @@ func (e *Engine) apply(paths []string, opts Options, located locations) ([]Decis
 	return out, nil
 }
 
-func (e *Engine) registerDecision(d Decision, source string, opts Options, state *core.State) (Decision, error) {
-	lifespan, _ := core.ParseDuration(d.Lifespan)
+func (e *Engine) registerDecision(d Decision, source string, opts Options, state *ledger.State) (Decision, error) {
+	lifespan, _ := corelifespan.ParseDuration(d.Lifespan)
 	proj, ok, err := project.Find(d.Unit)
 	if err != nil || !ok {
 		d.Action, d.Reason = Skipped, "could not confirm its Git work tree"
@@ -157,7 +161,7 @@ func (e *Engine) registerDecision(d Decision, source string, opts Options, state
 		}
 		return d, nil
 	}
-	results, err := e.Svc.Add([]string{d.Unit}, core.AddOptions{
+	results, err := e.Svc.Add([]string{d.Unit}, lifecycle.AddOptions{
 		ExpiresAt: e.now().Add(lifespan), Source: source, Project: proj.Root,
 		Session: opts.Session, Note: "rule " + d.Rule, OnlyNew: true,
 		Observed: opts.Observed, AutoClass: opts.AutoClass,
@@ -184,12 +188,12 @@ func (e *Engine) now() time.Time {
 	return time.Now()
 }
 
-func (e *Engine) decide(ref string, state *core.State, seen map[string]bool, located locations) Decision {
+func (e *Engine) decide(ref string, state *ledger.State, seen map[string]bool, located locations) Decision {
 	d, proj := e.matchRule(ref, seen)
 	return e.vetDecision(d, proj, state, located)
 }
 
-func (e *Engine) vetDecision(d Decision, proj project.Project, state *core.State, located locations) Decision {
+func (e *Engine) vetDecision(d Decision, proj project.Project, state *ledger.State, located locations) Decision {
 	if d.Action != WouldRegister {
 		return d
 	}
@@ -259,13 +263,13 @@ func (e *Engine) matchRule(ref string, seen map[string]bool) (Decision, project.
 // not track the unit or anything in it, and it must not shorten an existing
 // lifespan, be it the same object under another name, an item inside it or
 // an item it lies in. A reason is a definite refusal; an error is retryable.
-func (e *Engine) vetUnit(proj project.Project, unit string, state *core.State, located locations) (string, error) {
+func (e *Engine) vetUnit(proj project.Project, unit string, state *ledger.State, located locations) (string, error) {
 	if dir := NeverAutomatic(proj.Root, unit); dir != "" {
 		return "dependencies, build output and caches are never registered automatically (" + dir + ")", nil
 	}
 	id, err := e.Svc.FS.Identify(unit)
 	if err != nil {
-		if errors.Is(err, core.ErrNotFound) || errors.Is(err, core.ErrUnsafe) {
+		if errors.Is(err, corefs.ErrNotFound) || errors.Is(err, corefs.ErrUnsafe) {
 			return "cannot identify it: " + err.Error(), nil
 		}
 		return "", fmt.Errorf("cannot identify it: %w", err)
@@ -293,7 +297,7 @@ func (e *Engine) vetUnit(proj project.Project, unit string, state *core.State, l
 	return "", nil
 }
 
-func (e *Engine) vetLifespans(unit string, id core.Identity, items []core.Item, scope *core.RegistrationScope, located locations) (string, error) {
+func (e *Engine) vetLifespans(unit string, id corefs.Identity, items []ledger.Item, scope *lifecycle.RegistrationScope, located locations) (string, error) {
 	for _, it := range items {
 		if !scope.Related(it) {
 			continue
@@ -307,7 +311,7 @@ func (e *Engine) vetLifespans(unit string, id core.Identity, items []core.Item, 
 			_, cached = located[*it.Identity]
 			if current, err := located.locate(e.Svc, it); err == nil {
 				path = current
-			} else if errors.Is(err, core.ErrNotFound) {
+			} else if errors.Is(err, corefs.ErrNotFound) {
 				continue
 			} else {
 				return "", fmt.Errorf("could not locate #%d: %w", it.ID, err)
@@ -320,7 +324,7 @@ func (e *Engine) vetLifespans(unit string, id core.Identity, items []core.Item, 
 			current, err := located.locate(e.Svc, it)
 			if err == nil {
 				path = current
-			} else if errors.Is(err, core.ErrNotFound) {
+			} else if errors.Is(err, corefs.ErrNotFound) {
 				continue
 			} else {
 				return "", fmt.Errorf("could not locate #%d: %w", it.ID, err)
@@ -359,9 +363,9 @@ type location struct {
 
 // locations belongs to one batch, including nested Observe/Apply calls.
 // Cache errors too, without changing their retry/not-found semantics.
-type locations map[core.Identity]location
+type locations map[corefs.Identity]location
 
-func (l locations) locate(svc *core.Service, it core.Item) (string, error) {
+func (l locations) locate(svc *lifecycle.Service, it ledger.Item) (string, error) {
 	id := *it.Identity
 	got, ok := l[id]
 	if !ok {
@@ -390,7 +394,7 @@ func (e *Engine) RecheckRules(root, path string, isDir bool) error {
 		return fmt.Errorf("could not check protection rules: %w", err)
 	}
 	if protected {
-		return core.ErrProtected
+		return lifecycle.ErrProtected
 	}
 	return nil
 }

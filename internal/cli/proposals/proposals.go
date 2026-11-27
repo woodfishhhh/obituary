@@ -8,7 +8,8 @@ import (
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/config"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/textutil"
 )
 
@@ -30,7 +31,7 @@ func NewCmd() *cobra.Command {
 			if asJSON {
 				return cmdutil.PrintJSON(app.ProposalViews(svc, state.Proposals))
 			}
-			printProposals(core.ExistingProposals(state.Proposals))
+			printProposals(lifecycle.ExistingProposals(state.Proposals))
 			printHandled(state.AutoHandled(), time.Now())
 			printMode(svc.Proposals())
 			return nil
@@ -40,7 +41,7 @@ func NewCmd() *cobra.Command {
 	return cmd
 }
 
-func printProposals(proposals []core.Proposal) {
+func printProposals(proposals []ledger.Proposal) {
 	if len(proposals) == 0 {
 		fmt.Println(cmdutil.Text("cli.proposals.no_pending_proposals"))
 		return
@@ -63,7 +64,7 @@ func printProposals(proposals []core.Proposal) {
 
 // printHandled lists what the proposal mode let in without asking, while it
 // is still tracked, with the commands that undo it.
-func printHandled(handled []core.AutoHandled, now time.Time) {
+func printHandled(handled []ledger.AutoHandled, now time.Time) {
 	if len(handled) == 0 {
 		return
 	}
@@ -76,10 +77,10 @@ func printHandled(handled []core.AutoHandled, now time.Time) {
 }
 
 var modeMessages = map[string]string{
-	core.ProposalsOff:    "cli.proposals.off_nothing_goes_in_by_itself_agents",
-	core.ProposalsTiered: "cli.proposals.tiered_files_the_agent_created_in_its",
-	core.ProposalsAuto:   "cli.proposals.auto_everything_automatic_registration_finds_goes_in",
-	core.ProposalsAsk:    "cli.proposals.ask_every_automatic_registration_waits_here_first",
+	lifecycle.ProposalsOff:    "cli.proposals.off_nothing_goes_in_by_itself_agents",
+	lifecycle.ProposalsTiered: "cli.proposals.tiered_files_the_agent_created_in_its",
+	lifecycle.ProposalsAuto:   "cli.proposals.auto_everything_automatic_registration_finds_goes_in",
+	lifecycle.ProposalsAsk:    "cli.proposals.ask_every_automatic_registration_waits_here_first",
 }
 
 func printMode(mode string) {
@@ -89,9 +90,9 @@ func printMode(mode string) {
 	}
 	fmt.Printf(cmdutil.Text("cli.proposals.proposal_mode"), cmdutil.Text(modeMessages[mode]))
 	switch mode {
-	case core.ProposalsOff:
+	case lifecycle.ProposalsOff:
 		fmt.Printf(cmdutil.Text("cli.proposals.to_turn_automatic_registration_on_set_proposals"), path)
-	case core.ProposalsAuto:
+	case lifecycle.ProposalsAuto:
 		fmt.Printf(cmdutil.Text("cli.proposals.to_be_asked_again_set_proposals_mode"), path)
 	default:
 		fmt.Printf(cmdutil.Text("cli.proposals.to_let_agents_artefacts_in_without_asking"), path)

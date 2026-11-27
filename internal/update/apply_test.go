@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func TestApplyReportsResultAndRestarts(t *testing.T) {
@@ -116,7 +116,7 @@ func testApply(t *testing.T, failure string) {
 func TestApplyLockPreventsAcknowledgement(t *testing.T) {
 	home := t.TempDir()
 	exe := filepath.Join(home, "scoop", "apps", "obituary", "current", "obit.exe")
-	unlock, ok, err := core.TryLockExclusive(filepath.Join(home, "update-apply.lock"))
+	unlock, ok, err := ledger.TryLockExclusive(filepath.Join(home, "update-apply.lock"))
 	if err != nil || !ok {
 		t.Fatal(ok, err)
 	}

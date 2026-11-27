@@ -9,7 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
+	corelifespan "github.com/woodfishhhh/obituary/internal/core/lifespan"
 )
 
 type GraveyardQuery struct {
@@ -19,22 +21,22 @@ type GraveyardQuery struct {
 }
 
 type GraveRow struct {
-	ID      int64              `json:"id"`
-	Status  string             `json:"status"`
-	Burial  *core.Burial       `json:"burial,omitempty"`
-	Pending *core.PendingGrave `json:"pending,omitempty"`
+	ID      int64                   `json:"id"`
+	Status  string                  `json:"status"`
+	Burial  *ledger.Burial          `json:"burial,omitempty"`
+	Pending *lifecycle.PendingGrave `json:"pending,omitempty"`
 }
 
 type GraveyardPage struct {
-	Rows          []GraveRow         `json:"rows"`
-	Total         int                `json:"total"`
-	PendingCount  int                `json:"pendingCount"`
-	GraveBytes    int64              `json:"graveBytes"`
-	GraveMaxBytes int64              `json:"graveMaxBytes"`
-	HasMore       bool               `json:"hasMore"`
-	NextAfter     string             `json:"nextAfter"`
-	Restored      []core.GraveResult `json:"restored"`
-	Error         string             `json:"error,omitempty"`
+	Rows          []GraveRow              `json:"rows"`
+	Total         int                     `json:"total"`
+	PendingCount  int                     `json:"pendingCount"`
+	GraveBytes    int64                   `json:"graveBytes"`
+	GraveMaxBytes int64                   `json:"graveMaxBytes"`
+	HasMore       bool                    `json:"hasMore"`
+	NextAfter     string                  `json:"nextAfter"`
+	Restored      []lifecycle.GraveResult `json:"restored"`
+	Error         string                  `json:"error,omitempty"`
 }
 
 // Use a stable key so removals between pages cannot shift unread entries behind
@@ -130,7 +132,7 @@ func (a *API) Graveyard(query GraveyardQuery) (GraveyardPage, error) {
 	return page, nil
 }
 
-func graveRows(view *core.GraveyardView, filter string) []GraveRow {
+func graveRows(view *lifecycle.GraveyardView, filter string) []GraveRow {
 	rows := make([]GraveRow, 0, len(view.Burials)+len(view.Pending))
 	for i := range view.Burials {
 		b := &view.Burials[i]
@@ -158,7 +160,7 @@ func (a *API) Resurrect(refs []string) (GraveReply, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if err := requireRefs(refs); err != nil {
-		return GraveReply{Results: []core.GraveResult{}}, err
+		return GraveReply{Results: []lifecycle.GraveResult{}}, err
 	}
 	results, err := a.deps.Service.Resurrect(refs)
 	return GraveReply{Results: list(results), Error: errorText(err)}, nil
@@ -168,7 +170,7 @@ func (a *API) Purge(refs []string) (GraveReply, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if err := requireRefs(refs); err != nil {
-		return GraveReply{Results: []core.GraveResult{}}, err
+		return GraveReply{Results: []lifecycle.GraveResult{}}, err
 	}
 	results, err := a.deps.Service.PurgeRefs(refs, false)
 	return GraveReply{Results: list(results), Error: errorText(err)}, nil
@@ -179,11 +181,11 @@ func (a *API) ExtendGraves(refs []string, lifespan string) (GraveReply, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if err := requireRefs(refs); err != nil {
-		return GraveReply{Results: []core.GraveResult{}}, err
+		return GraveReply{Results: []lifecycle.GraveResult{}}, err
 	}
-	duration, err := core.ParseDuration(lifespan)
+	duration, err := corelifespan.ParseDuration(lifespan)
 	if err != nil {
-		return GraveReply{Results: []core.GraveResult{}}, err
+		return GraveReply{Results: []lifecycle.GraveResult{}}, err
 	}
 	results, err := a.deps.Service.ExtendGraves(refs, duration)
 	return GraveReply{Results: list(results), Error: errorText(err)}, nil

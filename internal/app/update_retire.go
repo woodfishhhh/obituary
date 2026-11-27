@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 // updateLeftoverLifespan is how long the previous programs of a manual install
@@ -23,8 +23,8 @@ func retireUpdateFiles(paths []string) error {
 	return expireUpdateFiles(svc, paths)
 }
 
-func expireUpdateFiles(svc *core.Service, paths []string) error {
-	results, err := svc.Add(paths, core.AddOptions{ExpiresAt: time.Now().Add(updateLeftoverLifespan), Source: "update", Note: "Obituary update: previous programs"})
+func expireUpdateFiles(svc *lifecycle.Service, paths []string) error {
+	results, err := svc.Add(paths, lifecycle.AddOptions{ExpiresAt: time.Now().Add(updateLeftoverLifespan), Source: "update", Note: "Obituary update: previous programs"})
 	for _, r := range results {
 		if r.Error != "" {
 			err = errors.Join(err, fmt.Errorf("%s: %s", r.Ref, r.Error))

@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 func TestResurrectLastAcrossProcesses(t *testing.T) {
@@ -28,8 +28,8 @@ func TestResurrectLastAcrossProcesses(t *testing.T) {
 	assertRestored := func(paths []string) {
 		t.Helper()
 		out := run("resurrect", "--last", "--json")
-		var rows []core.GraveResult
-		if json.Unmarshal([]byte(out), &rows) != nil || len(rows) != len(paths) || core.GraveFailed(rows) {
+		var rows []lifecycle.GraveResult
+		if json.Unmarshal([]byte(out), &rows) != nil || len(rows) != len(paths) || lifecycle.GraveFailed(rows) {
 			t.Fatalf("batch receipts: %s", out)
 		}
 		for _, path := range paths {

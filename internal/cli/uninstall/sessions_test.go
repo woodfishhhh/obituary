@@ -2,7 +2,7 @@ package uninstall
 
 import (
 	"errors"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -15,7 +15,7 @@ func TestPurgeSessionMetadata(t *testing.T) {
 		t.Run(map[bool]string{false: "owned", true: "unknown"}[unknown], func(t *testing.T) {
 			d, _, _ := fixture(t)
 			home := os.Getenv("OBIT_HOME")
-			if err := (core.Store{Home: home}).Update(func(*core.State) error { return nil }); err != nil {
+			if err := (ledger.Store{Home: home}).Update(func(*ledger.State) error { return nil }); err != nil {
 				t.Fatal(err)
 			}
 			write(t, filepath.Join(home, "sessions", "123456abcdef-session.json"), `{"project":"C:\\fixture","at":"2026-11-10T00:00:00Z"}`)

@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 )
 
@@ -52,7 +52,7 @@ func (claudeAdapter) Decode(raw []byte, _ Invocation) (Event, error) {
 	if err := json.Unmarshal(raw, &in); err != nil {
 		return Event{}, err
 	}
-	ev := Event{Name: in.Event, Tool: in.ToolName, Session: core.NormalizeSession(in.SessionID), Cwd: in.Cwd, Source: in.Source}
+	ev := Event{Name: in.Event, Tool: in.ToolName, Session: lifecycle.NormalizeSession(in.SessionID), Cwd: in.Cwd, Source: in.Source}
 	// code.claude.com/docs/en/hooks#stop-decision-control: block + reason continues.
 	ev.CanContinue, ev.StopActive = in.Event == "Stop", in.StopHook
 	ev.References, ev.Writing = fileReferences(in.ToolName, in.ToolInput)

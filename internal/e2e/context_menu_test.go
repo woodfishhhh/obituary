@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/contextmenu"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func TestExplorerMenuCommandFlow(t *testing.T) {
@@ -77,7 +77,7 @@ func TestExplorerMenuCommandFlow(t *testing.T) {
 	if err != nil || len(st.Burials) != 0 {
 		t.Fatal(st.Burials, err)
 	}
-	if len(st.Watches) != 1 || st.Watches[0].Consent != "pending" || len(st.Proposals) != 1 || st.Proposals[0].Kind != core.ProposalWatch || len(st.Items) != 1 {
+	if len(st.Watches) != 1 || st.Watches[0].Consent != "pending" || len(st.Proposals) != 1 || st.Proposals[0].Kind != ledger.ProposalWatch || len(st.Items) != 1 {
 		t.Fatalf("Explorer policy bypassed approval: %+v", st)
 	}
 }

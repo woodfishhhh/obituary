@@ -9,7 +9,8 @@ import (
 	"testing"
 
 	"github.com/woodfishhhh/obituary/internal/app"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/hook"
 	"github.com/woodfishhhh/obituary/internal/regtxn"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
@@ -21,7 +22,7 @@ func TestUninstallRemovesOwnedUpdateMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := svc.Store.Update(func(*core.State) error { return nil }); err != nil {
+	if err := svc.Store.Update(func(*ledger.State) error { return nil }); err != nil {
 		t.Fatal(err)
 	}
 	for _, name := range []string{"update.json", "update.json.tmp", "update.lock", "proposal-log.json", "proposal-log.json.tmp", "proposal-log.lock", "explorer.log", "explorer.log.1"} {
@@ -45,7 +46,7 @@ func TestUninstallPurgeRemovesHookAndInstallerLocks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := svc.Store.Update(func(*core.State) error { return nil }); err != nil {
+	if err := svc.Store.Update(func(*ledger.State) error { return nil }); err != nil {
 		t.Fatal(err)
 	}
 	hook.Logf(svc.Store.Home, "fixture")
@@ -87,7 +88,7 @@ func TestUninstallPurgeKeepsUnrecognisedRegistryLocks(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := svc.Store.Update(func(*core.State) error { return nil }); err != nil {
+			if err := svc.Store.Update(func(*ledger.State) error { return nil }); err != nil {
 				t.Fatal(err)
 			}
 			dir := filepath.Join(svc.Store.Home, "registry-locks")
@@ -138,7 +139,7 @@ func TestUninstallPurgeOnlyListedGraves(t *testing.T) {
 	path := filepath.Join(root, "old.txt")
 	write(t, path, "GRAVE CONTENT")
 	results, err := svc.Bury([]string{path}, false, "uninstall fixture")
-	if err != nil || core.GraveFailed(results) {
+	if err != nil || lifecycle.GraveFailed(results) {
 		t.Fatal(results, err)
 	}
 	grave := results[0].Burial.Grave
@@ -182,7 +183,7 @@ func TestUninstallPurgeRefusesReplacedGrave(t *testing.T) {
 	write(t, other, "OTHER GRAVE")
 	write(t, path, "ORIGINAL")
 	results, err := svc.Bury([]string{other, path}, false, "fixture")
-	if err != nil || core.GraveFailed(results) {
+	if err != nil || lifecycle.GraveFailed(results) {
 		t.Fatal(results, err)
 	}
 	grave := results[1].Burial.Grave
@@ -231,7 +232,7 @@ func TestUninstallPurgeConfigLayouts(t *testing.T) {
 			path := filepath.Join(root, "payload.txt")
 			write(t, path, "BURIED USER CONTENT")
 			results, err := svc.Bury([]string{path}, false, "fixture")
-			if err != nil || core.GraveFailed(results) {
+			if err != nil || lifecycle.GraveFailed(results) {
 				t.Fatal(results, err)
 			}
 			if tc.unknown != "" {

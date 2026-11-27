@@ -10,7 +10,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/hook"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
 )
@@ -74,7 +75,7 @@ func runAgentHook(agent hook.Agent, event string, noticeOnly bool) {
 }
 
 func runDecodedEvent(agent hook.Agent, home string, ev hook.Event) {
-	svc := &core.Service{Store: core.Store{Home: home}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: home}}
 	var runner *hook.Runner
 	if ev.Name != "PreToolUse" {
 		var err error

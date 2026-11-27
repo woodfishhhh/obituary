@@ -11,7 +11,8 @@ import (
 	"testing"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/project"
 	"golang.org/x/sys/windows"
 )
@@ -24,7 +25,7 @@ func TestDiscoveryDenialUsesSkipLogWithoutPermissionDiagnostic(t *testing.T) {
 		return project.Project{}, false, &os.PathError{Op: "resolve project directory", Path: home, Err: windows.ERROR_ACCESS_DENIED}
 	}
 	t.Cleanup(func() { findProject = original })
-	e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: home}}}
+	e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: home}}}
 	agent, _ := Lookup("codex")
 	var out bytes.Buffer
 	RunEvent(agent, e, Event{Name: "SessionEnd", Cwd: home, Session: "denied"}, &out, nil)

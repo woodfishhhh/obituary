@@ -17,8 +17,8 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/rules"
 	"github.com/woodfishhhh/obituary/internal/textutil"
 )
@@ -150,7 +150,7 @@ func appendLog(home, name, format string, args ...any) {
 const maxListed = 5
 
 // Separate the fallible context read from notification acknowledgement.
-var proposalConsent = (*core.Service).Consent
+var proposalConsent = (*lifecycle.Service).Consent
 
 func rel(root, path string) string {
 	if r, err := filepath.Rel(root, path); err == nil && !strings.HasPrefix(r, "..") {
@@ -159,7 +159,7 @@ func rel(root, path string) string {
 	return path
 }
 
-func listCandidates(p core.Proposal) string {
+func listCandidates(p ledger.Proposal) string {
 	var parts []string
 	for i, c := range p.Candidates {
 		if i == maxListed {
@@ -173,7 +173,7 @@ func listCandidates(p core.Proposal) string {
 
 // describeProposal is a factual summary for the agent. Hook text is written
 // as statements, not commands, as the Claude Code docs advise.
-func describeProposal(p core.Proposal, consent string) string {
+func describeProposal(p ledger.Proposal, consent string) string {
 	text := describeProposalCandidates(p, consent, listCandidates(p))
 	if len(text) > maxContext/2-1 {
 		text = describeProposalCandidates(p, consent, "the complete candidate list is available through `obit proposals`")
@@ -181,14 +181,14 @@ func describeProposal(p core.Proposal, consent string) string {
 	return text
 }
 
-func describeProposalCandidates(p core.Proposal, consent, candidates string) string {
+func describeProposalCandidates(p ledger.Proposal, consent, candidates string) string {
 	switch p.Kind {
-	case core.ProposalContainer:
+	case ledger.ProposalContainer:
 		return fmt.Sprintf("Obituary proposal #%d, recommended for approval: the session started %s tied to this project by a compose working directory or a bind mount: %s. "+
 			"Approval (`obit approve %d`) gives each a %s lifespan; at expiry the container is stopped with its writable layer kept, `obit resurrect` starts it again, and volumes are never touched. `obit reject %d` leaves them unmanaged.",
 			p.ID, textutil.Count(len(p.Candidates), "container"), candidates, p.ID, auto.LeftoverLifespan, p.ID)
-	case core.ProposalOnboard:
-		if consent == core.ConsentApproved {
+	case ledger.ProposalOnboard:
+		if consent == ledger.ConsentApproved {
 			return fmt.Sprintf("Obituary proposal #%d: automatic registration in this project is already approved. These candidates remain pending after temporary problems: %s. `obit approve %d` is available to retry them.",
 				p.ID, candidates, p.ID)
 		}
@@ -196,7 +196,7 @@ func describeProposalCandidates(p core.Proposal, consent, candidates string) str
 			"Obituary registers these only once the user approves; approval also lets it handle such artefacts here automatically from then on, and each is buried at expiry and stays restorable until it is purged. "+
 			"The user can approve with `obit approve %d` or decline with `obit reject %d`.",
 			p.ID, textutil.Count(len(p.Candidates), "agent artefact"), textutil.Bytes(p.Size()), candidates, p.ID, p.ID)
-	case core.ProposalLarge:
+	case ledger.ProposalLarge:
 		return fmt.Sprintf("Obituary proposal #%d, recommended for approval: %s (%s) matched a rule: %s. Approval (`obit approve %d`) registers them with the rule's lifespan; each is buried at expiry and stays restorable until it is purged.",
 			p.ID, textutil.Count(len(p.Candidates), "unusually large artefact"), textutil.Bytes(p.Size()), candidates, p.ID)
 	default:
@@ -225,7 +225,7 @@ func appendContext(lines []string, text string) ([]string, bool) {
 // expiring items and recent burials is opt-in ([hooks] session_summary) to
 // save the agent's tokens. Empty when there is nothing worth saying.
 func sessionContext(e *auto.Engine, root, session string) (delivery, error) {
-	var due []core.Item
+	var due []ledger.Item
 	if e.Svc.SessionSummary {
 		var err error
 		if due, err = e.Svc.DueWithin(root, 24*time.Hour); err != nil {
@@ -233,7 +233,7 @@ func sessionContext(e *auto.Engine, root, session string) (delivery, error) {
 		}
 	}
 	read := e.Svc.Store.ReadHot
-	if e.Svc.SessionSummary && e.Svc.Mode != core.ModeRecycle {
+	if e.Svc.SessionSummary && e.Svc.Mode != lifecycle.ModeRecycle {
 		read = e.Svc.Store.ReadSnapshot
 	}
 	state, err := read()
@@ -248,14 +248,14 @@ func sessionContext(e *auto.Engine, root, session string) (delivery, error) {
 	if len(due) > 0 {
 		lines = append(lines, expiringContext(due, root, e.Svc.Mode))
 	}
-	if text := graveSessionContext(state.Burials, root, session); e.Svc.SessionSummary && e.Svc.Mode != core.ModeRecycle && text != "" {
+	if text := graveSessionContext(state.Burials, root, session); e.Svc.SessionSummary && e.Svc.Mode != lifecycle.ModeRecycle && text != "" {
 		lines, _ = appendContext(lines, text)
 	}
 	e.Svc.Store.RefreshGraveNoticeIndex()
 	context := delivery{lines: lines}
 	// Resume/compaction refreshes old notices too, after unseen proposals have
 	// had a chance to fit. Otherwise a truncated tail could starve forever.
-	slices.SortStableFunc(state.Proposals, func(a, b core.Proposal) int {
+	slices.SortStableFunc(state.Proposals, func(a, b ledger.Proposal) int {
 		aTold, bTold := slices.Contains(a.Notified, session), slices.Contains(b.Notified, session)
 		if aTold == bTold {
 			return 0
@@ -266,13 +266,13 @@ func sessionContext(e *auto.Engine, root, session string) (delivery, error) {
 		return -1
 	})
 	for _, p := range state.Proposals {
-		if strings.EqualFold(p.Project, root) || p.Kind == core.ProposalContainer && p.Session == session {
-			visible := core.ExistingProposals([]core.Proposal{p})
+		if strings.EqualFold(p.Project, root) || p.Kind == ledger.ProposalContainer && p.Session == session {
+			visible := lifecycle.ExistingProposals([]ledger.Proposal{p})
 			if len(visible) == 0 {
 				continue
 			}
 			p = visible[0]
-			context.append(p, state.Projects[core.ProjectKey(p.Project)].Consent)
+			context.append(p, state.Projects[ledger.ProjectKey(p.Project)].Consent)
 		}
 	}
 	context.appendReceipts(untoldReceipts(state, root, session, true), root, serviceNow(e.Svc))
@@ -282,7 +282,7 @@ func sessionContext(e *auto.Engine, root, session string) (delivery, error) {
 	return context, nil
 }
 
-func expiringContext(due []core.Item, root, mode string) string {
+func expiringContext(due []ledger.Item, root, mode string) string {
 	var parts []string
 	for i, it := range due {
 		if i == maxListed {
@@ -292,7 +292,7 @@ func expiringContext(due []core.Item, root, mode string) string {
 		parts = append(parts, fmt.Sprintf("#%d %s (%s)", it.ID, rel(root, it.Path), textutil.DueIn(time.Until(it.ExpiresAt))))
 	}
 	destination := "buried (restorable with `obit resurrect`)"
-	if mode == core.ModeRecycle {
+	if mode == lifecycle.ModeRecycle {
 		destination = "sent to the system Recycle Bin (restore from the Recycle Bin)"
 	}
 	text := fmt.Sprintf("Obituary (讣告): %s in this project will expire within 24 hours and will be %s: %s. `obit extend <id> <lifespan>` keeps one longer.",

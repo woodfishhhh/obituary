@@ -10,7 +10,8 @@ import (
 	"slices"
 
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/regtxn"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
 )
@@ -67,7 +68,7 @@ func (p *plan) purgeGraves(out io.Writer, preview bool) error {
 				fmt.Fprintln(out, cmdutil.Text("cli.uninstall.warning"), r.Warning)
 			}
 		}
-		if err != nil || core.GraveFailed(results) {
+		if err != nil || lifecycle.GraveFailed(results) {
 			return errors.Join(err, cmdutil.ErrReported)
 		}
 	}
@@ -112,7 +113,7 @@ func (p *plan) requireEmptyGraveyard() error {
 // Metadata names come from the existing store/log writers. Do not recursively
 // delete Home: OBIT_HOME may be a shared directory containing user files.
 var metadataNames = []string{
-	core.DataOwnerFile,
+	ledger.DataOwnerFile,
 	"store.json", "store.lock", "store.json.tmp", "sweep.lock", "graveyard.lock",
 	"grave-notice-paths.json", "grave-notice-paths.json.tmp", "grave-notice-paths.lock",
 	"audit.jsonl", "audit.jsonl.1", "audit.lock", "audit-outbox.lock",
@@ -198,10 +199,10 @@ func (p *plan) metadataEntries(root *os.Root, home os.FileInfo, remove bool) ([]
 	if len(entries) == 0 && keepConfig {
 		return nil, true, nil // A repeated uninstall has nothing left to remove.
 	}
-	if err := core.VerifyDataOwner(root); err != nil {
+	if err := ledger.VerifyDataOwner(root); err != nil {
 		return nil, false, err
 	}
-	var burials []core.Burial
+	var burials []ledger.Burial
 	if !remove {
 		burials = p.state.Burials
 	}
@@ -232,7 +233,7 @@ func removeMetadataEntries(root *os.Root, entries []os.DirEntry) error {
 	return nil
 }
 
-func checkMetadata(root *os.Root, name string, burials []core.Burial) error {
+func checkMetadata(root *os.Root, name string, burials []ledger.Burial) error {
 	info, err := root.Lstat(name)
 	if err != nil {
 		return err
@@ -248,7 +249,7 @@ func checkMetadata(root *os.Root, name string, burials []core.Burial) error {
 	if info.IsDir() && name == "graveyard" {
 		return checkLocalGraves(root, burials)
 	}
-	if info.Mode().IsRegular() && (slices.Contains(metadataNames, name) || core.OwnedLedgerFile(root, name)) {
+	if info.Mode().IsRegular() && (slices.Contains(metadataNames, name) || ledger.OwnedLedgerFile(root, name)) {
 		return nil
 	}
 	return fmt.Errorf(cmdutil.Text("cli.uninstall.data_retained_unknown_file_link_or_nonempty"), filepath.Join(root.Name(), name))
@@ -256,7 +257,7 @@ func checkMetadata(root *os.Root, name string, burials []core.Burial) error {
 
 // Core verifies each listed grave and its manifest. Anything else in this
 // directory would prevent its final empty-directory removal after the purge.
-func checkLocalGraves(root *os.Root, burials []core.Burial) error {
+func checkLocalGraves(root *os.Root, burials []ledger.Burial) error {
 	dir, err := root.Open("graveyard")
 	if err != nil {
 		return err
@@ -268,7 +269,7 @@ func checkLocalGraves(root *os.Root, burials []core.Burial) error {
 	}
 	known := make(map[string]bool, len(burials))
 	for _, b := range burials {
-		if b.Kind != core.KindContainer {
+		if b.Kind != ledger.KindContainer {
 			grave := filepath.Dir(b.Grave)
 			known[grave] = true
 			known[grave+".json"] = true

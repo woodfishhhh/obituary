@@ -16,7 +16,8 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/buildinfo"
 	"github.com/woodfishhhh/obituary/internal/config"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/update"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
@@ -74,7 +75,7 @@ func observeUsage(home string, now time.Time, start func(string) error) {
 	if os.MkdirAll(home, 0700) != nil {
 		return
 	}
-	release, ok, err := core.TryLockExclusive(filepath.Join(home, "usage.lock"))
+	release, ok, err := ledger.TryLockExclusive(filepath.Join(home, "usage.lock"))
 	if err != nil || !ok {
 		return
 	}
@@ -101,7 +102,7 @@ func observeUsage(home string, now time.Time, start func(string) error) {
 
 func readUsage(path string) (usageState, error) {
 	var s usageState
-	b, err := core.ReadMetadata(path)
+	b, err := lifecycle.ReadMetadata(path)
 	if err == nil {
 		err = json.Unmarshal(b, &s)
 	}
@@ -112,7 +113,7 @@ func saveUsage(path string, s usageState) error {
 	if err != nil {
 		return err
 	}
-	return core.WriteMetadata(path, b)
+	return lifecycle.WriteMetadata(path, b)
 }
 
 // Clearing the identity is local. Keep the attempt timestamp across opt-out/in.
@@ -129,7 +130,7 @@ func ForgetUsage() error {
 	if err != nil {
 		return err
 	}
-	release, err := core.LockFile(filepath.Join(home, "usage.lock"), true)
+	release, err := ledger.LockFile(filepath.Join(home, "usage.lock"), true)
 	if err != nil {
 		return err
 	}
@@ -143,7 +144,7 @@ func ForgetUsage() error {
 
 // Only a fresh reservation from an actual use can authorize one detached attempt.
 func claimUsage(home, stamp string, now time.Time) string {
-	release, err := core.LockFile(filepath.Join(home, "usage.lock"), true)
+	release, err := ledger.LockFile(filepath.Join(home, "usage.lock"), true)
 	if err != nil {
 		return ""
 	}

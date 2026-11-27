@@ -13,7 +13,8 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	removecmd "github.com/woodfishhhh/obituary/internal/cli/remove"
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/project"
 )
 
@@ -52,7 +53,7 @@ func TestRecycleCommandReceipts(t *testing.T) {
 			destination := filepath.Join(t.TempDir(), "recycled")
 			svc.FS = receiptRecycleFS{svc.FS, destination}
 			old := cmdutil.Open
-			cmdutil.Open = func() (*core.Service, error) { return svc, nil }
+			cmdutil.Open = func() (*lifecycle.Service, error) { return svc, nil }
 			t.Cleanup(func() { cmdutil.Open = old })
 			path := filepath.Join(repo, "victim.txt")
 			clitest.WriteFixture(t, path, "keep")
@@ -73,11 +74,11 @@ func TestRecycleCommandReceipts(t *testing.T) {
 }
 
 type receiptRecycleFS struct {
-	core.FS
+	corefs.FS
 	destination string
 }
 
-func (f receiptRecycleFS) Recycle(path string, want core.Identity) error {
+func (f receiptRecycleFS) Recycle(path string, want corefs.Identity) error {
 	return f.MovePinned(path, want, f.destination)
 }
 

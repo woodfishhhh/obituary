@@ -7,12 +7,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 // RecentBurials is a read-only menu snapshot. Clicking a row sends its ID,
 // never its current menu position, through the ordinary resurrection checks.
-func (r *Resident) RecentBurials() ([]core.Burial, error) {
+func (r *Resident) RecentBurials() ([]ledger.Burial, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	_, g, err := r.view()
@@ -25,22 +26,22 @@ func (r *Resident) RecentBurials() ([]core.Burial, error) {
 // graves is what the resident and tray need from a graveyard snapshot. It
 // stays valid while the hot ledger names the same snapshot.
 type graves struct {
-	ref    core.GraveyardReference
+	ref    ledger.GraveyardReference
 	next   time.Time // the next purge, when has
 	has    bool
 	count  int
-	recent []core.Burial // newest first, at most 10
+	recent []ledger.Burial // newest first, at most 10
 }
 
-func summarize(st core.State) *graves {
+func summarize(st ledger.State) *graves {
 	g := &graves{count: len(st.Burials)}
 	if st.Graveyard != nil {
 		g.ref = *st.Graveyard
 	}
-	only := core.State{Burials: st.Burials}
+	only := ledger.State{Burials: st.Burials}
 	g.next, g.has = only.NextDue()
 	burials := slices.Clone(st.Burials)
-	slices.SortFunc(burials, func(a, b core.Burial) int {
+	slices.SortFunc(burials, func(a, b ledger.Burial) int {
 		if c := b.BuriedAt.Compare(a.BuriedAt); c != 0 {
 			return c
 		}
@@ -52,7 +53,7 @@ func summarize(st core.State) *graves {
 
 // view is what the last step read, or the whole ledger without one; the
 // caller holds r.mu.
-func (r *Resident) view() (core.State, *graves, error) {
+func (r *Resident) view() (ledger.State, *graves, error) {
 	if r.hot != nil && r.graves != nil {
 		return *r.hot, r.graves, nil
 	}
@@ -63,7 +64,7 @@ func (r *Resident) view() (core.State, *graves, error) {
 	return st, summarize(st), nil
 }
 
-func (r *Resident) Restore(id int64) (core.GraveResult, error) {
+func (r *Resident) Restore(id int64) (lifecycle.GraveResult, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.hot, r.graves = nil, nil // the menu refreshed after this must not show the grave
@@ -94,14 +95,14 @@ func (r *Resident) Counts(now time.Time) (due, graves int, err error) {
 	return due, g.count, nil
 }
 
-func (r *Resident) Upcoming(now time.Time) ([]core.Item, error) {
+func (r *Resident) Upcoming(now time.Time) ([]ledger.Item, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	state, _, err := r.view()
 	if err != nil {
 		return nil, err
 	}
-	items := slices.DeleteFunc(slices.Clone(state.Items), func(item core.Item) bool { return item.ExpiresAt.After(now.Add(24 * time.Hour)) })
-	slices.SortFunc(items, func(a, b core.Item) int { return a.ExpiresAt.Compare(b.ExpiresAt) })
+	items := slices.DeleteFunc(slices.Clone(state.Items), func(item ledger.Item) bool { return item.ExpiresAt.After(now.Add(24 * time.Hour)) })
+	slices.SortFunc(items, func(a, b ledger.Item) int { return a.ExpiresAt.Compare(b.ExpiresAt) })
 	return items[:min(10, len(items))], nil
 }

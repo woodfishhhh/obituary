@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 // ReportLifespan is how long a report stays before it is buried; the
@@ -19,8 +19,8 @@ const ReportLifespan = 24 * time.Hour
 func ReportsDir(home string) string { return filepath.Join(home, "reports") }
 
 // ExpireReport gives a report in ReportsDir its lifespan, as obit mark would.
-func ExpireReport(svc *core.Service, path string, now time.Time) error {
-	results, err := svc.Add([]string{path}, core.AddOptions{ExpiresAt: now.Add(ReportLifespan), Source: "doctor", Note: "obit doctor report"})
+func ExpireReport(svc *lifecycle.Service, path string, now time.Time) error {
+	results, err := svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: now.Add(ReportLifespan), Source: "doctor", Note: "obit doctor report"})
 	for _, r := range results {
 		if r.Error != "" {
 			err = errors.Join(err, fmt.Errorf("%s: %s", r.Ref, r.Error))

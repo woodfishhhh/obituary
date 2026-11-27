@@ -5,15 +5,15 @@ import (
 	"os"
 	"strings"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 )
 
 type commitFailureFS struct {
-	core.FS
+	corefs.FS
 	blocked string
 }
 
-func (f commitFailureFS) MovePinned(path string, want core.Identity, to string) error {
+func (f commitFailureFS) MovePinned(path string, want corefs.Identity, to string) error {
 	if err := f.FS.MovePinned(path, want, to); err != nil {
 		return err
 	}
@@ -21,7 +21,7 @@ func (f commitFailureFS) MovePinned(path string, want core.Identity, to string) 
 }
 
 type unavailableRootFS struct {
-	core.FS
+	corefs.FS
 	root  string
 	scans int
 }

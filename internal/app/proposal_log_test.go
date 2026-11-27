@@ -10,7 +10,8 @@ import (
 	"testing"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
@@ -50,8 +51,8 @@ func TestProposalLogKeepsTickErrorsObservable(t *testing.T) {
 	if err := os.Mkdir(project, 0700); err != nil {
 		t.Fatal(err)
 	}
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(root, "home")}, FS: winfs.FS{}}
-	_, _, _, err := svc.Propose(core.ProposalLeftovers, project, "s", []core.Candidate{{Path: filepath.Join(project, "missing"), Lifespan: "1d"}})
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(root, "home")}, FS: winfs.FS{}}
+	_, _, _, err := svc.Propose(ledger.ProposalLeftovers, project, "s", []ledger.Candidate{{Path: filepath.Join(project, "missing"), Lifespan: "1d"}})
 	if err != nil {
 		t.Fatal(err)
 	}

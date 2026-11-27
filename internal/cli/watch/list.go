@@ -5,25 +5,25 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 type watchChild struct {
 	ID   int64  `json:"id"`
 	Path string `json:"path"`
-	*core.WatchStatus
+	*lifecycle.WatchStatus
 }
 
 type listing struct {
 	ledger.WatchPolicy
 	Exemptions []ledger.WatchExemption `json:"exemptions"`
 	Stability  []watchChild            `json:"stability,omitempty"`
-	Skipped    []core.WatchSkip        `json:"skipped,omitempty"`
+	Skipped    []lifecycle.WatchSkip   `json:"skipped,omitempty"`
 	ScanError  string                  `json:"scanError,omitempty"`
 }
 
-func (o *options) printPolicies(svc *core.Service) error {
+func (o *options) printPolicies(svc *lifecycle.Service) error {
 	st, err := svc.Store.Read()
 	if err != nil {
 		return err
@@ -42,11 +42,11 @@ func (o *options) printPolicies(svc *core.Service) error {
 	return nil
 }
 
-func policyListing(svc *core.Service, st ledger.State, p ledger.WatchPolicy, now time.Time) listing {
+func policyListing(svc *lifecycle.Service, st ledger.State, p ledger.WatchPolicy, now time.Time) listing {
 	row := listing{WatchPolicy: p, Exemptions: svc.WatchExemptionDetails(st, p.ID)}
 	path, err := svc.WatchPath(p)
 	if err == nil {
-		row.Skipped, err = core.WatchDownloadSkips(path)
+		row.Skipped, err = lifecycle.WatchDownloadSkips(path)
 	}
 	if err != nil {
 		row.ScanError = err.Error()

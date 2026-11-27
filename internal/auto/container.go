@@ -5,7 +5,8 @@ import (
 	"path/filepath"
 
 	"github.com/woodfishhhh/obituary/internal/config"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/docker"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
@@ -48,7 +49,7 @@ func (e *Engine) ContainerLeftovers(root, session string) ([]Notice, error) {
 	if err != nil {
 		return nil, err
 	}
-	groups := map[string][]core.Candidate{}
+	groups := map[string][]ledger.Candidate{}
 	for _, row := range rows {
 		if row.Created.Before(snap.At) || row.Created.After(end) || knownContainer(state, row.Identity) {
 			continue
@@ -61,11 +62,11 @@ func (e *Engine) ContainerLeftovers(root, session string) ([]Notice, error) {
 			continue
 		}
 		id := row.Identity
-		groups[owner] = append(groups[owner], core.Candidate{Kind: core.KindContainer, Container: &id, Path: id.Display(), Lifespan: LeftoverLifespan, Reason: reason})
+		groups[owner] = append(groups[owner], ledger.Candidate{Kind: ledger.KindContainer, Container: &id, Path: id.Display(), Lifespan: LeftoverLifespan, Reason: reason})
 	}
 	var notices []Notice
 	for owner, candidates := range groups {
-		notice, err := e.propose(core.ProposalContainer, owner, session, candidates, nil)
+		notice, err := e.propose(ledger.ProposalContainer, owner, session, candidates, nil)
 		if notice != nil {
 			notice, err = e.settleNotice(*notice, err)
 		}
@@ -79,7 +80,7 @@ func (e *Engine) ContainerLeftovers(root, session string) ([]Notice, error) {
 	return notices, nil
 }
 
-func knownContainer(state core.State, id docker.Identity) bool {
+func knownContainer(state ledger.State, id docker.Identity) bool {
 	for _, it := range state.Items {
 		if it.Container != nil && it.Container.Same(id) {
 			return true
@@ -121,7 +122,7 @@ func projectContainer(row docker.Container) (string, string, error) {
 		if !found {
 			continue
 		}
-		if root != "" && core.ProjectKey(root) != core.ProjectKey(p.Root) {
+		if root != "" && ledger.ProjectKey(root) != ledger.ProjectKey(p.Root) {
 			return "", "", nil
 		}
 		root = p.Root
@@ -129,7 +130,7 @@ func projectContainer(row docker.Container) (string, string, error) {
 	return root, "bind mount in project", nil
 }
 
-func (e *Engine) approveContainer(p core.Proposal, c core.Candidate, class string) ([]core.Result, bool, error) {
+func (e *Engine) approveContainer(p ledger.Proposal, c ledger.Candidate, class string) ([]lifecycle.Result, bool, error) {
 	results, retry, err := e.Svc.ApproveContainer(p, c, class)
 	if errors.Is(err, docker.ErrUnavailable) {
 		err = errors.New(config.UILanguage().Text(i18n.StartDocker))

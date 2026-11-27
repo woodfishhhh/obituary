@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/contextmenu"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/runkey"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 )
@@ -84,7 +84,7 @@ func WriteFixture(t testing.TB, path, data string) {
 	}
 }
 
-func CommandRepo(t *testing.T) (string, core.Store) {
+func CommandRepo(t *testing.T) (string, ledger.Store) {
 	t.Helper()
 	repo, store := CommandDir(t)
 	testenv.InitRepo(t, repo)
@@ -92,7 +92,7 @@ func CommandRepo(t *testing.T) (string, core.Store) {
 }
 
 // CommandDir is sufficient for commands whose contract does not involve Git.
-func CommandDir(t *testing.T) (string, core.Store) {
+func CommandDir(t *testing.T) (string, ledger.Store) {
 	t.Helper()
 	root := t.TempDir()
 	repo := filepath.Join(root, "repo")
@@ -105,7 +105,7 @@ func CommandDir(t *testing.T) (string, core.Store) {
 	home := filepath.Join(root, "data")
 	t.Setenv("OBIT_HOME", home)
 	t.Setenv("OBIT_CONFIG_DIR", filepath.Join(root, "config"))
-	return repo, core.Store{Home: home}
+	return repo, ledger.Store{Home: home}
 }
 
 // Runner functions are the process/OS boundary; command tests exercise actual
@@ -134,10 +134,10 @@ func IsolateRunner(t testing.TB) *[]string {
 	return &starts
 }
 
-func AddProposal(t *testing.T, store core.Store, root string, candidates ...core.Candidate) {
+func AddProposal(t *testing.T, store ledger.Store, root string, candidates ...ledger.Candidate) {
 	t.Helper()
-	if err := store.Update(func(st *core.State) error {
-		st.Proposals = append(st.Proposals, core.Proposal{ID: st.NextID, Kind: core.ProposalLeftovers, Project: root, Candidates: candidates})
+	if err := store.Update(func(st *ledger.State) error {
+		st.Proposals = append(st.Proposals, ledger.Proposal{ID: st.NextID, Kind: ledger.ProposalLeftovers, Project: root, Candidates: candidates})
 		st.NextID++
 		return nil
 	}); err != nil {

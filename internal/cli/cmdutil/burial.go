@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/config"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/project"
 )
 
@@ -64,7 +64,7 @@ func BurialScope() (session, root string) {
 	return session, root
 }
 
-func BeginBurial(svc *core.Service) (*core.Service, error) {
+func BeginBurial(svc *lifecycle.Service) (*lifecycle.Service, error) {
 	session, root := BurialScope()
 	return svc.BeginBurial(session, root)
 }

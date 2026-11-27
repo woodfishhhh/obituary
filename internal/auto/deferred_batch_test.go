@@ -5,13 +5,14 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func approveProject(t *testing.T, r *repo) {
 	t.Helper()
-	if err := r.engine.Svc.Store.Update(func(st *core.State) error {
-		st.Projects = map[string]core.ProjectState{core.ProjectKey(r.root): {Consent: core.ConsentApproved}}
+	if err := r.engine.Svc.Store.Update(func(st *ledger.State) error {
+		st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(r.root): {Consent: ledger.ConsentApproved}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -61,12 +62,12 @@ func TestResidentBatchRegistersEveryRequestOnceAcrossBatches(t *testing.T) {
 // lockProbeFS reports whether store.lock is free each time replay inspects the
 // observed file: Git and identity checks must not hold up other processes.
 type lockProbeFS struct {
-	core.FS
+	corefs.FS
 	path  string
 	probe func()
 }
 
-func (f *lockProbeFS) Identify(path string) (core.Identity, error) {
+func (f *lockProbeFS) Identify(path string) (corefs.Identity, error) {
 	if path == f.path {
 		f.probe()
 	}
@@ -147,7 +148,7 @@ func TestResidentBatchCrashAfterCommitBeforeAcknowledgement(t *testing.T) {
 		t.Fatal(err)
 	}
 	// The commit step of commitBatch, then "death": no audit flush, no acknowledgement.
-	err = r.engine.Svc.Store.ReplayBatch(func(tx core.Store) error {
+	err = r.engine.Svc.Store.ReplayBatch(func(tx ledger.Store) error {
 		svc := *r.engine.Svc
 		svc.Store, svc.AfterChange = tx, nil
 		engine := *r.engine
@@ -164,7 +165,7 @@ func TestResidentBatchCrashAfterCommitBeforeAcknowledgement(t *testing.T) {
 	// A new resident process: no cache.
 	reopened := *r.engine
 	svc := *r.engine.Svc
-	svc.Store = core.Store{Home: r.engine.Svc.Store.Home}.WithResidentReplay()
+	svc.Store = ledger.Store{Home: r.engine.Svc.Store.Home}.WithResidentReplay()
 	reopened.Svc = &svc
 	for range 2 {
 		if err := reopened.ReplayObservations(); err != nil {

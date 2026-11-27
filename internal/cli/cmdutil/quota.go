@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/textutil"
 )
 
 // FormatQuotaOverflow renders a human- and AI-readable Plan A reminder when an
 // oversized object stays in place and moves to pending decisions.
-func FormatQuotaOverflow(l *i18n.Localizer, o *core.QuotaOverflow, dryRun bool) string {
+func FormatQuotaOverflow(l *i18n.Localizer, o *lifecycle.QuotaOverflow, dryRun bool) string {
 	key := "cli.quota.overflow"
 	if dryRun {
 		key = "cli.quota.overflow_dry_run"
@@ -26,7 +26,7 @@ func FormatQuotaOverflow(l *i18n.Localizer, o *core.QuotaOverflow, dryRun bool) 
 
 // PrintQuotaEviction writes a concise FIFO auto-purge summary to w when quota
 // enforcement purged or retried any graveyard items.
-func PrintQuotaEviction(w io.Writer, l *i18n.Localizer, ev *core.QuotaEviction, dryRun bool) {
+func PrintQuotaEviction(w io.Writer, l *i18n.Localizer, ev *lifecycle.QuotaEviction, dryRun bool) {
 	if ev == nil {
 		return
 	}

@@ -9,7 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/textutil"
 )
 
@@ -34,7 +35,7 @@ func NewCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			run := func(dryRun bool) ([]core.GraveResult, error) {
+			run := func(dryRun bool) ([]lifecycle.GraveResult, error) {
 				if len(args) > 0 {
 					return svc.PurgeRefs(args, dryRun)
 				}
@@ -67,7 +68,7 @@ func NewCmd() *cobra.Command {
 
 // confirm lists what would be purged, then asks; outside a terminal it
 // refuses, so an agent cannot purge without the user passing --yes.
-func confirm(cmd *cobra.Command, preview []core.GraveResult, asJSON bool) error {
+func confirm(cmd *cobra.Command, preview []lifecycle.GraveResult, asJSON bool) error {
 	if !asJSON {
 		_ = report(preview, nil, true, false) // the run reports failures again
 	}
@@ -87,7 +88,7 @@ func confirm(cmd *cobra.Command, preview []core.GraveResult, asJSON bool) error 
 	return nil
 }
 
-func report(results []core.GraveResult, err error, dryRun, asJSON bool) error {
+func report(results []lifecycle.GraveResult, err error, dryRun, asJSON bool) error {
 	if !asJSON && len(results) == 0 {
 		fmt.Println(cmdutil.Text("cli.purge.nothing_to_purge"))
 	}
@@ -95,8 +96,8 @@ func report(results []core.GraveResult, err error, dryRun, asJSON bool) error {
 	if dryRun {
 		verb = cmdutil.Text("cli.preview.would_be")
 	}
-	reportErr := cmdutil.ReportGraves(results, asJSON, func(r core.GraveResult) string {
-		if r.Action == core.ActionResurrected {
+	reportErr := cmdutil.ReportGraves(results, asJSON, func(r lifecycle.GraveResult) string {
+		if r.Action == ledger.ActionResurrected {
 			if dryRun {
 				return fmt.Sprintf(cmdutil.Text("cli.purge.would_confirm_an_already_completed_resurrection"), r.Burial.ID, r.Path)
 			}

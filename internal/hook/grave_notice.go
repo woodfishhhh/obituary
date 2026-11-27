@@ -7,20 +7,19 @@ import (
 	"slices"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 // A hook's shared-lock budget is one second; optional advisories use only 25 ms.
 const graveNoticeBudget = 25 * time.Millisecond
 
-var readNoticeSnapshot = func(s core.Store) (core.State, error) { return s.ReadSnapshot() }
+var readNoticeSnapshot = func(s ledger.Store) (ledger.State, error) { return s.ReadSnapshot() }
 
-func restorableNotice(b core.Burial, now time.Time) bool {
+func restorableNotice(b ledger.Burial, now time.Time) bool {
 	return b.PurgeIntent == nil && b.PurgeAt.After(now)
 }
 
-func prepareGraveNotices(store core.Store, ev Event, d *delivery) {
+func prepareGraveNotices(store ledger.Store, ev Event, d *delivery) {
 	if ev.Session == "" || ev.Cwd == "" || ev.Name == "Stop" || ev.Name == "SessionEnd" {
 		return
 	}
@@ -69,13 +68,13 @@ func appendGraveNotices(d *delivery, ev Event, notices []graveNotice) {
 }
 
 type graveNotice struct {
-	ID      int64       `json:"id"`
-	Path    string      `json:"path"`
-	Writing bool        `json:"writing,omitempty"`
-	Burial  core.Burial `json:"-"`
+	ID      int64         `json:"id"`
+	Path    string        `json:"path"`
+	Writing bool          `json:"writing,omitempty"`
+	Burial  ledger.Burial `json:"-"`
 }
 
-func selectGraveNotices(burials []core.Burial, paths []string, session graveSession, ev Event) []graveNotice {
+func selectGraveNotices(burials []ledger.Burial, paths []string, session graveSession, ev Event) []graveNotice {
 	var notices []graveNotice
 	for _, b := range burials {
 		if !restorableNotice(b, time.Now()) || slices.Contains(session.Seen, b.ID) {
@@ -83,7 +82,7 @@ func selectGraveNotices(burials []core.Burial, paths []string, session graveSess
 		}
 		var n graveNotice
 		for _, p := range paths {
-			if core.BurialPathMatches(b.Path, b.IsDir, p) {
+			if ledger.BurialPathMatches(b.Path, b.IsDir, p) {
 				n = graveNotice{ID: b.ID, Path: p, Writing: ev.Writing}
 				break
 			}

@@ -7,7 +7,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/guard"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
+	corelifespan "github.com/woodfishhhh/obituary/internal/core/lifespan"
 	"github.com/woodfishhhh/obituary/internal/project"
 	"github.com/woodfishhhh/obituary/internal/rules"
 )
@@ -20,9 +24,9 @@ func (e *Engine) RefreshProposals() error {
 	if err != nil {
 		return err
 	}
-	groups := make(map[string][]core.Proposal)
+	groups := make(map[string][]ledger.Proposal)
 	for _, p := range st.Proposals {
-		if p.Kind == core.ProposalWatch || p.Kind == core.ProposalWatchBurial || p.Kind == core.ProposalContainer || p.Kind == core.ProposalGraveyardQuota {
+		if p.Kind == ledger.ProposalWatch || p.Kind == ledger.ProposalWatchBurial || p.Kind == ledger.ProposalContainer || p.Kind == ledger.ProposalGraveyardQuota {
 			continue
 		}
 		groups[p.Project] = append(groups[p.Project], p)
@@ -36,7 +40,7 @@ func (e *Engine) RefreshProposals() error {
 	return errors.Join(append(errs, e.AutoApprovePending())...)
 }
 
-func (e *Engine) refreshProjectProposals(proposals []core.Proposal) []error {
+func (e *Engine) refreshProjectProposals(proposals []ledger.Proposal) []error {
 	root := proposals[0].Project
 	if err := accessibleProposalProject(root); err != nil {
 		return e.pruneDeletedProposals(proposals, err)
@@ -47,7 +51,7 @@ func (e *Engine) refreshProjectProposals(proposals []core.Proposal) []error {
 	for _, p := range proposals {
 		for _, c := range p.Candidates {
 			paths = append(paths, c.Path)
-			if c.Kind != core.KindContainer && NeverAutomatic(root, c.Path) != "" {
+			if c.Kind != ledger.KindContainer && NeverAutomatic(root, c.Path) != "" {
 				stale[c.Path] = true // proposed before dependencies and build output were left alone
 			} else if _, err := os.Lstat(c.Path); errors.Is(err, os.ErrNotExist) {
 				stale[c.Path] = true
@@ -71,7 +75,7 @@ func (e *Engine) refreshProjectProposals(proposals []core.Proposal) []error {
 		}
 	}
 	for _, p := range proposals {
-		var removed []core.Candidate
+		var removed []ledger.Candidate
 		for _, c := range p.Candidates {
 			if stale[c.Path] {
 				removed = append(removed, c)
@@ -84,7 +88,7 @@ func (e *Engine) refreshProjectProposals(proposals []core.Proposal) []error {
 	return errs
 }
 
-func (e *Engine) pruneDeletedProposals(proposals []core.Proposal, cause error) []error {
+func (e *Engine) pruneDeletedProposals(proposals []ledger.Proposal, cause error) []error {
 	root := proposals[0].Project
 	deleted, err := e.Svc.ProposalProjectDeleted(root)
 	if !deleted || err != nil {
@@ -129,34 +133,34 @@ func accessibleProposalProject(root string) error {
 // again on its real location: still in the proposal's project, unprotected,
 // untracked and not shortening a lifespan. Anything that changed since the
 // proposal was made is skipped, not registered.
-func (e *Engine) Approve(refs []string) ([]core.ProposalResult, error) {
-	return e.approve(refs, func(_ int, ref string) (core.Proposal, func(), error) {
+func (e *Engine) Approve(refs []string) ([]lifecycle.ProposalResult, error) {
+	return e.approve(refs, func(_ int, ref string) (ledger.Proposal, func(), error) {
 		return e.Svc.ClaimProposal(ref)
 	})
 }
 
 // ApproveReviewed is for delayed confirmations carrying the displayed snapshot.
-func (e *Engine) ApproveReviewed(refs, fingerprints []string) ([]core.ProposalResult, error) {
-	if err := core.ValidateProposalReviews(refs, fingerprints); err != nil {
+func (e *Engine) ApproveReviewed(refs, fingerprints []string) ([]lifecycle.ProposalResult, error) {
+	if err := lifecycle.ValidateProposalReviews(refs, fingerprints); err != nil {
 		return nil, err
 	}
-	return e.approve(refs, func(i int, ref string) (core.Proposal, func(), error) {
+	return e.approve(refs, func(i int, ref string) (ledger.Proposal, func(), error) {
 		return e.Svc.ClaimProposalReviewed(ref, fingerprints[i])
 	})
 }
 
-func (e *Engine) approve(refs []string, claim func(int, string) (core.Proposal, func(), error)) ([]core.ProposalResult, error) {
+func (e *Engine) approve(refs []string, claim func(int, string) (ledger.Proposal, func(), error)) ([]lifecycle.ProposalResult, error) {
 	e.sets = nil // reread rule files: a changed or broken .obitrules must pause registration
-	var out []core.ProposalResult
+	var out []lifecycle.ProposalResult
 	var auditErr, retryErr error
 	located := locations{}
 	for i, ref := range refs {
-		r := core.ProposalResult{Ref: ref}
+		r := lifecycle.ProposalResult{Ref: ref}
 		p, release, err := claim(i, ref)
 		if err != nil {
 			r.Error = err.Error()
-			if errors.Is(err, core.ErrProposalChanged) {
-				r.ErrorCode = core.ErrorCodeProposalChanged
+			if errors.Is(err, lifecycle.ErrProposalChanged) {
+				r.ErrorCode = lifecycle.ErrorCodeProposalChanged
 			}
 			out = append(out, r)
 			continue
@@ -167,9 +171,9 @@ func (e *Engine) approve(refs []string, claim func(int, string) (core.Proposal, 
 			out = append(out, r)
 			continue
 		}
-		var pending []core.Candidate
+		var pending []ledger.Candidate
 		r.Results, pending, err = e.approveCandidates(p, located, "")
-		if core.HasAuditWarning(err) && core.OnlyAuditErrors(err) {
+		if ledger.HasAuditWarning(err) && ledger.OnlyAuditErrors(err) {
 			auditErr = err
 		} else if err != nil {
 			retryErr = errors.Join(retryErr, err)
@@ -191,62 +195,68 @@ func (e *Engine) approve(refs []string, claim func(int, string) (core.Proposal, 
 	return out, auditErr
 }
 
-func (e *Engine) approveWatchProposal(p core.Proposal, r *core.ProposalResult) bool {
-	if p.Kind == core.ProposalWatchBurial {
-		outcome, err := e.Svc.ApproveWatchBurial(p)
-		if err == nil && outcome.Action != core.ActionBuried {
-			err = errors.New(outcome.Detail)
-		}
-		if err != nil {
-			r.Error = err.Error()
-			if errors.Is(err, core.ErrProposalChanged) {
-				r.ErrorCode = core.ErrorCodeProposalChanged
-			}
-		} else {
-			r.Results = []core.Result{{Ref: outcome.Path, Item: &outcome.Item}}
-			r.QuotaEviction = outcome.QuotaEviction
-		}
-		return true
-	}
-	if p.Kind == core.ProposalWatch {
-		err := e.Svc.ApproveWatch(p)
-		if err == nil {
-			err = e.Svc.ResolveProposal(p, nil)
-		}
-		if err != nil {
-			r.Error = err.Error()
-			if errors.Is(err, core.ErrProposalChanged) {
-				r.ErrorCode = core.ErrorCodeProposalChanged
-			}
-		}
-		return true
-	}
-	if p.Kind == core.ProposalGraveyardQuota {
+func (e *Engine) approveWatchProposal(p ledger.Proposal, r *lifecycle.ProposalResult) bool {
+	switch p.Kind {
+	case ledger.ProposalWatchBurial:
+		e.approveWatchBurialProposal(p, r)
+	case ledger.ProposalWatch:
+		e.approveWatchPolicyProposal(p, r)
+	case ledger.ProposalGraveyardQuota:
 		e.approveQuotaProposal(p, r)
-		return true
+	default:
+		return false
 	}
-	return false
+	return true
 }
 
-func (e *Engine) approveQuotaProposal(p core.Proposal, r *core.ProposalResult) {
-	outcome, err := e.Svc.ApproveQuotaProposal(p)
-	if err == nil && outcome.Action != core.ActionBuried && outcome.Action != core.ActionRecycled {
+func (e *Engine) approveWatchBurialProposal(p ledger.Proposal, r *lifecycle.ProposalResult) {
+	outcome, err := e.Svc.ApproveWatchBurial(p)
+	if err == nil && outcome.Action != ledger.ActionBuried {
 		err = errors.New(outcome.Detail)
 	}
 	if err != nil {
 		r.Error = err.Error()
-		if errors.Is(err, core.ErrProposalChanged) {
-			r.ErrorCode = core.ErrorCodeProposalChanged
+		if errors.Is(err, lifecycle.ErrProposalChanged) {
+			r.ErrorCode = lifecycle.ErrorCodeProposalChanged
 		}
 		return
 	}
-	r.Results = []core.Result{{Ref: outcome.Path, Item: &outcome.Item}}
+	r.Results = []lifecycle.Result{{Ref: outcome.Path, Item: &outcome.Item}}
 	r.QuotaEviction = outcome.QuotaEviction
 }
 
-func (e *Engine) approveCandidates(p core.Proposal, located locations, class string) ([]core.Result, []core.Candidate, error) {
-	var out []core.Result
-	var pending []core.Candidate
+func (e *Engine) approveWatchPolicyProposal(p ledger.Proposal, r *lifecycle.ProposalResult) {
+	err := e.Svc.ApproveWatch(p)
+	if err == nil {
+		err = e.Svc.ResolveProposal(p, nil)
+	}
+	if err != nil {
+		r.Error = err.Error()
+		if errors.Is(err, lifecycle.ErrProposalChanged) {
+			r.ErrorCode = lifecycle.ErrorCodeProposalChanged
+		}
+	}
+}
+
+func (e *Engine) approveQuotaProposal(p ledger.Proposal, r *lifecycle.ProposalResult) {
+	outcome, err := e.Svc.ApproveQuotaProposal(p)
+	if err == nil && outcome.Action != ledger.ActionBuried && outcome.Action != ledger.ActionRecycled {
+		err = errors.New(outcome.Detail)
+	}
+	if err != nil {
+		r.Error = err.Error()
+		if errors.Is(err, lifecycle.ErrProposalChanged) {
+			r.ErrorCode = lifecycle.ErrorCodeProposalChanged
+		}
+		return
+	}
+	r.Results = []lifecycle.Result{{Ref: outcome.Path, Item: &outcome.Item}}
+	r.QuotaEviction = outcome.QuotaEviction
+}
+
+func (e *Engine) approveCandidates(p ledger.Proposal, located locations, class string) ([]lifecycle.Result, []ledger.Candidate, error) {
+	var out []lifecycle.Result
+	var pending []ledger.Candidate
 	var auditErr, retryErr error
 	for _, c := range p.Candidates {
 		results, retry, err := e.approveCandidate(p, c, located, class)
@@ -254,7 +264,7 @@ func (e *Engine) approveCandidates(p core.Proposal, located locations, class str
 		if retry {
 			pending = append(pending, c)
 		}
-		if core.HasAuditWarning(err) {
+		if ledger.HasAuditWarning(err) {
 			auditErr = err
 		} else if err != nil {
 			retryErr = errors.Join(retryErr, err)
@@ -266,27 +276,27 @@ func (e *Engine) approveCandidates(p core.Proposal, located locations, class str
 	return out, pending, auditErr
 }
 
-func (e *Engine) approveCandidate(p core.Proposal, c core.Candidate, located locations, class string) ([]core.Result, bool, error) {
-	if c.Kind == core.KindContainer {
+func (e *Engine) approveCandidate(p ledger.Proposal, c ledger.Candidate, located locations, class string) ([]lifecycle.Result, bool, error) {
+	if c.Kind == ledger.KindContainer {
 		return e.approveContainer(p, c, class)
 	}
-	res := core.Result{Ref: c.Path}
+	res := lifecycle.Result{Ref: c.Path}
 	reason, vetErr := e.vetCandidate(p, c, located)
 	if err := e.checkApprovalRules(p.Project); err != nil {
 		res.Error, res.Err = err.Error(), err
-		return []core.Result{res}, true, err
+		return []lifecycle.Result{res}, true, err
 	}
 	if err := vetErr; err != nil {
 		res.Error = err.Error()
-		return []core.Result{res}, true, err
+		return []lifecycle.Result{res}, true, err
 	} else if reason != "" {
 		res.Error = reason
-		return []core.Result{res}, false, nil
+		return []lifecycle.Result{res}, false, nil
 	}
-	lifespan, err := core.ParseDuration(c.Lifespan)
+	lifespan, err := corelifespan.ParseDuration(c.Lifespan)
 	if err != nil {
 		res.Error = err.Error()
-		return []core.Result{res}, false, nil
+		return []lifecycle.Result{res}, false, nil
 	}
 	note := fmt.Sprintf("approved #%d", p.ID)
 	if class != "" {
@@ -295,21 +305,21 @@ func (e *Engine) approveCandidate(p core.Proposal, c core.Candidate, located loc
 	if c.Rule != "" {
 		note += " (rule " + c.Rule + ")"
 	}
-	results, err := e.Svc.Add([]string{c.Path}, core.AddOptions{
-		ExpiresAt: e.now().Add(lifespan), Source: "proposal", Project: p.Project, Session: core.NormalizeSession(p.Session), Note: note, OnlyNew: true,
+	results, err := e.Svc.Add([]string{c.Path}, lifecycle.AddOptions{
+		ExpiresAt: e.now().Add(lifespan), Source: "proposal", Project: p.Project, Session: lifecycle.NormalizeSession(p.Session), Note: note, OnlyNew: true,
 		AutoClass:    class,
 		BeforeCommit: func() error { return e.checkApprovalRules(p.Project) },
 	})
-	if err != nil && !core.HasAuditWarning(err) {
+	if err != nil && !ledger.HasAuditWarning(err) {
 		res.Error = err.Error()
-		return []core.Result{res}, true, err
+		return []lifecycle.Result{res}, true, err
 	}
 	retry := false
-	if core.Failed(results) {
+	if lifecycle.Failed(results) {
 		// Only definitive inspection failures settle a candidate.
-		var refused *core.RefusedError
+		var refused *guard.RefusedError
 		cause := results[0].Err
-		retry = !errors.As(cause, &refused) && !errors.Is(cause, core.ErrUnsafe) && !errors.Is(cause, core.ErrNotFound)
+		retry = !errors.As(cause, &refused) && !errors.Is(cause, corefs.ErrUnsafe) && !errors.Is(cause, corefs.ErrNotFound)
 	}
 	return results, retry, err
 }
@@ -331,7 +341,7 @@ func (e *Engine) checkApprovalRules(root string) error {
 	return nil
 }
 
-func (e *Engine) vetCandidate(p core.Proposal, c core.Candidate, located locations) (string, error) {
+func (e *Engine) vetCandidate(p ledger.Proposal, c ledger.Candidate, located locations) (string, error) {
 	info, err := os.Lstat(c.Path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -341,7 +351,7 @@ func (e *Engine) vetCandidate(p core.Proposal, c core.Candidate, located locatio
 	}
 	real, err := e.Svc.FS.RealPath(c.Path)
 	if err != nil {
-		if errors.Is(err, core.ErrUnsafe) {
+		if errors.Is(err, corefs.ErrUnsafe) {
 			return err.Error(), nil
 		}
 		return "", fmt.Errorf("could not resolve its real location: %w", err)
@@ -362,7 +372,7 @@ func (e *Engine) vetCandidate(p core.Proposal, c core.Candidate, located locatio
 		return "", fmt.Errorf("could not check protection rules: %w", err)
 	}
 	if protected {
-		return core.ErrProtected.Error(), nil
+		return lifecycle.ErrProtected.Error(), nil
 	}
 	state, err := e.Svc.Store.ReadHot()
 	if err != nil {

@@ -7,7 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/docker"
 )
 
@@ -24,9 +25,9 @@ func (d *proposalDocker) ListIDs(context.Context) ([]string, error) {
 
 func TestProposalViewsReportLiveDockerAvailability(t *testing.T) {
 	d := &proposalDocker{err: docker.ErrUnavailable}
-	svc := &core.Service{Docker: d}
+	svc := &lifecycle.Service{Docker: d}
 	id := &docker.Identity{ID: strings.Repeat("a", 64)}
-	proposals := []core.Proposal{{ID: 1, Candidates: []core.Candidate{{Kind: core.KindContainer, Container: id}}}, {ID: 2, Candidates: []core.Candidate{{Kind: core.KindContainer, Container: id}}}}
+	proposals := []ledger.Proposal{{ID: 1, Candidates: []ledger.Candidate{{Kind: ledger.KindContainer, Container: id}}}, {ID: 2, Candidates: []ledger.Candidate{{Kind: ledger.KindContainer, Container: id}}}}
 	for _, tc := range []struct {
 		err     error
 		blocked string

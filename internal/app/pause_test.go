@@ -8,7 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
@@ -18,8 +19,8 @@ func TestPauseAppliesToOnceAndResumesExpiredItem(t *testing.T) {
 	if err := os.WriteFile(path, []byte("keep until resumed"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	svc := &core.Service{Store: core.Store{Home: home}, FS: winfs.FS{}, Now: func() time.Time { return time.Now().Add(-time.Hour) }}
-	if _, err := svc.Add([]string{path}, core.AddOptions{ExpiresAt: time.Now().Add(-time.Minute)}); err != nil {
+	svc := &lifecycle.Service{Store: ledger.Store{Home: home}, FS: winfs.FS{}, Now: func() time.Time { return time.Now().Add(-time.Hour) }}
+	if _, err := svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(-time.Minute)}); err != nil {
 		t.Fatal(err)
 	}
 	svc.Now = time.Now

@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 func TestMCPStdioProtocol(t *testing.T) {
@@ -95,7 +95,7 @@ func TestMCPStdioProtocol(t *testing.T) {
 	}
 	path := filepath.Join(repo, "stdio.log")
 	writeFixture(t, path, "stdio round trip")
-	var added struct{ Results []core.Result }
+	var added struct{ Results []lifecycle.Result }
 	call("obit_mark", map[string]any{"paths": []string{path}, "lifespan": "1d"}, false, &added)
 	if len(added.Results) != 1 || added.Results[0].Item == nil {
 		t.Fatalf("mark: %+v", added)

@@ -7,7 +7,8 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/config"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
@@ -31,13 +32,13 @@ func TestMigrationTurnsAutomaticRegistrationOffOnce(t *testing.T) {
 	}
 	write(path, "[proposals]\nmode = \"tiered\"\n")
 	root := filepath.Join(dir, "repo")
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(dir, "data")}, FS: winfs.FS{}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(dir, "data")}, FS: winfs.FS{}}
 	add := func(rel, source string) {
 		t.Helper()
 		p := filepath.Join(root, rel)
 		write(filepath.Join(p, "x"), "x")
-		rows, err := svc.Add([]string{p}, core.AddOptions{ExpiresAt: time.Now().Add(24 * time.Hour), Source: source, Project: root})
-		if err != nil || core.Failed(rows) {
+		rows, err := svc.Add([]string{p}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(24 * time.Hour), Source: source, Project: root})
+		if err != nil || lifecycle.Failed(rows) {
 			t.Fatalf("add %s: %v %+v", rel, err, rows)
 		}
 	}

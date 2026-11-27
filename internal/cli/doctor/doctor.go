@@ -17,8 +17,8 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	initcmd "github.com/woodfishhhh/obituary/internal/cli/init"
 	"github.com/woodfishhhh/obituary/internal/config"
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/hook"
 	"github.com/woodfishhhh/obituary/internal/integrate"
 	"github.com/woodfishhhh/obituary/internal/project"
@@ -253,7 +253,7 @@ func (lang diagnostics) diagnose(now time.Time, executable cmdutil.Executable, a
 		checks = append(checks, lang.diagnoseData(home))
 		state, err := (ledger.Store{Home: home}).Inspect()
 		check("store", lang.Text("cli.doctor.store_json_and_its_referenced_graveyard_snapshot", nil), err)
-		checks = append(checks, lang.diagnoseWatches(state, err, now, (&core.Service{FS: winfs.FS{}}).WatchPath))
+		checks = append(checks, lang.diagnoseWatches(state, err, now, (&lifecycle.Service{FS: winfs.FS{}}).WatchPath))
 		if err == nil {
 			checks = append(checks, lang.diagnoseDockerTargets(state))
 		} else {
@@ -325,7 +325,7 @@ func (lang diagnostics) diagnoseCodexWindowsShell() DoctorCheck {
 
 func (lang diagnostics) diagnoseRecovery(home string) DoctorCheck {
 	c := DoctorCheck{Name: "graveyard-recovery", Status: "PASS"}
-	pending, err := (&core.Service{Store: ledger.Store{Home: home}, FS: winfs.FS{}}).PendingGraves()
+	pending, err := (&lifecycle.Service{Store: ledger.Store{Home: home}, FS: winfs.FS{}}).PendingGraves()
 	c.Detail = fmt.Sprintf(lang.Text("cli.doctor.graveyard_records_need_attention", nil), len(pending))
 	if len(pending) > 0 || err != nil {
 		c.Status = "WARN"

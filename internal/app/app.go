@@ -8,7 +8,8 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/auto"
 	"github.com/woodfishhhh/obituary/internal/config"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/docker"
 	"github.com/woodfishhhh/obituary/internal/integrate"
 	"github.com/woodfishhhh/obituary/internal/rules"
@@ -18,7 +19,7 @@ import (
 )
 
 // Open builds the service for the current user's data directory.
-func Open() (*core.Service, error) {
+func Open() (*lifecycle.Service, error) {
 	home, err := userdirs.Data()
 	if err != nil {
 		return nil, err
@@ -27,9 +28,9 @@ func Open() (*core.Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	svc := &core.Service{
+	svc := &lifecycle.Service{
 		Docker: docker.CLI{},
-		Store:  core.Store{Home: home}, Guard: Guard(home), FS: winfs.FS{},
+		Store:  ledger.Store{Home: home}, Guard: Guard(home), FS: winfs.FS{},
 		Mode: cfg.Graveyard.Mode, Retention: cfg.Graveyard.Retention(), GraveyardMaxBytes: cfg.Graveyard.MaxBytes(),
 		WatchStableWindow: cfg.Watch.Stability(), WatchFileProposals: cfg.Watch.FileExpiry == "propose", SessionSummary: cfg.Hooks.SessionSummary,
 		SessionCleanup: cfg.Hooks.SessionCleanup, ProposalMode: cfg.Proposals.Mode,
@@ -42,14 +43,14 @@ func Open() (*core.Service, error) {
 
 // Engine wraps the service with rule-based registration; trusted project
 // rules are pinned in the data directory so edits require renewed consent.
-func Engine(svc *core.Service) *auto.Engine {
+func Engine(svc *lifecycle.Service) *auto.Engine {
 	return &auto.Engine{Svc: svc, Trust: rules.TrustStore{Path: filepath.Join(svc.Store.Home, "trusted_rules.json")}}
 }
 
 // Configured takes one fresh configuration snapshot, as long-lived processes
 // (resident, MCP, GUI) can outlive a configuration edit, without mutating the
 // shared service. A malformed configuration stops the work.
-func Configured(svc *core.Service) (*core.Service, config.Config, error) {
+func Configured(svc *lifecycle.Service) (*lifecycle.Service, config.Config, error) {
 	cfg, err := config.Load()
 	if err != nil {
 		return nil, cfg, err
@@ -65,7 +66,7 @@ func Configured(svc *core.Service) (*core.Service, config.Config, error) {
 	return svc, cfg, nil
 }
 
-func currentGraveyardMaxBytes(svc *core.Service) int64 {
+func currentGraveyardMaxBytes(svc *lifecycle.Service) int64 {
 	if cfg, err := config.Load(); err == nil {
 		return cfg.Graveyard.MaxBytes()
 	}
@@ -74,7 +75,7 @@ func currentGraveyardMaxBytes(svc *core.Service) int64 {
 
 // ReplayObservations absorbs the writes hooks queued while the ledger was
 // busy, without the rest of a tick.
-func ReplayObservations(svc *core.Service) error {
+func ReplayObservations(svc *lifecycle.Service) error {
 	svc, _, err := Configured(svc)
 	if err != nil {
 		return err
@@ -83,7 +84,7 @@ func ReplayObservations(svc *core.Service) error {
 }
 
 // Tick drains hook writes before reaping, in both resident and one-shot runs.
-func Tick(svc *core.Service) ([]core.Outcome, []core.GraveResult, error) {
+func Tick(svc *lifecycle.Service) ([]lifecycle.Outcome, []lifecycle.GraveResult, error) {
 	paused, err := Paused(svc.Store.Home)
 	if err != nil || paused {
 		return nil, nil, err
@@ -107,11 +108,11 @@ func Tick(svc *core.Service) ([]core.Outcome, []core.GraveResult, error) {
 	proposalErr := Engine(svc).RefreshProposals()
 	watchErr := watch.Reconcile(svc)
 	outcomes, purged, err := svc.Tick()
-	if errors.Is(err, core.ErrSweepBusy) {
+	if errors.Is(err, lifecycle.ErrSweepBusy) {
 		err = nil // another worker owns this round; callers must not log an error
 	}
 	vanished, vanishedErr := svc.SettleVanished()
-	if errors.Is(vanishedErr, core.ErrSweepBusy) {
+	if errors.Is(vanishedErr, lifecycle.ErrSweepBusy) {
 		vanishedErr = nil
 	}
 	outcomes = append(outcomes, vanished...)

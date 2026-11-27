@@ -17,7 +17,8 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	extendcmd "github.com/woodfishhhh/obituary/internal/cli/extend"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 func TestBuriedChildCommandsFailWithAdviceInTextAndJSON(t *testing.T) {
@@ -38,12 +39,12 @@ func TestBuriedChildCommandsFailWithAdviceInTextAndJSON(t *testing.T) {
 				}
 				now := time.Now()
 				svc.Now = func() time.Time { return now }
-				added, err := svc.Add([]string{filepath.Dir(path), path}, core.AddOptions{ExpiresAt: now.Add(time.Hour)})
-				if err != nil || core.Failed(added) {
+				added, err := svc.Add([]string{filepath.Dir(path), path}, lifecycle.AddOptions{ExpiresAt: now.Add(time.Hour)})
+				if err != nil || lifecycle.Failed(added) {
 					t.Fatalf("add: %+v %v", added, err)
 				}
 				now = now.Add(time.Hour)
-				if rows, err := svc.Bury([]string{filepath.Dir(path)}, false, ""); err != nil || core.GraveFailed(rows) {
+				if rows, err := svc.Bury([]string{filepath.Dir(path)}, false, ""); err != nil || lifecycle.GraveFailed(rows) {
 					t.Fatalf("bury: %+v %v", rows, err)
 				}
 				var cmd *cobra.Command
@@ -63,8 +64,8 @@ func TestBuriedChildCommandsFailWithAdviceInTextAndJSON(t *testing.T) {
 					t.Fatalf("missing nonzero failure/advice: %s %s %v", out, stderr, err)
 				}
 				if asJSON {
-					var rows []core.Result
-					if err := json.Unmarshal([]byte(out), &rows); err != nil || !core.Failed(rows) {
+					var rows []lifecycle.Result
+					if err := json.Unmarshal([]byte(out), &rows); err != nil || !lifecycle.Failed(rows) {
 						t.Fatalf("JSON error: %s %v", out, err)
 					}
 				}
@@ -139,7 +140,7 @@ func TestPathCommandsSelectCurrentObject(t *testing.T) {
 				t.Error("renamed object has no moved audit event")
 			}
 			// Also exercise a ledger written by the previous version.
-			if err := store.Update(func(st *core.State) error { st.Items[st.Index(old.ID)].Path = path; return nil }); err != nil {
+			if err := store.Update(func(st *ledger.State) error { st.Items[st.Index(old.ID)].Path = path; return nil }); err != nil {
 				t.Fatal(err)
 			}
 			cmd, args := NewCmd(), []string{path}
@@ -221,9 +222,9 @@ func TestMissingPathReferenceRejectsAmbiguity(t *testing.T) {
 			clitest.IsolateRunner(t)
 			repo, store := clitest.CommandDir(t)
 			path := filepath.Join(repo, "absent.log")
-			if err := store.Update(func(st *core.State) error {
+			if err := store.Update(func(st *ledger.State) error {
 				for range 2 {
-					st.Items = append(st.Items, core.Item{ID: st.NextID, Rev: 1, Path: path})
+					st.Items = append(st.Items, ledger.Item{ID: st.NextID, Rev: 1, Path: path})
 					st.NextID++
 				}
 				return nil
@@ -287,8 +288,8 @@ func TestPathCommandsIgnoreVolumeCase(t *testing.T) {
 				}
 				if asJSON {
 					var rows []struct {
-						Item   *core.Item   `json:"item"`
-						Burial *core.Burial `json:"burial"`
+						Item   *ledger.Item   `json:"item"`
+						Burial *ledger.Burial `json:"burial"`
 					}
 					if err := json.Unmarshal([]byte(out), &rows); err != nil || len(rows) != 1 {
 						t.Fatalf("JSON: %q, %v", out, err)
@@ -349,7 +350,7 @@ func TestRenamedPathCommandsReportCurrentPath(t *testing.T) {
 					t.Fatal(err)
 				}
 				if asJSON {
-					var rows []core.Result
+					var rows []lifecycle.Result
 					if err := json.Unmarshal([]byte(out), &rows); err != nil || len(rows) != 1 || rows[0].Item == nil || rows[0].Item.Path != current {
 						t.Fatalf("stale JSON path: %s, %v", out, err)
 					}

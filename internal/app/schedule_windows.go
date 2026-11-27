@@ -15,7 +15,7 @@ import (
 	"time"
 	"unicode/utf16"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
 	"golang.org/x/sys/windows"
 )
@@ -160,7 +160,7 @@ func installScheduleFor(daemon, home string) error {
 	if !generatedFallback(actual, daemon, home, config) || taskStartBoundary(actual) != taskStartBoundary(text) {
 		return fmt.Errorf("scheduled task %q changed during registration; not adopting it", TaskName)
 	}
-	return core.WriteMetadata(filepath.Join(home, fallbackReceipt), []byte(actual))
+	return lifecycle.WriteMetadata(filepath.Join(home, fallbackReceipt), []byte(actual))
 }
 
 func migrateExistingSchedule(current, daemon, home, config string) error {
@@ -179,7 +179,7 @@ func migrateExistingSchedule(current, daemon, home, config string) error {
 		return err
 	}
 	if generatedSchedule(current, daemon, home, config, desired) {
-		return core.WriteMetadata(filepath.Join(home, fallbackReceipt), []byte(current))
+		return lifecycle.WriteMetadata(filepath.Join(home, fallbackReceipt), []byte(current))
 	}
 	u, err := user.Current()
 	if err != nil {
@@ -198,7 +198,7 @@ func migrateExistingSchedule(current, daemon, home, config string) error {
 	if !generatedSchedule(actual, daemon, home, config, desired) || taskStartBoundary(actual) != start {
 		return fmt.Errorf("scheduled task %q changed during interval migration; preserved", TaskName)
 	}
-	return core.WriteMetadata(filepath.Join(home, fallbackReceipt), []byte(actual))
+	return lifecycle.WriteMetadata(filepath.Join(home, fallbackReceipt), []byte(actual))
 }
 
 func registerTask(name, text string) error {

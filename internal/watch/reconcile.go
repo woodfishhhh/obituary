@@ -8,26 +8,29 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/guard"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 // Reconcile is the full scan used on every application tick, including --once.
 // Repeated scans refresh stability and modified age while preserving manual extensions.
-func Reconcile(svc *core.Service) error {
+func Reconcile(svc *lifecycle.Service) error {
 	policies, err := svc.Watches()
 	if err != nil {
 		return err
 	}
 	var errs []error
 	for _, p := range policies {
-		if p.Consent == core.ConsentApproved {
+		if p.Consent == ledger.ConsentApproved {
 			errs = append(errs, reconcileFolder(svc, p))
 		}
 	}
 	return errors.Join(errs...)
 }
 
-func reconcileFolder(svc *core.Service, p core.WatchPolicy) error {
+func reconcileFolder(svc *lifecycle.Service, p ledger.WatchPolicy) error {
 	path, err := svc.WatchPath(p)
 	if err != nil {
 		return fmt.Errorf("watch %s: %w", p.Path, err)
@@ -42,8 +45,8 @@ func reconcileFolder(svc *core.Service, p core.WatchPolicy) error {
 			return errors.Join(append(errs, err)...)
 		}
 		err := svc.RegisterWatchChild(p, filepath.Join(path, child.Name()))
-		var refused *core.RefusedError
-		if errors.As(err, &refused) || errors.Is(err, core.ErrNotFound) || errors.Is(err, core.ErrUnsafe) || errors.Is(err, core.ErrProtected) {
+		var refused *guard.RefusedError
+		if errors.As(err, &refused) || errors.Is(err, corefs.ErrNotFound) || errors.Is(err, corefs.ErrUnsafe) || errors.Is(err, lifecycle.ErrProtected) {
 			continue // definite refusals are not retryable scan failures
 		}
 		if err != nil {

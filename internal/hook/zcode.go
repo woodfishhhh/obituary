@@ -8,7 +8,7 @@ import (
 	"reflect"
 
 	"github.com/woodfishhhh/obituary/internal/agentid"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 )
 
@@ -76,7 +76,7 @@ func (zcodeAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
 		return Event{}, ErrSkip // Includes failed tools and the nonexistent SessionEnd.
 	}
 	if in.SessionID != "" {
-		ev.Session = core.NormalizeSession(agentid.ZCode + ":" + in.SessionID)
+		ev.Session = lifecycle.NormalizeSession(agentid.ZCode + ":" + in.SessionID)
 	}
 	if ev.Name == "PreToolUse" {
 		if in.ToolName == "Bash" {

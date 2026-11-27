@@ -12,7 +12,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 func droidFixture(t *testing.T, name string) map[string]any {
@@ -107,7 +107,7 @@ func TestDroidLifecycleAndReplies(t *testing.T) {
 		in["session_id"] = id
 		raw, _ := json.Marshal(in)
 		ev, err := Decode(a, raw, Invocation{Agent: "droid"})
-		if err != nil || ev.Session != core.NormalizeSession("droid:"+id) {
+		if err != nil || ev.Session != lifecycle.NormalizeSession("droid:"+id) {
 			t.Fatalf("%+v %v", ev, err)
 		}
 		data, _ := a.Encode(ev, Result{Deny: true, Reason: "no", Context: strings.Repeat("中", 2000)})

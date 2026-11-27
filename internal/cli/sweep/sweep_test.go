@@ -13,7 +13,8 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"golang.org/x/sys/windows"
 )
 
@@ -22,10 +23,10 @@ func TestReapReportsRecoveryInTextAndJSON(t *testing.T) {
 		for _, asJSON := range []bool{false, true} {
 			t.Run(fmt.Sprintf("corrupt=%v/json=%v", corrupt, asJSON), func(t *testing.T) {
 				_, _, p := clitest.PendingCommandBurial(t, false)
-				want := core.ActionBuried
+				want := ledger.ActionBuried
 				if corrupt {
 					clitest.WriteFixture(t, p.Manifest, "{broken")
-					want = core.ActionBlocked
+					want = ledger.ActionBlocked
 				}
 				var args []string
 				if asJSON {
@@ -36,7 +37,7 @@ func TestReapReportsRecoveryInTextAndJSON(t *testing.T) {
 					t.Fatalf("wrong recovery receipt/status: %s, %v", out, err)
 				}
 				if asJSON {
-					var rows []core.Outcome
+					var rows []lifecycle.Outcome
 					if json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 1 || rows[0].Action != want || rows[0].Item.ID != p.Burial.ID || rows[0].Detail == "" {
 						t.Fatalf("JSON missing recovery details: %s", out)
 					}
@@ -63,7 +64,7 @@ func TestReapReportsRecoveryPending(t *testing.T) {
 			path := filepath.Join(repo, "payload.txt")
 			clitest.WriteFixture(t, path, "keep")
 			now := time.Now()
-			if rows, err := svc.Add([]string{path}, core.AddOptions{ExpiresAt: now.Add(time.Hour)}); err != nil || core.Failed(rows) {
+			if rows, err := svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: now.Add(time.Hour)}); err != nil || lifecycle.Failed(rows) {
 				t.Fatalf("add: %+v %v", rows, err)
 			}
 			svc.Now = func() time.Time { return now.Add(2 * time.Hour) }
@@ -84,19 +85,19 @@ func TestReapReportsRecoveryPending(t *testing.T) {
 				}
 			}()
 			previous := cmdutil.Open
-			cmdutil.Open = func() (*core.Service, error) { return svc, nil }
+			cmdutil.Open = func() (*lifecycle.Service, error) { return svc, nil }
 			t.Cleanup(func() { cmdutil.Open = previous })
 			args := []string{}
 			if format == "json" {
 				args = append(args, "--json")
 			}
 			out, _, err := clitest.Execute(t, NewCmd(), args...)
-			if err == nil || !strings.Contains(out, core.ActionRecoveryPending) || !strings.Contains(out, "obit reap") {
+			if err == nil || !strings.Contains(out, ledger.ActionRecoveryPending) || !strings.Contains(out, "obit reap") {
 				t.Fatalf("reap omitted recovery receipt: %s %v", out, err)
 			}
 			if format == "json" {
-				var rows []core.Outcome
-				if err := json.Unmarshal([]byte(out), &rows); err != nil || len(rows) != 1 || rows[0].Action != core.ActionRecoveryPending || rows[0].Grave == "" {
+				var rows []lifecycle.Outcome
+				if err := json.Unmarshal([]byte(out), &rows); err != nil || len(rows) != 1 || rows[0].Action != ledger.ActionRecoveryPending || rows[0].Grave == "" {
 					t.Fatalf("pending JSON: %s %v", out, err)
 				}
 				if data, err := os.ReadFile(rows[0].Grave); err != nil || string(data) != "keep" {
@@ -114,7 +115,7 @@ func TestReapRefreshesProposalsExceptDryRun(t *testing.T) {
 		t.Skip("requires a real Git repository or child process")
 	}
 	root, store := clitest.CommandRepo(t)
-	clitest.AddProposal(t, store, root, core.Candidate{Path: filepath.Join(root, "gone.txt"), Lifespan: "1d"})
+	clitest.AddProposal(t, store, root, ledger.Candidate{Path: filepath.Join(root, "gone.txt"), Lifespan: "1d"})
 	if _, _, err := clitest.Execute(t, NewCmd(), "--dry-run"); err != nil {
 		t.Fatal(err)
 	}

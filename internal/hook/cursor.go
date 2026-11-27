@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 // cursor.com/docs/hooks documents the flat event envelope. Responses use the
@@ -61,7 +61,7 @@ func (cursorAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
 		return Event{}, ErrSkip
 	}
 	if in.Conversation != "" {
-		ev.Session = core.NormalizeSession("cursor:" + in.Conversation)
+		ev.Session = lifecycle.NormalizeSession("cursor:" + in.Conversation)
 	}
 	if ev.Name == "PreToolUse" {
 		return ev, nil

@@ -9,7 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 func TestReplayKeepsCurrentRegistrationGates(t *testing.T) {
@@ -20,8 +21,8 @@ func TestReplayKeepsCurrentRegistrationGates(t *testing.T) {
 		t.Run(gate, func(t *testing.T) {
 			r := newRepo(t)
 			path := r.write("debug.log", "artifact")
-			if err := r.engine.Svc.Store.Update(func(st *core.State) error {
-				st.Projects = map[string]core.ProjectState{core.ProjectKey(r.root): {Consent: core.ConsentApproved}}
+			if err := r.engine.Svc.Store.Update(func(st *ledger.State) error {
+				st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(r.root): {Consent: ledger.ConsentApproved}}
 				return nil
 			}); err != nil {
 				t.Fatal(err)
@@ -56,7 +57,7 @@ func TestReplayExhaustedRequestRetriesDeadLetterOnly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rows[0].Attempts = core.ObservationMaxAttempts
+	rows[0].Attempts = ledger.ObservationMaxAttempts
 	if err := r.engine.Svc.Store.DeferObservations(rows); err != nil {
 		t.Fatal(err)
 	}
@@ -88,8 +89,8 @@ func prepareReplayGate(t *testing.T, r *repo, path, gate string) {
 	case "tracked":
 		r.git("add", "-f", "--", path)
 	case "declined":
-		if err := r.engine.Svc.Store.Update(func(st *core.State) error {
-			st.Projects[core.ProjectKey(r.root)] = core.ProjectState{Consent: core.ConsentDeclined}
+		if err := r.engine.Svc.Store.Update(func(st *ledger.State) error {
+			st.Projects[ledger.ProjectKey(r.root)] = ledger.ProjectState{Consent: ledger.ConsentDeclined}
 			return nil
 		}); err != nil {
 			t.Fatal(err)
@@ -108,7 +109,7 @@ func prepareReplayGate(t *testing.T, r *repo, path, gate string) {
 		}
 		r.write("debug.log", "replacement")
 	case "kept", "conflict":
-		items, err := r.engine.Svc.Add([]string{path}, core.AddOptions{ExpiresAt: time.Now().Add(30 * 24 * time.Hour)})
+		items, err := r.engine.Svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(30 * 24 * time.Hour)})
 		if err != nil || len(items) != 1 || items[0].Item == nil {
 			t.Fatal(items, err)
 		}
@@ -425,8 +426,8 @@ func TestReplayFailureDoesNotBlockOtherObservationsOrLeftovers(t *testing.T) {
 	}
 	good := r.write("good.log", "register")
 	r.write("test-results/report.html", "x")
-	if err := r.engine.Svc.Store.Update(func(st *core.State) error {
-		st.Projects = map[string]core.ProjectState{core.ProjectKey(r.root): {Consent: core.ConsentApproved}}
+	if err := r.engine.Svc.Store.Update(func(st *ledger.State) error {
+		st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(r.root): {Consent: ledger.ConsentApproved}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -470,7 +471,7 @@ func TestFinishStillComputesLeftoversWhenQueueUnreadable(t *testing.T) {
 		t.Fatal(err)
 	}
 	notices, err := r.engine.Finish(r.root, "s")
-	if err != nil || len(notices) != 1 || notices[0].Proposal.Kind != core.ProposalOnboard {
+	if err != nil || len(notices) != 1 || notices[0].Proposal.Kind != ledger.ProposalOnboard {
 		t.Fatalf("queue error prevented leftovers: %+v %v", notices, err)
 	}
 }

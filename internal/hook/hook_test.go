@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/rules"
 )
 
@@ -58,7 +58,7 @@ func TestIsErrorLogLineConservativelyFiltersDiscoveryDenials(t *testing.T) {
 func TestSessionRulesPauseDoesNotExposeContent(t *testing.T) {
 	for _, body := range []string{"[PRIVATE_RULE_TOKEN_83917 2h\n", "name EXTERNAL_PRIVATE_TOKEN_83917\n"} {
 		root := t.TempDir()
-		svc := &core.Service{Store: core.Store{Home: filepath.Join(t.TempDir(), "data")}}
+		svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(t.TempDir(), "data")}}
 		if err := os.WriteFile(filepath.Join(root, rules.FileName), []byte(body), 0600); err != nil {
 			t.Fatal(err)
 		}
@@ -73,7 +73,7 @@ func TestSessionRulesPauseDoesNotExposeContent(t *testing.T) {
 
 func TestSessionMissingTrustedRulesPause(t *testing.T) {
 	root := t.TempDir()
-	svc := &core.Service{Store: core.Store{Home: t.TempDir()}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}}
 	path := filepath.Join(root, rules.FileName)
 	if err := os.WriteFile(path, []byte("*.log off\n"), 0600); err != nil {
 		t.Fatal(err)
@@ -95,13 +95,13 @@ func TestSessionMissingTrustedRulesPause(t *testing.T) {
 // By default expiring and buried items are announced only when a tool call
 // touches them; the session start stays quiet to save the agent's tokens.
 func TestSessionStartDoesNotListExpiringOrBuriedItems(t *testing.T) {
-	for _, mode := range []string{core.ModeGraveyard, core.ModeRecycle} {
+	for _, mode := range []string{lifecycle.ModeGraveyard, lifecycle.ModeRecycle} {
 		t.Run(mode, func(t *testing.T) {
 			root := t.TempDir()
-			svc := &core.Service{Store: core.Store{Home: filepath.Join(root, "data")}, Mode: mode}
-			if err := svc.Store.Update(func(st *core.State) error {
-				st.Items = []core.Item{{ID: 1, Project: root, Path: filepath.Join(root, "due.log"), ExpiresAt: time.Now().Add(-time.Hour)}}
-				st.Burials = []core.Burial{{ID: 2, Project: root, Path: filepath.Join(root, "old.log"), BuriedAt: time.Now().Add(-time.Hour), PurgeAt: time.Now().Add(time.Hour)}}
+			svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(root, "data")}, Mode: mode}
+			if err := svc.Store.Update(func(st *ledger.State) error {
+				st.Items = []ledger.Item{{ID: 1, Project: root, Path: filepath.Join(root, "due.log"), ExpiresAt: time.Now().Add(-time.Hour)}}
+				st.Burials = []ledger.Burial{{ID: 2, Project: root, Path: filepath.Join(root, "old.log"), BuriedAt: time.Now().Add(-time.Hour), PurgeAt: time.Now().Add(time.Hour)}}
 				return nil
 			}); err != nil {
 				t.Fatal(err)
@@ -116,13 +116,13 @@ func TestSessionStartDoesNotListExpiringOrBuriedItems(t *testing.T) {
 
 func TestSessionExpiryWording(t *testing.T) {
 	for _, n := range []int{1, 2} {
-		for _, mode := range []string{core.ModeGraveyard, core.ModeRecycle} {
+		for _, mode := range []string{lifecycle.ModeGraveyard, lifecycle.ModeRecycle} {
 			t.Run(fmt.Sprintf("%d/%s", n, mode), func(t *testing.T) {
 				root := t.TempDir()
-				svc := &core.Service{Store: core.Store{Home: filepath.Join(root, "data")}, Mode: mode, SessionSummary: true}
-				if err := svc.Store.Update(func(st *core.State) error {
+				svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(root, "data")}, Mode: mode, SessionSummary: true}
+				if err := svc.Store.Update(func(st *ledger.State) error {
 					for i := range n {
-						st.Items = append(st.Items, core.Item{ID: int64(i + 1), Project: root, Path: filepath.Join(root, fmt.Sprintf("%d.log", i)), ExpiresAt: time.Now().Add(-time.Hour)})
+						st.Items = append(st.Items, ledger.Item{ID: int64(i + 1), Project: root, Path: filepath.Join(root, fmt.Sprintf("%d.log", i)), ExpiresAt: time.Now().Add(-time.Hour)})
 					}
 					return nil
 				}); err != nil {
@@ -137,7 +137,7 @@ func TestSessionExpiryWording(t *testing.T) {
 				if err != nil || !strings.Contains(text, want) || !strings.Contains(text, "(due)") || strings.Contains(text, "in due") {
 					t.Fatalf("context = %s, %v", text, err)
 				}
-				if mode == core.ModeRecycle && (!strings.Contains(text, "restore from the Recycle Bin") || strings.Contains(text, "obit resurrect")) {
+				if mode == lifecycle.ModeRecycle && (!strings.Contains(text, "restore from the Recycle Bin") || strings.Contains(text, "obit resurrect")) {
 					t.Fatal("wrong recovery advice", text)
 				}
 			})
@@ -149,10 +149,10 @@ func TestSessionExpiryWording(t *testing.T) {
 // path. Active mktemp scratch directories are left out (dogfood round 4).
 func TestSessionSummaryAttributesExplicitItemsAndSkipsScratch(t *testing.T) {
 	root := t.TempDir()
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(root, "data")}, SessionSummary: true}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(root, "data")}, SessionSummary: true}
 	soon := time.Now().Add(2 * time.Hour)
-	if err := svc.Store.Update(func(st *core.State) error {
-		st.Items = []core.Item{
+	if err := svc.Store.Update(func(st *ledger.State) error {
+		st.Items = []ledger.Item{
 			{ID: 1, Path: filepath.Join(root, "manual.txt"), ExpiresAt: soon, Source: "cli"},
 			{ID: 2, Project: root, Path: filepath.Join(root, ".obit", "tmp", "tmp-1"), IsDir: true, ExpiresAt: soon, Source: "mktemp"},
 			{ID: 3, Path: filepath.Join(filepath.Dir(root), "elsewhere.txt"), ExpiresAt: soon, Source: "cli"},
@@ -177,7 +177,7 @@ func TestSessionContextOmitsMissingProposalCandidatesWithoutGit(t *testing.T) {
 	if err := e.engine.Snapshot(e.root, "s"); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, _, err := e.engine.Svc.Propose(core.ProposalLeftovers, e.root, "s", []core.Candidate{{Path: keep, Lifespan: "1d"}, {Path: gone, Lifespan: "1d"}}); err != nil {
+	if _, _, _, err := e.engine.Svc.Propose(ledger.ProposalLeftovers, e.root, "s", []ledger.Candidate{{Path: keep, Lifespan: "1d"}, {Path: gone, Lifespan: "1d"}}); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.Remove(gone); err != nil {
@@ -254,7 +254,7 @@ func TestSessionStartOnlyAcknowledgesCompleteProposals(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t)
 	for i := 0; i < 9; i++ {
-		_, _, _, err := e.engine.Svc.Propose(core.ProposalLeftovers, e.root, fmt.Sprint(i), []core.Candidate{{Path: e.write(fmt.Sprintf("leftover-%d.txt", i)), Lifespan: "3d"}})
+		_, _, _, err := e.engine.Svc.Propose(ledger.ProposalLeftovers, e.root, fmt.Sprint(i), []ledger.Candidate{{Path: e.write(fmt.Sprintf("leftover-%d.txt", i)), Lifespan: "3d"}})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -290,11 +290,11 @@ func TestSessionStartDeliversOversizedProposalSummary(t *testing.T) {
 	if err := e.engine.Snapshot(e.root, "s"); err != nil {
 		t.Fatal(err)
 	}
-	var candidates []core.Candidate
+	var candidates []ledger.Candidate
 	for i := 0; i < 5; i++ {
-		candidates = append(candidates, core.Candidate{Path: e.write(strings.Repeat("subdirectory/", 45) + fmt.Sprintf("%d.txt", i)), Lifespan: "3d"})
+		candidates = append(candidates, ledger.Candidate{Path: e.write(strings.Repeat("subdirectory/", 45) + fmt.Sprintf("%d.txt", i)), Lifespan: "3d"})
 	}
-	p, _, _, err := e.engine.Svc.Propose(core.ProposalLeftovers, e.root, "previous", candidates)
+	p, _, _, err := e.engine.Svc.Propose(ledger.ProposalLeftovers, e.root, "previous", candidates)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -328,7 +328,7 @@ func TestSessionContextDescribesApprovedPendingCandidates(t *testing.T) {
 		t.Fatal(err)
 	}
 	st := e.state()
-	if len(st.Items) != 1 || len(st.Proposals) != 1 || st.Projects[core.ProjectKey(e.root)].Consent != core.ConsentApproved {
+	if len(st.Items) != 1 || len(st.Proposals) != 1 || st.Projects[ledger.ProjectKey(e.root)].Consent != ledger.ConsentApproved {
 		t.Fatalf("not partially approved: %+v", st)
 	}
 	ctx = e.event(map[string]any{"hook_event_name": "SessionStart"})

@@ -9,7 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/daemonipc"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/listing"
@@ -19,13 +20,13 @@ import (
 // caller's language and format, however it came by the entries.
 func TestResidentPrintsTheListTheCommandWould(t *testing.T) {
 	home := t.TempDir()
-	svc := &core.Service{Store: core.Store{Home: home}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: home}}
 	soon := time.Now().Add(100*time.Hour + 30*time.Second) // far from a change of the remaining-time text
-	if err := svc.Store.Update(func(st *core.State) error {
-		st.Items = []core.Item{
+	if err := svc.Store.Update(func(st *ledger.State) error {
+		st.Items = []ledger.Item{
 			{ID: 1, Path: filepath.Join(home, "plain"), ExpiresAt: soon, Note: "scratch"},
-			{ID: 2, Path: filepath.Join(home, "stuck"), ExpiresAt: soon, Attempts: 12, NextAttempt: core.RetryStopped, LastError: "in use"},
-			{ID: 3, Source: "watch", Path: filepath.Join(home, "watched"), ExpiresAt: soon, Watch: &core.WatchTiming{StableSince: time.Now()}},
+			{ID: 2, Path: filepath.Join(home, "stuck"), ExpiresAt: soon, Attempts: 12, NextAttempt: ledger.RetryStopped, LastError: "in use"},
+			{ID: 3, Source: "watch", Path: filepath.Join(home, "watched"), ExpiresAt: soon, Watch: &ledger.WatchTiming{StableSince: time.Now()}},
 		}
 		return nil
 	}); err != nil {

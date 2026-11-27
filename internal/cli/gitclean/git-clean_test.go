@@ -11,7 +11,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	resurrectcmd "github.com/woodfishhhh/obituary/internal/cli/resurrect"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 )
 
@@ -94,7 +94,7 @@ func TestGitPreviewRaceStaysRestorable(t *testing.T) {
 	old := cmdutil.Open
 	// git-clean opens the service after Git's preview. Another process can
 	// edit and stage the selected path during that gap.
-	cmdutil.Open = func() (*core.Service, error) {
+	cmdutil.Open = func() (*lifecycle.Service, error) {
 		clitest.WriteFixture(t, path, "edited after preview")
 		if out, err := exec.Command("git", "add", "loose").CombinedOutput(); err != nil {
 			t.Fatalf("concurrent git add: %s %v", out, err)

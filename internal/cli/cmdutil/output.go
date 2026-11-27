@@ -8,17 +8,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/core/lifespan"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/listing"
 )
 
 func OnlyAuditErrors(err error) bool {
-	return core.OnlyAuditErrors(err)
+	return ledger.OnlyAuditErrors(err)
 }
 
-func ReportGraves(results []core.GraveResult, asJSON bool, describe func(core.GraveResult) string) error {
+func ReportGraves(results []lifecycle.GraveResult, asJSON bool, describe func(lifecycle.GraveResult) string) error {
 	if asJSON {
 		if err := PrintJSON(results); err != nil {
 			return err
@@ -28,7 +29,7 @@ func ReportGraves(results []core.GraveResult, asJSON bool, describe func(core.Gr
 			printGraveResult(r, describe)
 		}
 	}
-	if core.GraveFailed(results) {
+	if lifecycle.GraveFailed(results) {
 		return ErrReported
 	}
 	return nil
@@ -44,7 +45,7 @@ func localizedWarning(language *i18n.Localizer, warning string) string {
 	return language.Text("cli.restore.rollback_nonempty", map[string]any{"Path": path, "Cause": cause})
 }
 
-func printGraveResult(r core.GraveResult, describe func(core.GraveResult) string) {
+func printGraveResult(r lifecycle.GraveResult, describe func(lifecycle.GraveResult) string) {
 	language := Localizer()
 	r.Error = ReferenceText(language, r.Err, r.Error)
 	if r.Warning != "" {
@@ -54,7 +55,7 @@ func printGraveResult(r core.GraveResult, describe func(core.GraveResult) string
 		fmt.Println(describe(r))
 		return
 	}
-	if _, ok := errors.AsType[*core.ReferenceError](r.Err); ok && r.Burial == nil && r.Action == "" {
+	if _, ok := errors.AsType[*lifecycle.ReferenceError](r.Err); ok && r.Burial == nil && r.Action == "" {
 		fmt.Fprintln(os.Stderr, language.Text("cli.error_prefix", nil), r.Error)
 		return
 	}
@@ -62,14 +63,14 @@ func printGraveResult(r core.GraveResult, describe func(core.GraveResult) string
 	if r.Burial != nil {
 		label += fmt.Sprintf(language.Text("cli.error_identity", nil), r.Burial.ID, r.Burial.Path)
 	}
-	if r.Action == core.ActionResurrected && r.Path != "" {
+	if r.Action == ledger.ActionResurrected && r.Path != "" {
 		fmt.Println(describe(r))
 	}
-	if r.Action == core.ActionNotExecuted {
+	if r.Action == ledger.ActionNotExecuted {
 		fmt.Fprintln(os.Stderr, language.Text("cli.not_executed", map[string]any{"Ref": r.Ref, "Text": r.Error}))
 		return
 	}
-	if r.Action == core.ActionBlocked {
+	if r.Action == ledger.ActionBlocked {
 		fmt.Fprintln(os.Stderr, language.Text("cli.blocked", map[string]any{"Label": label, "Text": r.Error}))
 	} else {
 		fmt.Fprintln(os.Stderr, language.Text("cli.error", map[string]any{"Label": label, "Text": r.Error}))
@@ -77,7 +78,7 @@ func printGraveResult(r core.GraveResult, describe func(core.GraveResult) string
 }
 
 // Bury emits a receipt for every argument before returning a partial failure.
-func ReportBury(results []core.GraveResult, asJSON bool, describe func(core.GraveResult) string) error {
+func ReportBury(results []lifecycle.GraveResult, asJSON bool, describe func(lifecycle.GraveResult) string) error {
 	if asJSON {
 		if err := PrintJSON(results); err != nil {
 			return err
@@ -87,13 +88,13 @@ func ReportBury(results []core.GraveResult, asJSON bool, describe func(core.Grav
 			printBuryResult(r, describe)
 		}
 	}
-	if core.GraveFailed(results) {
+	if lifecycle.GraveFailed(results) {
 		return ErrReported
 	}
 	return nil
 }
 
-func printBuryResult(r core.GraveResult, describe func(core.GraveResult) string) {
+func printBuryResult(r lifecycle.GraveResult, describe func(lifecycle.GraveResult) string) {
 	language := Localizer()
 	if r.Warning != "" {
 		fmt.Fprintln(os.Stderr, language.Text("cli.warning", map[string]any{"Text": r.Warning}))
@@ -146,7 +147,7 @@ func DueIn(left time.Duration) string {
 	return fmt.Sprintf(Text("cli.time.remaining"), lifespan.FormatRemaining(left))
 }
 
-func Report(results []core.Result, asJSON bool) error {
+func Report(results []lifecycle.Result, asJSON bool) error {
 	if asJSON {
 		if err := PrintJSON(results); err != nil {
 			return err
@@ -160,13 +161,13 @@ func Report(results []core.Result, asJSON bool) error {
 			fmt.Printf(Text("cli.mark.receipt"), r.Item.ID, Column(Localizer(), Localizer().Label(r.Action)), r.Item.Path, When(r.Item.ExpiresAt))
 		}
 	}
-	if core.Failed(results) {
+	if lifecycle.Failed(results) {
 		return ErrReported
 	}
 	return nil
 }
 
-func AnyOK(results []core.Result) bool {
+func AnyOK(results []lifecycle.Result) bool {
 	for _, r := range results {
 		if r.Error == "" {
 			return true

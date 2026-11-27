@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/app"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 const versionVar = "github.com/woodfishhhh/obituary/internal/buildinfo.Version"
@@ -268,7 +268,7 @@ func TestManualInstallUpdatesItselfInPlace(t *testing.T) {
 	if got := readFile(t, filepath.Join(folder, "old", "obit.exe")); !bytes.Equal(got, m.oldObit) {
 		t.Error("the previous obit.exe was not kept")
 	}
-	state, err := core.Store{Home: m.home}.Read()
+	state, err := ledger.Store{Home: m.home}.Read()
 	if err != nil {
 		t.Fatal(err)
 	}

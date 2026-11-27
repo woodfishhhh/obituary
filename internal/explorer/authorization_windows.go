@@ -7,12 +7,14 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 	"golang.org/x/sys/windows"
 )
 
-func (p projection) add(svc *core.Service, path string, item core.Item, options Options, folders []string) error {
+func (p projection) add(svc *lifecycle.Service, path string, item ledger.Item, options Options, folders []string) error {
 	dir := filepath.Dir(path)
 	h, err := pinDirectory(dir)
 	if err != nil {
@@ -50,16 +52,16 @@ func (p projection) add(svc *core.Service, path string, item core.Item, options 
 	return nil
 }
 
-func authorizeDirectory(svc *core.Service, dir string, id core.Identity, folders []string) (authorization, error) {
+func authorizeDirectory(svc *lifecycle.Service, dir string, id corefs.Identity, folders []string) (authorization, error) {
 	inScope, err := inFolders(svc.FS, dir, folders)
 	if err != nil {
 		return authorization{}, err
 	}
 	proj, _, err := findProject(svc.Store.Context(), dir)
-	return authorization{Identity: id, InScope: inScope, Project: proj, Items: make(map[string]core.Identity)}, err
+	return authorization{Identity: id, InScope: inScope, Project: proj, Items: make(map[string]corefs.Identity)}, err
 }
 
-func verifyChild(parent windows.Handle, dir, name string, want core.Identity) error {
+func verifyChild(parent windows.Handle, dir, name string, want corefs.Identity) error {
 	// Open relative to the pinned handle to preserve the checked parent.
 	// os.Root.Open follows a final symlink; ledger IDs do not.
 	n, err := windows.NewNTUnicodeString(name)

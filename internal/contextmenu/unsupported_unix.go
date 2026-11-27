@@ -5,7 +5,7 @@ package contextmenu
 import (
 	"fmt"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 )
 
@@ -29,7 +29,7 @@ type Status struct {
 }
 
 func unsupported() error {
-	return fmt.Errorf("the Explorer context menu and notifications are Windows-only: %w", core.ErrUnsupported)
+	return fmt.Errorf("the Explorer context menu and notifications are Windows-only: %w", corefs.ErrUnsupported)
 }
 
 func InspectDisplay(reg Registry, exe string, language i18n.Language, _ *i18n.Localizer) (Status, error) {

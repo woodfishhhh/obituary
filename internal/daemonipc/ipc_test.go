@@ -8,14 +8,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func TestSubmitWaitsForResidentQueueAcceptance(t *testing.T) {
 	home := t.TempDir()
 	var mu sync.Mutex
-	var got []core.Observation
-	stop, err := Serve(home, func(rows []core.Observation) error {
+	var got []ledger.Observation
+	stop, err := Serve(home, func(rows []ledger.Observation) error {
 		mu.Lock()
 		got = append(got, rows...)
 		mu.Unlock()
@@ -25,7 +26,7 @@ func TestSubmitWaitsForResidentQueueAcceptance(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer stop()
-	rows := []core.Observation{{Token: "token", Session: "session", Path: "/tmp/file", ObservedAt: time.Now(), Identity: &core.Identity{FileID: "id"}}}
+	rows := []ledger.Observation{{Token: "token", Session: "session", Path: "/tmp/file", ObservedAt: time.Now(), Identity: &corefs.Identity{FileID: "id"}}}
 	receipt, err := Submit(context.Background(), home, rows)
 	if err != nil || !receipt.Quiet {
 		t.Fatalf("receipt %+v: %v", receipt, err)
@@ -38,7 +39,7 @@ func TestSubmitWaitsForResidentQueueAcceptance(t *testing.T) {
 }
 
 func TestSubmitWithoutResidentIsUnavailable(t *testing.T) {
-	rows := []core.Observation{{Token: "token"}}
+	rows := []ledger.Observation{{Token: "token"}}
 	if _, err := Submit(context.Background(), t.TempDir(), rows); !errors.Is(err, ErrUnavailable) {
 		t.Fatalf("got %v, want ErrUnavailable so the hook registers directly", err)
 	}
@@ -47,7 +48,7 @@ func TestSubmitWithoutResidentIsUnavailable(t *testing.T) {
 func TestSubmitDistinguishesRefusalAndSilenceFromAbsence(t *testing.T) {
 	home := t.TempDir()
 	block := make(chan struct{})
-	stop, err := Serve(home, func(rows []core.Observation) error {
+	stop, err := Serve(home, func(rows []ledger.Observation) error {
 		if rows[0].Token == "refuse" {
 			return errors.New("queue is full")
 		}
@@ -59,13 +60,13 @@ func TestSubmitDistinguishesRefusalAndSilenceFromAbsence(t *testing.T) {
 	}
 	defer stop()
 	defer close(block) // runs first: stop waits for handlers still blocked on it
-	_, err = Submit(context.Background(), home, []core.Observation{{Token: "refuse"}})
+	_, err = Submit(context.Background(), home, []ledger.Observation{{Token: "refuse"}})
 	if err == nil || errors.Is(err, ErrUnavailable) {
 		t.Fatalf("a refusal is an answer from a resident that is there: %v", err)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
-	_, err = Submit(ctx, home, []core.Observation{{Token: "silent"}})
+	_, err = Submit(ctx, home, []ledger.Observation{{Token: "silent"}})
 	if err == nil || errors.Is(err, ErrUnavailable) {
 		t.Fatalf("a silent resident must be queued around, not treated as absent: %v", err)
 	}
@@ -100,7 +101,7 @@ func TestListFallsBackWhenNobodyCanAnswer(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			home := t.TempDir()
-			stop, err := Serve(home, func([]core.Observation) error { return nil }, nil, options...)
+			stop, err := Serve(home, func([]ledger.Observation) error { return nil }, nil, options...)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -115,7 +116,7 @@ func TestListFallsBackWhenNobodyCanAnswer(t *testing.T) {
 func TestListRequestsAreNotObservations(t *testing.T) {
 	home := t.TempDir()
 	delivered := false
-	stop, err := Serve(home, func([]core.Observation) error { delivered = true; return nil }, nil,
+	stop, err := Serve(home, func([]ledger.Observation) error { delivered = true; return nil }, nil,
 		WithList(func(ListRequest) ([]byte, error) { return []byte("x"), nil }))
 	if err != nil {
 		t.Fatal(err)
@@ -128,7 +129,7 @@ func TestListRequestsAreNotObservations(t *testing.T) {
 	}
 	defer conn.Close()
 	_ = conn.SetDeadline(time.Now().Add(time.Second))
-	mixed := request{Version: protocolVersion, Observations: []core.Observation{{Token: "t"}}, List: &ListRequest{}}
+	mixed := request{Version: protocolVersion, Observations: []ledger.Observation{{Token: "t"}}, List: &ListRequest{}}
 	if err := json.NewEncoder(conn).Encode(mixed); err != nil {
 		t.Fatal(err)
 	}

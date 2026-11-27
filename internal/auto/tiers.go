@@ -9,7 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"github.com/woodfishhhh/obituary/internal/project"
 )
@@ -27,7 +28,7 @@ import (
 // afterwards and can be undone.
 
 // off reports whether automatic registration is off.
-func (e *Engine) off() bool { return e.Svc.Proposals() == core.ProposalsOff }
+func (e *Engine) off() bool { return e.Svc.Proposals() == lifecycle.ProposalsOff }
 
 // offDecisions skips every path while automatic registration is off.
 func offDecisions(paths []string) []Decision {
@@ -43,12 +44,12 @@ func offDecisions(paths []string) []Decision {
 func (e *Engine) directClass(root, unit string, opts Options) string {
 	mode := e.Svc.Proposals()
 	switch {
-	case mode == core.ProposalsAsk || mode == core.ProposalsOff:
+	case mode == lifecycle.ProposalsAsk || mode == lifecycle.ProposalsOff:
 		return ""
 	case opts.Written && e.createdThisSession(root, opts.Session, unit):
-		return core.AutoCreated
-	case mode == core.ProposalsAuto:
-		return core.AutoAll
+		return ledger.AutoCreated
+	case mode == lifecycle.ProposalsAuto:
+		return ledger.AutoAll
 	}
 	return ""
 }
@@ -148,7 +149,7 @@ func (e *Engine) settleNotice(n Notice, err error) (*Notice, error) {
 // a mode change, or left pending by a retryable failure are settled the same
 // way, and each registration it makes is announced like any other.
 func (e *Engine) AutoApprovePending() error {
-	if e.Svc.Proposals() == core.ProposalsAsk {
+	if e.Svc.Proposals() == lifecycle.ProposalsAsk {
 		return nil
 	}
 	st, err := e.Svc.Store.ReadHot()
@@ -157,7 +158,7 @@ func (e *Engine) AutoApprovePending() error {
 	}
 	var errs error
 	for _, p := range st.Proposals {
-		if p.Kind == core.ProposalWatch || p.Kind == core.ProposalWatchBurial || p.Kind == core.ProposalGraveyardQuota {
+		if p.Kind == ledger.ProposalWatch || p.Kind == ledger.ProposalWatchBurial || p.Kind == ledger.ProposalGraveyardQuota {
 			continue
 		}
 		if _, err := e.autoApprove(p.ID); err != nil {
@@ -172,7 +173,7 @@ func (e *Engine) AutoApprovePending() error {
 // through the same claim, vetting and resolution as `obit approve`, but
 // without recording project consent. It returns the proposal as it remains
 // pending, or nil once nothing is left.
-func (e *Engine) autoApprove(id int64) (*core.Proposal, error) {
+func (e *Engine) autoApprove(id int64) (*ledger.Proposal, error) {
 	p, st, ok, err := e.pendingProposal(id)
 	if err != nil || !ok {
 		return nil, err
@@ -182,7 +183,7 @@ func (e *Engine) autoApprove(id int64) (*core.Proposal, error) {
 		return &p, nil
 	}
 	claimed, release, err := e.Svc.ClaimProposalAuto(fmt.Sprintf("#%d", id))
-	if errors.Is(err, core.ErrProposalBusy) {
+	if errors.Is(err, lifecycle.ErrProposalBusy) {
 		return &p, nil // a user decision is in progress; the next tick retries
 	}
 	if err != nil {
@@ -191,8 +192,8 @@ func (e *Engine) autoApprove(id int64) (*core.Proposal, error) {
 	defer release()
 	// Only candidates unchanged since they were sorted; a refreshed revision
 	// waits for the next round.
-	claimed.Candidates = slices.DeleteFunc(slices.Clone(claimed.Candidates), func(c core.Candidate) bool {
-		return !slices.ContainsFunc(allowed, func(a core.Candidate) bool { return a.Rev == c.Rev && sameCandidate(a, c) })
+	claimed.Candidates = slices.DeleteFunc(slices.Clone(claimed.Candidates), func(c ledger.Candidate) bool {
+		return !slices.ContainsFunc(allowed, func(a ledger.Candidate) bool { return a.Rev == c.Rev && sameCandidate(a, c) })
 	})
 	if len(claimed.Candidates) > 0 {
 		e.sets = nil // reread rule files, as an approval does
@@ -206,31 +207,31 @@ func (e *Engine) autoApprove(id int64) (*core.Proposal, error) {
 	return &rest, errors.Join(err, readErr)
 }
 
-func (e *Engine) pendingProposal(id int64) (core.Proposal, core.State, bool, error) {
+func (e *Engine) pendingProposal(id int64) (ledger.Proposal, ledger.State, bool, error) {
 	st, err := e.Svc.Store.ReadHot()
 	if err != nil {
-		return core.Proposal{}, st, false, err
+		return ledger.Proposal{}, st, false, err
 	}
 	idx := st.ProposalIndex(id)
 	if idx < 0 {
-		return core.Proposal{}, st, false, nil
+		return ledger.Proposal{}, st, false, nil
 	}
 	return st.Proposals[idx], st, true, nil
 }
 
 // autoCandidates sorts a pending proposal's candidates under the mode. What
 // it returns still passes every approval gate; the rest stays a proposal.
-func (e *Engine) autoCandidates(p core.Proposal, st core.State) ([]core.Candidate, string) {
+func (e *Engine) autoCandidates(p ledger.Proposal, st ledger.State) ([]ledger.Candidate, string) {
 	mode := e.Svc.Proposals()
-	if mode == core.ProposalsAsk || mode == core.ProposalsOff || st.Projects[core.ProjectKey(p.Project)].Consent == core.ConsentDeclined {
+	if mode == lifecycle.ProposalsAsk || mode == lifecycle.ProposalsOff || st.Projects[ledger.ProjectKey(p.Project)].Consent == ledger.ConsentDeclined {
 		return nil, "" // off, asked for everything, or declined automatic registration here
 	}
 	switch p.Kind {
-	case core.ProposalContainer:
-		return sessionContainers(p, st), core.AutoContainer
-	case core.ProposalOnboard, core.ProposalLarge:
-		if mode == core.ProposalsAuto {
-			return slices.Clone(p.Candidates), core.AutoAll
+	case ledger.ProposalContainer:
+		return sessionContainers(p, st), ledger.AutoContainer
+	case ledger.ProposalOnboard, ledger.ProposalLarge:
+		if mode == lifecycle.ProposalsAuto {
+			return slices.Clone(p.Candidates), ledger.AutoAll
 		}
 	}
 	return nil, ""
@@ -245,22 +246,22 @@ func (e *Engine) autoCandidates(p core.Proposal, st core.State) ([]core.Candidat
 // nothing. A container that another pending proposal also claims was started
 // while several sessions ran, so which one started it is unknown. All of
 // these wait for the user.
-func sessionContainers(p core.Proposal, st core.State) []core.Candidate {
+func sessionContainers(p ledger.Proposal, st ledger.State) []ledger.Candidate {
 	if root, ok, err := project.Find(p.Project); err != nil || !ok || !strings.EqualFold(filepath.Clean(root.Root), filepath.Clean(p.Project)) {
 		return nil
 	}
-	return slices.DeleteFunc(slices.Clone(p.Candidates), func(c core.Candidate) bool {
-		if c.Kind != core.KindContainer || c.Reason == "" {
+	return slices.DeleteFunc(slices.Clone(p.Candidates), func(c ledger.Candidate) bool {
+		if c.Kind != ledger.KindContainer || c.Reason == "" {
 			return true
 		}
-		return slices.ContainsFunc(st.Proposals, func(other core.Proposal) bool {
-			return other.ID != p.ID && slices.ContainsFunc(other.Candidates, func(o core.Candidate) bool { return sameCandidate(o, c) })
+		return slices.ContainsFunc(st.Proposals, func(other ledger.Proposal) bool {
+			return other.ID != p.ID && slices.ContainsFunc(other.Candidates, func(o ledger.Candidate) bool { return sameCandidate(o, c) })
 		})
 	})
 }
 
-func sameCandidate(a, b core.Candidate) bool {
-	if a.Kind == core.KindContainer || b.Kind == core.KindContainer {
+func sameCandidate(a, b ledger.Candidate) bool {
+	if a.Kind == ledger.KindContainer || b.Kind == ledger.KindContainer {
 		return a.Kind == b.Kind && a.Container != nil && b.Container != nil && a.Container.Key() == b.Container.Key()
 	}
 	return strings.EqualFold(filepath.Clean(a.Path), filepath.Clean(b.Path))

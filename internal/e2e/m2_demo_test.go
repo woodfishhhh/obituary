@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func TestDeleteGuardDemoRestoresBuild(t *testing.T) {
@@ -268,11 +268,11 @@ func demoNoLast(t *testing.T) {
 	}
 }
 
-func demoGraves(t *testing.T, paths ...string) map[string]core.Burial {
+func demoGraves(t *testing.T, paths ...string) map[string]ledger.Burial {
 	t.Helper()
 	out := demoRun(t, "graveyard", "--json")
 	var listing struct {
-		Burials      []core.Burial
+		Burials      []ledger.Burial
 		Pending      []json.RawMessage
 		PendingCount int
 		Warning      string
@@ -280,7 +280,7 @@ func demoGraves(t *testing.T, paths ...string) map[string]core.Burial {
 	if err := json.Unmarshal([]byte(out), &listing); err != nil || len(listing.Burials) != len(paths) || len(listing.Pending) != 0 || listing.PendingCount != 0 || listing.Warning != "" {
 		t.Fatalf("graveyard: %s %v; want paths %q", out, err, paths)
 	}
-	byPath := make(map[string]core.Burial)
+	byPath := make(map[string]ledger.Burial)
 	for _, burial := range listing.Burials {
 		if burial.ID <= 0 || burial.Operation == nil || burial.Operation.ID == "" || burial.Operation.StartedAt.IsZero() || burial.Operation.Session != "" {
 			t.Fatalf("missing project-only deletion operation: %+v", burial)

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 // Native protocol: https://docs.mistral.ai/vibe/code/cli/hooks (2026-11-09).
@@ -37,7 +37,7 @@ func (vibeAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
 		return Event{}, ErrSkip
 	}
 	if in.SessionID != "" {
-		ev.Session = core.NormalizeSession("vibe:" + in.SessionID)
+		ev.Session = lifecycle.NormalizeSession("vibe:" + in.SessionID)
 	}
 	if ev.Name == "PreToolUse" {
 		switch in.ToolName {

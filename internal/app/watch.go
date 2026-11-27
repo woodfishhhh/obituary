@@ -5,18 +5,19 @@ import (
 	"log"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/guard"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/watch"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
 // WatchFolders is the tray/resident integration point. Cancel ctx and wait for
 // its return before closing the application; errors are reported without UI.
-func WatchFolders(ctx context.Context, svc *core.Service, report func(error)) error {
+func WatchFolders(ctx context.Context, svc *lifecycle.Service, report func(error)) error {
 	return watch.Run(ctx, svc, 5*time.Minute, report)
 }
 
-func startFolderWatch(svc *core.Service, logger *log.Logger) func() {
+func startFolderWatch(svc *lifecycle.Service, logger *log.Logger) func() {
 	ctx, cancel := context.WithCancel(svc.Store.Context())
 	done := make(chan struct{})
 	report := func(err error) { logger.Printf("watch: %v", err) }
@@ -32,7 +33,7 @@ func startFolderWatch(svc *core.Service, logger *log.Logger) func() {
 	}
 }
 
-func allowDownloads(g core.Guard, paths []string) core.Guard {
+func allowDownloads(g guard.Guard, paths []string) guard.Guard {
 	for _, path := range paths {
 		g.WatchAllowed = append(g.WatchAllowed, path)
 		if real, err := winfs.Canonical(path); err == nil {

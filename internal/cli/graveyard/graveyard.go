@@ -9,20 +9,20 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/core/lifespan"
 	"github.com/woodfishhhh/obituary/internal/textutil"
 )
 
 type GraveyardListing struct {
-	Burials       []ledger.Burial     `json:"burials"`
-	Pending       []core.PendingGrave `json:"pending"`
-	PendingCount  int                 `json:"pendingCount"`
-	GraveBytes    int64               `json:"graveBytes,omitempty"`
-	GraveMaxBytes int64               `json:"graveMaxBytes,omitempty"`
-	Restored      []core.GraveResult  `json:"restored,omitempty"`
-	Warning       string              `json:"warning,omitempty"`
+	Burials       []ledger.Burial          `json:"burials"`
+	Pending       []lifecycle.PendingGrave `json:"pending"`
+	PendingCount  int                      `json:"pendingCount"`
+	GraveBytes    int64                    `json:"graveBytes,omitempty"`
+	GraveMaxBytes int64                    `json:"graveMaxBytes,omitempty"`
+	Restored      []lifecycle.GraveResult  `json:"restored,omitempty"`
+	Warning       string                   `json:"warning,omitempty"`
 }
 
 func NewCmd() *cobra.Command {

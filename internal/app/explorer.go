@@ -6,14 +6,14 @@ import (
 	"path/filepath"
 
 	"github.com/woodfishhhh/obituary/internal/config"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/explorer"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 )
 
 // Watcher/GUI services outlive configuration edits, so every notification
 // reads the current snapshot. A bad configuration preserves existing labels.
-func syncCurrentExplorer(svc *core.Service) {
+func syncCurrentExplorer(svc *lifecycle.Service) {
 	cfg, err := config.Load()
 	if err != nil {
 		logExplorerError(svc, err)
@@ -22,7 +22,7 @@ func syncCurrentExplorer(svc *core.Service) {
 	syncExplorer(svc, cfg)
 }
 
-func syncExplorer(svc *core.Service, cfg config.Config) {
+func syncExplorer(svc *lifecycle.Service, cfg config.Config) {
 	lang := i18n.Resolve(cfg.UI.Language, i18n.SystemLanguage)
 	// Stamp the input snapshot, not a ledger or language changed during sync.
 	stamp := explorerStamp(svc.Store.Home, lang)
@@ -44,7 +44,7 @@ func syncExplorer(svc *core.Service, cfg config.Config) {
 // Same bound as hook.log: a folder that keeps failing adds a line per sync.
 const explorerLogLimit = 512 << 10
 
-func logExplorerError(svc *core.Service, err error) {
+func logExplorerError(svc *lifecycle.Service, err error) {
 	path := filepath.Join(svc.Store.Home, "explorer.log")
 	if info, statErr := os.Stat(path); statErr == nil && info.Size() > explorerLogLimit {
 		_ = os.Rename(path, path+".1") // a concurrent writer keeps the old file; retried next time

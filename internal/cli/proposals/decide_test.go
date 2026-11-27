@@ -15,7 +15,8 @@ import (
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"golang.org/x/sys/windows"
 )
 
@@ -34,9 +35,9 @@ func TestProposalFailuresReturnNonzeroAfterReporting(t *testing.T) {
 					repo, store := clitest.CommandRepo(t)
 					path := filepath.Join(repo, "debug.log")
 					clitest.WriteFixture(t, path, "debug")
-					candidates := []core.Candidate{{Path: path, Lifespan: "1d"}}
+					candidates := []ledger.Candidate{{Path: path, Lifespan: "1d"}}
 					if candidateError {
-						candidates = append(candidates, core.Candidate{Path: filepath.Join(repo, "gone"), Lifespan: "1d"})
+						candidates = append(candidates, ledger.Candidate{Path: filepath.Join(repo, "gone"), Lifespan: "1d"})
 					}
 					clitest.AddProposal(t, store, repo, candidates...)
 					args := []string{"1"}
@@ -78,13 +79,13 @@ func TestApproveRetainsTransientCandidatesAndReportsPartialSuccess(t *testing.T)
 				first, second := filepath.Join(root, "first.log"), filepath.Join(root, "second.log")
 				clitest.WriteFixture(t, first, "one")
 				clitest.WriteFixture(t, second, "two")
-				clitest.AddProposal(t, store, root, core.Candidate{Path: first, Lifespan: "1d"}, core.Candidate{Path: second, Lifespan: "1d"})
+				clitest.AddProposal(t, store, root, ledger.Candidate{Path: first, Lifespan: "1d"}, ledger.Candidate{Path: second, Lifespan: "1d"})
 				svc, err := app.Open()
 				if err != nil {
 					t.Fatal(err)
 				}
 				oldOpen := cmdutil.Open
-				cmdutil.Open = func() (*core.Service, error) { return svc, nil }
+				cmdutil.Open = func() (*lifecycle.Service, error) { return svc, nil }
 				t.Cleanup(func() { cmdutil.Open = oldOpen })
 				originalPath := os.Getenv("PATH")
 				blocked := windows.InvalidHandle
@@ -145,7 +146,7 @@ func TestApproveRetainsTransientCandidatesAndReportsPartialSuccess(t *testing.T)
 					t.Error("partial transient failure must exit nonzero")
 				}
 				if asJSON {
-					var got []core.ProposalResult
+					var got []lifecycle.ProposalResult
 					if json.Unmarshal([]byte(out), &got) != nil || len(got) != 1 || len(got[0].Results) != 2 || got[0].Results[0].Item == nil || got[0].Results[0].Item.Path != first {
 						t.Errorf("completed result missing from JSON: %s (%s)", out, stderr)
 					}
@@ -156,7 +157,7 @@ func TestApproveRetainsTransientCandidatesAndReportsPartialSuccess(t *testing.T)
 					t.Errorf("partial success must ensure runner: %v", *starts)
 				}
 				pending, _, err := clitest.Execute(t, NewCmd(), "--json")
-				var proposals []core.Proposal
+				var proposals []ledger.Proposal
 				wantPending := 1
 				if fault == "store" {
 					wantPending = 2 // the failed final write must leave the original intact

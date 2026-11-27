@@ -14,7 +14,8 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 )
 
@@ -24,9 +25,9 @@ func TestMCPReplyTotalBudget(t *testing.T) {
 	}
 
 	t.Parallel()
-	rows := make([]core.GraveResult, 9000)
+	rows := make([]lifecycle.GraveResult, 9000)
 	for i := range rows {
-		rows[i] = core.GraveResult{Ref: "1", Action: core.ActionBuried, Burial: &core.Burial{ID: int64(i + 1), Path: strings.Repeat("<", 4096), Note: strings.Repeat("n", 4096)}}
+		rows[i] = lifecycle.GraveResult{Ref: "1", Action: ledger.ActionBuried, Burial: &ledger.Burial{ID: int64(i + 1), Path: strings.Repeat("<", 4096), Note: strings.Repeat("n", 4096)}}
 	}
 	out := boundMCPReply(mcpResult(map[string]any{"results": rows}, nil))
 	data, err := json.Marshal(out)
@@ -41,14 +42,14 @@ func TestMCPReplyTotalBudget(t *testing.T) {
 
 func TestMCPRepeatedCompactionRetainsOriginalTotals(t *testing.T) {
 	t.Parallel()
-	proposals := make([]core.Proposal, 200)
+	proposals := make([]ledger.Proposal, 200)
 	for i := range proposals {
 		p := &proposals[i]
 		p.ID = int64(i + 1)
 		p.Project = strings.Repeat("p", 1000)
-		p.Candidates = make([]core.Candidate, 100)
+		p.Candidates = make([]ledger.Candidate, 100)
 		for j := range p.Candidates {
-			p.Candidates[j] = core.Candidate{Path: strings.Repeat("f", 1000), Rule: strings.Repeat("r", 1000), Lifespan: "1d"}
+			p.Candidates[j] = ledger.Candidate{Path: strings.Repeat("f", 1000), Rule: strings.Repeat("r", 1000), Lifespan: "1d"}
 		}
 	}
 	reply := boundMCPReply(mcpResult(map[string]any{"proposals": proposals}, nil))
@@ -164,13 +165,13 @@ func TestMCPRepeatedExtendReceiptIsBounded(t *testing.T) {
 	s, repo, _ := mcpFixture(t)
 	path := filepath.Join(repo, "note.txt")
 	clitest.WriteFixture(t, path, "keep")
-	var marked struct{ Results []core.Result }
+	var marked struct{ Results []lifecycle.Result }
 	clitest.CallMCP(t, s, "obit_mark", map[string]any{"paths": []string{path}, "lifespan": "1h", "note": strings.Repeat("n", 4096)}, false, &marked)
 	refs := make([]string, 100)
 	for i := range refs {
 		refs[i] = path
 	}
-	var extended struct{ Results []core.Result }
+	var extended struct{ Results []lifecycle.Result }
 	r := clitest.CallMCP(t, s, "obit_extend", map[string]any{"refs": refs, "lifespan": "1h"}, false, &extended)
 	encoded, err := json.Marshal(r)
 	if err != nil || len(encoded) >= 1<<20 || len(extended.Results) != 100 {
@@ -184,12 +185,12 @@ func TestMCPRepeatedExtendReceiptIsBounded(t *testing.T) {
 func TestMCPBoundsNestedLegacyData(t *testing.T) {
 	t.Parallel()
 	const largeID = int64(9007199254740993)
-	var candidates []core.Candidate
+	var candidates []ledger.Candidate
 	for range 200 {
-		candidates = append(candidates, core.Candidate{Path: strings.Repeat("\x00", 32768), Rule: strings.Repeat("rule", 4096), Lifespan: "1d"})
+		candidates = append(candidates, ledger.Candidate{Path: strings.Repeat("\x00", 32768), Rule: strings.Repeat("rule", 4096), Lifespan: "1d"})
 	}
-	p := core.Proposal{ID: largeID, Project: strings.Repeat("p", 32768), Session: strings.Repeat("s", 4096), Candidates: candidates}
-	reply := boundMCPReply(mcpResult(map[string]any{"proposals": []core.Proposal{p}}, nil))
+	p := ledger.Proposal{ID: largeID, Project: strings.Repeat("p", 32768), Session: strings.Repeat("s", 4096), Candidates: candidates}
+	reply := boundMCPReply(mcpResult(map[string]any{"proposals": []ledger.Proposal{p}}, nil))
 	encoded, err := json.Marshal(reply)
 	if err != nil || len(encoded) > mcpRowBytes+1024 || !reply.Truncated || !strings.Contains(string(encoded), "candidatesTotal") || !strings.Contains(string(encoded), "9007199254740993") {
 		t.Fatalf("nested legacy receipt not bounded or lost precision: bytes=%d error=%v", len(encoded), err)

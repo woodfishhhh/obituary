@@ -12,7 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"golang.org/x/mod/semver"
 )
 
@@ -105,7 +106,7 @@ func applyFrom(ctx context.Context, home, exe, current, target string, hooks App
 	if err != nil {
 		return LastApply{}, err
 	}
-	unlock, ok, err := core.TryLockExclusive(filepath.Join(home, "update-apply.lock"))
+	unlock, ok, err := ledger.TryLockExclusive(filepath.Join(home, "update-apply.lock"))
 	if err != nil {
 		return LastApply{}, err
 	}
@@ -241,11 +242,11 @@ func saveLastApply(home string, result *LastApply, cause error) error {
 	if err != nil {
 		return err
 	}
-	return core.WriteMetadata(filepath.Join(home, "update-apply.json"), append(data, '\n'))
+	return lifecycle.WriteMetadata(filepath.Join(home, "update-apply.json"), append(data, '\n'))
 }
 
 func ReadLastApply(home string) (*LastApply, error) {
-	data, err := core.ReadMetadata(filepath.Join(home, "update-apply.json"))
+	data, err := lifecycle.ReadMetadata(filepath.Join(home, "update-apply.json"))
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, nil
 	}

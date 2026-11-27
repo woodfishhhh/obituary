@@ -3,16 +3,16 @@ package rm
 import (
 	"errors"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 )
 
 type removeRecycleFS struct {
-	core.FS
+	corefs.FS
 	destination string
 	fail        bool
 }
 
-func (fs removeRecycleFS) Recycle(path string, id core.Identity) error {
+func (fs removeRecycleFS) Recycle(path string, id corefs.Identity) error {
 	if fs.fail {
 		return errors.New("recycle unavailable")
 	}

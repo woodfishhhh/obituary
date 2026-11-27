@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 // MiniMax-AI/minimax-code 3c21163c: plugin-hooks/{runner,wire-tool-adapter}.ts
@@ -35,7 +35,7 @@ func (minimaxAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
 		return Event{}, ErrSkip
 	}
 	if in.SessionID != "" {
-		ev.Session = core.NormalizeSession("minimax-code:" + in.SessionID)
+		ev.Session = lifecycle.NormalizeSession("minimax-code:" + in.SessionID)
 	}
 	if ev.Name == "PreToolUse" {
 		switch in.ToolName {

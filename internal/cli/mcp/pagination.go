@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 // Advance by the last ID so removals between pages cannot shift unread entries
@@ -84,11 +84,11 @@ func mcpPageResult[T any](key string, rows []T, id func(T) int64, in mcpPageInpu
 	return mcpVersionedResult(data, keys, in, nil)
 }
 
-func mcpGravePage(burials []ledger.Burial, pending []core.PendingGrave, in mcpPageInput, readErr error) mcpReply {
+func mcpGravePage(burials []ledger.Burial, pending []lifecycle.PendingGrave, in mcpPageInput, readErr error) mcpReply {
 	type row struct {
 		id      int64
 		burial  *ledger.Burial
-		pending *core.PendingGrave
+		pending *lifecycle.PendingGrave
 	}
 	rows := make([]row, 0, len(burials)+len(pending))
 	for i := range burials {
@@ -112,7 +112,7 @@ func mcpGravePage(burials []ledger.Burial, pending []core.PendingGrave, in mcpPa
 	if err != nil {
 		return mcpResult(nil, err)
 	}
-	bs, ps := []ledger.Burial{}, []core.PendingGrave{}
+	bs, ps := []ledger.Burial{}, []lifecycle.PendingGrave{}
 	for _, r := range rows[start:end] {
 		if r.burial != nil {
 			bs = append(bs, *r.burial)

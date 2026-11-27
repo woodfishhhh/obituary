@@ -13,15 +13,17 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"golang.org/x/sys/windows"
 )
 
-func CommittedRetryFixture(t *testing.T) (*core.Service, core.Burial, core.Burial) {
+func CommittedRetryFixture(t *testing.T) (*lifecycle.Service, ledger.Burial, ledger.Burial) {
 	return BurialRetryFixture(t, "committed")
 }
 
-func BurialRetryFixture(t *testing.T, mode string) (*core.Service, core.Burial, core.Burial) {
+func BurialRetryFixture(t *testing.T, mode string) (*lifecycle.Service, ledger.Burial, ledger.Burial) {
 	t.Helper()
 	IsolateRunner(t)
 	repo, _ := CommandDir(t)
@@ -32,11 +34,11 @@ func BurialRetryFixture(t *testing.T, mode string) (*core.Service, core.Burial, 
 	clock := time.Now()
 	svc.Now = func() time.Time { return clock }
 	path := filepath.Join(repo, "payload.txt")
-	var burials []core.Burial
+	var burials []ledger.Burial
 	for _, content := range []string{"older", "newer"} {
 		WriteFixture(t, path, content)
 		rows, err := svc.Bury([]string{path}, false, "")
-		if err != nil || core.GraveFailed(rows) {
+		if err != nil || lifecycle.GraveFailed(rows) {
 			t.Fatal(rows, err)
 		}
 		burials = append(burials, *rows[0].Burial)
@@ -50,7 +52,7 @@ func BurialRetryFixture(t *testing.T, mode string) (*core.Service, core.Burial, 
 	return svc, burials[0], burials[1]
 }
 
-func prepareBurialRetry(t *testing.T, svc *core.Service, newer core.Burial, mode string) {
+func prepareBurialRetry(t *testing.T, svc *lifecycle.Service, newer ledger.Burial, mode string) {
 	t.Helper()
 	original := svc.FS
 	var held windows.Handle
@@ -68,7 +70,7 @@ func prepareBurialRetry(t *testing.T, svc *core.Service, newer core.Burial, mode
 		held = h
 	}}
 	rows, err := svc.Resurrect([]string{fmt.Sprint(newer.ID)})
-	if err != nil || core.GraveFailed(rows) || rows[0].Warning == "" {
+	if err != nil || lifecycle.GraveFailed(rows) || rows[0].Warning == "" {
 		t.Fatal(rows, err)
 	}
 	svc.FS = original
@@ -84,7 +86,7 @@ func prepareBurialRetry(t *testing.T, svc *core.Service, newer core.Burial, mode
 	}
 }
 
-func AssertRetryPreservesBurials(t *testing.T, older, newer core.Burial, mode, message string, failed bool) {
+func AssertRetryPreservesBurials(t *testing.T, older, newer ledger.Burial, mode, message string, failed bool) {
 	t.Helper()
 	if !failed || !strings.Contains(message, "retry") {
 		t.Fatalf("unverifiable retry selected an older burial: %s", message)
@@ -92,7 +94,7 @@ func AssertRetryPreservesBurials(t *testing.T, older, newer core.Burial, mode, m
 	if mode == "manifest" && !strings.Contains(message, fmt.Sprintf("#%d", newer.ID)) {
 		t.Fatalf("unverifiable newest receipt lost its ID: %s", message)
 	}
-	for _, b := range []core.Burial{older, newer} {
+	for _, b := range []ledger.Burial{older, newer} {
 		if mode == "manifest" && b.ID == newer.ID {
 			continue
 		}
@@ -102,10 +104,10 @@ func AssertRetryPreservesBurials(t *testing.T, older, newer core.Burial, mode, m
 	}
 }
 
-func AssertCommittedRetry(t *testing.T, svc *core.Service, older, newer core.Burial, rows []core.GraveResult) {
+func AssertCommittedRetry(t *testing.T, svc *lifecycle.Service, older, newer ledger.Burial, rows []lifecycle.GraveResult) {
 	t.Helper()
 	st, err := svc.Store.ReadSnapshot()
-	if err != nil || len(rows) != 1 || core.GraveFailed(rows) || rows[0].Burial == nil || rows[0].Burial.ID != newer.ID || rows[0].Action != core.ActionResurrected || rows[0].Path != newer.Path || len(st.Burials) != 1 || st.Burials[0].ID != older.ID {
+	if err != nil || len(rows) != 1 || lifecycle.GraveFailed(rows) || rows[0].Burial == nil || rows[0].Burial.ID != newer.ID || rows[0].Action != ledger.ActionResurrected || rows[0].Path != newer.Path || len(st.Burials) != 1 || st.Burials[0].ID != older.ID {
 		t.Fatalf("committed retry selected older active burial: %+v %v", rows, err)
 	}
 	data, err := os.ReadFile(older.Grave)
@@ -114,7 +116,7 @@ func AssertCommittedRetry(t *testing.T, svc *core.Service, older, newer core.Bur
 	}
 }
 
-func RestoreReceiptFixture(t *testing.T) (*core.Service, []string, func()) {
+func RestoreReceiptFixture(t *testing.T) (*lifecycle.Service, []string, func()) {
 	t.Helper()
 	IsolateRunner(t)
 	repo, _ := CommandDir(t)
@@ -125,7 +127,7 @@ func RestoreReceiptFixture(t *testing.T) (*core.Service, []string, func()) {
 	paths := []string{filepath.Join(repo, "a.txt"), filepath.Join(repo, "b.txt"), filepath.Join(repo, "c.txt")}
 	for _, path := range paths {
 		WriteFixture(t, path, "buried")
-		if got, err := svc.Bury([]string{path}, false, ""); err != nil || core.GraveFailed(got) {
+		if got, err := svc.Bury([]string{path}, false, ""); err != nil || lifecycle.GraveFailed(got) {
 			t.Fatal(got, err)
 		}
 	}
@@ -158,7 +160,7 @@ func RestoreReceiptFixture(t *testing.T) (*core.Service, []string, func()) {
 	return svc, paths, unlock
 }
 
-func PurgingCommandFixture(t *testing.T) (*core.Service, core.Burial) {
+func PurgingCommandFixture(t *testing.T) (*lifecycle.Service, ledger.Burial) {
 	t.Helper()
 	IsolateRunner(t)
 	repo, _ := CommandDir(t)
@@ -169,7 +171,7 @@ func PurgingCommandFixture(t *testing.T) (*core.Service, core.Burial) {
 	path := filepath.Join(repo, "payload.txt")
 	WriteFixture(t, path, "keep until purge can finish")
 	rows, err := svc.Bury([]string{path}, false, "")
-	if err != nil || core.GraveFailed(rows) {
+	if err != nil || lifecycle.GraveFailed(rows) {
 		t.Fatal(rows, err)
 	}
 	b := *rows[0].Burial
@@ -181,13 +183,13 @@ func PurgingCommandFixture(t *testing.T) (*core.Service, core.Burial) {
 	t.Cleanup(func() { windows.CloseHandle(h) })
 	rows, err = svc.PurgeRefs([]string{fmt.Sprint(b.ID)}, false)
 	st, readErr := svc.Store.ReadSnapshot()
-	if err != nil || readErr != nil || !core.GraveFailed(rows) || len(st.Burials) != 1 || st.Burials[0].PurgeIntent == nil || st.Burials[0].NextPurgeAttempt.IsZero() || st.Burials[0].LastPurgeError == "" {
+	if err != nil || readErr != nil || !lifecycle.GraveFailed(rows) || len(st.Burials) != 1 || st.Burials[0].PurgeIntent == nil || st.Burials[0].NextPurgeAttempt.IsZero() || st.Burials[0].LastPurgeError == "" {
 		t.Fatalf("fixture did not persist interrupted purge: %+v %+v %v %v", rows, st, err, readErr)
 	}
 	return svc, st.Burials[0]
 }
 
-func PendingCommandBurial(t *testing.T, tracked bool) (*core.Service, string, core.PendingGrave) {
+func PendingCommandBurial(t *testing.T, tracked bool) (*lifecycle.Service, string, lifecycle.PendingGrave) {
 	t.Helper()
 	IsolateRunner(t)
 	repo, store := CommandDir(t)
@@ -198,8 +200,8 @@ func PendingCommandBurial(t *testing.T, tracked bool) (*core.Service, string, co
 		t.Fatal(err)
 	}
 	if tracked {
-		rows, err := svc.Add([]string{path}, core.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
-		if err != nil || core.Failed(rows) {
+		rows, err := svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
+		if err != nil || lifecycle.Failed(rows) {
 			t.Fatalf("add: %+v, %v", rows, err)
 		}
 	}
@@ -220,7 +222,7 @@ func PendingCommandBurial(t *testing.T, tracked bool) (*core.Service, string, co
 
 // Attempt real manifest recovery after the list's ledger read, at its first
 // filesystem scan. A consistent view holds recovery off until that scan ends.
-func RecoverDuringGraveyardRead(t *testing.T, svc *core.Service) func() {
+func RecoverDuringGraveyardRead(t *testing.T, svc *lifecycle.Service) func() {
 	t.Helper()
 	recovering := *svc
 	root := filepath.Join(svc.Store.Home, "graveyard")
@@ -253,12 +255,12 @@ func RecoverDuringGraveyardRead(t *testing.T, svc *core.Service) func() {
 }
 
 type restoreReceiptFS struct {
-	core.FS
+	corefs.FS
 	after func()
 }
 
 type onceRootFailureFS struct {
-	core.FS
+	corefs.FS
 	root   string
 	failed bool
 }
@@ -271,7 +273,7 @@ func (f *onceRootFailureFS) RealPath(path string) (string, error) {
 	return f.FS.RealPath(path)
 }
 
-func (fs restoreReceiptFS) MovePinnedInto(path string, want core.Identity, parent core.RestoreParent, name string) (string, error) {
+func (fs restoreReceiptFS) MovePinnedInto(path string, want corefs.Identity, parent corefs.RestoreParent, name string) (string, error) {
 	actual, err := fs.FS.MovePinnedInto(path, want, parent, name)
 	if err == nil {
 		fs.after()
@@ -280,7 +282,7 @@ func (fs restoreReceiptFS) MovePinnedInto(path string, want core.Identity, paren
 }
 
 type approvalFaultFS struct {
-	core.FS
+	corefs.FS
 	beforeRealPath func(string)
 	beforeIdentify func(string)
 }
@@ -292,7 +294,7 @@ func (fs approvalFaultFS) RealPath(path string) (string, error) {
 	return fs.FS.RealPath(path)
 }
 
-func (fs approvalFaultFS) Identify(path string) (core.Identity, error) {
+func (fs approvalFaultFS) Identify(path string) (corefs.Identity, error) {
 	if fs.beforeIdentify != nil {
 		fs.beforeIdentify(path)
 	}
@@ -300,11 +302,11 @@ func (fs approvalFaultFS) Identify(path string) (core.Identity, error) {
 }
 
 type failBurialCommitFS struct {
-	core.FS
+	corefs.FS
 	blocked string
 }
 
-func (f *failBurialCommitFS) MovePinned(path string, want core.Identity, to string) error {
+func (f *failBurialCommitFS) MovePinned(path string, want corefs.Identity, to string) error {
 	if err := f.FS.MovePinned(path, want, to); err != nil {
 		return err
 	}

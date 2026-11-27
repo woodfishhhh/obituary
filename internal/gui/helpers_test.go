@@ -14,7 +14,10 @@ import (
 	"github.com/woodfishhhh/obituary/internal/auto"
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/contextmenu"
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/guard"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
@@ -64,7 +67,7 @@ func (f *fakeMenu) DeleteTree(path string, _ contextmenu.Tree) error {
 
 type safeFS struct{ winfs.FS }
 
-func (safeFS) Recycle(string, core.Identity) error {
+func (safeFS) Recycle(string, corefs.Identity) error {
 	return errors.New("test must not reach Recycle Bin")
 }
 
@@ -72,7 +75,7 @@ func fixture(t *testing.T) (*API, string) {
 	t.Helper()
 	root := t.TempDir()
 	home := filepath.Join(root, "home")
-	svc := &core.Service{Store: core.Store{Home: home}, FS: safeFS{}, Guard: core.Guard{System: []string{home}}, Owner: auto.Owner}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: home}, FS: safeFS{}, Guard: guard.Guard{System: []string{home}}, Owner: auto.Owner}
 	engine := app.Engine(svc)
 	svc.Recheck = engine.RecheckRules
 	d := Dependencies{Service: svc, Engine: engine, ConfigDir: filepath.Join(root, "config"),
@@ -100,17 +103,17 @@ func write(t *testing.T, path, content string) {
 	}
 }
 
-func add(t *testing.T, a *API, path string, expiry time.Time) core.Item {
+func add(t *testing.T, a *API, path string, expiry time.Time) ledger.Item {
 	t.Helper()
 	write(t, path, "payload")
-	results, err := a.deps.Service.Add([]string{path}, core.AddOptions{ExpiresAt: expiry})
+	results, err := a.deps.Service.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: expiry})
 	if err != nil || len(results) != 1 || results[0].Error != "" {
 		t.Fatalf("add: %+v %v", results, err)
 	}
 	return *results[0].Item
 }
 
-func bury(t *testing.T, a *API, path string) core.Burial {
+func bury(t *testing.T, a *API, path string) ledger.Burial {
 	t.Helper()
 	write(t, path, "payload")
 	results, err := a.deps.Service.Bury([]string{path}, false, "")

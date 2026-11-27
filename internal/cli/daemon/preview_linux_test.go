@@ -10,7 +10,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 )
 
 func TestPOSIXDaemonPreviewDoesNotInstallUserUnits(t *testing.T) {
@@ -36,7 +36,7 @@ func TestPOSIXDaemonPreviewDoesNotInstallUserUnits(t *testing.T) {
 	if err != nil || len(entries) != 0 {
 		t.Fatalf("preview wrote files: %v %v", entries, err)
 	}
-	if err := preview(&out, self, home, true, true); !errors.Is(err, core.ErrUnsupported) {
+	if err := preview(&out, self, home, true, true); !errors.Is(err, corefs.ErrUnsupported) {
 		t.Fatal(err)
 	}
 }

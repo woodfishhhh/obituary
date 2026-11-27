@@ -10,8 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
 	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 func TestPOSIXRapidRecreationHasDistinctIdentity(t *testing.T) {
@@ -44,9 +45,9 @@ func TestPOSIXRecreatedObjectIsRetained(t *testing.T) {
 			makePOSIXPayload(t, path, directory, "old")
 			now := time.Now()
 			moves := 0
-			svc := &core.Service{Store: core.Store{Home: filepath.Join(dir, "data")}, FS: FS{beforeRename: func() { moves++ }}, Now: func() time.Time { return now }}
-			rows, err := svc.Add([]string{path}, core.AddOptions{ExpiresAt: now.Add(time.Hour)})
-			if err != nil || core.Failed(rows) {
+			svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(dir, "data")}, FS: FS{beforeRename: func() { moves++ }}, Now: func() time.Time { return now }}
+			rows, err := svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: now.Add(time.Hour)})
+			if err != nil || lifecycle.Failed(rows) {
 				t.Fatalf("add: %+v %v", rows, err)
 			}
 			old := *rows[0].Item.Identity
@@ -65,7 +66,7 @@ func TestPOSIXRecreatedObjectIsRetained(t *testing.T) {
 			}
 			now = now.Add(2 * time.Hour)
 			out, err := svc.Sweep(false)
-			if err != nil || len(out) != 1 || out[0].Action != core.ActionRetry {
+			if err != nil || len(out) != 1 || out[0].Action != ledger.ActionRetry {
 				t.Fatalf("replacement was not retained: %+v %v", out, err)
 			}
 			if moves != 0 {
@@ -108,14 +109,14 @@ func TestPOSIXPersistentIdentitySurvivesEdits(t *testing.T) {
 		moved := path + "-renamed"
 		mustPOSIXRename(t, path, moved)
 		assertPOSIXPayload(t, moved, directory, want, "edited")
-		svc := &core.Service{Store: core.Store{Home: filepath.Join(dir, "data")}, FS: FS{}}
+		svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(dir, "data")}, FS: FS{}}
 		buried, err := svc.Bury([]string{moved}, false, "")
-		if err != nil || core.GraveFailed(buried) {
+		if err != nil || lifecycle.GraveFailed(buried) {
 			t.Fatalf("edited object burial: %+v %v", buried, err)
 		}
 		assertPOSIXPayload(t, buried[0].Burial.Grave, directory, want, "edited")
 		restored, err := svc.Resurrect([]string{moved})
-		if err != nil || core.GraveFailed(restored) {
+		if err != nil || lifecycle.GraveFailed(restored) {
 			t.Fatalf("edited object restore: %+v %v", restored, err)
 		}
 		assertPOSIXPayload(t, moved, directory, want, "edited")

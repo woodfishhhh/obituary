@@ -3,8 +3,8 @@ package cmdutil
 import (
 	"errors"
 
-	"github.com/woodfishhhh/obituary/internal/core"
 	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 )
 
@@ -15,7 +15,7 @@ func ReferenceText(l *i18n.Localizer, err error, raw string) string {
 	if l.Language() == i18n.English {
 		return raw
 	}
-	e, ok := errors.AsType[*core.ReferenceError](err)
+	e, ok := errors.AsType[*lifecycle.ReferenceError](err)
 	if !ok {
 		return raw
 	}

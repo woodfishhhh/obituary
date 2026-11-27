@@ -7,7 +7,7 @@ import (
 	"errors"
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,7 +26,7 @@ func TestRenamedParentCLIReceipts(t *testing.T) {
 		t.Fatal(err)
 	}
 	rows, err := svc.Bury([]string{file}, false, "")
-	if err != nil || core.GraveFailed(rows) {
+	if err != nil || lifecycle.GraveFailed(rows) {
 		t.Fatal(rows, err)
 	}
 	grave := rows[0].Burial.Grave
@@ -44,7 +44,7 @@ func TestRenamedParentCLIReceipts(t *testing.T) {
 		}
 	}
 	out, _, err := clitest.Execute(t, NewCmd(), "--json", file)
-	var got []core.GraveResult
+	var got []lifecycle.GraveResult
 	if !errors.Is(err, cmdutil.ErrReported) || json.Unmarshal([]byte(out), &got) != nil || len(got) != 1 || got[0].Burial.Grave != grave || !strings.Contains(got[0].Error, "is currently at") {
 		t.Fatal(out, err)
 	}
@@ -61,7 +61,7 @@ func buryCLIFile(t *testing.T, file string) string {
 		t.Fatal(err)
 	}
 	rows, err := svc.Bury([]string{file}, false, "")
-	if err != nil || len(rows) != 1 || core.GraveFailed(rows) {
+	if err != nil || len(rows) != 1 || lifecycle.GraveFailed(rows) {
 		t.Fatal(rows, err)
 	}
 	return rows[0].Burial.Grave

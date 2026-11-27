@@ -2,7 +2,7 @@
 
 package runkey
 
-import "github.com/woodfishhhh/obituary/internal/core"
+import corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 
 type Registry interface {
 	Get(string) (string, error)
@@ -24,9 +24,9 @@ var Current Registry = native{}
 
 type native struct{}
 
-func (native) Get(string) (string, error)                { return "", core.ErrUnsupported }
-func (native) Set(string, string) error                  { return core.ErrUnsupported }
-func (native) Delete(string) error                       { return core.ErrUnsupported }
-func (native) Read(string) (Value, error)                { return Value{}, core.ErrUnsupported }
-func (native) CompareAndSwap(string, Value, Value) error { return core.ErrUnsupported }
-func (native) Lock() (func(), error)                     { return nil, core.ErrUnsupported }
+func (native) Get(string) (string, error)                { return "", corefs.ErrUnsupported }
+func (native) Set(string, string) error                  { return corefs.ErrUnsupported }
+func (native) Delete(string) error                       { return corefs.ErrUnsupported }
+func (native) Read(string) (Value, error)                { return Value{}, corefs.ErrUnsupported }
+func (native) CompareAndSwap(string, Value, Value) error { return corefs.ErrUnsupported }
+func (native) Lock() (func(), error)                     { return nil, corefs.ErrUnsupported }

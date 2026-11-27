@@ -12,7 +12,8 @@ import (
 	"github.com/woodfishhhh/obituary/internal/app"
 	initcmd "github.com/woodfishhhh/obituary/internal/cli/init"
 	"github.com/woodfishhhh/obituary/internal/contextmenu"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/explorer"
 	"github.com/woodfishhhh/obituary/internal/integrate"
 	"github.com/woodfishhhh/obituary/internal/project"
@@ -26,9 +27,9 @@ type integration struct {
 }
 
 type plan struct {
-	svc          *core.Service
-	state        core.State
-	pending      []core.PendingGrave
+	svc          *lifecycle.Service
+	state        ledger.State
+	pending      []lifecycle.PendingGrave
 	config       string
 	schedule     string
 	integrations []integration

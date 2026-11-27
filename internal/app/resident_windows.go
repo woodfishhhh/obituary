@@ -14,14 +14,15 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"golang.org/x/sys/windows"
 )
 
 // Resident owns the long-lived Service. Menu actions and scheduled work share
 // this object; CLI writers continue to use the existing ledger/sweep locks.
 type Resident struct {
-	Service  *core.Service
+	Service  *lifecycle.Service
 	Changed  func()
 	mu       sync.Mutex
 	watcher  *fsnotify.Watcher
@@ -33,7 +34,7 @@ type Resident struct {
 	// hot and graves are what it read, which the tray shows instead of
 	// reading again.
 	read   time.Time
-	hot    *core.State
+	hot    *ledger.State
 	graves *graves
 	// stopFolderWatch stops the live obit watch policies.
 	stopFolderWatch func()
@@ -56,7 +57,7 @@ func daemonMutexName(home string) (*uint16, error) {
 var publishDaemonStart = func(home string) error { return writeDaemonProcess(home, false, nil) }
 
 // NewResident returns nil without error when this user's store is served already.
-func NewResident(svc *core.Service, logger *log.Logger) (r *Resident, err error) {
+func NewResident(svc *lifecycle.Service, logger *log.Logger) (r *Resident, err error) {
 	if err := os.MkdirAll(svc.Store.Home, 0o700); err != nil {
 		return nil, err
 	}
@@ -107,7 +108,7 @@ func NewResident(svc *core.Service, logger *log.Logger) (r *Resident, err error)
 	return r, nil
 }
 
-func watchObservations(svc *core.Service, w *fsnotify.Watcher, logger *log.Logger) {
+func watchObservations(svc *lifecycle.Service, w *fsnotify.Watcher, logger *log.Logger) {
 	// A hook that cannot take store.lock queues its write here and leaves the
 	// replay to this resident, so a new file must wake it. Without the watch
 	// the queue still drains at each tick.
@@ -119,7 +120,7 @@ func watchObservations(svc *core.Service, w *fsnotify.Watcher, logger *log.Logge
 	}
 }
 
-func resident(svc *core.Service, logger *log.Logger) *Resident {
+func resident(svc *lifecycle.Service, logger *log.Logger) *Resident {
 	return &Resident{Service: svc, logger: logger,
 		errs: &errorLog{logger: logger, last: map[string]string{}, at: map[string]time.Time{}}}
 }
@@ -139,7 +140,7 @@ func (r *Resident) Close() {
 }
 
 // Serve is the headless resident entry, also used by process-level tests.
-func Serve(svc *core.Service, logger *log.Logger) error {
+func Serve(svc *lifecycle.Service, logger *log.Logger) error {
 	r, err := NewResident(svc, logger)
 	if err != nil || r == nil {
 		return err
@@ -292,7 +293,7 @@ func (r *Resident) step(interval time.Duration) (time.Duration, bool, error) {
 // hot ledger names a new one: most commits never change the graveyard. It
 // notes the modification time first, so a commit that lands during the read
 // still wakes the next wait.
-func (r *Resident) readState() (core.State, bool) {
+func (r *Resident) readState() (ledger.State, bool) {
 	r.read = r.Service.Store.ModTime()
 	state, err := r.Service.Store.ReadHot()
 	if err == nil && (state.Graveyard == nil || r.graves == nil || *state.Graveyard != r.graves.ref) {
@@ -310,7 +311,7 @@ func (r *Resident) readState() (core.State, bool) {
 }
 
 // nextDue adds the graveyard's next purge to what the hot ledger has due.
-func (r *Resident) nextDue(hot core.State) (time.Time, bool) {
+func (r *Resident) nextDue(hot ledger.State) (time.Time, bool) {
 	next, has := hot.NextDueFor(currentGraveyardMaxBytes(r.Service))
 	if g := r.graves; g != nil && g.has && (!has || g.next.Before(next)) {
 		return g.next, true
@@ -328,7 +329,7 @@ func (r *Resident) tick() {
 	}
 	for _, o := range outcomes {
 		key := fmt.Sprintf("#%d", o.Item.ID)
-		if o.Action == core.ActionBlocked || o.Action == core.ActionRetry {
+		if o.Action == ledger.ActionBlocked || o.Action == ledger.ActionRetry {
 			r.errs.report(key, fmt.Errorf("%s %s %s", o.Action, o.Path, o.Detail))
 		} else {
 			r.errs.clear(key)
@@ -340,7 +341,7 @@ func (r *Resident) tick() {
 	}
 }
 
-func serveLoop(svc *core.Service, logger *log.Logger, interval time.Duration, wait func(time.Duration)) error {
+func serveLoop(svc *lifecycle.Service, logger *log.Logger, interval time.Duration, wait func(time.Duration)) error {
 	r := resident(svc, logger)
 	for {
 		delay, stop, err := r.step(interval)

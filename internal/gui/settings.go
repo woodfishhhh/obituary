@@ -10,7 +10,9 @@ import (
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/config"
 	"github.com/woodfishhhh/obituary/internal/contextmenu"
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/integrate"
 	"github.com/woodfishhhh/obituary/internal/shortcut"
@@ -70,7 +72,7 @@ func (a *API) readConfig() (config.Config, error) {
 // config.toml so external CLI/editor changes take effect without restarting
 // the GUI. Tests that configure a.deps.Service in memory without writing
 // config.toml keep their in-memory settings until config.toml is loaded.
-func (a *API) service() (*core.Service, error) {
+func (a *API) service() (*lifecycle.Service, error) {
 	path := filepath.Join(a.deps.ConfigDir, "config.toml")
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
@@ -91,7 +93,7 @@ func (a *API) service() (*core.Service, error) {
 	return applyServiceConfig(a.deps.Service, cfg), nil
 }
 
-func applyServiceConfig(base *core.Service, cfg config.Config) *core.Service {
+func applyServiceConfig(base *lifecycle.Service, cfg config.Config) *lifecycle.Service {
 	cp := *base
 	// Preserve live Mode so Summary, Upcoming, and Bury stay aligned with the
 	// GUI session's delete mode until changed via PlanSettings.
@@ -155,24 +157,24 @@ type ChangePreview struct {
 	After  string `json:"after"`
 }
 type Plan struct {
-	ID           string              `json:"id"`
-	Action       string              `json:"action"`
-	Changes      []ChangePreview     `json:"changes"`
-	QuotaPreview *core.QuotaEviction `json:"quotaPreview,omitempty"`
+	ID           string                   `json:"id"`
+	Action       string                   `json:"action"`
+	Changes      []ChangePreview          `json:"changes"`
+	QuotaPreview *lifecycle.QuotaEviction `json:"quotaPreview,omitempty"`
 }
 type pendingPlan struct {
 	view       Plan
 	apply      func() error
 	applyMenu  func() (contextmenu.ApplyReceipt, error)
-	applyQuota func() (bool, core.QuotaEviction, error)
+	applyQuota func() (bool, lifecycle.QuotaEviction, error)
 }
 
 type PlanReceipt struct {
 	Receipt
-	Applied       []string            `json:"applied"`
-	Remaining     []string            `json:"remaining"`
-	QuotaEviction *core.QuotaEviction `json:"quotaEviction,omitempty"`
-	Error         string              `json:"error,omitempty"`
+	Applied       []string                 `json:"applied"`
+	Remaining     []string                 `json:"remaining"`
+	QuotaEviction *lifecycle.QuotaEviction `json:"quotaEviction,omitempty"`
+	Error         string                   `json:"error,omitempty"`
 }
 
 func (a *API) savePlan(action string, changes []ChangePreview, apply func() error) Plan {
@@ -184,7 +186,7 @@ func (a *API) savePlan(action string, changes []ChangePreview, apply func() erro
 
 func (a *API) PlanSettings(mode string, retentionDays int) (Plan, error) {
 	if mode == config.ModeRecycle && !platformCapabilities().Recycle {
-		return Plan{}, core.ErrUnsupported
+		return Plan{}, corefs.ErrUnsupported
 	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -286,7 +288,7 @@ func (a *API) ApplyPlan(id string) (PlanReceipt, error) {
 	}
 	if plan.applyQuota != nil {
 		configSaved, ev, err := plan.applyQuota()
-		var summary *core.QuotaEviction
+		var summary *lifecycle.QuotaEviction
 		if ev.PurgedCount > 0 || ev.FailedCount > 0 {
 			ev.Results = nil
 			summary = &ev
@@ -304,16 +306,16 @@ func (a *API) ApplyPlan(id string) (PlanReceipt, error) {
 
 // PreviewGraveyardQuotaEviction inspects what lowering [graveyard] max_size
 // would evict without modifying config.toml, the ledger, or any file on disk.
-func (a *API) PreviewGraveyardQuotaEviction(maxSize string) (core.QuotaEviction, error) {
+func (a *API) PreviewGraveyardQuotaEviction(maxSize string) (lifecycle.QuotaEviction, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	_, maxBytes, err := config.NormalizeByteSize(maxSize)
 	if err != nil {
-		return core.QuotaEviction{}, err
+		return lifecycle.QuotaEviction{}, err
 	}
 	if maxBytes == 0 {
 		_, used, err := a.deps.Service.GraveyardDiskUsage()
-		return core.QuotaEviction{MaxBytes: 0, BeforeBytes: used, AfterBytes: used}, err
+		return lifecycle.QuotaEviction{MaxBytes: 0, BeforeBytes: used, AfterBytes: used}, err
 	}
 	ev, err := a.deps.Service.PreviewGraveyardQuotaEviction(maxBytes)
 	ev.Results = nil
@@ -341,7 +343,7 @@ func (a *API) PlanGraveyardMaxSize(maxSize string) (Plan, error) {
 	if err != nil {
 		return Plan{}, err
 	}
-	var quotaPreview *core.QuotaEviction
+	var quotaPreview *lifecycle.QuotaEviction
 	var previewHash string
 	var needDriftCheck bool
 	if maxBytes > 0 {
@@ -357,37 +359,37 @@ func (a *API) PlanGraveyardMaxSize(maxSize string) (Plan, error) {
 	preview := []ChangePreview{{Target: path, Before: "max_size=" + old.Graveyard.MaxSize, After: "max_size=" + norm}}
 	a.nextPlan++
 	view := Plan{ID: strconv.FormatUint(a.nextPlan, 10), Action: "graveyardMaxSize", Changes: preview, QuotaPreview: quotaPreview}
-	a.plan = &pendingPlan{view: view, applyQuota: func() (bool, core.QuotaEviction, error) {
+	a.plan = &pendingPlan{view: view, applyQuota: func() (bool, lifecycle.QuotaEviction, error) {
 		return a.applyGraveyardMaxSizePlan(change, maxBytes, needDriftCheck, previewHash)
 	}}
 	return view, nil
 }
 
-func (a *API) applyGraveyardMaxSizePlan(change integrate.Change, maxBytes int64, needDriftCheck bool, previewHash string) (bool, core.QuotaEviction, error) {
+func (a *API) applyGraveyardMaxSizePlan(change integrate.Change, maxBytes int64, needDriftCheck bool, previewHash string) (bool, lifecycle.QuotaEviction, error) {
 	if needDriftCheck {
 		currentHash, err := a.deps.Service.GraveyardSnapshotHash()
 		if err != nil {
-			return false, core.QuotaEviction{}, err
+			return false, lifecycle.QuotaEviction{}, err
 		}
 		if currentHash != previewHash {
-			return false, core.QuotaEviction{}, errors.New("graveyard changed since preview; preview again")
+			return false, lifecycle.QuotaEviction{}, errors.New("graveyard changed since preview; preview again")
 		}
 	}
 	if err := integrate.Apply([]integrate.Change{change}); err != nil {
-		return false, core.QuotaEviction{}, err
+		return false, lifecycle.QuotaEviction{}, err
 	}
 	cfg, err := a.readConfig()
 	if err != nil {
-		return true, core.QuotaEviction{}, err
+		return true, lifecycle.QuotaEviction{}, err
 	}
 	a.configLoaded = true
 	a.deps.Service.GraveyardMaxBytes = cfg.Graveyard.MaxBytes()
 	if maxBytes <= 0 {
-		return true, core.QuotaEviction{}, nil
+		return true, lifecycle.QuotaEviction{}, nil
 	}
 	svc := applyServiceConfig(a.deps.Service, cfg)
 	ev, evErr := svc.EnforceGraveyardQuota(false)
-	if core.OnlyAuditErrors(evErr) {
+	if ledger.OnlyAuditErrors(evErr) {
 		evErr = nil
 	}
 	return true, ev, evErr

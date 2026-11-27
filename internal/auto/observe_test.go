@@ -10,7 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 )
 
@@ -45,7 +46,7 @@ func TestObserveUnreadableLedgerReturnsEveryPath(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "store.json"), []byte("{broken"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	e := &Engine{Svc: &core.Service{Store: core.Store{Home: dir}, ProposalMode: core.ProposalsTiered}}
+	e := &Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: dir}, ProposalMode: lifecycle.ProposalsTiered}}
 	ds, notices, err := e.observe([]string{"first", "second"}, Options{Session: "s"}, locations{})
 	if err == nil || len(ds) != 2 || ds[0].Path != "first" || ds[1].Path != "second" || ds[0].Err == nil || ds[1].Err == nil || len(notices) != 0 {
 		t.Fatalf("unreadable ledger lost per-path failures: %+v %+v %v", ds, notices, err)
@@ -78,8 +79,8 @@ func TestObserveCapturedSkipsCompletedRequest(t *testing.T) {
 			r := newRepo(t)
 			want := Proposed
 			if approved {
-				if err := r.engine.Svc.Store.Update(func(st *core.State) error {
-					st.Projects = map[string]core.ProjectState{core.ProjectKey(r.root): {Consent: core.ConsentApproved}}
+				if err := r.engine.Svc.Store.Update(func(st *ledger.State) error {
+					st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(r.root): {Consent: ledger.ConsentApproved}}
 					return nil
 				}); err != nil {
 					t.Fatal(err)
@@ -141,8 +142,8 @@ func TestInvalidProjectRulesPauseAutomaticRegistration(t *testing.T) {
 
 func approveAutomatic(t *testing.T, r *repo) {
 	t.Helper()
-	if err := r.engine.Svc.Store.Update(func(st *core.State) error {
-		st.Projects = map[string]core.ProjectState{core.ProjectKey(r.root): {Consent: core.ConsentApproved}}
+	if err := r.engine.Svc.Store.Update(func(st *ledger.State) error {
+		st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(r.root): {Consent: ledger.ConsentApproved}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -171,7 +172,7 @@ func TestRemovedTrustedRulesPauseObservationAndExpiry(t *testing.T) {
 	r.engine.Svc.Now = func() time.Time { return time.Now().Add(time.Minute) }
 	out, err := r.engine.Svc.Sweep(false)
 	st, readErr := r.engine.Svc.Store.Read()
-	if err != nil || readErr != nil || len(st.Items) != 1 || len(out) != 1 || out[0].Action != core.ActionRetry {
+	if err != nil || readErr != nil || len(st.Items) != 1 || len(out) != 1 || out[0].Action != ledger.ActionRetry {
 		t.Fatalf("missing trusted protection permitted automatic work: %+v %+v %v %v", st.Items, out, err, readErr)
 	}
 	if _, err := os.Stat(path); err != nil {
@@ -201,8 +202,8 @@ func TestKeptObjectsStayOutOfSessionRegistration(t *testing.T) {
 				t.Fatal(err)
 			}
 			path := r.write("restored.log", "keep")
-			rows, err := r.engine.Svc.Add([]string{path}, core.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
-			if err != nil || core.Failed(rows) {
+			rows, err := r.engine.Svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
+			if err != nil || lifecycle.Failed(rows) {
 				t.Fatalf("add: %+v %v", rows, err)
 			}
 			keepObject(t, r, path, action)
@@ -235,17 +236,17 @@ func keepObject(t *testing.T, r *repo, path, action string) {
 	t.Helper()
 	if action == "spare" {
 		rows, err := r.engine.Svc.Cancel([]string{path})
-		if err != nil || core.Failed(rows) {
+		if err != nil || lifecycle.Failed(rows) {
 			t.Fatalf("spare: %+v %v", rows, err)
 		}
 		return
 	}
 	buried, err := r.engine.Svc.Bury([]string{path}, false, "")
-	if err != nil || len(buried) != 1 || buried[0].Action != core.ActionBuried {
+	if err != nil || len(buried) != 1 || buried[0].Action != ledger.ActionBuried {
 		t.Fatalf("bury: %+v %v", buried, err)
 	}
 	restored, err := r.engine.Svc.Resurrect([]string{path})
-	if err != nil || len(restored) != 1 || restored[0].Action != core.ActionResurrected {
+	if err != nil || len(restored) != 1 || restored[0].Action != ledger.ActionResurrected {
 		t.Fatalf("resurrect: %+v %v", restored, err)
 	}
 }
@@ -259,8 +260,8 @@ func TestKeptUnmatchedObjectDoesNotBecomeLeftoverProposal(t *testing.T) {
 		t.Fatal(err)
 	}
 	path := r.write("notes.txt", "keep")
-	rows, err := r.engine.Svc.Add([]string{path}, core.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
-	if err != nil || core.Failed(rows) {
+	rows, err := r.engine.Svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
+	if err != nil || lifecycle.Failed(rows) {
 		t.Fatalf("add: %+v %v", rows, err)
 	}
 	keepObject(t, r, path, "spare")
@@ -382,13 +383,13 @@ func TestLeftoversDeduplicateSessions(t *testing.T) {
 				t.Fatalf("unapproved leftover changed registration: %+v", st)
 			}
 			refs := []string{fmt.Sprint(st.Proposals[0].ID)}
-			var out []core.ProposalResult
+			var out []lifecycle.ProposalResult
 			if decision == "approve" {
 				out, err = r.engine.Approve(refs)
 			} else {
 				out, err = r.engine.Svc.Reject(refs)
 			}
-			if err != nil || len(out) != 1 || out[0].Error != "" || core.Failed(out[0].Results) {
+			if err != nil || len(out) != 1 || out[0].Error != "" || lifecycle.Failed(out[0].Results) {
 				t.Fatalf("decision failed: %+v %v", out, err)
 			}
 			for _, session := range []string{"first", "second"} {
@@ -418,8 +419,8 @@ func TestObserveReturnsEachPathOutcome(t *testing.T) {
 	t.Parallel()
 	r := newRepo(t)
 	bad, good, source := r.write("bad.log", "retry"), r.write("good.log", "register"), r.write("notes.txt", "keep")
-	if err := r.engine.Svc.Store.Update(func(st *core.State) error {
-		st.Projects = map[string]core.ProjectState{core.ProjectKey(r.root): {Consent: core.ConsentApproved}}
+	if err := r.engine.Svc.Store.Update(func(st *ledger.State) error {
+		st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(r.root): {Consent: ledger.ConsentApproved}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -472,15 +473,15 @@ func TestObserveVetsRegistrationAndProposals(t *testing.T) {
 			t.Run(route+"/"+gitState, func(t *testing.T) {
 				r := newRepo(t)
 				path := r.write("debug.log", "keep")
-				consent := core.ConsentApproved
+				consent := ledger.ConsentApproved
 				switch route {
 				case "onboard":
 					consent = ""
 				case "declined":
-					consent = core.ConsentDeclined
+					consent = ledger.ConsentDeclined
 				}
-				if err := r.engine.Svc.Store.Update(func(st *core.State) error {
-					st.Projects = map[string]core.ProjectState{core.ProjectKey(r.root): {Consent: consent}}
+				if err := r.engine.Svc.Store.Update(func(st *ledger.State) error {
+					st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(r.root): {Consent: consent}}
 					return nil
 				}); err != nil {
 					t.Fatal(err)
@@ -540,8 +541,8 @@ func TestObserveApprovedQueriesLiveGitOnce(t *testing.T) {
 	path := r.write("debug.log", "keep")
 	seed := func() {
 		t.Helper()
-		if err := r.engine.Svc.Store.Update(func(st *core.State) error {
-			*st = core.State{NextID: 1, Projects: map[string]core.ProjectState{core.ProjectKey(r.root): {Consent: core.ConsentApproved}}}
+		if err := r.engine.Svc.Store.Update(func(st *ledger.State) error {
+			*st = ledger.State{NextID: 1, Projects: map[string]ledger.ProjectState{ledger.ProjectKey(r.root): {Consent: ledger.ConsentApproved}}}
 			return nil
 		}); err != nil {
 			t.Fatal(err)

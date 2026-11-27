@@ -15,7 +15,8 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/app"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
@@ -61,7 +62,7 @@ func TestFolderResidentStopsNormallyWithPendingDirectories(t *testing.T) {
 		t.Fatal(out, stderr, err)
 	}
 	out, _, err := execute(t, "proposals", "--json")
-	var proposals []core.Proposal
+	var proposals []ledger.Proposal
 	if err != nil || json.Unmarshal([]byte(out), &proposals) != nil || len(proposals) != 1 {
 		t.Fatalf("policy proposal: %s %v", out, err)
 	}
@@ -69,7 +70,7 @@ func TestFolderResidentStopsNormallyWithPendingDirectories(t *testing.T) {
 		t.Fatal(out, stderr, err)
 	}
 	for deadline := time.Now().Add(30 * time.Second); ; time.Sleep(50 * time.Millisecond) {
-		st, err := (core.Store{Home: home}).Read()
+		st, err := (ledger.Store{Home: home}).Read()
 		if err == nil && len(st.Proposals) == 2 && len(st.Burials) == 1 {
 			break
 		}
@@ -168,7 +169,7 @@ func TestOnceRecoversWithoutNextDue(t *testing.T) {
 	dir := t.TempDir()
 	home := filepath.Join(dir, "home")
 	blocked := filepath.Join(home, "store.json.tmp")
-	svc := &core.Service{Store: core.Store{Home: home}, FS: commitFailureFS{FS: winfs.FS{}, blocked: blocked}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: home}, FS: commitFailureFS{FS: winfs.FS{}, blocked: blocked}}
 	path := filepath.Join(dir, "keep.txt")
 	if err := os.WriteFile(path, []byte("keep"), 0o600); err != nil {
 		t.Fatal(err)

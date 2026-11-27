@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 const fallbackReceipt = "obitd.runner-task.xml"
@@ -141,7 +141,7 @@ func snapshotFallback(home, current string) error {
 	path := filepath.Join(home, legacyFallbackSnapshot)
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 	if errors.Is(err, os.ErrExist) {
-		before, err := core.ReadMetadata(path)
+		before, err := lifecycle.ReadMetadata(path)
 		if err == nil && string(before) != current {
 			return errors.New("fallback differs from the saved migration snapshot; preserved")
 		}
@@ -156,7 +156,7 @@ func snapshotFallback(home, current string) error {
 
 func ensureFallbackSnapshot(home, current, daemon, config string) error {
 	path := filepath.Join(home, legacyFallbackSnapshot)
-	saved, err := core.ReadMetadata(path)
+	saved, err := lifecycle.ReadMetadata(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return snapshotFallback(home, current)
 	}
@@ -173,7 +173,7 @@ func ensureFallbackSnapshot(home, current, daemon, config string) error {
 }
 
 func restoreFallbackSnapshot(home, daemon, config string) error {
-	saved, err := core.ReadMetadata(filepath.Join(home, legacyFallbackSnapshot))
+	saved, err := lifecycle.ReadMetadata(filepath.Join(home, legacyFallbackSnapshot))
 	if err != nil {
 		return err
 	}

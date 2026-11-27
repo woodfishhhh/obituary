@@ -19,7 +19,8 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	gitcleancmd "github.com/woodfishhhh/obituary/internal/cli/gitclean"
 	rmcmd "github.com/woodfishhhh/obituary/internal/cli/rm"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 	"github.com/woodfishhhh/obituary/internal/hook"
 	"github.com/woodfishhhh/obituary/internal/winfs"
@@ -29,8 +30,8 @@ func TestStatsDueWording(t *testing.T) {
 	for _, delta := range []time.Duration{-time.Hour, time.Hour} {
 		t.Run(delta.String(), func(t *testing.T) {
 			_, store := clitest.CommandDir(t)
-			if err := store.Update(func(st *core.State) error {
-				st.Items = []core.Item{{ID: 1, ExpiresAt: time.Now().Add(delta)}}
+			if err := store.Update(func(st *ledger.State) error {
+				st.Items = []ledger.Item{{ID: 1, ExpiresAt: time.Now().Add(delta)}}
 				return nil
 			}); err != nil {
 				t.Fatal(err)
@@ -57,9 +58,9 @@ func BenchmarkStats(b *testing.B) {
 	if out, err := build.CombinedOutput(); err != nil {
 		b.Fatal(string(out), err)
 	}
-	store := core.Store{Home: filepath.Join(base, "data")}
+	store := ledger.Store{Home: filepath.Join(base, "data")}
 	now := time.Now()
-	if err := store.Update(func(st *core.State) error {
+	if err := store.Update(func(st *ledger.State) error {
 		for i := range 1000 {
 			path := filepath.Join(base, fmt.Sprintf("live-%04d", i))
 			grave := filepath.Join(store.Home, "graveyard", fmt.Sprintf("%d-%s-abcdef", 1001+i, now.UTC().Format("20060102T150405Z")), "buried")
@@ -83,8 +84,8 @@ func BenchmarkStats(b *testing.B) {
 			if err != nil {
 				return err
 			}
-			st.Items = append(st.Items, core.Item{ID: int64(i + 1), Rev: 1, Path: path, Identity: &id, ExpiresAt: now.Add(time.Hour)})
-			st.Burials = append(st.Burials, core.Burial{ID: int64(1001 + i), Path: filepath.Join(base, fmt.Sprintf("old-%04d", i)), Grave: grave, Identity: &objectID, GraveID: &graveID, BuriedAt: now, PurgeAt: now.Add(24 * time.Hour), Reason: core.ReasonBury})
+			st.Items = append(st.Items, ledger.Item{ID: int64(i + 1), Rev: 1, Path: path, Identity: &id, ExpiresAt: now.Add(time.Hour)})
+			st.Burials = append(st.Burials, ledger.Burial{ID: int64(1001 + i), Path: filepath.Join(base, fmt.Sprintf("old-%04d", i)), Grave: grave, Identity: &objectID, GraveID: &graveID, BuriedAt: now, PurgeAt: now.Add(24 * time.Hour), Reason: ledger.ReasonBury})
 		}
 		st.NextID = 2001
 		return nil
@@ -234,7 +235,7 @@ func TestDeleteStatsAfterRecovery(t *testing.T) {
 	blocked := filepath.Join(store.Home, "store.json.tmp")
 	svc.FS = &failBurialCommitFS{FS: svc.FS, blocked: blocked}
 	old := cmdutil.Open
-	cmdutil.Open = func() (*core.Service, error) { return svc, nil }
+	cmdutil.Open = func() (*lifecycle.Service, error) { return svc, nil }
 	t.Cleanup(func() { cmdutil.Open = old })
 	if _, _, err := clitest.Execute(t, rmcmd.NewCmd(), "victim"); err == nil {
 		t.Fatal("commit fault not injected")
@@ -284,7 +285,7 @@ func TestStatsShowsGraveyardQuotaAndPendingReminder(t *testing.T) {
 		t.Fatalf("stats text missing quota usage/pending: %s %v", out, err)
 	}
 	jsonOut, _, err := clitest.Execute(t, NewCmd(), "--json")
-	var got core.Summary
+	var got lifecycle.Summary
 	if err != nil || json.Unmarshal([]byte(jsonOut), &got) != nil || got.GraveMaxBytes != 5000 || got.QuotaPendingCount != 1 {
 		t.Fatalf("stats json missing quota fields: %s %+v %v", jsonOut, got, err)
 	}

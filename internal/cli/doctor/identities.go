@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
 func (lang diagnostics) diagnoseIdentities(home string) DoctorCheck {
-	svc := &core.Service{Store: core.Store{Home: home}, FS: winfs.FS{}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: home}, FS: winfs.FS{}}
 	events, err := svc.RegistrationLocationDiagnostics()
 	c := DoctorCheck{Name: "registration-identities", Status: "PASS", Detail: lang.Text("cli.doctor.recorded_identities_have_no_location_errors", nil), Errors: len(events)}
 	if err != nil {

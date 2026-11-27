@@ -5,29 +5,30 @@ import (
 	"strings"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/textutil"
 )
 
 // classText says why an item went in without a proposal.
 var classText = map[string]string{
-	core.AutoCreated:     "created in its session",
-	core.AutoRegenerable: "regenerable",
-	core.AutoContainer:   "session container",
-	core.AutoAll:         "auto mode",
+	ledger.AutoCreated:     "created in its session",
+	ledger.AutoRegenerable: "regenerable",
+	ledger.AutoContainer:   "session container",
+	ledger.AutoAll:         "auto mode",
 }
 
 // untoldReceipts lists registrations made without asking that no session has
 // heard of yet: those in this project, or made for this session elsewhere.
-func untoldReceipts(st core.State, root, session string, inProject bool) []core.AutoHandled {
-	var out []core.AutoHandled
+func untoldReceipts(st ledger.State, root, session string, inProject bool) []ledger.AutoHandled {
+	var out []ledger.AutoHandled
 	for _, r := range st.AutoReceipts {
-		mine := r.Session == session || inProject && core.ProjectKey(r.Project) == core.ProjectKey(root)
+		mine := r.Session == session || inProject && ledger.ProjectKey(r.Project) == ledger.ProjectKey(root)
 		if r.Told || !mine {
 			continue
 		}
 		if idx := st.Index(r.ID); idx >= 0 {
-			out = append(out, core.AutoHandled{Item: st.Items[idx], Class: r.Class, At: r.At})
+			out = append(out, ledger.AutoHandled{Item: st.Items[idx], Class: r.Class, At: r.At})
 		}
 	}
 	return out
@@ -35,7 +36,7 @@ func untoldReceipts(st core.State, root, session string, inProject bool) []core.
 
 // describeReceipts is the after-the-fact notice that replaces a proposal.
 // Hook text is written as statements, not commands.
-func describeReceipts(handled []core.AutoHandled, root string, now time.Time) string {
+func describeReceipts(handled []ledger.AutoHandled, root string, now time.Time) string {
 	var parts []string
 	for i, h := range handled {
 		if i == maxListed {
@@ -50,7 +51,7 @@ func describeReceipts(handled []core.AutoHandled, root string, now time.Time) st
 		textutil.Count(len(handled), "item"), strings.Join(parts, ", "))
 }
 
-func (d *delivery) appendReceipts(handled []core.AutoHandled, root string, now time.Time) {
+func (d *delivery) appendReceipts(handled []ledger.AutoHandled, root string, now time.Time) {
 	if len(handled) == 0 {
 		return
 	}
@@ -62,7 +63,7 @@ func (d *delivery) appendReceipts(handled []core.AutoHandled, root string, now t
 	}
 }
 
-func serviceNow(svc *core.Service) time.Time {
+func serviceNow(svc *lifecycle.Service) time.Time {
 	if svc.Now != nil {
 		return svc.Now()
 	}

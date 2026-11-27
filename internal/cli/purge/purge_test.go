@@ -14,7 +14,8 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"golang.org/x/sys/windows"
 )
 
@@ -33,7 +34,7 @@ func TestPurgeRecoveryReportsActualRestoredPath(t *testing.T) {
 			actual := rows[1].Path
 			unlock()
 			previous := cmdutil.Open
-			cmdutil.Open = func() (*core.Service, error) { return svc, nil }
+			cmdutil.Open = func() (*lifecycle.Service, error) { return svc, nil }
 			t.Cleanup(func() { cmdutil.Open = previous })
 			args := []string{paths[1]}
 			if format == "json" {
@@ -53,7 +54,7 @@ func TestPurgeRecoveryReportsActualRestoredPath(t *testing.T) {
 				t.Fatalf("purge confirmation: %s %v", out, err)
 			}
 			if format == "json" {
-				if err := json.Unmarshal([]byte(out), &rows); err != nil || len(rows) != 1 || rows[0].Path != actual || rows[0].Action != core.ActionResurrected {
+				if err := json.Unmarshal([]byte(out), &rows); err != nil || len(rows) != 1 || rows[0].Path != actual || rows[0].Action != ledger.ActionResurrected {
 					t.Fatalf("purge JSON lost actual restored path: %s %v", out, err)
 				}
 			} else if !strings.Contains(out, actual) || format == "dry-run" && !strings.Contains(out, "would confirm an already completed resurrection") {
@@ -81,12 +82,12 @@ func TestPurgeHardFailureAfterAuditWarningReturnsFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 	var refs []string
-	var burials []core.Burial
+	var burials []ledger.Burial
 	for _, name := range []string{"a.txt", "b.txt", "c.txt"} {
 		path := filepath.Join(repo, name)
 		clitest.WriteFixture(t, path, name)
 		rows, err := svc.Bury([]string{path}, false, "")
-		if err != nil || core.GraveFailed(rows) {
+		if err != nil || lifecycle.GraveFailed(rows) {
 			t.Fatal(rows, err)
 		}
 		refs = append(refs, path)
@@ -109,14 +110,14 @@ func TestPurgeHardFailureAfterAuditWarningReturnsFailure(t *testing.T) {
 		}
 	}}
 	original := cmdutil.Open
-	cmdutil.Open = func() (*core.Service, error) { return svc, nil }
+	cmdutil.Open = func() (*lifecycle.Service, error) { return svc, nil }
 	t.Cleanup(func() { cmdutil.Open = original })
 	out, _, err := clitest.Execute(t, NewCmd(), append(refs, "--json", "--yes")...)
 	if err == nil || !strings.Contains(err.Error(), "write store") {
 		t.Fatalf("audit warning swallowed purge hard failure: %s %v", out, err)
 	}
-	var rows []core.GraveResult
-	if json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 3 || rows[0].Action != core.ActionPurged || rows[1].Error == "" || rows[2].Action != core.ActionNotExecuted {
+	var rows []lifecycle.GraveResult
+	if json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 3 || rows[0].Action != ledger.ActionPurged || rows[1].Error == "" || rows[2].Action != ledger.ActionNotExecuted {
 		t.Fatalf("purge hard failure lost per-item receipts: %s %v", out, err)
 	}
 	if _, err := os.Stat(burials[1].Grave); err != nil {
@@ -140,12 +141,12 @@ func TestPurgeRestoreCommitFailureReportsJSONReceipt(t *testing.T) {
 	}
 	defer windows.CloseHandle(h)
 	original := cmdutil.Open
-	cmdutil.Open = func() (*core.Service, error) { return svc, nil }
+	cmdutil.Open = func() (*lifecycle.Service, error) { return svc, nil }
 	t.Cleanup(func() { cmdutil.Open = original })
 	out, _, err := clitest.Execute(t, NewCmd(), paths[1], paths[2], "--json", "--yes")
 	want := filepath.Join(filepath.Dir(paths[1]), "b (resurrected).txt")
-	var rows []core.GraveResult
-	if err == nil || json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 2 || rows[0].Path != want || rows[0].Error == "" || rows[1].Action != core.ActionNotExecuted {
+	var rows []lifecycle.GraveResult
+	if err == nil || json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 2 || rows[0].Path != want || rows[0].Error == "" || rows[1].Action != ledger.ActionNotExecuted {
 		t.Fatalf("purge restore commit failure lost JSON receipt: %s %v", out, err)
 	}
 }
@@ -173,15 +174,15 @@ func TestPurgeCommandExplicitlyAbandonsRestore(t *testing.T) {
 			}
 			before, _ := os.ReadFile(dest)
 			original := cmdutil.Open
-			cmdutil.Open = func() (*core.Service, error) { return svc, nil }
+			cmdutil.Open = func() (*lifecycle.Service, error) { return svc, nil }
 			t.Cleanup(func() { cmdutil.Open = original })
 			ref := fmt.Sprint(got[1].Burial.ID)
 			if refKind == "path" {
 				ref = paths[1]
 			}
 			out, stderr, err := clitest.Execute(t, NewCmd(), ref, "--json", "--yes")
-			var rows []core.GraveResult
-			if err != nil || json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 1 || rows[0].Action != core.ActionAbandoned {
+			var rows []lifecycle.GraveResult
+			if err != nil || json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 1 || rows[0].Action != ledger.ActionAbandoned {
 				t.Fatalf("explicit purge CLI failed: %s %s %v", out, stderr, err)
 			}
 			after, _ := os.ReadFile(dest)
@@ -212,12 +213,12 @@ func TestManualPurgeReportsBlockedDuringBackoff(t *testing.T) {
 					t.Fatal(err)
 				}
 				rows, err := svc.Bury([]string{path}, false, "")
-				if err != nil || core.GraveFailed(rows) {
+				if err != nil || lifecycle.GraveFailed(rows) {
 					t.Fatalf("bury: %+v %v", rows, err)
 				}
 				b := *rows[0].Burial
 				clitest.WriteFixture(t, filepath.Dir(b.Grave)+".json", "{broken")
-				if err := svc.Store.Update(func(st *core.State) error {
+				if err := svc.Store.Update(func(st *ledger.State) error {
 					st.Burials[0].PurgeAt = time.Now().Add(-time.Hour)
 					return nil
 				}); err != nil {
@@ -243,8 +244,8 @@ func TestManualPurgeReportsBlockedDuringBackoff(t *testing.T) {
 					t.Fatalf("blocked purge reported success or lost details: %s %s %v", out, stderr, err)
 				}
 				if asJSON {
-					var got []core.GraveResult
-					if err := json.Unmarshal([]byte(out), &got); err != nil || len(got) != 1 || got[0].Action != core.ActionBlocked || !core.GraveFailed(got) {
+					var got []lifecycle.GraveResult
+					if err := json.Unmarshal([]byte(out), &got); err != nil || len(got) != 1 || got[0].Action != ledger.ActionBlocked || !lifecycle.GraveFailed(got) {
 						t.Fatalf("JSON failure: %s %v", out, err)
 					}
 				}
@@ -273,7 +274,7 @@ func TestPurgeDryRunVerifiesGrave(t *testing.T) {
 					t.Fatal(err)
 				}
 				rows, err := svc.Bury([]string{path}, false, "")
-				if err != nil || len(rows) != 1 || core.GraveFailed(rows) {
+				if err != nil || len(rows) != 1 || lifecycle.GraveFailed(rows) {
 					t.Fatalf("bury: %+v %v", rows, err)
 				}
 				b := *rows[0].Burial
@@ -286,7 +287,7 @@ func TestPurgeDryRunVerifiesGrave(t *testing.T) {
 					clitest.WriteFixture(t, filepath.Join(filepath.Dir(b.Grave), "stray.txt"), "unrelated")
 					reason = "holds something besides"
 				case "outside-root":
-					if err := svc.Store.Update(func(st *core.State) error {
+					if err := svc.Store.Update(func(st *ledger.State) error {
 						st.Burials[0].Grave = path
 						return nil
 					}); err != nil {
@@ -311,21 +312,21 @@ func TestPurgeDryRunVerifiesGrave(t *testing.T) {
 					args = append(args, "--json")
 				}
 				out, stderr, runErr := clitest.Execute(t, NewCmd(), args...)
-				wantAction := core.ActionPurged
+				wantAction := ledger.ActionPurged
 				if fault == "missing-grave" {
-					wantAction = core.ActionLost
+					wantAction = ledger.ActionLost
 				}
 				if reason != "" {
-					wantAction = core.ActionBlocked
-					if runErr == nil || !strings.Contains(out+stderr, reason) || strings.Contains(out+stderr, core.ActionPurged) {
+					wantAction = ledger.ActionBlocked
+					if runErr == nil || !strings.Contains(out+stderr, reason) || strings.Contains(out+stderr, ledger.ActionPurged) {
 						t.Fatalf("invalid grave preview reported success: %s %s %v", out, stderr, runErr)
 					}
 				} else if runErr != nil {
 					t.Fatal(runErr)
 				}
 				if asJSON {
-					var got []core.GraveResult
-					if err := json.Unmarshal([]byte(out), &got); err != nil || len(got) != 1 || got[0].Action != wantAction || core.GraveFailed(got) != (reason != "") {
+					var got []lifecycle.GraveResult
+					if err := json.Unmarshal([]byte(out), &got); err != nil || len(got) != 1 || got[0].Action != wantAction || lifecycle.GraveFailed(got) != (reason != "") {
 						t.Fatalf("invalid preview receipt: %s %v", out, err)
 					}
 				} else if !strings.Contains(out+stderr, wantAction) {
@@ -363,19 +364,19 @@ func TestPurgeDryRunVerifiesGrave(t *testing.T) {
 func TestPurgeRequiresConfirmation(t *testing.T) {
 	for _, tc := range []struct {
 		name, input, failure string
-		args                 func(core.Burial) []string
+		args                 func(ledger.Burial) []string
 		terminal, purged     bool
 	}{
-		{name: "all-not-terminal", failure: "not a terminal", args: func(core.Burial) []string { return []string{"--all"} }},
-		{name: "id-not-terminal", failure: "agents: ask the user first", args: func(b core.Burial) []string { return []string{fmt.Sprint(b.ID)} }},
-		{name: "path-not-terminal-json", failure: "--yes", args: func(b core.Burial) []string { return []string{b.Path, "--json"} }},
-		{name: "piped-yes", input: "y\n", failure: "not a terminal", args: func(core.Burial) []string { return []string{"--all"} }},
-		{name: "answer-no", input: "n\n", failure: "nothing purged", terminal: true, args: func(core.Burial) []string { return []string{"--all"} }},
-		{name: "no-answer", failure: "agents: ask the user first", terminal: true, args: func(core.Burial) []string { return []string{"--all"} }},
-		{name: "answer-yes", input: "y\n", terminal: true, purged: true, args: func(b core.Burial) []string { return []string{fmt.Sprint(b.ID)} }},
-		{name: "yes-flag", purged: true, args: func(core.Burial) []string { return []string{"--all", "--yes"} }},
-		{name: "dry-run", args: func(core.Burial) []string { return []string{"--all", "--dry-run"} }},
-		{name: "retention-only", args: func(core.Burial) []string { return nil }},
+		{name: "all-not-terminal", failure: "not a terminal", args: func(ledger.Burial) []string { return []string{"--all"} }},
+		{name: "id-not-terminal", failure: "agents: ask the user first", args: func(b ledger.Burial) []string { return []string{fmt.Sprint(b.ID)} }},
+		{name: "path-not-terminal-json", failure: "--yes", args: func(b ledger.Burial) []string { return []string{b.Path, "--json"} }},
+		{name: "piped-yes", input: "y\n", failure: "not a terminal", args: func(ledger.Burial) []string { return []string{"--all"} }},
+		{name: "answer-no", input: "n\n", failure: "nothing purged", terminal: true, args: func(ledger.Burial) []string { return []string{"--all"} }},
+		{name: "no-answer", failure: "agents: ask the user first", terminal: true, args: func(ledger.Burial) []string { return []string{"--all"} }},
+		{name: "answer-yes", input: "y\n", terminal: true, purged: true, args: func(b ledger.Burial) []string { return []string{fmt.Sprint(b.ID)} }},
+		{name: "yes-flag", purged: true, args: func(ledger.Burial) []string { return []string{"--all", "--yes"} }},
+		{name: "dry-run", args: func(ledger.Burial) []string { return []string{"--all", "--dry-run"} }},
+		{name: "retention-only", args: func(ledger.Burial) []string { return nil }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			clitest.IsolateRunner(t)
@@ -387,7 +388,7 @@ func TestPurgeRequiresConfirmation(t *testing.T) {
 				t.Fatal(err)
 			}
 			rows, err := svc.Bury([]string{path}, false, "")
-			if err != nil || core.GraveFailed(rows) {
+			if err != nil || lifecycle.GraveFailed(rows) {
 				t.Fatalf("bury: %+v %v", rows, err)
 			}
 			b := *rows[0].Burial

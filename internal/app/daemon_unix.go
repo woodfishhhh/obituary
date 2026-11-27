@@ -11,21 +11,23 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/runkey"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
 )
 
 const daemonName = "obitd"
 
-func DesktopSession() bool { return false }
+func DesktopSession() bool        { return false }
 func ResidentEnabled(string) bool { return false }
 
 func cancelPendingRestart(string) error { return nil }
 
 func Running(string) bool { return false }
 func Start(string) error {
-	return fmt.Errorf("resident mode is unavailable; use obit daemon enable for a user timer: %w", core.ErrUnsupported)
+	return fmt.Errorf("resident mode is unavailable; use obit daemon enable for a user timer: %w", corefs.ErrUnsupported)
 }
 func Stop(string) error { return nil } // no resident process can be started here
 
@@ -84,26 +86,26 @@ func spawn(path string, args ...string) error {
 
 // GUI actions keep compiling; the POSIX runner uses one-shot timer invocations.
 type Resident struct {
-	Service *core.Service
+	Service *lifecycle.Service
 	mu      sync.Mutex
-	hot     *core.State
+	hot     *ledger.State
 	graves  *graves
 }
 
-func Serve(*core.Service, *log.Logger) error { return Start("") }
+func Serve(*lifecycle.Service, *log.Logger) error { return Start("") }
 
 type RunRegistry = runkey.Registry
 type AutostartPlan struct{ Name, Before, After string }
 
 func (*AutostartPlan) Pending() bool { return false }
-func (*AutostartPlan) Apply() error  { return core.ErrUnsupported }
+func (*AutostartPlan) Apply() error  { return corefs.ErrUnsupported }
 func PlanAutostart(RunRegistry, string, string, string, bool) (*AutostartPlan, error) {
-	return nil, core.ErrUnsupported
+	return nil, corefs.ErrUnsupported
 }
 func SetAutostart(_ string, enabled bool) error {
 	if !enabled {
 		return nil
 	}
-	return fmt.Errorf("tray login startup is Windows-only: %w", core.ErrUnsupported)
+	return fmt.Errorf("tray login startup is Windows-only: %w", corefs.ErrUnsupported)
 }
 func Autostart() string { return "" }

@@ -5,12 +5,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 )
 
 func TestQuotaReminderFormatting(t *testing.T) {
-	overflow := &core.QuotaOverflow{
+	overflow := &lifecycle.QuotaOverflow{
 		ProposalID: 42,
 		Path:       `C:\tmp\huge.bin`,
 		ItemBytes:  8 << 30,
@@ -31,7 +31,7 @@ func TestQuotaReminderFormatting(t *testing.T) {
 		}
 	}
 
-	ev := &core.QuotaEviction{
+	ev := &lifecycle.QuotaEviction{
 		MaxBytes:    5 << 30,
 		BeforeBytes: 6 << 30,
 		AfterBytes:  4 << 30,

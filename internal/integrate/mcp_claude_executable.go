@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"github.com/woodfishhhh/obituary/internal/project"
 	"github.com/woodfishhhh/obituary/internal/winfs"
@@ -122,7 +122,7 @@ func claudeProtectedRoots() ([]claudeExecutableRoot, error) {
 
 type claudeExecutableRoot struct {
 	path string
-	id   core.Identity
+	id   corefs.Identity
 	cwd  bool
 }
 

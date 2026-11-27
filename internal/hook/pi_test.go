@@ -15,8 +15,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 )
 
@@ -141,7 +141,7 @@ func testPluginBridge(t *testing.T, name string) {
 		if runtime.GOOS != "windows" {
 			wantCwd, wantPaths = input.Cwd, input.Paths
 		}
-		if err != nil || ev.Cwd != wantCwd || !reflect.DeepEqual(ev.Paths, wantPaths) || ev.Session != core.NormalizeSession(name+":"+input.Session) {
+		if err != nil || ev.Cwd != wantCwd || !reflect.DeepEqual(ev.Paths, wantPaths) || ev.Session != lifecycle.NormalizeSession(name+":"+input.Session) {
 			t.Fatalf("normalization: %+v %v", ev, err)
 		}
 		again, _ := Decode(agent.Adapter, pluginJSON(t, input), Invocation{Agent: name})
@@ -206,7 +206,7 @@ func pluginResponse(t *testing.T, data []byte) BridgeResponse {
 func testPluginFallback(t *testing.T, name string, raw []byte) {
 	t.Helper()
 	home := t.TempDir()
-	engine := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: home}}}
+	engine := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: home}}}
 	var out bytes.Buffer
 	Run(name, engine, bytes.NewReader(raw), &out, nil)
 	if got := pluginResponse(t, out.Bytes()); got != (BridgeResponse{Version: 1}) {
@@ -245,7 +245,7 @@ func testPluginGuard(t *testing.T, agent Agent, base BridgeRequest) {
 			tc.edit(&input)
 			raw := pluginJSON(t, input)
 			home := t.TempDir()
-			engine := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: home}}}
+			engine := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: home}}}
 			var out bytes.Buffer
 			Run(agent.Name, engine, bytes.NewReader(raw), &out, nil)
 			got := pluginResponse(t, out.Bytes())

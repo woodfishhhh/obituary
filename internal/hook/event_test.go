@@ -16,8 +16,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/docker"
 	"github.com/woodfishhhh/obituary/internal/project"
 	"github.com/woodfishhhh/obituary/internal/testenv"
@@ -25,8 +25,8 @@ import (
 
 func TestIdleHookEventsDoNotRewriteLedger(t *testing.T) {
 	root := t.TempDir()
-	e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: t.TempDir()}}}
-	if err := e.Svc.Store.Update(func(*core.State) error { return nil }); err != nil {
+	e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}}}
+	if err := e.Svc.Store.Update(func(*ledger.State) error { return nil }); err != nil {
 		t.Fatal(err)
 	}
 	for _, name := range []string{"PostToolUse", "Context", "SessionStart", "Stop", "SessionEnd"} {
@@ -42,7 +42,7 @@ func TestUnchangedProjectHooksDoNotRewriteLedger(t *testing.T) {
 	}
 	e := newEnv(t)
 	path := e.write("pending.log")
-	p, _, _, err := e.engine.Svc.Propose(core.ProposalOnboard, e.root, "idle", []core.Candidate{{Path: path, Lifespan: "1d"}})
+	p, _, _, err := e.engine.Svc.Propose(ledger.ProposalOnboard, e.root, "idle", []ledger.Candidate{{Path: path, Lifespan: "1d"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +94,7 @@ func TestDiscoveryDeniedOutsideProtectedLocationsReportsError(t *testing.T) {
 			original := findProject
 			findProject = func(string) (project.Project, bool, error) { return project.Project{}, false, denied }
 			t.Cleanup(func() { findProject = original })
-			e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: home}}}
+			e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: home}}}
 			runner := &Runner{
 				Tick:   func() { t.Error("discovery denial dispatched a tick") },
 				Finish: func(string, string, bool) { t.Error("discovery denial dispatched a session difference") },
@@ -134,7 +134,7 @@ func TestDiscoveryDeniedSkipsAutomaticWork(t *testing.T) {
 			original := findProject
 			findProject = func(string) (project.Project, bool, error) { return project.Project{}, false, denied }
 			t.Cleanup(func() { findProject = original })
-			e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: home}}}
+			e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: home}}}
 			runner := &Runner{
 				Tick:   func() { t.Error("discovery denial dispatched a tick") },
 				Finish: func(string, string, bool) { t.Error("discovery denial dispatched a session difference") },
@@ -254,8 +254,8 @@ func TestPostToolUseContinuesAfterCwdDiscoveryFailure(t *testing.T) {
 			if out, err := cmd.CombinedOutput(); err != nil {
 				t.Fatalf("track fixture: %v %s", err, out)
 			}
-			if err := e.engine.Svc.Store.Update(func(st *core.State) error {
-				st.Projects = map[string]core.ProjectState{core.ProjectKey(e.root): {Consent: core.ConsentApproved}}
+			if err := e.engine.Svc.Store.Update(func(st *ledger.State) error {
+				st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(e.root): {Consent: ledger.ConsentApproved}}
 				return nil
 			}); err != nil {
 				t.Fatal(err)
@@ -306,7 +306,7 @@ func TestFirstWriteProposesInsteadOfRegistering(t *testing.T) {
 	}
 	ctx := e.wrote(e.write("debug.log"))
 	st := e.state()
-	if len(st.Items) != 0 || len(st.Proposals) != 1 || st.Proposals[0].Kind != core.ProposalOnboard {
+	if len(st.Items) != 0 || len(st.Proposals) != 1 || st.Proposals[0].Kind != ledger.ProposalOnboard {
 		t.Fatalf("want one onboard proposal and nothing registered, got %+v", st)
 	}
 	id := st.Proposals[0].ID
@@ -327,7 +327,7 @@ func TestFirstWriteProposesInsteadOfRegistering(t *testing.T) {
 		t.Fatalf("after approval writes are registered silently, got %q", ctx)
 	}
 	st = e.state()
-	if len(st.Items) != 3 || len(st.Proposals) != 0 || st.Projects[core.ProjectKey(e.root)].Consent != core.ConsentApproved {
+	if len(st.Items) != 3 || len(st.Proposals) != 0 || st.Projects[ledger.ProjectKey(e.root)].Consent != ledger.ConsentApproved {
 		t.Fatalf("want three registered items and consent, got items=%d proposals=%d projects=%+v", len(st.Items), len(st.Proposals), st.Projects)
 	}
 }
@@ -402,7 +402,7 @@ func TestLeftoversSurviveInlineFinishDeadline(t *testing.T) {
 			}
 			e.finishEvent(next, "s1")
 			st := e.state()
-			if len(st.Items) != 0 || len(st.Proposals) != 1 || st.Proposals[0].Kind != core.ProposalOnboard ||
+			if len(st.Items) != 0 || len(st.Proposals) != 1 || st.Proposals[0].Kind != ledger.ProposalOnboard ||
 				len(st.Proposals[0].Candidates) != 1 || st.Proposals[0].Candidates[0].Path != path {
 				t.Fatalf("next ending event lost the original session difference: %+v", st)
 			}
@@ -417,7 +417,7 @@ func TestEndingEventsDispatchWithExpiredStoreDeadline(t *testing.T) {
 	if err := os.Mkdir(filepath.Join(root, ".git"), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: home}.WithDeadline(time.Now().Add(-time.Second))}}
+	e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: home}.WithDeadline(time.Now().Add(-time.Second))}}
 	for _, name := range []string{"Stop", "SessionEnd"} {
 		calls, ticks := 0, 0
 		runner := &Runner{
@@ -477,7 +477,7 @@ func TestCommittedRuleItemIsNotBuried(t *testing.T) {
 			t.Fatalf("git %v: %v %s", args, err, out)
 		}
 	}
-	err := e.engine.Svc.Store.Update(func(st *core.State) error {
+	err := e.engine.Svc.Store.Update(func(st *ledger.State) error {
 		st.Items[0].ExpiresAt = st.Items[0].CreatedAt // due now
 		return nil
 	})
@@ -485,7 +485,7 @@ func TestCommittedRuleItemIsNotBuried(t *testing.T) {
 		t.Fatal(err)
 	}
 	out, err := e.engine.Svc.Sweep(false)
-	if err != nil || len(out) != 1 || out[0].Action != core.ActionRefused {
+	if err != nil || len(out) != 1 || out[0].Action != ledger.ActionRefused {
 		t.Fatalf("a rule item committed since must be refused, got %+v %v", out, err)
 	}
 	if _, err := os.Stat(log); err != nil {
@@ -500,8 +500,8 @@ func TestObservationIdentityCapturedBeforeLedgerWait(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t)
 	path := e.write("debug.log")
-	if err := e.engine.Svc.Store.Update(func(st *core.State) error {
-		st.Projects = map[string]core.ProjectState{core.ProjectKey(e.root): {Consent: core.ConsentApproved}}
+	if err := e.engine.Svc.Store.Update(func(st *ledger.State) error {
+		st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(e.root): {Consent: ledger.ConsentApproved}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -542,8 +542,8 @@ func TestDeferredObservationDoesNotRegisterReplacement(t *testing.T) {
 	t.Parallel()
 	e := newEnv(t)
 	path := e.write("debug.log")
-	if err := e.engine.Svc.Store.Update(func(st *core.State) error {
-		st.Projects = map[string]core.ProjectState{core.ProjectKey(e.root): {Consent: core.ConsentApproved}}
+	if err := e.engine.Svc.Store.Update(func(st *ledger.State) error {
+		st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(e.root): {Consent: ledger.ConsentApproved}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -580,8 +580,8 @@ func TestReplayRejectsReplacementAfterInitialIdentityCheck(t *testing.T) {
 			e := newEnv(t)
 			path := e.write("debug.log")
 			if approved {
-				if err := e.engine.Svc.Store.Update(func(st *core.State) error {
-					st.Projects = map[string]core.ProjectState{core.ProjectKey(e.root): {Consent: core.ConsentApproved}}
+				if err := e.engine.Svc.Store.Update(func(st *ledger.State) error {
+					st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(e.root): {Consent: ledger.ConsentApproved}}
 					return nil
 				}); err != nil {
 					t.Fatal(err)
@@ -620,9 +620,9 @@ func TestContendedObservationRejectsReplacementDuringReplay(t *testing.T) {
 			t.Parallel()
 			e := newEnv(t)
 			path := e.write("debug.log")
-			if err := e.engine.Svc.Store.Update(func(st *core.State) error {
+			if err := e.engine.Svc.Store.Update(func(st *ledger.State) error {
 				if approved {
-					st.Projects = map[string]core.ProjectState{core.ProjectKey(e.root): {Consent: core.ConsentApproved}}
+					st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(e.root): {Consent: ledger.ConsentApproved}}
 				}
 				return nil
 			}); err != nil {
@@ -677,7 +677,7 @@ func TestTimedOutObservationQueuesAlternatePathSpellings(t *testing.T) {
 			case "dotdot":
 				input = filepath.ToSlash(e.root) + "/unused/../debug.log"
 			}
-			if err := e.engine.Svc.Store.Update(func(*core.State) error { return nil }); err != nil {
+			if err := e.engine.Svc.Store.Update(func(*ledger.State) error { return nil }); err != nil {
 				t.Fatal(err)
 			}
 			release, err := ledger.LockFile(filepath.Join(e.engine.Svc.Store.Home, "store.lock"), true)
@@ -818,7 +818,7 @@ func TestNoticeRedeliveredAfterContextOrNotificationTimeout(t *testing.T) {
 			previous := proposalConsent
 			t.Cleanup(func() { proposalConsent = previous })
 			var release func()
-			proposalConsent = func(svc *core.Service, root string) (string, error) {
+			proposalConsent = func(svc *lifecycle.Service, root string) (string, error) {
 				if !write {
 					return "", context.DeadlineExceeded
 				}
@@ -877,7 +877,7 @@ func TestContextReadTimeoutDoesNotMarkNotified(t *testing.T) {
 			previous := proposalConsent
 			t.Cleanup(func() { proposalConsent = previous })
 			reads := 0
-			proposalConsent = func(svc *core.Service, root string) (string, error) {
+			proposalConsent = func(svc *lifecycle.Service, root string) (string, error) {
 				reads++
 				if reads == failAt {
 					// Force the exact consent read to exhaust its shared lock budget.
@@ -911,7 +911,7 @@ func TestNotificationWriteTimeoutDoesNotAcknowledgePreparedContext(t *testing.T)
 	previous := proposalConsent
 	t.Cleanup(func() { proposalConsent = previous })
 	var release func()
-	proposalConsent = func(svc *core.Service, root string) (string, error) {
+	proposalConsent = func(svc *lifecycle.Service, root string) (string, error) {
 		consent, err := previous(svc, root)
 		if err != nil {
 			return "", err

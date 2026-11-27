@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 const Interval = 24 * time.Hour
@@ -30,7 +30,7 @@ type Cache struct {
 }
 
 func Read(home string) (Cache, error) {
-	data, err := core.ReadMetadata(filepath.Join(home, "update.json"))
+	data, err := lifecycle.ReadMetadata(filepath.Join(home, "update.json"))
 	if errors.Is(err, os.ErrNotExist) {
 		return Cache{}, nil
 	}
@@ -52,5 +52,5 @@ func save(home string, state Cache) error {
 	if err != nil {
 		return err
 	}
-	return core.WriteMetadata(filepath.Join(home, "update.json"), append(data, '\n'))
+	return lifecycle.WriteMetadata(filepath.Join(home, "update.json"), append(data, '\n'))
 }

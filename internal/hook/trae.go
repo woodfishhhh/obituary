@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 // Protocol: https://docs.trae.ai/ide/hook-configuration-reference (2026-11-09).
@@ -28,7 +28,7 @@ func (a traeAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
 		return Event{}, ErrSkip
 	}
 	if in.SessionID != "" {
-		ev.Session = core.NormalizeSession(a.name + ":" + in.SessionID)
+		ev.Session = lifecycle.NormalizeSession(a.name + ":" + in.SessionID)
 	}
 	if in.Event == "PreToolUse" {
 		if in.ToolName == "RunCommand" {

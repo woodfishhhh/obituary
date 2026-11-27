@@ -11,7 +11,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/daemonipc"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 	"github.com/woodfishhhh/obituary/internal/project"
@@ -182,7 +183,7 @@ func eventWritePaths(ev Event) []string {
 	return paths
 }
 
-func captureEventObservations(e *auto.Engine, ev Event, proj project.Project, paths []string) ([]core.Observation, error) {
+func captureEventObservations(e *auto.Engine, ev Event, proj project.Project, paths []string) ([]ledger.Observation, error) {
 	observations, captureErr := e.Svc.CaptureObservations(paths, ev.Session)
 	for i := range observations {
 		observations[i].Host, observations[i].Event = ev.Host, ev.Name
@@ -220,7 +221,7 @@ func postToolContext(e *auto.Engine, ev Event, runner *Runner, pendingNotices bo
 	}
 	decisions, notices, err := observeAvailable(e, observations)
 	if err != nil {
-		var pending []core.Observation
+		var pending []ledger.Observation
 		for i, d := range decisions {
 			if d.Action != auto.Retry {
 				continue
@@ -254,7 +255,7 @@ const residentAckBudget = 250 * time.Millisecond
 // registers directly. An unacknowledged request may still reach the resident, so
 // the same token can arrive twice; replays register a token once. quiet is the
 // resident's word that the ledger has nothing to tell an agent.
-func handedToResident(store core.Store, observations []core.Observation) (handed, quiet bool) {
+func handedToResident(store ledger.Store, observations []ledger.Observation) (handed, quiet bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), residentAckBudget)
 	defer cancel()
 	receipt, err := daemonipc.Submit(ctx, store.Home, observations)
@@ -268,14 +269,14 @@ func observationContext(e *auto.Engine, ev Event, proj project.Project, inProjec
 	// A callback need not write another matching file to deliver earlier
 	// observations. The ledger is the queue, scoped to the current project
 	// or proposals created by this session (which may span projects).
-	var state core.State
+	var state ledger.State
 	if pendingNotices || ev.Name == "Context" {
 		var err error
 		if state, err = e.Svc.Store.ReadCommittedHot(); err != nil {
 			return delivery{}, err
 		}
-		for _, p := range core.ExistingProposals(state.Proposals) {
-			if (p.Session == ev.Session || inProject && core.ProjectKey(p.Project) == core.ProjectKey(proj.Root)) &&
+		for _, p := range lifecycle.ExistingProposals(state.Proposals) {
+			if (p.Session == ev.Session || inProject && ledger.ProjectKey(p.Project) == ledger.ProjectKey(proj.Root)) &&
 				!slices.Contains(p.Notified, ev.Session) && !slices.ContainsFunc(notices, func(n auto.Notice) bool { return n.Proposal.ID == p.ID }) {
 				notices = append(notices, auto.Notice{Proposal: p})
 			}
@@ -349,7 +350,7 @@ func replayPending(e *auto.Engine) {
 	}
 }
 
-func observeAvailable(e *auto.Engine, rows []core.Observation) ([]auto.Decision, []auto.Notice, error) {
+func observeAvailable(e *auto.Engine, rows []ledger.Observation) ([]auto.Decision, []auto.Notice, error) {
 	if len(rows) > 0 {
 		if err := e.Svc.Store.ProbeObservationStore(); err != nil {
 			decisions := make([]auto.Decision, len(rows))

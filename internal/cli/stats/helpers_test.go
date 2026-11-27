@@ -5,18 +5,18 @@ import (
 
 	"github.com/spf13/cobra"
 	removeitemcmd "github.com/woodfishhhh/obituary/internal/cli/removeitem"
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 )
 
 // Use the public command registration, including parameter parsing and errors.
 func itemCommand() *cobra.Command { return removeitemcmd.NewCmd() }
 
 type failBurialCommitFS struct {
-	core.FS
+	corefs.FS
 	blocked string
 }
 
-func (f *failBurialCommitFS) MovePinned(path string, want core.Identity, to string) error {
+func (f *failBurialCommitFS) MovePinned(path string, want corefs.Identity, to string) error {
 	if err := f.FS.MovePinned(path, want, to); err != nil {
 		return err
 	}

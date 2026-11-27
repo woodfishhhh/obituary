@@ -8,7 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/guard"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"github.com/woodfishhhh/obituary/internal/rules"
 	"github.com/woodfishhhh/obituary/internal/testenv"
@@ -41,11 +44,11 @@ func newEngineFixture(t *testing.T) *repo {
 	r := &repo{t: t, root: root}
 	// Most tests exercise automatic registration, so they turn it on;
 	// TestOffModeRegistersNothing covers the default.
-	svc := &core.Service{
-		Store:        core.Store{Home: home},
-		Guard:        core.Guard{System: []string{home}},
+	svc := &lifecycle.Service{
+		Store:        ledger.Store{Home: home},
+		Guard:        guard.Guard{System: []string{home}},
 		FS:           winfs.FS{},
-		ProposalMode: core.ProposalsTiered,
+		ProposalMode: lifecycle.ProposalsTiered,
 	}
 	if os.Getenv("OBIT_TEST_RESIDENT_REPLAY") == "1" {
 		// Second pass over every replay test with the resident's batch consumer.
@@ -57,7 +60,7 @@ func newEngineFixture(t *testing.T) *repo {
 }
 
 // ask restores the pre-tiering behaviour: every automatic registration is proposed.
-func (r *repo) ask() { r.engine.Svc.ProposalMode = core.ProposalsAsk }
+func (r *repo) ask() { r.engine.Svc.ProposalMode = lifecycle.ProposalsAsk }
 
 func (r *repo) git(args ...string) string {
 	r.t.Helper()
@@ -105,10 +108,10 @@ func (r *repo) apply(paths ...string) map[string]Decision {
 	return out
 }
 
-func checkOwnerLedgerLock(t *testing.T, svc *core.Service, locked bool) {
+func checkOwnerLedgerLock(t *testing.T, svc *lifecycle.Service, locked bool) {
 	t.Helper()
 	// Probe ownership without consuming a Git query's deadline while waiting.
-	release, available, err := core.TryLockExclusive(filepath.Join(svc.Store.Home, "store.lock"))
+	release, available, err := ledger.TryLockExclusive(filepath.Join(svc.Store.Home, "store.lock"))
 	if available {
 		release()
 	}
@@ -118,7 +121,7 @@ func checkOwnerLedgerLock(t *testing.T, svc *core.Service, locked bool) {
 }
 
 type unreadableObservationFS struct {
-	core.FS
+	corefs.FS
 	path string
 }
 
@@ -130,19 +133,19 @@ func (f *unreadableObservationFS) RealPath(path string) (string, error) {
 }
 
 type unavailableObservationFS struct {
-	core.FS
+	corefs.FS
 	path        string
 	volumeError string
 	onlineOnce  bool
 }
 
-func (f *unavailableObservationFS) Identify(path string) (core.Identity, error) {
+func (f *unavailableObservationFS) Identify(path string) (corefs.Identity, error) {
 	if path == f.path {
 		if f.onlineOnce {
 			f.onlineOnce = false
 			return f.FS.Identify(path)
 		}
-		return core.Identity{}, core.ErrNotFound
+		return corefs.Identity{}, corefs.ErrNotFound
 	}
 	if filepath.Clean(path) == filepath.Clean(pathutil.VolumeRoot(f.path)) {
 		if f.volumeError == "volume serial changed" {
@@ -150,17 +153,17 @@ func (f *unavailableObservationFS) Identify(path string) (core.Identity, error) 
 			id.Serial++
 			return id, err
 		}
-		return core.Identity{}, core.ErrNotFound
+		return corefs.Identity{}, corefs.ErrNotFound
 	}
 	return f.FS.Identify(path)
 }
 
 type changedObservationFS struct {
-	core.FS
+	corefs.FS
 	path string
 }
 
-func (f changedObservationFS) Identify(path string) (core.Identity, error) {
+func (f changedObservationFS) Identify(path string) (corefs.Identity, error) {
 	id, err := f.FS.Identify(path)
 	if err == nil && path == f.path {
 		id.Serial++
@@ -174,7 +177,7 @@ type interleaveAddFS struct {
 	beforeAdd func()
 }
 
-func (f *interleaveAddFS) Identify(path string) (core.Identity, error) {
+func (f *interleaveAddFS) Identify(path string) (corefs.Identity, error) {
 	f.calls++
 	if f.calls == 2 {
 		f.beforeAdd() // vet passed on its snapshot; Add has not taken the write lock
@@ -183,13 +186,13 @@ func (f *interleaveAddFS) Identify(path string) (core.Identity, error) {
 }
 
 type timedBurialFS struct {
-	core.FS
+	corefs.FS
 	checked *time.Time
 	gap     time.Duration
 	move    time.Duration
 }
 
-func (f *timedBurialFS) MovePinned(path string, want core.Identity, to string) error {
+func (f *timedBurialFS) MovePinned(path string, want corefs.Identity, to string) error {
 	f.gap = time.Since(*f.checked)
 	start := time.Now()
 	err := f.FS.MovePinned(path, want, to)
@@ -199,12 +202,12 @@ func (f *timedBurialFS) MovePinned(path string, want core.Identity, to string) e
 
 type lookupFS struct {
 	winfs.FS
-	failID core.Identity
+	failID corefs.Identity
 	err    error
-	calls  map[core.Identity]int
+	calls  map[corefs.Identity]int
 }
 
-func (f *lookupFS) Locate(id core.Identity) (string, error) {
+func (f *lookupFS) Locate(id corefs.Identity) (string, error) {
 	f.calls[id]++
 	if id == f.failID && f.err != nil {
 		return "", f.err
@@ -221,10 +224,10 @@ type approvalFS struct {
 	calls int
 }
 
-func (f *approvalFS) Identify(path string) (core.Identity, error) {
+func (f *approvalFS) Identify(path string) (corefs.Identity, error) {
 	f.calls++
 	if f.calls == 2 && f.err != nil {
-		return core.Identity{}, f.err
+		return corefs.Identity{}, f.err
 	}
 	id, err := f.FS.Identify(path)
 	if f.calls == 1 && err == nil && f.first != nil {

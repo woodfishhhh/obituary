@@ -14,7 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/project"
 	"github.com/woodfishhhh/obituary/internal/rules"
 	"github.com/woodfishhhh/obituary/internal/testenv"
@@ -99,7 +101,7 @@ func TestApplyRejectsChangedExtendedSpelling(t *testing.T) {
 			rows, err := r.engine.Apply([]string{input}, Options{Session: "s1"})
 			// "No repository" or a failed Git query must not stand in for the
 			// path rejection, even in the fast fixture without Git.
-			if err != nil || len(rows) != 1 || rows[0].Action != Retry || !errors.Is(rows[0].Err, core.ErrUnsafe) {
+			if err != nil || len(rows) != 1 || rows[0].Action != Retry || !errors.Is(rows[0].Err, corefs.ErrUnsafe) {
 				t.Fatalf("automatic registration selected normalized neighbor: %+v %v", rows, err)
 			}
 			st, err := r.engine.Svc.Store.ReadSnapshot()
@@ -223,7 +225,7 @@ func TestApplyNeverShortensAnExistingLifespan(t *testing.T) {
 	t.Parallel()
 	r := newRepo(t)
 	log := r.write("run.log", "x")
-	if _, err := r.engine.Svc.Add([]string{log}, core.AddOptions{ExpiresAt: time.Now().Add(30 * 24 * time.Hour)}); err != nil {
+	if _, err := r.engine.Svc.Add([]string{log}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(30 * 24 * time.Hour)}); err != nil {
 		t.Fatal(err)
 	}
 	if d := r.apply(log)[log]; d.Action != Skipped {
@@ -477,7 +479,7 @@ func TestAutomaticRegistrationNeverShortensALifespan(t *testing.T) {
 	t.Parallel()
 	r := newRepo(t)
 	old := r.write("keep.log", "x")
-	if _, err := r.engine.Svc.Add([]string{old}, core.AddOptions{ExpiresAt: time.Now().Add(30 * 24 * time.Hour)}); err != nil {
+	if _, err := r.engine.Svc.Add([]string{old}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(30 * 24 * time.Hour)}); err != nil {
 		t.Fatal(err)
 	}
 	renamed := filepath.Join(r.root, "renamed.log")
@@ -485,7 +487,7 @@ func TestAutomaticRegistrationNeverShortensALifespan(t *testing.T) {
 		t.Fatal(err)
 	}
 	inner := r.write("test-results/report.xml", "x")
-	if _, err := r.engine.Svc.Add([]string{inner}, core.AddOptions{ExpiresAt: time.Now().Add(30 * 24 * time.Hour)}); err != nil {
+	if _, err := r.engine.Svc.Add([]string{inner}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(30 * 24 * time.Hour)}); err != nil {
 		t.Fatal(err)
 	}
 	sibling := r.write("test-results/other.xml", "x")
@@ -511,8 +513,8 @@ func TestMovedChildKeepsLongerLifespan(t *testing.T) {
 			now := time.Now()
 			r.engine.Svc.Now = func() time.Time { return now }
 			keep := r.write("keep.txt", "keep for thirty days")
-			added, err := r.engine.Svc.Add([]string{keep}, core.AddOptions{ExpiresAt: now.Add(30 * 24 * time.Hour)})
-			if err != nil || core.Failed(added) {
+			added, err := r.engine.Svc.Add([]string{keep}, lifecycle.AddOptions{ExpiresAt: now.Add(30 * 24 * time.Hour)})
+			if err != nil || lifecycle.Failed(added) {
 				t.Fatalf("add: %+v, %v", added, err)
 			}
 			r.write("test-results/report.xml", "report")
@@ -537,7 +539,7 @@ func TestMovedChildKeepsLongerLifespan(t *testing.T) {
 			move()
 			now = d.Item.ExpiresAt.Add(time.Second)
 			out, err := r.engine.Svc.Sweep(false)
-			if err != nil || len(out) != 1 || out[0].Action != core.ActionRetry {
+			if err != nil || len(out) != 1 || out[0].Action != ledger.ActionRetry {
 				t.Errorf("parent must retry while child has a longer lifespan: %+v, %v", out, err)
 			}
 			if data, err := os.ReadFile(moved); err != nil || string(data) != "keep for thirty days" {
@@ -655,8 +657,8 @@ func TestBatchRechecksCachedConflictAfterMove(t *testing.T) {
 				cached = filepath.Join(r.root, "debug.log")
 				unit = cached
 			}
-			old, err := r.engine.Svc.Add([]string{original}, core.AddOptions{ExpiresAt: time.Now().Add(30 * 24 * time.Hour)})
-			if err != nil || core.Failed(old) {
+			old, err := r.engine.Svc.Add([]string{original}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(30 * 24 * time.Hour)})
+			if err != nil || lifecycle.Failed(old) {
 				t.Fatalf("old add: %+v, %v", old, err)
 			}
 			if err := os.MkdirAll(filepath.Dir(cached), 0o700); err != nil {
@@ -703,8 +705,8 @@ func TestReplacementLogKeepsBothIdentitiesAndRechecksGit(t *testing.T) {
 	now := time.Now()
 	r.engine.Svc.Now = func() time.Time { return now }
 	path := r.write("debug.log", "old")
-	old, err := r.engine.Svc.Add([]string{path}, core.AddOptions{ExpiresAt: now.Add(30 * 24 * time.Hour), Session: "old-session"})
-	if err != nil || core.Failed(old) {
+	old, err := r.engine.Svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: now.Add(30 * 24 * time.Hour), Session: "old-session"})
+	if err != nil || lifecycle.Failed(old) {
 		t.Fatalf("add: %+v, %v", old, err)
 	}
 	keep := filepath.Join(r.root, "keep.txt")
@@ -713,14 +715,14 @@ func TestReplacementLogKeepsBothIdentitiesAndRechecksGit(t *testing.T) {
 	}
 	r.write("debug.log", "new")
 	now = now.Add(time.Minute)
-	fs := &lookupFS{calls: map[core.Identity]int{}}
+	fs := &lookupFS{calls: map[corefs.Identity]int{}}
 	r.engine.Svc.FS = fs
 	d := r.apply(path)[path]
 	if d.Action != Skipped || !strings.Contains(d.Reason, "already has a lifespan") {
 		t.Fatalf("a live old-path record needs explicit reconciliation: %+v", d)
 	}
-	refreshed, err := r.engine.Svc.Add([]string{keep}, core.AddOptions{ExpiresAt: old[0].Item.ExpiresAt})
-	if err != nil || core.Failed(refreshed) {
+	refreshed, err := r.engine.Svc.Add([]string{keep}, lifecycle.AddOptions{ExpiresAt: old[0].Item.ExpiresAt})
+	if err != nil || lifecycle.Failed(refreshed) {
 		t.Fatalf("refresh renamed record: %+v, %v", refreshed, err)
 	}
 	d = r.apply(path)[path]
@@ -734,7 +736,7 @@ func TestReplacementLogKeepsBothIdentitiesAndRechecksGit(t *testing.T) {
 	r.commit("debug.log")
 	now = d.Item.ExpiresAt.Add(time.Second)
 	out, err := r.engine.Svc.Sweep(false)
-	if err != nil || len(out) != 1 || out[0].Action != core.ActionRefused || !strings.Contains(out[0].Detail, "Git tracks") {
+	if err != nil || len(out) != 1 || out[0].Action != ledger.ActionRefused || !strings.Contains(out[0].Detail, "Git tracks") {
 		t.Fatalf("new log must recheck Git: %+v, %v", out, err)
 	}
 	for _, p := range []string{path, keep} {
@@ -760,8 +762,8 @@ func TestMovedChildLookupFailureRetries(t *testing.T) {
 			now := time.Now()
 			r.engine.Svc.Now = func() time.Time { return now }
 			keep := r.write("keep.txt", "long lived")
-			added, err := r.engine.Svc.Add([]string{keep}, core.AddOptions{ExpiresAt: now.Add(30 * 24 * time.Hour)})
-			if err != nil || core.Failed(added) {
+			added, err := r.engine.Svc.Add([]string{keep}, lifecycle.AddOptions{ExpiresAt: now.Add(30 * 24 * time.Hour)})
+			if err != nil || lifecycle.Failed(added) {
 				t.Fatalf("add: %+v, %v", added, err)
 			}
 			r.write("test-results/report.xml", "report")
@@ -778,14 +780,14 @@ func TestMovedChildLookupFailureRetries(t *testing.T) {
 				t.Fatal(err)
 			}
 			fault := errors.New("temporary Locate failure")
-			r.engine.Svc.FS = &lookupFS{failID: *added[0].Item.Identity, err: fault, calls: map[core.Identity]int{}}
+			r.engine.Svc.FS = &lookupFS{failID: *added[0].Item.Identity, err: fault, calls: map[corefs.Identity]int{}}
 			switch stage {
 			case "apply":
 				if d := r.apply(dir)[dir]; d.Action != Retry || !strings.Contains(d.Reason, fault.Error()) {
 					t.Errorf("must skip unknown child location: %+v", d)
 				}
 			case "approve":
-				p, _, _, err := r.engine.Svc.Propose(core.ProposalLeftovers, r.root, "s", []core.Candidate{{Path: dir, Lifespan: "1d"}})
+				p, _, _, err := r.engine.Svc.Propose(ledger.ProposalLeftovers, r.root, "s", []ledger.Candidate{{Path: dir, Lifespan: "1d"}})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -798,7 +800,7 @@ func TestMovedChildLookupFailureRetries(t *testing.T) {
 				}
 			case "sweep":
 				out, err := r.engine.Svc.Sweep(false)
-				if err != nil || len(out) != 1 || out[0].Action != core.ActionRetry || !strings.Contains(out[0].Detail, fault.Error()) {
+				if err != nil || len(out) != 1 || out[0].Action != ledger.ActionRetry || !strings.Contains(out[0].Detail, fault.Error()) {
 					t.Errorf("must retry: %+v, %v", out, err)
 				}
 			}
@@ -845,13 +847,13 @@ func TestRuleScanFailureRetriesAndSkipsRegistration(t *testing.T) {
 				now = d.Item.ExpiresAt.Add(time.Second)
 			}
 			denyEnumeration(t, dir)
-			if err := r.engine.RecheckRules(r.root, dir, true); err == nil || errors.Is(err, core.ErrProtected) {
+			if err := r.engine.RecheckRules(r.root, dir, true); err == nil || errors.Is(err, lifecycle.ErrProtected) {
 				t.Errorf("scan error must stay retryable: %v", err)
 			}
 			switch stage {
 			case "sweep":
 				out, err := r.engine.Svc.Sweep(false)
-				if err != nil || len(out) != 1 || out[0].Action != core.ActionRetry {
+				if err != nil || len(out) != 1 || out[0].Action != ledger.ActionRetry {
 					t.Errorf("scan failure must retry: %+v, %v", out, err)
 				}
 			case "apply":
@@ -859,7 +861,7 @@ func TestRuleScanFailureRetriesAndSkipsRegistration(t *testing.T) {
 					t.Errorf("scan failure registered: %+v", d)
 				}
 			case "approve":
-				p, _, _, err := r.engine.Svc.Propose(core.ProposalLeftovers, r.root, "s", []core.Candidate{{Path: dir, Lifespan: "1d"}})
+				p, _, _, err := r.engine.Svc.Propose(ledger.ProposalLeftovers, r.root, "s", []ledger.Candidate{{Path: dir, Lifespan: "1d"}})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -905,12 +907,12 @@ func TestBatchPreservesExistingLifespanAndRetriesLookupErrors(t *testing.T) {
 			t.Parallel()
 			r := newRepo(t)
 			keep := r.write("keep.txt", "long lived")
-			added, err := r.engine.Svc.Add([]string{keep}, core.AddOptions{ExpiresAt: time.Now().Add(30 * 24 * time.Hour)})
-			if err != nil || core.Failed(added) {
+			added, err := r.engine.Svc.Add([]string{keep}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(30 * 24 * time.Hour)})
+			if err != nil || lifecycle.Failed(added) {
 				t.Fatalf("add: %+v, %v", added, err)
 			}
-			if err := r.engine.Svc.Store.Update(func(st *core.State) error {
-				st.Projects = map[string]core.ProjectState{core.ProjectKey(r.root): {Consent: core.ConsentApproved}}
+			if err := r.engine.Svc.Store.Update(func(st *ledger.State) error {
+				st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(r.root): {Consent: ledger.ConsentApproved}}
 				return nil
 			}); err != nil {
 				t.Fatal(err)
@@ -919,7 +921,7 @@ func TestBatchPreservesExistingLifespanAndRetriesLookupErrors(t *testing.T) {
 				t.Fatal(err)
 			}
 			paths := []string{r.write("one.log", "1"), r.write("two.log", "2"), r.write("three.log", "3")}
-			fs := &lookupFS{calls: map[core.Identity]int{}}
+			fs := &lookupFS{calls: map[corefs.Identity]int{}}
 			r.engine.Svc.FS = fs
 			switch stage {
 			case "apply":
@@ -970,8 +972,8 @@ func TestRegistrationIgnoresUnrelatedHardLinkedIdentity(t *testing.T) {
 	}
 	r := newRepo(t)
 	oldPath := r.write("keep.txt", "existing long-lived content")
-	old, err := r.engine.Svc.Add([]string{oldPath}, core.AddOptions{ExpiresAt: time.Now().Add(30 * 24 * time.Hour)})
-	if err != nil || core.Failed(old) {
+	old, err := r.engine.Svc.Add([]string{oldPath}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(30 * 24 * time.Hour)})
+	if err != nil || lifecycle.Failed(old) {
 		t.Fatalf("register old file: %+v, %v", old, err)
 	}
 	if err := os.Link(oldPath, filepath.Join(r.root, "keep-alias.txt")); err != nil {
@@ -1004,7 +1006,7 @@ func TestRegistrationMatchesFullLocate(t *testing.T) {
 				if full {
 					// Hide only the optional proof capability; all native safety
 					// operations still run against the same real filesystem.
-					r.engine.Svc.FS = struct{ core.FS }{r.engine.Svc.FS}
+					r.engine.Svc.FS = struct{ corefs.FS }{r.engine.Svc.FS}
 				}
 				got, err := r.engine.Apply([]string{path}, Options{})
 				if err != nil || len(got) != 1 || got[0].Action != want {
@@ -1020,7 +1022,7 @@ func TestRegistrationMatchesFullLocate(t *testing.T) {
 	}
 }
 
-func registrationConflictFixture(t *testing.T, r *repo, kind string) (string, core.Item, string) {
+func registrationConflictFixture(t *testing.T, r *repo, kind string) (string, ledger.Item, string) {
 	t.Helper()
 	old := r.write("keep.txt", "keep for thirty days")
 	if kind == "renamed-parent" {
@@ -1029,8 +1031,8 @@ func registrationConflictFixture(t *testing.T, r *repo, kind string) (string, co
 	if kind == "replacement" || kind == "case" {
 		old = r.write("fresh.log", "old content")
 	}
-	rows, err := r.engine.Svc.Add([]string{old}, core.AddOptions{ExpiresAt: time.Now().Add(30 * 24 * time.Hour)})
-	if err != nil || core.Failed(rows) {
+	rows, err := r.engine.Svc.Add([]string{old}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(30 * 24 * time.Hour)})
+	if err != nil || lifecycle.Failed(rows) {
 		t.Fatalf("seed lifespan: %+v %v", rows, err)
 	}
 	path, want := filepath.Join(r.root, "fresh.log"), Skipped
@@ -1060,7 +1062,7 @@ func registrationConflictFixture(t *testing.T, r *repo, kind string) (string, co
 	return path, *rows[0].Item, want
 }
 
-type unavailableFileAncestry struct{ core.FS }
+type unavailableFileAncestry struct{ corefs.FS }
 
 func TestRegistrationRetainsUnverifiableRecord(t *testing.T) {
 	if testing.Short() {
@@ -1070,11 +1072,11 @@ func TestRegistrationRetainsUnverifiableRecord(t *testing.T) {
 		t.Run(kind, func(t *testing.T) {
 			r := newRepo(t)
 			old := r.write("keep.txt", "keep")
-			rows, err := r.engine.Svc.Add([]string{old}, core.AddOptions{ExpiresAt: time.Now().Add(30 * 24 * time.Hour)})
-			if err != nil || core.Failed(rows) {
+			rows, err := r.engine.Svc.Add([]string{old}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(30 * 24 * time.Hour)})
+			if err != nil || lifecycle.Failed(rows) {
 				t.Fatalf("old lifespan: %+v %v", rows, err)
 			}
-			if err := r.engine.Svc.Store.Update(func(st *core.State) error {
+			if err := r.engine.Svc.Store.Update(func(st *ledger.State) error {
 				switch kind {
 				case "legacy":
 					st.Items[0].Identity = nil
@@ -1096,7 +1098,7 @@ func TestRegistrationRetainsUnverifiableRecord(t *testing.T) {
 	}
 }
 
-func (unavailableFileAncestry) OpenFileAncestry(string, core.Identity) (core.FileAncestry, error) {
+func (unavailableFileAncestry) OpenFileAncestry(string, corefs.Identity) (corefs.FileAncestry, error) {
 	return nil, os.ErrPermission
 }
 
@@ -1106,8 +1108,8 @@ func TestRegistrationAncestryFailureKeepsFullLookup(t *testing.T) {
 	}
 	r := newRepo(t)
 	old := r.write("keep.txt", "keep")
-	rows, err := r.engine.Svc.Add([]string{old}, core.AddOptions{ExpiresAt: time.Now().Add(30 * 24 * time.Hour)})
-	if err != nil || core.Failed(rows) {
+	rows, err := r.engine.Svc.Add([]string{old}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(30 * 24 * time.Hour)})
+	if err != nil || lifecycle.Failed(rows) {
 		t.Fatalf("old lifespan: %+v %v", rows, err)
 	}
 	if err := os.Link(old, old+".alias"); err != nil {
@@ -1137,7 +1139,7 @@ func TestExpiryRetriesWhenGitUnavailable(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())
 
 	out, err := r.engine.Svc.Sweep(false)
-	if err != nil || len(out) != 1 || out[0].Action != core.ActionRetry {
+	if err != nil || len(out) != 1 || out[0].Action != ledger.ActionRetry {
 		t.Errorf("Git unavailable at expiry must retry: %+v, %v", out, err)
 	}
 	if data, err := os.ReadFile(path); err != nil || string(data) != "keep this file" {
@@ -1174,14 +1176,14 @@ func TestExpiryRechecksRulesAndProject(t *testing.T) {
 		t.Fatal(err)
 	}
 	r.write("test-results/keep.xml", "precious")
-	if err := r.engine.Svc.Store.Update(func(st *core.State) error {
+	if err := r.engine.Svc.Store.Update(func(st *ledger.State) error {
 		st.Items[0].ExpiresAt = st.Items[0].CreatedAt
 		return nil
 	}); err != nil {
 		t.Fatal(err)
 	}
 	out, err := r.engine.Svc.Sweep(false)
-	if err != nil || len(out) != 1 || out[0].Action != core.ActionRefused {
+	if err != nil || len(out) != 1 || out[0].Action != ledger.ActionRefused {
 		t.Fatalf("a directory that now holds a protected file must not be buried, got %+v %v", out, err)
 	}
 	if _, err := os.Stat(filepath.Join(dir, "keep.xml")); err != nil {
@@ -1214,7 +1216,7 @@ func TestExpiryRetriesUnreadableRules(t *testing.T) {
 	}
 	now = d.Item.ExpiresAt.Add(time.Second)
 	out, err := r.engine.Svc.Sweep(false)
-	if err != nil || len(out) != 1 || out[0].Action != core.ActionRetry {
+	if err != nil || len(out) != 1 || out[0].Action != ledger.ActionRetry {
 		t.Errorf("unreadable rules must retry: %+v, %v", out, err)
 	}
 	st, err := r.engine.Svc.Store.Read()
@@ -1246,7 +1248,7 @@ func TestBurialRechecksGitAfterRuleInspection(t *testing.T) {
 		return err
 	}
 	out, err := r.engine.Svc.Sweep(false)
-	if err != nil || len(out) != 1 || out[0].Action != core.ActionRefused {
+	if err != nil || len(out) != 1 || out[0].Action != ledger.ActionRefused {
 		t.Fatalf("Git staging during the final rule check must prevent burial: %+v, %v", out, err)
 	}
 	if data, err := os.ReadFile(path); err != nil || string(data) != "keep" {
@@ -1281,7 +1283,7 @@ func TestAutomaticBurialGitToMoveWindow(t *testing.T) {
 	r.engine.Svc.FS = fs
 	out, err := r.engine.Svc.Sweep(false)
 	st, readErr := r.engine.Svc.Store.Read()
-	if err != nil || readErr != nil || len(out) != 1 || out[0].Action != core.ActionBuried || len(st.Burials) != 1 {
+	if err != nil || readErr != nil || len(out) != 1 || out[0].Action != ledger.ActionBuried || len(st.Burials) != 1 {
 		t.Fatalf("automatic burial: %+v, %v, %v", out, err, readErr)
 	}
 	if data, err := os.ReadFile(st.Burials[0].Grave); err != nil || string(data) != "keep" {
@@ -1310,7 +1312,7 @@ func TestSweepRefusesCommittedFileWithInheritedGitEnvironment(t *testing.T) {
 			t.Setenv(key, value)
 			r.engine.Svc.Now = func() time.Time { return d.Item.ExpiresAt }
 			out, err := r.engine.Svc.Sweep(false)
-			if err != nil || len(out) != 1 || out[0].Action != core.ActionRefused {
+			if err != nil || len(out) != 1 || out[0].Action != ledger.ActionRefused {
 				t.Fatalf("committed file was not refused: %+v, %v", out, err)
 			}
 			if data, err := os.ReadFile(path); err != nil || string(data) != "must survive" {

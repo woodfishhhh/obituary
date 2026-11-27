@@ -11,18 +11,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
 func TestTrayRecentIsBoundedAndUpcomingIsOrdered(t *testing.T) {
 	now := time.Now()
-	svc := &core.Service{Store: core.Store{Home: t.TempDir()}}
-	if err := svc.Store.Update(func(st *core.State) error {
+	svc := &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}}
+	if err := svc.Store.Update(func(st *ledger.State) error {
 		for i := 1; i <= 12; i++ {
-			st.Burials = append(st.Burials, core.Burial{ID: int64(i), Path: fmt.Sprint(i), BuriedAt: now.Add(time.Duration(i) * time.Minute), Reason: core.ReasonExpired})
+			st.Burials = append(st.Burials, ledger.Burial{ID: int64(i), Path: fmt.Sprint(i), BuriedAt: now.Add(time.Duration(i) * time.Minute), Reason: ledger.ReasonExpired})
 		}
-		st.Items = []core.Item{{ID: 20, ExpiresAt: now.Add(25 * time.Hour)}, {ID: 21, ExpiresAt: now.Add(time.Hour)}, {ID: 22, ExpiresAt: now.Add(-time.Hour)}}
+		st.Items = []ledger.Item{{ID: 20, ExpiresAt: now.Add(25 * time.Hour)}, {ID: 21, ExpiresAt: now.Add(time.Hour)}, {ID: 22, ExpiresAt: now.Add(-time.Hour)}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -43,7 +44,7 @@ func TestTrayRecentIsBoundedAndUpcomingIsOrdered(t *testing.T) {
 
 func TestTrayRestoreOnlySelectedIDAndPreservesConflict(t *testing.T) {
 	root := t.TempDir()
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(root, "data")}, FS: winfs.FS{}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(root, "data")}, FS: winfs.FS{}}
 	paths := []string{filepath.Join(root, "first.txt"), filepath.Join(root, "second.txt")}
 	for _, path := range paths {
 		if err := os.WriteFile(path, []byte(path), 0600); err != nil {

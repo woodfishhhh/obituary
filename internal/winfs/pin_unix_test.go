@@ -10,7 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"golang.org/x/sys/unix"
 )
 
@@ -26,9 +27,9 @@ func TestPOSIXImmediateWithoutBirthTime(t *testing.T) {
 	if err := fs.MovePinned(path, id, filepath.Join(dir, "unscoped")); err == nil {
 		t.Fatal("weak move without inspection pin accepted")
 	}
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(dir, "data")}, FS: fs}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(dir, "data")}, FS: fs}
 	rows, err := svc.Bury([]string{path}, false, "")
-	if err != nil || core.GraveFailed(rows) || len(rows) != 1 || rows[0].Action != core.ActionBuried || !strings.Contains(rows[0].Warning, "pinned") {
+	if err != nil || lifecycle.GraveFailed(rows) || len(rows) != 1 || rows[0].Action != ledger.ActionBuried || !strings.Contains(rows[0].Warning, "pinned") {
 		t.Fatalf("immediate weak burial failed: %+v %v", rows, err)
 	}
 	grave := rows[0].Burial.Grave
@@ -37,11 +38,11 @@ func TestPOSIXImmediateWithoutBirthTime(t *testing.T) {
 		t.Fatalf("weak burial did not move: %v", err)
 	}
 	rows, err = svc.PurgeRefs([]string{ref}, false)
-	if err != nil || !core.GraveFailed(rows) {
+	if err != nil || !lifecycle.GraveFailed(rows) {
 		t.Fatalf("weak grave purged without durable identity: %+v %v", rows, err)
 	}
 	rows, err = svc.Resurrect([]string{ref})
-	if err != nil || !core.GraveFailed(rows) {
+	if err != nil || !lifecycle.GraveFailed(rows) {
 		t.Fatalf("weak grave restored without durable identity: %+v %v", rows, err)
 	}
 	if data, err := os.ReadFile(grave); err != nil || string(data) != "keep" {
@@ -60,12 +61,12 @@ func TestWeakImmediateDirectory(t *testing.T) {
 			if kind != "empty" && kind != "active-empty" {
 				makePOSIXPayload(t, filepath.Join(p, "child"), false, "keep")
 			}
-			svc := &core.Service{Store: core.Store{Home: filepath.Join(dir, "data")}, FS: FS{}}
+			svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(dir, "data")}, FS: FS{}}
 			if strings.HasPrefix(kind, "active") {
 				other := filepath.Join(dir, "other")
 				makePOSIXPayload(t, other, false, "keep")
-				rs, e := svc.Add([]string{other}, core.AddOptions{ExpiresAt: time.Now().Add(24 * time.Hour)})
-				if e != nil || core.Failed(rs) {
+				rs, e := svc.Add([]string{other}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(24 * time.Hour)})
+				if e != nil || lifecycle.Failed(rs) {
 					t.Fatal(rs, e)
 				}
 			}
@@ -88,10 +89,10 @@ func TestWeakImmediateDirectory(t *testing.T) {
 				t.Fatal(rows, err)
 			}
 			if strings.HasPrefix(kind, "active") {
-				if _, err := os.Stat(p); err != nil || rows[0].Action != core.ActionRetry || !strings.Contains(rows[0].Error, "active") || strings.Contains(rows[0].Error, "obit bury") {
+				if _, err := os.Stat(p); err != nil || rows[0].Action != ledger.ActionRetry || !strings.Contains(rows[0].Error, "active") || strings.Contains(rows[0].Error, "obit bury") {
 					t.Fatalf("weak protected tree: %+v", rows)
 				}
-			} else if rows[0].Action != core.ActionBuried {
+			} else if rows[0].Action != ledger.ActionBuried {
 				t.Fatalf("weak immediate tree: %+v", rows)
 			}
 		})

@@ -18,8 +18,8 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	graveyardcmd "github.com/woodfishhhh/obituary/internal/cli/graveyard"
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/docker"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 	"golang.org/x/sys/windows"
@@ -37,7 +37,7 @@ func TestMCPContainerLists(t *testing.T) {
 	if err := svc.Store.Update(func(st *ledger.State) error {
 		st.Items = []ledger.Item{{ID: 1, Rev: 1, Kind: ledger.KindContainer, Container: &id, Path: id.Display(), ExpiresAt: now.Add(time.Hour)}}
 		st.Burials = []ledger.Burial{{ID: 2, Kind: ledger.KindContainer, Container: &id, Path: id.Display(), BuriedAt: now, PurgeAt: now.Add(time.Hour)}}
-		st.Proposals = []ledger.Proposal{{ID: 3, Kind: core.ProposalContainer, Candidates: []ledger.Candidate{{Kind: ledger.KindContainer, Container: &id, Path: id.Display(), Lifespan: "2d"}}}}
+		st.Proposals = []ledger.Proposal{{ID: 3, Kind: ledger.ProposalContainer, Candidates: []ledger.Candidate{{Kind: ledger.KindContainer, Container: &id, Path: id.Display(), Lifespan: "2d"}}}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -66,12 +66,12 @@ func TestMCPContainerOperations(t *testing.T) {
 	svc.Docker = docker.CLI{Executable: executable}
 	row := docker.Container{Identity: docker.Identity{ID: strings.Repeat("a", 64), Name: "cache", Created: now.Add(-time.Hour)}, Running: true}
 	testenv.WriteDocker(t, state, row)
-	it, err := svc.AddContainer("cache", core.AddOptions{ExpiresAt: now.Add(time.Hour)})
+	it, err := svc.AddContainer("cache", lifecycle.AddOptions{ExpiresAt: now.Add(time.Hour)})
 	if err != nil {
 		t.Fatal(err)
 	}
 	session := clitest.ConnectMCP(t, NewServer(svc, "test"))
-	var items struct{ Results []core.Result }
+	var items struct{ Results []lifecycle.Result }
 	clitest.CallMCP(t, session, "obit_extend", map[string]any{"refs": []string{fmt.Sprint(it.ID)}, "lifespan": "1h"}, false, &items)
 	if len(items.Results) != 1 || items.Results[0].Item.Kind != ledger.KindContainer {
 		t.Fatal("container extend lost receipt", items)
@@ -80,17 +80,17 @@ func TestMCPContainerOperations(t *testing.T) {
 	if _, err := svc.Sweep(false); err != nil {
 		t.Fatal(err)
 	}
-	var graves struct{ Results []core.GraveResult }
+	var graves struct{ Results []lifecycle.GraveResult }
 	clitest.CallMCP(t, session, "obit_resurrect", map[string]any{"refs": []string{fmt.Sprint(it.ID)}}, false, &graves)
-	if len(graves.Results) != 1 || graves.Results[0].Action != core.ActionResurrected {
+	if len(graves.Results) != 1 || graves.Results[0].Action != ledger.ActionResurrected {
 		t.Fatal("container resurrection lost", graves)
 	}
-	it, err = svc.AddContainer("cache", core.AddOptions{ExpiresAt: now.Add(time.Hour)})
+	it, err = svc.AddContainer("cache", lifecycle.AddOptions{ExpiresAt: now.Add(time.Hour)})
 	if err != nil {
 		t.Fatal(err)
 	}
 	clitest.CallMCP(t, session, "obit_spare", map[string]any{"refs": []string{fmt.Sprint(it.ID)}}, false, &items)
-	if len(items.Results) != 1 || items.Results[0].Action != core.ActionCanceled {
+	if len(items.Results) != 1 || items.Results[0].Action != ledger.ActionCanceled {
 		t.Fatal("container spare lost", items)
 	}
 }
@@ -103,7 +103,7 @@ func TestMCPRecycleModeDescriptionAndReceipt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if svc.Mode != core.ModeRecycle {
+	if svc.Mode != lifecycle.ModeRecycle {
 		t.Fatal("fixture did not load recycle mode")
 	}
 	destination := filepath.Join(t.TempDir(), "recycled.log")
@@ -120,9 +120,9 @@ func TestMCPRecycleModeDescriptionAndReceipt(t *testing.T) {
 	}
 	path := filepath.Join(repo, "recycle.log")
 	clitest.WriteFixture(t, path, "safe fixture")
-	var out struct{ Results []core.GraveResult }
+	var out struct{ Results []lifecycle.GraveResult }
 	clitest.CallMCP(t, s, "obit_bury", map[string]any{"paths": []string{path}}, false, &out)
-	if len(out.Results) != 1 || out.Results[0].Action != core.ActionRecycled || out.Results[0].Burial != nil {
+	if len(out.Results) != 1 || out.Results[0].Action != ledger.ActionRecycled || out.Results[0].Burial != nil {
 		t.Fatalf("recycle receipt inaccurate: %+v", out)
 	}
 	if !strings.Contains(out.Results[0].Detail, "restore from the Recycle Bin") || strings.Contains(out.Results[0].Detail, "obit resurrect") {
@@ -194,7 +194,7 @@ func TestMCPGraveyardHereAndBurialBatches(t *testing.T) {
 	for _, path := range paths {
 		clitest.WriteFixture(t, path, "keep")
 	}
-	var batch struct{ Results []core.GraveResult }
+	var batch struct{ Results []lifecycle.GraveResult }
 	clitest.CallMCP(t, s, "obit_bury", map[string]any{"paths": paths[:2]}, false, &batch)
 	if len(batch.Results) != 2 || batch.Results[0].Burial.Operation == nil || batch.Results[1].Burial.Operation == nil || batch.Results[0].Burial.Operation.ID != batch.Results[1].Burial.Operation.ID {
 		t.Fatalf("MCP call split batch: %+v", batch)
@@ -235,7 +235,7 @@ func TestMCPMixedProjectBatchHasNoInferredScope(t *testing.T) {
 	for _, path := range paths {
 		clitest.WriteFixture(t, path, "keep")
 	}
-	var batch struct{ Results []core.GraveResult }
+	var batch struct{ Results []lifecycle.GraveResult }
 	clitest.CallMCP(t, s, "obit_bury", map[string]any{"paths": paths}, false, &batch)
 	if len(batch.Results) != 2 {
 		t.Fatal(batch)
@@ -258,7 +258,7 @@ func TestMCPFileLifecycle(t *testing.T) {
 	s, repo, starts := mcpFixture(t)
 	path := filepath.Join(repo, "debug.txt")
 	clitest.WriteFixture(t, path, "retained bytes")
-	var items struct{ Results []core.Result }
+	var items struct{ Results []lifecycle.Result }
 	clitest.CallMCP(t, s, "obit_mark", map[string]any{"paths": []string{path}, "lifespan": "2h"}, false, &items)
 	if len(items.Results) != 1 || items.Results[0].Item == nil || len(*starts) != 1 {
 		t.Fatalf("mark receipt/daemon: %+v %v", items, *starts)
@@ -270,7 +270,7 @@ func TestMCPFileLifecycle(t *testing.T) {
 	if !items.Results[0].Item.ExpiresAt.Equal(expires.Add(time.Hour)) {
 		t.Fatal("extend did not add one hour")
 	}
-	var graves struct{ Results []core.GraveResult }
+	var graves struct{ Results []lifecycle.GraveResult }
 	clitest.CallMCP(t, s, "obit_bury", map[string]any{"paths": []string{path}}, false, &graves)
 	if _, err := os.Stat(path); !os.IsNotExist(err) || len(*starts) != 2 {
 		t.Fatalf("bury did not move/start: %v %v", err, *starts)
@@ -291,7 +291,7 @@ func TestMCPFileLifecycle(t *testing.T) {
 	if len(list.Items) != 0 {
 		t.Fatal("spare left tracked items")
 	}
-	var summary core.Summary
+	var summary lifecycle.Summary
 	clitest.CallMCP(t, s, "obit_stats", struct{}{}, false, &summary)
 	if summary.Lifetime.Buried != 1 || summary.Lifetime.Resurrected != 1 {
 		t.Fatalf("stats: %+v", summary)
@@ -336,7 +336,7 @@ func TestMCPMktempUsesExplicitProject(t *testing.T) {
 func TestMCPResurrectPrefersLatestCommittedBurial(t *testing.T) {
 	svc, older, newer := clitest.CommittedRetryFixture(t)
 	session := clitest.ConnectMCP(t, NewServer(svc, "0.1.0-dev"))
-	var reply struct{ Results []core.GraveResult }
+	var reply struct{ Results []lifecycle.GraveResult }
 	clitest.CallMCP(t, session, "obit_resurrect", map[string]any{"refs": []string{newer.Path}}, false, &reply)
 	clitest.AssertCommittedRetry(t, svc, older, newer, reply.Results)
 }
@@ -374,7 +374,7 @@ func TestMCPResurrectExpandsAbsoluteShortPath(t *testing.T) {
 		t.Skip("volume has no short names")
 	}
 	clitest.CallMCP(t, s, "obit_bury", map[string]any{"paths": []string{path}}, false, nil)
-	var reply struct{ Results []core.GraveResult }
+	var reply struct{ Results []lifecycle.GraveResult }
 	clitest.CallMCP(t, s, "obit_resurrect", map[string]any{"refs": []string{short}}, false, &reply)
 	if len(reply.Results) != 1 || reply.Results[0].Path != path {
 		t.Fatalf("MCP short reference lost original path: %+v", reply)
@@ -384,16 +384,16 @@ func TestMCPResurrectExpandsAbsoluteShortPath(t *testing.T) {
 func TestMCPResurrectReportsPartialCommit(t *testing.T) {
 	svc, paths, unlock := clitest.RestoreReceiptFixture(t)
 	s := clitest.ConnectMCP(t, NewServer(svc, "0.1.0-dev"))
-	var data struct{ Results []core.GraveResult }
+	var data struct{ Results []lifecycle.GraveResult }
 	clitest.CallMCP(t, s, "obit_resurrect", map[string]any{"refs": paths}, true, &data)
 	actual := filepath.Join(filepath.Dir(paths[1]), "b (resurrected).txt")
-	if len(data.Results) != 3 || data.Results[0].Path != paths[0] || data.Results[1].Path != actual || data.Results[1].Error == "" || data.Results[2].Action != core.ActionNotExecuted {
+	if len(data.Results) != 3 || data.Results[0].Path != paths[0] || data.Results[1].Path != actual || data.Results[1].Error == "" || data.Results[2].Action != ledger.ActionNotExecuted {
 		t.Fatalf("MCP restore partial receipt lost completed paths: %+v", data)
 	}
 	unlock()
 	var view struct {
 		Burials  []ledger.Burial
-		Restored []core.GraveResult
+		Restored []lifecycle.GraveResult
 	}
 	clitest.CallMCP(t, s, "obit_graveyard", map[string]any{}, false, &view)
 	if len(view.Burials) != 1 || view.Burials[0].Path != paths[2] || len(view.Restored) != 1 || view.Restored[0].Path != actual {
@@ -408,7 +408,7 @@ func TestMCPGraveyardIncludesConcurrentRecovery(t *testing.T) {
 	for range 2 {
 		var page struct {
 			Burials []ledger.Burial
-			Pending []core.PendingGrave
+			Pending []lifecycle.PendingGrave
 		}
 		clitest.CallMCP(t, s, "obit_graveyard", map[string]any{}, false, &page)
 		if len(page.Burials)+len(page.Pending) != 1 || len(page.Burials) == 1 && page.Burials[0].ID != pending.Burial.ID || len(page.Pending) == 1 && page.Pending[0].Burial.ID != pending.Burial.ID {
@@ -599,7 +599,7 @@ func TestMCPBuryQuotaOverflowAndFIFOEviction(t *testing.T) {
 	}
 
 	// obit_stats exposes graveMaxBytes and quotaPendingCount.
-	var summary core.Summary
+	var summary lifecycle.Summary
 	rStats := clitest.CallMCP(t, s, "obit_stats", struct{}{}, false, &summary)
 	if summary.GraveMaxBytes != 5000 || summary.QuotaPendingCount != 1 {
 		t.Fatalf("MCP stats missing quota fields: %+v", summary)
@@ -630,15 +630,15 @@ func TestMCPRefreshesGraveyardMaxSizeWithoutRestart(t *testing.T) {
 	// Clear max_size externally while MCP session stays alive.
 	clitest.WriteFixture(t, cfgPath, "[graveyard]\nmax_size = ''\n")
 
-	var summary core.Summary
+	var summary lifecycle.Summary
 	clitest.CallMCP(t, s, "obit_stats", struct{}{}, false, &summary)
 	if summary.GraveMaxBytes != 0 {
 		t.Fatalf("MCP stats used stale GraveMaxBytes = %d, want 0", summary.GraveMaxBytes)
 	}
 	// Burying 8KB file now succeeds without Plan A and without evicting f1.
-	var buried struct{ Results []core.GraveResult }
+	var buried struct{ Results []lifecycle.GraveResult }
 	clitest.CallMCP(t, s, "obit_bury", map[string]any{"paths": []string{huge}}, false, &buried)
-	if len(buried.Results) != 1 || buried.Results[0].Action != core.ActionBuried || buried.Results[0].QuotaEviction != nil {
+	if len(buried.Results) != 1 || buried.Results[0].Action != ledger.ActionBuried || buried.Results[0].QuotaEviction != nil {
 		t.Fatalf("MCP bury used stale limit: %+v", buried.Results)
 	}
 	var listing graveyardcmd.GraveyardListing

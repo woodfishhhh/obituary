@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/runkey"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
 )
@@ -24,7 +24,7 @@ func DesktopSession() bool { return graphicalLogin() }
 func stopPath(home string) string { return filepath.Join(home, "obitd.stop") }
 
 func Running(home string) bool {
-	release, ok, err := core.TryLockExclusive(filepath.Join(home, "obitd.lock"))
+	release, ok, err := ledger.TryLockExclusive(filepath.Join(home, "obitd.lock"))
 	if err != nil || !ok {
 		return err == nil && !ok
 	}

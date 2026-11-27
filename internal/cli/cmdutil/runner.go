@@ -12,7 +12,8 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/app"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/hook"
 )
 
@@ -24,9 +25,9 @@ var RunOnce = app.RunOnce
 // background tick. The resident already reconciles labels on every tick; an
 // absent resident gets the existing one-shot runner. Registration still commits
 // synchronously, and non-hook commands retain their immediate presentation.
-func DeferExplorerSync(svc *core.Service) func() {
+func DeferExplorerSync(svc *lifecycle.Service) func() {
 	changed := false
-	svc.AfterChange = func(*core.Service) { changed = true }
+	svc.AfterChange = func(*lifecycle.Service) { changed = true }
 	return func() {
 		if !changed || RunnerRunning(svc.Store.Home) {
 			return
@@ -38,7 +39,7 @@ func DeferExplorerSync(svc *core.Service) func() {
 }
 
 // runner hands a hook's slow work to background processes.
-func Runner(svc *core.Service) *hook.Runner {
+func Runner(svc *lifecycle.Service) *hook.Runner {
 	return &hook.Runner{
 		Tick: func() { tickInBackground(svc) },
 		Finish: func(root, session string, final bool) {
@@ -69,7 +70,7 @@ func finishDue(home, root, session string) bool {
 
 // tickInBackground starts a one-shot runner when work is due and no daemon
 // is there to do it, so hooks never do the slow part themselves.
-func tickInBackground(svc *core.Service) {
+func tickInBackground(svc *lifecycle.Service) {
 	if app.Running(svc.Store.Home) {
 		return
 	}
@@ -99,7 +100,7 @@ func tickInBackground(svc *core.Service) {
 // filename, changed size or modification time bypasses the ten-minute delay.
 // Due items and queued writes never consult this marker.
 func recoverInBackground(home string) error {
-	release, ok, err := core.TryLockExclusive(filepath.Join(home, "manifest-recovery.lock"))
+	release, ok, err := ledger.TryLockExclusive(filepath.Join(home, "manifest-recovery.lock"))
 	if err != nil || !ok {
 		return err
 	}

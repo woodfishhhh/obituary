@@ -11,7 +11,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/cli/proposals"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func TestWatchCommandsAndModifiedApproval(t *testing.T) {
@@ -24,12 +24,12 @@ func TestWatchCommandsAndModifiedApproval(t *testing.T) {
 	dir := filepath.Join(root, "user", name)
 	clitest.WriteFixture(t, filepath.Join(dir, "file.txt"), "fixture")
 	out, _, err := clitest.Execute(t, NewCmd(), "~/"+name, "30d", "--json")
-	var policy core.WatchPolicy
+	var policy ledger.WatchPolicy
 	if err != nil || json.Unmarshal([]byte(out), &policy) != nil || policy.Consent != "pending" || len(*starts) != 1 {
 		t.Fatalf("watch: %s %v starts=%v", out, err, *starts)
 	}
 	out, _, err = clitest.Execute(t, NewCmd(), "--list", "--json")
-	var policies []core.WatchPolicy
+	var policies []ledger.WatchPolicy
 	if err != nil || json.Unmarshal([]byte(out), &policies) != nil || len(policies) != 1 || policies[0].Path != dir {
 		t.Fatalf("list: %s %v", out, err)
 	}
@@ -98,7 +98,7 @@ func TestWatchRemoveIDAndClearExclusionCommands(t *testing.T) {
 	var ids []int64
 	for _, path := range []string{dir, nested} {
 		out, _, err := clitest.Execute(t, NewCmd(), path, "1d", "--json", "--no-daemon")
-		var p core.WatchPolicy
+		var p ledger.WatchPolicy
 		if err != nil || json.Unmarshal([]byte(out), &p) != nil {
 			t.Fatalf("watch: %s %v", out, err)
 		}
@@ -115,7 +115,7 @@ func TestWatchRemoveIDAndClearExclusionCommands(t *testing.T) {
 		t.Fatal(err)
 	}
 	out, _, err = clitest.Execute(t, NewCmd(), "--list", "--json")
-	var policies []core.WatchPolicy
+	var policies []ledger.WatchPolicy
 	if err != nil || json.Unmarshal([]byte(out), &policies) != nil || len(policies[0].Exclusions) != 0 {
 		t.Fatalf("clear: %s %v", out, err)
 	}

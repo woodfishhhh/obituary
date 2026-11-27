@@ -16,7 +16,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 // Functional callbacks keep real Git and filesystem operations, while scheduler
@@ -43,7 +43,7 @@ func isolateLatencyRunner(t *testing.T) {
 	cmdutil.RunOnce = func(string) error { return nil }
 }
 
-func readHookLog(t *testing.T, store core.Store) string {
+func readHookLog(t *testing.T, store ledger.Store) string {
 	t.Helper()
 	data, err := os.ReadFile(filepath.Join(store.Home, "hook.log"))
 	if err != nil && !os.IsNotExist(err) {
@@ -54,7 +54,7 @@ func readHookLog(t *testing.T, store core.Store) string {
 
 // Only a diagnosed deadline may defer this sample; empty output alone is never
 // success. Both durable states must deliver on the very next callback.
-func checkPendingLatency(t *testing.T, store core.Store, root, agent, out, previousLog string) string {
+func checkPendingLatency(t *testing.T, store ledger.Store, root, agent, out, previousLog string) string {
 	t.Helper()
 	log := readHookLog(t, store)
 	if log == previousLog {
@@ -101,7 +101,7 @@ func checkDeadlineLog(t *testing.T, agent, log string) {
 	}
 }
 
-func checkDeferredProposal(t *testing.T, store core.Store, root, agent string) string {
+func checkDeferredProposal(t *testing.T, store ledger.Store, root, agent string) string {
 	t.Helper()
 	st, err := store.Read()
 	if err != nil {
@@ -135,15 +135,15 @@ func checkDeferredProposal(t *testing.T, store core.Store, root, agent string) s
 	return "observation"
 }
 
-func checkProposalScope(t *testing.T, p core.Proposal, root, session string) {
+func checkProposalScope(t *testing.T, p ledger.Proposal, root, session string) {
 	t.Helper()
-	if p.Kind != core.ProposalOnboard || p.Project != root || p.Session != session ||
+	if p.Kind != ledger.ProposalOnboard || p.Project != root || p.Session != session ||
 		len(p.Candidates) != 1 || p.Candidates[0].Path != filepath.Join(root, "debug.log") {
 		t.Fatalf("proposal scope changed: %+v", p)
 	}
 }
 
-func checkDeliveredProposal(t *testing.T, store core.Store, root, session string) {
+func checkDeliveredProposal(t *testing.T, store ledger.Store, root, session string) {
 	t.Helper()
 	st, err := store.Read()
 	if err != nil || len(st.Items) != 0 || len(st.Proposals) != 1 || len(st.ObservationReceipts) != 1 || store.HasDeferredObservations() {
@@ -155,10 +155,10 @@ func checkDeliveredProposal(t *testing.T, store core.Store, root, session string
 	}
 }
 
-func injectDeliveryDeadline(t *testing.T, store core.Store, stage string) func() {
+func injectDeliveryDeadline(t *testing.T, store ledger.Store, stage string) func() {
 	t.Helper()
 	if stage == "locked" {
-		release, err := core.LockFile(filepath.Join(store.Home, "store.lock"), true)
+		release, err := ledger.LockFile(filepath.Join(store.Home, "store.lock"), true)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -170,7 +170,7 @@ func injectDeliveryDeadline(t *testing.T, store core.Store, stage string) func()
 		return func() {}
 	}
 	delayed := false
-	restore := core.SetFileSyncForTesting(func(*os.File) error {
+	restore := ledger.SetFileSyncForTesting(func(*os.File) error {
 		st, err := store.Inspect()
 		if err != nil {
 			return err

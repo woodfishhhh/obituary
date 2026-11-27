@@ -15,7 +15,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/hook"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 )
@@ -123,8 +123,8 @@ func TestHookDefersExplorerRefresh(t *testing.T) {
 	}
 	root, store := clitest.CommandRepo(t)
 	autoOn(t, "[explorer]\neverywhere=true\nin_git=true\n")
-	if err := store.Update(func(st *core.State) error {
-		st.Projects = map[string]core.ProjectState{core.ProjectKey(root): {Consent: core.ConsentApproved}}
+	if err := store.Update(func(st *ledger.State) error {
+		st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(root): {Consent: ledger.ConsentApproved}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -305,12 +305,12 @@ func latencyPayload(t *testing.T, root, name string) string {
 	return string(data)
 }
 
-func resetLatencyFixture(t *testing.T, root string, store core.Store, name string) {
+func resetLatencyFixture(t *testing.T, root string, store ledger.Store, name string) {
 	t.Helper()
-	if err := store.Update(func(st *core.State) error {
-		*st = core.State{NextID: 1}
+	if err := store.Update(func(st *ledger.State) error {
+		*st = ledger.State{NextID: 1}
 		if name == "PostToolUse/approved" {
-			st.Projects = map[string]core.ProjectState{core.ProjectKey(root): {Consent: core.ConsentApproved}}
+			st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(root): {Consent: ledger.ConsentApproved}}
 		}
 		return nil
 	}); err != nil {
@@ -332,7 +332,7 @@ func resetLatencyFixture(t *testing.T, root string, store core.Store, name strin
 	}
 }
 
-func checkLatencyResult(t *testing.T, store core.Store, name, out string) {
+func checkLatencyResult(t *testing.T, store ledger.Store, name, out string) {
 	t.Helper()
 	st, err := store.Read()
 	if err != nil {
@@ -481,8 +481,8 @@ func TestFinishReplaysTimedOutObservationOfPreexistingFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := store.Update(func(st *core.State) error {
-		st.Projects = map[string]core.ProjectState{core.ProjectKey(root): {Consent: core.ConsentApproved}}
+	if err := store.Update(func(st *ledger.State) error {
+		st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(root): {Consent: ledger.ConsentApproved}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -492,7 +492,7 @@ func TestFinishReplaysTimedOutObservationOfPreexistingFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	clitest.WriteFixture(t, path, "edited during session")
-	release, err := core.LockFile(filepath.Join(store.Home, "store.lock"), true)
+	release, err := ledger.LockFile(filepath.Join(store.Home, "store.lock"), true)
 	if err != nil {
 		t.Fatal(err)
 	}

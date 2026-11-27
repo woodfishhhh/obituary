@@ -13,7 +13,9 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/rules"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 	"github.com/woodfishhhh/obituary/internal/watch"
@@ -25,7 +27,7 @@ func TestProposalListMatchesCLIAndRejectsReappearingCandidate(t *testing.T) {
 			a, root := fixture(t)
 			p := propose(t, a, root, "keep.log")
 			gone := filepath.Join(root, "gone.log")
-			if _, _, _, err := a.deps.Service.Propose(p.Kind, p.Project, p.Session, []core.Candidate{{Path: gone, Lifespan: "2d"}}); err != nil {
+			if _, _, _, err := a.deps.Service.Propose(p.Kind, p.Project, p.Session, []ledger.Candidate{{Path: gone, Lifespan: "2d"}}); err != nil {
 				t.Fatal(err)
 			}
 			rows, err := a.Proposals()
@@ -34,7 +36,7 @@ func TestProposalListMatchesCLIAndRejectsReappearingCandidate(t *testing.T) {
 			}
 			t.Setenv("OBIT_HOME", a.deps.Service.Store.Home)
 			out, _, err := clitest.Execute(t, cliproposals.NewCmd(), "--json")
-			var cli []core.Proposal
+			var cli []ledger.Proposal
 			if err != nil || json.Unmarshal([]byte(out), &cli) != nil || len(cli) != 1 || !reflect.DeepEqual(cli[0], rows.Proposals[0].Proposal) {
 				t.Fatalf("GUI/CLI mismatch: %+v %s %v", rows, out, err)
 			}
@@ -70,7 +72,7 @@ func TestGUIExpiredWatchDirectoryDecisions(t *testing.T) {
 			write(t, path, "payload")
 			now := time.Now()
 			a.deps.Service.Now = func() time.Time { return now }
-			if _, err := a.SetWatch(filepath.Dir(filepath.Dir(path)), "1h", core.WatchFirstSeen); err != nil {
+			if _, err := a.SetWatch(filepath.Dir(filepath.Dir(path)), "1h", ledger.WatchFirstSeen); err != nil {
 				t.Fatal(err)
 			}
 			guiApproveOnlyProposal(t, a)
@@ -82,7 +84,7 @@ func TestGUIExpiredWatchDirectoryDecisions(t *testing.T) {
 				t.Fatal(err)
 			}
 			rows, err := a.Proposals()
-			if err != nil || len(rows.Proposals) != 1 || rows.Proposals[0].Kind != core.ProposalWatchBurial || rows.Proposals[0].WatchBurial.Files != 1 {
+			if err != nil || len(rows.Proposals) != 1 || rows.Proposals[0].Kind != ledger.ProposalWatchBurial || rows.Proposals[0].WatchBurial.Files != 1 {
 				t.Fatalf("GUI burial proposal missing: %+v %v", rows, err)
 			}
 			p := rows.Proposals[0]
@@ -115,11 +117,11 @@ func guiApproveOnlyProposal(t *testing.T, a *API) {
 	}
 }
 
-func propose(t *testing.T, a *API, repo, name string) core.Proposal {
+func propose(t *testing.T, a *API, repo, name string) ledger.Proposal {
 	t.Helper()
 	path := filepath.Join(repo, name)
 	write(t, path, "candidate")
-	p, _, _, err := a.deps.Service.Propose(core.ProposalOnboard, repo, "gui-test", []core.Candidate{{Path: path, Lifespan: "2d"}})
+	p, _, _, err := a.deps.Service.Propose(ledger.ProposalOnboard, repo, "gui-test", []ledger.Candidate{{Path: path, Lifespan: "2d"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,11 +140,11 @@ func TestProposalListApproveAndReject(t *testing.T) {
 		t.Fatalf("proposals: %+v %v", list, err)
 	}
 	approved, err := a.Approve([]string{ref(p.ID), "999999"}, []string{list.Proposals[0].Fingerprint, "missing"})
-	if err != nil || approved.Error != "" || approved.Results[0].Error != "" || len(approved.Results[0].Results) != 1 || approved.Results[0].Results[0].Action != core.ActionAdded || approved.Results[1].Error == "" {
+	if err != nil || approved.Error != "" || approved.Results[0].Error != "" || len(approved.Results[0].Results) != 1 || approved.Results[0].Results[0].Action != ledger.ActionAdded || approved.Results[1].Error == "" {
 		t.Fatalf("approve: %+v %v", approved, err)
 	}
 	p = propose(t, a, repo, "second.log")
-	rejected, err := a.Reject([]string{ref(p.ID), "999999"}, []string{core.ProposalFingerprint(p), "missing"})
+	rejected, err := a.Reject([]string{ref(p.ID), "999999"}, []string{lifecycle.ProposalFingerprint(p), "missing"})
 	if err != nil || rejected.Error != "" || rejected.Results[0].Error != "" || rejected.Results[1].Error == "" {
 		t.Fatalf("reject: %+v %v", rejected, err)
 	}
@@ -195,7 +197,7 @@ func TestCandidateReceiptMatchesPartialApproval(t *testing.T) {
 		path := filepath.Join(repo, name)
 		write(t, path, "candidate")
 		var err error
-		p, _, _, err = a.deps.Service.Propose(p.Kind, repo, p.Session, []core.Candidate{{Path: path, Lifespan: "2d"}})
+		p, _, _, err = a.deps.Service.Propose(p.Kind, repo, p.Session, []ledger.Candidate{{Path: path, Lifespan: "2d"}})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -223,24 +225,24 @@ func TestCandidateReceiptMatchesPartialApproval(t *testing.T) {
 	}
 	var receipt struct {
 		Remaining []string
-		Results   []core.Result
+		Results   []lifecycle.Result
 	}
 	if err := json.Unmarshal(raw, &receipt); err != nil {
 		t.Fatal(err)
 	}
-	if len(receipt.Results) != 3 || receipt.Results[0].Action != core.ActionAdded || receipt.Results[1].Error == "" || receipt.Results[2].Error == "" || !reflect.DeepEqual(receipt.Remaining, []string{retry}) {
+	if len(receipt.Results) != 3 || receipt.Results[0].Action != ledger.ActionAdded || receipt.Results[1].Error == "" || receipt.Results[2].Error == "" || !reflect.DeepEqual(receipt.Remaining, []string{retry}) {
 		t.Fatalf("candidate receipt: %s", raw)
 	}
 }
 
 type denyCandidateFS struct {
-	core.FS
+	corefs.FS
 	path string
 }
 
-func (f denyCandidateFS) Identify(path string) (core.Identity, error) {
+func (f denyCandidateFS) Identify(path string) (corefs.Identity, error) {
 	if path == f.path {
-		return core.Identity{}, os.ErrPermission
+		return corefs.Identity{}, os.ErrPermission
 	}
 	return f.FS.Identify(path)
 }
@@ -256,7 +258,7 @@ func TestProposalReviewValidation(t *testing.T) {
 	a, root := fixture(t)
 	p := propose(t, a, root, "reviewed.log")
 	propose(t, a, root, "unseen.log")
-	for _, fingerprints := range [][]string{nil, {""}, {core.ProposalFingerprint(p)}} {
+	for _, fingerprints := range [][]string{nil, {""}, {lifecycle.ProposalFingerprint(p)}} {
 		approved, err := a.Approve([]string{ref(p.ID)}, fingerprints)
 		if err != nil || approved.Error == "" && (len(approved.Results) != 1 || approved.Results[0].Error == "") {
 			t.Fatalf("unreviewed approval accepted: %+v %v", approved, err)
@@ -291,7 +293,7 @@ func TestApproveRefreshesRules(t *testing.T) {
 				t.Fatal(err)
 			}
 			p := propose(t, a, repo, "first.log")
-			if reply, err := a.Approve([]string{ref(p.ID)}, []string{core.ProposalFingerprint(p)}); err != nil || reply.Results[0].Results[0].Action != core.ActionAdded {
+			if reply, err := a.Approve([]string{ref(p.ID)}, []string{lifecycle.ProposalFingerprint(p)}); err != nil || reply.Results[0].Results[0].Action != ledger.ActionAdded {
 				t.Fatalf("prime rules: %+v %v", reply, err)
 			}
 			if change == "untrust" {
@@ -311,7 +313,7 @@ func TestApproveRefreshesRules(t *testing.T) {
 				}
 			}
 			p = propose(t, a, repo, "blocked.log")
-			reply, err := a.Approve([]string{ref(p.ID)}, []string{core.ProposalFingerprint(p)})
+			reply, err := a.Approve([]string{ref(p.ID)}, []string{lifecycle.ProposalFingerprint(p)})
 			state, readErr := a.deps.Service.Store.Read()
 			wantItems := 1
 			if change == "untrust" {
@@ -349,13 +351,13 @@ func TestApproveRefreshesRulesDuringReview(t *testing.T) {
 					trustRuleFile(t, a, path)
 				}
 			}}
-			reply, err := a.Approve([]string{ref(p.ID)}, []string{core.ProposalFingerprint(p)})
+			reply, err := a.Approve([]string{ref(p.ID)}, []string{lifecycle.ProposalFingerprint(p)})
 			state, readErr := a.deps.Service.Store.Read()
 			if err != nil || readErr != nil || reply.Error == "" || len(reply.Results) != 1 || len(state.Items) != 0 || len(state.Proposals) != 1 {
 				t.Fatalf("stale rules affected candidate: %+v %+v %v %v", reply, state, err, readErr)
 			}
 			results := reply.Results[0].Results
-			if len(results) != 1 || !strings.Contains(results[0].Error, "rules") || core.ProposalFingerprint(state.Proposals[0]) != core.ProposalFingerprint(p) {
+			if len(results) != 1 || !strings.Contains(results[0].Error, "rules") || lifecycle.ProposalFingerprint(state.Proposals[0]) != lifecycle.ProposalFingerprint(p) {
 				t.Fatalf("stale rules affected candidate: %+v %+v", reply, state.Proposals)
 			}
 		})
@@ -374,11 +376,11 @@ func trustRuleFile(t *testing.T, a *API, path string) {
 }
 
 type approvalRuleChangeFS struct {
-	core.FS
+	corefs.FS
 	before func()
 }
 
-func (f *approvalRuleChangeFS) Identify(path string) (core.Identity, error) {
+func (f *approvalRuleChangeFS) Identify(path string) (corefs.Identity, error) {
 	if f.before != nil {
 		before := f.before
 		f.before = nil
@@ -443,12 +445,12 @@ func TestWatchesReusePolicyConsent(t *testing.T) {
 	if approved, err := a.Approve([]string{ref(initial.Proposals[0].ID)}, []string{initial.Proposals[0].Fingerprint}); err != nil || approved.Error != "" || approved.Results[0].Error != "" {
 		t.Fatalf("first-seen approve: %+v %v", approved, err)
 	}
-	set, err = a.SetWatch(folder, "2d", core.WatchModified)
-	if err != nil || set.Error != "" || set.Policy.Consent == core.ConsentApproved {
+	set, err = a.SetWatch(folder, "2d", ledger.WatchModified)
+	if err != nil || set.Error != "" || set.Policy.Consent == ledger.ConsentApproved {
 		t.Fatalf("modified policy needs approval: %+v %v", set, err)
 	}
 	proposals, err := a.Proposals()
-	if err != nil || len(proposals.Proposals) != 1 || proposals.Proposals[0].Kind != core.ProposalWatch {
+	if err != nil || len(proposals.Proposals) != 1 || proposals.Proposals[0].Kind != ledger.ProposalWatch {
 		t.Fatalf("policy proposal: %+v %v", proposals, err)
 	}
 	approved, err := a.Approve([]string{ref(proposals.Proposals[0].ID)}, []string{proposals.Proposals[0].Fingerprint})
@@ -481,9 +483,9 @@ func TestRuleListDeduplicatesKnownProjectSpellings(t *testing.T) {
 	repo := filepath.Join(root, "repo")
 	write(t, filepath.Join(repo, ".obitrules"), "*.log 2d\n")
 	propose(t, a, repo, "one.log")
-	if err := a.deps.Service.Store.Update(func(st *core.State) error {
-		st.Projects = map[string]core.ProjectState{}
-		st.Projects[core.ProjectKey(strings.ToUpper(repo))] = core.ProjectState{Consent: core.ConsentApproved, At: time.Now()}
+	if err := a.deps.Service.Store.Update(func(st *ledger.State) error {
+		st.Projects = map[string]ledger.ProjectState{}
+		st.Projects[ledger.ProjectKey(strings.ToUpper(repo))] = ledger.ProjectState{Consent: ledger.ConsentApproved, At: time.Now()}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -512,8 +514,8 @@ func TestRuleListUsesProjectDirectoryIdentity(t *testing.T) {
 	if os.SameFile(left, right) {
 		want = 1
 	}
-	if err := a.deps.Service.Store.Update(func(st *core.State) error {
-		st.Projects = map[string]core.ProjectState{first: {}, second: {}}
+	if err := a.deps.Service.Store.Update(func(st *ledger.State) error {
+		st.Projects = map[string]ledger.ProjectState{first: {}, second: {}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -561,26 +563,26 @@ func TestDecisionsShowModeAndWhatWentInWithoutAsking(t *testing.T) {
 	a, root := fixture(t)
 	path := filepath.Join(root, "debug.log")
 	write(t, path, "x")
-	if err := a.deps.Service.Store.Update(func(st *core.State) error {
-		st.Items = append(st.Items, core.Item{ID: st.NextID, Rev: 1, Path: path, Source: "rule", Project: root, ExpiresAt: time.Now().Add(time.Hour)})
-		st.AddAutoReceipts(core.AutoReceipt{ID: st.NextID, Class: core.AutoCreated, Project: root, At: time.Now()})
+	if err := a.deps.Service.Store.Update(func(st *ledger.State) error {
+		st.Items = append(st.Items, ledger.Item{ID: st.NextID, Rev: 1, Path: path, Source: "rule", Project: root, ExpiresAt: time.Now().Add(time.Hour)})
+		st.AddAutoReceipts(ledger.AutoReceipt{ID: st.NextID, Class: ledger.AutoCreated, Project: root, At: time.Now()})
 		st.NextID++
 		return nil
 	}); err != nil {
 		t.Fatal(err)
 	}
 	rows, err := a.Proposals()
-	if err != nil || rows.Mode != core.ProposalsOff || len(rows.Handled) != 1 || rows.Handled[0].Class != core.AutoCreated || rows.Handled[0].Item.Path != path {
+	if err != nil || rows.Mode != lifecycle.ProposalsOff || len(rows.Handled) != 1 || rows.Handled[0].Class != ledger.AutoCreated || rows.Handled[0].Item.Path != path {
 		t.Fatalf("decisions view: %+v %v", rows, err)
 	}
-	plan, err := a.PlanProposalMode(core.ProposalsAuto)
+	plan, err := a.PlanProposalMode(lifecycle.ProposalsAuto)
 	if err != nil || len(plan.Changes) != 1 {
 		t.Fatalf("preview: %+v %v", plan, err)
 	}
 	if _, err := a.ApplyPlan(plan.ID); err != nil {
 		t.Fatal(err)
 	}
-	if rows, err = a.Proposals(); err != nil || rows.Mode != core.ProposalsAuto || a.deps.Service.Proposals() != core.ProposalsAuto {
+	if rows, err = a.Proposals(); err != nil || rows.Mode != lifecycle.ProposalsAuto || a.deps.Service.Proposals() != lifecycle.ProposalsAuto {
 		t.Fatalf("mode not switched: %+v %v", rows, err)
 	}
 	if _, err := a.PlanProposalMode("everything"); err == nil {
@@ -617,7 +619,7 @@ func TestGUIQuotaDecisionsPurgeAndExtend(t *testing.T) {
 		t.Fatalf("summary with quota decision: %+v %v", sum, err)
 	}
 	rows, err := a.Proposals()
-	if err != nil || len(rows.Proposals) != 1 || rows.Proposals[0].Kind != core.ProposalGraveyardQuota || rows.Proposals[0].QuotaReview == nil {
+	if err != nil || len(rows.Proposals) != 1 || rows.Proposals[0].Kind != ledger.ProposalGraveyardQuota || rows.Proposals[0].QuotaReview == nil {
 		t.Fatalf("quota proposal missing: %+v %v", rows, err)
 	}
 	p1 := rows.Proposals[0]
@@ -694,8 +696,8 @@ func TestGUIRefreshesMaxSizeAndApprovesOversizedAfterLimitRaise(t *testing.T) {
 	f2 := filepath.Join(root, "work", "bury2.bin")
 	write(t, f1, strings.Repeat("a", 3000))
 	write(t, f2, strings.Repeat("b", 3000))
-	addRes, err := a.deps.Service.Add([]string{f1, f2}, core.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
-	if err != nil || len(addRes) != 2 || core.Failed(addRes) {
+	addRes, err := a.deps.Service.Add([]string{f1, f2}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
+	if err != nil || len(addRes) != 2 || lifecycle.Failed(addRes) {
 		t.Fatalf("add f1/f2: %+v %v", addRes, err)
 	}
 	if _, err := a.Bury([]string{"#" + ref(addRes[0].Item.ID)}); err != nil {

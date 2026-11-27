@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/docker"
 )
 
@@ -17,11 +17,11 @@ func TestProposalItemCounts(t *testing.T) {
 	for _, n := range []int{1, 2} {
 		t.Run(fmt.Sprint(n), func(t *testing.T) {
 			root, store := clitest.CommandDir(t)
-			var candidates []core.Candidate
+			var candidates []ledger.Candidate
 			for i := range n {
 				path := filepath.Join(root, fmt.Sprintf("file%d.txt", i))
 				clitest.WriteFixture(t, path, "keep")
-				candidates = append(candidates, core.Candidate{Path: path, Lifespan: "1d"})
+				candidates = append(candidates, ledger.Candidate{Path: path, Lifespan: "1d"})
 			}
 			clitest.AddProposal(t, store, root, candidates...)
 			out, _, err := clitest.Execute(t, NewCmd())
@@ -39,7 +39,7 @@ func TestProposalItemCounts(t *testing.T) {
 func TestProposalsJSONReportsUnavailableDocker(t *testing.T) {
 	root, store := clitest.CommandDir(t)
 	id := &docker.Identity{ID: strings.Repeat("c", 64), Name: "cache", Created: time.Now()}
-	clitest.AddProposal(t, store, root, core.Candidate{Kind: core.KindContainer, Container: id, Path: id.Display(), Lifespan: "1d"})
+	clitest.AddProposal(t, store, root, ledger.Candidate{Kind: ledger.KindContainer, Container: id, Path: id.Display(), Lifespan: "1d"})
 	t.Setenv("PATH", t.TempDir())
 	out, _, err := clitest.Execute(t, NewCmd(), "--json")
 	if err != nil || !strings.Contains(out, `"blocked": "docker-unavailable"`) {
@@ -51,7 +51,7 @@ func TestProposalsOmitsMissingCandidates(t *testing.T) {
 	root, store := clitest.CommandDir(t)
 	keep, gone := filepath.Join(root, "keep.txt"), filepath.Join(root, "gone.txt")
 	clitest.WriteFixture(t, keep, "keep")
-	clitest.AddProposal(t, store, root, core.Candidate{Path: keep, Lifespan: "1d"}, core.Candidate{Path: gone, Lifespan: "1d"})
+	clitest.AddProposal(t, store, root, ledger.Candidate{Path: keep, Lifespan: "1d"}, ledger.Candidate{Path: gone, Lifespan: "1d"})
 	t.Setenv("PATH", t.TempDir())
 	for _, args := range [][]string{nil, {"--json"}} {
 		out, _, err := clitest.Execute(t, NewCmd(), args...)
@@ -72,9 +72,9 @@ func TestProposalsListsWhatWentInWithoutAsking(t *testing.T) {
 	root, store := clitest.CommandDir(t)
 	path := filepath.Join(root, "debug.log")
 	clitest.WriteFixture(t, path, "x")
-	if err := store.Update(func(st *core.State) error {
-		st.Items = append(st.Items, core.Item{ID: 7, Rev: 1, Path: path, Source: "rule", Project: root, ExpiresAt: time.Now().Add(48 * time.Hour)})
-		st.AddAutoReceipts(core.AutoReceipt{ID: 7, Class: core.AutoCreated, Project: root, At: time.Now()})
+	if err := store.Update(func(st *ledger.State) error {
+		st.Items = append(st.Items, ledger.Item{ID: 7, Rev: 1, Path: path, Source: "rule", Project: root, ExpiresAt: time.Now().Add(48 * time.Hour)})
+		st.AddAutoReceipts(ledger.AutoReceipt{ID: 7, Class: ledger.AutoCreated, Project: root, At: time.Now()})
 		st.NextID = 8
 		return nil
 	}); err != nil {

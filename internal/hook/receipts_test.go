@@ -6,20 +6,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func TestReceiptNoticeSaysWhatAndHowToUndo(t *testing.T) {
 	now := time.Now()
 	repo, other := filepath.Join(t.TempDir(), "repo"), filepath.Join(t.TempDir(), "other")
-	st := core.State{Items: []core.Item{
+	st := ledger.State{Items: []ledger.Item{
 		{ID: 3, Path: filepath.Join(repo, "debug.log"), ExpiresAt: now.Add(72 * time.Hour)},
 		{ID: 4, Path: filepath.Join(other, "dist"), ExpiresAt: now.Add(time.Hour)},
 	}}
-	st.AutoReceipts = []core.AutoReceipt{
-		{ID: 3, Class: core.AutoCreated, Project: repo, Session: "s"},
-		{ID: 4, Class: core.AutoRegenerable, Project: other, Session: "elsewhere"},
-		{ID: 9, Class: core.AutoAll, Project: repo}, // its item is gone
+	st.AutoReceipts = []ledger.AutoReceipt{
+		{ID: 3, Class: ledger.AutoCreated, Project: repo, Session: "s"},
+		{ID: 4, Class: ledger.AutoRegenerable, Project: other, Session: "elsewhere"},
+		{ID: 9, Class: ledger.AutoAll, Project: repo}, // its item is gone
 	}
 	handled := untoldReceipts(st, repo, "s", true)
 	if len(handled) != 1 || handled[0].Item.ID != 3 {

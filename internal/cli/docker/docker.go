@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/core/lifespan"
 )
 
@@ -28,7 +28,7 @@ func newAdd() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		item, err := svc.WithContext(cmd.Context()).AddContainer(args[0], core.AddOptions{ExpiresAt: time.Now().Add(d)})
+		item, err := svc.WithContext(cmd.Context()).AddContainer(args[0], lifecycle.AddOptions{ExpiresAt: time.Now().Add(d)})
 		if err := cmdutil.Committed(err); err != nil {
 			return err
 		}

@@ -11,7 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
@@ -42,8 +43,8 @@ func TestOnceDeduplicatesProposalErrorsAcrossProcesses(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(config, "config.toml"), []byte("[update]\ncheck = false\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	svc := &core.Service{Store: core.Store{Home: home}, FS: winfs.FS{}}
-	if _, _, _, err := svc.Propose(core.ProposalLeftovers, project, "s", []core.Candidate{{Path: filepath.Join(project, "missing.log"), Lifespan: "1d"}}); err != nil {
+	svc := &lifecycle.Service{Store: ledger.Store{Home: home}, FS: winfs.FS{}}
+	if _, _, _, err := svc.Propose(ledger.ProposalLeftovers, project, "s", []ledger.Candidate{{Path: filepath.Join(project, "missing.log"), Lifespan: "1d"}}); err != nil {
 		t.Fatal(err)
 	}
 	for range 3 {
@@ -87,8 +88,8 @@ func TestDaemonRejectsChangedHomeArgument(t *testing.T) {
 			if err := os.WriteFile(path, []byte("keep"), 0600); err != nil {
 				t.Fatal(err)
 			}
-			svc := &core.Service{Store: core.Store{Home: home}, FS: winfs.FS{}, Now: func() time.Time { return time.Now().Add(-2 * time.Hour) }}
-			if rows, err := svc.Add([]string{path}, core.AddOptions{ExpiresAt: time.Now().Add(-time.Hour)}); err != nil || core.Failed(rows) {
+			svc := &lifecycle.Service{Store: ledger.Store{Home: home}, FS: winfs.FS{}, Now: func() time.Time { return time.Now().Add(-2 * time.Hour) }}
+			if rows, err := svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(-time.Hour)}); err != nil || lifecycle.Failed(rows) {
 				t.Fatalf("fixture: %+v %v", rows, err)
 			}
 			before, err := os.ReadFile(filepath.Join(home, "store.json"))

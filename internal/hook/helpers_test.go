@@ -13,7 +13,10 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/guard"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 	"github.com/woodfishhhh/obituary/internal/rules"
 	"github.com/woodfishhhh/obituary/internal/testenv"
@@ -42,7 +45,7 @@ func newEnv(t testing.TB) *env {
 	}
 	testenv.InitRepo(t, root)
 	// Most tests exercise automatic registration, so they turn it on.
-	svc := &core.Service{Store: core.Store{Home: home}, Guard: core.Guard{System: []string{home}}, FS: winfs.FS{}, ProposalMode: core.ProposalsTiered}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: home}, Guard: guard.Guard{System: []string{home}}, FS: winfs.FS{}, ProposalMode: lifecycle.ProposalsTiered}
 	return &env{t: t, root: root, engine: &auto.Engine{Svc: svc, Trust: rules.TrustStore{Path: filepath.Join(home, "trusted_rules.json")}}}
 }
 
@@ -54,7 +57,7 @@ func benchmarkHook(b *testing.B, agent string, run func(*auto.Engine, io.Reader,
 	for _, name := range []string{"PreToolUse/delete", "PreToolUse/ordinary", "PostToolUse/approved", "PostToolUse/pending", "SessionStart/startup", "SessionStart/resume", "Stop/dispatch"} {
 		b.Run(name, func(b *testing.B) {
 			e := newEnv(b)
-			e.engine.Svc.Guard = core.DefaultGuard(e.engine.Svc.Store.Home).WithCanonical(winfs.Canonical)
+			e.engine.Svc.Guard = guard.DefaultGuard(e.engine.Svc.Store.Home).WithCanonical(winfs.Canonical)
 			e.engine.Svc.Owner = auto.Owner
 			path := e.write("debug.log")
 			event, variant, _ := strings.Cut(name, "/")
@@ -93,10 +96,10 @@ func benchmarkHook(b *testing.B, agent string, run func(*auto.Engine, io.Reader,
 			for b.Loop() {
 				b.StopTimer()
 				if event == "PostToolUse" {
-					if err := e.engine.Svc.Store.Update(func(st *core.State) error {
-						*st = core.State{NextID: 1}
+					if err := e.engine.Svc.Store.Update(func(st *ledger.State) error {
+						*st = ledger.State{NextID: 1}
 						if variant == "approved" {
-							st.Projects = map[string]core.ProjectState{core.ProjectKey(e.root): {Consent: core.ConsentApproved}}
+							st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(e.root): {Consent: ledger.ConsentApproved}}
 						}
 						return nil
 					}); err != nil {
@@ -152,7 +155,7 @@ func benchmarkHook(b *testing.B, agent string, run func(*auto.Engine, io.Reader,
 }
 
 // ask restores the pre-tiering behaviour: every automatic registration is proposed.
-func (e *env) ask() { e.engine.Svc.ProposalMode = core.ProposalsAsk }
+func (e *env) ask() { e.engine.Svc.ProposalMode = lifecycle.ProposalsAsk }
 
 func (e *env) write(rel string) string {
 	e.t.Helper()
@@ -229,7 +232,7 @@ func (e *env) wrote(path string) string {
 		"tool_input": map[string]any{"file_path": path, "content": "x"}})
 }
 
-func (e *env) state() core.State {
+func (e *env) state() ledger.State {
 	e.t.Helper()
 	st, err := e.engine.Svc.Store.Read()
 	if err != nil {
@@ -271,7 +274,7 @@ const noEquivalent = "<no exact equivalent>"
 func guardSuggestion(t *testing.T, agent, cwd, tool string, input map[string]any) string {
 	t.Helper()
 	data, _ := json.Marshal(map[string]any{"hook_event_name": "PreToolUse", "cwd": cwd, "tool_name": tool, "tool_input": input})
-	e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: t.TempDir()}}}
+	e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}}}
 	var out bytes.Buffer
 	Run(agent, e, bytes.NewReader(data), &out, nil)
 	if _, err := os.Stat(filepath.Join(e.Svc.Store.Home, "store.json")); !os.IsNotExist(err) {
@@ -335,12 +338,12 @@ func testAgentShellDeclaration(t *testing.T, agent, declarationAgent string, too
 }
 
 type replaceOnCaptureFS struct {
-	core.FS
+	corefs.FS
 	path    string
 	replace func()
 }
 
-func (f *replaceOnCaptureFS) Identify(path string) (core.Identity, error) {
+func (f *replaceOnCaptureFS) Identify(path string) (corefs.Identity, error) {
 	id, err := f.FS.Identify(path)
 	if err == nil && path == f.path && f.replace != nil {
 		replace := f.replace

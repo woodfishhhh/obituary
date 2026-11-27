@@ -15,7 +15,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
@@ -145,9 +144,9 @@ func TestDeferredWriteSurvivesLedgerTimeout(t *testing.T) {
 			t.Parallel()
 			e := newEnv(t)
 			path := e.write("debug.log")
-			if err := e.engine.Svc.Store.Update(func(st *core.State) error {
+			if err := e.engine.Svc.Store.Update(func(st *ledger.State) error {
 				if approved {
-					st.Projects = map[string]core.ProjectState{core.ProjectKey(e.root): {Consent: core.ConsentApproved}}
+					st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(e.root): {Consent: ledger.ConsentApproved}}
 				}
 				return nil
 			}); err != nil {
@@ -204,8 +203,8 @@ func TestDeferredWriteRegistersApprovedProject(t *testing.T) {
 	}
 	t.Parallel()
 	e := newEnv(t)
-	if err := e.engine.Svc.Store.Update(func(st *core.State) error {
-		st.Projects = map[string]core.ProjectState{core.ProjectKey(e.root): {Consent: core.ConsentApproved}}
+	if err := e.engine.Svc.Store.Update(func(st *ledger.State) error {
+		st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(e.root): {Consent: ledger.ConsentApproved}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -275,11 +274,11 @@ func TestPendingDeliveryBudgetAndScope(t *testing.T) {
 	t.Parallel()
 	e, other := newEnv(t), newEnv(t)
 	for i := 0; i < 9; i++ {
-		if _, _, _, err := e.engine.Svc.Propose(core.ProposalLeftovers, e.root, "seed", []core.Candidate{{Path: e.write(fmt.Sprintf("pending-%d.txt", i)), Lifespan: "1d"}}); err != nil {
+		if _, _, _, err := e.engine.Svc.Propose(ledger.ProposalLeftovers, e.root, "seed", []ledger.Candidate{{Path: e.write(fmt.Sprintf("pending-%d.txt", i)), Lifespan: "1d"}}); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if _, _, _, err := e.engine.Svc.Propose(core.ProposalLeftovers, other.root, "other", []core.Candidate{{Path: other.write("other.txt"), Lifespan: "1d"}}); err != nil {
+	if _, _, _, err := e.engine.Svc.Propose(ledger.ProposalLeftovers, other.root, "other", []ledger.Candidate{{Path: other.write("other.txt"), Lifespan: "1d"}}); err != nil {
 		t.Fatal(err)
 	}
 	seen := map[int64]bool{}

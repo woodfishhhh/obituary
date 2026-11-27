@@ -12,8 +12,9 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
@@ -23,15 +24,15 @@ func TestDoctorWatches(t *testing.T) {
 		name, consent, status string
 		pathErr               error
 	}{
-		{"approved", core.ConsentApproved, "PASS", nil},
+		{"approved", ledger.ConsentApproved, "PASS", nil},
 		{"pending", "pending", "WARN", nil},
-		{"missing", core.ConsentApproved, "WARN", core.ErrNotFound},
-		{"changed", core.ConsentApproved, "WARN", core.ErrUnsafe},
-		{"unreadable", core.ConsentApproved, "WARN", os.ErrPermission},
+		{"missing", ledger.ConsentApproved, "WARN", corefs.ErrNotFound},
+		{"changed", ledger.ConsentApproved, "WARN", corefs.ErrUnsafe},
+		{"unreadable", ledger.ConsentApproved, "WARN", os.ErrPermission},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			state := ledger.State{Watches: []ledger.WatchPolicy{{ID: 1, Path: testenv.NativeFixture(`C:\downloads`), Consent: tc.consent,
-				Exclusions: []core.WatchExclusion{{ID: 2}}}}, WatchExemptions: []ledger.WatchExemption{{WatchID: 1}}}
+				Exclusions: []ledger.WatchExclusion{{ID: 2}}}}, WatchExemptions: []ledger.WatchExemption{{WatchID: 1}}}
 			calls := 0
 			folder := t.TempDir()
 			got := english.diagnoseWatches(state, nil, now, func(policy ledger.WatchPolicy) (string, error) {
@@ -106,8 +107,8 @@ func TestDoctorWatchIdentityReadOnly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	state := ledger.State{Watches: []ledger.WatchPolicy{{ID: 1, Path: path, Identity: id, Consent: core.ConsentApproved}}}
-	svc := &core.Service{FS: fs}
+	state := ledger.State{Watches: []ledger.WatchPolicy{{ID: 1, Path: path, Identity: id, Consent: ledger.ConsentApproved}}}
+	svc := &lifecycle.Service{FS: fs}
 	for _, status := range []string{"PASS", "WARN"} {
 		before := clitest.TreeSnapshot(t, root)
 		got := english.diagnoseWatches(state, nil, time.Now(), svc.WatchPath)
@@ -132,8 +133,8 @@ func TestDoctorExplainsDownloadSkips(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	st := ledger.State{Watches: []ledger.WatchPolicy{{ID: 1, Path: path, Identity: id, Consent: core.ConsentApproved}}}
-	svc := &core.Service{FS: winfs.FS{}}
+	st := ledger.State{Watches: []ledger.WatchPolicy{{ID: 1, Path: path, Identity: id, Consent: ledger.ConsentApproved}}}
+	svc := &lifecycle.Service{FS: winfs.FS{}}
 	got := english.diagnoseWatches(st, nil, time.Now(), svc.WatchPath)
 	if !strings.Contains(got.Detail, "archive.tmp") || !strings.Contains(got.Detail, "obit add") || !strings.Contains(got.Detail, "download") {
 		t.Fatalf("doctor omitted download skip explanation: %+v", got)

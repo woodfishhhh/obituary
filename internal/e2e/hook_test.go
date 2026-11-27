@@ -16,7 +16,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 	"github.com/woodfishhhh/obituary/internal/hook"
 	"github.com/woodfishhhh/obituary/internal/project"
@@ -94,7 +94,7 @@ func TestCodexDeniedPathsFailOpenWithDiagnostics(t *testing.T) {
 			autoOn(t, "")
 			path := filepath.Join(root, "debug.log")
 			writeFixture(t, path, "user content")
-			if err := store.Update(func(*core.State) error { return nil }); err != nil {
+			if err := store.Update(func(*ledger.State) error { return nil }); err != nil {
 				t.Fatal(err)
 			}
 			sessions := filepath.Join(store.Home, "sessions")

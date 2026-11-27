@@ -9,7 +9,10 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/config"
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/guard"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"github.com/woodfishhhh/obituary/internal/project"
@@ -24,11 +27,11 @@ type Options struct {
 }
 
 type directory struct {
-	Tag         string        `json:"tag,omitempty"`
-	PreviousTag string        `json:"previousTag,omitempty"`
-	Path        string        `json:"path"`
-	Identity    core.Identity `json:"identity"`
-	Candidate   bool          `json:"-"` // No write has been attempted in this sync.
+	Tag         string          `json:"tag,omitempty"`
+	PreviousTag string          `json:"previousTag,omitempty"`
+	Path        string          `json:"path"`
+	Identity    corefs.Identity `json:"identity"`
+	Candidate   bool            `json:"-"` // No write has been attempted in this sync.
 }
 
 type projection struct {
@@ -42,11 +45,11 @@ var findProject = project.FindContext
 // Sync reconciles the current ledger with directories previously labelled by
 // this home. The shared lock serializes CLI and daemon projections; it never
 // holds store.lock while writing Explorer files or asking Git.
-func Sync(svc *core.Service, options Options) error {
+func Sync(svc *lifecycle.Service, options Options) error {
 	if err := os.MkdirAll(svc.Store.Home, 0o700); err != nil {
 		return err
 	}
-	release, ok, err := core.TryLockExclusive(filepath.Join(svc.Store.Home, "explorer.lock"))
+	release, ok, err := ledger.TryLockExclusive(filepath.Join(svc.Store.Home, "explorer.lock"))
 	if err != nil {
 		return err
 	}
@@ -69,7 +72,7 @@ func Sync(svc *core.Service, options Options) error {
 	return projectLabels(svc, index, state, previous, options)
 }
 
-func projectDirectories(svc *core.Service, index string, state core.State, previous map[string]directory, options Options) error {
+func projectDirectories(svc *lifecycle.Service, index string, state ledger.State, previous map[string]directory, options Options) error {
 	wanted, err := desired(svc, state.Items, options)
 	if err != nil {
 		return err
@@ -80,11 +83,11 @@ func projectDirectories(svc *core.Service, index string, state core.State, previ
 	return syncDirectories(svc, index, wanted, options.Language)
 }
 
-func syncDirectories(svc *core.Service, index string, wanted projection, lang i18n.Language) error {
+func syncDirectories(svc *lifecycle.Service, index string, wanted projection, lang i18n.Language) error {
 	var failures []error
 	for id, dir := range wanted.dirs {
 		path, err := svc.FS.Locate(dir.Identity)
-		if errors.Is(err, core.ErrNotFound) {
+		if errors.Is(err, corefs.ErrNotFound) {
 			delete(wanted.dirs, id)
 			continue
 		}
@@ -110,7 +113,7 @@ func syncDirectories(svc *core.Service, index string, wanted projection, lang i1
 	return errors.Join(append(failures, saveDirectories(index, wanted.dirs))...)
 }
 
-func desired(svc *core.Service, items []core.Item, options Options) (projection, error) {
+func desired(svc *lifecycle.Service, items []ledger.Item, options Options) (projection, error) {
 	wanted := projection{make(map[string]map[string]time.Time), make(map[string]directory), make(map[string]authorization)}
 	if !options.Enabled {
 		return wanted, nil
@@ -137,7 +140,7 @@ func desired(svc *core.Service, items []core.Item, options Options) (projection,
 	return wanted, nil
 }
 
-func scopeFolders(fs core.FS, folders []string) ([]string, error) {
+func scopeFolders(fs corefs.FS, folders []string) ([]string, error) {
 	roots := make([]string, 0, len(folders))
 	for _, folder := range folders {
 		path, err := pathutil.Abs(folder)
@@ -155,7 +158,7 @@ func scopeFolders(fs core.FS, folders []string) ([]string, error) {
 	return roots, nil
 }
 
-func inFolders(fs core.FS, dir string, folders []string) (bool, error) {
+func inFolders(fs corefs.FS, dir string, folders []string) (bool, error) {
 	for {
 		for _, folder := range folders {
 			if same, err := fs.SameName(dir, folder); err != nil || same {
@@ -170,11 +173,11 @@ func inFolders(fs core.FS, dir string, folders []string) (bool, error) {
 	}
 }
 
-func directoryKey(id core.Identity) string { return fmt.Sprintf("%d:%s", id.Serial, id.FileID) }
+func directoryKey(id corefs.Identity) string { return fmt.Sprintf("%d:%s", id.Serial, id.FileID) }
 
-func livePath(svc *core.Service, id core.Identity) (string, error) {
+func livePath(svc *lifecycle.Service, id corefs.Identity) (string, error) {
 	path, err := svc.FS.Locate(id)
-	if errors.Is(err, core.ErrNotFound) {
+	if errors.Is(err, corefs.ErrNotFound) {
 		return "", nil
 	}
 	if err != nil {
@@ -183,7 +186,7 @@ func livePath(svc *core.Service, id core.Identity) (string, error) {
 	// A successful move can precede its ledger commit. Reuse the existing
 	// protected-location rules so a stale Item never decorates a grave.
 	err = svc.Guard.CheckContext(svc.Store.Context(), path, true)
-	var refused *core.RefusedError
+	var refused *guard.RefusedError
 	if errors.As(err, &refused) {
 		return "", nil
 	}

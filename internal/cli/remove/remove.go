@@ -7,7 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 )
 
@@ -40,7 +41,7 @@ func NewCmd(directoryOnly bool) *cobra.Command {
 	return cmd
 }
 
-func RemovePaths(svc *core.Service, opts guardrm.RemoveOptions, name string, directoryOnly bool) error {
+func RemovePaths(svc *lifecycle.Service, opts guardrm.RemoveOptions, name string, directoryOnly bool) error {
 	svc, err := cmdutil.BeginBurial(svc)
 	if err != nil {
 		return err
@@ -60,28 +61,13 @@ func RemovePaths(svc *core.Service, opts guardrm.RemoveOptions, name string, dir
 	}
 	results, burialErr := svc.BuryDeletionChecked(opts.Paths, opts.Force, name, check)
 	for i, result := range results {
-		ref := result.Ref
-		if i < len(diagnostics) && diagnostics[i] != "" {
-			if diagnostics[i] != "skip" {
-				fmt.Fprint(os.Stderr, diagnostics[i])
-				failed = true
-			}
-			continue
+		diag := ""
+		if i < len(diagnostics) {
+			diag = diagnostics[i]
 		}
-		if result.Action == core.ActionBuried || result.Action == core.ActionRecoveryPending {
-			buried = true
-		}
-		if result.QuotaOverflow != nil {
-			fmt.Fprintln(os.Stderr, cmdutil.FormatQuotaOverflow(cmdutil.Localizer(), result.QuotaOverflow, false))
-			failed = true
-		} else if result.Error != "" {
-			report(ref, errors.New(result.Error))
-		} else if opts.Verbose && result.Action != "" {
-			printRemoved(name, ref, result.Action)
-		}
-		if result.QuotaEviction != nil {
-			cmdutil.PrintQuotaEviction(os.Stderr, cmdutil.Localizer(), result.QuotaEviction, false)
-		}
+		b, f := reportRemoveResult(name, opts, result, diag, report)
+		buried = buried || b
+		failed = failed || f
 	}
 	if err := cmdutil.Committed(burialErr); err != nil {
 		ref := ""
@@ -97,6 +83,31 @@ func RemovePaths(svc *core.Service, opts guardrm.RemoveOptions, name string, dir
 		return cmdutil.ErrReported
 	}
 	return nil
+}
+
+func reportRemoveResult(name string, opts guardrm.RemoveOptions, result lifecycle.GraveResult, diag string, report func(string, error)) (buried, failed bool) {
+	if diag != "" {
+		if diag != "skip" {
+			fmt.Fprint(os.Stderr, diag)
+			return false, true
+		}
+		return false, false
+	}
+	if result.Action == ledger.ActionBuried || result.Action == ledger.ActionRecoveryPending {
+		buried = true
+	}
+	if result.QuotaOverflow != nil {
+		fmt.Fprintln(os.Stderr, cmdutil.FormatQuotaOverflow(cmdutil.Localizer(), result.QuotaOverflow, false))
+		failed = true
+	} else if result.Error != "" {
+		report(result.Ref, errors.New(result.Error))
+	} else if opts.Verbose && result.Action != "" {
+		printRemoved(name, result.Ref, result.Action)
+	}
+	if result.QuotaEviction != nil {
+		cmdutil.PrintQuotaEviction(os.Stderr, cmdutil.Localizer(), result.QuotaEviction, false)
+	}
+	return buried, failed
 }
 
 func checkRemovePath(ref string, opts guardrm.RemoveOptions, name string, directoryOnly bool) string {
@@ -139,7 +150,7 @@ func checkRemovePath(ref string, opts guardrm.RemoveOptions, name string, direct
 }
 
 func printRemoved(name, ref, action string) {
-	if action == core.ActionRecycled {
+	if action == ledger.ActionRecycled {
 		fmt.Printf("%s: %s '%s' (%s)\n", name, action, ref, cmdutil.RecycleRecovery)
 	} else {
 		fmt.Printf("%s: %s '%s'\n", name, action, ref)

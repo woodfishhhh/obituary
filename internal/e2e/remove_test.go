@@ -14,7 +14,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 )
 
@@ -73,7 +73,7 @@ func TestDeleteDenyBashResurrection(t *testing.T) {
 	listing := exec.Command(self, "graveyard", "--json")
 	listing.Env = command.Env
 	out, err := listing.CombinedOutput()
-	var graves struct{ Burials []core.Burial }
+	var graves struct{ Burials []ledger.Burial }
 	if err != nil || json.Unmarshal(out, &graves) != nil || len(graves.Burials) != 3 {
 		t.Fatalf("graveyard receipt: %s %v", out, err)
 	}

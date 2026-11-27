@@ -13,7 +13,7 @@ import (
 	"unicode/utf16"
 	"unicode/utf8"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 )
 
 const marker = "; obituary-labels:v1:"
@@ -21,13 +21,13 @@ const endMarker = "; obituary-labels:end\r\n"
 const maxINIBytes = 1 << 20
 
 type receipt struct {
-	Directory core.Identity `json:"directory"`
-	Original  []byte        `json:"original"`
-	Existed   bool          `json:"existed"`
-	FileAttrs uint32        `json:"file_attrs"`
-	DirAttrs  uint32        `json:"dir_attrs"`
-	Prefix    string        `json:"prefix"`
-	Lines     string        `json:"lines"`
+	Directory corefs.Identity `json:"directory"`
+	Original  []byte          `json:"original"`
+	Existed   bool            `json:"existed"`
+	FileAttrs uint32          `json:"file_attrs"`
+	DirAttrs  uint32          `json:"dir_attrs"`
+	Prefix    string          `json:"prefix"`
+	Lines     string          `json:"lines"`
 }
 
 // go-ini/ini's file.go writeTo reserializes comments, spacing and blank lines.

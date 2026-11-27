@@ -12,7 +12,8 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/config"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 type fakeItem struct {
@@ -41,7 +42,7 @@ func TestMenuRefreshUsesCurrentLanguage(t *testing.T) {
 	t.Setenv("OBIT_CONFIG_DIR", root)
 	items := &fakeItem{}
 	var tooltip string
-	r := &app.Resident{Service: &core.Service{Store: core.Store{Home: filepath.Join(root, "home")}}}
+	r := &app.Resident{Service: &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(root, "home")}}}
 	gui := newGUIAction(filepath.Join(root, "obitd.exe"), func(string) error { t.Fatal("desktop launcher called"); return nil })
 	m := makeMenu(r, gui, menuUI{addItem: items.AddSubMenuItem, addSeparator: func() {}, tooltip: func(text string) { tooltip = text }, notify: func(string, string) error { return nil }}, config.UILanguage)
 	defer func() {

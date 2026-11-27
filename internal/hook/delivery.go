@@ -4,7 +4,8 @@ import (
 	"strings"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 // A delivery contains only complete summaries that fit the hook budget. The
@@ -21,10 +22,10 @@ type delivery struct {
 	receipts    []int64      // registrations made without asking, told here
 	cleanups    []cleanupAck // earlier sessions' cleanup requests told here
 	cont        bool         // Stop: ask the agent to continue with the text
-	svc         *core.Service
+	svc         *lifecycle.Service
 }
 
-func (d *delivery) append(p core.Proposal, consent string) {
+func (d *delivery) append(p ledger.Proposal, consent string) {
 	var fits bool
 	d.lines, fits = appendContext(d.lines, describeProposal(p, consent))
 	if fits {

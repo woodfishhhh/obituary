@@ -9,7 +9,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/auto"
 	"github.com/woodfishhhh/obituary/internal/contextmenu"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/runkey"
 	"github.com/woodfishhhh/obituary/internal/shortcut"
@@ -17,7 +17,7 @@ import (
 )
 
 type Dependencies struct {
-	Service        *core.Service
+	Service        *lifecycle.Service
 	Engine         *auto.Engine
 	ConfigDir      string
 	Executable     string
@@ -72,19 +72,19 @@ type Receipt struct {
 // error rejects a binding promise. Never lose a successful move's actual path
 // just because writing its audit log (or another member of the batch) failed.
 type GraveReply struct {
-	Results []core.GraveResult `json:"results"`
-	Error   string             `json:"error,omitempty"`
+	Results []lifecycle.GraveResult `json:"results"`
+	Error   string                  `json:"error,omitempty"`
 }
 
 type BuryReply struct {
-	Results   []core.GraveResult `json:"results"`
-	BuriedIDs []int64            `json:"buriedIds"`
-	Error     string             `json:"error,omitempty"`
+	Results   []lifecycle.GraveResult `json:"results"`
+	BuriedIDs []int64                 `json:"buriedIds"`
+	Error     string                  `json:"error,omitempty"`
 }
 
 type ItemReply struct {
-	Results []core.Result `json:"results"`
-	Error   string        `json:"error,omitempty"`
+	Results []lifecycle.Result `json:"results"`
+	Error   string             `json:"error,omitempty"`
 }
 
 // list keeps an empty answer an empty JSON array. A nil slice marshals as

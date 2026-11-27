@@ -12,7 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/project"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 	"github.com/woodfishhhh/obituary/internal/winfs"
@@ -139,11 +140,11 @@ func TestSyncFolderPolicyDoesNotIncludeOtherItemsInDirectory(t *testing.T) {
 
 type replaceLocatedDirectory struct {
 	winfs.FS
-	want    core.Identity
+	want    corefs.Identity
 	replace func()
 }
 
-func (fs *replaceLocatedDirectory) Locate(id core.Identity) (string, error) {
+func (fs *replaceLocatedDirectory) Locate(id corefs.Identity) (string, error) {
 	path, err := fs.FS.Locate(id)
 	if err == nil && id == fs.want && fs.replace != nil {
 		f := fs.replace
@@ -313,7 +314,7 @@ func replacedLabelDirectory(t *testing.T, cleanup, git bool) {
 
 func TestSyncSkipsLabelInfrastructure(t *testing.T) {
 	svc, dir := syncService(t), t.TempDir()
-	items := []core.Item{trackedFile(t, dir, "report.log"), trackedFile(t, dir, "DESKTOP.INI"), trackedFile(t, dir, ".obit-labels-user.tmp")}
+	items := []ledger.Item{trackedFile(t, dir, "report.log"), trackedFile(t, dir, "DESKTOP.INI"), trackedFile(t, dir, ".obit-labels-user.tmp")}
 	if err := os.WriteFile(filepath.Join(dir, iniName), []byte("; user"), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -343,7 +344,7 @@ func TestSyncTrackedFolderUsesParentScope(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			storeItems(t, svc, core.Item{Path: path, IsDir: true, Identity: &identity, Source: "mktemp", ExpiresAt: time.Now().Add(time.Hour)})
+			storeItems(t, svc, ledger.Item{Path: path, IsDir: true, Identity: &identity, Source: "mktemp", ExpiresAt: time.Now().Add(time.Hour)})
 			if err := Sync(svc, Options{Enabled: true, Folders: []string{downloads}}); err != nil {
 				t.Fatal(err)
 			}
@@ -416,7 +417,7 @@ type countingFS struct {
 	identifications int
 }
 
-func (fs *countingFS) Identify(path string) (core.Identity, error) {
+func (fs *countingFS) Identify(path string) (corefs.Identity, error) {
 	fs.identifications++
 	return fs.FS.Identify(path)
 }
@@ -435,7 +436,7 @@ func TestSyncCachesNonGitDirectoryDiscovery(t *testing.T) {
 func assertDirectoryDiscovery(t *testing.T, withGit bool) {
 	t.Helper()
 	svc, dir := syncService(t), t.TempDir()
-	var items []core.Item
+	var items []ledger.Item
 	for i := 0; i < 5; i++ {
 		items = append(items, trackedFile(t, dir, fmt.Sprintf("report-%d.log", i)))
 	}
@@ -477,7 +478,7 @@ func BenchmarkSync500(b *testing.B) {
 	for _, directories := range []int{1, 10} {
 		b.Run(fmt.Sprintf("%ddirs", directories), func(b *testing.B) {
 			svc, root := syncService(b), b.TempDir()
-			items := make([]core.Item, 500)
+			items := make([]ledger.Item, 500)
 			for i := range items {
 				dir := filepath.Join(root, fmt.Sprintf("dir-%d", i%directories))
 				items[i] = trackedFile(b, dir, fmt.Sprintf("report-%d.log", i))

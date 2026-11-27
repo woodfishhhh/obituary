@@ -12,8 +12,8 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 func TestMCPItemVersionTracksReplacement(t *testing.T) {
@@ -24,8 +24,8 @@ func TestMCPItemVersionTracksReplacement(t *testing.T) {
 	}
 	path := filepath.Join(repo, "payload.txt")
 	clitest.WriteFixture(t, path, "old")
-	added, err := svc.Add([]string{path}, core.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
-	if err != nil || core.Failed(added) {
+	added, err := svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
+	if err != nil || lifecycle.Failed(added) {
 		t.Fatal(added, err)
 	}
 	var first struct{ Version string }
@@ -34,10 +34,10 @@ func TestMCPItemVersionTracksReplacement(t *testing.T) {
 		t.Fatal(err)
 	}
 	clitest.WriteFixture(t, path, "replacement")
-	newRows, err := svc.Add([]string{path}, core.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
+	newRows, err := svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
 	if runtime.GOOS != "windows" {
 		st, readErr := svc.Store.ReadSnapshot()
-		if err != nil || readErr != nil || len(newRows) != 1 || !core.Failed(newRows) || !strings.Contains(newRows[0].Error, "not supported") || len(st.Items) != 1 || st.Items[0].ID != added[0].Item.ID || *st.Items[0].Identity != *added[0].Item.Identity || !st.Items[0].ExpiresAt.Equal(added[0].Item.ExpiresAt) {
+		if err != nil || readErr != nil || len(newRows) != 1 || !lifecycle.Failed(newRows) || !strings.Contains(newRows[0].Error, "not supported") || len(st.Items) != 1 || st.Items[0].ID != added[0].Item.ID || *st.Items[0].Identity != *added[0].Item.Identity || !st.Items[0].ExpiresAt.Equal(added[0].Item.ExpiresAt) {
 			t.Fatalf("unverified replacement changed the tracked object: %+v %+v %v %v", newRows, st, err, readErr)
 		}
 		var next struct {
@@ -53,7 +53,7 @@ func TestMCPItemVersionTracksReplacement(t *testing.T) {
 		}
 		return
 	}
-	if err != nil || core.Failed(newRows) || newRows[0].Item.ID != added[0].Item.ID || *newRows[0].Item.Identity == *added[0].Item.Identity {
+	if err != nil || lifecycle.Failed(newRows) || newRows[0].Item.ID != added[0].Item.ID || *newRows[0].Item.Identity == *added[0].Item.Identity {
 		t.Fatalf("replacement fixture: %+v %v", newRows, err)
 	}
 	var next struct {
@@ -112,7 +112,7 @@ func TestMCPVersionExcludesUnrelatedFields(t *testing.T) {
 	store := svc.Store
 	path := filepath.Join(repo, "payload.txt")
 	clitest.WriteFixture(t, path, "keep")
-	if got, err := svc.Add([]string{path}, core.AddOptions{ExpiresAt: time.Now().Add(time.Hour)}); err != nil || core.Failed(got) {
+	if got, err := svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(time.Hour)}); err != nil || lifecycle.Failed(got) {
 		t.Fatal(got, err)
 	}
 	clitest.AddProposal(t, store, repo, ledger.Candidate{Path: path, Rev: 1, Lifespan: "1d"})
@@ -203,15 +203,15 @@ func TestMCPGraveyardLateBurialVersion(t *testing.T) {
 	}
 	late := filepath.Join(repo, "late.log")
 	clitest.WriteFixture(t, late, "late")
-	added, err := svc.Add([]string{late}, core.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
-	if err != nil || core.Failed(added) || added[0].Item.ID != 1 {
+	added, err := svc.Add([]string{late}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
+	if err != nil || lifecycle.Failed(added) || added[0].Item.ID != 1 {
 		t.Fatal(added, err)
 	}
 	for _, name := range []string{"second.log", "third.log"} {
 		path := filepath.Join(repo, name)
 		clitest.WriteFixture(t, path, name)
 		got, err := svc.Bury([]string{path}, false, "")
-		if err != nil || core.GraveFailed(got) {
+		if err != nil || lifecycle.GraveFailed(got) {
 			t.Fatal(got, err)
 		}
 	}
@@ -220,7 +220,7 @@ func TestMCPGraveyardLateBurialVersion(t *testing.T) {
 	if first.NextAfter != "2" || first.Version == "" {
 		t.Fatalf("first page lacks version/cursor: %+v", first)
 	}
-	if got, err := svc.Bury([]string{late}, false, ""); err != nil || core.GraveFailed(got) || got[0].Burial.ID != 1 {
+	if got, err := svc.Bury([]string{late}, false, ""); err != nil || lifecycle.GraveFailed(got) || got[0].Burial.ID != 1 {
 		t.Fatalf("old ID did not enter the graveyard: %+v %v", got, err)
 	}
 	var page struct {
@@ -241,7 +241,7 @@ func TestMCPGraveyardLateBurialVersion(t *testing.T) {
 func TestMCPGraveyardVersionTracksPendingStatus(t *testing.T) {
 	t.Parallel()
 	burials := []ledger.Burial{{ID: 3}, {ID: 2}}
-	pending := []core.PendingGrave{{Burial: &ledger.Burial{ID: 1}, Manifest: "manifest", Status: "pending"}}
+	pending := []lifecycle.PendingGrave{{Burial: &ledger.Burial{ID: 1}, Manifest: "manifest", Status: "pending"}}
 	first := mcpGravePage(burials, pending, mcpPageInput{Limit: 1}, nil)
 	version := first.Data.(map[string]any)["version"].(string)
 	burials[0], burials[1] = burials[1], burials[0]
@@ -269,7 +269,7 @@ func TestMCPProposalVersionSurvivesPruneAndReadd(t *testing.T) {
 	a, b := filepath.Join(repo, "a.log"), filepath.Join(repo, "b.log")
 	clitest.WriteFixture(t, a, "a")
 	clitest.WriteFixture(t, b, "b")
-	p, _, _, err := svc.Propose(core.ProposalLarge, repo, "", []ledger.Candidate{{Path: a, Lifespan: "1d"}, {Path: b, Lifespan: "1d"}})
+	p, _, _, err := svc.Propose(ledger.ProposalLarge, repo, "", []ledger.Candidate{{Path: a, Lifespan: "1d"}, {Path: b, Lifespan: "1d"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -278,7 +278,7 @@ func TestMCPProposalVersionSurvivesPruneAndReadd(t *testing.T) {
 	if err := svc.PruneProposal(p, p.Candidates[:1]); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, _, err := svc.Propose(core.ProposalLarge, repo, "", p.Candidates[:1]); err != nil {
+	if _, _, _, err := svc.Propose(ledger.ProposalLarge, repo, "", p.Candidates[:1]); err != nil {
 		t.Fatal(err)
 	}
 	var next struct {

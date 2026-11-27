@@ -12,7 +12,8 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
@@ -28,8 +29,8 @@ func TestTickWithdrawsDeletedProject(t *testing.T) {
 	if err := os.WriteFile(path, []byte("pending"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(root, "home")}, FS: winfs.FS{}}
-	p, _, _, err := svc.Propose(core.ProposalLeftovers, project, "s", []core.Candidate{{Path: path, Lifespan: "1d"}})
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(root, "home")}, FS: winfs.FS{}}
+	p, _, _, err := svc.Propose(ledger.ProposalLeftovers, project, "s", []ledger.Candidate{{Path: path, Lifespan: "1d"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,13 +59,13 @@ func TestTickWithdrawsDeletedProject(t *testing.T) {
 
 func TestTickAuditsUnrelatedIdentityFailure(t *testing.T) {
 	root := t.TempDir()
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(root, "data")}, FS: winfs.FS{}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(root, "data")}, FS: winfs.FS{}}
 	path := filepath.Join(root, "keep.txt")
 	if err := os.WriteFile(path, []byte("keep"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	rows, err := svc.Add([]string{path}, core.AddOptions{ExpiresAt: time.Now().Add(24 * time.Hour)})
-	if err != nil || core.Failed(rows) {
+	rows, err := svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(24 * time.Hour)})
+	if err != nil || lifecycle.Failed(rows) {
 		t.Fatalf("add: %+v %v", rows, err)
 	}
 	if err := os.Link(path, path+".alias"); err != nil {
@@ -89,9 +90,9 @@ func TestTickReconcilesWatchBeforeSweeping(t *testing.T) {
 	if err := os.Mkdir(dir, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(root, "data")}, FS: winfs.FS{},
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(root, "data")}, FS: winfs.FS{},
 		Owner: auto.Owner, OwnerBatch: auto.OwnerBatch, PrepareOwners: auto.PrepareOwners}
-	if _, err := svc.SetWatch(dir, "1h", core.WatchFirstSeen); err != nil {
+	if _, err := svc.SetWatch(dir, "1h", ledger.WatchFirstSeen); err != nil {
 		t.Fatal(err)
 	}
 	state, err := svc.Store.Read()
@@ -116,7 +117,7 @@ func TestTickReconcilesWatchBeforeSweeping(t *testing.T) {
 	expiry := st.Items[0].ExpiresAt
 	svc.Now = func() time.Time { return expiry.Add(time.Second) }
 	outcomes, _, err := Tick(svc)
-	if err != nil || len(outcomes) != 1 || outcomes[0].Action != core.ActionBuried {
+	if err != nil || len(outcomes) != 1 || outcomes[0].Action != ledger.ActionBuried {
 		t.Fatalf("tick did not bury expired child: %+v %v", outcomes, err)
 	}
 }
@@ -140,9 +141,9 @@ func TestTickUsesEditedWatchStableWindow(t *testing.T) {
 	if err := os.Mkdir(dir, 0700); err != nil {
 		t.Fatal(err)
 	}
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(root, "home")}, FS: winfs.FS{},
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(root, "home")}, FS: winfs.FS{},
 		Owner: auto.Owner, OwnerBatch: auto.OwnerBatch, PrepareOwners: auto.PrepareOwners}
-	if _, err := svc.SetWatch(dir, "1s", core.WatchFirstSeen); err != nil {
+	if _, err := svc.SetWatch(dir, "1s", ledger.WatchFirstSeen); err != nil {
 		t.Fatal(err)
 	}
 	pending, err := svc.Store.Read()
@@ -166,7 +167,7 @@ func TestTickUsesEditedWatchStableWindow(t *testing.T) {
 	now := st.Items[0].CreatedAt.Add(11 * time.Minute)
 	svc.Now = func() time.Time { return now }
 	out, _, err := Tick(svc)
-	if err != nil || len(out) != 1 || out[0].Action != core.ActionRetry {
+	if err != nil || len(out) != 1 || out[0].Action != ledger.ActionRetry {
 		t.Fatalf("tick ignored configured stable window: %+v %v", out, err)
 	}
 	if err := os.WriteFile(cfg, []byte("[watch]\nstable_window='10m'\n"), 0600); err != nil {
@@ -174,7 +175,7 @@ func TestTickUsesEditedWatchStableWindow(t *testing.T) {
 	}
 	now = now.Add(2 * time.Minute)
 	out, _, err = Tick(svc)
-	if err != nil || len(out) != 1 || out[0].Action != core.ActionBuried || svc.WatchStableWindow != 0 {
+	if err != nil || len(out) != 1 || out[0].Action != ledger.ActionBuried || svc.WatchStableWindow != 0 {
 		t.Fatalf("tick missed edited watch window or mutated shared service: %+v %v", out, err)
 	}
 }
@@ -190,18 +191,18 @@ func TestTickUsesEditedRetentionWithoutMutatingSharedService(t *testing.T) {
 	if err := os.WriteFile(configPath, []byte("[graveyard]\nretention_days = 3\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(root, "home")}, FS: winfs.FS{}, Retention: 99 * 24 * time.Hour}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(root, "home")}, FS: winfs.FS{}, Retention: 99 * 24 * time.Hour}
 	path := filepath.Join(root, "file")
 	if err := os.WriteFile(path, []byte("payload"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	expires := time.Now().Add(time.Hour)
-	if _, err := svc.Add([]string{path}, core.AddOptions{ExpiresAt: expires}); err != nil {
+	if _, err := svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: expires}); err != nil {
 		t.Fatal(err)
 	}
 	svc.Now = func() time.Time { return expires.Add(time.Second) }
 	out, _, err := Tick(svc)
-	if err != nil || len(out) != 1 || out[0].Action != core.ActionBuried {
+	if err != nil || len(out) != 1 || out[0].Action != ledger.ActionBuried {
 		t.Fatalf("tick: %+v %v", out, err)
 	}
 	st, err := svc.Store.Inspect()
@@ -237,7 +238,7 @@ func TestTickPrunesAndWithdrawsStaleProposals(t *testing.T) {
 		}
 	}
 	git("init", "-q")
-	svc := &core.Service{Store: core.Store{Home: t.TempDir()}, FS: winfs.FS{}, ProposalMode: core.ProposalsAsk}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}, FS: winfs.FS{}, ProposalMode: lifecycle.ProposalsAsk}
 	upgraded(t, svc.Store.Home)
 	engine := Engine(svc)
 	if err := engine.Snapshot(root, "s"); err != nil {

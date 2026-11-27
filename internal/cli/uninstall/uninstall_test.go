@@ -14,7 +14,8 @@ import (
 	"github.com/woodfishhhh/obituary/internal/app"
 	initcmd "github.com/woodfishhhh/obituary/internal/cli/init"
 	"github.com/woodfishhhh/obituary/internal/contextmenu"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/explorer"
 	"github.com/woodfishhhh/obituary/internal/integrate"
 )
@@ -196,11 +197,11 @@ func TestUninstallRemovesLabelsAndPoliciesWithoutMovingFiles(t *testing.T) {
 	dir := filepath.Join(root, "downloads")
 	path := filepath.Join(dir, "report.txt")
 	write(t, path, "USER FILE")
-	items, err := svc.Add([]string{path}, core.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
+	items, err := svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(time.Hour)})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.SetWatch(dir, "1d", core.WatchFirstSeen); err != nil {
+	if _, err := svc.SetWatch(dir, "1d", ledger.WatchFirstSeen); err != nil {
 		t.Fatal(err)
 	}
 	if err := explorer.Sync(svc, explorer.Options{Enabled: true, Everywhere: true}); err != nil {
@@ -236,7 +237,7 @@ func TestUninstallRemovesLabelsAndPoliciesWithoutMovingFiles(t *testing.T) {
 func TestUninstallStopFailureKeepsData(t *testing.T) {
 	d, root, _ := fixture(t)
 	path := filepath.Join(root, "OBIT_HOME", "store.json")
-	if err := (core.Store{Home: filepath.Dir(path)}).Update(func(*core.State) error { return nil }); err != nil {
+	if err := (ledger.Store{Home: filepath.Dir(path)}).Update(func(*ledger.State) error { return nil }); err != nil {
 		t.Fatal(err)
 	}
 	d.stop = func(string) error { return errors.New("fake tray would not stop") }

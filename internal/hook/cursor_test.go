@@ -12,7 +12,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 func cursorFixture(t *testing.T, name string) map[string]any {
@@ -147,7 +147,7 @@ func TestCursorLifecycleReplies(t *testing.T) {
 		in["conversation_id"] = id
 		raw, _ := json.Marshal(in)
 		ev, err := Decode(a, raw, Invocation{Agent: "cursor"})
-		if err != nil || ev.Session != core.NormalizeSession("cursor:"+id) {
+		if err != nil || ev.Session != lifecycle.NormalizeSession("cursor:"+id) {
 			t.Fatalf("%+v %v", ev, err)
 		}
 		data, _ := a.Encode(ev, Result{Deny: true, Reason: "no", Context: strings.Repeat("中", 2000)})

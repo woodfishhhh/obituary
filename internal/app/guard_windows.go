@@ -1,7 +1,7 @@
 package app
 
 import (
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/guard"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 	"golang.org/x/sys/windows"
 )
@@ -26,7 +26,7 @@ func explorerFolders() ([]string, error) {
 }
 
 // Guard returns the safety guard for the current user and data directory.
-func Guard(home string) core.Guard {
+func Guard(home string) guard.Guard {
 	var keep, watchAllowed []string
 	for _, id := range knownFolders {
 		if path, err := windows.KnownFolderPath(id, windows.KF_FLAG_DEFAULT); err == nil {
@@ -36,7 +36,7 @@ func Guard(home string) core.Guard {
 			}
 		}
 	}
-	g := core.DefaultGuard(home, keep...)
+	g := guard.DefaultGuard(home, keep...)
 	g.Exempt = []string{ReportsDir(home)}
 	return allowDownloads(g.WithCanonical(winfs.Canonical), watchAllowed)
 }

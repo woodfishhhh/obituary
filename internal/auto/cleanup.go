@@ -9,7 +9,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"github.com/woodfishhhh/obituary/internal/project"
 )
@@ -47,7 +47,7 @@ func (e *Engine) sessionFile(root, session, ext string) string {
 // RecordWrites remembers, per project and session, the paths a hook saw the
 // agent write. Appends are small and independent, so parallel hooks of one
 // session cannot lose each other's lines.
-func (e *Engine) RecordWrites(rows []core.Observation) error {
+func (e *Engine) RecordWrites(rows []ledger.Observation) error {
 	byFile := map[string][]string{}
 	for _, row := range rows {
 		if row.Project == "" || row.Session == "" {
@@ -150,7 +150,7 @@ func (e *Engine) CleanupCandidates(root, session string) ([]CleanupFile, error) 
 
 // accounted reports a path that already has a lifespan (itself or a folder
 // above it), waits in a proposal, or lies in Obituary's own work directory.
-func accounted(st core.State, root, path string) bool {
+func accounted(st ledger.State, root, path string) bool {
 	covers := func(p string) bool {
 		return strings.EqualFold(filepath.Clean(p), path) || inside(strings.ToLower(path), strings.ToLower(filepath.Clean(p)))
 	}
@@ -158,12 +158,12 @@ func accounted(st core.State, root, path string) bool {
 		return true
 	}
 	for _, it := range st.Items {
-		if it.Kind != core.KindContainer && covers(it.Path) {
+		if it.Kind != ledger.KindContainer && covers(it.Path) {
 			return true
 		}
 	}
 	for _, p := range st.Proposals {
-		if slices.ContainsFunc(p.Candidates, func(c core.Candidate) bool { return c.Kind != core.KindContainer && covers(c.Path) }) {
+		if slices.ContainsFunc(p.Candidates, func(c ledger.Candidate) bool { return c.Kind != ledger.KindContainer && covers(c.Path) }) {
 			return true
 		}
 	}

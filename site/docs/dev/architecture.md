@@ -10,7 +10,7 @@
 | 宿主 hook | 把宿主事件转换成 `internal/hook.Event`；慢操作交给 runner，不阻塞工具调用。 |
 | `internal/integrate` | 计算安装计划，再应用到宿主配置。应用时复核原文，避免覆盖用户刚做的编辑。 |
 | `internal/app`、`obitd` | 组装平台服务，按调度或事件唤醒后台处理；到期项仍由核心判定。 |
-| `internal/core`、`internal/core/ledger` | 复核保护规则和身份，协调文件移动、账本修订、恢复与审计。 |
+| `internal/core/lifecycle`、`internal/core/ledger`、`internal/core/guard`、`internal/core/fs` | 复核保护规则和身份，协调文件移动、账本修订、恢复与审计。 |
 
 ## 到期之后
 

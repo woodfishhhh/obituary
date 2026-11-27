@@ -9,7 +9,6 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
@@ -24,7 +23,7 @@ func TestWatchListShowsExemptionsAndStability(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := svc.SetWatch(filepath.Dir(path), "1s", core.WatchFirstSeen)
+	p, err := svc.SetWatch(filepath.Dir(path), "1s", ledger.WatchFirstSeen)
 	if err != nil {
 		t.Fatal(err)
 	}

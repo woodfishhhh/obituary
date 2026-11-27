@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 )
 
@@ -118,7 +118,7 @@ func copilotEnvelope(ev Event, in *copilotInput, compat bool) (Event, map[string
 		return Event{}, nil, false, fmt.Errorf("copilot: mixed envelopes")
 	}
 	if session != nil && *session != "" {
-		ev.Session = core.NormalizeSession("copilot:" + *session)
+		ev.Session = lifecycle.NormalizeSession("copilot:" + *session)
 	}
 	if tool != nil {
 		ev.Tool = *tool

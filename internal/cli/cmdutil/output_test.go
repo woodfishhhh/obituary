@@ -19,8 +19,9 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	extendcmd "github.com/woodfishhhh/obituary/internal/cli/extend"
 	resurrectcmd "github.com/woodfishhhh/obituary/internal/cli/resurrect"
-	"github.com/woodfishhhh/obituary/internal/core"
 	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 func TestOtherJSONMutationCommandsReportItemErrors(t *testing.T) {
@@ -48,12 +49,12 @@ func TestGraveFailureOutputIdentifiesReference(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var graves []core.Burial
+	var graves []ledger.Burial
 	for _, name := range []string{"good.txt", "bad.txt"} {
 		path := filepath.Join(repo, name)
 		clitest.WriteFixture(t, path, "keep")
 		rows, err := svc.Bury([]string{path}, false, "")
-		if err != nil || core.GraveFailed(rows) {
+		if err != nil || lifecycle.GraveFailed(rows) {
 			t.Fatal(rows, err)
 		}
 		graves = append(graves, *rows[0].Burial)
@@ -65,7 +66,7 @@ func TestGraveFailureOutputIdentifiesReference(t *testing.T) {
 	}
 	for _, asJSON := range []bool{false, true} {
 		cmd := &cobra.Command{RunE: func(*cobra.Command, []string) error {
-			return cmdutil.ReportGraves(rows, asJSON, func(r core.GraveResult) string { return r.Action + " " + r.Ref })
+			return cmdutil.ReportGraves(rows, asJSON, func(r lifecycle.GraveResult) string { return r.Action + " " + r.Ref })
 		}}
 		out, stderr, err := clitest.Execute(t, cmd)
 		if !errors.Is(err, cmdutil.ErrReported) {
@@ -85,7 +86,7 @@ func TestGraveFailureOutputIdentifiesReference(t *testing.T) {
 func TestCommittedRejectsMixedErrorTree(t *testing.T) {
 	t.Parallel()
 	hard := errors.New("ledger commit failed")
-	audit := &core.AuditError{Err: errors.New("audit unavailable")}
+	audit := &ledger.AuditError{Err: errors.New("audit unavailable")}
 	for _, err := range []error{errors.Join(audit, hard), fmt.Errorf("batch: %w", errors.Join(hard, audit))} {
 		if !errors.Is(cmdutil.Committed(err), hard) {
 			t.Fatalf("audit warning swallowed hard failure: %v", err)
@@ -126,8 +127,8 @@ func TestPendingMutationCommandsFailInTextAndJSON(t *testing.T) {
 					t.Fatalf("command reported success or no recovery advice: %s %s, %v", out, stderr, err)
 				}
 				if asJSON {
-					var rows []core.Result
-					if json.Unmarshal([]byte(out), &rows) != nil || !core.Failed(rows) {
+					var rows []lifecycle.Result
+					if json.Unmarshal([]byte(out), &rows) != nil || !lifecycle.Failed(rows) {
 						t.Fatalf("invalid JSON failure: %s", out)
 					}
 				}
@@ -144,8 +145,10 @@ func TestRestoreRefusalAndRollbackWarningRenderedTogether(t *testing.T) {
 	for _, lang := range []string{"en", "zh-CN"} {
 		t.Setenv("OBIT_LANG", lang)
 		issue := &corefs.RestoreParentError{Kind: "permission", Path: "denied-child"}
-		row := core.GraveResult{Ref: "1", Err: issue, Error: issue.Error(), Warning: "rollback kept nonempty created directory retained-parent"}
-		cmd := &cobra.Command{RunE: func(*cobra.Command, []string) error { return cmdutil.ReportGraves([]core.GraveResult{row}, false, nil) }}
+		row := lifecycle.GraveResult{Ref: "1", Err: issue, Error: issue.Error(), Warning: "rollback kept nonempty created directory retained-parent"}
+		cmd := &cobra.Command{RunE: func(*cobra.Command, []string) error {
+			return cmdutil.ReportGraves([]lifecycle.GraveResult{row}, false, nil)
+		}}
 		_, text, err := clitest.Execute(t, cmd)
 		cause := "permission denied"
 		if lang == "zh-CN" {

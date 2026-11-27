@@ -12,7 +12,8 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/app"
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 )
 
@@ -48,7 +49,7 @@ func writeFixture(t *testing.T, path, data string) {
 // commandRepo is the production arrangement: a resident serves this home, and
 // hooks hand their writes to it. A hook's response then carries no news of the
 // registration it caused; the next callback does.
-func commandRepo(t *testing.T) (string, core.Store) {
+func commandRepo(t *testing.T) (string, ledger.Store) {
 	t.Helper()
 	return startedRepo(t)
 }
@@ -56,13 +57,13 @@ func commandRepo(t *testing.T) (string, core.Store) {
 // commandRepoDirect runs the resident without its hook endpoint, so hooks use
 // the direct-write path they fall back to whenever no resident is reachable.
 // Tests of that path and of host protocols that read the first response use it.
-func commandRepoDirect(t *testing.T) (string, core.Store) {
+func commandRepoDirect(t *testing.T) (string, ledger.Store) {
 	t.Helper()
 	t.Setenv("OBIT_TEST_NO_RESIDENT_IPC", "1")
 	return startedRepo(t)
 }
 
-func startedRepo(t *testing.T) (string, core.Store) {
+func startedRepo(t *testing.T) (string, ledger.Store) {
 	t.Helper()
 	obit, obitd := binaryPath(t, "obit"), binaryPath(t, "obitd")
 	root := t.TempDir()
@@ -104,12 +105,12 @@ func startedRepo(t *testing.T) (string, core.Store) {
 	for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); time.Sleep(10 * time.Millisecond) {
 		if app.Running(home) {
 			waitRunnerIdle(home)
-			return repo, core.Store{Home: home}
+			return repo, ledger.Store{Home: home}
 		}
 	}
 	cancel()
 	t.Fatal("isolated daemon did not start")
-	return "", core.Store{}
+	return "", ledger.Store{}
 }
 
 // waitRunnerIdle lets the isolated resident finish its first tick. A hook
@@ -124,7 +125,7 @@ func waitRunnerIdle(home string) {
 		time.Sleep(10 * time.Millisecond)
 	}
 	lockable := func(name string) bool {
-		release, ok, err := core.TryLockExclusive(filepath.Join(home, name))
+		release, ok, err := ledger.TryLockExclusive(filepath.Join(home, name))
 		if ok {
 			release()
 		}
@@ -155,11 +156,11 @@ func execute(t *testing.T, command string, args ...string) (string, string, erro
 }
 
 type commitFailureFS struct {
-	core.FS
+	corefs.FS
 	blocked string
 }
 
-func (f commitFailureFS) MovePinned(path string, want core.Identity, to string) error {
+func (f commitFailureFS) MovePinned(path string, want corefs.Identity, to string) error {
 	if err := f.FS.MovePinned(path, want, to); err != nil {
 		return err
 	}

@@ -7,11 +7,12 @@ import (
 	"testing"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
-func approvePolicies(t *testing.T, svc *core.Service) {
+func approvePolicies(t *testing.T, svc *lifecycle.Service) {
 	t.Helper()
 	st, err := svc.Store.Read()
 	if err != nil {
@@ -25,14 +26,14 @@ func approvePolicies(t *testing.T, svc *core.Service) {
 	}
 }
 
-func fixture(t *testing.T) (*core.Service, string) {
+func fixture(t *testing.T) (*lifecycle.Service, string) {
 	t.Helper()
 	root := t.TempDir()
 	dir := filepath.Join(root, "downloads")
 	if err := os.Mkdir(dir, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(root, "data")}, FS: winfs.FS{}, Owner: auto.Owner}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(root, "data")}, FS: winfs.FS{}, Owner: auto.Owner}
 	return svc, dir
 }
 

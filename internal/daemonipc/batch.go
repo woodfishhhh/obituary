@@ -3,11 +3,11 @@ package daemonipc
 import (
 	"sync"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 type admission struct {
-	rows []core.Observation
+	rows []ledger.Observation
 	done chan error
 }
 
@@ -34,7 +34,7 @@ func Batch(commit Handler) Handler {
 			commitJobs(commit, jobs)
 		}
 	}
-	return func(rows []core.Observation) error {
+	return func(rows []ledger.Observation) error {
 		done := make(chan error, 1)
 		mu.Lock()
 		pending = append(pending, admission{rows, done})
@@ -48,7 +48,7 @@ func Batch(commit Handler) Handler {
 }
 
 func commitJobs(commit Handler, jobs []admission) {
-	var rows []core.Observation
+	var rows []ledger.Observation
 	for _, job := range jobs {
 		rows = append(rows, job.rows...)
 	}

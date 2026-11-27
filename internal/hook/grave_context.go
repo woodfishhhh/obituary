@@ -6,30 +6,30 @@ import (
 	"strings"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
-func buriedBySession(b core.Burial, session string) bool {
+func buriedBySession(b ledger.Burial, session string) bool {
 	if b.Operation != nil {
 		return b.Operation.Session == session || b.Operation.Session == "claude:"+session || b.Operation.Session == "codex:"+session
 	}
 	return b.Session != "" && (b.Session == session || b.Session == "claude:"+session || b.Session == "codex:"+session)
 }
 
-func burialInProject(b core.Burial, root string) bool {
+func burialInProject(b ledger.Burial, root string) bool {
 	project := b.Project
 	if project == "" && b.Operation != nil {
 		project = b.Operation.Project
 	}
 	if project != "" {
-		return core.ProjectKey(project) == core.ProjectKey(root)
+		return ledger.ProjectKey(project) == ledger.ProjectKey(root)
 	}
 	// Explicit burial of an unregistered path has no registration project.
-	return core.BurialPathMatches(root, true, b.Path)
+	return ledger.BurialPathMatches(root, true, b.Path)
 }
 
-func graveSessionContext(burials []core.Burial, root, session string) string {
-	var selected []core.Burial
+func graveSessionContext(burials []ledger.Burial, root, session string) string {
+	var selected []ledger.Burial
 	for _, b := range burials {
 		if burialInProject(b, root) && restorableNotice(b, time.Now()) && b.Source != "mktemp" && !buriedBySession(b, session) {
 			selected = append(selected, b)
@@ -38,7 +38,7 @@ func graveSessionContext(burials []core.Burial, root, session string) string {
 	if len(selected) == 0 {
 		return ""
 	}
-	slices.SortFunc(selected, func(a, b core.Burial) int { return b.BuriedAt.Compare(a.BuriedAt) })
+	slices.SortFunc(selected, func(a, b ledger.Burial) int { return b.BuriedAt.Compare(a.BuriedAt) })
 	var parts []string
 	for i, b := range selected {
 		if i == maxListed {

@@ -18,8 +18,8 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 func TestPostToolUseDeliversReplayedProposal(t *testing.T) {
@@ -84,7 +84,7 @@ func TestPostToolUseRecoversProposalAfterConsentTimeout(t *testing.T) {
 			ev := Event{Name: "PostToolUse", Cwd: e.root, Session: "s", Paths: []string{e.write("debug.log")}}
 			previous := proposalConsent
 			t.Cleanup(func() { proposalConsent = previous })
-			proposalConsent = func(svc *core.Service, root string) (string, error) {
+			proposalConsent = func(svc *lifecycle.Service, root string) (string, error) {
 				_, err := svc.Store.WithDeadline(time.Now()).Read()
 				if !errors.Is(err, context.DeadlineExceeded) {
 					t.Fatalf("expected the post-commit read to exhaust its lock budget: %v", err)
@@ -126,11 +126,11 @@ func TestPostToolUsePendingNoticeScopeAndSilence(t *testing.T) {
 			if err := os.WriteFile(path, []byte("pending"), 0o600); err != nil {
 				t.Fatal(err)
 			}
-			e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: t.TempDir()}}}
-			if err := e.Svc.Store.Update(func(st *core.State) error {
+			e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}}}
+			if err := e.Svc.Store.Update(func(st *ledger.State) error {
 				for i, scope := range []struct{ project, session string }{{root, "other"}, {elsewhere, "s"}, {elsewhere, "other"}} {
-					st.Proposals = append(st.Proposals, core.Proposal{ID: int64(i + 1), Kind: core.ProposalOnboard, Project: scope.project, Session: scope.session,
-						Candidates: []core.Candidate{{Path: path, Lifespan: "3d"}}})
+					st.Proposals = append(st.Proposals, ledger.Proposal{ID: int64(i + 1), Kind: ledger.ProposalOnboard, Project: scope.project, Session: scope.session,
+						Candidates: []ledger.Candidate{{Path: path, Lifespan: "3d"}}})
 				}
 				st.NextID = 4
 				return nil
@@ -206,7 +206,7 @@ func TestAdapterMatchesLegacyEntryPoints(t *testing.T) {
 			if err != nil || ev.Name != "PreToolUse" || ev.Command != "rm scratch.log" {
 				t.Fatalf("decode: %+v %v", ev, err)
 			}
-			e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: t.TempDir()}}}
+			e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}}}
 			var direct, decoded bytes.Buffer
 			if name == "claude" {
 				Claude(e, bytes.NewReader(input), &direct, nil)
@@ -269,7 +269,7 @@ func TestAdapterFailureUsesNeutralOutput(t *testing.T) {
 			name := "test-adapter-" + stage
 			Register(Agent{Name: name, Adapter: brokenAdapter{stage: stage}})
 			t.Cleanup(func() { adapters.Lock(); delete(adapters.byName, name); adapters.Unlock() })
-			e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: t.TempDir()}}}
+			e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}}}
 			var out bytes.Buffer
 			var in io.Reader = strings.NewReader("{}")
 			if stage == "read" {
@@ -285,7 +285,7 @@ func TestAdapterFailureUsesNeutralOutput(t *testing.T) {
 		})
 	}
 	var out bytes.Buffer
-	e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: t.TempDir()}}}
+	e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}}}
 	RunEvent(Agent{Name: "broken", Adapter: brokenAdapter{}}, e, Event{Name: "PreToolUse", SkipReason: "unsupported"}, &out, nil)
 	if out.String() != "{}\n" {
 		t.Fatalf("encode failure lost neutral response: %q", out.String())

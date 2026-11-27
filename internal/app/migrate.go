@@ -9,8 +9,8 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/auto"
 	"github.com/woodfishhhh/obituary/internal/config"
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/integrate"
 )
 
@@ -22,7 +22,7 @@ const autoOffMarker = "migrated-1.3-auto-off"
 // migrateAutoOff turns automatic registration off on an install that had it
 // on, the safer default since 1.3, and spares what it had registered among
 // dependencies, build output and caches: the files stay, without a lifespan.
-func migrateAutoOff(svc *core.Service) error {
+func migrateAutoOff(svc *lifecycle.Service) error {
 	marker := filepath.Join(svc.Store.Home, autoOffMarker)
 	if _, err := os.Stat(marker); err == nil || !errors.Is(err, os.ErrNotExist) {
 		return err
@@ -36,7 +36,7 @@ func migrateAutoOff(svc *core.Service) error {
 	return os.WriteFile(marker, nil, 0o600)
 }
 
-func switchAutoOff(svc *core.Service) error {
+func switchAutoOff(svc *lifecycle.Service) error {
 	path, err := config.Path()
 	if err != nil {
 		return err
@@ -56,11 +56,11 @@ func switchAutoOff(svc *core.Service) error {
 	if err != nil {
 		return err
 	}
-	return errors.Join(ExpireBackups(svc, backups), svc.Store.Record(core.Event{Time: time.Now(), Action: "settings", Path: path,
+	return errors.Join(ExpireBackups(svc, backups), svc.Store.Record(ledger.Event{Time: time.Now(), Action: "settings", Path: path,
 		Detail: "automatic registration is now off by default (was " + cfg.Proposals.Mode + "); turn it on in Settings or with [proposals] mode"}))
 }
 
-func spareDependencies(svc *core.Service) error {
+func spareDependencies(svc *lifecycle.Service) error {
 	st, err := svc.Store.ReadHot()
 	if err != nil {
 		return err
@@ -86,11 +86,11 @@ func spareDependencies(svc *core.Service) error {
 // ExpireBackups gives backups Obituary wrote beside a user's files the
 // lifespan of Obituary's own backups; the graveyard holds them for a while
 // after.
-func ExpireBackups(svc *core.Service, paths []string) error {
+func ExpireBackups(svc *lifecycle.Service, paths []string) error {
 	if len(paths) == 0 {
 		return nil
 	}
-	results, err := svc.Add(paths, core.AddOptions{ExpiresAt: time.Now().Add(ledger.BackupLifespan), Source: "init", Note: "Obituary backup"})
+	results, err := svc.Add(paths, lifecycle.AddOptions{ExpiresAt: time.Now().Add(ledger.BackupLifespan), Source: "init", Note: "Obituary backup"})
 	for _, r := range results {
 		if r.Error != "" {
 			err = errors.Join(err, fmt.Errorf("%s: %s", r.Ref, r.Error))

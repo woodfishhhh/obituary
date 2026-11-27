@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 )
 
@@ -217,8 +217,8 @@ func TestMiniMaxNativePathNormalizationKeepsUntouchedNeighbor(t *testing.T) {
 				e := newEnv(t)
 				neighbor, actual := e.write(names[0]), e.write(names[1])
 				e.engine.Svc.Owner, e.engine.Svc.Recheck = auto.Owner, e.engine.RecheckRules
-				if err := e.engine.Svc.Store.Update(func(st *core.State) error {
-					st.Projects = map[string]core.ProjectState{core.ProjectKey(e.root): {Consent: core.ConsentApproved}}
+				if err := e.engine.Svc.Store.Update(func(st *ledger.State) error {
+					st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(e.root): {Consent: ledger.ConsentApproved}}
 					return nil
 				}); err != nil {
 					t.Fatal(err)

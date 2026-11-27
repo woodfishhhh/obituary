@@ -13,14 +13,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
 func TestServeIsDetectedOnceAndStopsOnRequest(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
-	svc := &core.Service{Store: core.Store{Home: home}, Guard: Guard(home), FS: winfs.FS{}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: home}, Guard: Guard(home), FS: winfs.FS{}}
 	logger := log.New(io.Discard, "", 0)
 	done := make(chan error, 1)
 	go func() { done <- Serve(svc, logger) }()
@@ -70,9 +71,9 @@ func TestResidentDoesNotRetickBlockedBurialBeforeBackoff(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
 	fs := &unavailableRootFS{FS: winfs.FS{}, root: filepath.Join(home, "graveyard")}
-	svc := &core.Service{Store: core.Store{Home: home}, FS: fs}
-	if err := svc.Store.Update(func(st *core.State) error {
-		st.Burials = []core.Burial{{ID: 1, Path: filepath.Join(home, "offline.txt"), Grave: filepath.Join(fs.root, "1-grave", "offline.txt"), PurgeAt: time.Now().Add(-time.Hour)}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: home}, FS: fs}
+	if err := svc.Store.Update(func(st *ledger.State) error {
+		st.Burials = []ledger.Burial{{ID: 1, Path: filepath.Join(home, "offline.txt"), Grave: filepath.Join(fs.root, "1-grave", "offline.txt"), PurgeAt: time.Now().Add(-time.Hour)}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -98,8 +99,8 @@ func TestResidentDoesNotRetickBlockedBurialBeforeBackoff(t *testing.T) {
 
 func TestBackgroundBusyTickIsNotAnError(t *testing.T) {
 	t.Parallel()
-	svc := &core.Service{Store: core.Store{Home: t.TempDir()}, FS: winfs.FS{}}
-	release, ok, err := core.TryLockExclusive(filepath.Join(svc.Store.Home, "sweep.lock"))
+	svc := &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}, FS: winfs.FS{}}
+	release, ok, err := ledger.TryLockExclusive(filepath.Join(svc.Store.Home, "sweep.lock"))
 	if err != nil || !ok {
 		t.Fatalf("lock: %v %v", ok, err)
 	}
@@ -112,7 +113,7 @@ func TestBackgroundBusyTickIsNotAnError(t *testing.T) {
 func TestResidentRecoversManifestsWithoutNextDue(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(dir, "home")}, FS: winfs.FS{}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(dir, "home")}, FS: winfs.FS{}}
 	pending := func(name string) {
 		t.Helper()
 		path := filepath.Join(dir, name)
@@ -157,9 +158,9 @@ func TestResidentDoesNotRetickBlockedItemBeforeBackoff(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
 	fs := &unavailableRootFS{FS: winfs.FS{}, root: filepath.Join(home, "graveyard")}
-	svc := &core.Service{Store: core.Store{Home: home}, FS: fs}
-	if err := svc.Store.Update(func(st *core.State) error {
-		st.Items = []core.Item{{ID: 1, Rev: 1, Path: filepath.Join(home, "offline.txt"), ExpiresAt: time.Now().Add(-time.Hour)}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: home}, FS: fs}
+	if err := svc.Store.Update(func(st *ledger.State) error {
+		st.Items = []ledger.Item{{ID: 1, Rev: 1, Path: filepath.Join(home, "offline.txt"), ExpiresAt: time.Now().Add(-time.Hour)}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -183,7 +184,7 @@ func TestResidentDeduplicatesBlockedOutcomes(t *testing.T) {
 	t.Parallel()
 	home := t.TempDir()
 	fs := &unavailableRootFS{FS: winfs.FS{}, root: filepath.Join(home, "graveyard")}
-	svc := &core.Service{Store: core.Store{Home: home}, FS: fs}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: home}, FS: fs}
 	var output bytes.Buffer
 	rounds := 0
 	err := serveLoop(svc, log.New(&output, "", 0), time.Nanosecond, func(time.Duration) {
@@ -215,10 +216,10 @@ func TestBackgroundTickReplaysQueuedWrites(t *testing.T) {
 	if err := os.WriteFile(path, []byte("queued"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	svc := &core.Service{Store: core.Store{Home: home}, FS: winfs.FS{}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: home}, FS: winfs.FS{}}
 	upgraded(t, home)
-	if err := svc.Store.Update(func(st *core.State) error {
-		st.Projects = map[string]core.ProjectState{core.ProjectKey(root): {Consent: core.ConsentApproved}}
+	if err := svc.Store.Update(func(st *ledger.State) error {
+		st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(root): {Consent: ledger.ConsentApproved}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)

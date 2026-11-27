@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 )
 
 func TestLinuxSettingsExposeOnlyPortableEntryCapabilities(t *testing.T) {
@@ -20,7 +20,7 @@ func TestLinuxSettingsExposeOnlyPortableEntryCapabilities(t *testing.T) {
 		t.Fatalf("Windows-only capabilities exposed on Linux: %+v", settings.Capabilities)
 	}
 	for _, plan := range []func(bool) (Plan, error){a.PlanTaskbar, a.PlanStartMenu, a.PlanDesktopShortcut, a.PlanTrayIcon} {
-		if _, err := plan(true); !errors.Is(err, core.ErrUnsupported) {
+		if _, err := plan(true); !errors.Is(err, corefs.ErrUnsupported) {
 			t.Fatalf("unsupported desktop operation: %v", err)
 		}
 	}

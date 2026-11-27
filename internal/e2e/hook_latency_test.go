@@ -14,7 +14,8 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 // Measure the production executable, including runtime/init, Cobra dispatch,
@@ -36,7 +37,7 @@ func TestHookProcessLatencyReport(t *testing.T) {
 			var samples []time.Duration
 			for range 30 {
 				// Reset only this fixture's ledger, before starting the clock.
-				if err := store.Update(func(st *core.State) error { *st = baseline; return nil }); err != nil {
+				if err := store.Update(func(st *ledger.State) error { *st = baseline; return nil }); err != nil {
 					t.Fatal(err)
 				}
 				cmd := exec.Command(binaryPath(t, "obit"), "hook", "claude")
@@ -54,7 +55,7 @@ func TestHookProcessLatencyReport(t *testing.T) {
 	}
 }
 
-func seedHookLatencyLedger(t *testing.T, root string, store core.Store) {
+func seedHookLatencyLedger(t *testing.T, root string, store ledger.Store) {
 	t.Helper()
 	svc, err := app.Open()
 	if err != nil {
@@ -66,7 +67,7 @@ func seedHookLatencyLedger(t *testing.T, root string, store core.Store) {
 		paths[i] = filepath.Join(root, fmt.Sprintf("existing-%03d.log", i))
 		writeFixture(t, paths[i], "existing fixture")
 	}
-	results, err := svc.Add(paths, core.AddOptions{ExpiresAt: time.Now().Add(48 * time.Hour), Project: root})
+	results, err := svc.Add(paths, lifecycle.AddOptions{ExpiresAt: time.Now().Add(48 * time.Hour), Project: root})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,8 +76,8 @@ func seedHookLatencyLedger(t *testing.T, root string, store core.Store) {
 			t.Fatal(r.Error)
 		}
 	}
-	if err := store.Update(func(st *core.State) error {
-		st.Projects = map[string]core.ProjectState{core.ProjectKey(root): {Consent: core.ConsentApproved}}
+	if err := store.Update(func(st *ledger.State) error {
+		st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(root): {Consent: ledger.ConsentApproved}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -102,7 +103,7 @@ func processLatencyPayload(t *testing.T, root, event string) ([]byte, string) {
 	return data, name
 }
 
-func checkProcessLatencyState(t *testing.T, store core.Store, event string) {
+func checkProcessLatencyState(t *testing.T, store ledger.Store, event string) {
 	t.Helper()
 	want := 100
 	if event == "PostToolUse" {

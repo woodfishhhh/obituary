@@ -14,7 +14,9 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 	"golang.org/x/sys/windows"
 )
@@ -22,11 +24,11 @@ import (
 func TestPendingFolderDecisionHasZeroCommitsAndWakeups(t *testing.T) {
 	home := t.TempDir()
 	var notifications atomic.Int32
-	svc := &core.Service{Store: core.Store{Home: home}, FS: winfs.FS{}, AfterChange: func(*core.Service) { notifications.Add(1) }}
-	id := core.Identity{Serial: 42}
-	if err := svc.Store.Update(func(st *core.State) error {
-		st.Items = []core.Item{{ID: 1, Rev: 1, Identity: &id, Source: "watch", WatchID: 3, IsDir: true, Path: filepath.Join(home, "pending"), ExpiresAt: time.Now().Add(-time.Hour)}}
-		st.Proposals = []core.Proposal{{ID: 2, Kind: core.ProposalWatchBurial, WatchID: 3, WatchBurial: &core.WatchBurialReview{ItemID: 1, ItemRev: 1, Identity: id}}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: home}, FS: winfs.FS{}, AfterChange: func(*lifecycle.Service) { notifications.Add(1) }}
+	id := corefs.Identity{Serial: 42}
+	if err := svc.Store.Update(func(st *ledger.State) error {
+		st.Items = []ledger.Item{{ID: 1, Rev: 1, Identity: &id, Source: "watch", WatchID: 3, IsDir: true, Path: filepath.Join(home, "pending"), ExpiresAt: time.Now().Add(-time.Hour)}}
+		st.Proposals = []ledger.Proposal{{ID: 2, Kind: ledger.ProposalWatchBurial, WatchID: 3, WatchBurial: &ledger.WatchBurialReview{ItemID: 1, ItemRev: 1, Identity: id}}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -75,7 +77,7 @@ func TestPendingFolderDecisionHasZeroCommitsAndWakeups(t *testing.T) {
 func TestQueuedObservationWakesTheResident(t *testing.T) {
 	home := t.TempDir()
 	upgraded(t, home)
-	svc := &core.Service{Store: core.Store{Home: home}, FS: winfs.FS{}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: home}, FS: winfs.FS{}}
 	r, err := NewResident(svc, log.New(io.Discard, "", 0))
 	if err != nil {
 		t.Fatal(err)
@@ -97,7 +99,7 @@ func TestQueuedObservationWakesTheResident(t *testing.T) {
 	defer cancel()
 	go func() { done <- r.wait(ctx, time.Hour) }()
 	time.Sleep(100 * time.Millisecond) // the wait is listening
-	if err := svc.Store.DeferObservations([]core.Observation{{Token: "queued", Session: "s1", ObservedAt: time.Now(), Path: path, Identity: &id}}); err != nil {
+	if err := svc.Store.DeferObservations([]ledger.Observation{{Token: "queued", Session: "s1", ObservedAt: time.Now(), Path: path, Identity: &id}}); err != nil {
 		t.Fatal(err)
 	}
 	if err := <-done; err != nil {
@@ -106,7 +108,7 @@ func TestQueuedObservationWakesTheResident(t *testing.T) {
 }
 
 func TestIdleResidentSleepsUntilMaintenance(t *testing.T) {
-	svc := &core.Service{Store: core.Store{Home: t.TempDir()}, FS: winfs.FS{}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}, FS: winfs.FS{}}
 	r := resident(svc, log.New(io.Discard, "", 0))
 	// The delay counts down from when the step began, so allow for the time
 	// the step itself took on a busy machine.
@@ -118,7 +120,7 @@ func TestIdleResidentSleepsUntilMaintenance(t *testing.T) {
 }
 
 func TestResidentWakesOnLedgerReplacement(t *testing.T) {
-	svc := &core.Service{Store: core.Store{Home: t.TempDir()}, FS: winfs.FS{}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}, FS: winfs.FS{}}
 	r, err := NewResident(svc, log.New(io.Discard, "", 0))
 	if err != nil {
 		t.Fatal(err)
@@ -126,7 +128,7 @@ func TestResidentWakesOnLedgerReplacement(t *testing.T) {
 	defer r.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	if err := svc.Store.Update(func(st *core.State) error { st.NextID = 40; return nil }); err != nil {
+	if err := svc.Store.Update(func(st *ledger.State) error { st.NextID = 40; return nil }); err != nil {
 		t.Fatal(err)
 	}
 	if err := r.wait(ctx, time.Hour); err != nil {
@@ -136,7 +138,7 @@ func TestResidentWakesOnLedgerReplacement(t *testing.T) {
 
 func TestResidentSeparatesHomesAndCanonicalizesAliases(t *testing.T) {
 	home := t.TempDir()
-	r, err := NewResident(&core.Service{Store: core.Store{Home: home}}, log.New(io.Discard, "", 0))
+	r, err := NewResident(&lifecycle.Service{Store: ledger.Store{Home: home}}, log.New(io.Discard, "", 0))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,7 +146,7 @@ func TestResidentSeparatesHomesAndCanonicalizesAliases(t *testing.T) {
 	if !Running(filepath.Join(home, ".")) {
 		t.Fatal("canonical alias missed instance")
 	}
-	other, err := NewResident(&core.Service{Store: core.Store{Home: t.TempDir()}}, log.New(io.Discard, "", 0))
+	other, err := NewResident(&lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}}, log.New(io.Discard, "", 0))
 	if err != nil || other == nil {
 		t.Fatalf("other home blocked: %v", err)
 	}
@@ -153,7 +155,7 @@ func TestResidentSeparatesHomesAndCanonicalizesAliases(t *testing.T) {
 
 func TestResidentReapsAnExpiryAddedWhileIdle(t *testing.T) {
 	root := t.TempDir()
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(root, "data")}, FS: winfs.FS{}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(root, "data")}, FS: winfs.FS{}}
 	r, err := NewResident(svc, log.New(io.Discard, "", 0))
 	if err != nil {
 		t.Fatal(err)
@@ -173,8 +175,8 @@ func TestResidentReapsAnExpiryAddedWhileIdle(t *testing.T) {
 		t.Fatal(err)
 	}
 	// A separate service is the CLI writer; the resident must notice the commit.
-	writer := &core.Service{Store: svc.Store, FS: winfs.FS{}}
-	if rows, err := writer.Add([]string{path}, core.AddOptions{ExpiresAt: time.Now().Add(250 * time.Millisecond)}); err != nil || core.Failed(rows) {
+	writer := &lifecycle.Service{Store: svc.Store, FS: winfs.FS{}}
+	if rows, err := writer.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(250 * time.Millisecond)}); err != nil || lifecycle.Failed(rows) {
 		t.Fatalf("add %v %v", rows, err)
 	}
 	if err := waitFor(func() bool {
@@ -197,7 +199,7 @@ func TestResidentAcceptsStopRequestBeforeWriterCloses(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer windows.CloseHandle(writer)
-	r := resident(&core.Service{Store: core.Store{Home: home}}, log.New(io.Discard, "", 0))
+	r := resident(&lifecycle.Service{Store: ledger.Store{Home: home}}, log.New(io.Discard, "", 0))
 	if _, stop, err := r.step(Interval); !stop || err != nil {
 		t.Fatalf("stop request rejected while writer closes: stop=%v err=%v", stop, err)
 	}
@@ -231,12 +233,12 @@ func TestIdleResidentHasZeroWakeups(t *testing.T) {
 		t.Skip("waits out several settle windows")
 	}
 	root := t.TempDir()
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(root, "data")}, FS: winfs.FS{}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(root, "data")}, FS: winfs.FS{}}
 	due := filepath.Join(root, "due.txt")
 	if err := os.WriteFile(due, []byte("x"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if rows, err := svc.Add([]string{due}, core.AddOptions{ExpiresAt: time.Now().Add(50 * time.Millisecond)}); err != nil || core.Failed(rows) {
+	if rows, err := svc.Add([]string{due}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(50 * time.Millisecond)}); err != nil || lifecycle.Failed(rows) {
 		t.Fatalf("add %v %v", rows, err)
 	}
 	time.Sleep(100 * time.Millisecond)
@@ -270,15 +272,15 @@ func TestResidentCoalescesACommitBurst(t *testing.T) {
 	quiet, latest := settleQuiet, settleMax
 	settleQuiet, settleMax = 2*time.Second, time.Minute
 	t.Cleanup(func() { settleQuiet, settleMax = quiet, latest })
-	svc := &core.Service{Store: core.Store{Home: t.TempDir()}, FS: winfs.FS{}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}, FS: winfs.FS{}}
 	r, err := NewResident(svc, log.New(io.Discard, "", 0))
 	if err != nil {
 		t.Fatal(err)
 	}
 	steps := runResident(t, r)
-	writer := core.Store{Home: svc.Store.Home} // another process's commits
+	writer := ledger.Store{Home: svc.Store.Home} // another process's commits
 	for i := range 1000 {
-		if err := writer.Update(func(st *core.State) error { st.NextID = int64(100 + i); return nil }); err != nil {
+		if err := writer.Update(func(st *ledger.State) error { st.NextID = int64(100 + i); return nil }); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -298,7 +300,7 @@ func TestResidentCoalescesACommitBurst(t *testing.T) {
 // Windows drops events when a burst overflows its buffer; the resident steps
 // instead of exiting.
 func TestResidentSurvivesLostEvents(t *testing.T) {
-	r, err := NewResident(&core.Service{Store: core.Store{Home: t.TempDir()}, FS: winfs.FS{}}, log.New(io.Discard, "", 0))
+	r, err := NewResident(&lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}, FS: winfs.FS{}}, log.New(io.Discard, "", 0))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -315,14 +317,14 @@ func TestResidentSurvivesLostEvents(t *testing.T) {
 // one, and then sees the new graves and their purge times at once.
 func TestResidentRereadsTheGraveyardOnlyWhenItChanges(t *testing.T) {
 	root := t.TempDir()
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(root, "data")}, FS: winfs.FS{}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(root, "data")}, FS: winfs.FS{}}
 	bury := func(name string) {
 		t.Helper()
 		path := filepath.Join(root, name)
 		if err := os.WriteFile(path, []byte("x"), 0o600); err != nil {
 			t.Fatal(err)
 		}
-		if rows, err := svc.Add([]string{path}, core.AddOptions{ExpiresAt: time.Now().Add(50 * time.Millisecond)}); err != nil || core.Failed(rows) {
+		if rows, err := svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(50 * time.Millisecond)}); err != nil || lifecycle.Failed(rows) {
 			t.Fatalf("add %v %v", rows, err)
 		}
 		time.Sleep(100 * time.Millisecond)
@@ -339,7 +341,7 @@ func TestResidentRereadsTheGraveyardOnlyWhenItChanges(t *testing.T) {
 	if first == nil || first.count != 1 || !first.has {
 		t.Fatalf("first step missed the grave: %+v", first)
 	}
-	if err := svc.Store.Update(func(st *core.State) error { st.NextID += 10; return nil }); err != nil {
+	if err := svc.Store.Update(func(st *ledger.State) error { st.NextID += 10; return nil }); err != nil {
 		t.Fatal(err)
 	}
 	if _, _, err := r.step(Interval); err != nil {
@@ -369,18 +371,18 @@ func TestPendingQuotaDecisionDoesNotMaskNextDueOrSpin(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(cfgDir, "config.toml"), []byte("[graveyard]\nmax_size = \"5000\"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	svc := &core.Service{Store: core.Store{Home: home}, FS: winfs.FS{}, GraveyardMaxBytes: 5000}
-	idA := core.Identity{Serial: 7, FileID: "1"}
-	idB := core.Identity{Serial: 7, FileID: "2"}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: home}, FS: winfs.FS{}, GraveyardMaxBytes: 5000}
+	idA := corefs.Identity{Serial: 7, FileID: "1"}
+	idB := corefs.Identity{Serial: 7, FileID: "2"}
 	dueB := time.Now().Add(time.Minute)
-	if err := svc.Store.Update(func(st *core.State) error {
-		st.Items = []core.Item{
+	if err := svc.Store.Update(func(st *ledger.State) error {
+		st.Items = []ledger.Item{
 			{ID: 1, Rev: 1, Identity: &idA, Path: filepath.Join(home, "huge.bin"), ExpiresAt: time.Now().Add(-time.Hour)},
 			{ID: 2, Rev: 1, Identity: &idB, Path: filepath.Join(home, "later.bin"), ExpiresAt: dueB},
 		}
-		st.Proposals = []core.Proposal{{
-			ID: 3, Kind: core.ProposalGraveyardQuota,
-			QuotaReview: &core.QuotaBurialReview{ItemID: 1, ItemRev: 1, Identity: idA, ItemBytes: 8000, MaxBytes: 5000},
+		st.Proposals = []ledger.Proposal{{
+			ID: 3, Kind: ledger.ProposalGraveyardQuota,
+			QuotaReview: &ledger.QuotaBurialReview{ItemID: 1, ItemRev: 1, Identity: idA, ItemBytes: 8000, MaxBytes: 5000},
 		}}
 		return nil
 	}); err != nil {

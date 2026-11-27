@@ -10,7 +10,8 @@ import (
 	"testing"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/hook"
 )
 
@@ -29,7 +30,7 @@ func TestPOSIXNativeShellDeletionGuard(t *testing.T) {
 				if err := os.WriteFile(path, []byte("keep"), 0600); err != nil {
 					t.Fatal(err)
 				}
-				engine := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: filepath.Join(root, "data")}}}
+				engine := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(root, "data")}}}
 				input, _ := json.Marshal(map[string]any{"hook_event_name": "PreToolUse", "cwd": root, "tool_name": "Bash", "tool_input": map[string]string{"command": "rm -rf -- victim", "shell": "bash"}})
 				var output bytes.Buffer
 				hook.Run(agent, engine, bytes.NewReader(input), &output, nil)
@@ -75,7 +76,7 @@ func TestCodexEmbeddedDeletionGuardScope(t *testing.T) {
 				t.Fatal(err)
 			}
 			home := t.TempDir()
-			engine := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: home}}}
+			engine := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: home}}}
 			var output bytes.Buffer
 			hook.Run(tc.agent, engine, bytes.NewReader(payload), &output, nil)
 			denied := bytes.Contains(output.Bytes(), []byte("\"permissionDecision\":\"deny\""))
@@ -139,7 +140,7 @@ func TestCodexEmbeddedDeletionCases(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: t.TempDir()}}}
+			e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}}}
 			var output bytes.Buffer
 			hook.Run("codex", e, bytes.NewReader(payload), &output, nil)
 			denied := bytes.Contains(output.Bytes(), []byte("\"permissionDecision\":\"deny\""))

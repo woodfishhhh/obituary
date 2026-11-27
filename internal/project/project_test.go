@@ -15,7 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 	"golang.org/x/sys/windows"
@@ -718,16 +719,16 @@ func TestGitTimeoutRetriesAutomaticBurial(t *testing.T) {
 				err = p.Ensure()
 			case "sweep":
 				now := time.Now()
-				svc := &core.Service{Store: core.Store{Home: t.TempDir()}, FS: winfs.FS{}, Now: func() time.Time { return now },
+				svc := &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}, FS: winfs.FS{}, Now: func() time.Time { return now },
 					Owner: func(path string) (string, bool, error) { tracked, err := p.Tracked(path); return root, tracked, err }}
-				added, addErr := svc.Add([]string{path}, core.AddOptions{ExpiresAt: now.Add(time.Hour), Source: "rule", Project: root})
-				if addErr != nil || core.Failed(added) {
+				added, addErr := svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: now.Add(time.Hour), Source: "rule", Project: root})
+				if addErr != nil || lifecycle.Failed(added) {
 					t.Fatalf("add: %+v, %v", added, addErr)
 				}
 				now = now.Add(time.Hour)
 				rows, sweepErr := svc.Sweep(false)
 				st, readErr := svc.Store.Read()
-				if sweepErr != nil || readErr != nil || len(rows) != 1 || rows[0].Action != core.ActionRetry || len(st.Items) != 1 || len(st.Burials) != 0 {
+				if sweepErr != nil || readErr != nil || len(rows) != 1 || rows[0].Action != ledger.ActionRetry || len(st.Items) != 1 || len(st.Burials) != 0 {
 					t.Fatalf("timed out Git authorized burial: %+v, %v, %v", rows, sweepErr, readErr)
 				}
 				if _, statErr := os.Stat(path); statErr != nil {

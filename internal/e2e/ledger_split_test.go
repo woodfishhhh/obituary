@@ -10,7 +10,8 @@ import (
 	"testing"
 
 	"github.com/woodfishhhh/obituary/internal/app"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 func TestHookProcessesInterleaveGraveyardCommits(t *testing.T) {
@@ -28,11 +29,11 @@ func TestHookProcessesInterleaveGraveyardCommits(t *testing.T) {
 		writeFixture(t, path, "owned fixture")
 	}
 	graves, err := svc.Bury(paths, false, "")
-	if err != nil || core.GraveFailed(graves) {
+	if err != nil || lifecycle.GraveFailed(graves) {
 		t.Fatal(graves, err)
 	}
-	if err := store.UpdateHot(func(st *core.State) error {
-		st.Projects = map[string]core.ProjectState{core.ProjectKey(root): {Consent: core.ConsentApproved}}
+	if err := store.UpdateHot(func(st *ledger.State) error {
+		st.Projects = map[string]ledger.ProjectState{ledger.ProjectKey(root): {Consent: ledger.ConsentApproved}}
 		return nil
 	}); err != nil {
 		t.Fatal(err)

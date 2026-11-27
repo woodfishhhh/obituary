@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 // codexInput is the part of a Codex hook payload Obituary reads. Codex edits
@@ -63,7 +63,7 @@ func (codexAdapter) Decode(raw []byte, _ Invocation) (Event, error) {
 			return Event{}, ErrSkip // a path this build cannot reach (for example inside WSL's own file system)
 		}
 	}
-	ev := Event{Name: input.Event, Tool: input.ToolName, Session: core.NormalizeSession(input.SessionID), Cwd: cwd, Source: input.Source}
+	ev := Event{Name: input.Event, Tool: input.ToolName, Session: lifecycle.NormalizeSession(input.SessionID), Cwd: cwd, Source: input.Source}
 	// Codex Stop has no additionalContext; block + reason continues the turn.
 	ev.CanContinue, ev.StopActive = input.Event == "Stop", input.StopHook
 	ev.References, ev.Writing = fileReferences(input.ToolName, input.ToolInput)

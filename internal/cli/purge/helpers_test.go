@@ -1,11 +1,11 @@
 package purge
 
 import (
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 )
 
 type approvalFaultFS struct {
-	core.FS
+	corefs.FS
 	beforeRealPath func(string)
 	beforeIdentify func(string)
 }
@@ -17,7 +17,7 @@ func (fs approvalFaultFS) RealPath(path string) (string, error) {
 	return fs.FS.RealPath(path)
 }
 
-func (fs approvalFaultFS) Identify(path string) (core.Identity, error) {
+func (fs approvalFaultFS) Identify(path string) (corefs.Identity, error) {
 	if fs.beforeIdentify != nil {
 		fs.beforeIdentify(path)
 	}

@@ -13,7 +13,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 )
 
@@ -250,7 +250,7 @@ func TestDeepSeekLifecycleAndResponses(t *testing.T) {
 		id := strings.Repeat("中", 5000)
 		in["session_id"] = id
 		ev, err := decodeDeepSeek(t, in)
-		if err != nil || ev.Session != core.NormalizeSession("deepseek-harness:"+id) {
+		if err != nil || ev.Session != lifecycle.NormalizeSession("deepseek-harness:"+id) {
 			t.Fatalf("%+v %v", ev, err)
 		}
 		data, err := (deepseekAdapter{}).Encode(ev, Result{Context: "continue", Deny: true, Reason: "continue"})

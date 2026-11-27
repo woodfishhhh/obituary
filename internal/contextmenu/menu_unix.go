@@ -16,7 +16,7 @@ import (
 	"syscall"
 
 	"github.com/woodfishhhh/obituary/internal/config"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
 )
@@ -112,7 +112,7 @@ func (menuFiles) Lock() (func(), error) {
 	if err = os.MkdirAll(home, 0700); err != nil {
 		return nil, err
 	}
-	return core.LockFile(filepath.Join(home, "menu.lock"), true)
+	return ledger.LockFile(filepath.Join(home, "menu.lock"), true)
 }
 func (menuFiles) ReadTree(path string) (Tree, error) {
 	st, err := os.Lstat(path)

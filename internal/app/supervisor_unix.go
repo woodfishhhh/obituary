@@ -2,9 +2,9 @@
 
 package app
 
-import "github.com/woodfishhhh/obituary/internal/core"
+import corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 
-func Supervise(string) error { return core.ErrUnsupported }
+func Supervise(string) error { return corefs.ErrUnsupported }
 func SupervisorProblem(home string) (string, error) {
 	if paused, err := Paused(home); err != nil {
 		return "", err

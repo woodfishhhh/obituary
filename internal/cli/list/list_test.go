@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/daemonipc"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
@@ -103,7 +102,7 @@ func BenchmarkList(b *testing.B) {
 				return err
 			}
 			st.Items = append(st.Items, ledger.Item{ID: int64(i + 1), Rev: 1, Path: path, Identity: &id, ExpiresAt: now.Add(time.Hour)})
-			st.Burials = append(st.Burials, ledger.Burial{ID: int64(1001 + i), Path: filepath.Join(base, fmt.Sprintf("old-%04d", i)), Grave: grave, Identity: &objectID, GraveID: &graveID, BuriedAt: now, PurgeAt: now.Add(24 * time.Hour), Reason: core.ReasonBury})
+			st.Burials = append(st.Burials, ledger.Burial{ID: int64(1001 + i), Path: filepath.Join(base, fmt.Sprintf("old-%04d", i)), Grave: grave, Identity: &objectID, GraveID: &graveID, BuriedAt: now, PurgeAt: now.Add(24 * time.Hour), Reason: ledger.ReasonBury})
 		}
 		st.NextID = 2001
 		return nil

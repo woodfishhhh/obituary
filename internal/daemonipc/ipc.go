@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 const protocolVersion = 1
@@ -22,7 +22,7 @@ var ErrUnavailable = errors.New("obituary resident IPC unavailable")
 
 type request struct {
 	Version      int
-	Observations []core.Observation
+	Observations []ledger.Observation
 	// List asks for the output of `obit list` instead of delivering observations.
 	// A resident that predates it finds no observations and refuses the request,
 	// which the caller answers by reading the ledger itself.
@@ -50,7 +50,7 @@ type response struct {
 	Output []byte `json:",omitempty"`
 }
 
-type Handler func([]core.Observation) error
+type Handler func([]ledger.Observation) error
 
 // Receipt is what a hook learns from an accepted request besides the fact.
 type Receipt struct{ Quiet bool }
@@ -89,7 +89,7 @@ func Serve(home string, handler Handler, quiet func() bool, options ...Option) (
 
 // Submit waits only for durable queue acceptance. A missing or stopped
 // resident is reported distinctly so callers can use their direct-write path.
-func Submit(ctx context.Context, home string, observations []core.Observation) (Receipt, error) {
+func Submit(ctx context.Context, home string, observations []ledger.Observation) (Receipt, error) {
 	if len(observations) == 0 {
 		return Receipt{}, nil
 	}

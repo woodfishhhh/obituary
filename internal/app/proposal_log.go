@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 type tickErrors struct {
@@ -44,7 +44,7 @@ func ProposalLogErrors(home string, logger *log.Logger, tickErr error) error {
 	if err := os.MkdirAll(home, 0700); err != nil {
 		return errors.Join(tickErr, err)
 	}
-	release, err := core.LockFile(filepath.Join(home, "proposal-log.lock"), true)
+	release, err := ledger.LockFile(filepath.Join(home, "proposal-log.lock"), true)
 	if err != nil {
 		return errors.Join(tickErr, err)
 	}

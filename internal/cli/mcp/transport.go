@@ -5,10 +5,10 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/woodfishhhh/obituary/internal/app"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
-func addMCPTool[I any](server *mcp.Server, svc *core.Service, name, description string, readOnly bool, run func(*core.Service, I) mcpReply) {
+func addMCPTool[I any](server *mcp.Server, svc *lifecycle.Service, name, description string, readOnly bool, run func(*lifecycle.Service, I) mcpReply) {
 	// SDK v1.8.0 tool.go applySchema round-trips object output through
 	// any/float64. Out=any with no OutputSchema is its supported raw-output
 	// path (server.go toolForErr), preserving int64 in structured and text JSON.

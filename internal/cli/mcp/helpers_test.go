@@ -10,12 +10,12 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 )
 
 type approvalFaultFS struct {
-	core.FS
+	corefs.FS
 	beforeRealPath func(string)
 	beforeIdentify func(string)
 }
@@ -27,7 +27,7 @@ func (fs approvalFaultFS) RealPath(path string) (string, error) {
 	return fs.FS.RealPath(path)
 }
 
-func (fs approvalFaultFS) Identify(path string) (core.Identity, error) {
+func (fs approvalFaultFS) Identify(path string) (corefs.Identity, error) {
 	if fs.beforeIdentify != nil {
 		fs.beforeIdentify(path)
 	}
@@ -35,16 +35,16 @@ func (fs approvalFaultFS) Identify(path string) (core.Identity, error) {
 }
 
 type concurrentBurialFS struct {
-	core.FS
+	corefs.FS
 	before func(string)
 }
 
-func (f concurrentBurialFS) MovePinned(path string, id core.Identity, to string) error {
+func (f concurrentBurialFS) MovePinned(path string, id corefs.Identity, to string) error {
 	f.before(path)
 	return f.FS.MovePinned(path, id, to)
 }
 
-func (f concurrentBurialFS) MovePinnedInto(path string, id core.Identity, parent core.RestoreParent, name string) (string, error) {
+func (f concurrentBurialFS) MovePinnedInto(path string, id corefs.Identity, parent corefs.RestoreParent, name string) (string, error) {
 	f.before(path)
 	return f.FS.MovePinnedInto(path, id, parent, name)
 }
@@ -85,11 +85,11 @@ f.Version, f.Trusted = 2, migrated
 `
 
 type mcpRecycleFS struct {
-	core.FS
+	corefs.FS
 	destination string
 }
 
-func (f mcpRecycleFS) Recycle(path string, want core.Identity) error {
+func (f mcpRecycleFS) Recycle(path string, want corefs.Identity) error {
 	return f.MovePinned(path, want, f.destination)
 }
 
@@ -105,7 +105,7 @@ func mcpFixture(t *testing.T) (*mcp.ClientSession, string, *[]string) {
 }
 
 type cancelMCPTempFS struct {
-	core.FS
+	corefs.FS
 	cancel context.CancelFunc
 }
 
@@ -116,7 +116,7 @@ func mcpGitFixture(t *testing.T) (*mcp.ClientSession, string, *[]string) {
 	return session, repo, starts
 }
 
-func (f cancelMCPTempFS) Identify(path string) (core.Identity, error) {
+func (f cancelMCPTempFS) Identify(path string) (corefs.Identity, error) {
 	id, err := f.FS.Identify(path)
 	if err == nil && strings.Contains(path, "rollback-") {
 		err = os.WriteFile(filepath.Join(path, "keep.txt"), []byte("keep"), 0o600)

@@ -10,7 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"github.com/woodfishhhh/obituary/internal/project"
 )
@@ -30,11 +31,11 @@ func Owner(path string) (string, bool, error) {
 
 // OwnerBatch discovers every path independently (including nested worktrees),
 // then reuses project.TrackedBatchContext's UTF-16 command-line chunking.
-func OwnerBatch(ctx context.Context, paths []string) []core.Ownership {
+func OwnerBatch(ctx context.Context, paths []string) []lifecycle.Ownership {
 	return attachCurrentRoots(paths, queryOwners(ctx, paths, nil, nil, nil), nil)
 }
 
-func attachCurrentRoots(paths []string, answers []core.Ownership, known map[string]discoveredOwner) []core.Ownership {
+func attachCurrentRoots(paths []string, answers []lifecycle.Ownership, known map[string]discoveredOwner) []lifecycle.Ownership {
 	for i := range answers {
 		path, root := paths[i], answers[i].Root
 		answers[i].CurrentRoot = func(ctx context.Context) (bool, error) {
@@ -48,8 +49,8 @@ func attachCurrentRoots(paths []string, answers []core.Ownership, known map[stri
 	return answers
 }
 
-func queryOwners(ctx context.Context, paths []string, observers map[string]preparedIndex, known map[string]discoveredOwner, names map[string]string) []core.Ownership {
-	answers := make([]core.Ownership, len(paths))
+func queryOwners(ctx context.Context, paths []string, observers map[string]preparedIndex, known map[string]discoveredOwner, names map[string]string) []lifecycle.Ownership {
+	answers := make([]lifecycle.Ownership, len(paths))
 	groups := ownerGroups(ctx, paths, known, answers)
 	for root, indices := range groups {
 		group, preparedNames := ownerGroupPaths(paths, indices, names)
@@ -81,33 +82,36 @@ func queryOwners(ctx context.Context, paths []string, observers map[string]prepa
 			}
 			answers[i].CheckedAt = checkedAt
 			if snapshot != nil {
-				path := paths[i]
-				findRoot := func(ctx context.Context) (project.Project, bool, error) {
-					current, found, err := project.FindContext(ctx, path)
-					if afterFind != nil {
-						afterFind()
-					}
-					known[path] = discoveredOwner{project: current, found: found, err: err}
-					return current, found, err
-				}
-				answers[i].CurrentRoot = func(ctx context.Context) (bool, error) {
-					current, found, err := project.FindContext(ctx, path)
-					known[path] = discoveredOwner{project: current, found: found, err: err}
-					return err == nil && found && current.Root == root, err
-				}
-				answers[i].Current = func(ctx context.Context) (bool, time.Time, error) {
-					started := time.Now()
-					current, found, err := findRoot(ctx)
-					if err != nil || !found || current.Root != root {
-						return false, time.Time{}, err
-					}
-					valid, err := snapshot.Current(ctx)
-					return valid, started, err
-				}
+				bindOwnerSnapshot(&answers[i], paths[i], root, snapshot, afterFind, known)
 			}
 		}
 	}
 	return answers
+}
+
+func bindOwnerSnapshot(answer *lifecycle.Ownership, path, root string, snapshot *project.IndexSnapshot, afterFind func(), known map[string]discoveredOwner) {
+	findRoot := func(ctx context.Context) (project.Project, bool, error) {
+		current, found, err := project.FindContext(ctx, path)
+		if afterFind != nil {
+			afterFind()
+		}
+		known[path] = discoveredOwner{project: current, found: found, err: err}
+		return current, found, err
+	}
+	answer.CurrentRoot = func(ctx context.Context) (bool, error) {
+		current, found, err := project.FindContext(ctx, path)
+		known[path] = discoveredOwner{project: current, found: found, err: err}
+		return err == nil && found && current.Root == root, err
+	}
+	answer.Current = func(ctx context.Context) (bool, time.Time, error) {
+		started := time.Now()
+		current, found, err := findRoot(ctx)
+		if err != nil || !found || current.Root != root {
+			return false, time.Time{}, err
+		}
+		valid, err := snapshot.Current(ctx)
+		return valid, started, err
+	}
 }
 
 func prepareOwnerIndex(ctx context.Context, root string, observers map[string]preparedIndex) preparedIndex {
@@ -136,7 +140,7 @@ var unsafeName = regexp.MustCompile(`[^A-Za-z0-9._-]+`)
 // MkTemp creates a temporary directory with a lifespan and returns its path.
 // Inside a Git project it lives in .obit/tmp (excluded from Git); elsewhere
 // in the system temporary directory.
-func (e *Engine) MkTemp(lifespan time.Duration, name, cwd, session string) (string, *core.Item, error) {
+func (e *Engine) MkTemp(lifespan time.Duration, name, cwd, session string) (string, *ledger.Item, error) {
 	cwd, err := validateTempRequest(cwd, name, session)
 	if err != nil {
 		return "", nil, err
@@ -171,10 +175,10 @@ func (e *Engine) MkTemp(lifespan time.Duration, name, cwd, session string) (stri
 	if err != nil {
 		return "", nil, err
 	}
-	results, err := e.Svc.Add([]string{dir}, core.AddOptions{
+	results, err := e.Svc.Add([]string{dir}, lifecycle.AddOptions{
 		ExpiresAt: e.now().Add(lifespan), Source: "mktemp", Project: proj.Root, Session: session,
 	})
-	rollback := func(cause error) (string, *core.Item, error) {
+	rollback := func(cause error) (string, *ledger.Item, error) {
 		if err := os.Remove(dir); err != nil {
 			return dir, nil, errors.Join(cause, fmt.Errorf("rollback temporary directory %s: %w", dir, err))
 		}
@@ -201,7 +205,7 @@ func validateTempRequest(cwd, name, session string) (string, error) {
 	if !info.IsDir() {
 		return "", fmt.Errorf("mktemp cwd %q is not a directory", cwd)
 	}
-	if err := core.ValidateMetadata("session", session); err != nil {
+	if err := lifecycle.ValidateMetadata("session", session); err != nil {
 		return "", err
 	}
 	if len(name) > 128 {

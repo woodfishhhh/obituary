@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/app"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/hook"
 	"github.com/woodfishhhh/obituary/internal/integrate"
 )
@@ -264,7 +264,7 @@ func lifecycleHook(t *testing.T, agent string, input map[string]any, event strin
 // tick; the hook then queues the write by design. Replay it before asserting.
 func lifecycleDrainQueue(t *testing.T) {
 	t.Helper()
-	store := core.Store{Home: os.Getenv("OBIT_HOME")}
+	store := ledger.Store{Home: os.Getenv("OBIT_HOME")}
 	for deadline := time.Now().Add(10 * time.Second); store.HasDeferredObservations(); time.Sleep(50 * time.Millisecond) {
 		if time.Now().After(deadline) {
 			t.Fatal("queued hook writes were not replayed")
@@ -279,9 +279,9 @@ func lifecycleDrainQueue(t *testing.T) {
 	}
 }
 
-func lifecycleState(t *testing.T) core.State {
+func lifecycleState(t *testing.T) ledger.State {
 	t.Helper()
-	state, err := (core.Store{Home: os.Getenv("OBIT_HOME")}).Read()
+	state, err := (ledger.Store{Home: os.Getenv("OBIT_HOME")}).Read()
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -6,20 +6,22 @@ import (
 	"slices"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
+	corelifespan "github.com/woodfishhhh/obituary/internal/core/lifespan"
 )
 
 type ItemList struct {
-	Items []core.Item `json:"items"`
+	Items []ledger.Item `json:"items"`
 	// Effective [graveyard] mode executed by Bury: graveyard or recycle.
 	Mode string `json:"mode,omitempty"`
 }
 
 func (a *API) effectiveMode() string {
-	if a.deps.Service.Mode == core.ModeRecycle {
-		return core.ModeRecycle
+	if a.deps.Service.Mode == lifecycle.ModeRecycle {
+		return lifecycle.ModeRecycle
 	}
-	return core.ModeGraveyard
+	return lifecycle.ModeGraveyard
 }
 
 // Within is empty, "24h" or "7d". Already overdue entries remain visible.
@@ -35,13 +37,13 @@ func (a *API) Upcoming(within string) (ItemList, error) {
 	if err != nil {
 		return ItemList{}, err
 	}
-	items := make([]core.Item, 0, len(state.Items))
+	items := make([]ledger.Item, 0, len(state.Items))
 	for _, item := range state.Items {
 		if duration == 0 || !item.ExpiresAt.After(a.deps.Now().Add(duration)) {
 			items = append(items, item)
 		}
 	}
-	slices.SortFunc(items, func(a, b core.Item) int {
+	slices.SortFunc(items, func(a, b ledger.Item) int {
 		if n := a.ExpiresAt.Compare(b.ExpiresAt); n != 0 {
 			return n
 		}
@@ -54,11 +56,11 @@ func (a *API) Extend(refs []string, lifespan string) (ItemReply, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if err := requireRefs(refs); err != nil {
-		return ItemReply{Results: []core.Result{}}, err
+		return ItemReply{Results: []lifecycle.Result{}}, err
 	}
-	duration, err := core.ParseDuration(lifespan)
+	duration, err := corelifespan.ParseDuration(lifespan)
 	if err != nil {
-		return ItemReply{Results: []core.Result{}}, err
+		return ItemReply{Results: []lifecycle.Result{}}, err
 	}
 	results, err := a.deps.Service.Extend(refs, duration)
 	return ItemReply{Results: list(results), Error: errorText(err)}, nil
@@ -69,7 +71,7 @@ func (a *API) Retry(refs []string) (ItemReply, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if err := requireRefs(refs); err != nil {
-		return ItemReply{Results: []core.Result{}}, err
+		return ItemReply{Results: []lifecycle.Result{}}, err
 	}
 	results, err := a.deps.Service.Retry(refs)
 	return ItemReply{Results: list(results), Error: errorText(err)}, nil
@@ -79,7 +81,7 @@ func (a *API) Cancel(refs []string) (ItemReply, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if err := requireRefs(refs); err != nil {
-		return ItemReply{Results: []core.Result{}}, err
+		return ItemReply{Results: []lifecycle.Result{}}, err
 	}
 	results, err := a.deps.Service.Cancel(refs)
 	return ItemReply{Results: list(results), Error: errorText(err)}, nil
@@ -90,20 +92,20 @@ func (a *API) Bury(refs []string) (BuryReply, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if err := requireRefs(refs); err != nil {
-		return BuryReply{Results: []core.GraveResult{}, BuriedIDs: []int64{}}, err
+		return BuryReply{Results: []lifecycle.GraveResult{}, BuriedIDs: []int64{}}, err
 	}
 	svc, err := a.service()
 	if err != nil {
-		return BuryReply{Results: []core.GraveResult{}, BuriedIDs: []int64{}, Error: errorText(err)}, nil
+		return BuryReply{Results: []lifecycle.GraveResult{}, BuriedIDs: []int64{}, Error: errorText(err)}, nil
 	}
 	results, err := svc.BuryTracked(refs)
 	return BuryReply{Results: list(results), BuriedIDs: buriedIDs(results), Error: errorText(err)}, nil
 }
 
-func buriedIDs(results []core.GraveResult) []int64 {
+func buriedIDs(results []lifecycle.GraveResult) []int64 {
 	ids := make([]int64, 0, len(results))
 	for _, r := range results {
-		if r.Action == core.ActionBuried && r.Burial != nil {
+		if r.Action == ledger.ActionBuried && r.Burial != nil {
 			ids = append(ids, r.Burial.ID)
 		}
 	}

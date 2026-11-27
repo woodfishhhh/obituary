@@ -7,7 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
 	folderwatch "github.com/woodfishhhh/obituary/internal/watch"
 )
@@ -33,7 +34,7 @@ func NewCmd() *cobra.Command {
 	}
 	cmd.Flags().BoolVar(&o.list, "list", false, "list folder policies")
 	cmd.Flags().StringVar(&o.remove, "remove", "", "remove a policy and cancel its registered lifespans")
-	cmd.Flags().StringVar(&o.age, "age", core.WatchFirstSeen, "age basis: first-seen or modified (requires approval)")
+	cmd.Flags().StringVar(&o.age, "age", ledger.WatchFirstSeen, "age basis: first-seen or modified (requires approval)")
 	cmd.Flags().BoolVar(&o.asJSON, "json", false, "print JSON")
 	cmd.Flags().BoolVar(&o.noDaemon, "no-daemon", false, "do not start the background runner")
 	cmd.Flags().Int64Var(&o.removeID, "remove-id", 0, "remove a folder policy by ID, including missing paths")
@@ -86,18 +87,18 @@ func (o *options) run(args []string) error {
 	return folderwatch.Reconcile(svc)
 }
 
-func (o *options) printPolicy(svc *core.Service, p core.WatchPolicy) error {
+func (o *options) printPolicy(svc *lifecycle.Service, p ledger.WatchPolicy) error {
 	if o.asJSON {
 		return cmdutil.PrintJSON(p)
 	}
 	fmt.Printf(cmdutil.Text("cli.watch.age"), p.ID, p.Path, p.Lifespan, cmdutil.Localizer().Label(p.Age), cmdutil.Localizer().Label(p.Consent))
-	if p.Consent != core.ConsentApproved {
+	if p.Consent != ledger.ConsentApproved {
 		return printWatchProposal(svc, p.ID)
 	}
 	return nil
 }
 
-func printWatchProposal(svc *core.Service, policyID int64) error {
+func printWatchProposal(svc *lifecycle.Service, policyID int64) error {
 	st, err := svc.Store.Read()
 	if err != nil {
 		return err
@@ -111,7 +112,7 @@ func printWatchProposal(svc *core.Service, policyID int64) error {
 	return nil
 }
 
-func (o *options) changePolicy(svc *core.Service) error {
+func (o *options) changePolicy(svc *lifecycle.Service) error {
 	if o.removeID != 0 {
 		if err := svc.RemoveWatchID(o.removeID); err != nil {
 			return err

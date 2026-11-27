@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	"github.com/woodfishhhh/obituary/internal/config"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/integrate"
 	"github.com/woodfishhhh/obituary/internal/textutil"
 )
@@ -66,19 +66,19 @@ func applyMaxSize(cmd *cobra.Command, raw string, yes, dryRun bool) error {
 	return cmdutil.Committed(evErr)
 }
 
-func previewMaxSizeEviction(maxBytes int64) (*core.Service, core.QuotaEviction, error) {
+func previewMaxSizeEviction(maxBytes int64) (*lifecycle.Service, lifecycle.QuotaEviction, error) {
 	if maxBytes <= 0 {
-		return nil, core.QuotaEviction{}, nil
+		return nil, lifecycle.QuotaEviction{}, nil
 	}
 	svc, err := cmdutil.Open()
 	if err != nil {
-		return nil, core.QuotaEviction{}, err
+		return nil, lifecycle.QuotaEviction{}, err
 	}
 	ev, err := svc.PreviewGraveyardQuotaEviction(maxBytes)
 	return svc, ev, err
 }
 
-func printMaxSizePreview(normalized string, ev core.QuotaEviction) {
+func printMaxSizePreview(normalized string, ev lifecycle.QuotaEviction) {
 	fmt.Printf("max_size = %q\n", normalized)
 	if ev.MaxBytes <= 0 || ev.BeforeBytes <= ev.MaxBytes {
 		return
@@ -86,7 +86,7 @@ func printMaxSizePreview(normalized string, ev core.QuotaEviction) {
 	printEvictionSummary(ev)
 }
 
-func printEvictionSummary(ev core.QuotaEviction) {
+func printEvictionSummary(ev lifecycle.QuotaEviction) {
 	l := cmdutil.Localizer()
 	fmt.Fprintln(os.Stderr, l.Text("cli.config.max_size_preview", map[string]any{
 		"Used":  textutil.Bytes(ev.BeforeBytes),
@@ -105,7 +105,7 @@ func printEvictionSummary(ev core.QuotaEviction) {
 	}
 }
 
-func confirmMaxSizeEviction(cmd *cobra.Command, ev core.QuotaEviction) error {
+func confirmMaxSizeEviction(cmd *cobra.Command, ev lifecycle.QuotaEviction) error {
 	printEvictionSummary(ev)
 	if !isTerminal() {
 		return errors.New(cmdutil.Text("cli.config.max_size_not_a_terminal"))

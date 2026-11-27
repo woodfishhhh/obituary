@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/core/lifespan"
 )
 
@@ -33,11 +33,11 @@ func NewCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			var results []core.Result
+			var results []lifecycle.Result
 			if dockerVolume {
-				results, err = svc.AddDockerVolume(paths, core.AddOptions{ExpiresAt: expires, Force: force, Note: note})
+				results, err = svc.AddDockerVolume(paths, lifecycle.AddOptions{ExpiresAt: expires, Force: force, Note: note})
 			} else {
-				results, err = svc.Add(paths, core.AddOptions{ExpiresAt: expires, Force: force, Note: note})
+				results, err = svc.Add(paths, lifecycle.AddOptions{ExpiresAt: expires, Force: force, Note: note})
 			}
 			if err := cmdutil.Committed(err); err != nil {
 				return err

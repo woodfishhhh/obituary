@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/guard"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/rules"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
@@ -31,7 +31,7 @@ func TestRuleScanLimitIsDefinitive(t *testing.T) {
 		t.Fatal(err)
 	}
 	now := time.Now()
-	svc := &core.Service{
+	svc := &lifecycle.Service{
 		Store: ledger.Store{Home: home},
 		Guard: guard.Guard{System: []string{home}},
 		FS:    winfs.FS{},
@@ -92,7 +92,7 @@ func TestRuleScanLimitIsDefinitive(t *testing.T) {
 		}
 	})
 	t.Run("ExpiryRefused", func(t *testing.T) {
-		if err := engine.RecheckRules(root, dir, true); !errors.Is(err, core.ErrProtected) {
+		if err := engine.RecheckRules(root, dir, true); !errors.Is(err, lifecycle.ErrProtected) {
 			t.Errorf("RecheckRules = %v; want ErrProtected", err)
 		}
 		now = registered[0].Item.ExpiresAt.Add(time.Second)

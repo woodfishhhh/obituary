@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 // CodeBuddy's CLI and Craft IDE share Claude's response envelope, but retain
@@ -37,7 +37,7 @@ func (a codeBuddyAdapter) Decode(raw []byte, invocation Invocation) (Event, erro
 		return Event{}, ErrSkip
 	}
 	if in.SessionID != "" {
-		ev.Session = core.NormalizeSession(a.name + ":" + in.SessionID)
+		ev.Session = lifecycle.NormalizeSession(a.name + ":" + in.SessionID)
 	}
 	if ev.Name == "PreToolUse" {
 		switch in.ToolName {

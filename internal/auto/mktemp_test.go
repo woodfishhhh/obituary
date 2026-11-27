@@ -13,7 +13,9 @@ import (
 	"testing/synctest"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/project"
 	"github.com/woodfishhhh/obituary/internal/rules"
 	"golang.org/x/sys/windows"
@@ -34,12 +36,12 @@ func TestSweepPreservesNestedRepositoryPublishedDuringDiscovery(t *testing.T) {
 	if err := os.Rename(gitdir, staged); err != nil {
 		t.Fatal(err)
 	}
-	if rows, err := r.engine.Svc.Add([]string{path}, core.AddOptions{ExpiresAt: now.Add(time.Hour), Source: "rule", Project: r.root}); err != nil || core.Failed(rows) {
+	if rows, err := r.engine.Svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: now.Add(time.Hour), Source: "rule", Project: r.root}); err != nil || lifecycle.Failed(rows) {
 		t.Fatalf("add: %+v %v", rows, err)
 	}
 	now = now.Add(time.Hour)
 	published := false
-	r.engine.Svc.PrepareOwners = func(ctx context.Context, _ []string, roots map[string]string) core.OwnerBatchFunc {
+	r.engine.Svc.PrepareOwners = func(ctx context.Context, _ []string, roots map[string]string) lifecycle.OwnerBatchFunc {
 		observer, err := (project.Project{Root: r.root}).ObserveIndex(ctx)
 		if err != nil {
 			t.Fatal(err)
@@ -54,7 +56,7 @@ func TestSweepPreservesNestedRepositoryPublishedDuringDiscovery(t *testing.T) {
 			}
 		}}}
 		known := make(map[string]discoveredOwner)
-		return func(ctx context.Context, paths []string) []core.Ownership {
+		return func(ctx context.Context, paths []string) []lifecycle.Ownership {
 			return queryOwners(ctx, paths, observers, known, nil)
 		}
 	}
@@ -68,7 +70,7 @@ func TestSweepPreservesNestedRepositoryPublishedDuringDiscovery(t *testing.T) {
 		t.Fatalf("project discovery stall moved newly tracked content: %+v %v", rows, readErr)
 	}
 	st, readErr := r.engine.Svc.Store.ReadSnapshot()
-	if err != nil || readErr != nil || len(rows) != 1 || rows[0].Action != core.ActionRetry || len(st.Burials) != 0 || len(st.Items) != 1 || st.Items[0].Attempts != 1 {
+	if err != nil || readErr != nil || len(rows) != 1 || rows[0].Action != ledger.ActionRetry || len(st.Burials) != 0 || len(st.Items) != 1 || st.Items[0].Attempts != 1 {
 		t.Fatalf("stale project discovery did not preserve a retry: %+v %+v %v %v", rows, st, err, readErr)
 	}
 }
@@ -157,7 +159,7 @@ func TestSweepPreservesFileStagedBetweenMoves(t *testing.T) {
 				now := time.Now()
 				r.engine.Svc.Now = func() time.Time { return now }
 				paths := []string{r.write("first.log", "first"), r.write("second.log", "keep"), r.write("third.log", "third")}
-				if rows, err := r.engine.Svc.Add(paths, core.AddOptions{ExpiresAt: now.Add(time.Hour), Source: "rule", Project: r.root}); err != nil || core.Failed(rows) {
+				if rows, err := r.engine.Svc.Add(paths, lifecycle.AddOptions{ExpiresAt: now.Add(time.Hour), Source: "rule", Project: r.root}); err != nil || lifecycle.Failed(rows) {
 					t.Fatalf("add: %+v %v", rows, err)
 				}
 				now = now.Add(time.Hour)
@@ -190,7 +192,7 @@ func TestSweepPreservesFileStagedBetweenMoves(t *testing.T) {
 					t.Fatalf("file staged after first move was buried: %+v %v", out, readErr)
 				}
 				st, ledgerErr := r.engine.Svc.Store.ReadSnapshot()
-				if ledgerErr != nil || len(out) != 3 || out[0].Action != core.ActionBuried || out[1].Action != core.ActionRefused || out[2].Action != core.ActionBuried || len(st.Burials) != 2 || len(st.Items) != 0 {
+				if ledgerErr != nil || len(out) != 3 || out[0].Action != ledger.ActionBuried || out[1].Action != ledger.ActionRefused || out[2].Action != ledger.ActionBuried || len(st.Burials) != 2 || len(st.Items) != 0 {
 					t.Fatalf("new Git protection blocked unrelated siblings: %+v %v", out, ledgerErr)
 				}
 			})
@@ -213,7 +215,7 @@ func TestSweepQueriesGitAfterFinalDirectoryGuard(t *testing.T) {
 		for i := 0; i < 1000; i++ {
 			r.write(fmt.Sprintf("scratch/file-%04d", i), "data")
 		}
-		if rows, err := r.engine.Svc.Add([]string{dir}, core.AddOptions{ExpiresAt: now.Add(time.Hour), Source: "rule", Project: r.root}); err != nil || core.Failed(rows) {
+		if rows, err := r.engine.Svc.Add([]string{dir}, lifecycle.AddOptions{ExpiresAt: now.Add(time.Hour), Source: "rule", Project: r.root}); err != nil || lifecycle.Failed(rows) {
 			t.Fatalf("add: %+v %v", rows, err)
 		}
 		now = now.Add(time.Hour)
@@ -247,7 +249,7 @@ func TestSweepQueriesGitAfterFinalDirectoryGuard(t *testing.T) {
 		if readErr != nil || string(data) != "keep" {
 			t.Fatalf("single directory used Git answer predating Guard: %+v %v", out, readErr)
 		}
-		if len(out) != 1 || out[0].Action != core.ActionRefused {
+		if len(out) != 1 || out[0].Action != ledger.ActionRefused {
 			t.Fatalf("directory Git recheck was not reached: %+v", out)
 		}
 	})
@@ -281,9 +283,9 @@ func TestOwnerBatchDeadlineStopsRepositoryDiscovery(t *testing.T) {
 		start := time.Now()
 		// Only discovery runs under the lock: test logging can block on a busy
 		// runner and would otherwise be charged to the hook's lock budget.
-		var owners []core.Ownership
+		var owners []lifecycle.Ownership
 		var elapsed time.Duration
-		err := r.engine.Svc.Store.Update(func(*core.State) error {
+		err := r.engine.Svc.Store.Update(func(*ledger.State) error {
 			go func() {
 				_, err := r.engine.Svc.Store.WithDeadline(time.Now().Add(time.Second)).ReadSnapshot()
 				readDone <- err
@@ -356,9 +358,9 @@ func TestSweepBatchRechecksGitAndRules(t *testing.T) {
 					}
 				}
 				calls := 0
-				r.engine.Svc.PrepareOwners = func(ctx context.Context, paths []string, roots map[string]string) core.OwnerBatchFunc {
+				r.engine.Svc.PrepareOwners = func(ctx context.Context, paths []string, roots map[string]string) lifecycle.OwnerBatchFunc {
 					query := PrepareOwners(ctx, paths, roots)
-					return func(ctx context.Context, paths []string) []core.Ownership {
+					return func(ctx context.Context, paths []string) []lifecycle.Ownership {
 						calls++
 						checkOwnerLedgerLock(t, r.engine.Svc, false)
 						owners := query(ctx, paths)
@@ -390,14 +392,14 @@ func TestSweepBatchRechecksGitAndRules(t *testing.T) {
 }
 
 type batchRuleChangeFS struct {
-	core.FS
+	corefs.FS
 	afterMove   func(string)
 	gitAnswered map[string]time.Time
 	maxGitGap   time.Duration
 	moves       int
 }
 
-func (fs *batchRuleChangeFS) MovePinned(path string, want core.Identity, to string) error {
+func (fs *batchRuleChangeFS) MovePinned(path string, want corefs.Identity, to string) error {
 	if fs.gitAnswered != nil {
 		answered := fs.gitAnswered[path]
 		if answered.IsZero() {
@@ -431,13 +433,13 @@ func TestSweepFinalGitToMoveWindow(t *testing.T) {
 		for i := range paths {
 			paths[i] = r.write(fmt.Sprintf("timed-%02d.log", i), "payload")
 		}
-		if rows, err := r.engine.Svc.Add(paths, core.AddOptions{ExpiresAt: now.Add(time.Hour), Source: "rule", Project: r.root}); err != nil || core.Failed(rows) {
+		if rows, err := r.engine.Svc.Add(paths, lifecycle.AddOptions{ExpiresAt: now.Add(time.Hour), Source: "rule", Project: r.root}); err != nil || lifecycle.Failed(rows) {
 			t.Fatalf("add: %+v %v", rows, err)
 		}
 		now = now.Add(time.Hour)
 		answered := make(map[string]time.Time)
 		calls := 0
-		r.engine.Svc.OwnerBatch = func(ctx context.Context, paths []string) []core.Ownership {
+		r.engine.Svc.OwnerBatch = func(ctx context.Context, paths []string) []lifecycle.Ownership {
 			owners := OwnerBatch(ctx, paths)
 			time.Sleep(time.Millisecond)
 			calls++
@@ -567,12 +569,12 @@ func TestMkTempRequiresDirectoryCwd(t *testing.T) {
 }
 
 type cancelTempFS struct {
-	core.FS
+	corefs.FS
 	cancel context.CancelFunc
 	fill   bool
 }
 
-func (f cancelTempFS) Identify(path string) (core.Identity, error) {
+func (f cancelTempFS) Identify(path string) (corefs.Identity, error) {
 	id, err := f.FS.Identify(path)
 	if err == nil && strings.Contains(path, "rollback-") {
 		if f.fill {

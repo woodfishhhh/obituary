@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func TestGraveyardSortFilterAndCursor(t *testing.T) {
@@ -69,7 +69,7 @@ func TestGraveyardReceiptPreservesRestoreAndPurgeFailures(t *testing.T) {
 	b := bury(t, a, filepath.Join(root, "restore.log"))
 	write(t, b.Path, "replacement")
 	failed, err := a.Resurrect([]string{ref(b.ID)})
-	if err != nil || len(failed.Results) != 1 || failed.Results[0].Action != core.ActionResurrected || strings.EqualFold(failed.Results[0].Path, b.Path) {
+	if err != nil || len(failed.Results) != 1 || failed.Results[0].Action != ledger.ActionResurrected || strings.EqualFold(failed.Results[0].Path, b.Path) {
 		t.Fatalf("alternate restore path: %+v %v", failed, err)
 	}
 	data, _ := os.ReadFile(b.Path)
@@ -78,12 +78,12 @@ func TestGraveyardReceiptPreservesRestoreAndPurgeFailures(t *testing.T) {
 	}
 	b = bury(t, a, filepath.Join(root, "restore-ok.log"))
 	restored, err := a.Resurrect([]string{ref(b.ID), "999999"})
-	if err != nil || restored.Results[0].Action != core.ActionResurrected || !strings.EqualFold(restored.Results[0].Path, b.Path) || restored.Results[1].Error == "" {
+	if err != nil || restored.Results[0].Action != ledger.ActionResurrected || !strings.EqualFold(restored.Results[0].Path, b.Path) || restored.Results[1].Error == "" {
 		t.Fatalf("restore: %+v %v", restored, err)
 	}
 	b = bury(t, a, filepath.Join(root, "purge.log"))
 	purged, err := a.Purge([]string{ref(b.ID), "999999"})
-	if err != nil || purged.Results[0].Action != core.ActionPurged || purged.Results[1].Error == "" {
+	if err != nil || purged.Results[0].Action != ledger.ActionPurged || purged.Results[1].Error == "" {
 		t.Fatalf("purge: %+v %v", purged, err)
 	}
 	if _, err := os.Stat(b.Grave); !os.IsNotExist(err) {
@@ -101,7 +101,7 @@ func TestGraveyardCursorUsesTimeBeforeID(t *testing.T) {
 	a, root := fixture(t)
 	b1 := bury(t, a, filepath.Join(root, "older-id.log"))
 	b2 := bury(t, a, filepath.Join(root, "newer-id.log"))
-	if err := a.deps.Service.Store.Update(func(st *core.State) error {
+	if err := a.deps.Service.Store.Update(func(st *ledger.State) error {
 		for i := range st.Burials {
 			if st.Burials[i].ID == b1.ID {
 				st.Burials[i].BuriedAt = time.Now().Add(time.Hour)
@@ -137,13 +137,13 @@ func TestExtendGravesAndPurgeRejectActiveItems(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ExtendGraves: %v", err)
 	}
-	if ext.Results[0].Action != core.ActionExtended || !ext.Results[0].Burial.PurgeAt.Equal(b1.PurgeAt.Add(72*time.Hour)) {
+	if ext.Results[0].Action != ledger.ActionExtended || !ext.Results[0].Burial.PurgeAt.Equal(b1.PurgeAt.Add(72*time.Hour)) {
 		t.Fatalf("b1 not extended: %+v", ext.Results[0])
 	}
 	if ext.Results[1].Error == "" {
 		t.Fatalf("active item must fail ExtendGraves: %+v", ext.Results[1])
 	}
-	if ext.Results[2].Action != core.ActionExtended {
+	if ext.Results[2].Action != ledger.ActionExtended {
 		t.Fatalf("b2 not extended: %+v", ext.Results[2])
 	}
 	// Batch purge also refuses active tracked item while purging both graves.
@@ -151,7 +151,7 @@ func TestExtendGravesAndPurgeRejectActiveItems(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Purge: %v", err)
 	}
-	if purged.Results[0].Action != core.ActionPurged || purged.Results[1].Error == "" || purged.Results[2].Action != core.ActionPurged {
+	if purged.Results[0].Action != ledger.ActionPurged || purged.Results[1].Error == "" || purged.Results[2].Action != ledger.ActionPurged {
 		t.Fatalf("unexpected purge batch: %+v", purged.Results)
 	}
 }

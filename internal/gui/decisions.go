@@ -9,14 +9,16 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
+	corelifespan "github.com/woodfishhhh/obituary/internal/core/lifespan"
 	"github.com/woodfishhhh/obituary/internal/integrate"
 	"github.com/woodfishhhh/obituary/internal/rules"
 	"github.com/woodfishhhh/obituary/internal/watch"
 )
 
 type ReviewedProposal struct {
-	core.Proposal
+	ledger.Proposal
 	Fingerprint string `json:"fingerprint"`
 	Blocked     string `json:"blocked,omitempty"`
 }
@@ -24,16 +26,16 @@ type ReviewedProposal struct {
 type ProposalList struct {
 	Proposals []ReviewedProposal `json:"proposals"`
 	// Handled is what the proposal mode let in without asking, while tracked.
-	Handled []core.AutoHandled `json:"handled"`
+	Handled []ledger.AutoHandled `json:"handled"`
 	// Mode is [proposals] mode: tiered, auto or ask.
 	Mode string `json:"mode"`
 	// GraveMaxBytes is the currently effective [graveyard] max_size (0 means unlimited).
 	GraveMaxBytes int64 `json:"graveMaxBytes"`
 }
 type ProposalReply struct {
-	ErrorCode string                `json:"errorCode,omitempty"`
-	Results   []core.ProposalResult `json:"results"`
-	Error     string                `json:"error,omitempty"`
+	ErrorCode string                     `json:"errorCode,omitempty"`
+	Results   []lifecycle.ProposalResult `json:"results"`
+	Error     string                     `json:"error,omitempty"`
 }
 
 func (a *API) Proposals() (ProposalList, error) {
@@ -44,7 +46,7 @@ func (a *API) Proposals() (ProposalList, error) {
 	// The fingerprint covers exactly the displayed candidates. A partial view
 	// cannot authorize the full ledger snapshot; background pruning refreshes it.
 	for _, p := range app.ProposalViews(a.deps.Service, state.Proposals) {
-		rows.Proposals = append(rows.Proposals, ReviewedProposal{Proposal: p.Proposal, Fingerprint: core.ProposalFingerprint(p.Proposal), Blocked: p.Blocked})
+		rows.Proposals = append(rows.Proposals, ReviewedProposal{Proposal: p.Proposal, Fingerprint: lifecycle.ProposalFingerprint(p.Proposal), Blocked: p.Blocked})
 	}
 	rows.Handled = state.AutoHandled()
 	if svc, svcErr := a.service(); svcErr == nil {
@@ -91,11 +93,11 @@ func (a *API) Approve(refs, fingerprints []string) (ProposalReply, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if err := requireRefs(refs); err != nil {
-		return ProposalReply{Results: []core.ProposalResult{}}, err
+		return ProposalReply{Results: []lifecycle.ProposalResult{}}, err
 	}
 	svc, err := a.service()
 	if err != nil {
-		return ProposalReply{Results: []core.ProposalResult{}, Error: errorText(err)}, nil
+		return ProposalReply{Results: []lifecycle.ProposalResult{}, Error: errorText(err)}, nil
 	}
 	// Request-local rules also observe edits made outside this GUI.
 	engine := &auto.Engine{Svc: svc, Trust: a.deps.Engine.Trust}
@@ -109,7 +111,7 @@ func (a *API) Reject(refs, fingerprints []string) (ProposalReply, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if err := requireRefs(refs); err != nil {
-		return ProposalReply{Results: []core.ProposalResult{}}, err
+		return ProposalReply{Results: []lifecycle.ProposalResult{}}, err
 	}
 	results, err := a.deps.Service.RejectReviewed(refs, fingerprints)
 	return ProposalReply{Results: list(results), Error: errorText(err), ErrorCode: proposalErrorCode(err)}, nil
@@ -122,10 +124,10 @@ func (a *API) PurgeQuotaProposal(ref, fingerprint string) (ProposalReply, error)
 	defer a.mu.Unlock()
 	svc, err := a.service()
 	if err != nil {
-		return ProposalReply{Results: []core.ProposalResult{}, Error: errorText(err)}, nil
+		return ProposalReply{Results: []lifecycle.ProposalResult{}, Error: errorText(err)}, nil
 	}
 	res, err := svc.PurgeQuotaProposal(ref, fingerprint)
-	return ProposalReply{Results: []core.ProposalResult{res}, Error: errorText(err), ErrorCode: proposalErrorCode(err)}, nil
+	return ProposalReply{Results: []lifecycle.ProposalResult{res}, Error: errorText(err), ErrorCode: proposalErrorCode(err)}, nil
 }
 
 // ExtendQuotaProposal gives the reviewed oversized object a fresh lifespan and
@@ -133,21 +135,21 @@ func (a *API) PurgeQuotaProposal(ref, fingerprint string) (ProposalReply, error)
 func (a *API) ExtendQuotaProposal(ref, fingerprint, lifespan string) (ProposalReply, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	d, err := core.ParseDuration(lifespan)
+	d, err := corelifespan.ParseDuration(lifespan)
 	if err != nil {
-		return ProposalReply{Results: []core.ProposalResult{}}, err
+		return ProposalReply{Results: []lifecycle.ProposalResult{}}, err
 	}
 	svc, err := a.service()
 	if err != nil {
-		return ProposalReply{Results: []core.ProposalResult{}, Error: errorText(err)}, nil
+		return ProposalReply{Results: []lifecycle.ProposalResult{}, Error: errorText(err)}, nil
 	}
 	res, err := svc.ExtendQuotaProposal(ref, fingerprint, d)
-	return ProposalReply{Results: []core.ProposalResult{res}, Error: errorText(err), ErrorCode: proposalErrorCode(err)}, nil
+	return ProposalReply{Results: []lifecycle.ProposalResult{res}, Error: errorText(err), ErrorCode: proposalErrorCode(err)}, nil
 }
 
 func proposalErrorCode(err error) string {
-	if errors.Is(err, core.ErrProposalChanged) {
-		return core.ErrorCodeProposalChanged
+	if errors.Is(err, lifecycle.ErrProposalChanged) {
+		return lifecycle.ErrorCodeProposalChanged
 	}
 	return ""
 }
@@ -200,7 +202,7 @@ func (a *API) ruleFiles() (RuleList, error) {
 	return rows, nil
 }
 
-func projectRoots(state core.State) []string {
+func projectRoots(state ledger.State) []string {
 	roots := []string{}
 	for root := range state.Projects {
 		roots = append(roots, root)
@@ -241,11 +243,11 @@ func (a *API) Untrust(path string) (Receipt, error) {
 }
 
 type WatchList struct {
-	Policies []core.WatchPolicy `json:"policies"`
+	Policies []ledger.WatchPolicy `json:"policies"`
 }
 type WatchReply struct {
-	Policy core.WatchPolicy `json:"policy"`
-	Error  string           `json:"error,omitempty"`
+	Policy ledger.WatchPolicy `json:"policy"`
+	Error  string             `json:"error,omitempty"`
 }
 
 func (a *API) Watches() (WatchList, error) {
@@ -259,7 +261,7 @@ func (a *API) SetWatch(path, lifespan, age string) (WatchReply, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if age == "" {
-		age = core.WatchFirstSeen
+		age = ledger.WatchFirstSeen
 	}
 	policy, err := a.deps.Service.SetWatch(path, lifespan, age)
 	if err != nil {

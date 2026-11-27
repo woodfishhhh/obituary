@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 // replayBatchRows bounds what one resident commit absorbs, so a long queue
@@ -22,7 +22,7 @@ func (d decisionRetry) Unwrap() error { return d.error }
 // write and the audit outbox is flushed once for the group. A request file is
 // removed only after the commit that registered it; a crash in between is safe
 // because the commit also stored the request's receipt.
-func (e *Engine) replayBatches(rows []core.Observation) error {
+func (e *Engine) replayBatches(rows []ledger.Observation) error {
 	var failures error
 	for len(rows) > 0 {
 		batch := rows[:min(len(rows), replayBatchRows)]
@@ -39,8 +39,8 @@ func (e *Engine) replayBatches(rows []core.Observation) error {
 	return failures
 }
 
-func (e *Engine) commitBatch(rows []core.Observation) error {
-	err := e.Svc.Store.ReplayBatch(func(tx core.Store) error {
+func (e *Engine) commitBatch(rows []ledger.Observation) error {
+	err := e.Svc.Store.ReplayBatch(func(tx ledger.Store) error {
 		// A private copy per attempt: the batch may run again after a conflict.
 		svc := *e.Svc
 		svc.Store, svc.AfterChange = tx, nil
@@ -67,10 +67,10 @@ func (e *Engine) commitBatch(rows []core.Observation) error {
 
 // retryBatch commits the rows of an abandoned batch one at a time: a stale
 // identity must not hold back its healthy neighbours.
-func (e *Engine) retryBatch(rows []core.Observation) error {
+func (e *Engine) retryBatch(rows []ledger.Observation) error {
 	var failures error
 	for _, row := range rows {
-		err := e.commitBatch([]core.Observation{row})
+		err := e.commitBatch([]ledger.Observation{row})
 		if retry := (decisionRetry{}); errors.As(err, &retry) {
 			_, retryErr := e.Svc.Store.RetryObservation(row, e.now(), retry.error)
 			err = errors.Join(fmt.Errorf("observe %s: %w", row.Path, retry.error), retryErr)

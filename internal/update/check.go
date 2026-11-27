@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/buildinfo"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 const APIBase = "https://api.github.com"
@@ -70,7 +70,7 @@ func (c Checker) Check(ctx context.Context, enabled, force bool) (Cache, error) 
 
 func (c Checker) lock(ctx context.Context, wait bool) (func(), bool, error) {
 	for {
-		unlock, ok, err := core.TryLockExclusive(filepath.Join(c.Home, "update.lock"))
+		unlock, ok, err := ledger.TryLockExclusive(filepath.Join(c.Home, "update.lock"))
 		if err != nil || ok || !wait {
 			return unlock, ok, err
 		}

@@ -14,7 +14,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/contextmenu"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"github.com/woodfishhhh/obituary/internal/tray"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
@@ -99,7 +99,7 @@ func runDaemon(once, withTray bool) error {
 	return nil
 }
 
-func runOnce(svc *core.Service, logger *log.Logger) {
+func runOnce(svc *lifecycle.Service, logger *log.Logger) {
 	outcomes, purged, err := app.Tick(svc)
 	for _, o := range outcomes {
 		logger.Printf("once: #%d %s %s %s", o.Item.ID, o.Action, o.Path, o.Detail)

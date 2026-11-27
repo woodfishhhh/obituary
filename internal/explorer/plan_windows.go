@@ -11,7 +11,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/pathutil"
 	"github.com/woodfishhhh/obituary/internal/winfs"
@@ -83,7 +85,7 @@ func Prepare(dir string, authorized authorization, dates map[string]time.Time, l
 	return p, err
 }
 
-func preparePinned(abs string, identity core.Identity, root *os.Root, dates map[string]time.Time, lang i18n.Language) (*Plan, error) {
+func preparePinned(abs string, identity corefs.Identity, root *os.Root, dates map[string]time.Time, lang i18n.Language) (*Plan, error) {
 	info, err := root.Stat(".")
 	if err != nil {
 		return nil, err
@@ -228,6 +230,6 @@ func snapshotFile(f *os.File, info os.FileInfo) (snapshot, error) {
 }
 
 func restoreBits(current, original, mask uint32) uint32 { return current&^mask | original&mask }
-func projectLabels(svc *core.Service, index string, state core.State, previous map[string]directory, options Options) error {
+func projectLabels(svc *lifecycle.Service, index string, state ledger.State, previous map[string]directory, options Options) error {
 	return projectDirectories(svc, index, state, previous, options)
 }

@@ -23,7 +23,8 @@ import (
 	purgecmd "github.com/woodfishhhh/obituary/internal/cli/purge"
 	removecmd "github.com/woodfishhhh/obituary/internal/cli/remove"
 	sweepcmd "github.com/woodfishhhh/obituary/internal/cli/sweep"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"golang.org/x/sys/windows"
 )
 
@@ -54,8 +55,8 @@ func TestResurrectLastCommandBatch(t *testing.T) {
 			}
 			clitest.WriteFixture(t, paths[0], "replacement")
 			out, stderr, err := clitest.Execute(t, NewCmd(), "--last", "--json")
-			var rows []core.GraveResult
-			if err != nil || json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 2 || core.GraveFailed(rows) {
+			var rows []lifecycle.GraveResult
+			if err != nil || json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 2 || lifecycle.GraveFailed(rows) {
 				t.Fatal(out, stderr, err)
 			}
 			for _, r := range rows {
@@ -97,8 +98,8 @@ func TestResurrectLastSessionAndPartialFailure(t *testing.T) {
 	}
 	t.Setenv("OBIT_SESSION_ID", "mine")
 	out, stderr, err := clitest.Execute(t, NewCmd(), "--last", "--json")
-	var rows []core.GraveResult
-	if err == nil || json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 2 || rows[0].Error == "" || rows[1].Action != core.ActionResurrected {
+	var rows []lifecycle.GraveResult
+	if err == nil || json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 2 || rows[0].Error == "" || rows[1].Action != ledger.ActionResurrected {
 		t.Fatalf("partial batch receipts lost: %s %s %v", out, stderr, err)
 	}
 	if _, err := os.Stat(foreign); !os.IsNotExist(err) {
@@ -125,7 +126,7 @@ func TestResurrectLastAgentSessions(t *testing.T) {
 			now := time.Now()
 			svc.Now = func() time.Time { return now }
 			previous := cmdutil.Open
-			cmdutil.Open = func() (*core.Service, error) { return svc, nil }
+			cmdutil.Open = func() (*lifecycle.Service, error) { return svc, nil }
 			t.Cleanup(func() { cmdutil.Open = previous })
 			variable, prefix := "CLAUDE_CODE_SESSION_ID", "claude:"
 			if mode == "codex" {
@@ -167,8 +168,8 @@ func TestResurrectLastAgentSessions(t *testing.T) {
 					t.Setenv(variable, "other")
 				}
 				out, stderr, err := clitest.Execute(t, NewCmd(), "--last", "--json")
-				var rows []core.GraveResult
-				if err != nil || json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 1 || rows[0].Path != filepath.Join(repo, agent) || rows[0].Action != core.ActionResurrected {
+				var rows []lifecycle.GraveResult
+				if err != nil || json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 1 || rows[0].Path != filepath.Join(repo, agent) || rows[0].Action != ledger.ActionResurrected {
 					t.Fatalf("wrong session restored: %s %s %v", out, stderr, err)
 				}
 				if data, err := os.ReadFile(rows[0].Path); err != nil || string(data) != agent {
@@ -216,8 +217,8 @@ func TestResurrectLastReportsRecoveredBatch(t *testing.T) {
 				t.Fatalf("reconciled batch reported as missing: %s %s %v", out, stderr, err)
 			}
 			if asJSON {
-				var rows []core.GraveResult
-				if json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 1 || rows[0].Action != core.ActionResurrected || rows[0].Path != path {
+				var rows []lifecycle.GraveResult
+				if json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 1 || rows[0].Action != ledger.ActionResurrected || rows[0].Path != path {
 					t.Fatalf("reconciled receipt lost: %s", out)
 				}
 			} else if !strings.Contains(out, "resurrected") || !strings.Contains(out, path) {
@@ -240,7 +241,7 @@ func TestResurrectCommandPrefersLatestCommittedBurial(t *testing.T) {
 	if err != nil {
 		t.Fatalf("committed retry selected older active burial: %s %s %v", out, stderr, err)
 	}
-	var rows []core.GraveResult
+	var rows []lifecycle.GraveResult
 	if err := json.Unmarshal([]byte(out), &rows); err != nil {
 		t.Fatal(err)
 	}
@@ -252,7 +253,7 @@ func TestResurrectCommandRetriesUnverifiableSelection(t *testing.T) {
 		t.Run(mode, func(t *testing.T) {
 			svc, older, newer := clitest.BurialRetryFixture(t, mode)
 			previous := cmdutil.Open
-			cmdutil.Open = func() (*core.Service, error) { return svc, nil }
+			cmdutil.Open = func() (*lifecycle.Service, error) { return svc, nil }
 			t.Cleanup(func() { cmdutil.Open = previous })
 			out, stderr, err := clitest.Execute(t, NewCmd(), newer.Path, "--json")
 			clitest.AssertRetryPreservesBurials(t, older, newer, mode, fmt.Sprint(out, stderr, err), err != nil)
@@ -270,7 +271,7 @@ func TestResurrectFailureReportsSelectedIdentity(t *testing.T) {
 		t.Fatal(err)
 	}
 	rows, err := svc.Bury([]string{path}, false, "")
-	if err != nil || core.GraveFailed(rows) {
+	if err != nil || lifecycle.GraveFailed(rows) {
 		t.Fatal(rows, err)
 	}
 	b := rows[0].Burial
@@ -351,7 +352,7 @@ func TestResurrectCommandReportsPartialCommit(t *testing.T) {
 		t.Run(fmt.Sprint(asJSON), func(t *testing.T) {
 			svc, paths, unlock := clitest.RestoreReceiptFixture(t)
 			original := cmdutil.Open
-			cmdutil.Open = func() (*core.Service, error) { return svc, nil }
+			cmdutil.Open = func() (*lifecycle.Service, error) { return svc, nil }
 			t.Cleanup(func() { cmdutil.Open = original })
 			args := append([]string(nil), paths...)
 			if asJSON {
@@ -363,8 +364,8 @@ func TestResurrectCommandReportsPartialCommit(t *testing.T) {
 				t.Fatal("failed restore commit reported success")
 			}
 			if asJSON {
-				var rows []core.GraveResult
-				if json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 3 || rows[0].Path != paths[0] || rows[1].Path != actual || rows[1].Error == "" || rows[2].Action != core.ActionNotExecuted {
+				var rows []lifecycle.GraveResult
+				if json.Unmarshal([]byte(out), &rows) != nil || len(rows) != 3 || rows[0].Path != paths[0] || rows[1].Path != actual || rows[1].Error == "" || rows[2].Action != ledger.ActionNotExecuted {
 					t.Fatalf("restore partial receipt lost completed paths: %s %s", out, stderr)
 				}
 			} else if !strings.Contains(out, paths[0]) || !strings.Contains(out, actual) || !strings.Contains(out+stderr, paths[2]) {
@@ -396,8 +397,8 @@ func TestCommandsRecoverFailedBurialCommit(t *testing.T) {
 			}
 			now := time.Now().Add(-2 * time.Hour)
 			svc.Now = func() time.Time { return now }
-			added, err := svc.Add([]string{path}, core.AddOptions{ExpiresAt: now.Add(time.Hour), Source: "rule", Project: repo})
-			if err != nil || core.Failed(added) {
+			added, err := svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: now.Add(time.Hour), Source: "rule", Project: repo})
+			if err != nil || lifecycle.Failed(added) {
 				t.Fatalf("add: %+v, %v", added, err)
 			}
 			now = now.Add(time.Hour)

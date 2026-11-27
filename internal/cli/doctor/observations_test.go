@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
@@ -17,8 +17,8 @@ func TestDoctorObservationQueueIsReadOnly(t *testing.T) {
 	home := t.TempDir()
 	store := ledger.Store{Home: home}
 	now := time.Now()
-	row := core.Observation{Path: filepath.Join(home, "debug.log"), Session: "s", Token: "request", Identity: &core.Identity{}, ObservedAt: now.Add(-2 * time.Hour)}
-	if err := store.DeferObservations([]core.Observation{row}); err != nil {
+	row := ledger.Observation{Path: filepath.Join(home, "debug.log"), Session: "s", Token: "request", Identity: &corefs.Identity{}, ObservedAt: now.Add(-2 * time.Hour)}
+	if err := store.DeferObservations([]ledger.Observation{row}); err != nil {
 		t.Fatal(err)
 	}
 	clitest.WriteFixture(t, filepath.Join(home, "observations", "dead", "failed.json"), "{}")
@@ -47,8 +47,8 @@ func TestDoctorYoungQueueIsNormal(t *testing.T) {
 	home := t.TempDir()
 	store := ledger.Store{Home: home}
 	now := time.Now()
-	row := core.Observation{Path: filepath.Join(home, "debug.log"), Session: "s", Token: "request", Identity: &core.Identity{}, ObservedAt: now.Add(-5 * time.Second)}
-	if err := store.DeferObservations([]core.Observation{row}); err != nil {
+	row := ledger.Observation{Path: filepath.Join(home, "debug.log"), Session: "s", Token: "request", Identity: &corefs.Identity{}, ObservedAt: now.Add(-5 * time.Second)}
+	if err := store.DeferObservations([]ledger.Observation{row}); err != nil {
 		t.Fatal(err)
 	}
 	if check := english.diagnoseHookQueue(home, now); check.Status != "PASS" || check.Queue.Pending != 1 {

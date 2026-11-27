@@ -2,7 +2,8 @@ package gui
 
 import (
 	"github.com/woodfishhhh/obituary/internal/app"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/rules"
 )
 
@@ -36,10 +37,10 @@ func (a *API) Summary() (Summary, error) {
 	if err != nil {
 		return Summary{}, err
 	}
-	existing := core.ExistingProposals(state.Proposals)
+	existing := lifecycle.ExistingProposals(state.Proposals)
 	quotaPending := 0
 	for _, p := range existing {
-		if p.Kind == core.ProposalGraveyardQuota {
+		if p.Kind == ledger.ProposalGraveyardQuota {
 			quotaPending++
 		}
 	}

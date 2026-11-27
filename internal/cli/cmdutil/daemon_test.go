@@ -16,7 +16,8 @@ import (
 	mktempcmd "github.com/woodfishhhh/obituary/internal/cli/mktemp"
 	proposalscmd "github.com/woodfishhhh/obituary/internal/cli/proposals"
 	rulescmd "github.com/woodfishhhh/obituary/internal/cli/rules"
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 func TestRegistrationCommandsEnsureRunner(t *testing.T) {
@@ -33,7 +34,7 @@ func TestRegistrationCommandsEnsureRunner(t *testing.T) {
 				case "add":
 					cmd, args = addcmd.NewCmd(), []string{path, "1d"}
 				case "approve":
-					clitest.AddProposal(t, store, repo, core.Candidate{Path: path, Lifespan: "1d"})
+					clitest.AddProposal(t, store, repo, ledger.Candidate{Path: path, Lifespan: "1d"})
 					cmd, args = proposalscmd.NewDecideCmd("approve", "", true), []string{"1"}
 				case "mktemp":
 					cmd, args = mktempcmd.NewCmd(), []string{"1d"}
@@ -85,14 +86,14 @@ func TestNoRunnerForChecksSkippedPathsAndFailedRegistrations(t *testing.T) {
 			case "skipped":
 				cmd, args = rulescmd.NewCmd(), []string{"apply", path}
 			case "approve":
-				clitest.AddProposal(t, store, repo, core.Candidate{Path: filepath.Join(repo, "gone"), Lifespan: "1d"})
+				clitest.AddProposal(t, store, repo, ledger.Candidate{Path: filepath.Join(repo, "gone"), Lifespan: "1d"})
 				cmd, args = proposalscmd.NewDecideCmd("approve", "", true), []string{"1"}
 			case "bury":
 				cmd, args = burycmd.NewCmd(), []string{filepath.Join(repo, "gone")}
 			case "mktemp":
 				cmd, args = mktempcmd.NewCmd(), []string{"invalid"}
 			case "reject":
-				clitest.AddProposal(t, store, repo, core.Candidate{Path: path, Lifespan: "1d"})
+				clitest.AddProposal(t, store, repo, ledger.Candidate{Path: path, Lifespan: "1d"})
 				cmd, args = proposalscmd.NewDecideCmd("reject", "", false), []string{"1"}
 			}
 			clitest.Execute(t, cmd, append(args, "--json")...)
@@ -126,7 +127,7 @@ func TestBuryAndRulesApplyStartRunnerAfterPartialSuccess(t *testing.T) {
 	}
 }
 
-func runnerCommandFixture(t *testing.T, name string) (string, core.Store) {
+func runnerCommandFixture(t *testing.T, name string) (string, ledger.Store) {
 	t.Helper()
 	switch name {
 	case "approve", "mktemp", "apply", "check", "skipped":
@@ -178,11 +179,11 @@ func TestEnsureDaemonExplainsMissingTimer(t *testing.T) {
 	cmdutil.RunnerServes = func(string) bool { return false }
 	cmdutil.RunnerStart = func(home string) error {
 		*starts = append(*starts, home)
-		return fmt.Errorf("resident mode is unavailable: %w", core.ErrUnsupported)
+		return fmt.Errorf("resident mode is unavailable: %w", corefs.ErrUnsupported)
 	}
 	_, stderr, err := clitest.Execute(t, &cobra.Command{Use: "test", Run: func(*cobra.Command, []string) { cmdutil.EnsureDaemon("isolated", false) }})
 	if err != nil || len(*starts) != 1 || !strings.Contains(stderr, "obit reap") || !strings.Contains(stderr, "obit daemon enable") ||
-		strings.Contains(stderr, "could not start") || strings.Contains(stderr, core.ErrUnsupported.Error()) {
+		strings.Contains(stderr, "could not start") || strings.Contains(stderr, corefs.ErrUnsupported.Error()) {
 		t.Fatalf("stderr=%q err=%v", stderr, err)
 	}
 }

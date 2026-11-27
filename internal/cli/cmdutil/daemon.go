@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/woodfishhhh/obituary/internal/app"
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 )
 
 // Process and scheduler boundaries shared by commands and diagnostics.
@@ -28,7 +28,7 @@ func EnsureDaemon(home string, quiet bool) error {
 	if err := RunnerStart(home); err != nil {
 		switch {
 		case quiet:
-		case errors.Is(err, core.ErrUnsupported): // macOS / Linux: no resident daemon, only the user timer
+		case errors.Is(err, corefs.ErrUnsupported): // macOS / Linux: no resident daemon, only the user timer
 			fmt.Fprintln(os.Stderr, Text("cli.daemon.no_timer"))
 		default:
 			fmt.Fprintf(os.Stderr, Text("cli.daemon.start_failed"), err)

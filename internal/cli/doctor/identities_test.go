@@ -9,17 +9,18 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 )
 
 func TestDiagnoseIdentitiesReportsUnrelatedUnsafeObject(t *testing.T) {
 	root := t.TempDir()
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(root, "data")}, FS: winfs.FS{}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(root, "data")}, FS: winfs.FS{}}
 	path := filepath.Join(root, "keep.txt")
 	clitest.WriteFixture(t, path, "keep")
-	rows, err := svc.Add([]string{path}, core.AddOptions{ExpiresAt: time.Now().Add(24 * time.Hour)})
-	if err != nil || core.Failed(rows) {
+	rows, err := svc.Add([]string{path}, lifecycle.AddOptions{ExpiresAt: time.Now().Add(24 * time.Hour)})
+	if err != nil || lifecycle.Failed(rows) {
 		t.Fatalf("add: %+v %v", rows, err)
 	}
 	want, detail := "PASS", "hard links"

@@ -14,7 +14,7 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
 	resurrectcmd "github.com/woodfishhhh/obituary/internal/cli/resurrect"
 	rmdircmd "github.com/woodfishhhh/obituary/internal/cli/rmdir"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/guardrm"
 )
 
@@ -103,7 +103,7 @@ func TestRmRespectsRecycleModeWithoutFallback(t *testing.T) {
 			trash := filepath.Join(t.TempDir(), "simulated-recycle")
 			svc.FS = removeRecycleFS{FS: svc.FS, destination: trash, fail: fail}
 			old := cmdutil.Open
-			cmdutil.Open = func() (*core.Service, error) { return svc, nil }
+			cmdutil.Open = func() (*lifecycle.Service, error) { return svc, nil }
 			t.Cleanup(func() { cmdutil.Open = old })
 			_, stderr, err := clitest.Execute(t, NewCmd(), "-f", "keep")
 			if (err != nil) != fail {
@@ -148,7 +148,7 @@ func TestRmRefusalNeverDeletes(t *testing.T) {
 				}
 			}
 			old := cmdutil.Open
-			cmdutil.Open = func() (*core.Service, error) { return svc, nil }
+			cmdutil.Open = func() (*lifecycle.Service, error) { return svc, nil }
 			t.Cleanup(func() { cmdutil.Open = old })
 			args := []string{"-r", path}
 			if fault != "repository" {

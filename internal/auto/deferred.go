@@ -5,7 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/project"
 )
 
@@ -35,14 +36,14 @@ func (e *Engine) replayObservations() error {
 	return failures
 }
 
-func (e *Engine) replayObservation(row core.Observation) error {
+func (e *Engine) replayObservation(row ledger.Observation) error {
 	if err := e.applyObservation(row); err != nil {
 		return err
 	}
 	return e.Svc.Store.AcknowledgeObservation(row)
 }
 
-func (e *Engine) applyObservation(row core.Observation) error {
+func (e *Engine) applyObservation(row ledger.Observation) error {
 	state, err := e.Svc.Store.ReadHot()
 	if err != nil {
 		return err
@@ -72,15 +73,15 @@ func (e *Engine) applyObservation(row core.Observation) error {
 	return nil
 }
 
-func (e *Engine) observationDecision(row core.Observation) (string, error) {
-	if row.Attempts >= core.ObservationMaxAttempts {
+func (e *Engine) observationDecision(row ledger.Observation) (string, error) {
+	if row.Attempts >= ledger.ObservationMaxAttempts {
 		return "", errors.New("observation exhausted twenty attempts")
 	}
-	if e.now().Sub(row.ObservedAt) >= core.ObservationMaxAge {
+	if e.now().Sub(row.ObservedAt) >= ledger.ObservationMaxAge {
 		return "", errors.New("observation is at least seven days old")
 	}
 	err := e.Svc.CheckObservation(&row)
-	if errors.Is(err, core.ErrNotFound) || errors.Is(err, core.ErrUnsafe) {
+	if errors.Is(err, corefs.ErrNotFound) || errors.Is(err, corefs.ErrUnsafe) {
 		return err.Error(), nil
 	}
 	if err != nil {
@@ -106,7 +107,7 @@ func (e *Engine) observationDecision(row core.Observation) (string, error) {
 // files that existed in its snapshot still need their write events handled.
 func (e *Engine) FinishFiles(root, session string) ([]Notice, error) {
 	if err := e.ReplayObservations(); err != nil {
-		_ = e.Svc.Store.Record(core.Event{Time: e.now(), Action: "observation replay warning", Path: root, Detail: err.Error()})
+		_ = e.Svc.Store.Record(ledger.Event{Time: e.now(), Action: "observation replay warning", Path: root, Detail: err.Error()})
 	}
 	return e.Leftovers(root, session)
 }

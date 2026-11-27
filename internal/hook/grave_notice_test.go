@@ -14,17 +14,17 @@ import (
 	"time"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
-func noticeFixture(t testing.TB, directory bool) (*auto.Engine, string, core.Burial) {
+func noticeFixture(t testing.TB, directory bool) (*auto.Engine, string, ledger.Burial) {
 	t.Helper()
 	root := t.TempDir()
 	root, _ = filepath.EvalSymlinks(root)
-	b := core.Burial{ID: 42, Path: filepath.Join(root, "buried"), Project: root, IsDir: directory, BuriedAt: time.Now().Add(-time.Hour), PurgeAt: time.Now().Add(7 * 24 * time.Hour)}
-	e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: filepath.Join(root, "home")}}}
-	if err := e.Svc.Store.Update(func(st *core.State) error { st.Burials = []core.Burial{b}; return nil }); err != nil {
+	b := ledger.Burial{ID: 42, Path: filepath.Join(root, "buried"), Project: root, IsDir: directory, BuriedAt: time.Now().Add(-time.Hour), PurgeAt: time.Now().Add(7 * 24 * time.Hour)}
+	e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(root, "home")}}}
+	if err := e.Svc.Store.Update(func(st *ledger.State) error { st.Burials = []ledger.Burial{b}; return nil }); err != nil {
 		t.Fatal(err)
 	}
 	return e, root, b
@@ -92,18 +92,18 @@ func TestGraveNoticeSkipsUnavailableAndUnrelated(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				if err := e.Svc.Store.Update(func(st *core.State) error { st.Burials = nil; return nil }); err != nil {
+				if err := e.Svc.Store.Update(func(st *ledger.State) error { st.Burials = nil; return nil }); err != nil {
 					t.Fatal(err)
 				}
 				if err := os.WriteFile(index, stale, 0600); err != nil {
 					t.Fatal(err)
 				}
 			case "expired":
-				if err := e.Svc.Store.Update(func(st *core.State) error { st.Burials[0].PurgeAt = time.Now().Add(-time.Second); return nil }); err != nil {
+				if err := e.Svc.Store.Update(func(st *ledger.State) error { st.Burials[0].PurgeAt = time.Now().Add(-time.Second); return nil }); err != nil {
 					t.Fatal(err)
 				}
 			case "purging":
-				if err := e.Svc.Store.Update(func(st *core.State) error { st.Burials[0].PurgeIntent = &core.PurgeIntent{}; return nil }); err != nil {
+				if err := e.Svc.Store.Update(func(st *ledger.State) error { st.Burials[0].PurgeIntent = &ledger.PurgeIntent{}; return nil }); err != nil {
 					t.Fatal(err)
 				}
 			case "unrelated":
@@ -113,7 +113,7 @@ func TestGraveNoticeSkipsUnavailableAndUnrelated(t *testing.T) {
 			}
 			calls := 0
 			old := readNoticeSnapshot
-			readNoticeSnapshot = func(s core.Store) (core.State, error) { calls++; return old(s) }
+			readNoticeSnapshot = func(s ledger.Store) (ledger.State, error) { calls++; return old(s) }
 			defer func() { readNoticeSnapshot = old }()
 			if out := runNotice(t, e, "claude", "s", root, "Read", map[string]any{"file_path": path}); out != "" {
 				t.Fatal(out)
@@ -157,7 +157,7 @@ func TestGraveNoticeWriteAndGuardBytes(t *testing.T) {
 		}
 		input := map[string]any{"command": "rm buried", "shell": "bash"}
 		before := runNotice(t, e, agent, "s", root, "Bash", input)
-		if err := e.Svc.Store.Update(func(st *core.State) error { st.Burials = nil; return nil }); err != nil {
+		if err := e.Svc.Store.Update(func(st *ledger.State) error { st.Burials = nil; return nil }); err != nil {
 			t.Fatal(err)
 		}
 		after := runNotice(t, e, agent, "s", root, "Bash", input)
@@ -204,14 +204,14 @@ func BenchmarkGraveNoticePreToolUse(b *testing.B) {
 						b.Fatal(err)
 					}
 				}
-				store := core.Store{Home: filepath.Join(dir, "home")}
-				if err := store.Update(func(st *core.State) error {
-					st.Burials = []core.Burial{{ID: 1, Path: target, BuriedAt: time.Now(), PurgeAt: time.Now().Add(time.Hour)}}
+				store := ledger.Store{Home: filepath.Join(dir, "home")}
+				if err := store.Update(func(st *ledger.State) error {
+					st.Burials = []ledger.Burial{{ID: 1, Path: target, BuriedAt: time.Now(), PurgeAt: time.Now().Add(time.Hour)}}
 					return nil
 				}); err != nil {
 					b.Fatal(err)
 				}
-				e := &auto.Engine{Svc: &core.Service{Store: store}}
+				e := &auto.Engine{Svc: &lifecycle.Service{Store: store}}
 				data, _ := json.Marshal(map[string]any{"hook_event_name": "PreToolUse", "session_id": "benchmark", "cwd": dir, "tool_name": "Read", "tool_input": map[string]any{"file_path": target}})
 				var samples []float64
 				for b.Loop() {

@@ -8,7 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/docker"
 	"github.com/woodfishhhh/obituary/internal/testenv"
 )
@@ -102,7 +103,7 @@ func TestContainerSessionProposals(t *testing.T) {
 		}
 	}
 	results, err := r.engine.Approve([]string{fmt.Sprint(st.Proposals[0].ID)})
-	if err != nil || len(results) != 1 || core.Failed(results[0].Results) {
+	if err != nil || len(results) != 1 || lifecycle.Failed(results[0].Results) {
 		t.Fatal(results, err)
 	}
 	if _, err := r.engine.Finish(r.root, "session"); err != nil {
@@ -149,7 +150,7 @@ func TestApproveContainerUnavailableKeepsProposalAndLocalizes(t *testing.T) {
 	r := newEngineFixture(t)
 	r.ask()
 	id := docker.Identity{ID: strings.Repeat("b", 64), Name: "cache", Created: time.Now()}
-	p, _, _, err := r.engine.Svc.Propose(core.ProposalContainer, r.root, "session", []core.Candidate{{Kind: core.KindContainer, Container: &id, Path: id.Display(), Lifespan: "1d"}})
+	p, _, _, err := r.engine.Svc.Propose(ledger.ProposalContainer, r.root, "session", []ledger.Candidate{{Kind: ledger.KindContainer, Container: &id, Path: id.Display(), Lifespan: "1d"}})
 	if err != nil {
 		t.Fatal(err)
 	}

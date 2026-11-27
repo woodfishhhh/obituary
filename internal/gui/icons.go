@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/woodfishhhh/obituary/internal/contextmenu"
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 	"github.com/woodfishhhh/obituary/internal/integrate"
 	"github.com/woodfishhhh/obituary/internal/shortcut"
@@ -24,7 +24,7 @@ func (a *API) PlanTaskbar(enabled bool) (Plan, error)  { return a.planIcon("task
 
 func (a *API) planIcon(action string, enabled bool) (Plan, error) {
 	if caps := platformCapabilities(); (action == "taskbar" && !caps.Taskbar) || (action == "trayIcon" && !caps.TrayVisibility) {
-		return Plan{}, core.ErrUnsupported
+		return Plan{}, corefs.ErrUnsupported
 	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -82,7 +82,7 @@ func (a *API) PlanDesktopShortcut(enabled bool) (Plan, error) {
 
 func (a *API) planShortcut(place shortcut.Location, enabled bool) (Plan, error) {
 	if caps := platformCapabilities(); (place == shortcut.StartMenu && !caps.StartMenu) || (place == shortcut.Desktop && !caps.DesktopShortcut) {
-		return Plan{}, core.ErrUnsupported
+		return Plan{}, corefs.ErrUnsupported
 	}
 	a.mu.Lock()
 	defer a.mu.Unlock()

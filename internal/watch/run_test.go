@@ -7,7 +7,8 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/watch"
 )
 
@@ -83,7 +84,7 @@ func TestRunDiscoversEventsAndPolicyChangesWithoutTick(t *testing.T) {
 			t.Error("watch did not stop after cancellation")
 		}
 	})
-	if _, err := svc.SetWatch(dir, "30d", core.WatchFirstSeen); err != nil {
+	if _, err := svc.SetWatch(dir, "30d", ledger.WatchFirstSeen); err != nil {
 		t.Fatal(err)
 	}
 	approvePolicies(t, svc)
@@ -95,7 +96,7 @@ func TestRunDiscoversEventsAndPolicyChangesWithoutTick(t *testing.T) {
 	// must discover this directory and then its next file.
 	second := filepath.Join(filepath.Dir(dir), "second")
 	write(t, filepath.Join(second, "existing.txt"))
-	if _, err := svc.SetWatch(second, "1d", core.WatchFirstSeen); err != nil {
+	if _, err := svc.SetWatch(second, "1d", ledger.WatchFirstSeen); err != nil {
 		t.Fatal(err)
 	}
 	approvePolicies(t, svc)
@@ -114,7 +115,7 @@ func TestRunDiscoversEventsAndPolicyChangesWithoutTick(t *testing.T) {
 	}
 }
 
-func waitItems(t *testing.T, ctx context.Context, svc *core.Service, count int) {
+func waitItems(t *testing.T, ctx context.Context, svc *lifecycle.Service, count int) {
 	t.Helper()
 	ticker := time.NewTicker(20 * time.Millisecond)
 	defer ticker.Stop()
@@ -138,7 +139,7 @@ func waitItems(t *testing.T, ctx context.Context, svc *core.Service, count int) 
 // but never rescan the watched folders, which only their own events do.
 func TestLedgerCommitsDoNotRescanFolders(t *testing.T) {
 	svc, dir := fixture(t)
-	if _, err := svc.SetWatch(dir, "30d", core.WatchFirstSeen); err != nil {
+	if _, err := svc.SetWatch(dir, "30d", ledger.WatchFirstSeen); err != nil {
 		t.Fatal(err)
 	}
 	approvePolicies(t, svc)

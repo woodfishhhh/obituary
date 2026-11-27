@@ -8,13 +8,13 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"github.com/woodfishhhh/obituary/internal/userdirs"
 )
 
 func preview(out io.Writer, self cmdutil.Executable, home string, enabled, resident bool) error {
 	if resident {
-		return fmt.Errorf(cmdutil.Text("cli.daemon.resident_mode_is_unavailable_use_the_user"), core.ErrUnsupported)
+		return fmt.Errorf(cmdutil.Text("cli.daemon.resident_mode_is_unavailable_use_the_user"), corefs.ErrUnsupported)
 	}
 	exe, err := self.Path()
 	if err != nil {

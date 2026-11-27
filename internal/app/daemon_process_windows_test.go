@@ -13,7 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 	"golang.org/x/sys/windows"
 )
@@ -28,7 +29,7 @@ func init() {
 
 func daemonStopProcessHelper() {
 	home := os.Getenv("OBIT_TEST_STOP_HOME")
-	r, err := NewResident(&core.Service{Store: core.Store{Home: home}, FS: winfs.FS{}}, log.New(io.Discard, "", 0))
+	r, err := NewResident(&lifecycle.Service{Store: ledger.Store{Home: home}, FS: winfs.FS{}}, log.New(io.Discard, "", 0))
 	if err != nil || r == nil {
 		os.Exit(3)
 	}
@@ -89,7 +90,7 @@ func TestStopChecksActualProcessExit(t *testing.T) {
 			if _, err := os.Stat(stopPath(home)); !os.IsNotExist(err) {
 				t.Fatalf("stopped process left stop request: %v", err)
 			}
-			r, err := NewResident(&core.Service{Store: core.Store{Home: home}, FS: winfs.FS{}}, log.New(io.Discard, "", 0))
+			r, err := NewResident(&lifecycle.Service{Store: ledger.Store{Home: home}, FS: winfs.FS{}}, log.New(io.Discard, "", 0))
 			if err != nil || r == nil {
 				t.Fatalf("restart: %v", err)
 			}
@@ -138,7 +139,7 @@ func TestStopRetainsRequestUntilProcessExit(t *testing.T) {
 
 func TestStopClearsRequestAfterShutdownError(t *testing.T) {
 	home := t.TempDir()
-	r, err := NewResident(&core.Service{Store: core.Store{Home: home}, FS: winfs.FS{}}, log.New(io.Discard, "", 0))
+	r, err := NewResident(&lifecycle.Service{Store: ledger.Store{Home: home}, FS: winfs.FS{}}, log.New(io.Discard, "", 0))
 	if err != nil || r == nil {
 		t.Fatalf("resident: %v", err)
 	}
@@ -217,7 +218,7 @@ func TestStopWaitsForStartupReceipt(t *testing.T) {
 	var runErr error
 	go func() {
 		defer close(done)
-		svc := &core.Service{Store: core.Store{Home: home}, FS: winfs.FS{}}
+		svc := &lifecycle.Service{Store: ledger.Store{Home: home}, FS: winfs.FS{}}
 		r, err := NewResident(svc, log.New(io.Discard, "", 0))
 		if err != nil || r == nil {
 			runErr = errors.Join(errors.New("resident did not start"), err)

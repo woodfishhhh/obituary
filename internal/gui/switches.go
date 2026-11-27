@@ -11,13 +11,13 @@ import (
 	"github.com/woodfishhhh/obituary/internal/app"
 	"github.com/woodfishhhh/obituary/internal/config"
 	"github.com/woodfishhhh/obituary/internal/contextmenu"
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"github.com/woodfishhhh/obituary/internal/i18n"
 )
 
 func (a *API) PlanContextMenu(enabled bool) (Plan, error) {
 	if !platformCapabilities().ContextMenu {
-		return Plan{}, core.ErrUnsupported
+		return Plan{}, corefs.ErrUnsupported
 	}
 	a.mu.Lock()
 	defer a.mu.Unlock()

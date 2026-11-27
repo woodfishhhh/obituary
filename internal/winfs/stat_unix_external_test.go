@@ -8,7 +8,9 @@ import (
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
 	"github.com/woodfishhhh/obituary/internal/cli/doctor"
 	listcmd "github.com/woodfishhhh/obituary/internal/cli/list"
-	"github.com/woodfishhhh/obituary/internal/core"
+	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/rules"
 	"github.com/woodfishhhh/obituary/internal/winfs"
 	"os"
@@ -21,7 +23,7 @@ import (
 
 type unavailableBirthFS struct{ winfs.FS }
 
-func (fs unavailableBirthFS) Identify(path string) (core.Identity, error) {
+func (fs unavailableBirthFS) Identify(path string) (corefs.Identity, error) {
 	id, err := fs.FS.Identify(path)
 	if err == nil {
 		id.FileID = "0000000000000000" + id.FileID[16:]
@@ -29,7 +31,7 @@ func (fs unavailableBirthFS) Identify(path string) (core.Identity, error) {
 	return id, err
 }
 
-func (fs unavailableBirthFS) Inspect(path string) (core.Identity, os.FileMode, error) {
+func (fs unavailableBirthFS) Inspect(path string) (corefs.Identity, os.FileMode, error) {
 	id, mode, err := fs.FS.Inspect(path)
 	if err == nil {
 		id.FileID = "0000000000000000" + id.FileID[16:]
@@ -45,13 +47,13 @@ func TestPOSIXLegacyIdentityDiagnostics(t *testing.T) {
 	if err := os.WriteFile(path, []byte("keep"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	svc := &core.Service{Store: core.Store{Home: home}, FS: unavailableBirthFS{}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: home}, FS: unavailableBirthFS{}}
 	id, err := svc.FS.Identify(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := svc.Store.UpdateHot(func(st *core.State) error {
-		st.Items = append(st.Items, core.Item{ID: st.NextID, Rev: 1, Path: path, Identity: &id, ExpiresAt: time.Now().Add(time.Hour)})
+	if err := svc.Store.UpdateHot(func(st *ledger.State) error {
+		st.Items = append(st.Items, ledger.Item{ID: st.NextID, Rev: 1, Path: path, Identity: &id, ExpiresAt: time.Now().Add(time.Hour)})
 		st.NextID++
 		return nil
 	}); err != nil {
@@ -95,7 +97,7 @@ func TestPOSIXMissingBirthTimeRefusesAutomaticRegistration(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(repo, ".obitrules"), []byte("*.log 1d\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	svc := &core.Service{Store: core.Store{Home: filepath.Join(dir, "data")}, FS: unavailableBirthFS{}}
+	svc := &lifecycle.Service{Store: ledger.Store{Home: filepath.Join(dir, "data")}, FS: unavailableBirthFS{}}
 	engine := &auto.Engine{Svc: svc, Trust: rules.TrustStore{Path: filepath.Join(dir, "trust.json")}}
 	if _, err := engine.Trust.Trust(filepath.Join(repo, ".obitrules"), ""); err != nil {
 		t.Fatal(err)

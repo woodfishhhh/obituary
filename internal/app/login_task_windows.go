@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"golang.org/x/sys/windows"
 )
 
@@ -45,7 +45,7 @@ func installedLoginTask(home, daemon, config string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	before, err := core.ReadMetadata(filepath.Join(home, loginReceipt))
+	before, err := lifecycle.ReadMetadata(filepath.Join(home, loginReceipt))
 	if err != nil || string(before) != current || !ownedTaskAction(current, daemon, "--supervise", home, config) {
 		return "", fmt.Errorf("preserving unverified or edited login task %q", name)
 	}
@@ -75,7 +75,7 @@ func createLoginTask(home, daemon, config string) error {
 	if !ownedTaskAction(actual, daemon, "--supervise", home, config) {
 		return fmt.Errorf("login task %q changed during registration", name)
 	}
-	return core.WriteMetadata(filepath.Join(home, loginReceipt), []byte(actual))
+	return lifecycle.WriteMetadata(filepath.Join(home, loginReceipt), []byte(actual))
 }
 
 func removeLoginTask(home, daemon, config string) error {

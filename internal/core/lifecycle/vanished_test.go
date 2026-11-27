@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 // An object deleted outside Obituary is closed at the next check. One that
@@ -42,7 +42,7 @@ func TestSettleVanishedClosesOnlyDeletedObjects(t *testing.T) {
 		}
 		return
 	}
-	if err != nil || len(outcomes) != 1 || outcomes[0].Path != gone || outcomes[0].Action != core.ActionVanished {
+	if err != nil || len(outcomes) != 1 || outcomes[0].Path != gone || outcomes[0].Action != ledger.ActionVanished {
 		t.Fatalf("outcomes %+v %v", outcomes, err)
 	}
 	var left []string

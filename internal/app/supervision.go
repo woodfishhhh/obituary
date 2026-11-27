@@ -10,7 +10,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 const crashLimit = 3
@@ -52,7 +53,7 @@ func runTrayProcess(cmd *exec.Cmd) error {
 
 func readSupervision(home string) (supervision, error) {
 	var s supervision
-	data, err := core.ReadMetadata(filepath.Join(home, supervisionFile))
+	data, err := lifecycle.ReadMetadata(filepath.Join(home, supervisionFile))
 	if errors.Is(err, os.ErrNotExist) {
 		return s, nil
 	}
@@ -93,7 +94,7 @@ func (s supervision) save(home string) error {
 	if err != nil {
 		return err
 	}
-	return core.WriteMetadata(filepath.Join(home, supervisionFile), data)
+	return lifecycle.WriteMetadata(filepath.Join(home, supervisionFile), data)
 }
 
 func recordSupervisionReason(home, reason string) error {
@@ -122,7 +123,7 @@ func managedAttempt(home string, now func() time.Time, run func() error) error {
 	if err := os.MkdirAll(home, 0700); err != nil {
 		return err
 	}
-	unlock, ok, err := core.TryLockExclusive(filepath.Join(home, "obitd.attempt.lock"))
+	unlock, ok, err := ledger.TryLockExclusive(filepath.Join(home, "obitd.attempt.lock"))
 	if !ok || err != nil {
 		return err
 	}

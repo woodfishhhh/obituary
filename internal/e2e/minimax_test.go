@@ -13,7 +13,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/woodfishhhh/obituary/internal/cli/clitest"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/integrate"
 )
 
@@ -127,7 +127,7 @@ func TestMiniMaxInstalledMCPRelay(t *testing.T) {
 	}
 	path := filepath.Join(repo, "relay.log")
 	writeFixture(t, path, "relay restore")
-	var marked struct{ Results []core.Result }
+	var marked struct{ Results []lifecycle.Result }
 	clitest.CallMCP(t, session, "obit_mark", map[string]any{"paths": []string{path}, "lifespan": "1d"}, false, &marked)
 	if len(marked.Results) != 1 || marked.Results[0].Item == nil {
 		t.Fatalf("mark %+v", marked)

@@ -5,7 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/woodfishhhh/obituary/internal/cli/cmdutil"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/textutil"
 )
 
@@ -27,24 +28,24 @@ func NewCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			var results []core.GraveResult
+			var results []lifecycle.GraveResult
 			if dockerVolume {
 				results, err = svc.BuryDockerVolumes(args, note)
 			} else {
 				results, err = svc.Bury(args, force, note)
 			}
 			for _, r := range results {
-				if r.Action == core.ActionBuried || r.Action == core.ActionRecoveryPending {
+				if r.Action == ledger.ActionBuried || r.Action == ledger.ActionRecoveryPending {
 					cmdutil.EnsureDaemon(svc.Store.Home, asJSON)
 					break
 				}
 			}
 			language := cmdutil.Localizer()
-			reportErr := cmdutil.ReportBury(results, asJSON, func(r core.GraveResult) string {
-				if r.Action == core.ActionRecycled {
+			reportErr := cmdutil.ReportBury(results, asJSON, func(r lifecycle.GraveResult) string {
+				if r.Action == ledger.ActionRecycled {
 					return language.Text("cli.bury.recycled", map[string]any{"Action": language.Label(r.Action), "Ref": r.Ref})
 				}
-				if r.Action == core.ActionResurrected && r.Burial != nil {
+				if r.Action == ledger.ActionResurrected && r.Burial != nil {
 					return language.Text("cli.bury.resurrected", map[string]any{"ID": r.Burial.ID, "Path": r.Path})
 				}
 				if r.Burial == nil {

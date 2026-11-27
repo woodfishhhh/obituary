@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 // Targets MoonshotAI/kimi-cli 9ab1286b (Beta hooks), not the separate kimi-code
@@ -27,7 +27,7 @@ func (kimiAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
 		return Event{}, ErrSkip
 	}
 	if in.SessionID != "" {
-		ev.Session = core.NormalizeSession("kimi:" + in.SessionID)
+		ev.Session = lifecycle.NormalizeSession("kimi:" + in.SessionID)
 	}
 	if in.Event == "PreToolUse" {
 		if in.ToolName == "Shell" {

@@ -9,7 +9,8 @@ import (
 	"testing"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 func TestAgentShellDeclarationRejectsRemote(t *testing.T) {
@@ -58,7 +59,7 @@ func TestAgentShellDeclarationRejectsRemote(t *testing.T) {
 					if ev.Cwd != payload["cwd"] || len(ev.Paths) != 0 {
 						t.Fatalf("remote namespace mapped: %+v", ev)
 					}
-					e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: t.TempDir()}}}
+					e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}}}
 					var out bytes.Buffer
 					RunEvent(agent, e, ev, &out, nil)
 					if out.Len() != 0 {

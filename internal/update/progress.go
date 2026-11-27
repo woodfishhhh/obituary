@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 // What the update helper is doing, for the window that started it. The window
@@ -33,7 +33,7 @@ type Progress struct {
 // ReadProgress returns the zero value when no update has run.
 func ReadProgress(home string) (Progress, error) {
 	var p Progress
-	data, err := core.ReadMetadata(filepath.Join(home, "update-progress.json"))
+	data, err := lifecycle.ReadMetadata(filepath.Join(home, "update-progress.json"))
 	if errors.Is(err, os.ErrNotExist) {
 		return p, nil
 	}
@@ -57,7 +57,7 @@ func (t *tracker) set(p Progress) {
 	}
 	data, err := json.Marshal(p)
 	if err == nil {
-		_ = core.WriteMetadata(filepath.Join(t.home, "update-progress.json"), append(data, '\n'))
+		_ = lifecycle.WriteMetadata(filepath.Join(t.home, "update-progress.json"), append(data, '\n'))
 	}
 }
 

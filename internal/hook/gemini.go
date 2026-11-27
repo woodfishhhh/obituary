@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 // geminicli.com/docs/hooks/reference/ and google-gemini/gemini-cli
@@ -50,7 +50,7 @@ func (geminiAdapter) Decode(raw []byte, invocation Invocation) (Event, error) {
 		return Event{}, ErrSkip
 	}
 	if in.Session != "" {
-		ev.Session = core.NormalizeSession("gemini:" + in.Session)
+		ev.Session = lifecycle.NormalizeSession("gemini:" + in.Session)
 	}
 	if ev.Name == "PreToolUse" {
 		ev.Command = firstString(in.Input, "command")

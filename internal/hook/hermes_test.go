@@ -13,7 +13,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/woodfishhhh/obituary/internal/auto"
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
+	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 )
 
 func TestHermesBridge(t *testing.T) {
@@ -152,12 +153,12 @@ func checkPluginBridge(t *testing.T, name string, deferred bool) {
 		raw := pluginBridgeJSON(t, in)
 		a, err := Decode(agent.Adapter, raw, Invocation{Agent: name})
 		b, again := Decode(agent.Adapter, raw, Invocation{Agent: name})
-		if err != nil || again != nil || a.Session != b.Session || a.Session != core.NormalizeSession(name+":"+in.Session) {
+		if err != nil || again != nil || a.Session != b.Session || a.Session != lifecycle.NormalizeSession(name+":"+in.Session) {
 			t.Fatalf("unstable session: %+v %+v %v %v", a, b, err, again)
 		}
 	})
 	t.Run("fallback", func(t *testing.T) {
-		e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: t.TempDir()}}}
+		e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}}}
 		for _, raw := range []string{"", "{", "null", "[]", `{"version":1,"paths":"bad"}`} {
 			var out bytes.Buffer
 			Run(name, e, strings.NewReader(raw), &out, &Runner{})
@@ -194,7 +195,7 @@ func checkPluginBridge(t *testing.T, name string, deferred bool) {
 			if tc.deny && in.Shell == "powershell" {
 				testenv.WindowsOnly(t, "PowerShell Remove-Item integration is Windows-only")
 			}
-			e := &auto.Engine{Svc: &core.Service{Store: core.Store{Home: t.TempDir()}}}
+			e := &auto.Engine{Svc: &lifecycle.Service{Store: ledger.Store{Home: t.TempDir()}}}
 			// A pre-hook has no Git, service FS or configuration dependency.
 			t.Setenv("PATH", t.TempDir())
 			var out bytes.Buffer

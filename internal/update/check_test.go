@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/woodfishhhh/obituary/internal/core"
+	"github.com/woodfishhhh/obituary/internal/core/ledger"
 )
 
 const releaseJSON = `{"tag_name":"v1.0.1","name":"Release 1.0.1","body":"Fixes and improvements","html_url":"https://github.com/woodfishhhh/obituary/releases/tag/v1.0.1","published_at":"2026-11-11T00:00:00Z"}`
@@ -176,7 +176,7 @@ func TestCheckConcurrentCallersShareCache(t *testing.T) {
 
 func TestManualCheckWaitsForConcurrentCheck(t *testing.T) {
 	home := t.TempDir()
-	unlock, ok, err := core.TryLockExclusive(filepath.Join(home, "update.lock"))
+	unlock, ok, err := ledger.TryLockExclusive(filepath.Join(home, "update.lock"))
 	if err != nil || !ok {
 		t.Fatalf("lock: %t %v", ok, err)
 	}
