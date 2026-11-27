@@ -88,7 +88,11 @@ func (s *Service) purgeVerified(b Burial) error {
 		}
 		return nil
 	})
-	plan := fs.PurgePlan{Name: filepath.Base(b.Grave), Object: *b.Identity, Stage: b.PurgeIntent.Stage,
+	stage := ""
+	if b.PurgeIntent != nil {
+		stage = b.PurgeIntent.Stage
+	}
+	plan := fs.PurgePlan{Name: filepath.Base(b.Grave), Object: *b.Identity, Stage: stage,
 		Guard: func(check func(fs.ProtectedIDs) error) error { return guard(func() error { return check(ids) }) },
 	}
 	if err := s.resumePurgePlan(b, &plan); err != nil {

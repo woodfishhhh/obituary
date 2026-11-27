@@ -1,7 +1,9 @@
 package lifecycle_test
 
 import (
+	"crypto/rand"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -55,6 +57,55 @@ func TestPurgeGuardsNewRegistrations(t *testing.T) {
 			}
 			if err != nil || !called || len(rows) != 1 || !strings.Contains(rows[0].Error, "protected") || read(t, first) != "first" || read(t, second) != "second" || read(t, filepath.Join(b.Grave, "member")) != "tree/member" {
 				t.Fatal(rows, err)
+			}
+		})
+	}
+}
+
+func TestPurgeVerifiedStageHandling(t *testing.T) {
+	recorded := ".obit-purge-" + rand.Text()
+	stray := ".obit-purge-" + rand.Text()
+	cases := []struct {
+		name      string
+		intent    *core.PurgeIntent
+		wantStage string
+	}{
+		{name: "nil-intent", intent: nil},
+		{name: "legacy-empty-stage", intent: &core.PurgeIntent{Basis: "explicit selection"}},
+		{name: "recorded-stage", intent: &core.PurgeIntent{Basis: "explicit selection", Stage: recorded}, wantStage: recorded},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newFixture(t)
+			rows, err := f.svc.Bury([]string{f.file("payload.txt")}, true, "")
+			if err != nil || len(rows) != 1 || rows[0].Burial == nil {
+				t.Fatal(rows, err)
+			}
+			b := *rows[0].Burial
+			b.PurgeIntent = tc.intent
+			if tc.intent == nil {
+				if err := os.Mkdir(filepath.Join(filepath.Dir(b.Grave), stray), 0o700); err != nil {
+					t.Fatal(err)
+				}
+			}
+			var got corefs.PurgePlan
+			called := false
+			f.svc.FS = observingPurger{f.fs, func(plan corefs.PurgePlan) error {
+				called = true
+				got = plan
+				return nil
+			}}
+			if err := core.PurgeVerified(f.svc, b); err != nil {
+				t.Fatalf("PurgeVerified(%s): %v", tc.name, err)
+			}
+			if !called || got.Name != filepath.Base(b.Grave) || got.Object != *b.Identity || !got.ValidStage() {
+				t.Fatalf("unexpected plan: called=%v plan=%+v", called, got)
+			}
+			if tc.wantStage != "" && got.Stage != tc.wantStage {
+				t.Fatalf("stage=%q, want %q", got.Stage, tc.wantStage)
+			}
+			if tc.intent == nil && (got.Stage == stray || len(got.LegacyMembers) != 0) {
+				t.Fatalf("nil intent adopted an unowned stage directory: %+v", got)
 			}
 		})
 	}

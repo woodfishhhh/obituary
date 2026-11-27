@@ -63,6 +63,8 @@ func SetBeforePurgeDelete(s *Service, fn func()) func() {
 	return func() { s.beforePurgeDelete = previous }
 }
 
+func PurgeVerified(s *Service, b Burial) error { return s.purgeVerified(b) }
+
 func SameDirectory(s *Service, a, b string) (bool, error) { return s.sameDirectory(a, b) }
 
 func WriteRestoreIntent(b Burial, parent RestoreParent, name string) error {
