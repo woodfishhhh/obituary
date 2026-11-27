@@ -19,7 +19,7 @@ func ExistingProposals(proposals []Proposal) []Proposal {
 	for _, p := range proposals {
 		candidates := make([]Candidate, 0, len(p.Candidates))
 		for _, c := range p.Candidates {
-			if c.Kind == KindContainer {
+			if c.IsExternal() {
 				candidates = append(candidates, c)
 				continue
 			}
@@ -191,7 +191,7 @@ func matchingProposalIndex(st *State, kind, project, session string) int {
 func (s *Service) proposalCandidatePaths(candidates []Candidate) ([]Candidate, error) {
 	candidates = slices.Clone(candidates)
 	for i := range candidates {
-		if candidates[i].Kind == KindContainer {
+		if candidates[i].IsExternal() {
 			continue
 		}
 		path, _, err := s.FS.LongPath(candidates[i].Path)

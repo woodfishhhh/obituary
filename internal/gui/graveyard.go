@@ -107,7 +107,7 @@ func (a *API) Graveyard(query GraveyardQuery) (GraveyardPage, error) {
 	}
 	var diskBytes int64
 	for _, b := range view.Burials {
-		if b.Kind == "" && b.Source != "quota-decision" {
+		if b.IsFile() && b.Source != "quota-decision" {
 			diskBytes += b.Size
 		}
 	}

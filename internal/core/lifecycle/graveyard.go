@@ -369,7 +369,7 @@ func (s *Service) graveyardRoots(st State, paths ...string) []string {
 		paths = append(paths, st.GraveyardIndex.Volumes...)
 	}
 	for _, it := range st.Items {
-		if it.Kind == KindContainer || it.Kind == KindDockerVolume {
+		if it.IsExternal() {
 			continue
 		}
 		paths = append(paths, it.Path)
@@ -378,7 +378,7 @@ func (s *Service) graveyardRoots(st State, paths ...string) []string {
 		}
 	}
 	for _, b := range st.Burials {
-		if b.Kind == KindContainer || b.Kind == KindDockerVolume {
+		if b.IsExternal() {
 			continue
 		}
 		paths = append(paths, b.Path)

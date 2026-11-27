@@ -260,6 +260,55 @@ func verifyVolumeArchiveFile(path string) (docker.VolumeArchive, error) {
 	return docker.VerifyVolumeArchive(f)
 }
 
+// Docker volumes are removed from the file sweep snapshot before graveyard or
+// recycle mode gates so both modes share the same archival path.
+func (s *Service) sweepDockerVolumes(state *State, dryRun bool, blocked map[int64]bool) ([]Outcome, error) {
+	var rows []Outcome
+	var files []Item
+	var auditErr error
+	for _, snapshot := range state.Items {
+		if snapshot.Kind != KindDockerVolume {
+			files = append(files, snapshot)
+			continue
+		}
+		if blocked[snapshot.ID] || !snapshot.Due(s.now()) {
+			continue
+		}
+		item, ok, err := s.claimDockerVolume(snapshot, dryRun)
+		if err != nil {
+			return rows, err
+		}
+		if !ok {
+			continue
+		}
+		out := s.settleDockerVolume(item, dryRun, ReasonExpired)
+		rows = append(rows, out)
+		if dryRun || out.Action == ActionBuried || out.Action == ActionRefused {
+			continue
+		}
+		if err := s.commit(out); err != nil {
+			if commitFailed(err) {
+				return rows, err
+			}
+			auditErr = errors.Join(auditErr, err)
+		}
+		auditErr = errors.Join(auditErr, s.Store.RecordCommitted(Event{Time: s.now(), Action: out.Action, ID: item.ID, Path: out.Path, Detail: out.Detail}))
+	}
+	state.Items = files
+	return rows, auditErr
+}
+
+func (s *Service) claimDockerVolume(snapshot Item, dryRun bool) (Item, bool, error) {
+	if dryRun {
+		return snapshot, true, nil
+	}
+	item, ok, err := s.claim(snapshot.ID)
+	if err != nil || !ok || item.Kind != KindDockerVolume {
+		return Item{}, false, err
+	}
+	return item, true, nil
+}
+
 func (s *Service) settleDockerVolume(item Item, dryRun bool, reason string) Outcome {
 	out := Outcome{Item: item, Path: item.Path}
 	if dryRun {
@@ -278,8 +327,11 @@ func (r GraveResult) BurialSize() int64 {
 	return r.Burial.Size
 }
 
-//nolint:funlen // restore must keep the create, stream, verify and ledger commit sequence together.
 func (s *Service) resurrectDockerVolume(result *GraveResult, b Burial) error {
+	if b.PurgeIntent != nil {
+		result.Error = fmt.Sprintf("#%d: purge is in progress; retry obit purge %d", b.ID, b.ID)
+		return nil
+	}
 	client, err := s.volumeClient()
 	if err != nil {
 		result.Error = err.Error()
@@ -289,36 +341,59 @@ func (s *Service) resurrectDockerVolume(result *GraveResult, b Burial) error {
 		result.Error = "grave has no Docker volume identity"
 		return nil
 	}
-	if _, err := client.InspectVolume(s.Store.Context(), b.Volume.Name); err == nil {
-		result.Error = "a Docker volume with the original name already exists; nothing was written"
-		return nil
-	} else if !errors.Is(err, docker.ErrNoVolume) {
+	if err := s.ensureVolumeAbsent(client, b.Volume.Name); err != nil {
 		result.Error = err.Error()
 		return nil
 	}
-	archive, err := os.Open(b.Grave)
+	h, err := s.openVolumeArchive(b, false)
 	if err != nil {
 		result.Error = err.Error()
 		return nil
 	}
-	defer archive.Close()
-	if check, err := docker.VerifyVolumeArchive(archive); err != nil || check.Digest != b.VolumeArchiveDigest {
-		result.Error = "Docker volume archive failed verification"
+	defer h.Close()
+	if err := s.restoreVolumeArchive(client, h.sub, b); err != nil {
+		result.Error = err.Error()
 		return nil
+	}
+	if err := s.commitVolumeResurrection(b); err != nil {
+		return err
+	}
+	result.Action, result.Burial, result.Path = ActionResurrected, &b, b.Path
+	_ = removeVolumeArchive(h)
+	return nil
+}
+
+func (s *Service) ensureVolumeAbsent(client docker.VolumeClient, name string) error {
+	_, err := client.InspectVolume(s.Store.Context(), name)
+	if err == nil {
+		return errors.New("a Docker volume with the original name already exists; nothing was written")
+	}
+	if errors.Is(err, docker.ErrNoVolume) {
+		return nil
+	}
+	return err
+}
+
+func (s *Service) restoreVolumeArchive(client docker.VolumeClient, sub *os.Root, b Burial) error {
+	archive, _, err := openRegularInRoot(sub, "volume.tar")
+	if err != nil {
+		return err
+	}
+	defer archive.Close()
+	if check, err := docker.VerifyVolumeArchive(archive); err != nil || b.VolumeArchiveDigest == "" || check.Digest != b.VolumeArchiveDigest {
+		return errors.New("docker volume archive failed verification")
 	}
 	if _, err := client.CreateVolume(s.Store.Context(), *b.Volume, randomToken()); err != nil {
-		result.Error = err.Error()
-		return nil
+		return err
 	}
 	if _, err := archive.Seek(0, io.SeekStart); err != nil {
-		result.Error = err.Error()
-		return nil
+		return err
 	}
-	if err := client.RestoreVolume(s.Store.Context(), *b.Volume, archive); err != nil {
-		result.Error = err.Error()
-		return nil
-	}
-	if err := s.Store.UpdateGraveyard(func(st *State) error {
+	return client.RestoreVolume(s.Store.Context(), *b.Volume, archive)
+}
+
+func (s *Service) commitVolumeResurrection(b Burial) error {
+	return s.Store.UpdateGraveyard(func(st *State) error {
 		idx := st.BurialIndex(b.ID)
 		if idx < 0 {
 			return errors.New("docker volume burial disappeared")
@@ -328,13 +403,7 @@ func (s *Service) resurrectDockerVolume(result *GraveResult, b Burial) error {
 		st.Stats.ResurrectedBytes += b.Size
 		queueAudit(st, Event{Time: s.now(), Action: ActionResurrected, ID: b.ID, Path: b.Path, Detail: b.Grave})
 		return nil
-	}); err != nil {
-		return err
-	}
-	result.Action, result.Burial, result.Path = ActionResurrected, &b, b.Path
-	_ = os.Remove(b.Grave + ".json")
-	_ = os.Remove(b.Grave)
-	return nil
+	})
 }
 
 func randomToken() string {
@@ -351,12 +420,18 @@ func (s *Service) purgeDockerVolume(result *GraveResult, dryRun bool) error {
 		result.Error = "Docker volume archive has no verification digest"
 		return nil
 	}
-	if b.PurgeAt.After(s.now()) {
+	if b.PurgeIntent == nil && b.PurgeAt.After(s.now()) {
 		result.Error = fmt.Sprintf("#%d: volume retention has not elapsed", b.ID)
 		return nil
 	}
-	if _, err := verifyVolumeArchiveFile(b.Grave); err != nil {
-		result.Error = "refusing to purge unverified Docker volume archive: " + err.Error()
+	h, err := s.openVolumeArchive(*b, b.PurgeIntent != nil)
+	if err != nil {
+		result.Error = err.Error()
+		return nil
+	}
+	defer h.Close()
+	if err := verifyVolumePurgeArchive(h, *b); err != nil {
+		result.Error = err.Error()
 		return nil
 	}
 	if dryRun {
@@ -366,12 +441,10 @@ func (s *Service) purgeDockerVolume(result *GraveResult, dryRun bool) error {
 	if err := s.beginPurge(b, "volume retention elapsed"); err != nil {
 		return err
 	}
-	if err := os.Remove(b.Grave); err != nil && !errors.Is(err, os.ErrNotExist) {
+	if err := removeVolumeArchive(h); err != nil {
 		result.Error = err.Error()
 		return nil
 	}
-	_ = os.Remove(b.Grave + ".json")
-	_ = os.Remove(filepath.Dir(b.Grave))
 	result.Action = ActionPurged
 	return s.commitPurge(*result)
 }

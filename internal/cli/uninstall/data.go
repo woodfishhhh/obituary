@@ -269,7 +269,7 @@ func checkLocalGraves(root *os.Root, burials []ledger.Burial) error {
 	}
 	known := make(map[string]bool, len(burials))
 	for _, b := range burials {
-		if b.Kind != ledger.KindContainer {
+		if b.IsFile() {
 			grave := filepath.Dir(b.Grave)
 			known[grave] = true
 			known[grave+".json"] = true

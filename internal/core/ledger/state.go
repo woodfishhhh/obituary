@@ -51,6 +51,12 @@ type Item struct {
 	LastError   string       `json:"lastError,omitempty"`
 }
 
+// IsFile reports whether the item tracks a filesystem path (Kind == "").
+func (it Item) IsFile() bool { return it.Kind == "" }
+
+// IsExternal reports whether the item tracks an external resource (Kind != "").
+func (it Item) IsExternal() bool { return it.Kind != "" }
+
 // Due reports whether the item needs processing at now.
 func (it Item) Due(now time.Time) bool {
 	return !it.ExpiresAt.After(now) && !it.NextAttempt.After(now)
@@ -100,6 +106,12 @@ type Burial struct {
 	PurgeIntent      *PurgeIntent     `json:"purgeIntent,omitempty"`
 	IdentityMismatch string           `json:"identityMismatch,omitempty"` // retained after a failed move rollback; never purge
 }
+
+// IsFile reports whether the burial holds a filesystem object (Kind == "").
+func (b Burial) IsFile() bool { return b.Kind == "" }
+
+// IsExternal reports whether the burial holds an external resource (Kind != "").
+func (b Burial) IsExternal() bool { return b.Kind != "" }
 
 // PurgeIntent records authorization after verifyGrave, before deletion. The
 // enclosing Burial retains the verified object and directory identities.
@@ -155,6 +167,12 @@ type Candidate struct {
 	Rule      string           `json:"rule,omitempty"` // empty for leftovers no rule covers
 	Size      int64            `json:"size"`
 }
+
+// IsFile reports whether the candidate is a filesystem path (Kind == "").
+func (c Candidate) IsFile() bool { return c.Kind == "" }
+
+// IsExternal reports whether the candidate is an external resource (Kind != "").
+func (c Candidate) IsExternal() bool { return c.Kind != "" }
 
 // Proposal kinds.
 const (

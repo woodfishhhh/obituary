@@ -59,7 +59,7 @@ func (s *Service) prepareExtendGraves(st State, refs []string) ([]extendTarget, 
 		}
 		b := st.Burials[idx]
 		targets[i] = extendTarget{ref: ref, id: b.ID}
-		if seen[b.ID] || b.Kind != "" || b.PurgeIntent != nil || b.IdentityMismatch != "" {
+		if seen[b.ID] || b.IsExternal() || b.PurgeIntent != nil || b.IdentityMismatch != "" {
 			continue
 		}
 		seen[b.ID] = true

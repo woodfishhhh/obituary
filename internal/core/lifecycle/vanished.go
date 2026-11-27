@@ -28,7 +28,7 @@ func (s *Service) SettleVanished() ([]Outcome, error) {
 		if err := s.Store.Context().Err(); err != nil {
 			return outcomes, errors.Join(append(errs, err)...)
 		}
-		if it.Kind == KindContainer || it.Identity == nil || it.Due(s.now()) || awaitingWatchBurial(&st, it) {
+		if it.IsExternal() || it.Identity == nil || it.Due(s.now()) || awaitingWatchBurial(&st, it) {
 			continue
 		}
 		_, _, verdict, detail := s.locate(it)

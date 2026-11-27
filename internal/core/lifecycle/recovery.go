@@ -62,7 +62,7 @@ func reconcileChildren(st *State, b *Burial, inside map[string]bool) error {
 		}
 	}
 	for _, it := range st.Items {
-		if known[it.ID] || it.ID == b.ID || it.Kind == KindContainer || it.Kind == KindDockerVolume {
+		if known[it.ID] || it.ID == b.ID || it.IsExternal() {
 			continue
 		}
 		if it.Identity == nil || it.Identity.Serial == b.Identity.Serial && inside[it.Identity.FileID] {
@@ -115,11 +115,17 @@ func (s *Service) manifestIDs(st State, p PendingGrave) []int64 {
 	}
 	if p.root != "" {
 		for _, it := range st.Items {
+			if it.IsExternal() {
+				continue
+			}
 			if samePath(s.graveyardRoot(it.Path), p.root) || it.Identity != nil && samePath(s.graveyardRoot(it.Identity.Volume), p.root) {
 				ids = append(ids, it.ID)
 			}
 		}
 		for _, b := range st.Burials {
+			if b.IsExternal() {
+				continue
+			}
 			if samePath(s.graveyardRoot(b.Path), p.root) {
 				ids = append(ids, b.ID)
 			}
@@ -281,12 +287,12 @@ func (s *Service) blockRecoveryRoot(r *recovery, st State, root string, err erro
 	r.roots[ProjectKey(root)] = err.Error()
 	before := len(r.outcomes)
 	for _, it := range st.Items {
-		if samePath(s.graveyardRoot(it.Path), root) || it.Identity != nil && samePath(s.graveyardRoot(it.Identity.Volume), root) {
+		if !it.IsExternal() && (samePath(s.graveyardRoot(it.Path), root) || it.Identity != nil && samePath(s.graveyardRoot(it.Identity.Volume), root)) {
 			r.block(it.ID, it.Path, err)
 		}
 	}
 	for _, b := range st.Burials {
-		if samePath(s.graveyardRoot(b.Path), root) {
+		if !b.IsExternal() && samePath(s.graveyardRoot(b.Path), root) {
 			r.block(b.ID, b.Grave, err)
 		}
 	}
@@ -363,7 +369,7 @@ func (snap *lifespanSnapshot) verified(st *State, id int64) (map[string]bool, er
 	}
 	active := false
 	for _, it := range st.Items {
-		if it.ID != id && it.Kind != KindContainer && it.Kind != KindDockerVolume {
+		if it.ID != id && it.IsFile() {
 			active = true
 			break
 		}

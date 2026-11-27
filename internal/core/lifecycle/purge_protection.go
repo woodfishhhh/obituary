@@ -42,7 +42,7 @@ func (tree *purgeInventory) protect(items []Item) error {
 	}
 	active := false
 	for _, it := range items {
-		if it.Kind == KindContainer || it.Kind == KindDockerVolume {
+		if it.IsExternal() {
 			continue
 		}
 		if it.Identity == nil {
@@ -76,7 +76,7 @@ func (s *Service) purgeVerified(b Burial) error {
 	guard := s.Store.GuardItems(func(items []Item) error {
 		ids = make(fs.ProtectedIDs)
 		for _, it := range items {
-			if it.Kind == KindContainer || it.Kind == KindDockerVolume {
+			if it.IsExternal() {
 				continue
 			}
 			if it.Identity == nil {

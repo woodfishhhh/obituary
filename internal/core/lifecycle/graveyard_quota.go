@@ -58,7 +58,7 @@ func (e QuotaEviction) summary() *QuotaEviction {
 	return &cp
 }
 
-func isQuotaManagedBurial(b Burial) bool { return b.Kind == "" && b.Source != "quota-decision" }
+func isQuotaManagedBurial(b Burial) bool { return b.IsFile() && b.Source != "quota-decision" }
 
 func isNonFollowedEntry(info os.FileInfo) bool {
 	return info.Mode()&(os.ModeSymlink|os.ModeIrregular) != 0 || isReparse(info)
@@ -204,7 +204,7 @@ func quotaOverflowDetail(path string, itemBytes, maxBytes int64) string {
 // checkBurialQuota enforces Plan A before an object enters the graveyard.
 // Oversized objects are left safely in place and routed to pending decisions.
 func (s *Service) checkBurialQuota(out Outcome, dryRun bool, reason string) (Outcome, bool) {
-	if s.GraveyardMaxBytes <= 0 || out.Item.Kind != "" || (s.recycleMode() && !out.Item.IsDir) {
+	if s.GraveyardMaxBytes <= 0 || out.Item.IsExternal() || (s.recycleMode() && !out.Item.IsDir) {
 		return out, false
 	}
 	itemSize, err := measureLocalSize(out.Path)
@@ -576,7 +576,7 @@ func (s *Service) runSweepQuota(outcomes []Outcome, dryRun bool) (QuotaEviction,
 func projectSweepBurials(state State, outcomes []Outcome, now time.Time) State {
 	burials := slices.Clone(state.Burials)
 	for _, out := range outcomes {
-		if out.Action != ActionBuried || out.Item.Kind != "" {
+		if out.Action != ActionBuried || out.Item.IsExternal() {
 			continue
 		}
 		sz := out.Size

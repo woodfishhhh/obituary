@@ -170,6 +170,9 @@ func (s *Service) addCandidate(st *State, result Result, c *candidate, opts AddO
 
 func (s *Service) checkRegistrationPending(st *State, path string, c *candidate) error {
 	for _, it := range st.Items {
+		if it.IsExternal() {
+			continue
+		}
 		if !samePath(it.Path, path) && (c == nil || it.Identity == nil || *it.Identity != c.identity) {
 			continue
 		}
@@ -239,7 +242,7 @@ func (s *Service) reconcileRegistrationPaths(st *State, path string, now time.Ti
 	var unresolved []string
 	for j := len(st.Items) - 1; j >= 0; j-- {
 		old := &st.Items[j]
-		if !samePath(old.Path, path) {
+		if old.IsExternal() || !samePath(old.Path, path) {
 			continue
 		}
 		if old.Identity == nil {
@@ -355,6 +358,9 @@ var errRegistrationChanged = fmt.Errorf("registration target changed during insp
 
 func classifyChangedRegistration(st *State, c *candidate, r Result) Result {
 	for _, it := range st.Items {
+		if it.IsExternal() {
+			continue
+		}
 		if !automatic(it) && (samePath(it.Path, c.path) || it.Identity != nil && *it.Identity == c.identity) {
 			r.Err = lifespanConflict(c.path, it.ID)
 			r.Error = r.Err.Error()

@@ -14,7 +14,7 @@ func candidateKey(c Candidate) string {
 }
 
 func sameCandidate(a, b Candidate) bool {
-	if a.Kind == KindContainer || b.Kind == KindContainer {
+	if a.IsExternal() || b.IsExternal() {
 		return a.Kind == b.Kind && candidateKey(a) == candidateKey(b)
 	}
 	return samePath(a.Path, b.Path)
