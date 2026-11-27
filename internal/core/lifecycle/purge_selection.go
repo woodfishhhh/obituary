@@ -75,7 +75,7 @@ func (s *Service) purgeLocked(run *purgeRun) error {
 	pending, _ := s.scanManifests(state)
 	blocked := s.blockedPurges(state, pending)
 	if run.background && !run.dryRun {
-		files, err := s.purgeContainerRequests(run, state)
+		files, err := s.purgeExternalRequests(run, state)
 		if err != nil {
 			return err
 		}
@@ -100,6 +100,20 @@ func (s *Service) purgeLocked(run *purgeRun) error {
 		return s.purgeQuotaLocked(run)
 	}
 	return nil
+}
+
+func (s *Service) purgeExternalRequests(run *purgeRun, state State) ([]Burial, error) {
+	var files []Burial
+	for _, b := range run.requested {
+		if b.IsFile() {
+			files = append(files, b)
+			continue
+		}
+		if err := s.purgeRequestedBurial(run, state, b, nil, ""); err != nil {
+			return files, err
+		}
+	}
+	return files, nil
 }
 
 func (s *Service) blockedPurges(state State, pending []PendingGrave) map[int64]string {

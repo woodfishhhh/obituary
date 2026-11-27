@@ -46,7 +46,7 @@ func (s *RegistrationScope) Close() {
 }
 
 func (s *RegistrationScope) Related(it Item) bool {
-	if it.Kind == KindContainer {
+	if it.IsExternal() {
 		return false
 	}
 	if s == nil || !completeRegistrationIdentity(it.Identity) {

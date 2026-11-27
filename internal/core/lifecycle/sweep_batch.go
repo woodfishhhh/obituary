@@ -30,7 +30,7 @@ func (s *Service) sweepBurials(state State, roots []resolvedGraveyardRoot, block
 		return err
 	}
 	for _, snapshot := range state.Items {
-		if blocked[snapshot.ID] || !snapshot.Due(s.now()) || awaitingWatchBurial(&state, snapshot) || awaitingQuotaDecision(&state, snapshot, s.GraveyardMaxBytes) {
+		if !snapshot.IsFile() || blocked[snapshot.ID] || !snapshot.Due(s.now()) || awaitingWatchBurial(&state, snapshot) || awaitingQuotaDecision(&state, snapshot, s.GraveyardMaxBytes) {
 			continue
 		}
 		if refresh {
@@ -42,7 +42,7 @@ func (s *Service) sweepBurials(state State, roots []resolvedGraveyardRoot, block
 			refresh = false
 		}
 		idx := current.Index(snapshot.ID)
-		if idx < 0 || !current.Items[idx].Due(s.now()) || awaitingWatchBurial(&current, current.Items[idx]) || awaitingQuotaDecision(&current, current.Items[idx], s.GraveyardMaxBytes) {
+		if idx < 0 || !current.Items[idx].IsFile() || !current.Items[idx].Due(s.now()) || awaitingWatchBurial(&current, current.Items[idx]) || awaitingQuotaDecision(&current, current.Items[idx], s.GraveyardMaxBytes) {
 			continue
 		}
 		item := current.Items[idx]
@@ -90,7 +90,7 @@ func (s *Service) prepareExpiredBurial(item Item, roots []resolvedGraveyardRoot,
 func (s *Service) saveSweepBurialSizes(outcomes []Outcome, finalErr error) error {
 	var measured []Burial
 	for _, out := range outcomes {
-		if out.Action == ActionBuried && out.Burial != nil {
+		if out.Action == ActionBuried && out.Burial != nil && out.Burial.IsFile() {
 			measured = append(measured, *out.Burial)
 		}
 	}

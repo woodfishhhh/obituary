@@ -26,3 +26,17 @@ func TestGraveyardSafetyIndexPreservesConservativeMatches(t *testing.T) {
 		t.Fatal("complete safety index lost child or cleanup allocation")
 	}
 }
+
+func TestGraveyardSafetyIndexExcludesExternalVolumes(t *testing.T) {
+	st := State{Burials: []Burial{
+		{ID: 1, Kind: KindContainer, Path: "docker:web (aaaaaaaaaaaa)"},
+		{ID: 2, Kind: KindDockerVolume, Path: "cache"},
+	}}
+	idx := buildGraveyardIndex(st)
+	if len(idx.Volumes) != 0 {
+		t.Fatalf("external burials leaked into filesystem volumes: %v", idx.Volumes)
+	}
+	if idx.MaxID != 2 {
+		t.Fatalf("MaxID = %d, want 2", idx.MaxID)
+	}
+}

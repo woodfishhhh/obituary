@@ -118,7 +118,7 @@ func (s *Service) prepareBatchOwners(items []Item, blocked map[int64]bool) *owne
 	}
 	var paths []string
 	for _, item := range items {
-		if automatic(item) && item.Identity != nil && item.Due(s.now()) && !blocked[item.ID] {
+		if item.IsFile() && automatic(item) && item.Identity != nil && item.Due(s.now()) && !blocked[item.ID] {
 			if path, err := s.FS.RealPath(item.Path); err == nil {
 				b.paths[item.ID] = path
 				paths = append(paths, path)

@@ -110,6 +110,12 @@ func (s *Service) sweep(dryRun bool, blocked map[int64]bool) (outcomes []Outcome
 	if containerErr != nil {
 		return outcomes, containerErr
 	}
+	volumeRows, volumeErr := s.sweepDockerVolumes(&state, dryRun, blocked)
+	outcomes = append(outcomes, volumeRows...)
+	if commitFailed(volumeErr) {
+		return outcomes, volumeErr
+	}
+	auditErr = errors.Join(auditErr, volumeErr)
 	// Recovery may have committed records, and concurrent registrations can
 	// add a volume. Resolve only roots not already seen in this operation.
 	roots = s.resolveMissingGraveyardRoots(roots, s.graveyardRoots(state))
@@ -134,22 +140,7 @@ func (s *Service) sweep(dryRun bool, blocked map[int64]bool) (outcomes []Outcome
 
 func (s *Service) sweepItems(state State, dryRun bool, roots []resolvedGraveyardRoot, blocked map[int64]bool, outcomes []Outcome, auditErr error) ([]Outcome, error) {
 	for _, snapshot := range state.Items {
-		if blocked[snapshot.ID] || !snapshot.Due(s.now()) || awaitingWatchBurial(&state, snapshot) || awaitingQuotaDecision(&state, snapshot, s.GraveyardMaxBytes) {
-			continue
-		}
-		//nolint:nestif // volume expiry has a distinct commit path from file expiry.
-		if snapshot.Kind == KindDockerVolume {
-			out := s.settleDockerVolume(snapshot, dryRun, ReasonExpired)
-			outcomes = append(outcomes, out)
-			if dryRun || out.Action == ActionBuried || out.Action == ActionRefused {
-				continue
-			}
-			if err := s.commit(out); err != nil {
-				if commitFailed(err) {
-					return outcomes, err
-				}
-				auditErr = errors.Join(auditErr, err)
-			}
+		if !snapshot.IsFile() || blocked[snapshot.ID] || !snapshot.Due(s.now()) || awaitingWatchBurial(&state, snapshot) || awaitingQuotaDecision(&state, snapshot, s.GraveyardMaxBytes) {
 			continue
 		}
 		if dryRun {

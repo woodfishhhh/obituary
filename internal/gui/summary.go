@@ -79,7 +79,7 @@ func (a *API) Summary() (Summary, error) {
 		seen[row.ID] = true
 		out.GraveCount++
 		out.GraveBytes += row.Burial.Size
-		if row.Burial.Kind == "" && row.Burial.Source != "quota-decision" {
+		if row.Burial.IsFile() && row.Burial.Source != "quota-decision" {
 			out.GraveQuotaBytes += row.Burial.Size
 		}
 	}

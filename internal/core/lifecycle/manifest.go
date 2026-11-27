@@ -232,10 +232,22 @@ func (s *Service) inspectUnrecordedManifest(p PendingGrave, m burialManifest) Pe
 }
 
 func sameBurial(a, b Burial) bool {
-	return a.ID == b.ID && samePath(a.Grave, b.Grave) && a.GraveID != nil && b.GraveID != nil &&
-		a.Identity != nil && b.Identity != nil && *a.GraveID == *b.GraveID && *a.Identity == *b.Identity &&
-		samePath(a.Path, b.Path) && a.LongNames == b.LongNames && a.IsDir == b.IsDir && a.BuriedAt.Equal(b.BuriedAt) &&
-		a.PurgeAt.Equal(b.PurgeAt) && a.Reason == b.Reason && a.IdentityMismatch == b.IdentityMismatch && slices.Equal(a.Parents, b.Parents) && slices.EqualFunc(a.Children, b.Children, sameBuriedChild)
+	if a.Kind != b.Kind || a.ID != b.ID || !samePath(a.Grave, b.Grave) || !samePath(a.Path, b.Path) ||
+		!a.BuriedAt.Equal(b.BuriedAt) || !a.PurgeAt.Equal(b.PurgeAt) || a.Reason != b.Reason || a.IdentityMismatch != b.IdentityMismatch {
+		return false
+	}
+	if a.Kind == KindDockerVolume {
+		return a.Volume != nil && b.Volume != nil && a.Volume.Same(*b.Volume) &&
+			a.VolumeArchiveDigest != "" && a.VolumeArchiveDigest == b.VolumeArchiveDigest &&
+			a.VolumeHolderID == b.VolumeHolderID && a.VolumeEventStarted.Equal(b.VolumeEventStarted)
+	}
+	if a.IsExternal() {
+		return false
+	}
+	return a.GraveID != nil && b.GraveID != nil && a.Identity != nil && b.Identity != nil &&
+		*a.GraveID == *b.GraveID && *a.Identity == *b.Identity &&
+		a.LongNames == b.LongNames && a.IsDir == b.IsDir &&
+		slices.Equal(a.Parents, b.Parents) && slices.EqualFunc(a.Children, b.Children, sameBuriedChild)
 }
 
 // Contains can shrink during recovery; the original identity snapshots agree.
@@ -317,7 +329,7 @@ func (s *Service) pendingGraves(st State) ([]PendingGrave, error) {
 		}
 	}
 	for _, b := range st.Burials {
-		if b.Kind == KindContainer || b.Kind == KindDockerVolume {
+		if b.IsExternal() {
 			continue
 		}
 		if slices.ContainsFunc(pending, func(p PendingGrave) bool { return p.Number() == b.ID }) {
@@ -339,7 +351,7 @@ func (s *Service) pendingGraves(st State) ([]PendingGrave, error) {
 		}
 	}
 	for _, it := range st.Items {
-		if it.Identity == nil {
+		if it.IsExternal() || it.Identity == nil {
 			continue
 		}
 		path, locateErr := s.FS.Locate(*it.Identity)

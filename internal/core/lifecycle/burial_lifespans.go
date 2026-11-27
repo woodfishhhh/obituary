@@ -62,10 +62,7 @@ func (s *Service) checkChildLifespanState(st *State, item Item, path, reason str
 // Resolve registered spellings outside store.lock, including legacy records without an identity.
 func (s *Service) preflightContained(st *State, item Item, real string, expires time.Time) error {
 	for _, other := range st.Items {
-		if other.Kind == KindContainer {
-			continue
-		}
-		if other.Kind == KindDockerVolume || other.ID == item.ID {
+		if other.IsExternal() || other.ID == item.ID {
 			continue
 		}
 		var current string

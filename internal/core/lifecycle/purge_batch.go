@@ -183,6 +183,10 @@ func (s *Service) commitPurgeBatch(batch []GraveResult) (auditCount int, err err
 // A blank action means a verified, nonempty grave ready for a durable intent.
 func (s *Service) inspectExpiredPurge(b Burial, state State, blocked string) GraveResult {
 	r := GraveResult{Ref: fmt.Sprintf("#%d", b.ID), Burial: &b}
+	if b.IsExternal() {
+		r.Action, r.Error = ActionBlocked, fmt.Sprintf("#%d: external burial cannot use file batch purge", b.ID)
+		return r
+	}
 	if b.IdentityMismatch != "" {
 		blocked = b.IdentityMismatch
 	}

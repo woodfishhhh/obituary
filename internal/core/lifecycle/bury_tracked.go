@@ -100,7 +100,7 @@ func (s *Service) resolveTrackedRef(st *State, ref string, seen map[int64]bool, 
 		row.Action, row.Error = ActionRetry, "unverifiable burial manifest; see obit doctor"
 		return nil, row
 	}
-	if item.Kind == "" {
+	if item.IsFile() {
 		if detail := recovery.roots[ProjectKey(s.graveyardRoot(item.Path))]; detail != "" {
 			row.Action, row.Error = ActionBlocked, detail
 			return nil, row
@@ -134,7 +134,7 @@ func (s *Service) executeTrackedBurials(entries []trackedBurialEntry, state Stat
 		if err := s.Store.Context().Err(); err != nil {
 			return errors.Join(finalErr, flush(), err)
 		}
-		if entry.item.Kind != "" || s.recycleMode() {
+		if entry.item.IsExternal() || s.recycleMode() {
 			if commitFailed(flush()) {
 				return finalErr
 			}

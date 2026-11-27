@@ -62,7 +62,7 @@ func reconcileChildren(st *State, b *Burial, inside map[string]bool) error {
 		}
 	}
 	for _, it := range st.Items {
-		if known[it.ID] || it.ID == b.ID || it.Kind == KindContainer || it.Kind == KindDockerVolume {
+		if known[it.ID] || it.ID == b.ID || it.IsExternal() {
 			continue
 		}
 		if it.Identity == nil || it.Identity.Serial == b.Identity.Serial && inside[it.Identity.FileID] {
@@ -363,7 +363,7 @@ func (snap *lifespanSnapshot) verified(st *State, id int64) (map[string]bool, er
 	}
 	active := false
 	for _, it := range st.Items {
-		if it.ID != id && it.Kind != KindContainer && it.Kind != KindDockerVolume {
+		if it.ID != id && it.IsFile() {
 			active = true
 			break
 		}

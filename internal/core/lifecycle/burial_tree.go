@@ -57,7 +57,7 @@ func (s *Service) currentBurialChildren(st *State, item Item, snap *lifespanSnap
 	active := make(map[string]bool)
 	for i := range st.Items {
 		other := &st.Items[i]
-		if other.ID == item.ID || other.Kind == KindContainer || other.Kind == KindDockerVolume {
+		if other.ID == item.ID || other.IsExternal() {
 			continue
 		}
 		if other.Identity == nil {

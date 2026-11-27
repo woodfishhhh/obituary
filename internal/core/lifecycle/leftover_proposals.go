@@ -8,7 +8,7 @@ import (
 // concurrent finishes cannot each publish the same candidate.
 func (s *Service) leftoverUnavailable(st *State, project, session string, c Candidate) bool {
 	for _, it := range st.Items {
-		if it.Kind != KindContainer && it.Identity != nil && samePath(it.Path, c.Path) {
+		if it.IsFile() && it.Identity != nil && samePath(it.Path, c.Path) {
 			id, err := s.FS.Identify(c.Path)
 			if err == nil && id.Serial == it.Identity.Serial && id.FileID == it.Identity.FileID {
 				return true

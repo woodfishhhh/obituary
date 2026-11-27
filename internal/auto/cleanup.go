@@ -158,12 +158,12 @@ func accounted(st ledger.State, root, path string) bool {
 		return true
 	}
 	for _, it := range st.Items {
-		if it.Kind != ledger.KindContainer && covers(it.Path) {
+		if it.IsFile() && covers(it.Path) {
 			return true
 		}
 	}
 	for _, p := range st.Proposals {
-		if slices.ContainsFunc(p.Candidates, func(c ledger.Candidate) bool { return c.Kind != ledger.KindContainer && covers(c.Path) }) {
+		if slices.ContainsFunc(p.Candidates, func(c ledger.Candidate) bool { return c.IsFile() && covers(c.Path) }) {
 			return true
 		}
 	}

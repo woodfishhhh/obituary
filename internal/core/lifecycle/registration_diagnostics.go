@@ -16,7 +16,7 @@ func (s *Service) RegistrationLocationDiagnostics() ([]Event, error) {
 	}
 	var events []Event
 	for _, it := range state.Items {
-		if it.Kind == KindContainer {
+		if it.IsExternal() {
 			continue
 		}
 		if err := s.Store.Context().Err(); err != nil {

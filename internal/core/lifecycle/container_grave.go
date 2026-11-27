@@ -9,20 +9,6 @@ import (
 	"github.com/woodfishhhh/obituary/internal/docker"
 )
 
-func (s *Service) purgeContainerRequests(run *purgeRun, state State) ([]Burial, error) {
-	var files []Burial
-	for _, b := range run.requested {
-		if b.Kind != KindContainer {
-			files = append(files, b)
-			continue
-		}
-		if err := s.purgeRequestedBurial(run, state, b, nil, ""); err != nil {
-			return files, err
-		}
-	}
-	return files, nil
-}
-
 func (s *Service) resurrectContainer(r *GraveResult, b Burial) error {
 	pending, err := s.pendingContainerGrave(b)
 	if err != nil {
