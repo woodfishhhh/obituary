@@ -112,9 +112,8 @@ func cmdWSLDeletion(args []string, depth int) string {
 }
 
 func splitCmdExecFlag(arg string) (string, bool) {
-	lower := strings.ToLower(arg)
 	for _, prefix := range []string{"//c", "//k", "/c", "/k"} {
-		if strings.HasPrefix(lower, prefix) {
+		if len(arg) >= len(prefix) && strings.EqualFold(arg[:len(prefix)], prefix) {
 			return arg[len(prefix):], true
 		}
 	}
@@ -151,12 +150,15 @@ func cmdLineWSLDeletion(s string, depth int) string {
 	if found := cmdScanLine(s, depth); found != "" {
 		return found
 	}
-	// Windows cmd.exe /c strips one outer pair of double quotes when the command
-	// string starts and ends with '"' (used for quoted paths such as
-	// "C:\Program Files\WSL\wsl.exe").
+	// Windows cmd.exe /c rule 2 strips the first '"' and the last '"' when the
+	// command starts with '"', preserving trailing redirections and operators.
 	trimmed := strings.TrimSpace(s)
-	if len(trimmed) >= 2 && trimmed[0] == '"' && trimmed[len(trimmed)-1] == '"' {
-		return cmdScanLine(trimmed[1:len(trimmed)-1], depth+1)
+	if len(trimmed) >= 2 && trimmed[0] == '"' {
+		if last := strings.LastIndexByte(trimmed, '"'); last > 0 {
+			if stripped := trimmed[1:last] + trimmed[last+1:]; stripped != s {
+				return cmdScanLine(stripped, depth+1)
+			}
+		}
 	}
 	return ""
 }
@@ -220,30 +222,33 @@ func cmdScanLine(s string, depth int) string {
 	return cmdSegmentWSLDeletion(s[segStart:], sc.words, depth)
 }
 
+func cmdStripAtWords(words []string) (string, []string, bool) {
+	for i, w := range words {
+		if first := strings.TrimLeft(w, "@"); first != "" {
+			return first, words[i+1:], true
+		}
+	}
+	return "", nil, false
+}
+
 func cmdSegmentWSLDeletion(raw string, words []string, depth int) string {
-	if len(words) == 0 {
+	first, rest, ok := cmdStripAtWords(words)
+	if !ok {
 		return ""
-	}
-	first := strings.TrimLeft(words[0], "@")
-	if first == "" {
-		return ""
-	}
-	if first != words[0] {
-		words = append([]string{first}, words[1:]...)
 	}
 	if strings.TrimSuffix(commandBase(first), ".exe") == "cmd" {
 		if tail, ok := cmdRawExecTail(raw); ok {
 			return cmdLineWSLDeletion(tail, depth+1)
 		}
 	}
-	return wslWrapperWords(words, depth)
+	return wslWrapperWords(first, rest, depth)
 }
 
 // cmdRawExecTail returns the raw command tail following /c or /k in a CMD
 // segment so nested cmd.exe /c outer double quotes remain intact.
 func cmdRawExecTail(seg string) (string, bool) {
-	i := skipCmdSpaces(seg, 0)
-	for i < len(seg) && seg[i] == '@' {
+	i := 0
+	for i < len(seg) && (seg[i] == '@' || seg[i] == ' ' || seg[i] == '\t') {
 		i++
 	}
 	i = skipCmdRawToken(seg, i)
@@ -287,10 +292,10 @@ func skipCmdRawToken(s string, i int) int {
 }
 
 func cmdLineComment(words []string) bool {
-	if len(words) != 1 {
+	first, rest, ok := cmdStripAtWords(words)
+	if !ok || len(rest) != 0 {
 		return false
 	}
-	first := strings.TrimLeft(words[0], "@")
 	return strings.EqualFold(first, "rem") || strings.HasPrefix(first, "::")
 }
 
@@ -361,21 +366,18 @@ func psScriptWSLDeletion(script string, depth int) string {
 	return ""
 }
 
-func wslWrapperWords(words []string, depth int) string {
-	if len(words) == 0 {
-		return ""
-	}
-	base := commandBase(words[0])
+func wslWrapperWords(first string, args []string, depth int) string {
+	base := commandBase(first)
 	if strings.ContainsRune(base, 0) {
 		return ""
 	}
 	switch strings.TrimSuffix(base, ".exe") {
 	case "wsl":
-		return wslDeletion(words[1:])
+		return wslDeletion(args)
 	case "cmd":
-		return cmdWSLDeletion(words[1:], depth)
+		return cmdWSLDeletion(args, depth)
 	case "powershell", "pwsh":
-		return psWrapperWSLDeletion(words[1:], depth)
+		return psWrapperWSLDeletion(args, depth)
 	}
 	return ""
 }
