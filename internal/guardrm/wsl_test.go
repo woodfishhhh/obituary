@@ -1,6 +1,9 @@
 package guardrm
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestWSLUnregisterDeletion(t *testing.T) {
 	t.Parallel()
@@ -67,10 +70,38 @@ func TestWSLUnregisterDeletion(t *testing.T) {
 		{"bash-cmd-c-unquoted", Bash, `cmd /c wsl --unregister Ubuntu`, "wsl --unregister Ubuntu"},
 		{"ps-cmd-c-quoted", PowerShell, `cmd /c "wsl --unregister Ubuntu"`, "wsl --unregister Ubuntu"},
 		{"ps-cmd-c-caret", PowerShell, `cmd.exe /c "w^sl --un^register Ubuntu"`, "wsl --unregister Ubuntu"},
+		// BLOCKER-1: cmd.exe /c outer double-quote stripping (including spaced WSL2 paths)
+		{"cmd-outer-quotes-sys32", CMD, `""C:\Windows\System32\wsl.exe" --unregister Ubuntu"`, "wsl --unregister Ubuntu"},
+		{"bash-cmd-c-outer-quotes-sys32", Bash, `cmd /c '""C:\Windows\System32\wsl.exe" --unregister Ubuntu"'`, "wsl --unregister Ubuntu"},
+		{"ps-cmd-c-outer-quotes-sys32", PowerShell, `cmd /c '""C:\Windows\System32\wsl.exe" --unregister Ubuntu"'`, "wsl --unregister Ubuntu"},
+		{"cmd-nested-outer-quotes-progfiles", CMD, `cmd /c ""C:\Program Files\WSL\wsl.exe" --unregister Ubuntu"`, "wsl --unregister Ubuntu"},
+		{"cmd-outer-quotes-progfiles", CMD, `""C:\Program Files\WSL\wsl.exe" --unregister Ubuntu"`, "wsl --unregister Ubuntu"},
+		{"cmd-quoted-path-quoted-distro", CMD, `"C:\Program Files\WSL\wsl.exe" --unregister "Ubuntu"`, "wsl --unregister Ubuntu"},
+		// BLOCKER-2: cmd /c multi-arg forms, attached /c, and CMD @ prefix
+		{"bash-cmd-c-unquoted-caret", Bash, `cmd /c w^sl --unregister Ubuntu`, "wsl --unregister Ubuntu"},
+		{"ps-cmd-c-unquoted-caret", PowerShell, `cmd /c w^sl --unregister Ubuntu`, "wsl --unregister Ubuntu"},
+		{"bash-cmd-exe-c-unquoted-caret", Bash, `cmd.exe /c w^sl --un^register Ubuntu`, "wsl --unregister Ubuntu"},
+		{"ps-cmd-exe-c-unquoted-caret", PowerShell, `cmd.exe /c w^sl --un^register Ubuntu`, "wsl --unregister Ubuntu"},
+		{"bash-cmd-c-inline-amp-escape", Bash, `cmd /c echo ok\&wsl --unregister Ubuntu`, "wsl --unregister Ubuntu"},
+		{"bash-cmd-c-inline-amp-quoted", Bash, `cmd /c echo 'ok&wsl' --unregister Ubuntu`, "wsl --unregister Ubuntu"},
+		{"ps-cmd-c-inline-amp-quoted", PowerShell, `cmd /c echo 'ok&wsl' --unregister Ubuntu`, "wsl --unregister Ubuntu"},
+		{"bash-cmd-c-paren-escape", Bash, `cmd /c \(wsl --unregister Ubuntu\)`, "wsl --unregister Ubuntu"},
+		{"cmd-at-prefix", CMD, `@wsl --unregister Ubuntu`, "wsl --unregister Ubuntu"},
+		{"bash-cmd-c-at-prefix", Bash, `cmd /c "@wsl --unregister Ubuntu"`, "wsl --unregister Ubuntu"},
+		{"ps-cmd-c-at-prefix", PowerShell, `cmd /c "@wsl --unregister Ubuntu"`, "wsl --unregister Ubuntu"},
+		{"cmd-nested-at-prefix", CMD, `cmd /c "@wsl --unregister Ubuntu"`, "wsl --unregister Ubuntu"},
+		{"bash-cmd-c-attached-quote", Bash, `cmd /c"wsl --unregister Ubuntu"`, "wsl --unregister Ubuntu"},
+		{"ps-cmd-c-attached-quote", PowerShell, `cmd /c"wsl --unregister Ubuntu"`, "wsl --unregister Ubuntu"},
+		{"cmd-nested-c-attached-quote", CMD, `cmd /c"wsl --unregister Ubuntu"`, "wsl --unregister Ubuntu"},
+		{"bash-cmd-c-attached-word", Bash, `cmd /cwsl --unregister Ubuntu`, "wsl --unregister Ubuntu"},
+		{"ps-cmd-c-attached-word", PowerShell, `cmd /cwsl --unregister Ubuntu`, "wsl --unregister Ubuntu"},
+		{"cmd-nested-c-attached-word", CMD, `cmd /cwsl --unregister Ubuntu`, "wsl --unregister Ubuntu"},
 		{"bash-ps-command", Bash, `powershell -Command "wsl --unregister Ubuntu"`, "wsl --unregister Ubuntu"},
 		{"bash-pwsh-c", Bash, `pwsh.exe -NoProfile -c "wsl.exe --Unregister=Ubuntu-24.04"`, "wsl --unregister Ubuntu-24.04"},
 		{"ps-ps-command", PowerShell, `powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "wsl --unregister Ubuntu"`, "wsl --unregister Ubuntu"},
 		{"bash-ps-command-unquoted", Bash, `powershell -Command wsl --unregister Ubuntu`, "wsl --unregister Ubuntu"},
+		{"bash-ps-command-spaced-path", Bash, `powershell -Command "C:\Program Files\WSL\wsl.exe" --unregister Ubuntu`, "wsl --unregister Ubuntu"},
+		{"bash-ps-nested-command", Bash, `powershell -c powershell -c wsl --unregister Ubuntu`, "wsl --unregister Ubuntu"},
 		// Direct CMD shell context
 		{"cmd-basic", CMD, "wsl --unregister Ubuntu", "wsl --unregister Ubuntu"},
 		{"cmd-win-path", CMD, `"C:\Windows\System32\wsl.exe" --Unregister Ubuntu-24.04`, "wsl --unregister Ubuntu-24.04"},
@@ -121,13 +152,19 @@ func TestWSLNonUnregisterCommandsPass(t *testing.T) {
 		`grep -rn -- "--unregister" .`,
 		`git commit -m "guard wsl --unregister"`,
 		"# wsl --unregister Ubuntu",
+		"wsl --manage Ubuntu --move D:\\wsl",
+		"wsl --manage Ubuntu --move --unregister",
 		// Safe cmd /c and powershell -Command invocations
 		`cmd /c "echo wsl --unregister Ubuntu"`,
+		`cmd /c echo "a && wsl --unregister Ubuntu"`,
+		`cmd /c "@echo wsl --unregister Ubuntu"`,
 		`cmd /c "wsl --list -v"`,
 		`cmd /c "del /s /q build"`,
 		`powershell -Command "Write-Output 'wsl --unregister Ubuntu'"`,
 		`powershell -Command "wsl --status"`,
 		`powershell -File ./cleanup.ps1`,
+		`pwsh -fi ./script.ps1 "a; wsl --unregister Ubuntu"`,
+		`pwsh -fil ./script.ps1 "a; wsl --unregister Ubuntu"`,
 	}
 	for _, command := range commands {
 		for _, shell := range []Shell{Bash, PowerShell} {
@@ -144,9 +181,13 @@ func TestWSLNonUnregisterCommandsPass(t *testing.T) {
 		"wsl --export Ubuntu backup.tar",
 		"wsl -d Ubuntu -- echo --unregister",
 		"echo wsl --unregister Ubuntu",
+		"@echo wsl --unregister Ubuntu",
 		`echo "a && wsl --unregister Ubuntu"`,
+		`cmd /c echo "a && wsl --unregister Ubuntu"`,
+		`cmd /c "@echo wsl --unregister Ubuntu"`,
 		"echo a ^& wsl --unregister Ubuntu",
 		"rem wsl --unregister Ubuntu",
+		"@rem wsl --unregister Ubuntu",
 		"del /s /q build",
 		"rm -rf build",
 	} {
@@ -187,5 +228,29 @@ func TestWSLUnregisterNeverRewrites(t *testing.T) {
 		if got != command || why == "" {
 			t.Errorf("%s: Suggest(%q) = (%q, %q), want unchanged with reason", shell, command, got, why)
 		}
+	}
+}
+
+// Nested powershell -c wrappers must scale linearly with depth, never
+// branching exponentially across large hook inputs (up to 4 MiB).
+func TestWSLWrapperDeepNestingLinear(t *testing.T) {
+	payload := strings.Repeat("a ", 4096)
+	nested := strings.Repeat("powershell -c ", maxWrapperDepth+2) + "Write-Output " + payload
+	for _, shell := range []Shell{Bash, PowerShell} {
+		if got := Deletion(nested, shell); got != "" {
+			t.Fatalf("%s: Deletion(nested safe) = %q, want none", shell, got)
+		}
+	}
+	// Compare allocations between depth 2 and full maxWrapperDepth+2 nesting:
+	// linear scaling stays well under 8x, whereas 2^(depth-1) branching is > 30x.
+	shallow := strings.Repeat("powershell -c ", 2) + "Write-Output " + payload
+	shallowAllocs := testing.AllocsPerRun(2, func() {
+		_ = Deletion(shallow, Bash)
+	})
+	deepAllocs := testing.AllocsPerRun(2, func() {
+		_ = Deletion(nested, Bash)
+	})
+	if deepAllocs > shallowAllocs*8 {
+		t.Fatalf("nested powershell -c scaled super-linearly: shallow=%.0f allocs, deep=%.0f allocs (ratio %.1fx)", shallowAllocs, deepAllocs, deepAllocs/shallowAllocs)
 	}
 }

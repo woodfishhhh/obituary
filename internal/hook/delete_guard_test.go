@@ -1329,6 +1329,7 @@ func TestWSLUnregisterHookDecisions(t *testing.T) {
 		{"claude-bash-ps-cmd", "claude", `C:\repo`, "Bash", map[string]any{"command": `powershell -Command "wsl --unregister Ubuntu"`}, true, "wsl --export Ubuntu <backup.tar>"},
 		{"codex-cmd-shell", "codex", `C:\repo`, "exec_command", map[string]any{"cmd": "wsl --unregister Ubuntu", "shell": "cmd.exe"}, true, "wsl --export Ubuntu <backup.tar>"},
 		{"codex-cmd-argv", "codex", `C:\repo`, "local_shell", map[string]any{"command": []string{"cmd.exe", "/c", "wsl --unregister Ubuntu"}}, true, "wsl --export Ubuntu <backup.tar>"},
+		{"codex-cmd-argv-outer-quotes", "codex", `C:\repo`, "local_shell", map[string]any{"command": []string{"cmd.exe", "/c", `""C:\Program Files\WSL\wsl.exe" --unregister Ubuntu"`}}, true, "wsl --export Ubuntu <backup.tar>"},
 		{"codex-pwsh-argv", "codex", `C:\repo`, "local_shell", map[string]any{"command": []string{"pwsh.exe", "-NoProfile", "-Command", "wsl --unregister Ubuntu"}}, true, "wsl --export Ubuntu <backup.tar>"},
 		{"claude-bash-safe-list", "claude", `C:\repo`, "Bash", map[string]any{"command": "wsl --list -v"}, false, ""},
 		{"claude-bash-safe-export", "claude", `C:\repo`, "Bash", map[string]any{"command": "wsl --export Ubuntu backup.tar"}, false, ""},

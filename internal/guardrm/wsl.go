@@ -75,11 +75,11 @@ func wslOptionValueCount(opt string) int {
 	switch opt {
 	case "-d", "--distribution", "--distribution-id", "-u", "--user",
 		"--cd", "--shell-type", "-t", "--terminate", "-s", "--set-default",
-		"--set-default-version", "--manage", "--mount", "--name", "--location",
+		"--set-default-version", "--manage", "--move", "--mount", "--name", "--location",
 		"--vhd-size", "--partition", "--type", "--options", "--set-sparse",
 		"--set-default-user":
 		return 1
-	case "--export", "--import-in-place", "--move", "--set-version":
+	case "--export", "--import-in-place", "--set-version":
 		return 2
 	case "--import":
 		return 3
@@ -92,33 +92,54 @@ func cmdWSLDeletion(args []string, depth int) string {
 		return ""
 	}
 	for i, arg := range args {
-		lower := strings.ToLower(arg)
-		if lower != "/c" && lower != "/k" && lower != "//c" && lower != "//k" {
+		tail, ok := splitCmdExecFlag(arg)
+		if !ok {
 			continue
 		}
 		rest := args[i+1:]
+		if tail != "" {
+			rest = append([]string{tail}, rest...)
+		}
 		if len(rest) == 0 {
 			return ""
 		}
 		if len(rest) == 1 {
 			return cmdLineWSLDeletion(rest[0], depth+1)
 		}
-		return cmdWordListWSLDeletion(rest, depth+1)
+		return cmdLineWSLDeletion(joinCmdArgs(rest), depth+1)
 	}
 	return ""
 }
 
-func cmdWordListWSLDeletion(words []string, depth int) string {
-	start := 0
-	for i, w := range words {
-		if w == "&" || w == "&&" || w == "|" || w == "||" || w == "(" || w == ")" {
-			if found := wslWrapperWords(words[start:i], depth); found != "" {
-				return found
-			}
-			start = i + 1
+func splitCmdExecFlag(arg string) (string, bool) {
+	lower := strings.ToLower(arg)
+	for _, prefix := range []string{"//c", "//k", "/c", "/k"} {
+		if strings.HasPrefix(lower, prefix) {
+			return arg[len(prefix):], true
 		}
 	}
-	return wslWrapperWords(words[start:], depth)
+	return "", false
+}
+
+// joinCmdArgs reconstructs a Windows CreateProcess command line for multi-arg
+// cmd /c invocations, quoting only arguments with spaces or tabs that are not
+// already wrapped in double quotes.
+func joinCmdArgs(args []string) string {
+	var b strings.Builder
+	for i, arg := range args {
+		if i > 0 {
+			b.WriteByte(' ')
+		}
+		quoted := len(arg) >= 2 && arg[0] == '"' && arg[len(arg)-1] == '"'
+		if strings.ContainsAny(arg, " \t") && !quoted {
+			b.WriteByte('"')
+			b.WriteString(arg)
+			b.WriteByte('"')
+		} else {
+			b.WriteString(arg)
+		}
+	}
+	return b.String()
 }
 
 // cmdLineWSLDeletion scans a CMD command string statically for command-position
@@ -127,56 +148,150 @@ func cmdLineWSLDeletion(s string, depth int) string {
 	if depth >= maxWrapperDepth {
 		return ""
 	}
-	var words []string
-	var cur strings.Builder
-	inToken, inQuote := false, false
-	flush := func() {
-		if inToken {
-			words = append(words, cur.String())
-			cur.Reset()
-			inToken = false
-		}
+	if found := cmdScanLine(s, depth); found != "" {
+		return found
 	}
+	// Windows cmd.exe /c strips one outer pair of double quotes when the command
+	// string starts and ends with '"' (used for quoted paths such as
+	// "C:\Program Files\WSL\wsl.exe").
+	trimmed := strings.TrimSpace(s)
+	if len(trimmed) >= 2 && trimmed[0] == '"' && trimmed[len(trimmed)-1] == '"' {
+		return cmdScanLine(trimmed[1:len(trimmed)-1], depth+1)
+	}
+	return ""
+}
+
+type cmdLineScanner struct {
+	words   []string
+	cur     strings.Builder
+	inToken bool
+	inQuote bool
+}
+
+func (c *cmdLineScanner) flush() {
+	if c.inToken {
+		c.words = append(c.words, c.cur.String())
+		c.cur.Reset()
+		c.inToken = false
+	}
+}
+
+func cmdScanLine(s string, depth int) string {
+	if depth >= maxWrapperDepth {
+		return ""
+	}
+	var sc cmdLineScanner
+	segStart := 0
 	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if inQuote {
-			if c == '"' {
-				inQuote = false
+		ch := s[i]
+		if sc.inQuote {
+			if ch == '"' {
+				sc.inQuote = false
 			} else {
-				cur.WriteByte(c)
+				sc.cur.WriteByte(ch)
 			}
 			continue
 		}
 		switch {
-		case c == '"':
-			inQuote, inToken = true, true
-		case c == '^' && i+1 < len(s):
+		case ch == '"':
+			sc.inQuote, sc.inToken = true, true
+		case ch == '^' && i+1 < len(s):
 			i++
-			cur.WriteByte(s[i])
-			inToken = true
-		case c == ' ' || c == '\t':
-			flush()
-			if cmdLineComment(words) {
+			sc.cur.WriteByte(s[i])
+			sc.inToken = true
+		case ch == ' ' || ch == '\t':
+			sc.flush()
+			if cmdLineComment(sc.words) {
 				i = cmdSkipToNewline(s, i)
-				words = nil
+				sc.words, segStart = nil, i+1
 			}
-		case c == '&' || c == '|' || c == '(' || c == ')' || c == '\r' || c == '\n':
-			flush()
-			if found := wslWrapperWords(words, depth); found != "" {
+		case ch == '&' || ch == '|' || ch == '(' || ch == ')' || ch == '\r' || ch == '\n':
+			sc.flush()
+			if found := cmdSegmentWSLDeletion(s[segStart:i], sc.words, depth); found != "" {
 				return found
 			}
-			words = nil
+			sc.words, segStart = nil, i+1
 		default:
-			cur.WriteByte(c)
-			inToken = true
+			sc.cur.WriteByte(ch)
+			sc.inToken = true
 		}
 	}
-	flush()
+	sc.flush()
+	return cmdSegmentWSLDeletion(s[segStart:], sc.words, depth)
+}
+
+func cmdSegmentWSLDeletion(raw string, words []string, depth int) string {
+	if len(words) == 0 {
+		return ""
+	}
+	first := strings.TrimLeft(words[0], "@")
+	if first == "" {
+		return ""
+	}
+	if first != words[0] {
+		words = append([]string{first}, words[1:]...)
+	}
+	if strings.TrimSuffix(commandBase(first), ".exe") == "cmd" {
+		if tail, ok := cmdRawExecTail(raw); ok {
+			return cmdLineWSLDeletion(tail, depth+1)
+		}
+	}
 	return wslWrapperWords(words, depth)
 }
 
+// cmdRawExecTail returns the raw command tail following /c or /k in a CMD
+// segment so nested cmd.exe /c outer double quotes remain intact.
+func cmdRawExecTail(seg string) (string, bool) {
+	i := skipCmdSpaces(seg, 0)
+	for i < len(seg) && seg[i] == '@' {
+		i++
+	}
+	i = skipCmdRawToken(seg, i)
+	for {
+		i = skipCmdSpaces(seg, i)
+		if i >= len(seg) {
+			return "", false
+		}
+		if tail, ok := splitCmdExecFlag(seg[i:]); ok {
+			return tail, true
+		}
+		i = skipCmdRawToken(seg, i)
+	}
+}
+
+func skipCmdSpaces(s string, i int) int {
+	for i < len(s) && (s[i] == ' ' || s[i] == '\t') {
+		i++
+	}
+	return i
+}
+
+func skipCmdRawToken(s string, i int) int {
+	inQuote := false
+	for i < len(s) {
+		switch s[i] {
+		case '"':
+			inQuote = !inQuote
+		case '^':
+			if !inQuote && i+1 < len(s) {
+				i++
+			}
+		case ' ', '\t':
+			if !inQuote {
+				return i
+			}
+		}
+		i++
+	}
+	return i
+}
+
 func cmdLineComment(words []string) bool {
-	return len(words) == 1 && (strings.EqualFold(words[0], "rem") || strings.HasPrefix(words[0], "::"))
+	if len(words) != 1 {
+		return false
+	}
+	first := strings.TrimLeft(words[0], "@")
+	return strings.EqualFold(first, "rem") || strings.HasPrefix(first, "::")
 }
 
 func cmdSkipToNewline(s string, i int) int {
@@ -199,7 +314,7 @@ func psWrapperWSLDeletion(args []string, depth int) string {
 			return psScriptWSLDeletion(strings.Join(args[i:], " "), depth+1)
 		}
 		switch lower {
-		case "-file", "-f", "-encodedcommand", "-e", "-ec", "-enc", "-help", "-h", "-?":
+		case "-encodedcommand", "-e", "-ec", "-enc", "-help", "-h", "-?":
 			return ""
 		case "-executionpolicy", "-ep", "-ex", "-windowstyle", "-w",
 			"-outputformat", "-of", "-o", "-inputformat", "-if",
@@ -207,6 +322,9 @@ func psWrapperWSLDeletion(args []string, depth int) string {
 			"-settingsfile", "-version", "-v":
 			i++
 		default:
+			if len(lower) >= 2 && strings.HasPrefix("-file", lower) {
+				return ""
+			}
 			if lower == "-c" || (len(lower) >= 3 && strings.HasPrefix("-command", lower)) {
 				return psCommandTailWSLDeletion(args[i+1:], depth+1)
 			}
@@ -222,8 +340,15 @@ func psCommandTailWSLDeletion(rest []string, depth int) string {
 	if len(rest) == 1 {
 		return psScriptWSLDeletion(rest[0], depth)
 	}
-	if found := wslWrapperWords(rest, depth); found != "" {
-		return found
+	// Preserve a spaced wsl executable path whose outer quotes were removed by
+	// the parent shell without recursing into nested wrappers twice.
+	if strings.ContainsAny(rest[0], " \t") {
+		base := commandBase(rest[0])
+		if !strings.ContainsRune(base, 0) && strings.TrimSuffix(base, ".exe") == "wsl" {
+			if found := wslDeletion(rest[1:]); found != "" {
+				return found
+			}
+		}
 	}
 	return psScriptWSLDeletion(strings.Join(rest, " "), depth)
 }

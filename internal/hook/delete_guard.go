@@ -243,35 +243,43 @@ func codexArgvCommand(raw []any, shell guardrm.Shell) (string, guardrm.Shell, st
 			return string(encoded), shell, "non-string argv"
 		}
 	}
-	if len(args) == 3 {
-		base := strings.ToLower(args[0][strings.LastIndexAny(args[0], `/\`)+1:])
-		if (base == "bash" || base == "bash.exe" || base == "sh" || base == "sh.exe") && (args[1] == "-c" || args[1] == "-lc") {
+	if len(args) < 3 {
+		return string(encoded), shell, "unsupported shell argv"
+	}
+	base := strings.ToLower(args[0][strings.LastIndexAny(args[0], `/\`)+1:])
+	switch base {
+	case "bash", "bash.exe", "sh", "sh.exe":
+		if len(args) == 3 && (args[1] == "-c" || args[1] == "-lc") {
 			return args[2], guardrm.Bash, ""
 		}
-	}
-	if len(args) >= 3 {
-		base := strings.ToLower(args[0][strings.LastIndexAny(args[0], `/\`)+1:])
-		if base == "cmd" || base == "cmd.exe" {
-			if cmd, ok := codexCmdArgv(args[1:]); ok {
-				return cmd, guardrm.CMD, ""
-			}
-			return string(encoded), shell, "unsupported CMD argv"
+	case "cmd", "cmd.exe":
+		if cmd, ok := codexCmdArgv(args[1:]); ok {
+			return cmd, guardrm.CMD, ""
 		}
-		if base == "pwsh" || base == "pwsh.exe" || base == "powershell" || base == "powershell.exe" {
-			for i := 1; i < len(args)-1; i++ {
-				switch strings.ToLower(args[i]) {
-				case "-noprofile", "-noninteractive", "-nologo":
-				case "-command", "-c":
-					if i == len(args)-2 {
-						return args[i+1], guardrm.PowerShell, ""
-					}
-				default:
-					return string(encoded), shell, "unsupported PowerShell argv"
-				}
-			}
+		return string(encoded), shell, "unsupported CMD argv"
+	case "pwsh", "pwsh.exe", "powershell", "powershell.exe":
+		if cmd, reason := codexPowerShellArgv(args[1:]); reason == "" {
+			return cmd, guardrm.PowerShell, ""
+		} else {
+			return string(encoded), shell, reason
 		}
 	}
 	return string(encoded), shell, "unsupported shell argv"
+}
+
+func codexPowerShellArgv(args []string) (string, string) {
+	for i := 0; i < len(args)-1; i++ {
+		switch strings.ToLower(args[i]) {
+		case "-noprofile", "-noninteractive", "-nologo":
+		case "-command", "-c":
+			if i == len(args)-2 {
+				return args[i+1], ""
+			}
+		default:
+			return "", "unsupported PowerShell argv"
+		}
+	}
+	return "", "unsupported shell argv"
 }
 
 func codexCmdArgv(args []string) (string, bool) {
