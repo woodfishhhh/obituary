@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -324,9 +325,15 @@ func TestWatchBurialToQuotaNoDoubleOrZombieCardAndPreservesChecks(t *testing.T) 
 			t.Fatalf("Git-tracked automatic watch folder must refuse PurgeQuotaProposal: res=%+v err=%v", purgeRes, err)
 		}
 
-		// Clear Git tracking: re-reviewing updated fingerprint succeeds and buries.
+		// Clear Git tracking: re-reviewing updated fingerprint obeys platform watch rules.
 		f.svc.Owner = nil
 		appRows, err = eng.ApproveReviewed([]string{fmt.Sprint(qp.ID)}, []string{core.ProposalFingerprint(qp)})
+		if runtime.GOOS != "windows" {
+			if err != nil || len(appRows) != 1 || appRows[0].Error == "" || !exists(folder) || len(f.burials()) != 0 {
+				t.Fatalf("POSIX watch quota approval must not bypass writer exclusion: %+v %v", appRows, err)
+			}
+			return
+		}
 		if err != nil || len(appRows) != 1 || appRows[0].Error != "" || exists(folder) {
 			t.Fatalf("re-reviewed watch quota approval should bury: %+v %v", appRows, err)
 		}
