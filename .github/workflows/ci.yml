@@ -316,6 +316,11 @@ jobs:
           DO_NOT_TRACK: "1"
           OBIT_TELEMETRY: "0"
         run: go test -tags docker_e2e -count=1 -run '^TestDockerVolumeRealEngine$' ./internal/e2e
+      - name: Docker container lifecycle contract end to end
+        env:
+          DO_NOT_TRACK: "1"
+          OBIT_TELEMETRY: "0"
+        run: go test -tags docker_e2e -count=1 -run '^TestDockerContainerRealEngine$' ./internal/e2e
 
   macos:
     needs: changes
