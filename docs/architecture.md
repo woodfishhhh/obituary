@@ -56,10 +56,11 @@ flowchart TD
 | `core/ledger` | 账本：热账本 `store.json` 和不可变的墓地快照、事务、锁、审计 |
 | `core/guard` | 哪些路径可以给寿命：登记时和下葬前各查一次，数据目录和必须保住的位置连同祖先一律拒绝 |
 | `core/fs` | `core/fs.FS` 接口和身份类型 |
+| `core/extres` | 外部资源提供者契约（`Provider`、可选能力接口、不可变 `Registry`），仅依赖标准库 |
 | `core/lifespan` | 寿命和时间的解析、格式化 |
 | `core/internal/fileio`、`core/internal/pathcheck` | 落盘同步和路径检查，只给 core 的子包用 |
 
-导入只往下走：`lifecycle → ledger / guard / lifespan / fs`，下层子包从不反过来导入上层子包。
+导入只往下走：`lifecycle → ledger / guard / lifespan / fs / extres`，下层子包从不反过来导入上层子包。
 
 ## 原则
 

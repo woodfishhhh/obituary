@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/woodfishhhh/obituary/internal/core/extres"
 	corefs "github.com/woodfishhhh/obituary/internal/core/fs"
 	"github.com/woodfishhhh/obituary/internal/docker"
 )
@@ -52,7 +53,8 @@ const DefaultRetention = 7 * 24 * time.Hour
 
 // Service implements the Obituary operations on top of a Store.
 type Service struct {
-	Docker docker.Client
+	Docker    docker.Client
+	Providers map[string]extres.Provider
 	// Fault injection belongs to this service and its request-local copies.
 	beforePurgeDelete func()             // after durable pre-delete persistence
 	afterBurialStep   func(string) error // interruption without cleanup

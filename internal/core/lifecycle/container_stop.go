@@ -8,15 +8,13 @@ import (
 
 func (s *Service) stopContainer(item Item, dryRun, requireDue bool, reason string) (out Outcome) {
 	out = Outcome{Item: item, Path: item.Path, Action: ActionRetry}
+	if s.recycleMode() && !s.excludeFromRecycleMode(item.Kind) {
+		out.Action, out.Detail = ActionRefused, ErrUnsupported.Error()
+		return out
+	}
 	p := ContainerIntent{Operation: "stop", Reason: containerBurialReason(reason), Phase: "prepared", Item: &item}
 	if dryRun {
-		_, err := s.inspectContainer(p)
-		if err != nil {
-			out.Detail = err.Error()
-		} else {
-			out.Action = ActionBuried
-		}
-		return out
+		return s.dryRunStopContainer(p, out)
 	}
 	out.err = s.withGraveyardLock(func() error {
 		if err := s.bindContainer(&p); err != nil {
@@ -55,6 +53,15 @@ func (s *Service) stopContainer(item Item, dryRun, requireDue bool, reason strin
 	return out
 }
 
+func (s *Service) dryRunStopContainer(p ContainerIntent, out Outcome) Outcome {
+	if _, err := s.inspectContainer(p); err != nil {
+		out.Detail = err.Error()
+	} else {
+		out.Action = ActionBuried
+	}
+	return out
+}
+
 func (s *Service) sendContainerStop(p *ContainerIntent) (error, error) {
 	var writeErr error
 	beforeSend := func(got docker.Container) error {
@@ -69,6 +76,9 @@ func (s *Service) sendContainerStop(p *ContainerIntent) (error, error) {
 			p.RunningSince = nil
 		})
 		return writeErr
+	}
+	if prov, ok := s.explicitProvider(KindContainer); ok {
+		return s.sendContainerStopViaProvider(prov, p, beforeSend)
 	}
 	err := s.Docker.Stop(s.Store.Context(), *containerIntentIdentity(*p), beforeSend)
 	if errors.Is(err, docker.ErrNotSent) && p.Phase == "sent" {

@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/woodfishhhh/obituary/internal/core/extres"
 	"github.com/woodfishhhh/obituary/internal/docker"
 )
 
@@ -30,7 +31,9 @@ func (s *Service) resurrectContainer(r *GraveResult, b Burial) error {
 		return err
 	}
 	got, err := s.inspectContainer(p)
-	if err == nil && !got.Running {
+	if prov, ok := s.explicitProvider(KindContainer); ok && err == nil && !got.Running {
+		err = s.resurrectContainerViaProvider(prov, b)
+	} else if err == nil && !got.Running {
 		err = s.Docker.Start(s.Store.Context(), *b.Container)
 	}
 	if err != nil {
@@ -114,7 +117,7 @@ func (s *Service) containerPurgeAction(b Burial, dryRun bool) (string, error) {
 			return "", err
 		}
 	}
-	got, err := s.inspectContainer(p)
+	obs, got, err := s.verifyContainerProvider(p)
 	if errors.Is(err, docker.ErrNotFound) {
 		if b.PurgeIntent != nil {
 			return ActionPurged, nil
@@ -123,6 +126,9 @@ func (s *Service) containerPurgeAction(b Burial, dryRun bool) (string, error) {
 	}
 	if err != nil {
 		return "", err
+	}
+	if obs.Verdict == extres.VerdictReclaimed {
+		return ActionResurrected, nil
 	}
 	reclaimed, err := got.Reclaimed(*b.Container)
 	if err != nil {
@@ -136,27 +142,9 @@ func (s *Service) containerPurgeAction(b Burial, dryRun bool) (string, error) {
 
 func (s *Service) purgeContainer(r *GraveResult, dryRun bool) error {
 	b := *r.Burial
-	pending, err := s.pendingContainerGrave(b)
-	if err != nil {
+	done, err := s.preflightContainerPurge(r, b, dryRun)
+	if done || err != nil {
 		return err
-	}
-	if pending != nil {
-		if dryRun {
-			r.Error = "container operation pending; run obit reap"
-			return nil
-		}
-		return s.settleContainerGrave(*pending, r)
-	}
-	if done, err := s.prepareContainerPurge(r, dryRun); done || err != nil {
-		return err
-	}
-	if b.PurgeAt.After(s.now()) {
-		r.Error = fmt.Sprintf("#%d: container retention has not elapsed", b.ID)
-		return nil
-	}
-	if dryRun {
-		r.Action = ActionPurged
-		return nil
 	}
 	p := ContainerIntent{Operation: "rm", Burial: &b}
 	if err := s.bindContainer(&p); err != nil {
@@ -167,7 +155,9 @@ func (s *Service) purgeContainer(r *GraveResult, dryRun bool) error {
 		return err
 	}
 	got, err := s.inspectContainer(p)
-	if err == nil && !got.Running {
+	if prov, ok := s.explicitProvider(KindContainer); ok && err == nil && !got.Running {
+		err = s.purgeContainerViaProvider(prov, &p, b)
+	} else if err == nil && !got.Running {
 		_, err = s.Docker.Remove(s.Store.Context(), *b.Container, func(ids []string) error {
 			return s.updateContainerIntent(&p, func(p *ContainerIntent) { p.RemovalIDs = ids })
 		})
@@ -182,4 +172,30 @@ func (s *Service) purgeContainer(r *GraveResult, dryRun bool) error {
 		}
 	}
 	return s.settleContainerGrave(p, r)
+}
+
+func (s *Service) preflightContainerPurge(r *GraveResult, b Burial, dryRun bool) (bool, error) {
+	pending, err := s.pendingContainerGrave(b)
+	if err != nil {
+		return true, err
+	}
+	if pending != nil {
+		if dryRun {
+			r.Error = "container operation pending; run obit reap"
+			return true, nil
+		}
+		return true, s.settleContainerGrave(*pending, r)
+	}
+	if done, err := s.prepareContainerPurge(r, dryRun); done || err != nil {
+		return true, err
+	}
+	if s.requireElapsedRetention(b.Kind) && b.PurgeAt.After(s.now()) {
+		r.Error = fmt.Sprintf("#%d: container retention has not elapsed", b.ID)
+		return true, nil
+	}
+	if dryRun {
+		r.Action = ActionPurged
+		return true, nil
+	}
+	return false, nil
 }

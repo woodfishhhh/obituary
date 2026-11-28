@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"errors"
 
+	"github.com/woodfishhhh/obituary/internal/core/extres"
 	"github.com/woodfishhhh/obituary/internal/docker"
 )
 
@@ -85,7 +86,7 @@ func (s *Service) settleContainerGrave(p ContainerIntent, r *GraveResult) error 
 }
 
 func (s *Service) inspectSettledContainer(p ContainerIntent) (string, string, string, error) {
-	got, err := s.inspectContainer(p)
+	obs, got, err := s.verifyContainerProvider(p)
 	switch {
 	case errors.Is(err, docker.ErrNotFound) && p.Operation == "rm":
 		return ActionPurged, "docker rm confirmed; volumes retained", "", nil
@@ -96,6 +97,9 @@ func (s *Service) inspectSettledContainer(p ContainerIntent) (string, string, st
 	case got.Running:
 		return ActionResurrected, "container running; resurrection confirmed", "", nil
 	case p.Operation == "rm":
+		if obs.Verdict == extres.VerdictReclaimed {
+			return ActionResurrected, "container restarted since burial; kept stopped", "", nil
+		}
 		reclaimed, err := got.Reclaimed(*p.Burial.Container)
 		if err != nil {
 			return "", "", err.Error(), nil
@@ -112,7 +116,7 @@ func (s *Service) checkContainerRemoval(p ContainerIntent) error {
 	if p.Operation != "rm" || len(p.RemovalIDs) == 0 {
 		return nil
 	}
-	ids, err := s.Docker.ListIDs(docker.WithTarget(s.Store.Context(), containerIntentIdentity(p).Target))
+	ids, err := s.listContainerIDs(p)
 	if err != nil {
 		return err
 	}

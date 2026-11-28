@@ -8,6 +8,7 @@ import (
 
 	"github.com/woodfishhhh/obituary/internal/auto"
 	"github.com/woodfishhhh/obituary/internal/config"
+	"github.com/woodfishhhh/obituary/internal/core/extres"
 	"github.com/woodfishhhh/obituary/internal/core/ledger"
 	"github.com/woodfishhhh/obituary/internal/core/lifecycle"
 	"github.com/woodfishhhh/obituary/internal/docker"
@@ -28,9 +29,14 @@ func Open() (*lifecycle.Service, error) {
 	if err != nil {
 		return nil, err
 	}
+	dockerClient := docker.CLI{}
 	svc := &lifecycle.Service{
-		Docker: docker.CLI{},
-		Store:  ledger.Store{Home: home}, Guard: Guard(home), FS: winfs.FS{},
+		Docker: dockerClient,
+		Providers: map[string]extres.Provider{
+			ledger.KindContainer:    docker.NewContainerProvider(dockerClient),
+			ledger.KindDockerVolume: docker.NewVolumeProvider(dockerClient),
+		},
+		Store: ledger.Store{Home: home}, Guard: Guard(home), FS: winfs.FS{},
 		Mode: cfg.Graveyard.Mode, Retention: cfg.Graveyard.Retention(), GraveyardMaxBytes: cfg.Graveyard.MaxBytes(),
 		WatchStableWindow: cfg.Watch.Stability(), WatchFileProposals: cfg.Watch.FileExpiry == "propose", SessionSummary: cfg.Hooks.SessionSummary,
 		SessionCleanup: cfg.Hooks.SessionCleanup, ProposalMode: cfg.Proposals.Mode,

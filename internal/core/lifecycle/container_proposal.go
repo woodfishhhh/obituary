@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"fmt"
 
+	"github.com/woodfishhhh/obituary/internal/core/extres"
 	"github.com/woodfishhhh/obituary/internal/docker"
 )
 
@@ -39,21 +40,7 @@ func pendingContainer(st *State, c Candidate) bool {
 // A non-empty class marks a registration Obituary made without asking.
 func (s *Service) ApproveContainer(p Proposal, c Candidate, class string) ([]Result, bool, error) {
 	result := Result{Ref: c.Path}
-	client, err := s.containerClient()
-	if err == nil {
-		err = containerIdentity(c.Kind, c.Container)
-	}
-	if err != nil {
-		result.Error = err.Error()
-		return []Result{result}, true, err
-	}
-	got, err := client.Inspect(docker.WithTarget(s.Store.Context(), c.Container.Target), c.Container.ID)
-	if err == nil && got.AutoRemove {
-		err = docker.ErrAutoRemove
-	}
-	if err == nil && !got.Same(*c.Container) {
-		err = docker.ErrIdentity
-	}
+	gotID, err := s.verifyContainerCandidate(c)
 	if err != nil {
 		result.Error = err.Error()
 		return []Result{result}, true, err
@@ -67,11 +54,38 @@ func (s *Service) ApproveContainer(p Proposal, c Candidate, class string) ([]Res
 	if class != "" {
 		note = fmt.Sprintf("auto-approved #%d (%s)", p.ID, class)
 	}
-	item, err := s.registerContainer(got.Identity, AddOptions{ExpiresAt: s.now().Add(lifespan), Source: "proposal", Project: p.Project, Session: NormalizeSession(p.Session), Note: note, OnlyNew: true, AutoClass: class})
+	item, err := s.registerContainer(gotID, AddOptions{ExpiresAt: s.now().Add(lifespan), Source: "proposal", Project: p.Project, Session: NormalizeSession(p.Session), Note: note, OnlyNew: true, AutoClass: class})
 	if err != nil {
 		result.Error = err.Error()
 		return []Result{result}, true, err
 	}
 	result.Item = &item
 	return []Result{result}, false, nil
+}
+
+func (s *Service) verifyContainerCandidate(c Candidate) (docker.Identity, error) {
+	prov, ok := s.provider(KindContainer)
+	if !ok {
+		return docker.Identity{}, docker.ErrUnavailable
+	}
+	if err := containerIdentity(c.Kind, c.Container); err != nil {
+		return docker.Identity{}, err
+	}
+	cred := docker.EncodeContainerCredential(*c.Container)
+	if err := prov.Validate(cred); err != nil {
+		return docker.Identity{}, err
+	}
+	obs, err := prov.Verify(s.Store.Context(), cred)
+	if err != nil {
+		return docker.Identity{}, err
+	}
+	if obs.Verdict != extres.VerdictPresent && obs.Verdict != extres.VerdictReclaimed {
+		return docker.Identity{}, docker.ErrNotFound
+	}
+	if obs.Updated != nil {
+		if decoded, decErr := docker.DecodeContainerCredential(*obs.Updated); decErr == nil {
+			return decoded, nil
+		}
+	}
+	return *c.Container, nil
 }

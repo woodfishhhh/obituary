@@ -60,7 +60,7 @@ func (s *Service) beginContainerIntent(p *ContainerIntent, requireDue bool) erro
 		} else if err := checkContainerBurial(st, *p.Burial); err != nil {
 			return err
 		}
-		if p.Operation == "rm" && p.Burial.PurgeAt.After(s.now()) {
+		if p.Operation == "rm" && s.requireElapsedRetention(p.Burial.Kind) && p.Burial.PurgeAt.After(s.now()) {
 			return errors.New("container retention has not elapsed")
 		}
 		st.ContainerIntents = append(st.ContainerIntents, *p)
@@ -74,13 +74,6 @@ func sameContainerItem(st *State, it Item) bool {
 }
 
 func (s *Service) inspectContainer(p ContainerIntent) (docker.Container, error) {
-	client, err := s.containerClient()
-	if err != nil {
-		return docker.Container{}, err
-	}
-	got, err := client.Inspect(docker.WithTarget(s.Store.Context(), containerIntentIdentity(p).Target), containerIntentIdentity(p).ID)
-	if err == nil && !got.Same(*containerIntentIdentity(p)) {
-		err = docker.ErrIdentity
-	}
+	_, got, err := s.verifyContainerProvider(p)
 	return got, err
 }

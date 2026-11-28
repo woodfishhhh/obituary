@@ -294,3 +294,20 @@ func TestTickPrunesAndWithdrawsStaleProposals(t *testing.T) {
 		t.Fatalf("proposal pruning/withdrawal audit missing: %+v %v", events, err)
 	}
 }
+
+func TestOpenRegistersDockerProviders(t *testing.T) {
+	home := filepath.Join(t.TempDir(), "home")
+	cfg := filepath.Join(t.TempDir(), "config")
+	t.Setenv("OBIT_HOME", home)
+	t.Setenv("OBIT_CONFIG_DIR", cfg)
+	svc, err := Open()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, kind := range []string{ledger.KindContainer, ledger.KindDockerVolume} {
+		p, ok := svc.Providers[kind]
+		if !ok || p == nil || p.Kind() != kind {
+			t.Fatalf("app.Open did not register %q provider: %+v", kind, svc.Providers)
+		}
+	}
+}

@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"errors"
 
+	"github.com/woodfishhhh/obituary/internal/core/extres"
 	"github.com/woodfishhhh/obituary/internal/docker"
 )
 
@@ -45,7 +46,13 @@ func (s *Service) restartContainer(p ContainerIntent, out *Outcome) error {
 	if err := s.updateContainerIntent(&p, func(p *ContainerIntent) { p.StoppedByUs = true; p.Phase = "confirmed" }); err != nil {
 		return err
 	}
-	err := s.Docker.Start(s.Store.Context(), *containerIntentIdentity(p))
+	prov, ok := s.provider(KindContainer)
+	var err error
+	if !ok {
+		err = docker.ErrUnavailable
+	} else {
+		err = prov.Resurrect(s.Store.Context(), docker.EncodeContainerCredential(*containerIntentIdentity(p)), extres.GraveArtifact{}, extres.MutateHooks{})
+	}
 	if auditErr := s.containerActionError(&p, err); auditErr != nil {
 		return auditErr
 	}

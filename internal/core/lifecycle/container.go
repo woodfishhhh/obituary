@@ -11,27 +11,21 @@ import (
 
 const KindContainer = ledger.KindContainer
 
-func (s *Service) containerClient() (docker.Client, error) {
-	if s.Docker == nil {
-		return nil, docker.ErrUnavailable
-	}
-	return s.Docker, nil
-}
-
 // AddContainer resolves names only at registration. Every subsequent action uses the pinned ID.
 func (s *Service) AddContainer(ref string, opt AddOptions) (Item, error) {
-	client, err := s.containerClient()
+	prov, ok := s.provider(KindContainer)
+	if !ok {
+		return Item{}, docker.ErrUnavailable
+	}
+	cred, err := prov.Inspect(s.Store.Context(), ref)
 	if err != nil {
 		return Item{}, err
 	}
-	got, err := client.Inspect(s.Store.Context(), ref)
+	id, err := docker.DecodeContainerCredential(cred)
 	if err != nil {
 		return Item{}, err
 	}
-	if got.AutoRemove {
-		return Item{}, docker.ErrAutoRemove
-	}
-	return s.registerContainer(got.Identity, opt)
+	return s.registerContainer(id, opt)
 }
 
 func (s *Service) registerContainer(id docker.Identity, opt AddOptions) (item Item, err error) {
@@ -86,14 +80,8 @@ func (s *Service) registerContainer(id docker.Identity, opt AddOptions) (item It
 }
 
 func (s *Service) checkItemMutation(st *State, idx int, path string, roots []resolvedGraveyardRoot) error {
-	if st.Items[idx].Kind == KindContainer {
-		return containerIdentity(st.Items[idx].Kind, st.Items[idx].Container)
-	}
-	if st.Items[idx].Kind == KindDockerVolume {
-		if st.Items[idx].Volume == nil {
-			return docker.ErrIdentity
-		}
-		return st.Items[idx].Volume.Check()
+	if st.Items[idx].IsExternal() {
+		return s.validateExternalItem(st.Items[idx])
 	}
 	if err := s.checkBurying(st.Items[idx]); err != nil {
 		return err
